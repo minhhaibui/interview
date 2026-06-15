@@ -1,5 +1,7 @@
 # Tuần 3: SQL Database (PostgreSQL/MySQL)
 
+> 🧪 **Có lab tận tay!** Xem [`lab/LAB.md`](lab/LAB.md) — Postgres qua `docker compose` + seed 50k đơn hàng để TẬN MẮT thấy `EXPLAIN ANALYZE` Seq Scan→Index Scan, transaction chuyển tiền có `FOR UPDATE`, diệt N+1 + cursor pagination.
+
 ## 🎯 Mục tiêu tuần này
 
 - Thiết kế schema đúng: hiểu **normalization (1NF–3NF)** và biết **khi nào nên denormalize** có chủ đích.

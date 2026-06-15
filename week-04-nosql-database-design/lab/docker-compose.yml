@@ -1,0 +1,27 @@
+# 🐳 Docker Compose cho Lab MongoDB
+# Chạy:  docker compose up -d   (đợi tới khi container "healthy")
+# Dừng:  docker compose down     (giữ dữ liệu)
+# Xoá sạch cả dữ liệu: docker compose down -v
+#
+# ⚠️ CẢNH BÁO: Lab local KHÔNG bật auth cho gọn (không cần user/password).
+# Trên PRODUCTION BẮT BUỘC phải bật authentication (--auth + user/role),
+# bind đúng network, dùng TLS. Đừng bao giờ chạy Mongo "trần" ra Internet.
+
+services:
+  mongo:
+    image: mongo:7                 # pin đúng major version 7 cho ổn định
+    container_name: lab-mongo
+    ports:
+      - "27017:27017"             # host:container — để Node ở máy thật nối vào
+    volumes:
+      - mongodata:/data/db        # volume đặt tên → dữ liệu sống qua các lần restart
+    healthcheck:
+      # mongo:7 đã có sẵn mongosh; ping admin để biết server thực sự sẵn sàng
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  mongodata:                       # Docker tự quản lý, xoá bằng `down -v`

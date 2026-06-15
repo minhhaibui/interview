@@ -1,0 +1,84 @@
+# 🚀 Deployment — quản lý nhiều bản sao (replica) của Pod, tự self-heal & rolling update
+# ----------------------------------------------------------------------
+# Deployment KHÔNG tạo Pod trực tiếp: nó tạo ra ReplicaSet, ReplicaSet mới tạo Pod.
+# Ta khai báo "desired state" (muốn 3 pod), Kubernetes liên tục reconcile để đạt được.
+# ----------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  labels:
+    app: web
+spec:
+  replicas: 3              # 🎯 desired state: luôn muốn có 3 pod chạy
+
+  # 🔎 selector: Deployment dùng label này để "nhận" những Pod thuộc về nó.
+  #    Phải KHỚP với template.metadata.labels bên dưới.
+  selector:
+    matchLabels:
+      app: web
+
+  # 🔄 Chiến lược cập nhật cuốn chiếu (rolling update): thay pod dần dần, không downtime.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1           # cho phép tạo thêm tối đa 1 pod vượt mức trong lúc update
+      maxUnavailable: 0     # không cho pod nào "thiếu" trong lúc update => luôn đủ phục vụ
+
+  # 🧬 template: khuôn để tạo ra từng Pod
+  template:
+    metadata:
+      labels:
+        app: web            # label gắn lên pod (Service & selector dựa vào đây)
+    spec:
+      # 📦 Khai báo volume lấy nội dung từ ConfigMap web-content
+      volumes:
+        - name: web-content-vol
+          configMap:
+            name: web-content
+            items:
+              # Chỉ map đúng key index.html -> file index.html.
+              # Dùng items để CHỈ đưa file này vào, tránh rác trong thư mục web.
+              - key: index.html
+                path: index.html
+
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine   # image công khai, không cần build riêng
+          ports:
+            - containerPort: 80       # nginx lắng nghe cổng 80 trong pod
+
+          # 📂 Mount nội dung index.html từ ConfigMap vào thư mục gốc của nginx.
+          #    nginx chỉ cần file index.html nên mount cả thư mục này là ổn.
+          volumeMounts:
+            - name: web-content-vol
+              mountPath: /usr/share/nginx/html
+
+          # 💰 resources: khai báo tài nguyên.
+          #    requests = mức scheduler "đặt chỗ" để xếp pod lên node.
+          #    limits   = trần cứng; vượt memory limit -> bị OOMKilled, vượt cpu -> bị bóp (throttle).
+          resources:
+            requests:
+              cpu: 50m         # 50 milli-core = 0.05 CPU
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+
+          # ✅ readinessProbe: pod đã SẴN SÀNG nhận traffic chưa?
+          #    Fail -> bị tách khỏi Service (không nhận request) nhưng KHÔNG bị restart.
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3   # chờ 3s sau khi container khởi động rồi mới check
+            periodSeconds: 5         # kiểm tra mỗi 5s
+
+          # ❤️ livenessProbe: pod còn SỐNG không?
+          #    Fail liên tiếp -> kubelet RESTART container (chữa treo/deadlock).
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10  # cho nginx thời gian khởi động trước khi soi
+            periodSeconds: 10

@@ -1,0 +1,27 @@
+# 🐘 Docker Compose cho Lab SQL/Postgres
+# Chạy: docker compose up -d  → đợi tới khi container "healthy" rồi mới chạy node
+services:
+  postgres:
+    image: postgres:16-alpine        # pin version để tái lập ổn định
+    container_name: lab-postgres
+    environment:
+      POSTGRES_USER: lab
+      POSTGRES_PASSWORD: lab
+      POSTGRES_DB: shop
+    ports:
+      - "5432:5432"                  # map ra host để Node connect qua localhost:5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Postgres tự chạy mọi file trong /docker-entrypoint-initdb.d KHI khởi tạo DB lần đầu
+      # (chỉ chạy khi volume pgdata còn TRỐNG — muốn chạy lại phải `docker compose down -v`)
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      # pg_isready trả về "accepting connections" khi DB sẵn sàng nhận query
+      test: ["CMD-SHELL", "pg_isready -U lab -d shop"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+# Volume đặt tên để dữ liệu (và seed) không mất khi container restart
+volumes:
+  pgdata:

@@ -1,0 +1,15 @@
+{
+  "name": "sql-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Lab SQL/Postgres tận tay: index/EXPLAIN, transaction/lock, N+1/pagination",
+  "scripts": {
+    "join": "node src/01-join-index.js",
+    "tx": "node src/02-transaction.js",
+    "nplus1": "node src/03-n-plus-1.js",
+    "start": "node -e \"console.log('👉 Chạy: docker compose up -d (đợi healthy) → npm install → npm run join | npm run tx | npm run nplus1. Xem LAB.md để biết chi tiết.')\""
+  },
+  "dependencies": {
+    "pg": "^8"
+  }
+}

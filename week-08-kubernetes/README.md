@@ -1,5 +1,7 @@
 # Tuần 8: Kubernetes
 
+> 🧪 **Có lab tận tay!** Xem [`lab/LAB.md`](lab/LAB.md) — tạo cluster thật bằng `kind` (3 node) rồi `kubectl apply` Deployment + Service NodePort + ConfigMap để TẬN TAY thử self-heal, scaling, rolling update + rollback, probes.
+
 ## 🎯 Mục tiêu tuần này
 
 - Hiểu rõ K8s architecture: control plane (api-server, etcd, scheduler, controller-manager) và worker node (kubelet, kube-proxy).

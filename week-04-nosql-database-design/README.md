@@ -1,5 +1,7 @@
 # Tuần 4: NoSQL & Database Design
 
+> 🧪 **Có lab tận tay!** Xem [`lab/LAB.md`](lab/LAB.md) — MongoDB qua `docker compose` + seed 2k đơn hàng để thực hành CRUD/index (COLLSCAN→IXSCAN), aggregation pipeline báo cáo bán hàng, và bucket pattern cho time-series.
+
 ## 🎯 Mục tiêu tuần này
 
 - Hiểu rõ sự khác biệt giữa SQL và NoSQL, biết **khi nào chọn cái gì** và lý do (không trả lời cảm tính kiểu "NoSQL nhanh hơn").

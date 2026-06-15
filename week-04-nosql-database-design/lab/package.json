@@ -1,0 +1,17 @@
+{
+  "name": "mongo-lab",
+  "version": "1.0.0",
+  "description": "Lab MongoDB/NoSQL tận tay để ôn phỏng vấn backend Node.js",
+  "type": "commonjs",
+  "private": true,
+  "scripts": {
+    "start": "node -e \"console.log('👉 Chạy lần lượt: npm run seed  →  npm run crud  →  npm run agg  →  npm run bucket. Xem LAB.md để biết chi tiết.')\"",
+    "seed": "node seed.js",
+    "crud": "node src/01-crud-index.js",
+    "agg": "node src/02-aggregation.js",
+    "bucket": "node src/03-bucket-pattern.js"
+  },
+  "dependencies": {
+    "mongodb": "^6"
+  }
+}

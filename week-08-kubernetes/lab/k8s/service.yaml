@@ -1,0 +1,28 @@
+# 🌐 Service — địa chỉ ổn định để truy cập nhóm Pod (Pod có IP đổi xoành xoạch)
+# ----------------------------------------------------------------------
+# Service tìm pod qua selector (label app=web) và load-balance request vào chúng.
+#
+# Các kiểu Service:
+#   • ClusterIP  (mặc định): chỉ truy cập được TRONG cluster. Dùng cho giao tiếp nội bộ.
+#   • NodePort:  mở 1 cổng (30000-32767) trên MỌI node -> truy cập từ ngoài qua <nodeIP>:<nodePort>.
+#   • LoadBalancer: nhờ cloud (AWS/GCP...) cấp 1 LB ngoài. Trên kind không có sẵn.
+#
+# Ta chọn NodePort 30080 vì kind đã map containerPort 30080 -> hostPort 8080
+# (xem kind-config.yaml) => gõ http://localhost:8080 trên máy host là vào được.
+# ----------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: web
+  labels:
+    app: web
+spec:
+  type: NodePort
+  selector:
+    app: web          # 🔎 chọn mọi pod có label app=web (chính là pod của Deployment)
+  ports:
+    - name: http
+      port: 80         # cổng của chính Service (truy cập trong cluster: web:80)
+      targetPort: 80   # cổng container nginx đang lắng nghe
+      nodePort: 30080  # cổng mở trên node, KHỚP extraPortMappings trong kind-config.yaml
+      protocol: TCP
