@@ -99,7 +99,19 @@ Mỗi Chủ nhật, tự kiểm tra 3 mục. Ghi kết quả vào một file log
 | [03-listening-speaking.md](./03-listening-speaking.md) | Danh sách talks/podcasts theo chủ đề + hướng dẫn shadowing | Tuần 5-12 |
 | [04-interview-english.md](./04-interview-english.md) | Mẫu câu phỏng vấn: mở đầu, câu giờ, trình bày trade-off, STAR stories | Tuần 9-12 |
 | [05-workplace-communication.md](./05-workplace-communication.md) | Template standup, commit message, PR description, Slack, email | Tuần 5-8 và dùng mãi về sau |
+| [06-daily-life-vocabulary.md](./06-daily-life-vocabulary.md) | 323 từ giao tiếp đời sống theo 16 chủ đề (IPA, nghĩa, ví dụ) | Học song song, luyện ở tab Flashcards |
+
+### 🌱 Bộ VỠ LÒNG — dành cho người mới / học yếu tiếng Anh (bắt đầu từ đây!)
+
+> Nếu bạn thấy các file trên hơi khó, hãy học 4 file này TRƯỚC. Chúng cực kỳ chi tiết, có **phiên âm Việt-hóa** (đọc gần đúng bằng âm tiếng Việt) nên không cần biết IPA vẫn học được.
+
+| File | Nội dung | Dùng khi nào |
+|------|----------|--------------|
+| [07-phat-am-co-ban.md](./07-phat-am-co-ban.md) | Phát âm cho người Việt: âm cuối, đuôi -s/-ed, âm khó (th, r/l…), trọng âm — có Việt-hóa | Tuần 1 trở đi, luyện 10 phút/ngày |
+| [08-ngu-phap-vo-long.md](./08-ngu-phap-vo-long.md) | Ngữ pháp nền tảng đủ để TỰ ĐẶT CÂU: to be, present simple, câu hỏi, mạo từ, can/want to… + lỗi người Việt hay mắc | Tuần 1-3, nền tảng |
+| [09-cau-giao-tiep-song-con.md](./09-cau-giao-tiep-song-con.md) | ~120 câu giao tiếp sống còn (chào hỏi, nhờ giúp, xin nhắc lại, standup…) — học thuộc là nói được | Mỗi ngày 5 câu |
+| [10-doc-tieng-anh-di-lam.md](./10-doc-tieng-anh-di-lam.md) | Đọc tiếng Anh ở công ty cho người mới: ~200 từ UI/trạng thái/Slack, đọc error message, cách đọc câu dài từng bước | Khi đọc giao diện/Slack/lỗi ở chỗ làm |
 
 ---
 
-*Bắt đầu từ hôm nay: mở [01-technical-vocabulary.md](./01-technical-vocabulary.md), nạp 10 thẻ Week 1 vào Anki, và đọc trang đầu tiên của Node.js docs. 30 phút thôi.*
+*Bắt đầu từ hôm nay: nếu mới học, mở [09-cau-giao-tiep-song-con.md](./09-cau-giao-tiep-song-con.md) học thuộc 5 câu + [07-phat-am-co-ban.md](./07-phat-am-co-ban.md) luyện âm cuối 10 phút. Nếu đã khá, mở [01-technical-vocabulary.md](./01-technical-vocabulary.md), nạp 10 thẻ Week 1 và đọc trang đầu Node.js docs.*
