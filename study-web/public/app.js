@@ -579,10 +579,12 @@ function loadDeck() {
   deckPromise ??= Promise.all([
     fetchMd('english/01-technical-vocabulary.md'),
     fetchMd('english/06-daily-life-vocabulary.md'),
-  ]).then(([tech, daily]) => {
+    fetchMd('english/11-tu-vung-co-ban-pho-bien.md'),
+  ]).then(([tech, daily, basic]) => {
     DECK = [
       ...(tech ? parseVocab(tech) : []),
-      ...(daily ? parseVocab(daily, true) : []), // file giao tiếp: mọi heading là một chủ đề
+      ...(daily ? parseVocab(daily, true) : []),  // file giao tiếp: mọi heading là một chủ đề
+      ...(basic ? parseVocab(basic, true) : []),  // ~640 từ cơ bản phổ biến: mỗi heading là một chủ đề
     ];
     return DECK;
   });
