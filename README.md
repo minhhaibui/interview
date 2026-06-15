@@ -3,6 +3,8 @@
 > Lộ trình 12 tuần, từ cơ bản đến nâng cao, kèm bài tập thực hành và bài test cuối tuần.
 > Mục tiêu: pass phỏng vấn vị trí **Backend Engineer (Node.js)** từ Middle → Senior.
 
+> 🗺️ **Chưa biết bắt đầu từ đâu? Đọc [`LO-TRINH-HOC.md`](LO-TRINH-HOC.md) TRƯỚC** — lộ trình học hiệu quả nhất: học gì trước/sau, trong mỗi tuần làm theo thứ tự nào, ghép tiếng Anh ra sao, và chiến lược "học 2 lượt" cho người mới.
+
 ## 💻 Study Web — học qua giao diện web
 
 ```bash

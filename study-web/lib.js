@@ -21,6 +21,7 @@ function buildTree(ROOT) {
   groups.push({
     title: '🏠 Tổng quan',
     items: [
+      exists('LO-TRINH-HOC.md') && { label: '🗺️ LỘ TRÌNH HỌC — đọc đầu tiên!', path: 'LO-TRINH-HOC.md' },
       { label: 'Giới thiệu lộ trình', path: 'README.md' },
       exists('capstone-project/README.md') && { label: '⭐ Capstone Project', path: 'capstone-project/README.md' },
       exists('capstone-project/GETTING-STARTED.md') && { label: '🚀 Capstone — Bắt đầu code', path: 'capstone-project/GETTING-STARTED.md' },
