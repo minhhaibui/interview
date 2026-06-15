@@ -1,0 +1,5 @@
+node_modules/
+.DS_Store
+*.log
+# Dữ liệu tĩnh được GitHub Actions build lại mỗi lần deploy — không commit
+study-web/public/data/

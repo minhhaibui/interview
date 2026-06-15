@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>📚 Backend Interview Prep — Study Web</title>
+  <link id="hljs-css" rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <button id="sb-toggle" class="sb-toggle" title="Mở/đóng mục lục">☰</button>
+    <div class="brand">🚀 Backend Interview Prep</div>
+    <nav class="tabs">
+      <button class="tab active" data-view="docs">📚 Tài liệu</button>
+      <button class="tab" data-view="flashcards">🃏 Flashcards</button>
+      <button class="tab" data-view="writing">✍️ Luyện viết</button>
+      <button class="tab" data-view="code">⌨️ Gõ code</button>
+      <button class="tab" data-view="mock">🎯 Mock PV</button>
+      <button class="tab" data-view="dashboard">📊 Tiến độ</button>
+    </nav>
+    <div class="pomo">
+      <button id="theme-btn" title="Đổi giao diện sáng / tối">🌙</button>
+      <button id="pomo-btn" title="Pomodoro: bấm để bắt đầu / tạm dừng phiên tập trung 25 phút">🍅 25:00</button>
+      <button id="pomo-reset" title="Đặt lại pomodoro" hidden>↺</button>
+    </div>
+  </header>
+
+  <!-- ============ VIEW: TÀI LIỆU ============ -->
+  <div id="view-docs" class="view active">
+    <aside id="sidebar">
+      <div class="sb-search">
+        <input id="sb-search" type="search" placeholder="🔍 Tìm toàn bộ tài liệu…" autocomplete="off" />
+      </div>
+      <div id="sb-results" class="sb-results" hidden></div>
+      <div id="sb-tree"></div>
+    </aside>
+    <div id="sb-backdrop"></div>
+    <main id="content">
+      <div class="welcome">
+        <h1>Chào mừng trở lại! 👋</h1>
+        <p>Chọn một tài liệu ở sidebar để bắt đầu học.</p>
+        <p>Mẹo: trong các trang có quiz, bấm <b>🧪 Chế độ quiz tự chấm</b> để làm bài và lưu điểm.</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- ============ VIEW: FLASHCARDS ============ -->
+  <div id="view-flashcards" class="view">
+    <div class="fc-wrap">
+      <h1>🃏 Flashcards từ vựng kỹ thuật</h1>
+      <div class="fc-controls">
+        <select id="fc-week"></select>
+        <button id="fc-shuffle">🔀 Xáo bài</button>
+        <button id="fc-dir" title="Đổi chiều hỏi">🔄 Anh→Việt</button>
+        <button id="fc-speak" title="Nghe phát âm từ (lật thẻ rồi bấm để nghe cả câu ví dụ)">🔊</button>
+        <button id="fc-auto" title="Tự đọc to mỗi khi hiện thẻ / lật thẻ">🔁 Tự đọc: TẮT</button>
+        <span id="fc-stats" class="fc-stats"></span>
+      </div>
+      <div id="fc-card" class="fc-card">
+        <div class="fc-inner">
+          <div class="fc-face fc-front"><p>Đang tải từ vựng…</p></div>
+          <div class="fc-face fc-back"></div>
+        </div>
+      </div>
+      <p class="fc-hint">Bấm thẻ hoặc <kbd>Space</kbd> để lật · <kbd>←</kbd> chưa nhớ · <kbd>→</kbd> nhớ rồi · <kbd>S</kbd> nghe phát âm</p>
+      <div class="fc-actions">
+        <button id="fc-again" class="btn-again">❌ Chưa nhớ</button>
+        <button id="fc-good" class="btn-good">✅ Nhớ rồi</button>
+      </div>
+      <div id="fc-progress" class="fc-progress"></div>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: LUYỆN VIẾT ============ -->
+  <div id="view-writing" class="view">
+    <div class="wr-wrap">
+      <h1>✍️ Luyện viết tiếng Anh</h1>
+      <div class="wr-modes">
+        <button class="wr-mode" data-mode="mix">⚡ Mix nhanh</button>
+        <button class="wr-mode active" data-mode="word">✍️ Từ mới</button>
+        <button class="wr-mode" data-mode="cloze">🧩 Điền từ vào câu</button>
+        <button class="wr-mode" data-mode="sentence">🎧 Nghe & gõ câu</button>
+        <button class="wr-mode" data-mode="listen">👂 Nghe điền từ</button>
+        <button class="wr-mode" data-mode="speak">🎤 Đọc to</button>
+      </div>
+      <div class="wr-controls">
+        <select id="wr-week"></select>
+        <span id="wr-stats" class="wr-stats"></span>
+      </div>
+      <div class="wr-card">
+        <div id="wr-prompt" class="wr-prompt"><p>Đang tải dữ liệu…</p></div>
+        <div class="wr-input-row">
+          <input id="wr-input" type="text" autocomplete="off" autocapitalize="off"
+                 spellcheck="false" placeholder="Gõ tiếng Anh rồi nhấn Enter…" />
+          <button id="wr-mic" title="Bấm và đọc to" hidden>🎤</button>
+          <button id="wr-speak" title="Nghe phát âm">🔊</button>
+        </div>
+        <div id="wr-feedback" class="wr-feedback"></div>
+        <div class="wr-actions">
+          <button id="wr-check">✅ Kiểm tra <kbd>Enter</kbd></button>
+          <button id="wr-hint">💡 Gợi ý</button>
+          <button id="wr-skip">⏭️ Hiện đáp án & bỏ qua</button>
+        </div>
+      </div>
+      <div id="wr-progress" class="wr-progress"></div>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: LUYỆN GÕ CODE ============ -->
+  <div id="view-code" class="view">
+    <div class="ct-wrap">
+      <h1>⌨️ Luyện gõ code</h1>
+      <p class="ct-tip">Gõ lại đoạn code bên dưới — chỉ ký tự <b>đúng</b> mới đi tiếp được, gõ sai tính lỗi.
+        Nhấn <kbd>Enter</kbd> xuống dòng (thụt đầu dòng được bỏ qua tự động). Gõ xong sẽ có điểm WPM + độ chính xác.</p>
+      <div class="ct-controls">
+        <select id="ct-source"></select>
+        <button id="ct-next">🔀 Snippet khác</button>
+        <span id="ct-stats" class="ct-stats"></span>
+      </div>
+      <div id="ct-meta" class="ct-meta"></div>
+      <pre id="ct-code" class="ct-code" tabindex="0"></pre>
+      <div id="ct-result" class="ct-result"></div>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: MOCK INTERVIEW ============ -->
+  <div id="view-mock" class="view">
+    <div class="mk-wrap">
+      <h1>🎯 Mock Interview</h1>
+      <div id="mk-setup" class="mk-setup">
+        <p class="mk-tip">Bốc ngẫu nhiên câu hỏi từ kho 180 câu Q&A của 12 tuần. Đọc câu hỏi xong hãy <b>trả lời TO THÀNH TIẾNG</b> như phỏng vấn thật (tiếng Anh càng tốt!), rồi xem đáp án và tự chấm.</p>
+        <div class="mk-options">
+          <label>Phạm vi <select id="mk-week"></select></label>
+          <label>Số câu
+            <select id="mk-count">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="15">15</option>
+            </select>
+          </label>
+          <label>Phút/câu
+            <select id="mk-time">
+              <option value="1">1</option>
+              <option value="2" selected>2</option>
+              <option value="3">3</option>
+            </select>
+          </label>
+        </div>
+        <button id="mk-start" class="mk-start">▶️ Bắt đầu phỏng vấn</button>
+      </div>
+      <div id="mk-session" hidden>
+        <div class="mk-top">
+          <span id="mk-progress"></span>
+          <span id="mk-timer" class="mk-timer"></span>
+        </div>
+        <div id="mk-question" class="mk-question"></div>
+        <div id="mk-answer" class="mk-answer" hidden></div>
+        <div class="mk-actions">
+          <button id="mk-reveal">👁 Xem đáp án</button>
+          <button id="mk-right" class="mk-grade-right" hidden>✓ Tôi trả lời tốt</button>
+          <button id="mk-wrong" class="mk-grade-wrong" hidden>✗ Chưa tốt</button>
+          <button id="mk-quit">⏹ Dừng</button>
+        </div>
+      </div>
+      <div id="mk-result" class="mk-result" hidden></div>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: DASHBOARD ============ -->
+  <div id="view-dashboard" class="view">
+    <div class="dash-wrap">
+      <h1>📊 Tiến độ của bạn</h1>
+      <div id="dash-due" class="dash-due"></div>
+      <div class="dash-total">
+        <div class="bar"><div id="dash-bar-fill" class="bar-fill"></div></div>
+        <span id="dash-percent">0%</span>
+      </div>
+      <div id="dash-weeks"></div>
+      <h2>📦 Từ vựng theo hộp SRS</h2>
+      <div id="dash-srs"></div>
+      <h2>🗓️ Hoạt động học tập</h2>
+      <div id="dash-streak" class="dash-streak"></div>
+      <div id="dash-heatmap" class="heatmap"></div>
+      <h3>📈 Lượt học 14 ngày gần nhất</h3>
+      <div id="dash-chart-activity" class="chart"></div>
+      <h2>🎯 Lịch sử Mock Interview</h2>
+      <div id="dash-chart-mock" class="chart"></div>
+      <div id="dash-mock"></div>
+      <h2>🚩 Câu mock cần ôn lại</h2>
+      <div id="dash-mock-wrong"></div>
+      <h2>⌨️ Gõ code — WPM theo thời gian</h2>
+      <div id="dash-chart-wpm" class="chart"></div>
+      <h2>🧪 Điểm quiz đã lưu</h2>
+      <div id="dash-scores"></div>
+      <div class="dash-io">
+        <button id="dash-export">📤 Xuất dữ liệu (backup)</button>
+        <button id="dash-import">📥 Nhập dữ liệu</button>
+        <input id="dash-import-file" type="file" accept="application/json,.json" hidden />
+        <button id="dash-reset" class="btn-danger">🗑️ Xoá toàn bộ tiến độ</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

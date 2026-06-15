@@ -1,0 +1,7 @@
+node_modules
+test
+k8s
+sql
+*.md
+.dockerignore
+Dockerfile

@@ -1,0 +1,1983 @@
+/**
+ * Study Web — frontend SPA (vanilla JS, không framework).
+ * Tính năng: đọc tài liệu markdown, quiz tự chấm, flashcards từ vựng, dashboard tiến độ.
+ * Toàn bộ tiến độ lưu trong localStorage của trình duyệt.
+ */
+
+// ---------- State & storage helpers ----------
+const store = {
+  get(key, fallback) {
+    try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
+    catch { return fallback; }
+  },
+  set(key, val) { localStorage.setItem(key, JSON.stringify(val)); },
+};
+
+let TREE = [];
+let currentDoc = null;
+
+// ---------- API: chạy được cả với backend động (server.js) lẫn bản tĩnh (GitHub Pages) ----------
+// STATIC_MODE bật khi không gọi được /api (ví dụ trên GitHub Pages) — khi đó dùng data/*.json.
+let STATIC_MODE = false;
+let _docsPromise = null;
+/** Tải gói nội dung md tĩnh một lần, cache lại (dùng cho đọc file + tìm kiếm) */
+function loadDocsStatic() {
+  return _docsPromise ??= fetch('data/docs.json').then(r => r.json());
+}
+
+/** Đọc 1 file md (raw text) — null nếu không có */
+async function apiFile(relPath) {
+  if (STATIC_MODE) { const docs = await loadDocsStatic(); return docs[relPath] ?? null; }
+  const r = await fetch('/api/file?path=' + encodeURIComponent(relPath)).catch(() => null);
+  return r && r.ok ? r.text() : null;
+}
+
+/** Danh sách snippet luyện gõ code */
+function apiSnippets() {
+  return (STATIC_MODE ? fetch('data/snippets.json') : fetch('/api/snippets')).then(r => r.json());
+}
+
+/** Tìm toàn văn — bản tĩnh duyệt docs.json client-side, giữ nguyên định dạng kết quả của server */
+async function apiSearch(q) {
+  if (!STATIC_MODE) return fetch('/api/search?q=' + encodeURIComponent(q)).then(r => r.json()).catch(() => []);
+  const docs = await loadDocsStatic();
+  const needle = q.toLowerCase();
+  const results = [];
+  const MAX = 60;
+  for (const [p, content] of Object.entries(docs)) {
+    const lines = content.split('\n');
+    for (let i = 0; i < lines.length && results.length < MAX; i++) {
+      if (lines[i].toLowerCase().includes(needle)) {
+        results.push({ path: p, line: i + 1, text: lines[i].trim().slice(0, 180) });
+      }
+    }
+    if (results.length >= MAX) break;
+  }
+  return results;
+}
+
+// ---------- SRS + thống kê dùng chung ----------
+const SRS_INTERVALS = [0, 1, 3, 7, 14, 30]; // số ngày chờ trước khi ôn lại, theo box 0→5
+const LEECH_THRESHOLD = 3;          // sai từ này trở lên → "từ cứng đầu"
+
+const dayKey = d =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+/** Thời điểm thẻ đến hạn ôn lại */
+function srsDue(entry) {
+  return entry.at + SRS_INTERVALS[entry.box || 0] * 864e5;
+}
+
+/** Lọc deck theo lựa chọn tuần / đến hạn / từ cứng đầu / kỹ thuật / giao tiếp */
+function filterDeck(week) {
+  if (week === '__due__') {
+    const srs = store.get('prep-srs', {});
+    return DECK.filter(c => srs[c.id] && srsDue(srs[c.id]) <= Date.now());
+  }
+  if (week === '__leech__') {
+    const fails = store.get('prep-fails', {});
+    return DECK.filter(c => (fails[c.id] || 0) >= LEECH_THRESHOLD);
+  }
+  if (week === '__tech__') return DECK.filter(c => !c.daily);
+  if (week === '__daily__') return DECK.filter(c => c.daily);
+  return week ? DECK.filter(c => c.week === week) : [...DECK];
+}
+
+/** Ghi nhận một lượt học vào heatmap hoạt động */
+function logActivity(n = 1) {
+  const acts = store.get('prep-activity', {});
+  const key = dayKey(new Date());
+  acts[key] = (acts[key] || 0) + n;
+  store.set('prep-activity', acts);
+}
+
+/** Cập nhật SRS + đếm lỗi: dùng chung cho flashcards và luyện viết */
+function bumpSrs(card, known) {
+  if (!card) return;
+  const srs = store.get('prep-srs', {});
+  const cur = srs[card.id]?.box || 0;
+  srs[card.id] = { box: known ? Math.min(cur + 1, SRS_INTERVALS.length - 1) : 0, at: Date.now() };
+  store.set('prep-srs', srs);
+  if (!known) {
+    const fails = store.get('prep-fails', {});
+    fails[card.id] = (fails[card.id] || 0) + 1;
+    store.set('prep-fails', fails);
+  }
+}
+
+// ---------- Tabs / views ----------
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => switchView(btn.dataset.view));
+});
+
+function switchView(name) {
+  store.set('prep-last-view', name); // nhớ tab đang mở cho lần reload sau
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === `view-${name}`));
+  if (name === 'flashcards') initFlashcards().then(() => fcLoaded && fillFcWeekSelect());
+  if (name === 'writing') initWriting().then(() => wrInit && WR_SENTENCES && fillWrWeekSelect());
+  if (name === 'code') initCodeTyping();
+  if (name === 'mock') initMock().then(() => mkInit && fillMockWeekSelect());
+  if (name === 'dashboard') renderDashboard();
+}
+
+// ---------- Pomodoro ----------
+const POMO_FOCUS = 25 * 60, POMO_BREAK = 5 * 60;
+let pomoMode = 'idle'; // idle | focus | break
+let pomoLeft = POMO_FOCUS, pomoRunning = false, pomoTimerId = null;
+let pomoEndAt = 0; // deadline thật — không trừ dần để khỏi lệch khi tab bị throttle
+const BASE_TITLE = document.title;
+
+function pomoBeep(times = 3) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    for (let i = 0; i < times; i++) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.25, ctx.currentTime + i * 0.4);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.4 + 0.3);
+      osc.start(ctx.currentTime + i * 0.4);
+      osc.stop(ctx.currentTime + i * 0.4 + 0.32);
+    }
+  } catch {}
+}
+
+function pomoTodayCount() {
+  return store.get('prep-pomo', {})[dayKey(new Date())] || 0;
+}
+
+/** Báo qua Notification API — hữu ích khi đang ở tab/app khác lúc hết giờ */
+function pomoNotify(title, body) {
+  try {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, { body });
+    }
+  } catch {}
+}
+
+function pomoRender() {
+  const btn = document.getElementById('pomo-btn');
+  const mm = String(Math.floor(pomoLeft / 60)).padStart(2, '0');
+  const ss = String(pomoLeft % 60).padStart(2, '0');
+  const icon = pomoMode === 'break' ? '☕' : '🍅';
+  const count = pomoTodayCount();
+  btn.textContent = `${icon} ${mm}:${ss}${count ? ` ×${count}` : ''}`;
+  btn.className = pomoRunning ? (pomoMode === 'break' ? 'break running' : 'running')
+    : (pomoMode !== 'idle' ? 'paused' : '');
+  document.getElementById('pomo-reset').hidden = pomoMode === 'idle';
+  document.title = pomoRunning ? `${icon} ${mm}:${ss} · Study Web` : BASE_TITLE;
+}
+
+function pomoTick() {
+  pomoLeft = Math.max(0, Math.round((pomoEndAt - Date.now()) / 1000));
+  if (pomoLeft > 0) return pomoRender();
+  pomoBeep();
+  if (pomoMode === 'focus') {
+    // Xong 1 pomodoro → cộng vào bộ đếm hôm nay rồi tự chuyển sang giải lao
+    const pomo = store.get('prep-pomo', {});
+    const key = dayKey(new Date());
+    pomo[key] = (pomo[key] || 0) + 1;
+    store.set('prep-pomo', pomo);
+    pomoNotify('🍅 Xong phiên tập trung 25 phút!', `Pomodoro thứ ${pomo[key]} hôm nay — nghỉ 5 phút nhé ☕`);
+    pomoMode = 'break';
+    pomoLeft = POMO_BREAK;
+    pomoEndAt = Date.now() + POMO_BREAK * 1000;
+  } else {
+    pomoNotify('☕ Hết giờ nghỉ', 'Vào phiên tập trung tiếp nào! 🍅');
+    pomoStop();
+  }
+  pomoRender();
+}
+
+function pomoStop() {
+  clearInterval(pomoTimerId);
+  pomoTimerId = null;
+  pomoRunning = false;
+  pomoMode = 'idle';
+  pomoLeft = POMO_FOCUS;
+}
+
+function initPomodoro() {
+  document.getElementById('pomo-btn').addEventListener('click', () => {
+    if (pomoRunning) {
+      clearInterval(pomoTimerId);
+      pomoTimerId = null;
+      pomoRunning = false;
+      pomoLeft = Math.max(0, Math.round((pomoEndAt - Date.now()) / 1000));
+    } else {
+      if (pomoMode === 'idle') {
+        pomoMode = 'focus';
+        pomoLeft = POMO_FOCUS;
+        // Xin quyền notification ở lần bấm đầu (cần user gesture)
+        try {
+          if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+        } catch {}
+      }
+      pomoRunning = true;
+      pomoEndAt = Date.now() + pomoLeft * 1000;
+      pomoTimerId = setInterval(pomoTick, 1000);
+    }
+    pomoRender();
+  });
+  document.getElementById('pomo-reset').addEventListener('click', () => { pomoStop(); pomoRender(); });
+  pomoRender();
+}
+
+// ---------- Sidebar toggle (mobile) ----------
+function initSidebarToggle() {
+  const sidebar = document.getElementById('sidebar');
+  document.getElementById('sb-toggle').addEventListener('click', () => {
+    switchView('docs');
+    sidebar.classList.toggle('open');
+  });
+  document.getElementById('sb-backdrop').addEventListener('click', () =>
+    sidebar.classList.remove('open'));
+}
+
+// ---------- Trang Home "Hôm nay học gì" ----------
+// Hiện khi chưa mở tài liệu nào, hoặc bấm vào logo trên topbar.
+async function renderHome(pushHash = true) {
+  switchView('docs');
+  currentDoc = null;
+  if (pushHash) history.replaceState(null, '', location.pathname);
+  document.querySelectorAll('.sb-item').forEach(b => b.classList.remove('active'));
+
+  const h = new Date().getHours();
+  const greet = h < 12 ? 'Chào buổi sáng' : h < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
+
+  const acts = store.get('prep-activity', {});
+  const todayN = acts[dayKey(new Date())] || 0;
+  let streak = 0;
+  const d = new Date();
+  if (!acts[dayKey(d)]) d.setDate(d.getDate() - 1);
+  while (acts[dayKey(d)] > 0) { streak++; d.setDate(d.getDate() - 1); }
+
+  // Tuần đầu tiên còn mục checklist chưa xong → gợi ý học tiếp
+  const progress = store.get('prep-progress', {});
+  const weeksGroup = TREE.find(g => g.title.includes('12 tuần'));
+  const weeks = [...new Set((weeksGroup?.items || []).map(i => i.week).filter(Boolean))];
+  const nextWeek = weeks.find(wk => WEEK_TASKS.some(([k]) => !(progress[wk] || {})[k]));
+
+  await loadDeck();
+  const due = filterDeck('__due__').length;
+  const leech = filterDeck('__leech__').length;
+  const last = store.get('prep-last-doc', null);
+
+  const cards = [];
+  cards.push({ id: 'hc-quick', title: '⚡ Ôn nhanh ~10 câu', sub: 'Mix từ đến hạn + điền từ + dịch câu — 10 phút mỗi ngày' });
+  if (last) cards.push({ id: 'hc-continue', title: '▶️ Đọc tiếp', sub: last });
+  if (nextWeek) cards.push({ id: 'hc-week', title: `📅 ${prettyWeek(nextWeek)}`, sub: 'Tuần đang học — vào lý thuyết tuần này' });
+  if (due) cards.push({ id: 'hc-due', title: `📬 ${due} từ đến hạn ôn`, sub: 'Ôn flashcards theo lịch SRS hôm nay' });
+  if (leech) cards.push({ id: 'hc-leech', title: `🔥 ${leech} từ cứng đầu`, sub: 'Sai nhiều lần — luyện riêng cho nhớ' });
+  cards.push({ id: 'hc-code', title: '⌨️ Gõ một snippet code', sub: 'Khởi động ngón tay 2 phút' });
+  cards.push({ id: 'hc-mock', title: '🎯 Mock interview nhanh', sub: '5-10 câu hỏi ngẫu nhiên từ 12 tuần' });
+  const wrongN = getMockWrong().length;
+  if (wrongN) cards.push({ id: 'hc-wrong', title: `🚩 ${wrongN} câu mock đã sai`, sub: 'Ôn lại riêng những câu từng trả lời chưa tốt' });
+
+  document.getElementById('content').innerHTML = `
+    <div class="home">
+      <h1>${greet}! 👋</h1>
+      <p class="home-stats">
+        ${todayN ? `Hôm nay đã học <b>${todayN} lượt</b>` : 'Hôm nay chưa học lượt nào'}
+        ${streak ? ` · 🔥 chuỗi <b>${streak} ngày</b>` : ''}
+        ${pomoTodayCount() ? ` · 🍅 <b>${pomoTodayCount()} pomodoro</b>` : ''}
+      </p>
+      <div class="home-cards">
+        ${cards.map(c => `<button class="home-card" id="${c.id}">
+          <span class="hc-title">${escHtml(c.title)}</span>
+          <span class="hc-sub">${escHtml(c.sub)}</span>
+        </button>`).join('')}
+      </div>
+      <p class="home-tip">Mẹo: phím <kbd>1</kbd>–<kbd>6</kbd> chuyển tab nhanh, <kbd>/</kbd> để tìm kiếm tài liệu.</p>
+    </div>`;
+
+  const goFlash = filter => {
+    switchView('flashcards');
+    initFlashcards().then(() => {
+      fillFcWeekSelect();
+      const sel = document.getElementById('fc-week');
+      sel.value = filter;
+      sel.dispatchEvent(new Event('change'));
+    });
+  };
+  document.getElementById('hc-quick')?.addEventListener('click', async () => {
+    switchView('writing');
+    await initWriting();
+    // initWriting return sớm nếu đã init dở — chờ dữ liệu thật sự sẵn sàng
+    await Promise.all([loadDeck(), loadSentences()]);
+    document.querySelector('.wr-mode[data-mode="mix"]').click();
+  });
+  document.getElementById('hc-continue')?.addEventListener('click', () => openDoc(last));
+  document.getElementById('hc-week')?.addEventListener('click', () => openDoc(`${nextWeek}/README.md`));
+  document.getElementById('hc-due')?.addEventListener('click', () => goFlash('__due__'));
+  document.getElementById('hc-leech')?.addEventListener('click', () => goFlash('__leech__'));
+  document.getElementById('hc-code')?.addEventListener('click', () => switchView('code'));
+  document.getElementById('hc-mock')?.addEventListener('click', () => switchView('mock'));
+  document.getElementById('hc-wrong')?.addEventListener('click', () => {
+    switchView('mock');
+    initMock().then(() => {
+      fillMockWeekSelect();
+      const sel = document.getElementById('mk-week');
+      sel.value = '__wrong__';
+    });
+  });
+}
+
+// ---------- Sidebar ----------
+async function loadTree() {
+  // Thử backend động trước; nếu hỏng (vd GitHub Pages tĩnh) thì chuyển sang data/tree.json
+  try {
+    const r = await fetch('/api/tree');
+    if (!r.ok) throw new Error('no api');
+    TREE = await r.json();
+  } catch {
+    STATIC_MODE = true;
+    TREE = await fetch('data/tree.json').then(r => r.json());
+  }
+  const sb = document.getElementById('sb-tree');
+  sb.innerHTML = '';
+  TREE.forEach(group => {
+    const g = document.createElement('div');
+    g.className = 'sb-group';
+    const title = document.createElement('button');
+    title.className = 'sb-title';
+    title.textContent = group.title;
+    title.addEventListener('click', () => g.classList.toggle('collapsed'));
+    g.appendChild(title);
+    const items = document.createElement('div');
+    items.className = 'sb-items';
+    group.items.forEach(item => {
+      const b = document.createElement('button');
+      b.className = 'sb-item' + (item.sub ? ' sub' : '');
+      b.textContent = item.label;
+      b.dataset.path = item.path;
+      b.addEventListener('click', () => openDoc(item.path));
+      items.appendChild(b);
+    });
+    g.appendChild(items);
+    sb.appendChild(g);
+  });
+}
+
+// ---------- Tìm kiếm toàn văn ----------
+let searchTimer = null;
+function initSearch() {
+  const input = document.getElementById('sb-search');
+  input.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    const q = input.value.trim();
+    if (q.length < 2) return renderSearchResults(null);
+    searchTimer = setTimeout(async () => {
+      const res = await apiSearch(q);
+      renderSearchResults(res, q);
+    }, 250);
+  });
+  input.addEventListener('keydown', e => { if (e.key === 'Escape') { input.value = ''; renderSearchResults(null); } });
+}
+
+function renderSearchResults(res, q) {
+  const box = document.getElementById('sb-results');
+  const tree = document.getElementById('sb-tree');
+  if (!res) { box.hidden = true; tree.style.display = ''; return; }
+  tree.style.display = 'none';
+  box.hidden = false;
+  box.innerHTML = '';
+  if (!res.length) {
+    box.innerHTML = '<p class="sb-empty">Không tìm thấy 😕</p>';
+    return;
+  }
+  const mark = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig');
+  const byFile = {};
+  res.forEach(r => (byFile[r.path] ??= []).push(r));
+  for (const [p, hits] of Object.entries(byFile)) {
+    const g = document.createElement('div');
+    g.className = 'sb-result-group';
+    const head = document.createElement('button');
+    head.className = 'sb-result-file';
+    head.textContent = `📄 ${p} (${hits.length})`;
+    head.addEventListener('click', () => openDoc(p));
+    g.appendChild(head);
+    hits.slice(0, 4).forEach(h => {
+      const item = document.createElement('button');
+      item.className = 'sb-result-hit';
+      item.innerHTML = h.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(mark, '<mark>$1</mark>');
+      item.addEventListener('click', () => openDoc(p));
+      g.appendChild(item);
+    });
+    box.appendChild(g);
+  }
+}
+
+// ---------- Doc rendering ----------
+async function openDoc(relPath, pushHash = true) {
+  const md = await apiFile(relPath);
+
+  const content = document.getElementById('content');
+  if (md === null) {
+    content.innerHTML = '<div class="welcome"><h1>😕 Không tải được tài liệu</h1></div>';
+    return;
+  }
+
+  currentDoc = relPath;
+  if (pushHash) location.hash = `doc=${encodeURIComponent(relPath)}`;
+  store.set('prep-last-doc', relPath);
+
+  const html = window.marked ? marked.parse(md) : `<pre>${md.replace(/</g, '&lt;')}</pre>`;
+  content.innerHTML = `<div class="md">${html}</div>`;
+  content.scrollTop = 0;
+
+  // Syntax highlight
+  if (window.hljs) content.querySelectorAll('pre code').forEach(el => { try { hljs.highlightElement(el); } catch {} });
+
+  // Link nội bộ .md → mở trong app thay vì điều hướng trang
+  content.querySelectorAll('a[href]').forEach(a => {
+    const href = a.getAttribute('href');
+    if (href.startsWith('http')) { a.target = '_blank'; return; }
+    if (href.endsWith('.md') || href.includes('.md#')) {
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        const target = resolveRelative(relPath, href.split('#')[0]);
+        openDoc(target);
+      });
+    }
+  });
+
+  // Task list "- [ ]" trong markdown → checkbox tick được, lưu tiến độ theo từng file
+  attachTaskLists(content, relPath);
+
+  // Nếu trang có <details> (đáp án quiz) → gắn chế độ quiz tự chấm
+  const detailsCount = content.querySelectorAll('details').length;
+  if (detailsCount > 0) attachQuizMode(content.querySelector('.md'), relPath, detailsCount);
+
+  // Đánh dấu item active trong sidebar
+  document.querySelectorAll('.sb-item').forEach(b =>
+    b.classList.toggle('active', b.dataset.path === relPath));
+
+  // Mobile: chọn xong tài liệu thì đóng sidebar lại
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+/** Cho phép tick checkbox task list trong tài liệu, trạng thái lưu theo path + thứ tự */
+function attachTaskLists(content, docPath) {
+  const boxes = content.querySelectorAll('.md input[type="checkbox"]');
+  if (!boxes.length) return;
+  const saved = store.get('prep-doc-checks', {})[docPath] || {};
+  boxes.forEach((cb, i) => {
+    cb.disabled = false;
+    cb.checked = !!saved[i];
+    cb.closest('li')?.classList.toggle('task-done', cb.checked);
+    cb.addEventListener('change', () => {
+      const all = store.get('prep-doc-checks', {});
+      (all[docPath] ??= {})[i] = cb.checked;
+      store.set('prep-doc-checks', all);
+      cb.closest('li')?.classList.toggle('task-done', cb.checked);
+      if (cb.checked) logActivity(); // tick xong một mục = một lượt học
+    });
+  });
+}
+
+/** Resolve đường dẫn tương đối kiểu '../capstone-project/README.md' */
+function resolveRelative(fromPath, href) {
+  const baseParts = fromPath.split('/').slice(0, -1);
+  const parts = href.split('/');
+  for (const p of parts) {
+    if (p === '..') baseParts.pop();
+    else if (p !== '.' && p !== '') baseParts.push(p);
+  }
+  return baseParts.join('/');
+}
+
+// ---------- Quiz tự chấm ----------
+function attachQuizMode(mdEl, docPath, total) {
+  const bar = document.createElement('div');
+  bar.className = 'quiz-toolbar';
+  bar.innerHTML = `
+    <button class="qm-toggle">🧪 Chế độ quiz tự chấm</button>
+    <span class="score" style="display:none"></span>
+    <button class="qm-save" style="display:none">💾 Lưu điểm</button>
+    <button class="qm-manual">✍️ Nhập điểm thủ công</button>`;
+
+  // Nhập điểm tay — dùng khi quiz gom hết đáp án vào 1 thẻ details
+  bar.querySelector('.qm-manual').addEventListener('click', () => {
+    const input = prompt('Nhập điểm dạng "đúng/tổng" (ví dụ: 13/15):');
+    const m = (input || '').match(/^\s*(\d+)\s*\/\s*(\d+)\s*$/);
+    if (!m) return;
+    const scores = store.get('prep-quiz-scores', {});
+    scores[docPath] = { correct: +m[1], total: +m[2], date: new Date().toISOString().slice(0, 10) };
+    store.set('prep-quiz-scores', scores);
+    logActivity(+m[2]);
+    alert(`✅ Đã lưu ${m[1]}/${m[2]} cho trang này. Xem ở tab 📊 Tiến độ.`);
+  });
+  mdEl.prepend(bar);
+
+  const toggleBtn = bar.querySelector('.qm-toggle');
+  const scoreEl = bar.querySelector('.score');
+  const saveBtn = bar.querySelector('.qm-save');
+  let active = false;
+
+  function updateScore() {
+    const correct = mdEl.querySelectorAll('.quiz-judge .jc.picked').length;
+    const judged = mdEl.querySelectorAll('.quiz-judge button.picked').length;
+    scoreEl.textContent = `Điểm: ${correct}/${judged} (đã chấm ${judged} câu)`;
+    return { correct, judged };
+  }
+
+  toggleBtn.addEventListener('click', () => {
+    active = !active;
+    toggleBtn.textContent = active ? '✋ Thoát chế độ quiz' : '🧪 Chế độ quiz tự chấm';
+    scoreEl.style.display = saveBtn.style.display = active ? '' : 'none';
+
+    mdEl.querySelectorAll('details').forEach(d => {
+      d.open = false;
+      let judge = d.nextElementSibling?.classList?.contains('quiz-judge') ? d.nextElementSibling : null;
+      if (active && !judge) {
+        judge = document.createElement('div');
+        judge.className = 'quiz-judge';
+        judge.innerHTML = `<button class="jc">✓ Tôi trả lời đúng</button><button class="jw">✗ Tôi trả lời sai</button>`;
+        judge.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+          judge.querySelectorAll('button').forEach(x => x.classList.remove('picked'));
+          b.classList.add('picked');
+          updateScore();
+        }));
+        d.after(judge);
+      }
+      if (judge) judge.style.display = active ? '' : 'none';
+    });
+    if (active) updateScore();
+  });
+
+  saveBtn.addEventListener('click', () => {
+    const { correct, judged } = updateScore();
+    if (!judged) return alert('Bạn chưa chấm câu nào!');
+    const scores = store.get('prep-quiz-scores', {});
+    scores[docPath] = { correct, total: judged, date: new Date().toISOString().slice(0, 10) };
+    store.set('prep-quiz-scores', scores);
+    logActivity(judged);
+    saveBtn.textContent = '✅ Đã lưu!';
+    setTimeout(() => (saveBtn.textContent = '💾 Lưu điểm'), 1800);
+  });
+}
+
+// ---------- Flashcards ----------
+let DECK = [];       // toàn bộ card
+let fcQueue = [];    // hàng đợi phiên học hiện tại
+let fcIndex = 0;
+let fcLoaded = false;
+let fcReverse = store.get('prep-fc-dir', false); // false: Anh→Việt, true: Việt→Anh
+let fcAuto = store.get('prep-fc-auto', false);   // tự đọc to khi hiện/lật thẻ
+
+/** Tải file markdown thô (dùng chung cho flashcards + luyện viết) */
+function fetchMd(relPath) {
+  return apiFile(relPath);
+}
+
+let deckPromise = null;
+/** Tải + parse bộ từ vựng một lần duy nhất, dùng chung mọi tab */
+function loadDeck() {
+  deckPromise ??= Promise.all([
+    fetchMd('english/01-technical-vocabulary.md'),
+    fetchMd('english/06-daily-life-vocabulary.md'),
+  ]).then(([tech, daily]) => {
+    DECK = [
+      ...(tech ? parseVocab(tech) : []),
+      ...(daily ? parseVocab(daily, true) : []), // file giao tiếp: mọi heading là một chủ đề
+    ];
+    return DECK;
+  });
+  return deckPromise;
+}
+
+async function initFlashcards() {
+  if (fcLoaded) return;
+  const deck = await loadDeck();
+  if (!deck.length) {
+    document.querySelector('.fc-front').innerHTML = '<p>Không tải được file từ vựng 😕</p>';
+    return;
+  }
+  fcLoaded = true;
+
+  fillFcWeekSelect();
+  updateFcDirLabel();
+  document.getElementById('fc-week').addEventListener('change', startSession);
+  document.getElementById('fc-shuffle').addEventListener('click', startSession);
+  document.getElementById('fc-dir').addEventListener('click', () => {
+    fcReverse = !fcReverse;
+    store.set('prep-fc-dir', fcReverse);
+    updateFcDirLabel();
+    showCard();
+  });
+  document.getElementById('fc-speak').addEventListener('click', () =>
+    speakCard(document.getElementById('fc-card').classList.contains('flipped')));
+  document.getElementById('fc-auto').addEventListener('click', () => {
+    fcAuto = !fcAuto;
+    store.set('prep-fc-auto', fcAuto);
+    updateFcAutoLabel();
+    if (fcAuto) speakCard(false);
+  });
+  updateFcAutoLabel();
+  initFcHotkeys();
+  document.getElementById('fc-card').addEventListener('click', () => {
+    const el = document.getElementById('fc-card');
+    el.classList.toggle('flipped');
+    // Vừa lật ra đáp án + đang bật tự đọc → đọc từ kèm câu ví dụ
+    if (fcAuto && el.classList.contains('flipped')) speakCard(true);
+  });
+  document.getElementById('fc-again').addEventListener('click', () => gradeCard(false));
+  document.getElementById('fc-good').addEventListener('click', () => gradeCard(true));
+  startSession();
+}
+
+/** Parse bảng markdown |Từ|IPA|Nghĩa|Ví dụ| theo từng heading.
+ *  everyHeading=false: chỉ nhận heading có "Week/Tuần" (file kỹ thuật);
+ *  everyHeading=true: mọi heading là một chủ đề (file giao tiếp). */
+function parseVocab(md, everyHeading = false) {
+  const cards = [];
+  let week = everyHeading ? '🗣️ Khác' : 'Khác';
+  for (const line of md.split('\n')) {
+    const h = line.match(/^#{2,3}\s+(.*)/);
+    if (h) {
+      const t = h[1].trim();
+      if (everyHeading || /week|tuần/i.test(t)) week = t.replace(/[*_`]/g, '');
+      continue;
+    }
+    if (!line.trim().startsWith('|')) continue;
+    const cells = line.split('|').map(c => c.trim()).filter((c, i, a) => !(i === 0 && c === '') && !(i === a.length - 1 && c === ''));
+    if (cells.length < 3) continue;
+    if (/^[-:\s]+$/.test(cells[0])) continue;               // dòng kẻ bảng
+    if (/từ|word|ipa/i.test(cells[0] + cells[1])) continue;  // dòng header
+    cards.push({
+      id: cells[0].replace(/[*`⚠️]/g, '').trim(),
+      front: cells[0].replace(/[*`]/g, '').trim(),
+      ipa: cells[1] || '',
+      meaning: cells[2] || '',
+      example: cells[3] || '',
+      week,
+      daily: everyHeading,
+    });
+  }
+  return cards;
+}
+
+/** Dựng option tuần + 📬 đến hạn + 🔥 từ cứng đầu (đếm lại mỗi lần mở tab) */
+function fillFcWeekSelect() {
+  const sel = document.getElementById('fc-week');
+  const prev = sel.value;
+  const weeks = [...new Set(DECK.map(c => c.week))];
+  sel.innerHTML = '<option value="">— Tất cả các tuần —</option>' +
+    `<option value="__due__">📬 Đến hạn ôn hôm nay (${filterDeck('__due__').length})</option>` +
+    `<option value="__leech__">🔥 Từ cứng đầu — sai ≥${LEECH_THRESHOLD} lần (${filterDeck('__leech__').length})</option>` +
+    `<option value="__tech__">💻 Toàn bộ từ kỹ thuật (${filterDeck('__tech__').length})</option>` +
+    `<option value="__daily__">🗣️ Toàn bộ từ giao tiếp (${filterDeck('__daily__').length})</option>` +
+    weeks.map(w => `<option value="${w}">${w} (${DECK.filter(c => c.week === w).length} từ)</option>`).join('');
+  if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+}
+
+function startSession() {
+  const week = document.getElementById('fc-week').value;
+  const srs = store.get('prep-srs', {});
+  let cards = filterDeck(week);
+  // Ưu tiên từ chưa thuộc (box thấp lên trước), trong cùng box thì xáo ngẫu nhiên
+  cards.sort((a, b) => ((srs[a.id]?.box || 0) - (srs[b.id]?.box || 0)) || Math.random() - 0.5);
+  fcQueue = cards;
+  fcIndex = 0;
+  showCard();
+}
+
+function showCard() {
+  const card = fcQueue[fcIndex];
+  const el = document.getElementById('fc-card');
+  el.classList.remove('flipped');
+  const front = el.querySelector('.fc-front');
+  const back = el.querySelector('.fc-back');
+  if (!card) {
+    front.innerHTML = '<p>🎉 Hết thẻ trong phiên này! Bấm 🔀 Xáo bài để học lại.</p>';
+    back.innerHTML = '';
+    updateFcStats();
+    return;
+  }
+  const wordSide = `
+    <span class="fc-week-tag">${card.week}</span>
+    <div class="fc-word">${card.front}</div>
+    <div class="fc-ipa">${card.ipa}</div>`;
+  const meaningSide = `
+    <span class="fc-week-tag">${card.week}</span>
+    <div class="fc-meaning">${card.meaning}</div>`;
+  front.innerHTML = fcReverse ? meaningSide : wordSide;
+  back.innerHTML = fcReverse
+    ? `<div class="fc-word">${card.front}</div>
+       <div class="fc-ipa">${card.ipa}</div>
+       <div class="fc-example">${card.example}</div>`
+    : `<div class="fc-meaning">${card.meaning}</div>
+       <div class="fc-example">${card.example}</div>`;
+  // Tự đọc khi hiện thẻ mới — chỉ ở chiều Anh→Việt (chiều Việt→Anh đọc từ là lộ đáp án)
+  if (fcAuto && !fcReverse) speakCard(false);
+  updateFcStats();
+}
+
+function updateFcDirLabel() {
+  document.getElementById('fc-dir').textContent = fcReverse ? '🔄 Việt→Anh' : '🔄 Anh→Việt';
+}
+
+function updateFcAutoLabel() {
+  document.getElementById('fc-auto').textContent = fcAuto ? '🔁 Tự đọc: BẬT' : '🔁 Tự đọc: TẮT';
+}
+
+/** Đọc to thẻ hiện tại; withExample=true thì kèm câu ví dụ (bỏ phần chú thích "— ⚠️…") */
+function speakCard(withExample) {
+  const card = fcQueue[fcIndex];
+  if (!card) return;
+  const word = cleanTarget(card.front);
+  const example = (card.example || '').replace(/[`*]/g, '').replace(/—.*$/, '').trim();
+  speak(withExample && example ? `${word}. ${example}` : word);
+}
+
+/** Phím tắt riêng cho tab flashcards: Space lật, ← chưa nhớ, → nhớ rồi, S nghe */
+function initFcHotkeys() {
+  document.addEventListener('keydown', e => {
+    if (!document.getElementById('view-flashcards').classList.contains('active')) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.target.closest?.('input, textarea, select, [contenteditable]')) return;
+    const el = document.getElementById('fc-card');
+    if (e.key === ' ') {
+      e.preventDefault(); // chặn cuộn trang
+      el.classList.toggle('flipped');
+      if (fcAuto && el.classList.contains('flipped')) speakCard(true);
+    } else if (e.key === 'ArrowRight') {
+      gradeCard(true);
+    } else if (e.key === 'ArrowLeft') {
+      gradeCard(false);
+    } else if (e.key === 's' || e.key === 'S') {
+      speakCard(el.classList.contains('flipped'));
+    }
+  });
+}
+
+function gradeCard(known) {
+  const card = fcQueue[fcIndex];
+  if (!card) return;
+  bumpSrs(card, known);
+  logActivity();
+  if (!known) fcQueue.push(card); // chưa nhớ → quay lại cuối hàng đợi
+  fcIndex++;
+  showCard();
+}
+
+function updateFcStats() {
+  const srs = store.get('prep-srs', {});
+  const week = document.getElementById('fc-week').value;
+  const cards = filterDeck(week);
+  const known = cards.filter(c => (srs[c.id]?.box || 0) >= 2).length;
+  document.getElementById('fc-stats').textContent = `Đã thuộc ${known}/${cards.length} từ`;
+  document.getElementById('fc-progress').textContent =
+    fcQueue[fcIndex] ? `Thẻ ${Math.min(fcIndex + 1, fcQueue.length)}/${fcQueue.length}` : '';
+}
+
+// ---------- Luyện viết (typing practice) ----------
+// 3 chế độ: word (nghĩa Việt → gõ từ Anh), cloze (điền từ vào câu ví dụ),
+// sentence (nghe TTS / đọc bản dịch → gõ lại cả câu).
+let wrInit = false;
+let wrMode = 'word';
+let wrQueue = [];
+let wrIndex = 0;
+let wrState = 'answering'; // answering | done | finished
+let wrHintLevel = 0;
+let wrStreak = 0;
+let wrCorrect = 0;
+let wrTotalAnswered = 0;
+let WR_SENTENCES = null; // { pairs: [{en, vi, week}], questions: [{en}] }
+
+function speak(text) {
+  if (!('speechSynthesis' in window) || !text) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'en-US';
+  u.rate = 0.92;
+  const voice = speechSynthesis.getVoices().find(v => v.lang && v.lang.startsWith('en'));
+  if (voice) u.voice = voice;
+  speechSynthesis.speak(u);
+}
+
+// ---------- Speech Recognition (chế độ 🎤 Đọc to) ----------
+let wrRecog = null;
+function startListening() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const fb = document.getElementById('wr-feedback');
+  const mic = document.getElementById('wr-mic');
+  if (!SR) {
+    fb.innerHTML = '<div class="wr-wrong">Trình duyệt này chưa hỗ trợ nhận diện giọng nói — hãy dùng Chrome/Edge nhé.</div>';
+    return;
+  }
+  if (wrRecog) { wrRecog.abort(); wrRecog = null; mic.classList.remove('listening'); return; }
+
+  wrRecog = new SR();
+  wrRecog.lang = 'en-US';
+  wrRecog.interimResults = false;
+  wrRecog.maxAlternatives = 1;
+  mic.classList.add('listening');
+  fb.innerHTML = '<div class="wr-hint">🎙️ Đang nghe… đọc to câu trên rồi ngừng nói để máy chấm.</div>';
+
+  wrRecog.onresult = e => {
+    const transcript = e.results[0][0].transcript;
+    document.getElementById('wr-input').value = transcript;
+    if (wrState === 'answering') checkWr();
+  };
+  wrRecog.onerror = e => {
+    fb.innerHTML = `<div class="wr-wrong">Không nghe được (${e.error}) — kiểm tra quyền micro rồi thử lại.</div>`;
+  };
+  wrRecog.onend = () => {
+    mic.classList.remove('listening');
+    wrRecog = null;
+  };
+  wrRecog.start();
+}
+
+/** Chuẩn hóa để so sánh: thường hóa, bỏ dấu câu, gạch nối → khoảng trắng */
+function normAnswer(s) {
+  return s.toLowerCase()
+    .replace(/[‘’]/g, "'")
+    .replace(/[-–—/]/g, ' ')
+    .replace(/[^a-z0-9' ]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+const wrTokens = s => normAnswer(s).split(' ').filter(Boolean);
+
+/** LCS: trả về tập index của `a` khớp được với `b` (để tô màu diff từng từ) */
+function lcsMatch(a, b) {
+  const dp = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  for (let i = a.length - 1; i >= 0; i--)
+    for (let j = b.length - 1; j >= 0; j--)
+      dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+  const matched = new Set();
+  let i = 0, j = 0;
+  while (i < a.length && j < b.length) {
+    if (a[i] === b[j]) { matched.add(i); i++; j++; }
+    else if (dp[i + 1][j] >= dp[i][j + 1]) i++;
+    else j++;
+  }
+  return matched;
+}
+
+/** 'event loop' → 'e···· l···' — gợi ý chữ cái đầu */
+function maskWords(s) {
+  return s.split(/\s+/).map(w => w[0] + '·'.repeat(Math.max(w.length - 1, 0))).join(' ');
+}
+
+const escHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Từ cần gõ: bỏ ⚠️ và phần chú thích trong ngoặc */
+function cleanTarget(front) {
+  return front.replace(/⚠️/g, '').replace(/\(.*?\)/g, '').replace(/\s+/g, ' ').trim();
+}
+
+/** Parse các câu "Luyện nói cuối tuần": `1. *EN*` rồi dòng `→ VN` */
+function parseSentencePairs(md) {
+  const pairs = [];
+  let week = '';
+  const lines = md.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const h = lines[i].match(/^##\s+(.+)/);
+    if (h) { week = h[1].trim(); continue; }
+    const m = lines[i].match(/^\d+\.\s+\*(.+)\*\s*$/);
+    if (!m) continue;
+    const next = (lines[i + 1] || '').trim();
+    const vi = next.match(/^→\s*(.+)/);
+    pairs.push({
+      en: m[1].replace(/[`*]/g, '').trim(),
+      vi: vi ? vi[1].replace(/[`*]/g, '').trim() : '',
+      week,
+    });
+  }
+  return pairs;
+}
+
+/** Parse 10 câu hỏi phỏng vấn: `#### Q1. "..."` trong 04-interview-english.md */
+function parseInterviewQuestions(md) {
+  const out = [];
+  for (const line of md.split('\n')) {
+    const m = line.match(/^####\s*Q\d+\.\s*"(.+)"\s*$/);
+    if (!m) continue;
+    // Bỏ phương án sau " / " và chú thích trong ngoặc cho dễ gõ
+    const en = m[1].split(' / ')[0].replace(/\s*\(.*?\)\s*/g, ' ').replace(/\s+/g, ' ').trim();
+    out.push({ en });
+  }
+  return out;
+}
+
+async function loadSentences() {
+  if (WR_SENTENCES) return WR_SENTENCES;
+  const [vocabMd, ivMd, dailyMd] = await Promise.all([
+    fetchMd('english/01-technical-vocabulary.md'),
+    fetchMd('english/04-interview-english.md'),
+    fetchMd('english/06-daily-life-vocabulary.md'),
+  ]);
+  WR_SENTENCES = {
+    pairs: [
+      ...(vocabMd ? parseSentencePairs(vocabMd) : []),
+      ...(dailyMd ? parseSentencePairs(dailyMd) : []),
+    ],
+    questions: ivMd ? parseInterviewQuestions(ivMd) : [],
+  };
+  return WR_SENTENCES;
+}
+
+async function initWriting() {
+  if (wrInit) return;
+  wrInit = true;
+  await Promise.all([loadDeck(), loadSentences()]);
+
+  document.querySelectorAll('.wr-mode').forEach(b => b.addEventListener('click', () => {
+    wrMode = b.dataset.mode;
+    document.querySelectorAll('.wr-mode').forEach(x => x.classList.toggle('active', x === b));
+    document.getElementById('wr-mic').hidden = wrMode !== 'speak';
+    document.getElementById('wr-input').placeholder = wrMode === 'speak'
+      ? 'Bấm 🎤 và đọc to — máy sẽ ghi lại những gì nghe được…'
+      : 'Gõ tiếng Anh rồi nhấn Enter…';
+    fillWrWeekSelect();
+    startWrSession();
+  }));
+  document.getElementById('wr-mic').addEventListener('click', startListening);
+  document.getElementById('wr-week').addEventListener('change', startWrSession);
+  document.getElementById('wr-input').addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    wrState === 'answering' ? checkWr() : nextWr();
+  });
+  document.getElementById('wr-check').addEventListener('click', () =>
+    wrState === 'answering' ? checkWr() : nextWr());
+  document.getElementById('wr-hint').addEventListener('click', showWrHint);
+  document.getElementById('wr-skip').addEventListener('click', skipWr);
+  document.getElementById('wr-speak').addEventListener('click', () => {
+    const it = wrQueue[wrIndex];
+    if (it) speak(it.say);
+  });
+  // Một số trình duyệt nạp danh sách giọng đọc bất đồng bộ
+  if ('speechSynthesis' in window) speechSynthesis.getVoices();
+
+  fillWrWeekSelect();
+  startWrSession();
+}
+
+function fillWrWeekSelect() {
+  const sel = document.getElementById('wr-week');
+  const prev = sel.value;
+  if (wrMode === 'mix') {
+    sel.innerHTML = `<option value="">⚡ Mix tự chọn: ${filterDeck('__due__').length} từ đến hạn + cloze + câu nói</option>`;
+    return;
+  }
+  if (wrMode === 'sentence' || wrMode === 'speak' || wrMode === 'listen') {
+    const weeks = [...new Set(WR_SENTENCES.pairs.map(p => p.week))];
+    sel.innerHTML = '<option value="">— Tất cả (câu mẫu + câu hỏi PV) —</option>' +
+      '<option value="__iv__">🎤 Chỉ câu hỏi phỏng vấn</option>' +
+      weeks.map(w => `<option value="${escHtml(w)}">${escHtml(w)}</option>`).join('');
+  } else {
+    const weeks = [...new Set(DECK.map(c => c.week))];
+    sel.innerHTML = '<option value="">— Tất cả các tuần —</option>' +
+      `<option value="__due__">📬 Đến hạn ôn hôm nay (${filterDeck('__due__').length})</option>` +
+      `<option value="__leech__">🔥 Từ cứng đầu — sai ≥${LEECH_THRESHOLD} lần (${filterDeck('__leech__').length})</option>` +
+      `<option value="__tech__">💻 Toàn bộ từ kỹ thuật (${filterDeck('__tech__').length})</option>` +
+      `<option value="__daily__">🗣️ Toàn bộ từ giao tiếp (${filterDeck('__daily__').length})</option>` +
+      weeks.map(w => `<option value="${escHtml(w)}">${escHtml(w)} (${DECK.filter(c => c.week === w).length} từ)</option>`).join('');
+  }
+  if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+}
+
+/** Item "gõ từ Anh theo nghĩa Việt" từ một card */
+function wrWordItem(c) {
+  const target = cleanTarget(c.front);
+  return target && {
+    type: 'word',
+    prompt: `<div class="wr-vi">${escHtml(c.meaning)}</div><div class="wr-sub">${escHtml(c.week)}</div>`,
+    answer: target,
+    say: target,
+    hint1: `IPA: ${escHtml(c.ipa || '—')} · ${maskWords(target)}`,
+    card: c,
+  };
+}
+
+/** Item "điền từ vào câu ví dụ" — null nếu ví dụ không chứa từ */
+function wrClozeItem(c) {
+  // Cụm có nhiều phương án ('egress / ingress') → lấy phương án đầu
+  const target = cleanTarget(c.front).split('/')[0].trim();
+  const example = (c.example || '').replace(/[`*]/g, '');
+  if (!target || !example) return null;
+  // Cho phép hậu tố (execute → executes) và gạch nối/khoảng trắng giữa các từ
+  const re = new RegExp('\\b' + target.split(/\s+/).map(escRe).join('[\\s-]+') + '\\w*', 'i');
+  const m = example.match(re);
+  if (!m) return null;
+  return {
+    type: 'cloze',
+    prompt: `<div class="wr-en">${escHtml(example.replace(re, '⟨…⟩')).replace('⟨…⟩', '<span class="wr-blank">_____</span>')}</div>
+             <div class="wr-sub">nghĩa của từ cần điền: <b>${escHtml(c.meaning)}</b> · ${escHtml(c.week)}</div>`,
+    answer: m[0],
+    altAnswer: target, // chấp nhận cả dạng gốc của từ
+    say: example,
+    hint1: maskWords(m[0]),
+    card: c,
+  };
+}
+
+// Từ phổ biến không đáng làm từ khuyết trong chế độ nghe điền từ
+const LISTEN_STOP = new Set(['the', 'this', 'that', 'with', 'from', 'your', 'have', 'will',
+  'been', 'they', 'them', 'than', 'then', 'when', 'what', 'where', 'which', 'about', 'into',
+  'over', 'under', 'after', 'before', 'because', 'their', 'there', 'these', 'those', 'would',
+  'could', 'should', 'until', 'while', 'does', 'don\'t', 'doesn\'t']);
+
+/** Item "nghe và điền từ khuyết": khoét tối đa 3 từ nội dung dài ≥4 ký tự */
+function listenItem(p) {
+  const words = p.en.split(/\s+/);
+  const candidates = words
+    .map((w, i) => ({ clean: w.replace(/[^a-zA-Z']/g, ''), i }))
+    .filter(x => x.clean.length >= 4 && !LISTEN_STOP.has(x.clean.toLowerCase()));
+  // Câu quá ngắn thì đừng khoét — sẽ trống gần hết, không còn ngữ cảnh để đoán
+  if (candidates.length < 2 || words.length < 5) return null;
+  // Rải đều các từ khuyết trên câu thay vì dồn về đầu
+  const step = Math.max(1, Math.floor(candidates.length / 3));
+  const chosen = [];
+  for (let k = 0; k < candidates.length && chosen.length < 3; k += step) chosen.push(candidates[k]);
+  const blanks = new Set(chosen.map(c => c.i));
+  const display = words
+    .map((w, i) => (blanks.has(i) ? '<span class="wr-blank">_____</span>' : escHtml(w)))
+    .join(' ');
+  const answer = chosen.map(c => c.clean).join(' ');
+  return {
+    type: 'sentence',
+    prompt: `<div class="wr-label">👂 Nghe (tự phát, bấm 🔊 nghe lại) rồi gõ ${chosen.length} từ còn thiếu, cách nhau bằng dấu cách:</div>
+             <div class="wr-en">${display}</div>
+             <div class="wr-sub">${escHtml(p.vi || '')}${p.vi ? ' · ' : ''}${escHtml(p.week)}</div>`,
+    answer,
+    say: p.en,
+    hint1: maskWords(answer),
+    autoplay: true,
+  };
+}
+
+/** Dựng hàng đợi câu hỏi cho phiên hiện tại theo mode + tuần đã chọn */
+function buildWrQueue() {
+  const week = document.getElementById('wr-week').value;
+  const srs = store.get('prep-srs', {});
+
+  if (wrMode === 'word') {
+    let cards = filterDeck(week);
+    cards.sort((a, b) => ((srs[a.id]?.box || 0) - (srs[b.id]?.box || 0)) || Math.random() - 0.5);
+    return cards.map(wrWordItem).filter(Boolean);
+  }
+
+  if (wrMode === 'cloze') {
+    const items = filterDeck(week).map(wrClozeItem).filter(Boolean);
+    items.sort((a, b) => ((srs[a.card.id]?.box || 0) - (srs[b.card.id]?.box || 0)) || Math.random() - 0.5);
+    return items;
+  }
+
+  // mix: phiên ôn nhanh ~10 câu — 5 từ (ưu tiên đến hạn) + 3 cloze + 2 câu nói
+  if (wrMode === 'mix') {
+    const due = filterDeck('__due__');
+    const pool = due.length >= 8
+      ? [...due]
+      : [...due, ...filterDeck('').filter(c => !due.includes(c))];
+    pool.sort((a, b) => ((srs[a.id]?.box || 0) - (srs[b.id]?.box || 0)) || Math.random() - 0.5);
+    const words = pool.slice(0, 5).map(wrWordItem).filter(Boolean);
+    const cloze = pool.slice(5).map(wrClozeItem).filter(Boolean).slice(0, 3);
+    const sents = [...WR_SENTENCES.pairs].sort(() => Math.random() - 0.5).slice(0, 2).map(p => ({
+      type: 'sentence',
+      prompt: `<div class="wr-label">📝 Dịch sang tiếng Anh (bấm 🔊 để nghe):</div><div class="wr-vi">${escHtml(p.vi)}</div><div class="wr-sub">${escHtml(p.week)}</div>`,
+      answer: p.en,
+      say: p.en,
+      hint1: maskWords(p.en),
+    }));
+    return [...words, ...cloze, ...sents].sort(() => Math.random() - 0.5);
+  }
+
+  // listen mode: nghe câu, nhìn câu khuyết 2-3 từ khóa, chỉ gõ từ còn thiếu
+  if (wrMode === 'listen') {
+    let pool = week && week !== '__iv__'
+      ? WR_SENTENCES.pairs.filter(p => p.week === week)
+      : (week === '__iv__' ? [] : [...WR_SENTENCES.pairs]);
+    if (!week || week === '__iv__') {
+      pool = pool.concat(WR_SENTENCES.questions.map(q => ({ en: q.en, vi: '', week: 'Câu hỏi phỏng vấn' })));
+    }
+    const items = [];
+    for (const p of pool) {
+      const it = listenItem(p);
+      if (it) items.push(it);
+    }
+    return items.sort(() => Math.random() - 0.5);
+  }
+
+  // speak mode: hiện câu tiếng Anh, đọc to, máy nghe và chấm từng từ
+  if (wrMode === 'speak') {
+    const pairs = week && week !== '__iv__'
+      ? WR_SENTENCES.pairs.filter(p => p.week === week)
+      : (week === '__iv__' ? [] : WR_SENTENCES.pairs);
+    const items = pairs.map(p => ({
+      type: 'speak',
+      prompt: `<div class="wr-label">🎤 Bấm mic và đọc to câu này:</div>
+               <div class="wr-en">${escHtml(p.en)}</div>
+               <div class="wr-sub">${escHtml(p.vi)} · ${escHtml(p.week)}</div>`,
+      answer: p.en,
+      say: p.en,
+      hint1: 'Bấm 🔊 nghe giọng mẫu rồi đọc theo, chú ý trọng âm',
+    }));
+    if (!week || week === '__iv__') {
+      items.push(...WR_SENTENCES.questions.map((q, i) => ({
+        type: 'speak',
+        prompt: `<div class="wr-label">🎤 Đọc to câu hỏi phỏng vấn #${i + 1}:</div>
+                 <div class="wr-en">${escHtml(q.en)}</div>
+                 <div class="wr-sub">Đây là câu bạn sẽ NGHE trong phỏng vấn — đọc được thì nghe sẽ ra.</div>`,
+        answer: q.en,
+        say: q.en,
+        hint1: 'Bấm 🔊 nghe giọng mẫu rồi đọc theo, chú ý trọng âm',
+      })));
+    }
+    return items.sort(() => Math.random() - 0.5);
+  }
+
+  // sentence mode
+  let items = [];
+  const pairs = week && week !== '__iv__'
+    ? WR_SENTENCES.pairs.filter(p => p.week === week)
+    : (week === '__iv__' ? [] : WR_SENTENCES.pairs);
+  items.push(...pairs.map(p => ({
+    type: 'sentence',
+    prompt: `<div class="wr-label">📝 Dịch sang tiếng Anh (bấm 🔊 để nghe):</div><div class="wr-vi">${escHtml(p.vi)}</div><div class="wr-sub">${escHtml(p.week)}</div>`,
+    answer: p.en,
+    say: p.en,
+    hint1: maskWords(p.en),
+  })));
+  if (!week || week === '__iv__') {
+    items.push(...WR_SENTENCES.questions.map((q, i) => ({
+      type: 'sentence',
+      prompt: `<div class="wr-label">🎧 Câu hỏi phỏng vấn #${i + 1} — bấm 🔊 nghe rồi gõ lại:</div><div class="wr-sub">Mẹo: nghe được bao nhiêu gõ bấy nhiêu, sai sẽ thấy diff từng từ.</div>`,
+      answer: q.en,
+      say: q.en,
+      hint1: maskWords(q.en),
+      autoplay: true,
+    })));
+  }
+  return items.sort(() => Math.random() - 0.5);
+}
+
+function startWrSession() {
+  wrQueue = buildWrQueue();
+  wrIndex = 0;
+  wrCorrect = 0;
+  wrTotalAnswered = 0;
+  wrStreak = 0;
+  showWr();
+}
+
+function showWr() {
+  const it = wrQueue[wrIndex];
+  const promptEl = document.getElementById('wr-prompt');
+  const input = document.getElementById('wr-input');
+  const fb = document.getElementById('wr-feedback');
+  fb.innerHTML = '';
+  input.value = '';
+  wrHintLevel = 0;
+  wrState = 'answering';
+
+  if (!it) {
+    wrState = 'finished';
+    const total = wrTotalAnswered || 1;
+    promptEl.innerHTML = `<div class="wr-vi">🎉 Hết câu trong phiên này!</div>
+      <div class="wr-sub">Đúng ${wrCorrect}/${wrTotalAnswered} câu (${Math.round(wrCorrect / total * 100)}%). Nhấn Enter để học lại.</div>`;
+    updateWrStats();
+    return;
+  }
+
+  promptEl.innerHTML = it.prompt;
+  if (it.autoplay) speak(it.say);
+  input.focus();
+  updateWrStats();
+}
+
+function updateWrStats() {
+  const best = store.get('prep-typing-best', 0);
+  document.getElementById('wr-stats').textContent =
+    `✅ ${wrCorrect} đúng · 🔥 chuỗi ${wrStreak} (kỷ lục ${best})`;
+  document.getElementById('wr-progress').textContent =
+    wrQueue[wrIndex] ? `Câu ${wrIndex + 1}/${wrQueue.length}` : '';
+}
+
+function checkWr() {
+  const it = wrQueue[wrIndex];
+  if (!it) return;
+  const input = document.getElementById('wr-input');
+  const fb = document.getElementById('wr-feedback');
+  const user = input.value.trim();
+  if (!user) { input.focus(); return; }
+
+  let ok;
+  if (it.type === 'sentence' || it.type === 'speak') {
+    const exp = wrTokens(it.answer);
+    const got = wrTokens(user);
+    const matched = lcsMatch(exp, got);
+    const pct = Math.round((matched.size / exp.length) * 100);
+    // Đọc to: máy nghe không tuyệt đối nên khớp ≥90% là đạt; gõ thì phải đúng 100%
+    ok = it.type === 'speak'
+      ? pct >= 90
+      : matched.size === exp.length && got.length === exp.length;
+    if (!ok) {
+      // Tô màu theo token đã chuẩn hóa để chỉ số luôn khớp với tập matched
+      const colored = exp.map((w, i) =>
+        `<span class="${matched.has(i) ? 'wr-ok' : 'wr-miss'}">${escHtml(w)}</span>`).join(' ');
+      fb.innerHTML = it.type === 'speak'
+        ? `<div class="wr-wrong">✗ Máy nghe khớp ${pct}% — từ <span class="wr-miss">đỏ</span> là từ phát âm chưa rõ, bấm 🎤 đọc lại:</div>
+           <div class="wr-answer">${colored}</div>
+           <div class="wr-sub">Máy nghe ra: “${escHtml(user)}”</div>`
+        : `<div class="wr-wrong">✗ Khớp ${pct}% — từ <span class="wr-miss">đỏ</span> là chỗ sai/thiếu, sửa rồi Enter thử lại:</div>
+           <div class="wr-answer">${colored}</div>`;
+      wrStreak = 0;
+      updateWrStats();
+      if (it.type !== 'speak') input.focus();
+      return;
+    }
+  } else {
+    ok = normAnswer(user) === normAnswer(it.answer) ||
+         (it.altAnswer && normAnswer(user) === normAnswer(it.altAnswer));
+    if (!ok) {
+      fb.innerHTML = `<div class="wr-wrong">✗ Chưa đúng — gợi ý: <b>${escHtml(maskWords(it.answer))}</b> (${it.answer.length} ký tự). Sửa rồi Enter thử lại, hoặc ⏭️ xem đáp án.</div>`;
+      wrStreak = 0;
+      if (!it.retried) { it.retried = true; bumpSrs(it.card, false); }
+      updateWrStats();
+      input.select();
+      return;
+    }
+  }
+
+  // Đúng!
+  wrTotalAnswered++;
+  wrCorrect++;
+  wrStreak++;
+  logActivity();
+  const best = store.get('prep-typing-best', 0);
+  if (wrStreak > best) store.set('prep-typing-best', wrStreak);
+  if (!it.retried) bumpSrs(it.card, true);
+  const cheer = wrStreak >= 5 ? ` 🔥 Chuỗi ${wrStreak}!` : '';
+  fb.innerHTML = `<div class="wr-right">✅ Chính xác!${cheer}</div>
+    <div class="wr-answer">${escHtml(it.answer)}</div>`;
+  if (it.type !== 'sentence') speak(it.say);
+  wrState = 'done';
+  document.getElementById('wr-input').blur();
+  updateWrStats();
+}
+
+function showWrHint() {
+  const it = wrQueue[wrIndex];
+  if (!it || wrState !== 'answering') return;
+  const fb = document.getElementById('wr-feedback');
+  wrHintLevel++;
+  if (wrHintLevel === 1) {
+    fb.innerHTML = `<div class="wr-hint">💡 ${escHtml(it.hint1)}</div>`;
+  } else {
+    fb.innerHTML = `<div class="wr-hint">💡 Đáp án: <b>${escHtml(it.answer)}</b> — gõ lại để nhớ tay nhé!</div>`;
+  }
+  document.getElementById('wr-input').focus();
+}
+
+function skipWr() {
+  const it = wrQueue[wrIndex];
+  if (!it) return;
+  if (wrState === 'answering') {
+    wrTotalAnswered++;
+    wrStreak = 0;
+    logActivity();
+    bumpSrs(it.card, false);
+    // Học lại từ này ở cuối phiên
+    if (!it.requeued) wrQueue.push({ ...it, requeued: true, retried: false });
+    document.getElementById('wr-feedback').innerHTML =
+      `<div class="wr-hint">Đáp án: <b>${escHtml(it.answer)}</b> — sẽ gặp lại ở cuối phiên. Enter để tiếp tục.</div>`;
+    speak(it.say);
+    wrState = 'done';
+    updateWrStats();
+    return;
+  }
+  nextWr();
+}
+
+function nextWr() {
+  if (wrState === 'finished') return startWrSession();
+  wrIndex++;
+  showWr();
+}
+
+// ---------- Luyện gõ code ----------
+// Snippet lấy từ /api/snippets (code block trong README tuần + design-patterns).
+// Chỉ ký tự đúng mới đi tiếp; thụt đầu dòng được nhảy qua tự động như typing.io.
+let ctInit = false;
+let CT_SNIPPETS = [];
+let ctCur = null;       // snippet đang gõ
+let ctPos = 0;          // vị trí ký tự hiện tại
+let ctTyped = 0;        // tổng phím đã gõ (kể cả sai)
+let ctErrors = 0;
+let ctStartAt = 0;      // bắt đầu tính giờ từ phím đầu tiên
+let ctDone = false;
+
+async function initCodeTyping() {
+  if (ctInit) return;
+  ctInit = true;
+  document.getElementById('ct-meta').textContent = 'Đang tải snippet…';
+  CT_SNIPPETS = await apiSnippets().catch(() => []);
+  if (!CT_SNIPPETS.length) {
+    document.getElementById('ct-meta').textContent = 'Không tải được snippet 😕';
+    return;
+  }
+
+  const sel = document.getElementById('ct-source');
+  const files = [...new Set(CT_SNIPPETS.map(s => s.file))];
+  sel.innerHTML = `<option value="">— Tất cả nguồn (${CT_SNIPPETS.length} snippet) —</option>` +
+    files.map(f => `<option value="${escHtml(f)}">${escHtml(f)} (${CT_SNIPPETS.filter(s => s.file === f).length})</option>`).join('');
+  sel.addEventListener('change', nextCtSnippet);
+  document.getElementById('ct-next').addEventListener('click', nextCtSnippet);
+  document.getElementById('ct-code').addEventListener('keydown', ctKeydown);
+  nextCtSnippet();
+}
+
+function nextCtSnippet() {
+  const file = document.getElementById('ct-source').value;
+  const pool = file ? CT_SNIPPETS.filter(s => s.file === file) : CT_SNIPPETS;
+  ctCur = pool[Math.floor(Math.random() * pool.length)];
+  if (!ctCur) return;
+
+  document.getElementById('ct-meta').textContent =
+    `${ctCur.title || 'Snippet'} · ${ctCur.file} · ${ctCur.lang}`;
+  document.getElementById('ct-result').innerHTML = '';
+
+  const pre = document.getElementById('ct-code');
+  pre.innerHTML = '';
+  [...ctCur.code].forEach(ch => {
+    const s = document.createElement('span');
+    s.textContent = ch === '\n' ? '⏎\n' : ch;
+    pre.appendChild(s);
+  });
+
+  ctPos = 0; ctTyped = 0; ctErrors = 0; ctStartAt = 0; ctDone = false;
+  ctMarkCursor();
+  updateCtStats();
+  pre.focus();
+}
+
+function ctSpans() { return document.getElementById('ct-code').children; }
+
+function ctMarkCursor() {
+  const spans = ctSpans();
+  for (const s of spans) s.classList.remove('cur', 'bad');
+  if (spans[ctPos]) spans[ctPos].classList.add('cur');
+}
+
+function updateCtStats() {
+  const best = store.get('prep-code-best', null);
+  const acc = ctTyped ? Math.round(((ctTyped - ctErrors) / ctTyped) * 100) : 100;
+  document.getElementById('ct-stats').textContent =
+    `${ctPos}/${ctCur ? ctCur.code.length : 0} ký tự · ${ctErrors} lỗi (${acc}%)` +
+    (best ? ` · 🏆 kỷ lục ${best.wpm} WPM` : '');
+}
+
+function ctKeydown(e) {
+  if (!ctCur) return;
+  if (ctDone) {
+    if (e.key === 'Enter') { e.preventDefault(); nextCtSnippet(); }
+    return;
+  }
+
+  const code = ctCur.code;
+  const expect = code[ctPos];
+  let match;
+  if (e.key === 'Enter') match = expect === '\n';
+  else if (e.key === 'Tab') match = expect === '\t' || expect === ' ';
+  else if (e.key.length === 1 && !e.metaKey && !e.ctrlKey && !e.altKey) match = e.key === expect;
+  else return; // bỏ qua phím điều khiển (Shift, mũi tên, F5…)
+
+  e.preventDefault();
+  if (!ctStartAt) ctStartAt = Date.now();
+  ctTyped++;
+
+  const spans = ctSpans();
+  if (!match) {
+    ctErrors++;
+    spans[ctPos]?.classList.add('bad');
+    updateCtStats();
+    return;
+  }
+
+  spans[ctPos]?.classList.add('ok');
+  ctPos++;
+  // Xuống dòng xong → nhảy qua thụt đầu dòng cho đỡ mỏi tay
+  if (expect === '\n') {
+    while (code[ctPos] === ' ' || code[ctPos] === '\t') {
+      spans[ctPos]?.classList.add('ok');
+      ctPos++;
+    }
+  }
+
+  if (ctPos >= code.length) return finishCt();
+  ctMarkCursor();
+  updateCtStats();
+}
+
+function finishCt() {
+  ctDone = true;
+  ctMarkCursor();
+  logActivity();
+
+  const minutes = Math.max((Date.now() - ctStartAt) / 60000, 1 / 60);
+  const wpm = Math.round(ctCur.code.length / 5 / minutes);
+  const acc = Math.round(((ctTyped - ctErrors) / ctTyped) * 100);
+
+  const best = store.get('prep-code-best', null);
+  const isRecord = !best || wpm > best.wpm;
+  if (isRecord) store.set('prep-code-best', { wpm, acc });
+
+  // Lưu lịch sử để vẽ đồ thị tiến bộ ở dashboard (giữ 100 lượt gần nhất)
+  const history = store.get('prep-code-history', []);
+  history.push({ date: dayKey(new Date()), wpm, acc });
+  store.set('prep-code-history', history.slice(-100));
+
+  document.getElementById('ct-result').innerHTML =
+    `<span class="big">🎉 ${wpm} WPM</span> · chính xác ${acc}% · ${ctErrors} lỗi` +
+    (isRecord ? ' · 🏆 KỶ LỤC MỚI!' : ` · kỷ lục ${best.wpm} WPM`) +
+    '<br><span style="color:var(--muted)">Nhấn Enter để gõ snippet tiếp theo.</span>';
+  updateCtStats();
+}
+
+// ---------- Mock Interview ----------
+// Bốc ngẫu nhiên câu hỏi từ 180 câu Q&A của 12 tuần, đếm giờ, tự chấm, lưu lịch sử.
+let mkInit = false;
+let MK_POOL = null; // [{q, a, week, weekLabel}]
+let mkQueue = [], mkIndex = 0, mkRight = 0, mkTimerId = null, mkPerQ = 120;
+let mkWrong = [];        // câu trả lời sai trong phiên hiện tại
+let mkReviewMode = false; // phiên đang ôn lại "câu đã sai" → trả lời đúng sẽ gỡ khỏi kho
+
+/** Khoá định danh một câu hỏi để khử trùng kho câu sai (câu hỏi là duy nhất) */
+const mkKey = it => it.q;
+
+/** Kho câu đã trả lời sai, để ôn lại sau — lưu {q,a,week,weekLabel} */
+function getMockWrong() { return store.get('prep-mock-wrong', []); }
+function addMockWrong(items) {
+  const wrong = getMockWrong();
+  const seen = new Set(wrong.map(mkKey));
+  items.forEach(it => {
+    if (!seen.has(mkKey(it))) { wrong.push({ q: it.q, a: it.a, week: it.week, weekLabel: it.weekLabel }); seen.add(mkKey(it)); }
+  });
+  store.set('prep-mock-wrong', wrong);
+}
+function removeMockWrong(it) {
+  store.set('prep-mock-wrong', getMockWrong().filter(w => mkKey(w) !== mkKey(it)));
+}
+
+/** Parse '**Q1: ...**' + '**A:** ...' từ README tuần */
+function parseQA(md, week, weekLabel) {
+  const out = [];
+  const re = /\*\*Q(\d+):\s*([\s\S]*?)\*\*\s*\n\*\*A:\*\*\s*([\s\S]*?)(?=\n\s*\n\s*\*\*Q\d+:|\n#{1,4}\s|$)/g;
+  let m;
+  while ((m = re.exec(md))) out.push({ q: m[2].trim(), a: m[3].trim(), week, weekLabel });
+  return out;
+}
+
+async function loadMockPool() {
+  if (MK_POOL) return MK_POOL;
+  const weeksGroup = TREE.find(g => g.title.includes('12 tuần'));
+  const weekItems = (weeksGroup?.items || []).filter(i => i.week && !i.sub);
+  const all = await Promise.all(weekItems.map(async it => {
+    const md = await fetchMd(it.path);
+    return md ? parseQA(md, it.week, it.label) : [];
+  }));
+  // Bộ ⚡ rapid-fire 40 câu trả lời nhanh — phạm vi riêng trong dropdown
+  const rapid = await fetchMd('week-12-mock-interview/RAPID-FIRE.md');
+  if (rapid) all.push(parseQA(rapid, '__rapid__', '⚡ Rapid-fire — trả lời nhanh 30s/câu'));
+  MK_POOL = all.flat();
+  return MK_POOL;
+}
+
+async function initMock() {
+  if (mkInit) return;
+  mkInit = true;
+  document.getElementById('mk-question').textContent = 'Đang tải kho câu hỏi…';
+  await loadMockPool();
+
+  fillMockWeekSelect();
+  document.getElementById('mk-start').addEventListener('click', startMock);
+  document.getElementById('mk-reveal').addEventListener('click', revealMock);
+  document.getElementById('mk-right').addEventListener('click', () => gradeMock(true));
+  document.getElementById('mk-wrong').addEventListener('click', () => gradeMock(false));
+  document.getElementById('mk-quit').addEventListener('click', finishMock);
+  document.getElementById('mk-question').textContent = '';
+}
+
+/** Dựng lại dropdown phạm vi — gồm cả mục "🚩 câu đã sai" với số đếm cập nhật */
+function fillMockWeekSelect() {
+  const weekSel = document.getElementById('mk-week');
+  if (!MK_POOL) return;
+  const prev = weekSel.value;
+  const weeks = [...new Map(MK_POOL.map(q => [q.week, q.weekLabel])).entries()];
+  const wrongN = getMockWrong().length;
+  weekSel.innerHTML = `<option value="">— Tất cả 12 tuần (${MK_POOL.length} câu) —</option>` +
+    (wrongN ? `<option value="__wrong__">🚩 Câu đã trả lời sai (${wrongN})</option>` : '') +
+    weeks.map(([w, label]) => `<option value="${w}">${escHtml(label)}</option>`).join('');
+  if ([...weekSel.options].some(o => o.value === prev)) weekSel.value = prev;
+}
+
+function startMock() {
+  const week = document.getElementById('mk-week').value;
+  const count = +document.getElementById('mk-count').value;
+  mkPerQ = +document.getElementById('mk-time').value * 60;
+  mkReviewMode = week === '__wrong__';
+  const pool = mkReviewMode ? getMockWrong()
+    : week ? MK_POOL.filter(q => q.week === week) : [...MK_POOL];
+  // Chế độ ôn câu sai: lấy hết (đến count) để xử lý cho cạn kho; còn lại bốc ngẫu nhiên
+  mkQueue = pool.sort(() => Math.random() - 0.5).slice(0, count);
+  mkIndex = 0;
+  mkRight = 0;
+  mkWrong = [];
+  document.getElementById('mk-setup').hidden = true;
+  document.getElementById('mk-result').hidden = true;
+  document.getElementById('mk-session').hidden = false;
+  showMockQ();
+}
+
+function showMockQ() {
+  const it = mkQueue[mkIndex];
+  if (!it) return finishMock();
+  document.getElementById('mk-progress').textContent =
+    `Câu ${mkIndex + 1}/${mkQueue.length} · ${it.weekLabel} · ✓ ${mkRight}`;
+  document.getElementById('mk-question').innerHTML =
+    window.marked ? marked.parse('**' + it.q + '**') : escHtml(it.q);
+  const ansEl = document.getElementById('mk-answer');
+  ansEl.hidden = true;
+  ansEl.innerHTML = '';
+  document.getElementById('mk-reveal').hidden = false;
+  document.getElementById('mk-right').hidden = true;
+  document.getElementById('mk-wrong').hidden = true;
+  startMockTimer();
+}
+
+function startMockTimer() {
+  clearInterval(mkTimerId);
+  let left = mkPerQ;
+  const el = document.getElementById('mk-timer');
+  const tick = () => {
+    el.textContent = `⏱ ${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`;
+    el.classList.toggle('late', left <= 10);
+    if (left <= 0) { clearInterval(mkTimerId); el.textContent = '⏱ HẾT GIỜ'; }
+    left--;
+  };
+  tick();
+  mkTimerId = setInterval(tick, 1000);
+}
+
+function revealMock() {
+  clearInterval(mkTimerId);
+  const it = mkQueue[mkIndex];
+  const ansEl = document.getElementById('mk-answer');
+  ansEl.innerHTML = window.marked ? marked.parse(it.a) : escHtml(it.a);
+  ansEl.hidden = false;
+  document.getElementById('mk-reveal').hidden = true;
+  document.getElementById('mk-right').hidden = false;
+  document.getElementById('mk-wrong').hidden = false;
+}
+
+function gradeMock(ok) {
+  const it = mkQueue[mkIndex];
+  if (ok) {
+    mkRight++;
+    if (mkReviewMode && it) removeMockWrong(it); // ôn lại đúng → coi như đã nắm, gỡ khỏi kho
+  } else if (it) {
+    mkWrong.push(it); // gom để cuối phiên lưu vào kho câu sai
+  }
+  logActivity();
+  mkIndex++;
+  showMockQ();
+}
+
+function finishMock() {
+  clearInterval(mkTimerId);
+  document.getElementById('mk-session').hidden = true;
+  document.getElementById('mk-setup').hidden = false;
+  const done = mkIndex;
+  if (done > 0) {
+    const history = store.get('prep-mock-history', []);
+    history.push({
+      date: new Date().toISOString().slice(0, 10),
+      correct: mkRight,
+      total: done,
+      week: document.getElementById('mk-week').value || 'all',
+    });
+    store.set('prep-mock-history', history);
+    // Lưu câu trả lời sai vào kho để ôn lại sau (khử trùng theo nội dung câu)
+    if (mkWrong.length) addMockWrong(mkWrong);
+    const pct = Math.round((mkRight / done) * 100);
+    const verdict = pct >= 80 ? 'PASS ✅ — phong độ tốt, giữ vững!' :
+                    pct >= 60 ? 'Gần đạt — xem lại các câu ✗ rồi chiến lại nhé.' :
+                    'Chưa đạt — quay lại tài liệu tuần tương ứng ôn thêm đã.';
+    const result = document.getElementById('mk-result');
+    const wrongList = mkWrong.length ? `
+      <details class="mk-wrong-list" open>
+        <summary>🚩 ${mkWrong.length} câu cần ôn lại (đã lưu — chọn phạm vi “Câu đã trả lời sai” để luyện riêng)</summary>
+        ${mkWrong.map(it => `
+          <div class="mk-wrong-item">
+            <div class="mk-wrong-q">${window.marked ? marked.parse('**' + it.q + '**') : escHtml(it.q)}</div>
+            <details class="mk-wrong-a"><summary>Xem đáp án</summary>${window.marked ? marked.parse(it.a) : escHtml(it.a)}</details>
+          </div>`).join('')}
+      </details>` : '';
+    const reviewNote = mkReviewMode
+      ? `<p class="mk-review-note">Còn <b>${getMockWrong().length}</b> câu trong kho ôn lại.</p>` : '';
+    result.innerHTML = `<h2>Kết quả: ${mkRight}/${done} (${pct}%)</h2><p>${verdict}</p>${reviewNote}${wrongList}`;
+    result.hidden = false;
+  }
+  fillMockWeekSelect(); // cập nhật lại số đếm "câu đã sai" trên dropdown
+  mkQueue = [];
+  mkIndex = 0;
+  mkWrong = [];
+  mkReviewMode = false;
+}
+
+// ---------- Dashboard ----------
+const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-doc',
+  'prep-typing-best', 'prep-fails', 'prep-activity', 'prep-mock-history',
+  'prep-pomo', 'prep-code-best', 'prep-fc-dir', 'prep-fc-auto', 'prep-code-history', 'prep-theme',
+  'prep-last-view', 'prep-doc-checks', 'prep-mock-wrong'];
+
+/** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */
+async function renderDueBanner() {
+  await loadDeck();
+  const el = document.getElementById('dash-due');
+  const due = filterDeck('__due__').length;
+  const leech = filterDeck('__leech__').length;
+  el.innerHTML = due || leech
+    ? `📬 Hôm nay có <b>${due} từ đến hạn ôn</b>${leech ? ` · 🔥 <b>${leech} từ cứng đầu</b> cần luyện thêm` : ''} — vào tab 🃏 Flashcards hoặc ✍️ Luyện viết, chọn bộ lọc tương ứng.`
+    : '✨ Không có từ nào đến hạn ôn — học từ mới thôi!';
+}
+
+/** Thanh phân bố từ vựng theo hộp SRS 0-5 + chưa học */
+async function renderSrsDist() {
+  await loadDeck();
+  const srs = store.get('prep-srs', {});
+  const counts = new Array(SRS_INTERVALS.length).fill(0);
+  let unseen = 0;
+  DECK.forEach(c => {
+    const e = srs[c.id];
+    if (!e) unseen++;
+    else counts[Math.min(e.box || 0, SRS_INTERVALS.length - 1)]++;
+  });
+  const seg = (n, cls, label) =>
+    n ? `<div class="srs-seg ${cls}" style="flex:${n}" title="${label}: ${n} từ"></div>` : '';
+  const learned = counts.slice(2).reduce((a, b) => a + b, 0); // hộp ≥2 coi như đã thuộc
+  document.getElementById('dash-srs').innerHTML = `
+    <div class="srs-bar">
+      ${seg(unseen, 's-none', 'Chưa học')}
+      ${counts.map((n, i) => seg(n, 's' + i, `Hộp ${i} — ôn lại sau ${SRS_INTERVALS[i]} ngày`)).join('')}
+    </div>
+    <div class="srs-legend">
+      Đã thuộc (hộp ≥2): <b>${learned}/${DECK.length}</b> ·
+      chưa học ${unseen} · ${counts.map((n, i) => `hộp ${i}: ${n}`).join(' · ')}
+    </div>`;
+}
+
+/** Heatmap hoạt động kiểu GitHub: ~18 tuần gần nhất */
+function renderHeatmap() {
+  const acts = store.get('prep-activity', {});
+  const wrap = document.getElementById('dash-heatmap');
+  wrap.innerHTML = '';
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const start = new Date(today);
+  start.setDate(start.getDate() - 119 - today.getDay()); // lùi ~17 tuần, neo về Chủ nhật
+  for (let w = 0; w < 18; w++) {
+    const col = document.createElement('div');
+    col.className = 'hm-col';
+    for (let d = 0; d < 7; d++) {
+      const day = new Date(start);
+      day.setDate(start.getDate() + w * 7 + d);
+      if (day > today) break;
+      const n = acts[dayKey(day)] || 0;
+      const cell = document.createElement('div');
+      cell.className = 'hm-cell ' + (n === 0 ? 'l0' : n < 10 ? 'l1' : n < 30 ? 'l2' : 'l3');
+      cell.title = `${dayKey(day)}: ${n} lượt học`;
+      col.appendChild(cell);
+    }
+    wrap.appendChild(col);
+  }
+  // Chuỗi ngày học liên tiếp (hôm nay chưa học thì tính đến hôm qua)
+  let streak = 0;
+  const d = new Date();
+  if (!acts[dayKey(d)]) d.setDate(d.getDate() - 1);
+  while (acts[dayKey(d)] > 0) { streak++; d.setDate(d.getDate() - 1); }
+  const streakMsg = streak
+    ? `🔥 Đang giữ chuỗi <b>${streak} ngày</b> học liên tiếp${acts[dayKey(new Date())] ? '' : ' — hôm nay chưa học, đừng để đứt!'}`
+    : 'Chưa có chuỗi ngày học nào — bắt đầu hôm nay nhé!';
+  const pomoToday = pomoTodayCount();
+  const codeBest = store.get('prep-code-best', null);
+  document.getElementById('dash-streak').innerHTML = streakMsg +
+    (pomoToday ? ` · 🍅 <b>${pomoToday} pomodoro</b> hôm nay` : '') +
+    (codeBest ? ` · ⌨️ kỷ lục gõ code <b>${codeBest.wpm} WPM</b>` : '');
+}
+
+/** Các đồ thị cột thuần CSS: hoạt động 14 ngày, % mock, WPM gõ code */
+function renderCharts() {
+  // Lượt học 14 ngày
+  const acts = store.get('prep-activity', {});
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push({ key: dayKey(d), n: acts[dayKey(d)] || 0 });
+  }
+  const maxAct = Math.max(...days.map(d => d.n), 1);
+  document.getElementById('dash-chart-activity').innerHTML = days.map(d => `
+    <div class="bar-col" title="${d.key}: ${d.n} lượt học">
+      <div class="bar-v" style="height:${Math.max(Math.round(d.n / maxAct * 100), d.n ? 4 : 0)}%"></div>
+      <span class="bar-label">${+d.key.slice(8)}</span>
+    </div>`).join('');
+
+  // % đúng các buổi mock gần nhất
+  const hist = store.get('prep-mock-history', []).slice(-15);
+  document.getElementById('dash-chart-mock').innerHTML = hist.length
+    ? hist.map(h => {
+        const pct = Math.round((h.correct / h.total) * 100);
+        return `<div class="bar-col" title="${h.date}: ${h.correct}/${h.total} (${pct}%)">
+          <div class="bar-v ${pct >= 80 ? 'ok' : 'low'}" style="height:${Math.max(pct, 4)}%"></div>
+          <span class="bar-label">${pct}</span>
+        </div>`;
+      }).join('')
+    : '<p class="chart-empty">Chưa có buổi mock nào — đồ thị sẽ hiện khi bạn làm mock đầu tiên.</p>';
+
+  // WPM các lượt gõ code gần nhất
+  const wpms = store.get('prep-code-history', []).slice(-20);
+  const maxWpm = Math.max(...wpms.map(w => w.wpm), 1);
+  document.getElementById('dash-chart-wpm').innerHTML = wpms.length
+    ? wpms.map(w => `
+        <div class="bar-col" title="${w.date}: ${w.wpm} WPM · ${w.acc}% chính xác">
+          <div class="bar-v ${w.acc >= 95 ? 'ok' : ''}" style="height:${Math.max(Math.round(w.wpm / maxWpm * 100), 4)}%"></div>
+          <span class="bar-label">${w.wpm}</span>
+        </div>`).join('')
+    : '<p class="chart-empty">Chưa có lượt gõ nào — vào tab ⌨️ Gõ code làm một snippet nhé.</p>';
+}
+
+function renderMockHistory() {
+  const history = store.get('prep-mock-history', []);
+  const wrap = document.getElementById('dash-mock');
+  wrap.innerHTML = history.length ? '' :
+    '<p style="color:var(--muted)">Chưa có buổi mock nào — vào tab 🎯 Mock PV làm thử một buổi 10 câu.</p>';
+  history.slice(-10).reverse().forEach(h => {
+    const pass = h.correct / h.total >= 0.8;
+    const row = document.createElement('div');
+    row.className = 'score-row';
+    row.innerHTML = `<span>${h.date} · ${h.week === 'all' ? 'Tất cả các tuần' : h.week}</span>
+      <span class="${pass ? 'pass' : 'fail'}">${h.correct}/${h.total} ${pass ? 'PASS ✅' : 'CHƯA PASS'}</span>`;
+    wrap.appendChild(row);
+  });
+}
+
+/** Panel kho câu mock trả lời sai: xem, gỡ từng câu đã nắm, hoặc vào ôn ngay */
+function renderMockWrong() {
+  const wrap = document.getElementById('dash-mock-wrong');
+  const wrong = getMockWrong();
+  if (!wrong.length) {
+    wrap.innerHTML = '<p style="color:var(--muted)">Chưa có câu nào trong kho — khi làm Mock và tự chấm "✗ Chưa tốt", câu đó sẽ vào đây để ôn lại.</p>';
+    return;
+  }
+  wrap.innerHTML =
+    `<div class="mw-head">
+       <span>Có <b>${wrong.length}</b> câu cần ôn lại</span>
+       <button id="mw-review" class="mw-review">🎯 Ôn lại ngay</button>
+     </div>` +
+    wrong.map((w, i) => `
+      <div class="mk-wrong-item" data-i="${i}">
+        <div class="mk-wrong-q">${window.marked ? marked.parse('**' + w.q + '**') : escHtml(w.q)}</div>
+        <div class="mw-row">
+          <span class="mw-week">${escHtml(w.weekLabel || '')}</span>
+          <details class="mk-wrong-a"><summary>Xem đáp án</summary>${window.marked ? marked.parse(w.a) : escHtml(w.a)}</details>
+          <button class="mw-done" data-i="${i}" title="Đã nắm câu này — gỡ khỏi kho">✓ Đã nắm</button>
+        </div>
+      </div>`).join('');
+
+  wrap.querySelectorAll('.mw-done').forEach(btn => btn.addEventListener('click', () => {
+    removeMockWrong(wrong[+btn.dataset.i]);
+    renderMockWrong(); // vẽ lại với index mới
+  }));
+  document.getElementById('mw-review')?.addEventListener('click', () => {
+    switchView('mock');
+    initMock().then(() => {
+      fillMockWeekSelect();
+      document.getElementById('mk-week').value = '__wrong__';
+    });
+  });
+}
+
+function exportData() {
+  const data = {};
+  PREP_KEYS.forEach(k => {
+    const v = localStorage.getItem(k);
+    if (v != null) data[k] = JSON.parse(v);
+  });
+  const blob = new Blob(
+    [JSON.stringify({ app: 'prep-study-web', exportedAt: new Date().toISOString(), data }, null, 2)],
+    { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `prep-backup-${dayKey(new Date())}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      const data = parsed.data;
+      if (parsed.app !== 'prep-study-web' || !data) throw new Error('không phải file backup của app này');
+      if (!confirm('Ghi đè tiến độ hiện tại bằng dữ liệu trong file backup?')) return;
+      PREP_KEYS.forEach(k => { if (k in data) store.set(k, data[k]); });
+      alert('✅ Đã khôi phục dữ liệu!');
+      renderDashboard();
+    } catch (err) {
+      alert('❌ File không hợp lệ: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+const WEEK_TASKS = [
+  ['theory', '📚 Lý thuyết'],
+  ['exercises', '💪 Bài tập'],
+  ['cases', '🏗️ Design & Cases'],
+  ['test', '📝 Test cuối tuần'],
+  ['english', '🇬🇧 English tuần này'],
+];
+
+function renderDashboard() {
+  const progress = store.get('prep-progress', {});
+  const weeksGroup = TREE.find(g => g.title.includes('12 tuần'));
+  const weeks = [...new Set((weeksGroup?.items || []).map(i => i.week).filter(Boolean))];
+  const wrap = document.getElementById('dash-weeks');
+  wrap.innerHTML = '';
+
+  let done = 0, totalTasks = weeks.length * WEEK_TASKS.length;
+  weeks.forEach(wk => {
+    const p = progress[wk] || {};
+    const row = document.createElement('div');
+    row.className = 'dash-week';
+    const name = document.createElement('span');
+    name.className = 'wk-name';
+    name.textContent = prettyWeek(wk);
+    row.appendChild(name);
+    let wkDone = 0;
+    WEEK_TASKS.forEach(([key, label]) => {
+      const lb = document.createElement('label');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!p[key];
+      if (cb.checked) { done++; wkDone++; }
+      cb.addEventListener('change', () => {
+        const prog = store.get('prep-progress', {});
+        prog[wk] = { ...(prog[wk] || {}), [key]: cb.checked };
+        store.set('prep-progress', prog);
+        renderDashboard();
+      });
+      lb.append(cb, label);
+      row.appendChild(lb);
+    });
+    if (wkDone === WEEK_TASKS.length) row.classList.add('complete');
+    wrap.appendChild(row);
+  });
+
+  const pct = totalTasks ? Math.round((done / totalTasks) * 100) : 0;
+  document.getElementById('dash-bar-fill').style.width = pct + '%';
+  document.getElementById('dash-percent').textContent = pct + '%';
+
+  // Điểm quiz đã lưu
+  const scores = store.get('prep-quiz-scores', {});
+  const scoreWrap = document.getElementById('dash-scores');
+  const entries = Object.entries(scores);
+  scoreWrap.innerHTML = entries.length ? '' : '<p style="color:var(--muted)">Chưa có điểm nào — vào một trang có quiz và bật 🧪 chế độ tự chấm nhé.</p>';
+  entries.forEach(([doc, s]) => {
+    const pass = s.correct / s.total >= 0.8;
+    const row = document.createElement('div');
+    row.className = 'score-row';
+    row.innerHTML = `<span>${doc}</span>
+      <span>${s.date} — <span class="${pass ? 'pass' : 'fail'}">${s.correct}/${s.total} ${pass ? 'PASS ✅' : 'CHƯA PASS'}</span></span>`;
+    scoreWrap.appendChild(row);
+  });
+
+  renderDueBanner();
+  renderSrsDist();
+  renderHeatmap();
+  renderCharts();
+  renderMockHistory();
+  renderMockWrong();
+
+  document.getElementById('dash-export').onclick = exportData;
+  const fileInput = document.getElementById('dash-import-file');
+  document.getElementById('dash-import').onclick = () => fileInput.click();
+  fileInput.onchange = () => {
+    if (fileInput.files[0]) importData(fileInput.files[0]);
+    fileInput.value = '';
+  };
+  document.getElementById('dash-reset').onclick = () => {
+    if (confirm('Xoá toàn bộ tiến độ, điểm quiz, SRS, heatmap và lịch sử mock? (Nên 📤 Xuất backup trước!)')) {
+      PREP_KEYS.forEach(k => localStorage.removeItem(k));
+      renderDashboard();
+    }
+  };
+}
+
+function prettyWeek(dir) {
+  const m = dir.match(/^week-(\d+)-(.+)$/);
+  return m ? `Tuần ${m[1]} · ${m[2].split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ')}` : dir;
+}
+
+// ---------- Theme sáng / tối ----------
+function initTheme() {
+  const btn = document.getElementById('theme-btn');
+  const apply = () => {
+    const light = store.get('prep-theme', 'dark') === 'light';
+    document.body.classList.toggle('light', light);
+    btn.textContent = light ? '☀️' : '🌙';
+    // Đổi luôn theme syntax highlight cho khớp nền code
+    document.getElementById('hljs-css').href = light
+      ? 'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github.min.css'
+      : 'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css';
+  };
+  btn.addEventListener('click', () => {
+    store.set('prep-theme', store.get('prep-theme', 'dark') === 'light' ? 'dark' : 'light');
+    apply();
+  });
+  apply();
+}
+
+// ---------- Phím tắt ----------
+function initShortcuts() {
+  const order = ['docs', 'flashcards', 'writing', 'code', 'mock', 'dashboard'];
+  document.addEventListener('keydown', e => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    // Đang gõ trong ô nhập / vùng gõ code thì không cướp phím
+    if (e.target.closest?.('input, textarea, select, #ct-code, [contenteditable]')) return;
+    if (e.key >= '1' && e.key <= '6') switchView(order[+e.key - 1]);
+    else if (e.key === '/') {
+      e.preventDefault();
+      switchView('docs');
+      document.getElementById('sb-search').focus();
+    }
+  });
+}
+
+// ---------- Khởi động ----------
+(async function init() {
+  initSearch();
+  initTheme();
+  initPomodoro();
+  initSidebarToggle();
+  initShortcuts();
+  document.querySelector('.brand').addEventListener('click', () => renderHome());
+  const lastView = store.get('prep-last-view', 'docs'); // đọc trước khi renderHome ghi đè
+  await loadTree();
+  const hashDoc = location.hash.match(/doc=([^&]+)/);
+  const start = hashDoc ? decodeURIComponent(hashDoc[1]) : store.get('prep-last-doc', null);
+  if (start) openDoc(start, false);
+  else renderHome(false);
+  // Quay lại đúng tab đang dùng trước khi reload (trừ khi mở bằng link #doc=…)
+  if (!hashDoc && lastView !== 'docs') switchView(lastView);
+})();

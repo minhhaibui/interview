@@ -1,0 +1,59 @@
+# Deployment + Service cho Order Service — apply: kubectl apply -f k8s/
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  labels:
+    app: order-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+        - name: order-service
+          image: order-service:dev
+          imagePullPolicy: IfNotPresent   # dùng image build local (kind/minikube)
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+          # liveness fail → restart container (app treo/deadlock)
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          # readiness fail → rút Pod khỏi Service, KHÔNG restart (đang warm-up/quá tải)
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          # requests để scheduler xếp Pod + HPA tính %; limits chặn ăn lạm tài nguyên
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+spec:
+  selector:
+    app: order-service
+  ports:
+    - port: 80
+      targetPort: 3000
