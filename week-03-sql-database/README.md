@@ -1,5 +1,7 @@
 # Tuần 3: SQL Database (PostgreSQL/MySQL)
 
+> 🔬 **Có bản đào sâu!** Xem [`DEEP-DIVE.md`](DEEP-DIVE.md) — cơ chế bên trong, ví dụ nâng cao, bẫy production & câu hỏi phỏng vấn KHÓ hơn cho tuần này.
+
 > 🧪 **Có lab tận tay!** Xem [`lab/LAB.md`](lab/LAB.md) — Postgres qua `docker compose` + seed 50k đơn hàng để TẬN MẮT thấy `EXPLAIN ANALYZE` Seq Scan→Index Scan, transaction chuyển tiền có `FOR UPDATE`, diệt N+1 + cursor pagination.
 
 ## 🎯 Mục tiêu tuần này

@@ -1,5 +1,7 @@
 # Tuần 5: Redis
 
+> 🔬 **Có bản đào sâu!** Xem [`DEEP-DIVE.md`](DEEP-DIVE.md) — cơ chế bên trong, ví dụ nâng cao, bẫy production & câu hỏi phỏng vấn KHÓ hơn cho tuần này.
+
 > 🧪 **Có lab tận tay!** Xem [`lab/LAB.md`](lab/LAB.md) — `docker compose up` + chạy thử cache-aside, rate-limit, leaderboard, pub/sub với `redis.conf` có chú thích từng dòng.
 
 ## 🎯 Mục tiêu tuần này

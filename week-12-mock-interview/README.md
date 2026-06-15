@@ -1,5 +1,7 @@
 # Tuần 12: Mock Interview & Tổng ôn
 
+> 🔬 **Có bản đào sâu!** Xem [`DEEP-DIVE.md`](DEEP-DIVE.md) — cơ chế bên trong, ví dụ nâng cao, bẫy production & câu hỏi phỏng vấn KHÓ hơn cho tuần này.
+
 ## 🎯 Mục tiêu tuần này
 
 - Tổng ôn toàn bộ 11 tuần dưới dạng **flash questions** — phát hiện và vá lỗ hổng kiến thức.

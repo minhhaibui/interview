@@ -1,5 +1,7 @@
 # Tuần 1: Node.js Core
 
+> 🔬 **Có bản đào sâu!** Xem [`DEEP-DIVE.md`](DEEP-DIVE.md) — cơ chế bên trong, ví dụ nâng cao, bẫy production & câu hỏi phỏng vấn KHÓ hơn cho tuần này.
+
 ## 🎯 Mục tiêu tuần này
 
 - Hiểu sâu **event loop** của Node.js: các phase, thứ tự thực thi, vì sao Node.js "single-threaded" nhưng vẫn xử lý được hàng nghìn connection.

@@ -1,5 +1,7 @@
 # Tuần 7: Docker
 
+> 🔬 **Có bản đào sâu!** Xem [`DEEP-DIVE.md`](DEEP-DIVE.md) — cơ chế bên trong, ví dụ nâng cao, bẫy production & câu hỏi phỏng vấn KHÓ hơn cho tuần này.
+
 > 🧪 **Có lab tận tay!** Xem [`lab/LAB.md`](lab/LAB.md) — build image multi-stage cho app Node zero-dep, chạy `docker compose` 2 service (app + redis) để hiểu layer cache, non-root, healthcheck, service discovery.
 
 ## 🎯 Mục tiêu tuần này

@@ -1,5 +1,7 @@
 # Tuần 2: Node.js Advanced
 
+> 🔬 **Có bản đào sâu!** Xem [`DEEP-DIVE.md`](DEEP-DIVE.md) — cơ chế bên trong, ví dụ nâng cao, bẫy production & câu hỏi phỏng vấn KHÓ hơn cho tuần này.
+
 ## 🎯 Mục tiêu tuần này
 
 - Phân biệt và chọn đúng công cụ scaling: **cluster vs worker_threads vs child_process**, hiểu cách scale Node.js theo chiều ngang/dọc.

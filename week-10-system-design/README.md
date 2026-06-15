@@ -1,5 +1,7 @@
 # Tuần 10: System Design
 
+> 🔬 **Có bản đào sâu!** Xem [`DEEP-DIVE.md`](DEEP-DIVE.md) — cơ chế bên trong, ví dụ nâng cao, bẫy production & câu hỏi phỏng vấn KHÓ hơn cho tuần này.
+
 ## 🎯 Mục tiêu tuần này
 
 - Nắm vững **framework 5 bước** để trả lời mọi câu hỏi system design trong phỏng vấn (45-60 phút).

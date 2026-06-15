@@ -39,6 +39,7 @@ function buildTree(ROOT) {
       if (exists(`${d}/README.md`)) items.push({ label: prettyWeekName(d), path: `${d}/README.md`, week: d });
       if (exists(`${d}/DESIGN-CASES.md`)) items.push({ label: '↳ Design & Cases', path: `${d}/DESIGN-CASES.md`, week: d, sub: true });
       if (exists(`${d}/RAPID-FIRE.md`)) items.push({ label: '↳ ⚡ Rapid-fire', path: `${d}/RAPID-FIRE.md`, week: d, sub: true });
+      if (exists(`${d}/DEEP-DIVE.md`)) items.push({ label: '↳ 🔬 Đào sâu', path: `${d}/DEEP-DIVE.md`, week: d, sub: true });
       if (exists(`${d}/lab/LAB.md`)) items.push({ label: '↳ 🧪 Lab (tận tay)', path: `${d}/lab/LAB.md`, week: d, sub: true });
       return items;
     }),

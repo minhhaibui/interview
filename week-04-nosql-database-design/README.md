@@ -1,5 +1,7 @@
 # Tuần 4: NoSQL & Database Design
 
+> 🔬 **Có bản đào sâu!** Xem [`DEEP-DIVE.md`](DEEP-DIVE.md) — cơ chế bên trong, ví dụ nâng cao, bẫy production & câu hỏi phỏng vấn KHÓ hơn cho tuần này.
+
 > 🧪 **Có lab tận tay!** Xem [`lab/LAB.md`](lab/LAB.md) — MongoDB qua `docker compose` + seed 2k đơn hàng để thực hành CRUD/index (COLLSCAN→IXSCAN), aggregation pipeline báo cáo bán hàng, và bucket pattern cho time-series.
 
 ## 🎯 Mục tiêu tuần này

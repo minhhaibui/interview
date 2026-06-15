@@ -1,5 +1,7 @@
 # Tuần 11: Capstone Week — Xây dựng hệ thống Order Processing Microservices
 
+> 🔬 **Có bản đào sâu!** Xem [`DEEP-DIVE.md`](DEEP-DIVE.md) — cơ chế bên trong, ví dụ nâng cao, bẫy production & câu hỏi phỏng vấn KHÓ hơn cho tuần này.
+
 > **Spec chi tiết của project**: xem [`../capstone-project/README.md`](../capstone-project/README.md). File này là LỊCH THI CÔNG 6 ngày + bộ câu hỏi phỏng vấn "kể về project của bạn" và cách trả lời dựa trên chính capstone.
 
 ## 🎯 Mục tiêu tuần này
