@@ -1722,7 +1722,12 @@ Quy tắc tiến hành:
 - Sau mỗi câu trả lời của ứng viên: nhận xét RẤT ngắn (tối đa 1 câu), rồi hoặc đào sâu bằng follow-up, hoặc chuyển câu hỏi mới. Thỉnh thoảng đưa tình huống thực tế (production/scaling).
 - Nếu trả lời sai/thiếu: gợi mở để họ tự nhận ra, đừng giảng giải dài dòng.
 - Giọng chuyên nghiệp, thân thiện. Mỗi lượt của bạn tối đa ~120 từ. Không dùng markdown nặng.
-- Khi nhận message bắt đầu bằng "[ĐÁNH GIÁ]": DỪNG hỏi và viết tổng kết buổi phỏng vấn gồm: **Điểm: X/10**, ✅ điểm mạnh, ⚠️ điểm cần cải thiện, và 2-3 lời khuyên ôn tập cụ thể (gợi ý tuần/chủ đề nên xem lại).`;
+- Khi nhận message bắt đầu bằng "[ĐÁNH GIÁ]": DỪNG hỏi và viết tổng kết buổi phỏng vấn theo ĐÚNG thứ tự sau:
+  1. **Điểm: X/10**
+  2. **Tỷ lệ đỗ phỏng vấn ước tính: Y%** — ước lượng khả năng PASS vòng phỏng vấn này cho vị trí Backend Node.js cấp ${aiCfg.level}, kèm 1 câu lý do ngắn. Ghi rõ đây là ước tính tham khảo, không phải con số chính thức.
+  3. ✅ Điểm mạnh
+  4. ⚠️ Điểm cần cải thiện
+  5. 💡 2-3 lời khuyên ôn tập cụ thể (gợi ý tuần/chủ đề nên xem lại).`;
 }
 
 function initAiInterview() {
@@ -1919,11 +1924,14 @@ function setAiInputDisabled(d) {
 /** Lưu lịch sử đánh giá AI (parse điểm /10 nếu có) */
 function saveAiEvaluation(text) {
   const m = text.match(/(\d+(?:[.,]\d+)?)\s*\/\s*10/);
+  // Bắt "tỷ lệ đỗ ... Y%" (ưu tiên dòng có chữ "đỗ/đậu/pass"), nếu không có thì lấy % đầu tiên
+  const passM = text.match(/(?:đỗ|đậu|pass)[^%\d]*?(\d{1,3})\s*%/i) || text.match(/(\d{1,3})\s*%/);
   const hist = store.get('prep-ai-history', []);
   hist.push({
     date: new Date().toISOString().slice(0, 10),
     topic: aiCfg.topic || 'Tổng hợp', level: aiCfg.level, model: aiCfg.model,
     score: m ? parseFloat(m[1].replace(',', '.')) : null,
+    pass: passM ? Math.min(+passM[1], 100) : null,
   });
   store.set('prep-ai-history', hist.slice(-50));
 }
@@ -1934,9 +1942,11 @@ function renderAiRecent() {
   const hist = store.get('prep-ai-history', []);
   if (!hist.length) { el.innerHTML = ''; return; }
   el.innerHTML = '<h3>🗂️ Buổi phỏng vấn AI gần đây</h3>' +
-    hist.slice(-6).reverse().map(h =>
-      `<div class="score-row"><span>${h.date} · ${escHtml(h.topic)} · ${escHtml(h.level)}</span>
-       <span class="${h.score != null && h.score >= 7 ? 'pass' : 'fail'}">${h.score != null ? h.score + '/10' : '—'}</span></div>`).join('');
+    hist.slice(-6).reverse().map(h => {
+      const passTxt = h.pass != null ? ` · 🎯 đỗ ~${h.pass}%` : '';
+      return `<div class="score-row"><span>${h.date} · ${escHtml(h.topic)} · ${escHtml(h.level)}</span>
+       <span class="${h.score != null && h.score >= 7 ? 'pass' : 'fail'}">${h.score != null ? h.score + '/10' : '—'}${passTxt}</span></div>`;
+    }).join('');
 }
 
 // ---------- Dashboard ----------
