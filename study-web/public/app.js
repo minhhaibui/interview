@@ -1505,6 +1505,7 @@ async function initMock() {
   document.getElementById('mk-wrong').addEventListener('click', () => gradeMock(false));
   document.getElementById('mk-quit').addEventListener('click', finishMock);
   document.getElementById('mk-question').textContent = '';
+  initAiInterview();
 }
 
 /** Dựng lại dropdown phạm vi — gồm cả mục "🚩 câu đã sai" với số đếm cập nhật */
@@ -1634,11 +1635,316 @@ function finishMock() {
   mkReviewMode = false;
 }
 
+// ---------- Phỏng vấn AI (Claude đóng vai người phỏng vấn) ----------
+// BYOK: người dùng dán API key Anthropic của họ, gọi thẳng api.anthropic.com từ trình duyệt
+// (header anthropic-dangerous-direct-browser-access). Streaming SSE. Key lưu localStorage tuỳ chọn.
+let aiInit = false;
+let aiMessages = [];       // lịch sử hội thoại [{role, content}]
+let aiBusy = false;
+let aiFinished = false;
+let aiRecog = null;
+let aiCfg = { lang: 'vi', model: 'claude-opus-4-8', level: 'Mid-level', topic: '', tts: true };
+
+const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+
+/** Đọc to bằng giọng phù hợp ngôn ngữ phỏng vấn */
+function aiSpeak(text) {
+  if (!aiCfg.tts || !('speechSynthesis' in window) || !text) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.replace(/[*`#>_]/g, '').slice(0, 600));
+  const wantVi = aiCfg.lang === 'vi';
+  u.lang = wantVi ? 'vi-VN' : 'en-US';
+  u.rate = 0.97;
+  const voices = speechSynthesis.getVoices();
+  const v = voices.find(x => x.lang && x.lang.toLowerCase().startsWith(wantVi ? 'vi' : 'en'));
+  if (v) u.voice = v;
+  speechSynthesis.speak(u);
+}
+
+/** Gọi Claude với streaming, gọi onText cho mỗi đoạn token; trả về full text */
+async function callClaudeStream({ apiKey, model, system, messages, maxTokens = 1024, onText }) {
+  const res = await fetch(ANTHROPIC_URL, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({ model, max_tokens: maxTokens, system, stream: true, messages }),
+  });
+  if (!res.ok || !res.body) {
+    let msg = `HTTP ${res.status}`;
+    try { const e = await res.json(); msg = e?.error?.message || msg; } catch {}
+    if (res.status === 401) msg = 'API key không hợp lệ (401). Kiểm tra lại key.';
+    else if (res.status === 429) msg = 'Quá nhiều yêu cầu hoặc hết hạn mức (429). Thử lại sau.';
+    else if (res.status === 400 && /credit|balance/i.test(msg)) msg = 'Tài khoản API chưa có credit. Nạp tại console.anthropic.com.';
+    throw new Error(msg);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '', full = '';
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    let nl;
+    while ((nl = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, nl).trim();
+      buf = buf.slice(nl + 1);
+      if (!line.startsWith('data:')) continue;
+      const data = line.slice(5).trim();
+      if (!data || data === '[DONE]') continue;
+      let ev; try { ev = JSON.parse(data); } catch { continue; }
+      if (ev.type === 'content_block_delta' && ev.delta?.type === 'text_delta') {
+        full += ev.delta.text;
+        onText?.(full);
+      } else if (ev.type === 'error') {
+        throw new Error(ev.error?.message || 'Lỗi stream từ API');
+      }
+    }
+  }
+  return full;
+}
+
+function aiSystemPrompt() {
+  const langInstr = aiCfg.lang === 'en'
+    ? 'Conduct the entire interview in ENGLISH.'
+    : aiCfg.lang === 'mix'
+      ? 'Hỏi bằng tiếng Anh; có thể giải thích thêm ngắn gọn bằng tiếng Việt khi ứng viên có vẻ chưa rõ.'
+      : 'Phỏng vấn bằng TIẾNG VIỆT, giữ nguyên thuật ngữ kỹ thuật bằng tiếng Anh.';
+  return `Bạn là một interviewer kỹ thuật giàu kinh nghiệm, đang phỏng vấn ứng viên cho vị trí Backend Engineer (Node.js) cấp độ ${aiCfg.level}. Chủ đề trọng tâm: ${aiCfg.topic || 'tổng hợp backend'}.
+${langInstr}
+
+Quy tắc tiến hành:
+- Hỏi MỘT câu mỗi lượt, như phỏng vấn thật. TUYỆT ĐỐI không tự trả lời thay ứng viên.
+- Mở đầu: chào ngắn gọn (1 câu) rồi hỏi câu đầu tiên.
+- Sau mỗi câu trả lời của ứng viên: nhận xét RẤT ngắn (tối đa 1 câu), rồi hoặc đào sâu bằng follow-up, hoặc chuyển câu hỏi mới. Thỉnh thoảng đưa tình huống thực tế (production/scaling).
+- Nếu trả lời sai/thiếu: gợi mở để họ tự nhận ra, đừng giảng giải dài dòng.
+- Giọng chuyên nghiệp, thân thiện. Mỗi lượt của bạn tối đa ~120 từ. Không dùng markdown nặng.
+- Khi nhận message bắt đầu bằng "[ĐÁNH GIÁ]": DỪNG hỏi và viết tổng kết buổi phỏng vấn gồm: **Điểm: X/10**, ✅ điểm mạnh, ⚠️ điểm cần cải thiện, và 2-3 lời khuyên ôn tập cụ thể (gợi ý tuần/chủ đề nên xem lại).`;
+}
+
+function initAiInterview() {
+  if (aiInit) return;
+  aiInit = true;
+
+  // mode switch self/ai
+  document.querySelectorAll('.mkm').forEach(b => b.addEventListener('click', () => {
+    const ai = b.dataset.mkmode === 'ai';
+    document.querySelectorAll('.mkm').forEach(x => x.classList.toggle('active', x === b));
+    document.getElementById('mk-ai').hidden = !ai;
+    document.getElementById('mk-self').hidden = ai;
+    if (ai) fillAiTopics();
+  }));
+
+  // nạp cài đặt + key đã lưu
+  const saved = store.get('prep-ai-settings', null);
+  if (saved) {
+    aiCfg = { ...aiCfg, ...saved };
+    document.getElementById('ai-model').value = aiCfg.model;
+    document.getElementById('ai-lang').value = aiCfg.lang;
+    document.getElementById('ai-level').value = aiCfg.level;
+    document.getElementById('ai-tts').checked = aiCfg.tts;
+  }
+  const savedKey = store.get('prep-ai-key', '');
+  if (savedKey) { document.getElementById('ai-key').value = savedKey; document.getElementById('ai-remember').checked = true; }
+
+  document.getElementById('ai-start').addEventListener('click', aiStart);
+  document.getElementById('ai-send').addEventListener('click', aiSend);
+  document.getElementById('ai-end').addEventListener('click', aiEnd);
+  document.getElementById('ai-quit').addEventListener('click', aiQuit);
+  document.getElementById('ai-mic').addEventListener('click', aiListen);
+  document.getElementById('ai-tts-toggle').addEventListener('click', () => {
+    aiCfg.tts = !aiCfg.tts;
+    document.getElementById('ai-tts-toggle').style.opacity = aiCfg.tts ? '1' : '.4';
+    if (!aiCfg.tts && 'speechSynthesis' in window) speechSynthesis.cancel();
+  });
+  document.getElementById('ai-answer').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); aiSend(); }
+  });
+  if ('speechSynthesis' in window) speechSynthesis.getVoices();
+  renderAiRecent();
+}
+
+/** Đổ chủ đề từ các tuần đã có trong kho mock */
+function fillAiTopics() {
+  const sel = document.getElementById('ai-topic');
+  if (sel.options.length) return;
+  let opts = '<option value="">— Tổng hợp 12 tuần —</option>';
+  if (MK_POOL) {
+    const weeks = [...new Map(MK_POOL.filter(q => q.week !== '__rapid__').map(q => [q.week, q.weekLabel])).entries()];
+    opts += weeks.map(([w, label]) => `<option value="${escHtml(label)}">${escHtml(label)}</option>`).join('');
+  }
+  sel.innerHTML = opts;
+}
+
+function aiReadCfg() {
+  aiCfg.model = document.getElementById('ai-model').value;
+  aiCfg.lang = document.getElementById('ai-lang').value;
+  aiCfg.level = document.getElementById('ai-level').value;
+  aiCfg.topic = document.getElementById('ai-topic').value;
+  aiCfg.tts = document.getElementById('ai-tts').checked;
+  store.set('prep-ai-settings', { model: aiCfg.model, lang: aiCfg.lang, level: aiCfg.level, tts: aiCfg.tts });
+}
+
+function aiKey() { return document.getElementById('ai-key').value.trim(); }
+
+async function aiStart() {
+  const key = aiKey();
+  if (!key) { alert('Hãy dán API key Anthropic của bạn trước.'); document.getElementById('ai-key').focus(); return; }
+  aiReadCfg();
+  // ghi nhớ key tuỳ chọn
+  if (document.getElementById('ai-remember').checked) store.set('prep-ai-key', key);
+  else localStorage.removeItem('prep-ai-key');
+
+  aiMessages = [];
+  aiFinished = false;
+  document.getElementById('ai-setup').hidden = true;
+  document.getElementById('ai-session').hidden = false;
+  document.getElementById('ai-chat').innerHTML = '';
+  document.getElementById('ai-meta').textContent =
+    `${aiCfg.model.replace('claude-', '')} · ${aiCfg.level} · ${aiCfg.topic || 'Tổng hợp'}`;
+  document.getElementById('ai-tts-toggle').style.opacity = aiCfg.tts ? '1' : '.4';
+  // lượt đầu: nhờ interviewer chào + hỏi câu đầu
+  aiMessages.push({ role: 'user', content: 'Xin chào, tôi đã sẵn sàng. Hãy bắt đầu buổi phỏng vấn.' });
+  await aiTurn();
+}
+
+/** Gửi 1 lượt: stream phản hồi interviewer vào một bong bóng mới */
+async function aiTurn() {
+  if (aiBusy) return;
+  aiBusy = true;
+  setAiInputDisabled(true);
+  const bubble = addAiBubble('assistant', '');
+  const streamEl = bubble.querySelector('.ai-bubble-body');
+  streamEl.textContent = '…';
+  try {
+    const full = await callClaudeStream({
+      apiKey: aiKey(),
+      model: aiCfg.model,
+      system: aiSystemPrompt(),
+      messages: aiMessages,
+      maxTokens: aiFinished ? 1200 : 700,
+      onText: t => { streamEl.textContent = t; scrollAiChat(); },
+    });
+    aiMessages.push({ role: 'assistant', content: full });
+    // render markdown + đọc to
+    streamEl.innerHTML = window.marked ? marked.parse(full) : escHtml(full);
+    if (window.hljs) streamEl.querySelectorAll('pre code').forEach(el => { try { hljs.highlightElement(el); } catch {} });
+    scrollAiChat();
+    aiSpeak(full);
+    logActivity();
+    if (aiFinished) saveAiEvaluation(full);
+  } catch (err) {
+    streamEl.innerHTML = `<span class="ai-err">⚠️ ${escHtml(err.message)}</span>`;
+  } finally {
+    aiBusy = false;
+    setAiInputDisabled(false);
+    if (!aiFinished) document.getElementById('ai-answer').focus();
+  }
+}
+
+async function aiSend() {
+  if (aiBusy || aiFinished) return;
+  const ta = document.getElementById('ai-answer');
+  const text = ta.value.trim();
+  if (!text) return;
+  ta.value = '';
+  addAiBubble('user', text);
+  aiMessages.push({ role: 'user', content: text });
+  scrollAiChat();
+  await aiTurn();
+}
+
+async function aiEnd() {
+  if (aiBusy || aiFinished) return;
+  if (!aiMessages.some(m => m.role === 'assistant')) { aiQuit(); return; }
+  aiFinished = true;
+  document.getElementById('ai-end').disabled = true;
+  addAiBubble('user', '🏁 Kết thúc — xin nhận xét & chấm điểm.');
+  aiMessages.push({ role: 'user', content: '[ĐÁNH GIÁ] Buổi phỏng vấn kết thúc. Hãy tổng kết và chấm điểm theo đúng định dạng đã yêu cầu.' });
+  await aiTurn();
+}
+
+function aiQuit() {
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  if (aiRecog) { try { aiRecog.abort(); } catch {} aiRecog = null; }
+  document.getElementById('ai-session').hidden = true;
+  document.getElementById('ai-setup').hidden = false;
+  document.getElementById('ai-end').disabled = false;
+  renderAiRecent();
+}
+
+/** Nghe câu trả lời bằng giọng nói */
+function aiListen() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const mic = document.getElementById('ai-mic');
+  if (!SR) { alert('Trình duyệt chưa hỗ trợ nhận diện giọng nói — dùng Chrome/Edge nhé.'); return; }
+  if (aiRecog) { aiRecog.abort(); aiRecog = null; mic.classList.remove('listening'); return; }
+  aiRecog = new SR();
+  aiRecog.lang = aiCfg.lang === 'vi' ? 'vi-VN' : 'en-US';
+  aiRecog.interimResults = true;
+  aiRecog.continuous = true;
+  mic.classList.add('listening');
+  const ta = document.getElementById('ai-answer');
+  let baseline = ta.value;
+  aiRecog.onresult = e => {
+    let txt = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) txt += e.results[i][0].transcript;
+    ta.value = (baseline + ' ' + txt).trim();
+  };
+  aiRecog.onerror = () => { mic.classList.remove('listening'); aiRecog = null; };
+  aiRecog.onend = () => { mic.classList.remove('listening'); aiRecog = null; };
+  aiRecog.start();
+}
+
+function addAiBubble(role, text) {
+  const chat = document.getElementById('ai-chat');
+  const wrap = document.createElement('div');
+  wrap.className = 'ai-bubble ' + role;
+  wrap.innerHTML = `<span class="ai-who">${role === 'user' ? '🙋 Bạn' : '🧑‍💼 Interviewer'}</span>
+    <div class="ai-bubble-body">${role === 'user' ? escHtml(text).replace(/\n/g, '<br>') : ''}</div>`;
+  chat.appendChild(wrap);
+  scrollAiChat();
+  return wrap;
+}
+
+function scrollAiChat() { const c = document.getElementById('ai-chat'); c.scrollTop = c.scrollHeight; }
+
+function setAiInputDisabled(d) {
+  ['ai-answer', 'ai-send', 'ai-mic', 'ai-end'].forEach(id => { const el = document.getElementById(id); if (el && !(id === 'ai-end' && aiFinished)) el.disabled = d; });
+}
+
+/** Lưu lịch sử đánh giá AI (parse điểm /10 nếu có) */
+function saveAiEvaluation(text) {
+  const m = text.match(/(\d+(?:[.,]\d+)?)\s*\/\s*10/);
+  const hist = store.get('prep-ai-history', []);
+  hist.push({
+    date: new Date().toISOString().slice(0, 10),
+    topic: aiCfg.topic || 'Tổng hợp', level: aiCfg.level, model: aiCfg.model,
+    score: m ? parseFloat(m[1].replace(',', '.')) : null,
+  });
+  store.set('prep-ai-history', hist.slice(-50));
+}
+
+function renderAiRecent() {
+  const el = document.getElementById('ai-recent');
+  if (!el) return;
+  const hist = store.get('prep-ai-history', []);
+  if (!hist.length) { el.innerHTML = ''; return; }
+  el.innerHTML = '<h3>🗂️ Buổi phỏng vấn AI gần đây</h3>' +
+    hist.slice(-6).reverse().map(h =>
+      `<div class="score-row"><span>${h.date} · ${escHtml(h.topic)} · ${escHtml(h.level)}</span>
+       <span class="${h.score != null && h.score >= 7 ? 'pass' : 'fail'}">${h.score != null ? h.score + '/10' : '—'}</span></div>`).join('');
+}
+
 // ---------- Dashboard ----------
 const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-doc',
   'prep-typing-best', 'prep-fails', 'prep-activity', 'prep-mock-history',
   'prep-pomo', 'prep-code-best', 'prep-fc-dir', 'prep-fc-auto', 'prep-code-history', 'prep-theme',
-  'prep-last-view', 'prep-doc-checks', 'prep-mock-wrong'];
+  'prep-last-view', 'prep-doc-checks', 'prep-mock-wrong', 'prep-ai-history', 'prep-ai-settings'];
+// Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */
 async function renderDueBanner() {

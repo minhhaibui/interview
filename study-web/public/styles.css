@@ -443,6 +443,72 @@ button { font-family: inherit; cursor: pointer; }
 }
 .mw-done:hover { background: var(--green); color: #fff; }
 
+/* ===== Phỏng vấn AI ===== */
+.mk-mode-switch { display: flex; gap: 8px; margin-bottom: 18px; }
+.mkm {
+  flex: 1; background: var(--bg2); border: 1px solid var(--border); color: var(--muted);
+  border-radius: 10px; padding: 10px; font-size: 14px; cursor: pointer; font-weight: 600;
+}
+.mkm.active { color: var(--text); background: var(--bg3); border-color: var(--accent); }
+.ai-key-box {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px; margin: 14px 0;
+}
+.ai-key-box label { display: block; font-weight: 600; margin-bottom: 6px; }
+#ai-key {
+  width: 100%; box-sizing: border-box; background: var(--bg3); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; font-family: monospace;
+}
+#ai-key:focus { outline: none; border-color: var(--accent); }
+.ai-remember { font-weight: 400 !important; margin: 10px 0 4px; font-size: 14px; }
+.ai-key-note { color: var(--muted); font-size: 12.5px; line-height: 1.6; margin: 6px 0 0; }
+.ai-options { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; margin: 14px 0; }
+.ai-options label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.ai-options select {
+  background: var(--bg2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 10px; font-size: 14px;
+}
+.ai-voice-opt { flex-direction: row !important; align-items: center; gap: 6px !important; font-size: 14px !important; color: var(--text) !important; }
+.ai-recent { margin-top: 22px; }
+.ai-recent h3 { font-size: 1.05em; margin-bottom: 8px; }
+
+.ai-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.ai-meta { color: var(--muted); font-size: 13px; }
+.ai-mini { background: none; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; padding: 4px 9px; }
+.ai-chat {
+  height: 52vh; min-height: 320px; overflow-y: auto; background: var(--bg2);
+  border: 1px solid var(--border); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 12px;
+}
+.ai-bubble { max-width: 85%; }
+.ai-bubble.assistant { align-self: flex-start; }
+.ai-bubble.user { align-self: flex-end; text-align: right; }
+.ai-who { font-size: 12px; color: var(--muted); display: block; margin-bottom: 3px; }
+.ai-bubble-body {
+  display: inline-block; text-align: left; padding: 10px 14px; border-radius: 12px; line-height: 1.6;
+  border: 1px solid var(--border); background: var(--bg3);
+}
+.ai-bubble.user .ai-bubble-body { background: var(--accent); color: #fff; border-color: var(--accent); }
+.ai-bubble-body p { margin: 0 0 8px; }
+.ai-bubble-body p:last-child { margin-bottom: 0; }
+.ai-bubble-body pre { margin: 8px 0; }
+.ai-err { color: var(--red); }
+.ai-input-row { display: flex; gap: 8px; margin-top: 10px; align-items: flex-end; }
+#ai-answer {
+  flex: 1; background: var(--bg2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 12px; font-size: 15px; font-family: inherit; resize: vertical;
+}
+#ai-answer:focus { outline: none; border-color: var(--accent); }
+.ai-mic { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; cursor: pointer; padding: 0 13px; font-size: 18px; }
+.ai-mic.listening { background: var(--red); border-color: var(--red); animation: pulse 1s infinite; }
+.ai-send {
+  background: var(--accent); color: #fff; border: none; border-radius: 10px;
+  padding: 0 18px; font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.ai-send:hover { filter: brightness(1.1); }
+.ai-send:disabled, .ai-mic:disabled, #ai-answer:disabled { opacity: .5; cursor: default; }
+.ai-actions { display: flex; gap: 10px; margin-top: 12px; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+
 /* ============ Dashboard ============ */
 .dash-wrap { max-width: 860px; margin: 0 auto; padding: 36px 24px 100px; }
 .dash-total { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }

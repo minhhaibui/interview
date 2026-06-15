@@ -128,6 +128,70 @@
   <div id="view-mock" class="view">
     <div class="mk-wrap">
       <h1>🎯 Mock Interview</h1>
+      <div class="mk-mode-switch">
+        <button class="mkm active" data-mkmode="self">📝 Tự chấm (offline)</button>
+        <button class="mkm" data-mkmode="ai">🤖 Phỏng vấn AI (Claude)</button>
+      </div>
+
+      <!-- ===== AI INTERVIEW (Claude đóng vai người phỏng vấn) ===== -->
+      <div id="mk-ai" hidden>
+        <div id="ai-setup">
+          <p class="mk-tip">Claude đóng vai <b>người phỏng vấn thật</b>: hỏi → bạn trả lời (gõ hoặc nói) → đào sâu/hỏi tiếp → cuối buổi chấm điểm + nhận xét.</p>
+          <div class="ai-key-box">
+            <label for="ai-key">🔑 Anthropic API key của bạn (BYOK):</label>
+            <input id="ai-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-api03-..." />
+            <label class="ai-remember"><input type="checkbox" id="ai-remember" /> Ghi nhớ key trên trình duyệt này</label>
+            <p class="ai-key-note">Key chỉ lưu <b>cục bộ trong trình duyệt của bạn</b> và gửi thẳng tới api.anthropic.com — không qua máy chủ nào khác. Lấy key tại <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>. Mỗi buổi phỏng vấn tính phí vào tài khoản API của bạn.</p>
+          </div>
+          <div class="ai-options">
+            <label>Model
+              <select id="ai-model">
+                <option value="claude-opus-4-8" selected>Opus 4.8 — thông minh nhất</option>
+                <option value="claude-sonnet-4-6">Sonnet 4.6 — cân bằng, rẻ hơn ~40%</option>
+                <option value="claude-haiku-4-5">Haiku 4.5 — nhanh & rẻ nhất</option>
+              </select>
+            </label>
+            <label>Ngôn ngữ
+              <select id="ai-lang">
+                <option value="vi">Tiếng Việt (thuật ngữ giữ tiếng Anh)</option>
+                <option value="en">English (toàn bộ tiếng Anh)</option>
+                <option value="mix">Mix — hỏi tiếng Anh, giải thích tiếng Việt</option>
+              </select>
+            </label>
+            <label>Chủ đề <select id="ai-topic"></select></label>
+            <label>Cấp độ
+              <select id="ai-level">
+                <option value="Junior">Junior</option>
+                <option value="Mid-level" selected>Mid-level</option>
+                <option value="Senior">Senior</option>
+              </select>
+            </label>
+            <label class="ai-voice-opt"><input type="checkbox" id="ai-tts" checked /> 🔊 Đọc to câu hỏi</label>
+          </div>
+          <button id="ai-start" class="mk-start">▶️ Bắt đầu phỏng vấn AI</button>
+          <div id="ai-recent" class="ai-recent"></div>
+        </div>
+
+        <div id="ai-session" hidden>
+          <div class="ai-top">
+            <span id="ai-meta" class="ai-meta"></span>
+            <button id="ai-tts-toggle" class="ai-mini" title="Bật/tắt đọc to">🔊</button>
+          </div>
+          <div id="ai-chat" class="ai-chat"></div>
+          <div class="ai-input-row">
+            <textarea id="ai-answer" rows="2" placeholder="Gõ câu trả lời… (Enter để gửi, Shift+Enter xuống dòng)"></textarea>
+            <button id="ai-mic" class="ai-mic" title="Bấm và trả lời bằng giọng nói">🎤</button>
+            <button id="ai-send" class="ai-send">Gửi</button>
+          </div>
+          <div class="ai-actions">
+            <button id="ai-end">🏁 Kết thúc & chấm điểm</button>
+            <button id="ai-quit">⏹ Thoát</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SELF-GRADED (offline) ===== -->
+      <div id="mk-self">
       <div id="mk-setup" class="mk-setup">
         <p class="mk-tip">Bốc ngẫu nhiên câu hỏi từ kho 180 câu Q&A của 12 tuần. Đọc câu hỏi xong hãy <b>trả lời TO THÀNH TIẾNG</b> như phỏng vấn thật (tiếng Anh càng tốt!), rồi xem đáp án và tự chấm.</p>
         <div class="mk-options">
@@ -164,6 +228,7 @@
         </div>
       </div>
       <div id="mk-result" class="mk-result" hidden></div>
+      </div><!-- /#mk-self -->
     </div>
   </div>
 
