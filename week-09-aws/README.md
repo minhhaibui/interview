@@ -1,5 +1,7 @@
 # Tuần 9: AWS
 
+> 🌱 **Mới với chủ đề này?** Đọc [`CO-BAN.md`](CO-BAN.md) TRƯỚC — bài nhập môn cực dễ, giải thích bằng ví dụ đời thường, không thuật ngữ khó. Xong rồi quay lại đọc bài đầy đủ bên dưới.
+
 > 🔬 **Có bản đào sâu!** Xem [`DEEP-DIVE.md`](DEEP-DIVE.md) — cơ chế bên trong, ví dụ nâng cao, bẫy production & câu hỏi phỏng vấn KHÓ hơn cho tuần này.
 
 ## 🎯 Mục tiêu tuần này

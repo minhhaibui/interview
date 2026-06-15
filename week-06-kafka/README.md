@@ -1,5 +1,7 @@
 # Tuần 6: Kafka
 
+> 🌱 **Mới với chủ đề này?** Đọc [`CO-BAN.md`](CO-BAN.md) TRƯỚC — bài nhập môn cực dễ, giải thích bằng ví dụ đời thường, không thuật ngữ khó. Xong rồi quay lại đọc bài đầy đủ bên dưới.
+
 > 🔬 **Có bản đào sâu!** Xem [`DEEP-DIVE.md`](DEEP-DIVE.md) — cơ chế bên trong, ví dụ nâng cao, bẫy production & câu hỏi phỏng vấn KHÓ hơn cho tuần này.
 
 > 🧪 **Có lab tận tay!** Xem [`lab/LAB.md`](lab/LAB.md) — Kafka KRaft qua `docker compose`, tự tạo topic 3 partition rồi producer/consumer để thấy consumer group chia partition & cùng key giữ thứ tự.

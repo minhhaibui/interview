@@ -37,6 +37,7 @@ function buildTree(ROOT) {
     items: weekDirs.flatMap(d => {
       const items = [];
       if (exists(`${d}/README.md`)) items.push({ label: prettyWeekName(d), path: `${d}/README.md`, week: d });
+      if (exists(`${d}/CO-BAN.md`)) items.push({ label: '↳ 🌱 Nhập môn (dễ, đọc trước)', path: `${d}/CO-BAN.md`, week: d, sub: true });
       if (exists(`${d}/DESIGN-CASES.md`)) items.push({ label: '↳ Design & Cases', path: `${d}/DESIGN-CASES.md`, week: d, sub: true });
       if (exists(`${d}/RAPID-FIRE.md`)) items.push({ label: '↳ ⚡ Rapid-fire', path: `${d}/RAPID-FIRE.md`, week: d, sub: true });
       if (exists(`${d}/DEEP-DIVE.md`)) items.push({ label: '↳ 🔬 Đào sâu', path: `${d}/DEEP-DIVE.md`, week: d, sub: true });
