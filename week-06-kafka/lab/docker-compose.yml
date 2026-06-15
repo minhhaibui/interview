@@ -1,0 +1,54 @@
+# 🐳 Kafka single-node chạy ở chế độ KRaft (KHÔNG cần Zookeeper)
+#
+# KRaft = "Kafka Raft": từ Kafka 3.x, broker tự quản lý metadata bằng giao thức
+# Raft thay vì phải dựng thêm Zookeeper. Một node duy nhất vừa làm BROKER (chứa
+# dữ liệu, phục vụ client) vừa làm CONTROLLER (bầu leader, quản lý metadata).
+# => Gọn nhẹ, lý tưởng cho lab học tập.
+
+services:
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: lab-kafka
+    ports:
+      # Mở cổng 9092 ra host để client (producer/consumer Node.js chạy trên máy
+      # bạn) kết nối được qua localhost:9092.
+      - "9092:9092"
+    environment:
+      # --- Định danh & vai trò của node ---
+      KAFKA_NODE_ID: 1
+      # Node này vừa là broker vừa là controller (combined mode).
+      KAFKA_PROCESS_ROLES: broker,controller
+      # Danh sách "cử tri" của quorum controller: <nodeId>@<host>:<port>
+      # 1@kafka:9093 nghĩa là node 1, liên lạc nội bộ container qua hostname "kafka".
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+
+      # --- Listeners (cổng lắng nghe) ---
+      # PLAINTEXT phục vụ client, CONTROLLER phục vụ giao tiếp nội bộ Raft.
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      # ⚠️ QUAN TRỌNG: advertised listener là địa chỉ mà broker "khai báo" cho
+      # client để client quay lại kết nối. Vì client chạy trên HOST (ngoài
+      # Docker), phải khai báo "localhost:9092" — nếu khai báo tên container
+      # "kafka" thì host sẽ không resolve được => kết nối thất bại.
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      # Broker giao tiếp với nhau qua listener PLAINTEXT (ở đây chỉ có 1 broker).
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      # --- Cấu hình replication cho cluster 1 node ---
+      # Chỉ có 1 broker nên replication factor phải = 1 (không thể nhân bản).
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      # Cho consumer group rebalance ngay, khỏi đợi (mặc định 3000ms).
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+    healthcheck:
+      # Broker được coi là "sẵn sàng" khi lệnh list topic chạy thành công.
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 15s
+    # 💡 Nếu không dùng healthcheck, hãy đợi thủ công ~15-20s sau khi
+    #    `docker compose up -d` để broker khởi động xong rồi mới chạy npm run admin.

@@ -1,0 +1,29 @@
+# 🙈 .dockerignore — danh sách thứ KHÔNG gửi vào "build context" của Docker.
+# Khi chạy `docker build .`, Docker đóng gói cả thư mục gửi cho daemon (build context).
+# Loại bỏ rác giúp: (1) build context NHỎ → build nhanh, (2) tránh COPY nhầm file thừa/nhạy cảm,
+# (3) tránh phá layer cache vì những file hay đổi (log, .git).
+
+# Thư viện đã cài — sẽ được cài lại trong image, không gửi từ máy host.
+node_modules
+npm-debug.log
+
+# Lịch sử git — không cần thiết khi chạy app, lại rất nặng.
+.git
+.gitignore
+
+# Chính Dockerfile và file compose — không cần nằm trong image.
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Tài liệu — không ảnh hưởng runtime.
+*.md
+
+# File môi trường nhạy cảm — KHÔNG bao giờ đưa secret vào image.
+.env
+*.local
+
+# Rác hệ điều hành / editor.
+.DS_Store
+.vscode
+.idea

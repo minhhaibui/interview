@@ -1,5 +1,7 @@
 # Tuần 5: Redis
 
+> 🧪 **Có lab tận tay!** Xem [`lab/LAB.md`](lab/LAB.md) — `docker compose up` + chạy thử cache-aside, rate-limit, leaderboard, pub/sub với `redis.conf` có chú thích từng dòng.
+
 ## 🎯 Mục tiêu tuần này
 
 - Hiểu sâu tại sao Redis nhanh (in-memory, single-threaded event loop, I/O multiplexing) — không trả lời hời hợt "vì nó là cache".

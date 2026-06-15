@@ -1,0 +1,19 @@
+{
+  "name": "kafka-lab",
+  "version": "1.0.0",
+  "description": "Lab Kafka tận tay để học phỏng vấn backend Node.js",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "admin": "node src/admin.js",
+    "produce": "node src/producer.js",
+    "consume": "node src/consumer.js",
+    "consume:g2": "GROUP_ID=order-workers-2 node src/consumer.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "kafkajs": "^2.2"
+  }
+}

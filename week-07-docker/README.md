@@ -1,5 +1,7 @@
 # Tuần 7: Docker
 
+> 🧪 **Có lab tận tay!** Xem [`lab/LAB.md`](lab/LAB.md) — build image multi-stage cho app Node zero-dep, chạy `docker compose` 2 service (app + redis) để hiểu layer cache, non-root, healthcheck, service discovery.
+
 ## 🎯 Mục tiêu tuần này
 
 - Hiểu sâu kiến trúc Docker (daemon, client, registry) và phân biệt rõ container vs VM, image vs container.

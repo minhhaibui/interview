@@ -1,0 +1,53 @@
+# 🌐 docker-compose.yml — chạy NHIỀU service cùng lúc (Docker Compose v2: `docker compose`).
+# Compose dựng giúp ta: 1 app Node + 1 redis, nối mạng với nhau, quản lý bằng 1 lệnh.
+# Lưu ý: Compose v2 không còn bắt buộc khai báo "version:" ở đầu file.
+
+services:
+  # ===========================================================
+  # 🟢 SERVICE: app — HTTP server Node của chúng ta
+  # ===========================================================
+  app:
+    container_name: docker-lab-app # tên container cố định, dễ gọi trong lệnh docker
+    build:
+      context: . # thư mục build = thư mục lab này (chứa Dockerfile + app/)
+      dockerfile: Dockerfile # tên Dockerfile dùng để build
+    ports:
+      - "3000:3000" # map cổng host:container → truy cập http://localhost:3000
+    environment:
+      # 🔧 Biến môi trường truyền vào container. App đọc qua process.env.*
+      PORT: 3000
+      REDIS_HOST: redis # 👈 "redis" chính là TÊN SERVICE bên dưới (service discovery)
+      REDIS_PORT: 6379
+    depends_on:
+      redis:
+        # ⏳ Chờ redis HEALTHY rồi mới khởi động app, tránh app gọi redis lúc nó chưa sẵn sàng.
+        condition: service_healthy
+    healthcheck:
+      # ❤️ Healthcheck riêng ở cấp compose (ghi đè/bổ sung cho HEALTHCHECK trong Dockerfile).
+      # Dùng node -e gọi /health vì image alpine không có sẵn curl.
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped # tự khởi động lại nếu crash, trừ khi ta chủ động stop
+
+  # ===========================================================
+  # 🔴 SERVICE: redis — kho key-value, ở đây chỉ để minh hoạ kết nối liên service
+  # ===========================================================
+  redis:
+    container_name: docker-lab-redis
+    image: redis:7-alpine # dùng image redis có sẵn, không cần build
+    healthcheck:
+      # ❤️ redis-cli ping → trả "PONG" nếu redis sống. Đây là cách kiểm tra sức khỏe chuẩn của redis.
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+
+# 🛰️ MẠNG (network):
+# Khi không khai báo networks riêng, Compose tự tạo 1 mạng "default" và gắn mọi service vào đó.
+# Trong mạng này có DNS nội bộ: mỗi service được phân giải theo TÊN service.
+# => Container app gọi "redis:6379" là tới đúng container redis, KHÔNG cần biết IP.
+# Đó chính là SERVICE DISCOVERY của Docker Compose.

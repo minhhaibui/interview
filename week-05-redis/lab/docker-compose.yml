@@ -1,0 +1,29 @@
+# 🐳 Docker Compose cho Lab Redis
+# Yêu cầu: Docker Compose v2 -> dùng lệnh "docker compose" (KHÔNG phải "docker-compose")
+# Chạy:   docker compose up -d
+# Tắt:    docker compose down        (giữ dữ liệu)
+#         docker compose down -v     (xoá luôn volume -> mất dữ liệu)
+
+services:
+  redis:
+    image: redis:7-alpine            # 📌 Pin phiên bản 7 (alpine = image nhỏ gọn) để môi trường ổn định
+    container_name: lab-redis        # Tên container cố định -> dễ exec: docker compose exec redis ...
+    ports:
+      - "6379:6379"                  # Map cổng máy thật:cổng trong container -> Node nối tới localhost:6379
+    volumes:
+      # Mount file config của ta vào container (chỉ đọc) để redis-server đọc cấu hình
+      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+      # Volume đặt tên giữ dữ liệu (RDB/AOF) -> container restart vẫn còn data
+      - redisdata:/data
+    # Bảo redis-server nạp đúng file config của ta (mặc định nó không tự đọc file này)
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    healthcheck:
+      # Kiểm tra "sống" bằng cách ping Redis; healthy khi trả về PONG
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s                   # 5 giây kiểm 1 lần
+      timeout: 3s                    # Quá 3s không trả lời -> coi là fail lần đó
+      retries: 5                     # Fail 5 lần liên tiếp -> đánh dấu unhealthy
+    restart: unless-stopped          # Tự khởi động lại trừ khi ta chủ động stop
+
+volumes:
+  redisdata:                         # Khai báo volume đặt tên dùng ở trên

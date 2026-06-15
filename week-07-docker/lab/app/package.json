@@ -1,0 +1,13 @@
+{
+  "name": "docker-lab-app",
+  "version": "1.0.0",
+  "description": "App zero-dependency cho Lab Docker (chi dung Node core: http, os, net)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {}
+}

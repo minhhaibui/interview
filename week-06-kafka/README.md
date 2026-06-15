@@ -1,5 +1,7 @@
 # Tuần 6: Kafka
 
+> 🧪 **Có lab tận tay!** Xem [`lab/LAB.md`](lab/LAB.md) — Kafka KRaft qua `docker compose`, tự tạo topic 3 partition rồi producer/consumer để thấy consumer group chia partition & cùng key giữ thứ tự.
+
 ## 🎯 Mục tiêu tuần này
 
 - Hiểu Kafka là gì, kiến trúc lõi (broker, topic, partition, offset) và **khi nào dùng Kafka vs RabbitMQ/SQS** — trả lời có tiêu chí, không cảm tính.

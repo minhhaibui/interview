@@ -1,0 +1,19 @@
+{
+  "name": "redis-lab",
+  "version": "1.0.0",
+  "description": "Lab Redis tận tay để ôn phỏng vấn backend Node.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node -e \"console.log('🧪 Lab Redis\\n\\nBước 1: docker compose up -d\\nBước 2: npm install\\nBước 3: chạy demo:\\n  npm run cache        # Cache-Aside\\n  npm run ratelimit    # Rate limit fixed-window\\n  npm run leaderboard  # Sorted Set leaderboard\\n  npm run pubsub       # Pub/Sub\\n\\nĐọc thêm: LAB.md')\"",
+    "cache": "node src/cache-aside.js",
+    "ratelimit": "node src/rate-limit.js",
+    "leaderboard": "node src/leaderboard.js",
+    "pubsub": "node src/pubsub.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "redis": "^4.6"
+  }
+}
