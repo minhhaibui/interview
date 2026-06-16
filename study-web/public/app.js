@@ -5,12 +5,16 @@
  */
 
 // ---------- State & storage helpers ----------
+let onStoreWrite = null; // hook đồng bộ Firebase gắn vào — gọi sau mỗi lần ghi 'prep-*'
 const store = {
   get(key, fallback) {
     try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
     catch { return fallback; }
   },
-  set(key, val) { localStorage.setItem(key, JSON.stringify(val)); },
+  set(key, val) {
+    localStorage.setItem(key, JSON.stringify(val));
+    if (onStoreWrite) try { onStoreWrite(key); } catch {}
+  },
 };
 
 let TREE = [];
@@ -118,6 +122,7 @@ function switchView(name) {
   if (name === 'writing') initWriting().then(() => wrInit && WR_SENTENCES && fillWrWeekSelect());
   if (name === 'code') initCodeTyping();
   if (name === 'mock') initMock().then(() => mkInit && fillMockWeekSelect());
+  if (name === 'plan') renderPlan();
   if (name === 'dashboard') renderDashboard();
 }
 
@@ -290,7 +295,7 @@ async function renderHome(pushHash = true) {
           <span class="hc-sub">${escHtml(c.sub)}</span>
         </button>`).join('')}
       </div>
-      <p class="home-tip">Mẹo: phím <kbd>1</kbd>–<kbd>6</kbd> chuyển tab nhanh, <kbd>/</kbd> để tìm kiếm tài liệu.</p>
+      <p class="home-tip">Mẹo: phím <kbd>1</kbd>–<kbd>7</kbd> chuyển tab nhanh, <kbd>/</kbd> để tìm kiếm tài liệu.</p>
     </div>`;
 
   const goFlash = filter => {
@@ -1955,7 +1960,7 @@ function renderAiRecent() {
 const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-doc',
   'prep-typing-best', 'prep-fails', 'prep-activity', 'prep-mock-history',
   'prep-pomo', 'prep-code-best', 'prep-fc-dir', 'prep-fc-auto', 'prep-code-history', 'prep-theme',
-  'prep-last-view', 'prep-doc-checks', 'prep-mock-wrong', 'prep-ai-history', 'prep-ai-settings'];
+  'prep-last-view', 'prep-doc-checks', 'prep-mock-wrong', 'prep-ai-history', 'prep-ai-settings', 'prep-plan'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */
@@ -2266,20 +2271,335 @@ function initTheme() {
   apply();
 }
 
+// ---------- Kế hoạch & nhịp độ ôn ----------
+function renderPlan() {
+  const body = document.getElementById('plan-body');
+  if (!body) return;
+
+  const weeksGroup = TREE.find(g => g.title.includes('12 tuần'));
+  const items = weeksGroup?.items || [];
+  const weeks = [...new Set(items.map(i => i.week).filter(Boolean))];
+  if (!weeks.length) { body.innerHTML = '<p style="color:var(--muted)">Chưa nạp được lộ trình tuần.</p>'; return; }
+
+  const parse = s => { const [y, m, dd] = s.split('-').map(Number); return new Date(y, m - 1, dd); };
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const diffDays = (a, b) => Math.round((b - a) / 86400000);
+  const fmt = d => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+  const today = parse(dayKey(new Date())); // hôm nay lúc 00:00 (giờ địa phương)
+
+  // Cấu hình kế hoạch — mặc định: bắt đầu hôm nay, phỏng vấn sau 12 tuần
+  let plan = store.get('prep-plan', null);
+  if (!plan || !plan.start || !plan.exam) {
+    plan = { start: dayKey(today), exam: dayKey(addDays(today, weeks.length * 7)) };
+    store.set('prep-plan', plan);
+  }
+  const start = parse(plan.start);
+  let exam = parse(plan.exam);
+  if (exam <= start) exam = addDays(start, weeks.length * 7); // chống cấu hình ngược
+
+  const progress = store.get('prep-progress', {});
+  const tasksPerWeek = WEEK_TASKS.length;
+  const totalTasks = weeks.length * tasksPerWeek;
+  let doneTasks = 0;
+  weeks.forEach(wk => { const p = progress[wk] || {}; WEEK_TASKS.forEach(([k]) => { if (p[k]) doneTasks++; }); });
+
+  // Nhịp độ: % thời gian đã trôi (theo lịch) so với % công việc đã xong
+  const totalSpan = Math.max(1, diffDays(start, exam));
+  const elapsed = diffDays(start, today);
+  const expectedPct = Math.max(0, Math.min(100, Math.round(elapsed / totalSpan * 100)));
+  const actualPct = Math.round(doneTasks / totalTasks * 100);
+  const daysToExam = diffDays(today, exam);
+
+  // Tuần "nên đang ở" — mỗi tuần là 1 block 7 ngày kể từ ngày bắt đầu
+  const curIdx = today < start ? -1 : Math.min(weeks.length - 1, Math.floor(elapsed / 7));
+
+  const countdownTxt = daysToExam > 0
+    ? `Còn <b>${daysToExam}</b> ngày đến ngày phỏng vấn (${fmt(exam)})`
+    : daysToExam === 0 ? '🔥 <b>Hôm nay</b> là ngày phỏng vấn — chúc bạn may mắn!'
+    : `Ngày phỏng vấn đã qua <b>${-daysToExam}</b> ngày — chỉnh lại bên dưới nếu cần.`;
+
+  let paceClass, paceTxt;
+  if (curIdx < 0) { paceClass = 'soon'; paceTxt = `Kế hoạch bắt đầu ${fmt(start)} — chưa tới ngày bắt đầu.`; }
+  else if (actualPct + 5 >= expectedPct) { paceClass = 'ok'; paceTxt = `✅ Đúng nhịp! Đã xong ${actualPct}% trong khi lịch mới tới ${expectedPct}%.`; }
+  else { paceClass = 'behind'; paceTxt = `⚠️ Hơi chậm: mới xong ${actualPct}% nhưng theo lịch nên ~${expectedPct}%. Ưu tiên dứt điểm tuần dưới đây.`; }
+
+  // Tuần hiện tại + việc còn thiếu
+  const focusWk = weeks[Math.max(0, curIdx)];
+  const focusItem = items.find(i => i.week === focusWk && !i.sub) || items.find(i => i.week === focusWk);
+  const fp = progress[focusWk] || {};
+  const focusUndone = WEEK_TASKS.filter(([k]) => !fp[k]);
+
+  const rows = weeks.map((wk, i) => {
+    const wkStart = addDays(start, i * 7), wkEnd = addDays(wkStart, 6);
+    const p = progress[wk] || {};
+    const n = WEEK_TASKS.filter(([k]) => p[k]).length;
+    let chip;
+    if (n === tasksPerWeek) chip = '<span class="pl-chip done">✅ Hoàn thành</span>';
+    else if (curIdx >= 0 && i < curIdx) chip = '<span class="pl-chip late">⚠️ Trễ lịch</span>';
+    else if (i === curIdx) chip = '<span class="pl-chip now">🔜 Tuần này</span>';
+    else chip = '<span class="pl-chip soon">⏳ Sắp tới</span>';
+    return `<div class="pl-row${i === curIdx ? ' current' : ''}" data-week="${escHtml(wk)}">
+      <span class="pl-wk">${escHtml(prettyWeek(wk))}</span>
+      <span class="pl-dates">${fmt(wkStart)}–${fmt(wkEnd)}</span>
+      <span class="pl-prog">${n}/${tasksPerWeek}</span>
+      ${chip}
+    </div>`;
+  }).join('');
+
+  body.innerHTML = `
+    <div class="plan-countdown ${daysToExam < 0 ? 'over' : ''}">${countdownTxt}</div>
+
+    <div class="plan-config">
+      <label>📌 Bắt đầu <input type="date" id="plan-start" value="${plan.start}"></label>
+      <label>🎯 Ngày phỏng vấn <input type="date" id="plan-exam" value="${plan.exam}"></label>
+    </div>
+
+    <div class="plan-pace ${paceClass}">
+      <div class="pace-line"><span>Lịch trình</span><div class="pace-track"><div class="pace-fill expected" style="width:${expectedPct}%"></div></div><b>${expectedPct}%</b></div>
+      <div class="pace-line"><span>Bạn đã xong</span><div class="pace-track"><div class="pace-fill actual" style="width:${actualPct}%"></div></div><b>${actualPct}%</b></div>
+      <p class="pace-verdict">${paceTxt}</p>
+    </div>
+
+    <div class="plan-focus">
+      <h2>🔜 ${escHtml(prettyWeek(focusWk))} — việc nên làm</h2>
+      ${focusUndone.length
+        ? `<ul class="focus-tasks">${focusUndone.map(([, label]) => `<li>${escHtml(label)}</li>`).join('')}</ul>`
+        : `<p class="focus-alldone">🎉 Tuần này bạn đã tick đủ ${tasksPerWeek} mục. Tuyệt!</p>`}
+      <div class="focus-actions">
+        ${focusItem ? `<button class="pl-go" data-doc="${escHtml(focusItem.path)}">📖 Mở tài liệu tuần này</button>` : ''}
+        <button class="pl-go" data-view="flashcards">🃏 Ôn flashcards</button>
+        <button class="pl-go" data-view="mock">🎯 Mock tuần này</button>
+      </div>
+    </div>
+
+    <h2>🗺️ Lộ trình 12 tuần theo lịch</h2>
+    <p class="plan-hint" style="color:var(--muted)">Bấm một tuần để mở tài liệu. Tick mục hoàn thành ở tab 📊 Tiến độ.</p>
+    <div class="plan-timeline">${rows}</div>
+  `;
+
+  const save = () => {
+    const s = document.getElementById('plan-start').value;
+    const e = document.getElementById('plan-exam').value;
+    if (s && e) { store.set('prep-plan', { start: s, exam: e }); renderPlan(); }
+  };
+  document.getElementById('plan-start').addEventListener('change', save);
+  document.getElementById('plan-exam').addEventListener('change', save);
+
+  body.querySelectorAll('.pl-go').forEach(b => b.addEventListener('click', () => {
+    if (b.dataset.doc) { switchView('docs'); openDoc(b.dataset.doc); }
+    else if (b.dataset.view) switchView(b.dataset.view);
+  }));
+  body.querySelectorAll('.pl-row').forEach(r => r.addEventListener('click', () => {
+    const it = items.find(i => i.week === r.dataset.week && !i.sub) || items.find(i => i.week === r.dataset.week);
+    if (it) { switchView('docs'); openDoc(it.path); }
+  }));
+}
+
 // ---------- Phím tắt ----------
 function initShortcuts() {
-  const order = ['docs', 'flashcards', 'writing', 'code', 'mock', 'dashboard'];
+  const order = ['docs', 'flashcards', 'writing', 'code', 'mock', 'plan', 'dashboard'];
   document.addEventListener('keydown', e => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     // Đang gõ trong ô nhập / vùng gõ code thì không cướp phím
     if (e.target.closest?.('input, textarea, select, #ct-code, [contenteditable]')) return;
-    if (e.key >= '1' && e.key <= '6') switchView(order[+e.key - 1]);
+    if (e.key >= '1' && e.key <= '7') switchView(order[+e.key - 1]);
     else if (e.key === '/') {
       e.preventDefault();
       switchView('docs');
       document.getElementById('sb-search').focus();
     }
   });
+}
+
+// ---------- Đồng bộ Firebase (Auth Google + Firestore) ----------
+// Giữ localStorage làm nguồn chính; khi đăng nhập thì đẩy lên / kéo về Firestore.
+// Chiến lược: last-write-wins theo CẢ GÓI (so sánh updatedAt). Đủ cho 1 người dùng nhiều máy;
+// nếu sửa ở 2 máy mà chưa đồng bộ thì máy có mốc thời gian cũ hơn sẽ bị ghi đè.
+let fbAuth = null, fbDb = null, fbUser = null, syncReady = false, pushTimer = null;
+
+function syncConfigured() {
+  const c = window.FIREBASE_CONFIG;
+  return !!(c && c.apiKey && !/DÁN_VÀO|YOUR_/.test(c.apiKey));
+}
+
+function gatherPrepData() {
+  const data = {};
+  PREP_KEYS.forEach(k => {
+    const v = localStorage.getItem(k);
+    if (v != null) { try { data[k] = JSON.parse(v); } catch {} }
+  });
+  return data;
+}
+function applyPrepData(data) {
+  if (!data) return;
+  PREP_KEYS.forEach(k => { if (k in data) localStorage.setItem(k, JSON.stringify(data[k])); });
+}
+function localUpdatedAt() { return store.get('prep-sync-meta', { updatedAt: 0 }).updatedAt || 0; }
+function setLocalUpdatedAt(at) {
+  const m = store.get('prep-sync-meta', {});
+  m.updatedAt = at;
+  localStorage.setItem('prep-sync-meta', JSON.stringify(m)); // ghi thẳng để khỏi kích lại onStoreWrite
+}
+
+function initSync() {
+  const btn = document.getElementById('sync-btn');
+  if (!btn) return;
+  if (typeof firebase === 'undefined' || !syncConfigured()) {
+    btn.onclick = () => alert('Chưa cấu hình Firebase.\n\nMở file study-web/public/firebase-config.js, làm theo hướng dẫn trong đó (tạo project + dán config), rồi tải lại trang.');
+    return;
+  }
+  try {
+    firebase.initializeApp(window.FIREBASE_CONFIG);
+    fbAuth = firebase.auth();
+    fbDb = firebase.firestore();
+  } catch (e) {
+    btn.textContent = '☁️ Lỗi';
+    btn.onclick = () => alert('Khởi tạo Firebase lỗi: ' + e.message);
+    return;
+  }
+  syncReady = true;
+  onStoreWrite = key => { if (key !== 'prep-sync-meta') schedulePush(); };
+
+  fbAuth.onAuthStateChanged(async user => {
+    fbUser = user;
+    renderSyncBtn();
+    renderLoginHint();
+    if (user) await onSignedIn();
+  });
+
+  btn.onclick = () => (fbUser ? toggleSyncPanel() : signInSync());
+}
+
+function renderSyncBtn() {
+  const btn = document.getElementById('sync-btn');
+  if (!btn) return;
+  btn.textContent = fbUser ? `☁️ ${(fbUser.email || 'đã đăng nhập').split('@')[0]}` : '☁️ Đăng nhập';
+}
+
+/** Banner nhắc đăng nhập khi đã cấu hình Firebase mà người dùng chưa đăng nhập. */
+function renderLoginHint() {
+  const dismissed = localStorage.getItem('login-hint-off') === '1';
+  const show = syncReady && !fbUser && !dismissed;
+  let el = document.getElementById('login-hint');
+  if (!show) { el?.remove(); return; }
+  if (el) return; // đã hiện rồi, khỏi tạo lại
+  el = document.createElement('div');
+  el.id = 'login-hint';
+  el.innerHTML = `
+    <span class="lh-text">☁️ Đăng nhập để lưu và đồng bộ tiến độ</span>
+    <button class="lh-in">Đăng nhập</button>
+    <button class="lh-x" title="Ẩn nhắc nhở này" aria-label="Ẩn">×</button>`;
+  document.body.appendChild(el);
+  el.querySelector('.lh-in').onclick = () => signInSync();
+  el.querySelector('.lh-x').onclick = () => { localStorage.setItem('login-hint-off', '1'); el.remove(); };
+}
+
+async function signInSync() {
+  try {
+    await fbAuth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+  } catch (e) {
+    alert('Đăng nhập thất bại: ' + (e.message || e.code));
+  }
+}
+
+/** Sau khi đăng nhập: hoà dữ liệu local <-> cloud theo updatedAt */
+async function onSignedIn() {
+  let snap;
+  try { snap = await fbDb.collection('users').doc(fbUser.uid).get(); }
+  catch (e) { console.warn('sync get lỗi', e); toast('⚠️ Không đọc được cloud'); return; }
+
+  const remote = snap.exists ? snap.data() : null;
+  const localAt = localUpdatedAt();
+
+  if (!remote) {
+    await pushRemote();                       // cloud trống → đẩy local lên lần đầu
+    toast('☁️ Đã tạo bản sao trên cloud');
+  } else if ((remote.updatedAt || 0) > localAt) {
+    const localHasData = Object.keys(gatherPrepData()).length > 0;
+    if (!localHasData || confirm('☁️ Cloud có tiến độ mới hơn máy này.\nKéo về (ghi đè dữ liệu hiện tại trên máy)?')) {
+      pullApply(remote);
+    }
+  } else if (localAt > (remote.updatedAt || 0)) {
+    await pushRemote();                       // local mới hơn → đẩy lên
+    toast('☁️ Đã đồng bộ');
+  } else {
+    toast('☁️ Đã đồng bộ');
+  }
+}
+
+function pullApply(remote) {
+  try {
+    applyPrepData(JSON.parse(remote.blob || '{}'));
+    setLocalUpdatedAt(remote.updatedAt || Date.now());
+    switchView(store.get('prep-last-view', 'docs')); // vẽ lại view đang mở
+    toast('⬇️ Đã kéo dữ liệu từ cloud');
+  } catch (e) { alert('Kéo dữ liệu lỗi: ' + e.message); }
+}
+
+async function pushRemote() {
+  if (!syncReady || !fbUser) return;
+  const at = Date.now();
+  setLocalUpdatedAt(at);
+  try {
+    await fbDb.collection('users').doc(fbUser.uid).set({
+      blob: JSON.stringify(gatherPrepData()),
+      updatedAt: at,
+      email: fbUser.email || '',
+    });
+  } catch (e) { console.warn('push lỗi', e); }
+}
+
+function schedulePush() {
+  if (!syncReady || !fbUser) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(pushRemote, 2500); // gộp nhiều thay đổi liên tiếp thành 1 lần ghi
+}
+
+function toggleSyncPanel() {
+  const existing = document.getElementById('sync-panel');
+  if (existing) { existing.remove(); return; }
+  const p = document.createElement('div');
+  p.id = 'sync-panel';
+  const at = localUpdatedAt();
+  p.innerHTML = `
+    <div class="sp-email">${escHtml(fbUser.email || '')}</div>
+    <div class="sp-when">Đồng bộ lần cuối: ${at ? new Date(at).toLocaleString('vi-VN') : '—'}</div>
+    <button class="sp-act" data-act="push">⬆️ Đẩy lên cloud</button>
+    <button class="sp-act" data-act="pull">⬇️ Kéo về từ cloud</button>
+    <button class="sp-act" data-act="out">🚪 Đăng xuất</button>`;
+  document.body.appendChild(p);
+  const r = document.getElementById('sync-btn').getBoundingClientRect();
+  p.style.top = (r.bottom + 6) + 'px';
+  p.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+  p.querySelectorAll('.sp-act').forEach(b => b.onclick = async () => {
+    const act = b.dataset.act;
+    p.remove();
+    if (act === 'push') { await pushRemote(); toast('⬆️ Đã đẩy lên cloud'); }
+    else if (act === 'pull') {
+      const snap = await fbDb.collection('users').doc(fbUser.uid).get();
+      if (snap.exists) pullApply(snap.data()); else toast('Cloud chưa có dữ liệu');
+    } else if (act === 'out') { await fbAuth.signOut(); toast('Đã đăng xuất'); }
+  });
+  setTimeout(() => {
+    const close = e => {
+      if (!e.target.closest('#sync-panel, #sync-btn')) {
+        document.getElementById('sync-panel')?.remove();
+        document.removeEventListener('click', close);
+      }
+    };
+    document.addEventListener('click', close);
+  }, 0);
+}
+
+let toastTimer = null;
+function toast(msg) {
+  let t = document.getElementById('app-toast');
+  if (!t) { t = document.createElement('div'); t.id = 'app-toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
 // ---------- Khởi động ----------
@@ -2289,6 +2609,7 @@ function initShortcuts() {
   initPomodoro();
   initSidebarToggle();
   initShortcuts();
+  initSync();
   document.querySelector('.brand').addEventListener('click', () => renderHome());
   const lastView = store.get('prep-last-view', 'docs'); // đọc trước khi renderHome ghi đè
   await loadTree();

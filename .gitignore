@@ -3,3 +3,9 @@ node_modules/
 *.log
 # Dữ liệu tĩnh được GitHub Actions build lại mỗi lần deploy — không commit
 study-web/public/data/
+
+# Cấu hình Firebase: local lấy từ study-web/.env; production sinh từ GitHub Secrets khi build
+study-web/.env
+study-web/public/firebase-config.js
+
+.idea/
