@@ -17,9 +17,11 @@
       <button class="tab" data-view="writing">✍️ Luyện viết</button>
       <button class="tab" data-view="code">⌨️ Gõ code</button>
       <button class="tab" data-view="mock">🎯 Mock PV</button>
+      <button class="tab" data-view="plan">📅 Kế hoạch</button>
       <button class="tab" data-view="dashboard">📊 Tiến độ</button>
     </nav>
     <div class="pomo">
+      <button id="sync-btn" title="Đồng bộ tiến độ qua Firebase (đa thiết bị)">☁️ Đồng bộ</button>
       <button id="theme-btn" title="Đổi giao diện sáng / tối">🌙</button>
       <button id="pomo-btn" title="Pomodoro: bấm để bắt đầu / tạm dừng phiên tập trung 25 phút">🍅 25:00</button>
       <button id="pomo-reset" title="Đặt lại pomodoro" hidden>↺</button>
@@ -233,6 +235,15 @@
   </div>
 
   <!-- ============ VIEW: DASHBOARD ============ -->
+  <!-- ============ VIEW: KẾ HOẠCH & NHỊP ĐỘ ============ -->
+  <div id="view-plan" class="view">
+    <div class="plan-wrap">
+      <h1>📅 Kế hoạch &amp; nhịp độ ôn</h1>
+      <p class="plan-intro">Đặt ngày bắt đầu và ngày phỏng vấn mục tiêu — app sẽ map lộ trình 12 tuần lên lịch thật, cho biết <b>tuần bạn nên đang ở</b> và bạn đang <b>đúng nhịp hay bị chậm</b>.</p>
+      <div id="plan-body"></div>
+    </div>
+  </div>
+
   <div id="view-dashboard" class="view">
     <div class="dash-wrap">
       <h1>📊 Tiến độ của bạn</h1>
@@ -269,6 +280,11 @@
 
   <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js"></script>
+  <!-- Firebase (compat SDK — chạy với script thường). Đồng bộ tiến độ đa thiết bị. -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
