@@ -16,6 +16,7 @@
       <button class="tab" data-view="flashcards">🃏 Flashcards</button>
       <button class="tab" data-view="writing">✍️ Luyện viết</button>
       <button class="tab" data-view="code">⌨️ Gõ code</button>
+      <button class="tab" data-view="coding">🧠 Tư duy</button>
       <button class="tab" data-view="mock">🎯 Mock PV</button>
       <button class="tab" data-view="plan">📅 Kế hoạch</button>
       <button class="tab" data-view="dashboard">📊 Tiến độ</button>
@@ -234,6 +235,36 @@
     </div>
   </div>
 
+  <!-- ============ VIEW: LUYỆN TƯ DUY (Lập trình + IQ) ============ -->
+  <div id="view-coding" class="view">
+    <div class="think-modes">
+      <button class="think-mode active" data-mode="code">💻 Lập trình</button>
+      <button class="think-mode" data-mode="iq">🧩 IQ / Logic</button>
+    </div>
+
+    <!-- Chế độ LẬP TRÌNH -->
+    <div id="think-code">
+      <div class="coding-wrap">
+        <div id="coding-list-pane">
+          <h1>🧠 Luyện tư duy lập trình</h1>
+          <p class="coding-intro">Giải các bài phỏng vấn kinh điển bằng JavaScript — viết hàm rồi <b>chạy test thật ngay trong trình duyệt</b>. Bí thì xem gợi ý nhiều cấp; bí nữa thì xem lời giải có giải thích.</p>
+          <div id="coding-filters" class="coding-filters"></div>
+          <div id="coding-list"></div>
+        </div>
+        <div id="coding-detail" class="coding-detail" hidden></div>
+      </div>
+    </div>
+
+    <!-- Chế độ IQ / LOGIC -->
+    <div id="think-iq" hidden>
+      <div class="iq-wrap">
+        <h1>🧩 Luyện IQ &amp; Logic</h1>
+        <p class="coding-intro">Câu hỏi trắc nghiệm rèn tư duy: dãy số, quy luật, suy luận logic, toán nhanh. Chọn đáp án để biết đúng/sai kèm <b>giải thích</b>. Làm hết một lượt sẽ có điểm IQ ước lượng.</p>
+        <div id="iq-body"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ VIEW: DASHBOARD ============ -->
   <!-- ============ VIEW: KẾ HOẠCH & NHỊP ĐỘ ============ -->
   <div id="view-plan" class="view">
@@ -285,6 +316,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
+  <!-- Dữ liệu luyện tư duy -->
+  <script src="coding-problems.js"></script>
+  <script src="iq-questions.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

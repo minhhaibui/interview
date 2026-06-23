@@ -121,6 +121,7 @@ function switchView(name) {
   if (name === 'flashcards') initFlashcards().then(() => fcLoaded && fillFcWeekSelect());
   if (name === 'writing') initWriting().then(() => wrInit && WR_SENTENCES && fillWrWeekSelect());
   if (name === 'code') initCodeTyping();
+  if (name === 'coding') initThink();
   if (name === 'mock') initMock().then(() => mkInit && fillMockWeekSelect());
   if (name === 'plan') renderPlan();
   if (name === 'dashboard') renderDashboard();
@@ -1960,7 +1961,8 @@ function renderAiRecent() {
 const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-doc',
   'prep-typing-best', 'prep-fails', 'prep-activity', 'prep-mock-history',
   'prep-pomo', 'prep-code-best', 'prep-fc-dir', 'prep-fc-auto', 'prep-code-history', 'prep-theme',
-  'prep-last-view', 'prep-doc-checks', 'prep-mock-wrong', 'prep-ai-history', 'prep-ai-settings', 'prep-plan'];
+  'prep-last-view', 'prep-doc-checks', 'prep-mock-wrong', 'prep-ai-history', 'prep-ai-settings', 'prep-plan',
+  'prep-coding-solved', 'prep-coding-code', 'prep-iq-best'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */
@@ -2491,14 +2493,278 @@ function renderPlan() {
   }));
 }
 
+// ========== LUYỆN TƯ DUY: Lập trình + IQ ==========
+let thinkInit = false, thinkMode = 'code';
+
+function initThink() {
+  document.querySelectorAll('.think-mode').forEach(b => { b.onclick = () => setThinkMode(b.dataset.mode); });
+  setThinkMode(thinkMode);
+  if (!thinkInit) { renderCodingFilters(); renderCodingList(); renderIQ(); thinkInit = true; }
+}
+
+function setThinkMode(m) {
+  thinkMode = m;
+  document.querySelectorAll('.think-mode').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+  document.getElementById('think-code').hidden = m !== 'code';
+  document.getElementById('think-iq').hidden = m !== 'iq';
+}
+
+// ----- Chế độ Lập trình -----
+const codingFilter = { topic: 'all', diff: 'all' };
+const diffClass = d => d === 'Dễ' ? 'easy' : d === 'Khó' ? 'hard' : 'med';
+
+function renderCodingFilters() {
+  const probs = window.CODING_PROBLEMS || [];
+  const topics = ['all', ...new Set(probs.map(p => p.topic))];
+  const diffs = ['all', 'Dễ', 'Trung bình', 'Khó'];
+  const el = document.getElementById('coding-filters');
+  if (!el) return;
+  el.innerHTML = `
+    <select id="cf-topic">${topics.map(t => `<option value="${escHtml(t)}">${t === 'all' ? 'Tất cả chủ đề' : escHtml(t)}</option>`).join('')}</select>
+    <select id="cf-diff">${diffs.map(d => `<option value="${escHtml(d)}">${d === 'all' ? 'Mọi độ khó' : escHtml(d)}</option>`).join('')}</select>
+    <span id="cf-count" class="cf-count"></span>`;
+  el.querySelector('#cf-topic').onchange = e => { codingFilter.topic = e.target.value; renderCodingList(); };
+  el.querySelector('#cf-diff').onchange = e => { codingFilter.diff = e.target.value; renderCodingList(); };
+}
+
+function renderCodingList() {
+  const probs = window.CODING_PROBLEMS || [];
+  const solved = store.get('prep-coding-solved', {});
+  const list = probs.filter(p =>
+    (codingFilter.topic === 'all' || p.topic === codingFilter.topic) &&
+    (codingFilter.diff === 'all' || p.difficulty === codingFilter.diff));
+  const el = document.getElementById('coding-list');
+  if (!el) return;
+  const cnt = document.getElementById('cf-count');
+  if (cnt) cnt.textContent = `Đã giải ${probs.filter(p => solved[p.id]).length}/${probs.length}`;
+  el.innerHTML = list.map(p => `
+    <button class="coding-item${solved[p.id] ? ' solved' : ''}" data-id="${escHtml(p.id)}">
+      <span class="ci-check">${solved[p.id] ? '✅' : '○'}</span>
+      <span class="ci-title">${escHtml(p.title)}</span>
+      <span class="ci-tags"><span class="ci-diff d-${diffClass(p.difficulty)}">${escHtml(p.difficulty)}</span><span class="ci-topic">${escHtml(p.topic)}</span></span>
+    </button>`).join('') || '<p style="color:var(--muted)">Không có bài nào khớp bộ lọc.</p>';
+  el.querySelectorAll('.coding-item').forEach(b => b.onclick = () => openCodingProblem(b.dataset.id));
+}
+
+function openCodingProblem(id) {
+  const p = (window.CODING_PROBLEMS || []).find(x => x.id === id);
+  if (!p) return;
+  let hintLevel = 0;
+  const saved = store.get('prep-coding-code', {})[id];
+  const detail = document.getElementById('coding-detail');
+  const listPane = document.getElementById('coding-list-pane');
+  listPane.hidden = true; detail.hidden = false;
+  detail.innerHTML = `
+    <button class="coding-back">← Danh sách bài</button>
+    <h2>${escHtml(p.title)}</h2>
+    <div class="cd-tags"><span class="ci-diff d-${diffClass(p.difficulty)}">${escHtml(p.difficulty)}</span><span class="ci-topic">${escHtml(p.topic)}</span></div>
+    <div class="cd-prompt md">${marked.parse(p.prompt)}</div>
+    <textarea id="cd-code" class="cd-code" spellcheck="false"></textarea>
+    <div class="cd-actions">
+      <button id="cd-run" class="cd-run">▶ Chạy test</button>
+      <button id="cd-hint">💡 Gợi ý</button>
+      <button id="cd-sol">👁 Lời giải</button>
+      <button id="cd-reset" class="cd-reset" title="Khôi phục code mẫu ban đầu">↺ Reset</button>
+    </div>
+    <div id="cd-hints" class="cd-hints"></div>
+    <div id="cd-result" class="cd-result"></div>
+    <div id="cd-solution" class="cd-solution" hidden></div>`;
+  const ta = document.getElementById('cd-code');
+  ta.value = saved || p.starter;
+  detail.querySelector('.coding-back').onclick = () => { detail.hidden = true; listPane.hidden = false; renderCodingList(); };
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const s = ta.selectionStart, en = ta.selectionEnd;
+      ta.value = ta.value.slice(0, s) + '  ' + ta.value.slice(en);
+      ta.selectionStart = ta.selectionEnd = s + 2;
+    }
+  });
+  ta.addEventListener('input', () => { const all = store.get('prep-coding-code', {}); all[id] = ta.value; store.set('prep-coding-code', all); });
+  document.getElementById('cd-run').onclick = () => runCoding(p, ta.value);
+  const hintBtn = document.getElementById('cd-hint');
+  hintBtn.onclick = () => {
+    if (hintLevel >= p.hints.length) return;
+    hintLevel++;
+    document.getElementById('cd-hints').innerHTML = p.hints.slice(0, hintLevel)
+      .map((h, i) => `<div class="cd-hint">💡 Gợi ý ${i + 1}: ${escHtml(h)}</div>`).join('');
+    if (hintLevel >= p.hints.length) { hintBtn.disabled = true; hintBtn.textContent = '💡 Hết gợi ý'; }
+  };
+  document.getElementById('cd-sol').onclick = () => {
+    const box = document.getElementById('cd-solution');
+    box.hidden = !box.hidden;
+    if (!box.dataset.filled) {
+      box.innerHTML = `<h3>Lời giải tham khảo</h3><pre><code class="language-js">${escHtml(p.solution)}</code></pre><p class="cd-explain">📝 ${escHtml(p.explain)}</p>`;
+      if (window.hljs) box.querySelectorAll('pre code').forEach(c => hljs.highlightElement(c));
+      box.dataset.filled = '1';
+    }
+  };
+  document.getElementById('cd-reset').onclick = () => {
+    ta.value = p.starter;
+    const all = store.get('prep-coding-code', {}); delete all[id]; store.set('prep-coding-code', all);
+  };
+}
+
+function runCoding(p, code) {
+  const res = document.getElementById('cd-result');
+  res.innerHTML = '<div class="cd-running">⏳ Đang chạy test…</div>';
+  runInSandbox(code, p.fnName, p.tests, data => {
+    if (data.error) { res.innerHTML = `<div class="cd-err">❌ ${escHtml(data.error)}</div>`; return; }
+    const rows = data.results.map((r, i) => {
+      const got = r.error ? `lỗi: ${r.error}` : JSON.stringify(r.got);
+      const argTxt = r.args.map(a => JSON.stringify(a)).join(', ');
+      return `<div class="cd-case ${r.pass ? 'pass' : 'fail'}">
+        <span class="cc-h">${r.pass ? '✅' : '❌'} Test ${i + 1}</span>
+        <code class="cc-in">${escHtml(p.fnName)}(${escHtml(argTxt)})</code>
+        <span class="cc-exp">→ mong đợi <b>${escHtml(JSON.stringify(r.expected))}</b>${r.pass ? '' : `, nhận <b>${escHtml(got)}</b>`}</span>
+      </div>`;
+    }).join('');
+    const passed = data.results.filter(r => r.pass).length;
+    const all = passed === data.results.length;
+    res.innerHTML = `<div class="cd-summary ${all ? 'ok' : 'no'}">${all ? '🎉' : '⚠️'} ${passed}/${data.results.length} test đúng</div>${rows}`;
+    if (all) markCodingSolved(p.id);
+  });
+}
+
+function markCodingSolved(id) {
+  const solved = store.get('prep-coding-solved', {});
+  if (!solved[id]) { solved[id] = true; store.set('prep-coding-solved', solved); logActivity(); }
+}
+
+/**
+ * Chạy code người dùng trong Web Worker (sandbox + chống treo bằng timeout).
+ * Fallback chạy trực tiếp nếu môi trường không cho tạo Worker.
+ */
+function runInSandbox(code, fnName, tests, cb) {
+  const src = 'self.onmessage=function(e){var d=e.data,fn;'
+    + 'try{fn=new Function(d.code+"\\n;return typeof "+d.fnName+"===\\"function\\"?"+d.fnName+":undefined;")();}'
+    + 'catch(err){self.postMessage({error:"Lỗi cú pháp: "+err.message});return;}'
+    + 'if(typeof fn!=="function"){self.postMessage({error:"Không tìm thấy hàm "+d.fnName+"(...). Bạn đã đặt đúng tên hàm chưa?"});return;}'
+    + 'var out=[];for(var i=0;i<d.tests.length;i++){var t=d.tests[i];'
+    + 'try{var g=fn.apply(null,JSON.parse(JSON.stringify(t.args)));'
+    + 'out.push({args:t.args,expected:t.expected,got:g,pass:JSON.stringify(g)===JSON.stringify(t.expected)});}'
+    + 'catch(err){out.push({args:t.args,expected:t.expected,error:String(err&&err.message||err),pass:false});}}'
+    + 'self.postMessage({results:out});};';
+  let url;
+  try {
+    url = URL.createObjectURL(new Blob([src], { type: 'application/javascript' }));
+    const w = new Worker(url);
+    const done = (data) => { clearTimeout(timer); w.terminate(); URL.revokeObjectURL(url); cb(data); };
+    const timer = setTimeout(() => done({ error: '⏱ Quá 2 giây — có thể vòng lặp vô tận. Kiểm tra điều kiện dừng của vòng lặp.' }), 2000);
+    w.onmessage = ev => done(ev.data);
+    w.onerror = ev => done({ error: 'Lỗi thực thi: ' + (ev.message || 'không rõ') });
+    w.postMessage({ code, fnName, tests });
+  } catch (_) {
+    if (url) URL.revokeObjectURL(url);
+    cb(runDirect(code, fnName, tests)); // môi trường không hỗ trợ Worker
+  }
+}
+
+function runDirect(code, fnName, tests) {
+  let fn;
+  try { fn = new Function(code + '\n;return typeof ' + fnName + '==="function"?' + fnName + ':undefined;')(); }
+  catch (err) { return { error: 'Lỗi cú pháp: ' + err.message }; }
+  if (typeof fn !== 'function') return { error: 'Không tìm thấy hàm ' + fnName + '(...)' };
+  return {
+    results: tests.map(t => {
+      try { const g = fn.apply(null, JSON.parse(JSON.stringify(t.args))); return { args: t.args, expected: t.expected, got: g, pass: JSON.stringify(g) === JSON.stringify(t.expected) }; }
+      catch (err) { return { args: t.args, expected: t.expected, error: String(err && err.message || err), pass: false }; }
+    }),
+  };
+}
+
+// ----- Chế độ IQ / Logic -----
+let iqState = null;
+const shuffleArr = a => { const r = [...a]; for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; };
+
+function renderIQ() {
+  const qs = window.IQ_QUESTIONS || [];
+  const body = document.getElementById('iq-body');
+  if (!body) return;
+  if (!qs.length) { body.innerHTML = '<p style="color:var(--muted)">Chưa nạp được câu hỏi IQ.</p>'; return; }
+  const best = store.get('prep-iq-best', null);
+  body.innerHTML = `
+    <div class="iq-start">
+      <div class="iq-stat">
+        <div><b>${qs.length}</b><small>câu hỏi</small></div>
+        ${best ? `<div><b>${best.iq}</b><small>IQ tốt nhất</small></div><div><b>${best.correct}/${best.total}</b><small>điểm cao nhất</small></div>` : ''}
+      </div>
+      <div class="iq-start-actions">
+        <button id="iq-start-btn" class="iq-start-btn">🚀 Bắt đầu (${qs.length} câu)</button>
+        <button id="iq-shuffle" class="iq-mini">🔀 Trộn thứ tự</button>
+      </div>
+    </div>`;
+  document.getElementById('iq-start-btn').onclick = () => startIQ(false);
+  document.getElementById('iq-shuffle').onclick = () => startIQ(true);
+}
+
+function startIQ(shuffle) {
+  let qs = [...(window.IQ_QUESTIONS || [])];
+  if (shuffle) qs = shuffleArr(qs);
+  iqState = { qs, idx: 0, correct: 0, answered: false };
+  showIQ();
+}
+
+function showIQ() {
+  const s = iqState, body = document.getElementById('iq-body');
+  if (s.idx >= s.qs.length) return finishIQ();
+  const q = s.qs[s.idx];
+  body.innerHTML = `
+    <div class="iq-prog">Câu ${s.idx + 1}/${s.qs.length} · <span class="iq-cat">${escHtml(q.category)}</span> · ✅ ${s.correct} đúng</div>
+    <div class="iq-track"><div class="iq-fill" style="width:${s.idx / s.qs.length * 100}%"></div></div>
+    <div class="iq-q">${escHtml(q.q)}</div>
+    <div class="iq-opts">${q.options.map((o, i) => `<button class="iq-opt" data-i="${i}">${escHtml(o)}</button>`).join('')}</div>
+    <div id="iq-fb" class="iq-fb"></div>
+    <button id="iq-next" class="iq-next" hidden></button>`;
+  body.querySelectorAll('.iq-opt').forEach(b => b.onclick = () => answerIQ(+b.dataset.i));
+}
+
+function answerIQ(i) {
+  const s = iqState;
+  if (s.answered) return;
+  s.answered = true;
+  const q = s.qs[s.idx];
+  document.querySelectorAll('.iq-opt').forEach((b, idx) => {
+    b.disabled = true;
+    if (idx === q.answer) b.classList.add('correct');
+    else if (idx === i) b.classList.add('wrong');
+  });
+  const ok = i === q.answer;
+  if (ok) s.correct++;
+  document.getElementById('iq-fb').innerHTML = `<div class="${ok ? 'iq-ok' : 'iq-no'}">${ok ? '✅ Chính xác! ' : '❌ Chưa đúng. '}${escHtml(q.explain)}</div>`;
+  const next = document.getElementById('iq-next');
+  next.hidden = false;
+  next.textContent = s.idx + 1 >= s.qs.length ? 'Xem kết quả →' : 'Câu tiếp →';
+  next.onclick = () => { s.idx++; s.answered = false; showIQ(); };
+  logActivity();
+}
+
+function finishIQ() {
+  const s = iqState;
+  const pct = Math.round(s.correct / s.qs.length * 100);
+  const iq = Math.round(85 + pct * 0.6); // ước lượng vui: 85..145
+  const best = store.get('prep-iq-best', null);
+  if (!best || iq > best.iq) store.set('prep-iq-best', { iq, correct: s.correct, total: s.qs.length, date: dayKey(new Date()) });
+  const tier = pct >= 90 ? 'Xuất sắc 🌟' : pct >= 70 ? 'Tốt 👏' : pct >= 50 ? 'Khá 🙂' : 'Cần luyện thêm 💪';
+  document.getElementById('iq-body').innerHTML = `
+    <div class="iq-done">
+      <div class="iq-score-ring" style="--p:${pct}"><div class="rd-center"><b>${iq}</b><small>IQ ước lượng</small></div></div>
+      <h2>${tier}</h2>
+      <p>Bạn trả lời đúng <b>${s.correct}/${s.qs.length}</b> câu (${pct}%).</p>
+      <p class="iq-note">⚠️ Điểm IQ ở đây chỉ để rèn tư duy cho vui, KHÔNG phải bài test IQ chuẩn hóa.</p>
+      <button id="iq-again" class="iq-start-btn">🔁 Làm lại</button>
+    </div>`;
+  document.getElementById('iq-again').onclick = () => renderIQ();
+}
+
 // ---------- Phím tắt ----------
 function initShortcuts() {
-  const order = ['docs', 'flashcards', 'writing', 'code', 'mock', 'plan', 'dashboard'];
+  const order = ['docs', 'flashcards', 'writing', 'code', 'coding', 'mock', 'plan', 'dashboard'];
   document.addEventListener('keydown', e => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     // Đang gõ trong ô nhập / vùng gõ code thì không cướp phím
     if (e.target.closest?.('input, textarea, select, #ct-code, [contenteditable]')) return;
-    if (e.key >= '1' && e.key <= '7') switchView(order[+e.key - 1]);
+    if (e.key >= '1' && e.key <= '8') switchView(order[+e.key - 1]);
     else if (e.key === '/') {
       e.preventDefault();
       switchView('docs');
