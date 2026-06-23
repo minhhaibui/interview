@@ -928,3 +928,9 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 .iq-rvq { font-weight: 600; margin-bottom: 4px; }
 .iq-rva { color: var(--muted); font-size: 13.5px; line-height: 1.55; }
 @media (max-width: 560px) { .iq-hrow { grid-template-columns: 1fr auto; row-gap: 4px; } .iq-hband { display: none; } }
+
+/* Bảng phân tích điểm bài Test IQ */
+.iq-break { max-width: 380px; margin: 4px auto 14px; text-align: left; display: flex; flex-direction: column; gap: 6px; }
+.iq-brow { display: flex; justify-content: space-between; gap: 12px; background: var(--bg3); border-radius: 7px; padding: 8px 12px; font-size: 13.5px; }
+.iq-brow span { color: var(--muted); }
+.iq-brow b { font-variant-numeric: tabular-nums; }

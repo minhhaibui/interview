@@ -2716,8 +2716,37 @@ function runDirect(code, fnName, tests) {
 let iqState = null;
 const shuffleArr = a => { const r = [...a]; for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; };
 
-const IQ_TEST_N = 20, IQ_TEST_SEC = 15 * 60;
+const IQ_TEST_N = 30, IQ_TEST_SEC = 20 * 60; // 30 câu trong 20 phút
 let iqTimerId = null;
+const qDiff = q => q.d || 2; // câu chưa gắn độ khó coi như trung bình (2)
+
+/** Xấp xỉ hàm phân vị chuẩn (probit) — Acklam. Dùng dựng đường cong IQ giống phân bố thật. */
+function invNorm(p) {
+  const a = [-39.69683028665376, 220.9460984245205, -275.9285104469687, 138.357751867269, -30.66479806614716, 2.506628277459239];
+  const b = [-54.47609879822406, 161.5858368580409, -155.6989798598866, 66.80131188771972, -13.28068155288572];
+  const c = [-0.007784894002430293, -0.3223964580411365, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+  const d = [0.007784695709041462, 0.3224671290700398, 2.445134137142996, 3.754408661907416];
+  const plow = 0.02425, phigh = 1 - plow;
+  let q, r;
+  if (p < plow) { q = Math.sqrt(-2 * Math.log(p)); return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1); }
+  if (p <= phigh) { q = p - 0.5; r = q * q; return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1); }
+  q = Math.sqrt(-2 * Math.log(1 - p)); return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+}
+
+/** Chọn N câu cho bài test, phối trộn độ khó ~40% dễ / 45% TB / 15% khó. */
+function pickIQTest(bank, N) {
+  const byD = { 1: [], 2: [], 3: [] };
+  bank.forEach(q => byD[qDiff(q)].push(q));
+  [1, 2, 3].forEach(d => byD[d] = shuffleArr(byD[d]));
+  const want = { 1: Math.round(N * 0.4), 3: Math.round(N * 0.15) };
+  want[2] = N - want[1] - want[3];
+  let picked = [].concat(byD[1].slice(0, want[1]), byD[2].slice(0, want[2]), byD[3].slice(0, want[3]));
+  if (picked.length < N) { // thiếu ở mức nào đó → bù từ phần còn lại
+    const used = new Set(picked.map(q => q.id));
+    picked = picked.concat(shuffleArr(bank.filter(q => !used.has(q.id))).slice(0, N - picked.length));
+  }
+  return shuffleArr(picked).slice(0, N);
+}
 
 /** Xếp loại IQ (mang tính tham khảo, theo phân bố chuẩn IQ phổ biến). */
 function iqBand(iq) {
@@ -2772,7 +2801,7 @@ function renderIQ() {
 // ===== Bài Test IQ chính thức (đếm giờ, không hiện đáp án giữa chừng) =====
 function startIQTest() {
   const all = window.IQ_QUESTIONS || [];
-  const qs = shuffleArr(all).slice(0, Math.min(IQ_TEST_N, all.length));
+  const qs = pickIQTest(all, Math.min(IQ_TEST_N, all.length));
   iqState = { mode: 'test', qs, idx: 0, correct: 0, log: [], startMs: Date.now(), endSec: IQ_TEST_SEC };
   clearInterval(iqTimerId);
   iqTimerId = setInterval(tickIQTest, 1000);
@@ -2812,7 +2841,7 @@ function answerIQTest(i) {
   const s = iqState, q = s.qs[s.idx];
   const ok = i === q.answer;
   if (ok) s.correct++;
-  s.log.push({ q: q.q, chosen: q.options[i], correct: q.options[q.answer], ok, explain: q.explain });
+  s.log.push({ q: q.q, chosen: q.options[i], correct: q.options[q.answer], ok, explain: q.explain, d: qDiff(q) });
   s.idx++;
   showIQTest();
 }
@@ -2822,11 +2851,27 @@ function finishIQTest(timeout) {
   const s = iqState;
   const answered = s.log.length;
   const total = s.qs.length;
-  const pct = Math.round(s.correct / total * 100);
-  const iq = Math.max(55, Math.min(160, Math.round(60 + pct * 0.8))); // ước lượng: 50%→100 (TB), 90%→132, 100%→140
+  const pctRaw = Math.round(s.correct / total * 100);
+
+  // (2) Trọng số theo độ khó: câu khó đúng ăn nhiều điểm hơn (dễ=1, TB=2, khó=3)
+  const wMax = s.qs.reduce((a, q) => a + qDiff(q), 0);
+  const wGot = s.log.reduce((a, l) => a + (l.ok ? l.d : 0), 0);
+  const wPct = wMax ? wGot / wMax * 100 : 0;
+
+  // (3) Đường cong chuẩn (probit): 50% điểm trọng số → IQ 100, nén ở hai đầu
+  const f = Math.max(0.03, Math.min(0.97, wPct / 100));
+  let iq = 100 + 15 * invNorm(f);
+
+  // (1) Thưởng/phạt thời gian: nhanh + đúng nhiều → cộng (tối đa +8); chậm/hết giờ → trừ (tối đa −8)
   const timeSec = Math.min(IQ_TEST_SEC, Math.round((Date.now() - s.startMs) / 1000));
+  const tr = Math.max(0, Math.min(1, timeSec / IQ_TEST_SEC));
+  let timeAdj = 8 * (1 - 2 * tr);
+  if (timeAdj > 0) timeAdj *= wPct / 100; // chỉ thưởng tốc độ khi làm đúng nhiều
+  timeAdj = Math.round(Math.max(-8, Math.min(8, timeAdj)));
+
+  iq = Math.max(55, Math.min(160, Math.round(iq + timeAdj)));
   const band = iqBand(iq);
-  const rec = { date: dayKey(new Date()), ts: Date.now(), iq, correct: s.correct, total, timeSec, band: band.label };
+  const rec = { date: dayKey(new Date()), ts: Date.now(), iq, correct: s.correct, total, timeSec, band: band.label, wpct: Math.round(wPct), timeAdj };
   const hist = store.get('prep-iq-test-history', []);
   hist.push(rec);
   store.set('prep-iq-test-history', hist.slice(-100)); // → tự đẩy lên Firestore qua schedulePush
@@ -2837,18 +2882,23 @@ function finishIQTest(timeout) {
   const review = s.log.filter(l => !l.ok).map(l =>
     `<div class="iq-rv"><div class="iq-rvq">❌ ${escHtml(l.q)}</div>
       <div class="iq-rva">Đáp án đúng: <b>${escHtml(l.correct)}</b> — ${escHtml(l.explain)}</div></div>`).join('');
+  const adjTxt = timeAdj === 0 ? '±0' : timeAdj > 0 ? `+${timeAdj}` : `${timeAdj}`;
 
   document.getElementById('iq-body').innerHTML = `
     <div class="iq-done">
       ${timeout ? '<div class="iq-timeout">⏱ Hết giờ — bài được nộp tự động.</div>' : ''}
-      <div class="iq-score-ring" style="--p:${pct}"><div class="rd-center"><b>${iq}</b><small>IQ ước lượng</small></div></div>
+      <div class="iq-score-ring" style="--p:${Math.round(wPct)}"><div class="rd-center"><b>${iq}</b><small>IQ ước lượng</small></div></div>
       <h2>${band.label}</h2>
       <p class="iq-band-desc">${band.desc}</p>
-      <p>Đúng <b>${s.correct}/${total}</b> câu (${pct}%)${answered < total ? ` · trả lời ${answered}/${total}` : ''} · thời gian <b>${fmtMMSS(timeSec)}</b></p>
-      <p class="iq-note">⚠️ Đây là ước lượng để theo dõi tiến bộ, KHÔNG thay thế bài test IQ chuẩn hóa chính thức.</p>
-      <div class="iq-start-actions">
-        <button id="iq-again" class="iq-start-btn">🔁 Làm bài test khác</button>
+      <div class="iq-break">
+        <div class="iq-brow"><span>✅ Số câu đúng</span><b>${s.correct}/${total} (${pctRaw}%)</b></div>
+        <div class="iq-brow"><span>⚖️ Điểm có trọng số độ khó</span><b>${Math.round(wPct)}%</b></div>
+        <div class="iq-brow"><span>⏱ Thời gian làm</span><b>${fmtMMSS(timeSec)}</b></div>
+        <div class="iq-brow"><span>🚀 Thưởng/phạt tốc độ</span><b>${adjTxt} điểm IQ</b></div>
+        ${answered < total ? `<div class="iq-brow"><span>⚠️ Bỏ trống</span><b>${total - answered} câu</b></div>` : ''}
       </div>
+      <p class="iq-note">IQ = đường cong chuẩn theo điểm trọng số (50%→100), cộng/trừ tốc độ. Là ước lượng để theo dõi tiến bộ, KHÔNG thay bài test IQ chuẩn hóa.</p>
+      <div class="iq-start-actions"><button id="iq-again" class="iq-start-btn">🔁 Làm bài test khác</button></div>
       ${review ? `<details class="iq-review"><summary>Xem lại ${s.log.filter(l => !l.ok).length} câu sai</summary>${review}</details>` : '<p class="iq-allright">🎉 Bạn trả lời đúng tất cả!</p>'}
     </div>`;
   document.getElementById('iq-again').onclick = () => renderIQ();

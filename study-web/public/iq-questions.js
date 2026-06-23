@@ -126,4 +126,67 @@ window.IQ_QUESTIONS = [
     explain: 'Quan hệ "người phục vụ : đối tượng được phục vụ". Bác sĩ chữa bệnh nhân, giáo viên dạy học sinh.' },
   { id: 'ana6', category: '🔗 Tương tự', q: 'Chim : Tổ = Người : ?', options: ['Hang', 'Nhà', 'Phòng', 'Lều'], answer: 1,
     explain: 'Quan hệ "loài : nơi ở". Chim ở tổ, người ở nhà.' },
+
+  // ===== ĐỢT 3 — mở rộng kho + gắn độ khó d (1 dễ · 2 trung bình · 3 khó) =====
+  // ---- Dãy số ----
+  { id: 'sq21', category: '🔢 Dãy số', d: 1, q: 'Số tiếp theo: 4, 9, 16, 25, 36, ?', options: ['42', '45', '49', '64'], answer: 2, explain: 'Bình phương 2²,3²,4²,5²,6²,7² = 49.' },
+  { id: 'sq22', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 2, 4, 8, 14, 22, ?', options: ['28', '30', '32', '34'], answer: 2, explain: 'Khoảng cách tăng +2,+4,+6,+8,+10. 22+10 = 32.' },
+  { id: 'sq23', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 81, 64, 49, 36, ?', options: ['25', '30', '24', '16'], answer: 0, explain: 'Bình phương giảm dần 9²,8²,7²,6²,5² = 25.' },
+  { id: 'sq24', category: '🔢 Dãy số', d: 1, q: 'Số tiếp theo: 1, 2, 3, 5, 8, 13, ?', options: ['18', '20', '21', '24'], answer: 2, explain: 'Fibonacci: 8+13 = 21.' },
+  { id: 'sq25', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 2, 5, 10, 17, 26, ?', options: ['35', '37', '38', '40'], answer: 1, explain: 'Quy luật n²+1: 6²+1 = 37.' },
+  { id: 'sq26', category: '🔢 Dãy số', d: 1, q: 'Số tiếp theo: 6, 12, 24, 48, ?', options: ['72', '96', '64', '108'], answer: 1, explain: 'Nhân đôi mỗi bước: 48×2 = 96.' },
+  { id: 'sq27', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 1, 3, 7, 15, 31, ?', options: ['47', '62', '63', '64'], answer: 2, explain: 'Quy luật ×2+1: 31×2+1 = 63.' },
+  { id: 'sq28', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 10, 9, 7, 4, ?', options: ['0', '1', '2', '-1'], answer: 0, explain: 'Trừ dần 1,2,3,4. 4−4 = 0.' },
+  { id: 'sq29', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 3, 5, 9, 17, 33, ?', options: ['64', '65', '66', '49'], answer: 1, explain: 'Quy luật ×2−1: 33×2−1 = 65.' },
+  { id: 'sq30', category: '🔢 Dãy số', d: 1, q: 'Số tiếp theo: 2, 6, 18, 54, ?', options: ['108', '150', '162', '216'], answer: 2, explain: 'Nhân 3 mỗi bước: 54×3 = 162.' },
+  { id: 'sq31', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 7, 10, 16, 25, 37, ?', options: ['49', '50', '52', '54'], answer: 2, explain: 'Khoảng cách +3,+6,+9,+12,+15. 37+15 = 52.' },
+  { id: 'sq32', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 1, 2, 6, 24, ?', options: ['96', '100', '120', '125'], answer: 2, explain: 'Nhân lần lượt ×1,×2,×3,×4,×5: 24×5 = 120 (giai thừa).' },
+
+  // ---- Toán nhanh ----
+  { id: 'mt11', category: '➗ Toán nhanh', d: 1, q: '15% của 200 là bao nhiêu?', options: ['25', '30', '35', '20'], answer: 1, explain: '15% × 200 = 0,15 × 200 = 30.' },
+  { id: 'mt12', category: '➗ Toán nhanh', d: 1, q: '7 × 8 = ?', options: ['54', '56', '63', '48'], answer: 1, explain: '7 × 8 = 56.' },
+  { id: 'mt13', category: '➗ Toán nhanh', d: 2, q: 'Một tá rưỡi là bao nhiêu cái?', options: ['15', '16', '18', '24'], answer: 2, explain: '1 tá = 12, rưỡi = 6 ⇒ 12 + 6 = 18.' },
+  { id: 'mt14', category: '➗ Toán nhanh', d: 1, q: '3/4 của 100 là?', options: ['25', '60', '75', '80'], answer: 2, explain: '100 ÷ 4 × 3 = 75.' },
+  { id: 'mt15', category: '➗ Toán nhanh', d: 2, q: 'Nếu x + 5 = 12 thì 2x bằng?', options: ['7', '12', '14', '24'], answer: 2, explain: 'x = 7 ⇒ 2x = 14.' },
+  { id: 'mt16', category: '➗ Toán nhanh', d: 2, q: 'Số nào chia hết cho cả 2, 3 và 5?', options: ['15', '20', '30', '45'], answer: 2, explain: '30 chia hết cho 2, 3 và 5 (bội chung nhỏ nhất là 30).' },
+  { id: 'mt17', category: '➗ Toán nhanh', d: 1, q: 'Trung bình cộng của 4 và 16 là?', options: ['8', '10', '12', '20'], answer: 1, explain: '(4 + 16) ÷ 2 = 10.' },
+  { id: 'mt18', category: '➗ Toán nhanh', d: 2, q: '2³ + 3² = ?', options: ['13', '17', '25', '36'], answer: 1, explain: '8 + 9 = 17.' },
+  { id: 'mt19', category: '➗ Toán nhanh', d: 2, q: '20% của một số bằng 10. Số đó là?', options: ['30', '40', '50', '200'], answer: 2, explain: 'Số = 10 ÷ 0,2 = 50.' },
+  { id: 'mt20', category: '➗ Toán nhanh', d: 1, q: '1 giờ 15 phút bằng bao nhiêu phút?', options: ['65', '75', '90', '115'], answer: 1, explain: '60 + 15 = 75 phút.' },
+
+  // ---- Logic ----
+  { id: 'lg13', category: '🧠 Logic', d: 1, q: 'Nếu A > B và B > C thì A so với C thế nào?', options: ['A > C', 'A < C', 'A = C', 'Chưa biết'], answer: 0, explain: 'Bắc cầu: A > B > C ⇒ A > C.' },
+  { id: 'lg14', category: '🧠 Logic', d: 1, q: 'Mọi con mèo đều có đuôi. Tom là mèo. Vậy?', options: ['Tom không có đuôi', 'Tom có đuôi', 'Tom là chó', 'Chưa biết'], answer: 1, explain: 'Tam đoạn luận: Tom là mèo ⇒ Tom có đuôi.' },
+  { id: 'lg15', category: '🧠 Logic', d: 2, q: 'Hôm nay là thứ Hai. Hôm kia (2 ngày trước) là thứ mấy?', options: ['Chủ Nhật', 'Thứ Bảy', 'Thứ Sáu', 'Thứ Ba'], answer: 1, explain: 'Lùi 2 ngày từ thứ Hai: Chủ Nhật → thứ Bảy.' },
+  { id: 'lg16', category: '🧠 Logic', d: 3, q: 'Tàu dài 200m chạy 10 m/s, đi qua hết cây cầu dài 300m mất bao lâu?', options: ['20 giây', '30 giây', '50 giây', '80 giây'], answer: 2, explain: 'Quãng đường = 200 + 300 = 500m. Thời gian = 500 ÷ 10 = 50 giây.' },
+  { id: 'lg17', category: '🧠 Logic', d: 2, q: '5 con mèo bắt 5 con chuột mất 5 phút. Vậy 1 con mèo bắt 1 con chuột mất mấy phút?', options: ['1 phút', '5 phút', '10 phút', '25 phút'], answer: 1, explain: 'Mỗi con mèo bắt 1 chuột trong 5 phút (làm song song).' },
+  { id: 'lg18', category: '🧠 Logic', d: 3, q: 'Cha hơn con 30 tuổi. 5 năm nữa cha gấp đôi tuổi con. Hiện con bao nhiêu tuổi?', options: ['15', '20', '25', '30'], answer: 2, explain: '(x+30+5) = 2(x+5) ⇒ x+35 = 2x+10 ⇒ x = 25.' },
+  { id: 'lg19', category: '🧠 Logic', d: 3, q: 'Xếp 4 người ngồi quanh một bàn tròn (xoay vòng coi như giống nhau) có mấy cách?', options: ['4', '6', '12', '24'], answer: 1, explain: 'Số hoán vị vòng = (4−1)! = 3! = 6.' },
+  { id: 'lg20', category: '🧠 Logic', d: 2, q: 'Ao sen: số lá gấp đôi mỗi ngày, ngày 30 phủ kín ao. Ngày nào phủ nửa ao?', options: ['Ngày 15', 'Ngày 28', 'Ngày 29', 'Ngày 30'], answer: 2, explain: 'Gấp đôi mỗi ngày ⇒ hôm trước khi đầy (ngày 29) là vừa nửa ao.' },
+  { id: 'lg21', category: '🧠 Logic', d: 1, q: 'Một năm KHÔNG nhuận có bao nhiêu ngày?', options: ['360', '364', '365', '366'], answer: 2, explain: 'Năm thường 365 ngày; năm nhuận mới 366.' },
+  { id: 'lg22', category: '🧠 Logic', d: 2, q: 'Vào phòng tối có đèn dầu, nến và lò sưởi. Bạn chỉ có 1 que diêm — châm cái gì TRƯỚC?', options: ['Đèn dầu', 'Que diêm', 'Nến', 'Lò sưởi'], answer: 1, explain: 'Phải châm (đốt) que diêm trước thì mới có lửa để mồi những thứ khác.' },
+
+  // ---- Xác suất / đếm ----
+  { id: 'pr4', category: '🎲 Xác suất', d: 2, q: 'Rút ngẫu nhiên 1 lá từ bộ bài 52 lá. Xác suất được lá Át (có 4 lá Át)?', options: ['1/4', '1/13', '1/52', '4/13'], answer: 1, explain: '4 lá Át trên 52 lá = 4/52 = 1/13.' },
+  { id: 'pr5', category: '🎲 Xác suất', d: 2, q: 'Có bao nhiêu số tự nhiên có đúng 2 chữ số?', options: ['89', '90', '99', '100'], answer: 1, explain: 'Từ 10 đến 99 ⇒ 99 − 10 + 1 = 90 số.' },
+  { id: 'pr6', category: '🎲 Xác suất', d: 3, q: 'Tung 2 con xúc xắc. Xác suất tổng bằng 7?', options: ['1/6', '5/36', '1/9', '1/12'], answer: 0, explain: 'Có 6 cách (1-6,2-5,3-4,4-3,5-2,6-1) trên 36 ⇒ 6/36 = 1/6.' },
+  { id: 'pr7', category: '🎲 Xác suất', d: 1, q: 'Lớp 30 bạn, có 18 nữ. Chọn ngẫu nhiên 1 bạn, xác suất là nữ?', options: ['2/5', '1/2', '3/5', '18/12'], answer: 2, explain: '18/30 = 3/5.' },
+  { id: 'pr8', category: '🎲 Xác suất', d: 2, q: 'Có bao nhiêu cách chọn 2 người từ 4 người?', options: ['4', '6', '8', '12'], answer: 1, explain: 'C(4,2) = 4×3/2 = 6.' },
+  { id: 'pr9', category: '🎲 Xác suất', d: 1, q: 'Tung 1 xúc xắc, xác suất KHÔNG ra mặt 6?', options: ['1/6', '1/2', '2/3', '5/6'], answer: 3, explain: '5 mặt còn lại trên 6 ⇒ 5/6.' },
+
+  // ---- Tương tự ----
+  { id: 'an7', category: '🔗 Tương tự', d: 1, q: 'Cá : Bơi = Chim : ?', options: ['Chạy', 'Bay', 'Nhảy', 'Bò'], answer: 1, explain: 'Cách di chuyển đặc trưng: cá bơi, chim bay.' },
+  { id: 'an8', category: '🔗 Tương tự', d: 1, q: 'Ngày : Đêm = Trắng : ?', options: ['Xám', 'Đen', 'Sáng', 'Xanh'], answer: 1, explain: 'Quan hệ trái nghĩa. Trắng ↔ Đen.' },
+  { id: 'an9', category: '🔗 Tương tự', d: 2, q: 'Kim : Đồng hồ = Trang : ?', options: ['Bút', 'Sách', 'Chữ', 'Giấy'], answer: 1, explain: 'Quan hệ "bộ phận : tổng thể". Kim thuộc đồng hồ, trang thuộc sách.' },
+  { id: 'an10', category: '🔗 Tương tự', d: 2, q: 'Vua : Ngai vàng = Thuyền trưởng : ?', options: ['Biển', 'Tàu', 'Thủy thủ', 'Bến'], answer: 1, explain: 'Quan hệ "người đứng đầu : nơi cai quản". Vua trên ngai (vương quốc), thuyền trưởng trên tàu.' },
+  { id: 'an11', category: '🔗 Tương tự', d: 1, q: 'Lửa : Nóng = Băng : ?', options: ['Ướt', 'Lạnh', 'Cứng', 'Trắng'], answer: 1, explain: 'Quan hệ "vật : tính chất". Lửa nóng, băng lạnh.' },
+  { id: 'an12', category: '🔗 Tương tự', d: 1, q: 'Đói : Ăn = Khát : ?', options: ['Ngủ', 'Uống', 'Nghỉ', 'Chạy'], answer: 1, explain: 'Quan hệ "nhu cầu : hành động giải quyết". Đói thì ăn, khát thì uống.' },
+
+  // ---- Chữ cái ----
+  { id: 'lt5', category: '🔠 Chữ cái', d: 1, q: 'Chữ tiếp theo: B, D, F, H, ?', options: ['I', 'J', 'K', 'L'], answer: 1, explain: 'Cách 1 chữ một. Sau H là J.' },
+  { id: 'lt6', category: '🔠 Chữ cái', d: 2, q: 'Chữ tiếp theo: A, Z, B, Y, C, X, ?', options: ['D', 'E', 'W', 'V'], answer: 0, explain: 'Hai dãy xen kẽ: A,B,C,D (từ đầu) và Z,Y,X (từ cuối). Tiếp theo là D.' },
+  { id: 'lt7', category: '🔠 Chữ cái', d: 2, q: 'Cặp tiếp theo: AB, CD, EF, GH, ?', options: ['HI', 'IJ', 'JK', 'IK'], answer: 1, explain: 'Mỗi cặp gồm 2 chữ liền nhau, nối tiếp bảng chữ: sau GH là IJ.' },
+  { id: 'lt8', category: '🔠 Chữ cái', d: 1, q: 'Chữ tiếp theo: Z, Y, X, W, ?', options: ['U', 'V', 'T', 'S'], answer: 1, explain: 'Đếm ngược bảng chữ cái. Sau W là V.' },
+  { id: 'lt9', category: '🔠 Chữ cái', d: 3, q: 'Chữ tiếp theo: A, C, F, J, ?', options: ['N', 'O', 'P', 'M'], answer: 1, explain: 'Khoảng cách tăng +2,+3,+4,+5: A(1)→C(3)→F(6)→J(10)→O(15).' },
+  { id: 'lt10', category: '🔠 Chữ cái', d: 2, q: 'Chữ tiếp theo: M, K, I, G, ?', options: ['F', 'E', 'H', 'D'], answer: 1, explain: 'Lùi 2 chữ mỗi bước: M,K,I,G,E.' },
 ];
