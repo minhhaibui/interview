@@ -114,10 +114,23 @@ document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => switchView(btn.dataset.view));
 });
 
+// Các tab có LƯU TIẾN ĐỘ → cần đăng nhập (chỉ áp dụng khi đã cấu hình Firebase).
+// Tab 📚 Tài liệu để mở tự do cho người chưa đăng nhập còn đọc nội dung.
+const GATED_VIEWS = new Set(['flashcards', 'writing', 'code', 'coding', 'mock', 'plan', 'dashboard']);
+let authResolved = false; // true sau lần onAuthStateChanged đầu tiên
+const viewGated = name => syncReady && GATED_VIEWS.has(name);
+
 function switchView(name) {
+  if (typeof iqTimerId !== 'undefined') clearInterval(iqTimerId); // rời tab → dừng bài test IQ đang chạy
   store.set('prep-last-view', name); // nhớ tab đang mở cho lần reload sau
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.view === name));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === `view-${name}`));
+  // Chặn tab cần đăng nhập khi chưa login
+  if (viewGated(name) && !fbUser) {
+    showLoginGate(!authResolved);
+    return; // không init/vẽ nội dung tab khi đang khóa
+  }
+  hideLoginGate();
   if (name === 'flashcards') initFlashcards().then(() => fcLoaded && fillFcWeekSelect());
   if (name === 'writing') initWriting().then(() => wrInit && WR_SENTENCES && fillWrWeekSelect());
   if (name === 'code') initCodeTyping();
@@ -126,6 +139,31 @@ function switchView(name) {
   if (name === 'plan') renderPlan();
   if (name === 'dashboard') renderDashboard();
 }
+
+/** Lớp phủ khóa tab khi chưa đăng nhập. checking=true khi đang chờ Firebase xác định phiên. */
+function showLoginGate(checking) {
+  let el = document.getElementById('login-gate');
+  if (!el) { el = document.createElement('div'); el.id = 'login-gate'; document.body.appendChild(el); }
+  el.hidden = false;
+  if (checking) {
+    el.innerHTML = '<div class="lg-box"><div class="lg-ico">⏳</div><p>Đang kiểm tra đăng nhập…</p></div>';
+    return;
+  }
+  el.innerHTML = `
+    <div class="lg-box">
+      <div class="lg-ico">🔒</div>
+      <h2>Cần đăng nhập</h2>
+      <p>Tab này lưu tiến độ học của bạn lên cloud (Firestore) nên cần đăng nhập bằng Google để tiếp tục — nhờ vậy dữ liệu được đồng bộ trên mọi thiết bị.</p>
+      <button id="lg-in" class="lg-btn">🔐 Đăng nhập với Google</button>
+      <button id="lg-docs" class="lg-link">← Về 📚 Tài liệu (xem tự do, không cần đăng nhập)</button>
+    </div>`;
+  document.getElementById('lg-in').onclick = () => signInSync();
+  document.getElementById('lg-docs').onclick = () => switchView('docs');
+}
+function hideLoginGate() { const el = document.getElementById('login-gate'); if (el) el.hidden = true; }
+
+/** Vẽ lại tab hiện tại (gọi sau khi trạng thái đăng nhập thay đổi). */
+function reapplyView() { switchView(store.get('prep-last-view', 'docs')); }
 
 // ---------- Pomodoro ----------
 const POMO_FOCUS = 25 * 60, POMO_BREAK = 5 * 60;
@@ -1962,7 +2000,7 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-typing-best', 'prep-fails', 'prep-activity', 'prep-mock-history',
   'prep-pomo', 'prep-code-best', 'prep-fc-dir', 'prep-fc-auto', 'prep-code-history', 'prep-theme',
   'prep-last-view', 'prep-doc-checks', 'prep-mock-wrong', 'prep-ai-history', 'prep-ai-settings', 'prep-plan',
-  'prep-coding-solved', 'prep-coding-code', 'prep-iq-best'];
+  'prep-coding-solved', 'prep-coding-code', 'prep-iq-best', 'prep-iq-test-history'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */
@@ -2504,6 +2542,7 @@ function initThink() {
 
 function setThinkMode(m) {
   thinkMode = m;
+  if (m !== 'iq' && typeof iqTimerId !== 'undefined') clearInterval(iqTimerId); // rời chế độ IQ → dừng timer
   document.querySelectorAll('.think-mode').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
   document.getElementById('think-code').hidden = m !== 'code';
   document.getElementById('think-iq').hidden = m !== 'iq';
@@ -2677,25 +2716,142 @@ function runDirect(code, fnName, tests) {
 let iqState = null;
 const shuffleArr = a => { const r = [...a]; for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; };
 
+const IQ_TEST_N = 20, IQ_TEST_SEC = 15 * 60;
+let iqTimerId = null;
+
+/** Xếp loại IQ (mang tính tham khảo, theo phân bố chuẩn IQ phổ biến). */
+function iqBand(iq) {
+  if (iq >= 130) return { label: 'Rất cao 🌟', desc: 'Nhóm ~2% dân số (thiên tài/xuất chúng).' };
+  if (iq >= 120) return { label: 'Cao 👏', desc: 'Trên hẳn mức trung bình (~khoảng 10% trên cùng).' };
+  if (iq >= 110) return { label: 'Trên trung bình 🙂', desc: 'Khá tốt, cao hơn phần lớn mọi người.' };
+  if (iq >= 90) return { label: 'Trung bình', desc: 'Mức phổ biến nhất (khoảng 50% dân số).' };
+  if (iq >= 80) return { label: 'Dưới trung bình', desc: 'Luyện thêm dạng dãy số & logic sẽ tiến bộ nhanh.' };
+  return { label: 'Cần luyện nhiều 💪', desc: 'Đừng nản — làm nhiều bài là điểm sẽ lên.' };
+}
+const fmtMMSS = sec => `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+
 function renderIQ() {
+  clearInterval(iqTimerId);
   const qs = window.IQ_QUESTIONS || [];
   const body = document.getElementById('iq-body');
   if (!body) return;
   if (!qs.length) { body.innerHTML = '<p style="color:var(--muted)">Chưa nạp được câu hỏi IQ.</p>'; return; }
-  const best = store.get('prep-iq-best', null);
+  const hist = store.get('prep-iq-test-history', []);
+  const bestIq = hist.length ? Math.max(...hist.map(h => h.iq)) : null;
+  const testN = Math.min(IQ_TEST_N, qs.length);
+
+  const histHtml = hist.length
+    ? `<h3>🗂️ Lịch sử bài test (${hist.length})</h3>
+       <div class="iq-hist">${hist.slice().reverse().slice(0, 12).map(h => `
+         <div class="iq-hrow">
+           <span class="iq-hdate">${escHtml(h.date)}</span>
+           <span class="iq-hiq">IQ ${h.iq}</span>
+           <span class="iq-hband">${escHtml(h.band || '')}</span>
+           <span class="iq-hsc">${h.correct}/${h.total} · ⏱ ${fmtMMSS(h.timeSec || 0)}</span>
+         </div>`).join('')}</div>
+       <p class="iq-note">☁️ Lịch sử được lưu và đồng bộ lên cloud (Firestore) theo tài khoản của bạn.</p>`
+    : '<p class="iq-note">Chưa có bài test nào. Làm bài đầu tiên để biết IQ ước lượng của bạn nhé!</p>';
+
   body.innerHTML = `
     <div class="iq-start">
       <div class="iq-stat">
-        <div><b>${qs.length}</b><small>câu hỏi</small></div>
-        ${best ? `<div><b>${best.iq}</b><small>IQ tốt nhất</small></div><div><b>${best.correct}/${best.total}</b><small>điểm cao nhất</small></div>` : ''}
+        <div><b>${bestIq != null ? bestIq : '—'}</b><small>IQ cao nhất</small></div>
+        <div><b>${hist.length}</b><small>lần test</small></div>
+        <div><b>${qs.length}</b><small>câu trong kho</small></div>
       </div>
+      <div class="iq-modes">
+        <button id="iq-test-btn" class="iq-start-btn">📝 Làm bài Test IQ<small>${testN} câu · ${IQ_TEST_SEC / 60} phút · có chấm điểm</small></button>
+        <button id="iq-prac-btn" class="iq-mini">🎮 Luyện tập tự do<small>cả ${qs.length} câu · xem giải thích ngay</small></button>
+      </div>
+    </div>
+    ${histHtml}`;
+  document.getElementById('iq-test-btn').onclick = () => startIQTest();
+  document.getElementById('iq-prac-btn').onclick = () => startIQ(true);
+}
+
+// ===== Bài Test IQ chính thức (đếm giờ, không hiện đáp án giữa chừng) =====
+function startIQTest() {
+  const all = window.IQ_QUESTIONS || [];
+  const qs = shuffleArr(all).slice(0, Math.min(IQ_TEST_N, all.length));
+  iqState = { mode: 'test', qs, idx: 0, correct: 0, log: [], startMs: Date.now(), endSec: IQ_TEST_SEC };
+  clearInterval(iqTimerId);
+  iqTimerId = setInterval(tickIQTest, 1000);
+  showIQTest();
+}
+
+function tickIQTest() {
+  const el = document.getElementById('iqt-timer');
+  if (!el || !iqState || iqState.mode !== 'test') { clearInterval(iqTimerId); return; }
+  const left = iqState.endSec - Math.floor((Date.now() - iqState.startMs) / 1000);
+  if (left <= 0) { el.textContent = '00:00'; finishIQTest(true); return; }
+  el.textContent = fmtMMSS(left);
+  el.classList.toggle('low', left <= 60);
+}
+
+function showIQTest() {
+  const s = iqState, body = document.getElementById('iq-body');
+  if (!body) { clearInterval(iqTimerId); return; }
+  if (s.idx >= s.qs.length) return finishIQTest(false);
+  const q = s.qs[s.idx];
+  body.innerHTML = `
+    <div class="iqt-bar">
+      <span class="iqt-count">Câu ${s.idx + 1}/${s.qs.length}</span>
+      <span id="iqt-timer" class="iqt-timer">${fmtMMSS(s.endSec)}</span>
+      <button id="iqt-quit" class="iqt-quit" title="Dừng bài test">✕ Thoát</button>
+    </div>
+    <div class="iq-track"><div class="iq-fill" style="width:${s.idx / s.qs.length * 100}%"></div></div>
+    <div class="iq-cat" style="margin-bottom:6px">${escHtml(q.category)}</div>
+    <div class="iq-q">${escHtml(q.q)}</div>
+    <div class="iq-opts">${q.options.map((o, i) => `<button class="iq-opt" data-i="${i}">${escHtml(o)}</button>`).join('')}</div>
+    <p class="iq-note">Bài test không hiện đáp án ngay — kết quả & giải thích sẽ có ở cuối.</p>`;
+  body.querySelectorAll('.iq-opt').forEach(b => b.onclick = () => answerIQTest(+b.dataset.i));
+  document.getElementById('iqt-quit').onclick = () => { if (confirm('Thoát bài test? Kết quả sẽ không được lưu.')) { clearInterval(iqTimerId); renderIQ(); } };
+}
+
+function answerIQTest(i) {
+  const s = iqState, q = s.qs[s.idx];
+  const ok = i === q.answer;
+  if (ok) s.correct++;
+  s.log.push({ q: q.q, chosen: q.options[i], correct: q.options[q.answer], ok, explain: q.explain });
+  s.idx++;
+  showIQTest();
+}
+
+function finishIQTest(timeout) {
+  clearInterval(iqTimerId);
+  const s = iqState;
+  const answered = s.log.length;
+  const total = s.qs.length;
+  const pct = Math.round(s.correct / total * 100);
+  const iq = Math.max(55, Math.min(160, Math.round(60 + pct * 0.8))); // ước lượng: 50%→100 (TB), 90%→132, 100%→140
+  const timeSec = Math.min(IQ_TEST_SEC, Math.round((Date.now() - s.startMs) / 1000));
+  const band = iqBand(iq);
+  const rec = { date: dayKey(new Date()), ts: Date.now(), iq, correct: s.correct, total, timeSec, band: band.label };
+  const hist = store.get('prep-iq-test-history', []);
+  hist.push(rec);
+  store.set('prep-iq-test-history', hist.slice(-100)); // → tự đẩy lên Firestore qua schedulePush
+  const best = store.get('prep-iq-best', null);
+  if (!best || iq > best.iq) store.set('prep-iq-best', { iq, correct: s.correct, total, date: rec.date });
+  logActivity();
+
+  const review = s.log.filter(l => !l.ok).map(l =>
+    `<div class="iq-rv"><div class="iq-rvq">❌ ${escHtml(l.q)}</div>
+      <div class="iq-rva">Đáp án đúng: <b>${escHtml(l.correct)}</b> — ${escHtml(l.explain)}</div></div>`).join('');
+
+  document.getElementById('iq-body').innerHTML = `
+    <div class="iq-done">
+      ${timeout ? '<div class="iq-timeout">⏱ Hết giờ — bài được nộp tự động.</div>' : ''}
+      <div class="iq-score-ring" style="--p:${pct}"><div class="rd-center"><b>${iq}</b><small>IQ ước lượng</small></div></div>
+      <h2>${band.label}</h2>
+      <p class="iq-band-desc">${band.desc}</p>
+      <p>Đúng <b>${s.correct}/${total}</b> câu (${pct}%)${answered < total ? ` · trả lời ${answered}/${total}` : ''} · thời gian <b>${fmtMMSS(timeSec)}</b></p>
+      <p class="iq-note">⚠️ Đây là ước lượng để theo dõi tiến bộ, KHÔNG thay thế bài test IQ chuẩn hóa chính thức.</p>
       <div class="iq-start-actions">
-        <button id="iq-start-btn" class="iq-start-btn">🚀 Bắt đầu (${qs.length} câu)</button>
-        <button id="iq-shuffle" class="iq-mini">🔀 Trộn thứ tự</button>
+        <button id="iq-again" class="iq-start-btn">🔁 Làm bài test khác</button>
       </div>
+      ${review ? `<details class="iq-review"><summary>Xem lại ${s.log.filter(l => !l.ok).length} câu sai</summary>${review}</details>` : '<p class="iq-allright">🎉 Bạn trả lời đúng tất cả!</p>'}
     </div>`;
-  document.getElementById('iq-start-btn').onclick = () => startIQ(false);
-  document.getElementById('iq-shuffle').onclick = () => startIQ(true);
+  document.getElementById('iq-again').onclick = () => renderIQ();
 }
 
 function startIQ(shuffle) {
@@ -2824,9 +2980,11 @@ function initSync() {
 
   fbAuth.onAuthStateChanged(async user => {
     fbUser = user;
+    authResolved = true;
     renderSyncBtn();
     renderLoginHint();
     if (user) await onSignedIn();
+    reapplyView(); // mở khóa / khóa lại tab theo trạng thái đăng nhập mới
   });
 
   btn.onclick = () => (fbUser ? toggleSyncPanel() : signInSync());
