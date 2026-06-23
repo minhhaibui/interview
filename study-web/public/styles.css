@@ -612,6 +612,50 @@ button { font-family: inherit; cursor: pointer; }
 /* ===== Kế hoạch & nhịp độ ===== */
 .plan-wrap { max-width: 860px; margin: 0 auto; padding: 36px 24px 100px; }
 .plan-intro { color: var(--muted); margin: -6px 0 20px; line-height: 1.6; }
+
+/* ----- Điểm sẵn sàng phỏng vấn ----- */
+.readiness {
+  display: flex; gap: 26px; align-items: center; flex-wrap: wrap;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 22px 24px; margin-bottom: 22px;
+}
+.readiness.ok { border-color: var(--green); }
+.readiness.good { border-color: var(--accent); }
+.readiness.low { border-color: var(--red); }
+.rd-ring {
+  --p: 0; flex: 0 0 auto; width: 132px; height: 132px; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--bg2) 71%, transparent 72%),
+    conic-gradient(var(--accent) calc(var(--p) * 1%), var(--border) 0);
+  display: grid; place-items: center;
+}
+.readiness.ok .rd-ring { background: radial-gradient(closest-side, var(--bg2) 71%, transparent 72%), conic-gradient(var(--green) calc(var(--p) * 1%), var(--border) 0); }
+.readiness.low .rd-ring { background: radial-gradient(closest-side, var(--bg2) 71%, transparent 72%), conic-gradient(var(--red) calc(var(--p) * 1%), var(--border) 0); }
+.rd-center { text-align: center; line-height: 1; }
+.rd-center b { font-size: 38px; }
+.rd-center small { display: block; color: var(--muted); font-size: 12px; margin-top: 3px; }
+.rd-info { flex: 1 1 320px; min-width: 280px; }
+.rd-info h2 { margin: 0 0 2px; font-size: 19px; }
+.rd-tier { margin: 0 0 14px; color: var(--muted); font-weight: 600; }
+.rd-parts { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
+.rd-part { display: grid; grid-template-columns: 170px 1fr 30px; align-items: center; gap: 10px; font-size: 13px; }
+.rd-plabel { color: var(--muted); }
+.rd-track { height: 8px; background: var(--bg3); border-radius: 5px; overflow: hidden; }
+.rd-fill { height: 100%; border-radius: 5px; background: linear-gradient(90deg, var(--accent), var(--green)); transition: width .5s; }
+.rd-pval { text-align: right; font-variant-numeric: tabular-nums; }
+.rd-weak {
+  background: var(--bg3); border-radius: 8px; padding: 10px 12px; font-size: 13.5px;
+  line-height: 1.55; margin: 0; color: var(--text);
+}
+.rd-cta {
+  display: inline-block; margin-left: 6px; padding: 4px 12px; font-size: 13px;
+  background: var(--accent); color: #fff; border: none; border-radius: 6px; cursor: pointer;
+}
+.rd-cta:hover { filter: brightness(1.08); }
+@media (max-width: 560px) {
+  .readiness { gap: 16px; padding: 18px; }
+  .rd-part { grid-template-columns: 130px 1fr 26px; }
+}
+
 .plan-countdown {
   background: var(--bg2); border: 1px solid var(--border); border-left: 4px solid var(--accent);
   border-radius: 8px; padding: 14px 18px; font-size: 17px; margin-bottom: 18px;

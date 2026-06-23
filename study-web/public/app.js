@@ -2272,6 +2272,99 @@ function initTheme() {
 }
 
 // ---------- Kế hoạch & nhịp độ ôn ----------
+/**
+ * Tính "Điểm sẵn sàng phỏng vấn" 0–100 từ toàn bộ dữ liệu học tập đã có.
+ * Mỗi thành phần được nhân hệ số "độ phủ" (coverage) để vài lượt lẻ không thổi điểm lên 100.
+ */
+function computeReadiness() {
+  const clamp = v => Math.max(0, Math.min(100, Math.round(v)));
+
+  // 1) Kiến thức — % task tuần đã tick (prep-progress)
+  const progress = store.get('prep-progress', {});
+  const weeksGroup = TREE.find(g => g.title.includes('12 tuần'));
+  const weeks = [...new Set((weeksGroup?.items || []).map(i => i.week).filter(Boolean))];
+  const totalTasks = Math.max(1, weeks.length * WEEK_TASKS.length);
+  let done = 0;
+  weeks.forEach(wk => { const p = progress[wk] || {}; WEEK_TASKS.forEach(([k]) => { if (p[k]) done++; }); });
+  const know = done / totalTasks * 100;
+
+  // 2) Trí nhớ — mức thuộc flashcards (box SRS), nhân độ phủ số thẻ đã học
+  const srs = store.get('prep-srs', {});
+  const ids = Object.keys(srs);
+  const maxBox = SRS_INTERVALS.length - 1;
+  const avgBox = ids.length ? ids.reduce((s, id) => s + Math.min(srs[id].box || 0, maxBox), 0) / (ids.length * maxBox) : 0;
+  const mem = avgBox * 100 * Math.min(ids.length / 150, 1);
+
+  // 3) Phỏng vấn thử — mock tự chấm + mock AI (mỗi cái 10 lượt gần nhất)
+  const mh = store.get('prep-mock-history', []).slice(-10);
+  const selfPct = mh.length ? mh.reduce((s, h) => s + (h.total ? h.correct / h.total * 100 : 0), 0) / mh.length : null;
+  const ah = store.get('prep-ai-history', []).filter(h => h.score != null).slice(-10);
+  const aiPct = ah.length ? ah.reduce((s, h) => s + h.score * 10, 0) / ah.length : null;
+  let mockBase = (selfPct != null && aiPct != null) ? (selfPct + aiPct) / 2
+    : selfPct != null ? selfPct : aiPct != null ? aiPct : 0;
+  const mock = mockBase * Math.min((mh.length + ah.length) / 5, 1);
+
+  // 4) Phản xạ gõ code — độ chính xác trung bình (prep-code-history)
+  const ch = store.get('prep-code-history', []).slice(-10);
+  const codeAcc = ch.length ? ch.reduce((s, h) => s + (h.acc || 0), 0) / ch.length : 0;
+  const code = codeAcc * Math.min(ch.length / 3, 1);
+
+  // 5) Đều đặn — số ngày có học trong 14 ngày gần nhất
+  const acts = store.get('prep-activity', {});
+  let activeDays = 0;
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    if ((acts[dayKey(d)] || 0) > 0) activeDays++;
+  }
+  const consistency = activeDays / 14 * 100;
+
+  const parts = [
+    { key: 'know', label: '📚 Kiến thức', pct: clamp(know), weight: 0.30, view: 'dashboard',
+      tip: 'Tick các mục đã học ở tab 📊 Tiến độ để tăng phần này.' },
+    { key: 'mem', label: '🃏 Trí nhớ (flashcards)', pct: clamp(mem), weight: 0.20, view: 'flashcards',
+      tip: 'Ôn flashcards đều để đẩy thẻ lên hộp SRS cao hơn.' },
+    { key: 'mock', label: '🎯 Phỏng vấn thử', pct: clamp(mock), weight: 0.30, view: 'mock',
+      tip: 'Làm thêm Mock (tự chấm hoặc AI) — đây là phần nặng ký nhất.' },
+    { key: 'code', label: '⌨️ Phản xạ gõ code', pct: clamp(code), weight: 0.10, view: 'code',
+      tip: 'Luyện gõ code để tăng độ chính xác & tốc độ.' },
+    { key: 'streak', label: '🔥 Đều đặn (14 ngày)', pct: clamp(consistency), weight: 0.10, view: 'plan',
+      tip: 'Học mỗi ngày một chút — đều đặn quan trọng hơn dồn cục.' },
+  ];
+  const score = clamp(parts.reduce((s, p) => s + p.pct * p.weight, 0));
+  return { score, parts };
+}
+
+/** HTML vòng đo sẵn sàng + breakdown; trả {html, weak} để gắn nút CTA. */
+function readinessHtml() {
+  const { score, parts } = computeReadiness();
+  const tier = score >= 80 ? { t: 'Sẵn sàng phỏng vấn 🚀', c: 'ok' }
+    : score >= 60 ? { t: 'Khá ổn — sắp tới rồi 💪', c: 'good' }
+    : score >= 40 ? { t: 'Đang lên — cố thêm 📈', c: 'mid' }
+    : { t: 'Mới bắt đầu — kiên trì nhé 🌱', c: 'low' };
+  // Điểm yếu nhất = thành phần kéo tụt điểm nhiều nhất (khoảng trống × hệ số)
+  const weak = [...parts].sort((a, b) => (100 - b.pct) * b.weight - (100 - a.pct) * a.weight)[0];
+  const bars = parts.map(p => `
+    <div class="rd-part">
+      <span class="rd-plabel">${p.label}</span>
+      <div class="rd-track"><div class="rd-fill" style="width:${p.pct}%"></div></div>
+      <b class="rd-pval">${p.pct}</b>
+    </div>`).join('');
+  const html = `
+    <div class="readiness ${tier.c}">
+      <div class="rd-ring" style="--p:${score}">
+        <div class="rd-center"><b>${score}</b><small>/100</small></div>
+      </div>
+      <div class="rd-info">
+        <h2>🎯 Điểm sẵn sàng phỏng vấn</h2>
+        <p class="rd-tier">${tier.t}</p>
+        <div class="rd-parts">${bars}</div>
+        <p class="rd-weak">🔧 Cần cải thiện nhất: <b>${weak.label}</b> — ${weak.tip}
+          <button class="pl-go rd-cta" data-view="${weak.view}">Cải thiện ngay →</button></p>
+      </div>
+    </div>`;
+  return html;
+}
+
 function renderPlan() {
   const body = document.getElementById('plan-body');
   if (!body) return;
@@ -2348,6 +2441,8 @@ function renderPlan() {
   }).join('');
 
   body.innerHTML = `
+    ${readinessHtml()}
+
     <div class="plan-countdown ${daysToExam < 0 ? 'over' : ''}">${countdownTxt}</div>
 
     <div class="plan-config">
