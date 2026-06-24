@@ -189,4 +189,14 @@ window.IQ_QUESTIONS = [
   { id: 'lt8', category: '🔠 Chữ cái', d: 1, q: 'Chữ tiếp theo: Z, Y, X, W, ?', options: ['U', 'V', 'T', 'S'], answer: 1, explain: 'Đếm ngược bảng chữ cái. Sau W là V.' },
   { id: 'lt9', category: '🔠 Chữ cái', d: 3, q: 'Chữ tiếp theo: A, C, F, J, ?', options: ['N', 'O', 'P', 'M'], answer: 1, explain: 'Khoảng cách tăng +2,+3,+4,+5: A(1)→C(3)→F(6)→J(10)→O(15).' },
   { id: 'lt10', category: '🔠 Chữ cái', d: 2, q: 'Chữ tiếp theo: M, K, I, G, ?', options: ['F', 'E', 'H', 'D'], answer: 1, explain: 'Lùi 2 chữ mỗi bước: M,K,I,G,E.' },
+
+  // ---- Bổ sung đợt mới ----
+  { id: 'nx1', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 2, 5, 10, 17, 26, ?', options: ['35', '37', '38', '40'], answer: 1, explain: 'Cộng số lẻ tăng dần +3,+5,+7,+9,+11. 26 + 11 = 37 (chính là n²+1).' },
+  { id: 'nx2', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 2, 4, 7, 11, 16, ?', options: ['20', '21', '22', '23'], answer: 2, explain: 'Khoảng cách tăng dần +1,+2,+3,+4,+5,+6. 16 + 6 = 22.' },
+  { id: 'nx3', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 81, 27, 9, 3, ?', options: ['0', '1', '2', '3'], answer: 1, explain: 'Chia 3 mỗi bước: 3 ÷ 3 = 1.' },
+  { id: 'nx4', category: '🧠 Logic', d: 2, q: 'Mọi backend dev đều biết SQL. Nam là backend dev. Vậy?', options: ['Nam không biết SQL', 'Nam biết SQL', 'Không kết luận được', 'Nam là frontend'], answer: 1, explain: 'Tam đoạn luận: mọi A có tính chất P, Nam ∈ A ⇒ Nam có P.' },
+  { id: 'nx5', category: '🧠 Logic', d: 3, q: '1 server xử lý 1 request mất 3 giây (chạy song song). 100 server xử lý 100 request mất bao lâu?', options: ['3 giây', '100 giây', '300 giây', '1 giây'], answer: 0, explain: 'Mỗi request 3 giây và độc lập, chạy song song — thêm server vẫn 3 giây.' },
+  { id: 'nx6', category: '➗ Toán nhanh', d: 1, q: '15% của 200 là?', options: ['20', '25', '30', '35'], answer: 2, explain: '10% của 200 = 20; thêm 5% = 10; tổng 30.' },
+  { id: 'nx7', category: '🧠 Logic', d: 2, q: 'Giao thức nào KHÁC nhóm: TCP, UDP, HTTP, IP?', options: ['TCP', 'UDP', 'HTTP', 'IP'], answer: 2, explain: 'TCP/UDP/IP ở tầng giao vận/mạng; HTTP ở tầng ứng dụng.' },
+  { id: 'nx8', category: '➗ Toán nhanh', d: 2, q: 'Một USD = 25.000đ. 2 triệu đồng đổi được bao nhiêu USD?', options: ['$50', '$80', '$100', '$200'], answer: 1, explain: '2.000.000 ÷ 25.000 = 80 USD.' },
 ];

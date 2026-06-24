@@ -116,7 +116,7 @@ document.querySelectorAll('.tab').forEach(btn => {
 
 // Các tab có LƯU TIẾN ĐỘ → cần đăng nhập (chỉ áp dụng khi đã cấu hình Firebase).
 // Tab 📚 Tài liệu để mở tự do cho người chưa đăng nhập còn đọc nội dung.
-const GATED_VIEWS = new Set(['flashcards', 'writing', 'code', 'coding', 'mock', 'company', 'plan', 'dashboard']);
+const GATED_VIEWS = new Set(['today', 'flashcards', 'writing', 'code', 'coding', 'mock', 'company', 'plan', 'dashboard']);
 let authResolved = false; // true sau lần onAuthStateChanged đầu tiên
 const viewGated = name => syncReady && GATED_VIEWS.has(name);
 
@@ -131,6 +131,7 @@ function switchView(name) {
     return; // không init/vẽ nội dung tab khi đang khóa
   }
   hideLoginGate();
+  if (name === 'today') renderToday();
   if (name === 'flashcards') initFlashcards().then(() => fcLoaded && fillFcWeekSelect());
   if (name === 'writing') initWriting().then(() => wrInit && WR_SENTENCES && fillWrWeekSelect());
   if (name === 'code') initCodeTyping();
@@ -335,7 +336,7 @@ async function renderHome(pushHash = true) {
           <span class="hc-sub">${escHtml(c.sub)}</span>
         </button>`).join('')}
       </div>
-      <p class="home-tip">Mẹo: phím <kbd>1</kbd>–<kbd>7</kbd> chuyển tab nhanh, <kbd>/</kbd> để tìm kiếm tài liệu.</p>
+      <p class="home-tip">Mẹo: phím <kbd>1</kbd>–<kbd>9</kbd> chuyển tab nhanh, <kbd>/</kbd> để tìm kiếm tài liệu. Bấm <kbd>2</kbd> để mở 🔥 <b>Hôm nay</b>.</p>
     </div>`;
 
   const goFlash = filter => {
@@ -367,6 +368,177 @@ async function renderHome(pushHash = true) {
       const sel = document.getElementById('mk-week');
       sel.value = '__wrong__';
     });
+  });
+}
+
+// ---------- Tab "Hôm nay": ôn tập trong ngày + mục tiêu + huy hiệu ----------
+const DAILY_GOAL_DEFAULT = 20;
+
+/** Đếm chuỗi ngày học liên tiếp (hôm nay chưa học vẫn tính tới hôm qua). */
+function currentStreak() {
+  const acts = store.get('prep-activity', {});
+  let streak = 0;
+  const d = new Date();
+  if (!acts[dayKey(d)]) d.setDate(d.getDate() - 1);
+  while (acts[dayKey(d)] > 0) { streak++; d.setDate(d.getDate() - 1); }
+  return streak;
+}
+
+/** Tính danh sách huy hiệu thành tích từ dữ liệu đã có. */
+function computeBadges() {
+  const acts = store.get('prep-activity', {});
+  const streak = currentStreak();
+  const srs = store.get('prep-srs', {});
+  const learned = Object.values(srs).filter(e => (e.box || 0) >= 2).length;
+  const solved = Object.keys(store.get('prep-coding-solved', {})).length;
+  const codingTotal = (window.CODING_PROBLEMS || []).length;
+  const iqBest = store.get('prep-iq-best', {}).iq || 0;
+  const mockCount = store.get('prep-mock-history', []).length;
+  const ivPass = store.get('prep-interview-history', []).some(r => (r.overall || 0) >= 70);
+  const wpm = store.get('prep-code-best', {}).wpm || 0;
+  const pomoTotal = Object.values(store.get('prep-pomo', {})).reduce((a, b) => a + b, 0);
+  // Tuần hoàn thành (đủ mọi mục checklist)
+  const progress = store.get('prep-progress', {});
+  const weeksGroup = TREE.find(g => g.title.includes('12 tuần'));
+  const weeks = [...new Set((weeksGroup?.items || []).map(i => i.week).filter(Boolean))];
+  const weeksDone = weeks.filter(wk => WEEK_TASKS.every(([k]) => (progress[wk] || {})[k])).length;
+
+  const B = (id, icon, name, earned, hint) => ({ id, icon, name, earned, hint });
+  return [
+    B('streak3', '🔥', 'Khởi động · chuỗi 3 ngày', streak >= 3, `Học liên tục 3 ngày (đang ${streak})`),
+    B('streak7', '🔥', 'Bền bỉ · chuỗi 7 ngày', streak >= 7, `Học liên tục 7 ngày (đang ${streak})`),
+    B('streak14', '🔥', 'Kỷ luật · chuỗi 14 ngày', streak >= 14, `Học liên tục 14 ngày (đang ${streak})`),
+    B('streak30', '🔥', 'Thép đã tôi · chuỗi 30 ngày', streak >= 30, `Học liên tục 30 ngày (đang ${streak})`),
+    B('vocab25', '📚', 'Thuộc 25 từ', learned >= 25, `Thuộc ${learned}/25 từ (hộp SRS ≥2)`),
+    B('vocab100', '📚', 'Thuộc 100 từ', learned >= 100, `Thuộc ${learned}/100 từ`),
+    B('vocab250', '📚', 'Kho từ vựng · 250 từ', learned >= 250, `Thuộc ${learned}/250 từ`),
+    B('code1', '💻', 'Giải bài code đầu tiên', solved >= 1, `Giải ${solved} bài`),
+    B('code5', '💻', 'Giải 5 bài code', solved >= 5, `Giải ${solved}/5 bài`),
+    B('codeAll', '💻', 'Giải hết bài code', codingTotal > 0 && solved >= codingTotal, `Giải ${solved}/${codingTotal} bài`),
+    B('iq110', '🧩', 'IQ ước lượng ≥ 110', iqBest >= 110, `Kỷ lục IQ ${iqBest || '—'}`),
+    B('iq125', '🧩', 'IQ ước lượng ≥ 125', iqBest >= 125, `Kỷ lục IQ ${iqBest || '—'}`),
+    B('mock1', '🎯', 'Buổi mock đầu tiên', mockCount >= 1, `${mockCount} buổi mock`),
+    B('mock10', '🎯', '10 buổi mock', mockCount >= 10, `${mockCount}/10 buổi mock`),
+    B('ivpass', '🏢', 'Pass phỏng vấn tổng hợp', ivPass, 'Đạt ≥70 điểm một buổi phỏng vấn 4 vòng'),
+    B('wpm40', '⌨️', 'Gõ code 40 WPM', wpm >= 40, `Kỷ lục ${wpm || 0} WPM`),
+    B('wpm60', '⌨️', 'Gõ code 60 WPM', wpm >= 60, `Kỷ lục ${wpm || 0} WPM`),
+    B('pomo10', '🍅', '10 pomodoro', pomoTotal >= 10, `${pomoTotal}/10 pomodoro`),
+    B('pomo50', '🍅', '50 pomodoro', pomoTotal >= 50, `${pomoTotal}/50 pomodoro`),
+    B('week1', '✅', 'Hoàn thành 1 tuần', weeksDone >= 1, `${weeksDone}/${weeks.length || 12} tuần xong`),
+    B('weekAll', '🏁', 'Hoàn thành 12 tuần', weeks.length > 0 && weeksDone >= weeks.length, `${weeksDone}/${weeks.length || 12} tuần xong`),
+  ];
+}
+
+/** Vòng tròn tiến độ mục tiêu (SVG thuần). */
+function goalRing(pct) {
+  const r = 52, c = 2 * Math.PI * r;
+  const off = c * (1 - Math.max(0, Math.min(1, pct / 100)));
+  return `<svg class="goal-ring" viewBox="0 0 120 120" width="120" height="120">
+    <circle cx="60" cy="60" r="${r}" class="gr-track"/>
+    <circle cx="60" cy="60" r="${r}" class="gr-fill" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/>
+  </svg>`;
+}
+
+async function renderToday() {
+  const body = document.getElementById('today-body');
+  body.innerHTML = '<p style="color:var(--muted)">Đang tải buổi ôn hôm nay…</p>';
+  await loadDeck();
+
+  const acts = store.get('prep-activity', {});
+  const todayN = acts[dayKey(new Date())] || 0;
+  const streak = currentStreak();
+  const goal = store.get('prep-daily-goal', DAILY_GOAL_DEFAULT);
+  const pct = goal ? Math.min(100, Math.round(todayN / goal * 100)) : 0;
+  const h = new Date().getHours();
+  const greet = h < 12 ? 'Chào buổi sáng' : h < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
+
+  const due = filterDeck('__due__').length;
+  const leech = filterDeck('__leech__').length;
+  const wrongN = getMockWrong().length;
+
+  // Danh sách việc ôn gợi ý hôm nay
+  const tasks = [];
+  if (due) tasks.push({ id: 'td-due', ic: '📬', t: `Ôn ${due} từ đến hạn`, s: 'Flashcards theo lịch SRS', go: () => goToFlash('__due__') });
+  if (leech) tasks.push({ id: 'td-leech', ic: '🔥', t: `Luyện ${leech} từ cứng đầu`, s: 'Những từ sai nhiều lần', go: () => goToFlash('__leech__') });
+  tasks.push({ id: 'td-mix', ic: '⚡', t: 'Ôn nhanh ~10 câu (mix)', s: 'Trộn dịch từ + điền câu + nghe', go: goToWritingMix });
+  if (wrongN) tasks.push({ id: 'td-wrong', ic: '🚩', t: `Ôn ${wrongN} câu mock đã sai`, s: 'Trả lời lại cho nhớ', go: goToMockWrong });
+  tasks.push({ id: 'td-think', ic: '🧠', t: 'Giải 1 bài luyện tư duy', s: 'Coding hoặc IQ', go: () => switchView('coding') });
+  tasks.push({ id: 'td-mock', ic: '🎯', t: 'Mock interview nhanh', s: '5–10 câu ngẫu nhiên', go: () => switchView('mock') });
+
+  // Huy hiệu + đánh dấu cái MỚI đạt
+  const badges = computeBadges();
+  const earnedIds = badges.filter(b => b.earned).map(b => b.id);
+  const seen = store.get('prep-badges-seen', []);
+  const fresh = earnedIds.filter(id => !seen.includes(id));
+  if (fresh.length) store.set('prep-badges-seen', [...seen, ...fresh]);
+  const earnedN = earnedIds.length;
+
+  body.innerHTML = `
+    <div class="td-hero">
+      <div class="td-hero-text">
+        <h1>${greet}! 🔥</h1>
+        <p class="td-streak">${streak
+          ? `Đang giữ chuỗi <b>${streak} ngày</b> liên tiếp${todayN ? '' : ' — hôm nay chưa học, đừng để đứt!'}`
+          : 'Chưa có chuỗi — học một chút hôm nay để bắt đầu!'}</p>
+        <p class="td-sub">Hôm nay: <b>${todayN}</b> lượt · 🏅 <b>${earnedN}/${badges.length}</b> huy hiệu${pomoTodayCount() ? ` · 🍅 <b>${pomoTodayCount()}</b>` : ''}</p>
+      </div>
+      <div class="td-goal">
+        <div class="td-ring-wrap">${goalRing(pct)}<span class="td-ring-label"><b>${todayN}</b><small>/ ${goal}</small></span></div>
+        <div class="td-goal-ctl">
+          <span>Mục tiêu/ngày</span>
+          <select id="td-goal-sel">
+            ${[10, 20, 30, 50, 80].map(g => `<option value="${g}" ${g === goal ? 'selected' : ''}>${g} lượt</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="td-h2">📋 Buổi ôn hôm nay</h2>
+    <div class="td-tasks">
+      ${tasks.map(t => `<button class="td-task" id="${t.id}">
+        <span class="td-ic">${t.ic}</span>
+        <span class="td-task-txt"><b>${escHtml(t.t)}</b><small>${escHtml(t.s)}</small></span>
+        <span class="td-go">▶</span>
+      </button>`).join('')}
+    </div>
+
+    <h2 class="td-h2">🏅 Huy hiệu thành tích${fresh.length ? ` <span class="td-new">+${fresh.length} mới!</span>` : ''}</h2>
+    <div class="td-badges">
+      ${badges.map(b => `<div class="td-badge ${b.earned ? 'earned' : 'locked'} ${fresh.includes(b.id) ? 'fresh' : ''}" title="${escHtml(b.hint)}">
+        <span class="tb-ic">${b.earned ? b.icon : '🔒'}</span>
+        <span class="tb-name">${escHtml(b.name)}</span>
+        ${fresh.includes(b.id) ? '<span class="tb-new">MỚI</span>' : ''}
+      </div>`).join('')}
+    </div>`;
+
+  document.getElementById('td-goal-sel').onchange = (e) => {
+    store.set('prep-daily-goal', +e.target.value);
+    renderToday();
+  };
+  tasks.forEach(t => document.getElementById(t.id)?.addEventListener('click', t.go));
+}
+
+// Bộ điều hướng dùng chung cho tab Hôm nay (mở tab tương ứng + đặt sẵn bộ lọc).
+function goToFlash(filter) {
+  switchView('flashcards');
+  initFlashcards().then(() => {
+    fillFcWeekSelect();
+    const sel = document.getElementById('fc-week');
+    if (sel) { sel.value = filter; sel.dispatchEvent(new Event('change')); }
+  });
+}
+async function goToWritingMix() {
+  switchView('writing');
+  await initWriting();
+  await Promise.all([loadDeck(), loadSentences()]);
+  document.querySelector('.wr-mode[data-mode="mix"]')?.click();
+}
+function goToMockWrong() {
+  switchView('mock');
+  initMock().then(() => {
+    fillMockWeekSelect();
+    const sel = document.getElementById('mk-week');
+    if (sel) sel.value = '__wrong__';
   });
 }
 
@@ -2001,7 +2173,8 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-typing-best', 'prep-fails', 'prep-activity', 'prep-mock-history',
   'prep-pomo', 'prep-code-best', 'prep-fc-dir', 'prep-fc-auto', 'prep-code-history', 'prep-theme',
   'prep-last-view', 'prep-doc-checks', 'prep-mock-wrong', 'prep-ai-history', 'prep-ai-settings', 'prep-plan',
-  'prep-coding-solved', 'prep-coding-code', 'prep-iq-best', 'prep-iq-test-history', 'prep-interview-history'];
+  'prep-coding-solved', 'prep-coding-code', 'prep-iq-best', 'prep-iq-test-history', 'prep-interview-history',
+  'prep-daily-goal', 'prep-badges-seen'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */
@@ -3169,7 +3342,7 @@ function finishInterview() {
 
 // ---------- Phím tắt ----------
 function initShortcuts() {
-  const order = ['docs', 'flashcards', 'writing', 'code', 'coding', 'mock', 'company', 'plan', 'dashboard'];
+  const order = ['docs', 'today', 'flashcards', 'writing', 'code', 'coding', 'mock', 'company', 'plan', 'dashboard'];
   document.addEventListener('keydown', e => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     // Đang gõ trong ô nhập / vùng gõ code thì không cướp phím
@@ -3376,12 +3549,48 @@ function toast(msg) {
 }
 
 // ---------- Khởi động ----------
+// ---------- PWA: service worker + nút "Cài app" ----------
+function initPwa() {
+  // Đăng ký service worker để chạy offline (bỏ qua khi mở bằng file:// — SW cần http/https).
+  if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {/* không sao, vẫn chạy online */});
+    });
+  }
+  // Bắt sự kiện cài đặt: hiện nút 📲 trên thanh công cụ khi trình duyệt cho phép cài.
+  let deferred = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferred = e;
+    let btn = document.getElementById('install-btn');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.id = 'install-btn';
+      btn.title = 'Cài app vào máy để học offline';
+      btn.textContent = '📲 Cài app';
+      document.querySelector('.pomo')?.prepend(btn);
+    }
+    btn.hidden = false;
+    btn.onclick = async () => {
+      btn.hidden = true;
+      deferred.prompt();
+      try { await deferred.userChoice; } catch {}
+      deferred = null;
+    };
+  });
+  window.addEventListener('appinstalled', () => {
+    const btn = document.getElementById('install-btn');
+    if (btn) btn.hidden = true;
+  });
+}
+
 (async function init() {
   initSearch();
   initTheme();
   initPomodoro();
   initSidebarToggle();
   initShortcuts();
+  initPwa();
   initSync();
   document.querySelector('.brand').addEventListener('click', () => renderHome());
   const lastView = store.get('prep-last-view', 'docs'); // đọc trước khi renderHome ghi đè

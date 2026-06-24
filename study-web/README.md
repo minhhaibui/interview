@@ -3,6 +3,12 @@
 Web ôn phỏng vấn: đọc tài liệu, flashcards (SRS), luyện viết/nghe/nói tiếng Anh,
 luyện gõ code, mock interview, dashboard tiến độ. Tiến độ lưu trong `localStorage`.
 
+Tab **🔥 Hôm nay** gộp buổi ôn trong ngày (từ đến hạn, câu mock đã sai, ôn nhanh…),
+vòng tròn **mục tiêu/ngày**, **chuỗi ngày học** và **huy hiệu thành tích**.
+
+Là **PWA**: cài như app trên điện thoại/desktop và **học offline** — `sw.js` cache
+app shell + `data/*.json`; `manifest.webmanifest` + `icon.svg` lo phần cài đặt.
+
 ## Chạy local (đầy đủ, có backend đọc file)
 
 ```bash

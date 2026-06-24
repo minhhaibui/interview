@@ -4,6 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>📚 Backend Interview Prep — Study Web</title>
+  <!-- PWA: cài như app, học offline trên điện thoại -->
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#0d1117" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Interview Prep" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
   <link id="hljs-css" rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -13,6 +22,7 @@
     <div class="brand">🚀 Backend Interview Prep</div>
     <nav class="tabs">
       <button class="tab active" data-view="docs">📚 Tài liệu</button>
+      <button class="tab" data-view="today">🔥 Hôm nay</button>
       <button class="tab" data-view="flashcards">🃏 Flashcards</button>
       <button class="tab" data-view="writing">✍️ Luyện viết</button>
       <button class="tab" data-view="code">⌨️ Gõ code</button>
@@ -47,6 +57,13 @@
         <p>Mẹo: trong các trang có quiz, bấm <b>🧪 Chế độ quiz tự chấm</b> để làm bài và lưu điểm.</p>
       </div>
     </main>
+  </div>
+
+  <!-- ============ VIEW: HÔM NAY (Ôn tập + Gamification) ============ -->
+  <div id="view-today" class="view">
+    <div class="today-wrap">
+      <div id="today-body"></div>
+    </div>
   </div>
 
   <!-- ============ VIEW: FLASHCARDS ============ -->

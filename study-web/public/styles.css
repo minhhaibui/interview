@@ -962,3 +962,70 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 .iv-hbk { color: var(--muted); text-align: right; font-size: 12px; white-space: nowrap; }
 #iv-submit { margin-left: auto; }
 @media (max-width: 560px) { .iv-hrow { grid-template-columns: 1fr auto; } .iv-hbk { grid-column: 1/3; text-align: left; } }
+
+/* ====================== Tab "Hôm nay" (ôn tập + gamification) ====================== */
+.today-wrap { max-width: 920px; margin: 0 auto; padding: 24px 20px 60px; }
+#install-btn { background: var(--green); color: #fff; border: none; }
+
+.td-hero {
+  display: flex; flex-wrap: wrap; gap: 20px; align-items: center; justify-content: space-between;
+  background: linear-gradient(135deg, var(--bg2), var(--bg3));
+  border: 1px solid var(--border); border-radius: 16px; padding: 22px 24px; margin-bottom: 26px;
+}
+.td-hero-text h1 { margin: 0 0 6px; font-size: 1.5rem; }
+.td-streak { margin: 0 0 4px; color: var(--text); }
+.td-sub { margin: 0; color: var(--muted); font-size: .92rem; }
+
+.td-goal { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.td-ring-wrap { position: relative; width: 120px; height: 120px; }
+.goal-ring { transform: rotate(-90deg); }
+.goal-ring .gr-track { fill: none; stroke: var(--bg3); stroke-width: 11; }
+.goal-ring .gr-fill {
+  fill: none; stroke: var(--green); stroke-width: 11; stroke-linecap: round;
+  transition: stroke-dashoffset .5s ease;
+}
+.td-ring-label {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; line-height: 1.1;
+}
+.td-ring-label b { font-size: 1.6rem; }
+.td-ring-label small { color: var(--muted); font-size: .8rem; }
+.td-goal-ctl { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: .8rem; color: var(--muted); }
+.td-goal-ctl select { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; }
+
+.td-h2 { font-size: 1.15rem; margin: 26px 0 12px; }
+.td-new { color: var(--green); font-size: .8rem; font-weight: 700; margin-left: 6px; }
+
+.td-tasks { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.td-task {
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 16px; cursor: pointer; color: var(--text); transition: border-color .15s, transform .1s;
+}
+.td-task:hover { border-color: var(--accent); transform: translateY(-2px); }
+.td-ic { font-size: 1.6rem; flex: 0 0 auto; }
+.td-task-txt { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.td-task-txt b { font-size: .98rem; }
+.td-task-txt small { color: var(--muted); font-size: .82rem; }
+.td-go { color: var(--accent); font-size: 1.1rem; flex: 0 0 auto; }
+
+.td-badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.td-badge {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 16px 10px;
+}
+.td-badge.locked { opacity: .5; filter: grayscale(.6); }
+.td-badge.earned { border-color: var(--green); box-shadow: inset 0 0 0 1px rgba(63,185,80,.25); }
+.td-badge.fresh { animation: badgePop .6s ease; border-color: var(--yellow); }
+@keyframes badgePop { 0% { transform: scale(.8); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
+.tb-ic { font-size: 2rem; }
+.tb-name { font-size: .82rem; color: var(--text); line-height: 1.25; }
+.tb-new {
+  position: absolute; top: -8px; right: -6px; background: var(--yellow); color: #000;
+  font-size: .62rem; font-weight: 800; padding: 2px 6px; border-radius: 999px;
+}
+
+@media (max-width: 560px) {
+  .td-hero { flex-direction: column; text-align: center; }
+  .td-tasks { grid-template-columns: 1fr; }
+}
