@@ -2532,13 +2532,26 @@ function computeReadiness() {
   }
   const consistency = activeDays / 14 * 100;
 
+  // 6) Tư duy — bài code đã giải + IQ ước lượng + phỏng vấn tổng hợp (lấy TB các phần đã có)
+  const codingTotal = (window.CODING_PROBLEMS || []).length;
+  const solvedN = Object.keys(store.get('prep-coding-solved', {})).length;
+  const codingPct = codingTotal ? solvedN / codingTotal * 100 : null;
+  const iqBest = (store.get('prep-iq-best', {}) || {}).iq || 0;
+  const iqPct = iqBest ? (iqBest - 80) / (130 - 80) * 100 : null; // 80→0, 130→100
+  const ivHist = store.get('prep-interview-history', []);
+  const ivBest = ivHist.length ? Math.max(...ivHist.map(r => r.overall || 0)) : null;
+  const thinkVals = [codingPct, iqPct, ivBest].filter(v => v != null);
+  const think = thinkVals.length ? thinkVals.reduce((a, b) => a + b, 0) / thinkVals.length : 0;
+
   const parts = [
-    { key: 'know', label: '📚 Kiến thức', pct: clamp(know), weight: 0.30, view: 'dashboard',
+    { key: 'know', label: '📚 Kiến thức', pct: clamp(know), weight: 0.25, view: 'dashboard',
       tip: 'Tick các mục đã học ở tab 📊 Tiến độ để tăng phần này.' },
-    { key: 'mem', label: '🃏 Trí nhớ (flashcards)', pct: clamp(mem), weight: 0.20, view: 'flashcards',
+    { key: 'mem', label: '🃏 Trí nhớ (flashcards)', pct: clamp(mem), weight: 0.15, view: 'flashcards',
       tip: 'Ôn flashcards đều để đẩy thẻ lên hộp SRS cao hơn.' },
-    { key: 'mock', label: '🎯 Phỏng vấn thử', pct: clamp(mock), weight: 0.30, view: 'mock',
+    { key: 'mock', label: '🎯 Phỏng vấn thử', pct: clamp(mock), weight: 0.25, view: 'mock',
       tip: 'Làm thêm Mock (tự chấm hoặc AI) — đây là phần nặng ký nhất.' },
+    { key: 'think', label: '🧠 Tư duy (code + IQ)', pct: clamp(think), weight: 0.15, view: 'coding',
+      tip: 'Giải bài Lập trình, làm Test IQ và Phỏng vấn tổng hợp để tăng phần này.' },
     { key: 'code', label: '⌨️ Phản xạ gõ code', pct: clamp(code), weight: 0.10, view: 'code',
       tip: 'Luyện gõ code để tăng độ chính xác & tốc độ.' },
     { key: 'streak', label: '🔥 Đều đặn (14 ngày)', pct: clamp(consistency), weight: 0.10, view: 'plan',
