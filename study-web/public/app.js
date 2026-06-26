@@ -2842,6 +2842,7 @@ function renderDashboard() {
   renderDueBanner();
   renderSrsDist();
   renderHeatmap();
+  renderThinkStats();
   renderCharts();
   renderMockHistory();
   renderMockWrong();
@@ -2890,6 +2891,38 @@ function initTheme() {
  * Tính "Điểm sẵn sàng phỏng vấn" 0–100 từ toàn bộ dữ liệu học tập đã có.
  * Mỗi thành phần được nhân hệ số "độ phủ" (coverage) để vài lượt lẻ không thổi điểm lên 100.
  */
+/** Panel tiến độ các mode tab Tư duy trong Dashboard. */
+function renderThinkStats() {
+  const el = document.getElementById('dash-think');
+  if (!el) return;
+  const cnt = (bank, key) => {
+    const ids = new Set((bank || []).map(x => x.id));
+    return { done: Object.keys(store.get(key, {})).filter(id => ids.has(id)).length, total: ids.size };
+  };
+  const coding = cnt(window.CODING_PROBLEMS, 'prep-coding-solved');
+  const oq = cnt(window.OUTPUT_QUIZ, 'prep-oq-done');
+  const dbg = cnt(window.DEBUG_CHALLENGES, 'prep-debug-solved');
+  const api = cnt(window.API_QUIZ, 'prep-api-done');
+  const iqBest = (store.get('prep-iq-best', {}) || {}).iq || 0;
+  const oqBest = store.get('prep-oq-best', null);
+  const apiBest = store.get('prep-api-best', null);
+  const bar = (label, done, total, extra = '') => {
+    const pct = total ? Math.round(done / total * 100) : 0;
+    return `<div class="tk-row"><span class="tk-label">${label}</span>
+      <div class="tk-track"><div class="tk-fill" style="width:${pct}%"></div></div>
+      <span class="tk-val">${done}/${total}${extra}</span></div>`;
+  };
+  const iqPctBar = iqBest ? Math.min(100, Math.max(0, (iqBest - 80) / (130 - 80) * 100)) : 0;
+  el.innerHTML =
+    bar('💻 Lập trình', coding.done, coding.total) +
+    bar('🔍 Đoán output', oq.done, oq.total, oqBest ? ` · KL ${oqBest.score}/${oqBest.total}` : '') +
+    bar('🐛 Sửa bug', dbg.done, dbg.total) +
+    bar('📡 API/HTTP', api.done, api.total, apiBest ? ` · KL ${apiBest.score}/${apiBest.total}` : '') +
+    `<div class="tk-row"><span class="tk-label">🧩 IQ ước lượng</span>
+      <div class="tk-track"><div class="tk-fill" style="width:${iqPctBar}%"></div></div>
+      <span class="tk-val">${iqBest || '—'}</span></div>`;
+}
+
 function computeReadiness() {
   const clamp = v => Math.max(0, Math.min(100, Math.round(v)));
 
@@ -2932,7 +2965,10 @@ function computeReadiness() {
   }
   const consistency = activeDays / 14 * 100;
 
-  // 6) Tư duy — bài code đã giải + IQ ước lượng + phỏng vấn tổng hợp (lấy TB các phần đã có)
+  // 6) Tư duy — bài code đã giải + IQ + phỏng vấn tổng hợp + 3 quiz mới (đoán output/sửa bug/API)
+  // % theo id còn tồn tại (giống cách tính badge), lấy TB các phần đã có dữ liệu.
+  const donePct = (bankIds, doneKey) =>
+    bankIds.size ? Object.keys(store.get(doneKey, {})).filter(id => bankIds.has(id)).length / bankIds.size * 100 : null;
   const codingTotal = (window.CODING_PROBLEMS || []).length;
   const solvedN = Object.keys(store.get('prep-coding-solved', {})).length;
   const codingPct = codingTotal ? solvedN / codingTotal * 100 : null;
@@ -2940,7 +2976,10 @@ function computeReadiness() {
   const iqPct = iqBest ? (iqBest - 80) / (130 - 80) * 100 : null; // 80→0, 130→100
   const ivHist = store.get('prep-interview-history', []);
   const ivBest = ivHist.length ? Math.max(...ivHist.map(r => r.overall || 0)) : null;
-  const thinkVals = [codingPct, iqPct, ivBest].filter(v => v != null);
+  const oqPct = donePct(new Set((window.OUTPUT_QUIZ || []).map(q => q.id)), 'prep-oq-done');
+  const dbgPct = donePct(new Set((window.DEBUG_CHALLENGES || []).map(c => c.id)), 'prep-debug-solved');
+  const apiPct = donePct(new Set((window.API_QUIZ || []).map(q => q.id)), 'prep-api-done');
+  const thinkVals = [codingPct, iqPct, ivBest, oqPct, dbgPct, apiPct].filter(v => v != null);
   const think = thinkVals.length ? thinkVals.reduce((a, b) => a + b, 0) / thinkVals.length : 0;
 
   // 7) Thiết kế hệ thống — coverage rubric tốt nhất + điểm AI tốt nhất (TB phần đã có), nhân độ phủ số lần luyện

@@ -340,6 +340,20 @@ test('readiness: tổng trọng số 7 phần = 1.0 (điểm không lệch thang
   assert.ok(Math.abs(sum - 1) < 1e-9, `tổng trọng số = ${sum} ≠ 1.0`);
 });
 
+test('readiness: phần Tư duy gồm cả 3 quiz mới (output/debug/api) + dashboard panel', () => {
+  const block = APP.slice(APP.indexOf('function computeReadiness'), APP.indexOf('function readinessHtml'));
+  for (const key of ['prep-oq-done', 'prep-debug-solved', 'prep-api-done']) {
+    assert.ok(block.includes(key), `computeReadiness chưa tính ${key} vào phần Tư duy`);
+  }
+  assert.ok(/thinkVals = \[codingPct, iqPct, ivBest, oqPct, dbgPct, apiPct\]/.test(block),
+    'thinkVals chưa gộp đủ 6 thành phần');
+  // dashboard panel Tư duy
+  assert.ok(HTML.includes('id="dash-think"'), 'index.html thiếu #dash-think');
+  assert.ok(/function renderThinkStats\b/.test(APP), 'thiếu renderThinkStats');
+  assert.ok(/renderThinkStats\(\)/.test(APP.slice(APP.indexOf('function renderDashboard'), APP.indexOf('function renderDashboard') + 2500)),
+    'renderDashboard chưa gọi renderThinkStats');
+});
+
 test('wiring: mọi switchView("x") literal trỏ tới view tồn tại', () => {
   const tabViews = new Set([...HTML.matchAll(/data-view="([\w-]+)"/g)].map(m => m[1]));
   const bad = [];

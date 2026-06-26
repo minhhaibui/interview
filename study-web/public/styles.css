@@ -1145,3 +1145,12 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 /* 📡 API/HTTP quiz — câu hỏi & lựa chọn dạng text (tái dùng .oq-* của Đoán output) */
 .oq-question { font-size: 15.5px; line-height: 1.6; font-weight: 600; margin: 6px 0 12px; }
 .oq-otext { display: block; padding: 8px 0; line-height: 1.55; white-space: normal; }
+
+/* 🧠 Panel Luyện tư duy trong Dashboard */
+#dash-think { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 8px; }
+.tk-row { display: grid; grid-template-columns: 130px 1fr auto; gap: 10px; align-items: center; font-size: 13px; }
+.tk-label { color: var(--text); white-space: nowrap; }
+.tk-track { height: 9px; background: var(--bg3); border-radius: 5px; overflow: hidden; }
+.tk-fill { height: 100%; background: var(--accent); border-radius: 5px; transition: width .3s; }
+.tk-val { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+@media (max-width: 560px) { .tk-row { grid-template-columns: 96px 1fr auto; gap: 6px; font-size: 12px; } .tk-label { white-space: normal; } }
