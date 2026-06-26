@@ -26,7 +26,9 @@ let STATIC_MODE = false;
 let _docsPromise = null;
 /** Tải gói nội dung md tĩnh một lần, cache lại (dùng cho đọc file + tìm kiếm) */
 function loadDocsStatic() {
-  return _docsPromise ??= fetch('data/docs.json').then(r => r.json());
+  return _docsPromise ??= fetch('data/docs.json')
+    .then(r => { if (!r.ok) throw new Error('docs.json ' + r.status); return r.json(); })
+    .catch(() => { _docsPromise = null; return {}; }); // lỗi tải → coi như rỗng, cho phép thử lại lần sau
 }
 
 /** Đọc 1 file md (raw text) — null nếu không có */
@@ -3166,16 +3168,19 @@ function renderCompany() {
   if (!body) return;
   clearInterval(iqTimerId);
   const hist = store.get('prep-interview-history', []);
-  const best = hist.length ? Math.max(...hist.map(h => h.overall)) : null;
+  const best = hist.length ? Math.max(...hist.map(h => h.overall || 0)) : null;
   const histHtml = hist.length
     ? `<h3>🗂️ Lịch sử phỏng vấn (${hist.length})</h3>
-       <div class="iv-hist">${hist.slice().reverse().slice(0, 8).map(h => `
+       <div class="iv-hist">${hist.slice().reverse().slice(0, 8).map(h => {
+         const sc = h.scores || {};
+         return `
          <div class="iv-hrow">
            <span class="iv-hdate">${escHtml(h.date)}</span>
-           <span class="iv-hov">${h.overall}/100</span>
-           <span class="iv-hverd ${verdClass(h.overall)}">${escHtml(h.verdict || '')}</span>
-           <span class="iv-hbk">🇬🇧${h.scores.english} 🧩${h.scores.iq} ⌨️${h.scores.code} 🎭${h.scores.situational}</span>
-         </div>`).join('')}</div>
+           <span class="iv-hov">${h.overall ?? '—'}/100</span>
+           <span class="iv-hverd ${verdClass(h.overall || 0)}">${escHtml(h.verdict || '')}</span>
+           <span class="iv-hbk">🇬🇧${sc.english ?? '—'} 🧩${sc.iq ?? '—'} ⌨️${sc.code ?? '—'} 🎭${sc.situational ?? '—'}</span>
+         </div>`;
+       }).join('')}</div>
        <p class="iq-note">☁️ Lịch sử được lưu & đồng bộ lên cloud theo tài khoản của bạn.</p>`
     : '<p class="iq-note">Chưa có buổi phỏng vấn nào — hãy thử buổi đầu tiên!</p>';
   body.innerHTML = `
@@ -3328,7 +3333,8 @@ function ivRunCode(p, code) {
 
 function finishInterview() {
   const sc = ivState.scores;
-  const overall = Math.round((sc.english + sc.iq + sc.code + sc.situational) / 4);
+  const v = k => sc[k] || 0;
+  const overall = Math.round((v('english') + v('iq') + v('code') + v('situational')) / 4);
   const verdict = verdictText(overall);
   const timeSec = Math.round((Date.now() - ivState.startMs) / 1000);
   const rec = { date: dayKey(new Date()), ts: Date.now(), scores: sc, overall, verdict, timeSec };

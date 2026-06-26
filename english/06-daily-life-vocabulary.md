@@ -587,6 +587,19 @@
 
 ---
 
+## 💻 Làm việc từ xa & Online
+
+| Từ/cụm | IPA | Nghĩa | Câu ví dụ |
+|--------|-----|-------|-----------|
+| remote work | /rɪˈmoʊt wɜːrk/ | làm việc từ xa | Our team does remote work three days a week. |
+| join a call | /dʒɔɪn ə kɔːl/ | tham gia cuộc gọi | Can you join the call at 9 a.m. tomorrow? |
+| share your screen | /ʃɛər jʊər skriːn/ | chia sẻ màn hình | Could you share your screen so we can see the error? |
+| mute | /mjuːt/ | tắt tiếng | Please mute your mic when you are not speaking. |
+| background noise | /ˈbækɡraʊnd nɔɪz/ | tiếng ồn nền | Sorry, there is some background noise on my side. |
+| time zone | /taɪm zoʊn/ | múi giờ | We work across three time zones, so we plan meetings carefully. |
+| deadline | /ˈdedlaɪn/ | hạn chót | The deadline for this task is Friday afternoon. |
+| out of office | /aʊt əv ˈɔːfɪs/ | nghỉ (không ở văn phòng) | I will be out of office next Monday. |
+
 ## Hướng dẫn học bộ từ này
 
 1. **Mỗi ngày một chủ đề nhỏ**: 5-10 từ trong tab 🃏 Flashcards (lọc nhóm 🗣️), bật chiều **Việt→Anh** để luyện phản xạ.

@@ -790,3 +790,19 @@
 | rabbit | RÁ-bịt | con thỏ | The rabbit runs fast. |
 
 
+
+## Công nghệ & Internet
+
+| Từ | Đọc (Việt-hóa) | Nghĩa | Ví dụ |
+|----|----------------|-------|-------|
+| internet | IN-tơ-nét | mạng internet | I use the internet every day. |
+| website | OÉP-sai | trang web | This website is very useful. |
+| password | PÁT-uợt | mật khẩu | Keep your password secret. |
+| account | ơ-CAO | tài khoản | I have a new email account. |
+| download | ĐAO-lâu | tải xuống | I download the file now. |
+| upload | ẮP-lâu | tải lên | She uploads a photo. |
+| click | CLÍCH | nhấp chuột | Click the blue button. |
+| search | XớT | tìm kiếm | I search for a good restaurant. |
+| online | ON-lai | trực tuyến | We meet online today. |
+| message | MÉT-sịch | tin nhắn | I send a message to my friend. |
+| screen | XCRIN | màn hình | The screen is very bright. |

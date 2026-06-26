@@ -446,6 +446,17 @@
 
 ---
 
+| tail latency | /teɪl ˈleɪtənsi/ | độ trễ đuôi (P99) | We optimize tail latency because the slowest 1% of requests hurt user experience most. |
+| thundering herd | /ˈθʌndərɪŋ hɜːrd/ | hiệu ứng bầy đàn (đổ dồn) | When the cache expires, a thundering herd of requests hits the database at once. |
+| graceful degradation | /ˈɡreɪsfl ˌdɛɡrəˈdeɪʃn/ | suy giảm có kiểm soát | Under heavy load the service shows cached data — graceful degradation instead of a crash. |
+| blue-green deployment | /bluː ɡriːn dɪˈplɔɪmənt/ | triển khai blue-green | Blue-green deployment lets us switch traffic to the new version with zero downtime. |
+| canary release | /kəˈnɛəri rɪˈliːs/ | phát hành thăm dò | We roll out the feature to 5% of users first as a canary release. |
+| feature flag | /ˈfiːtʃər flæɡ/ | cờ bật/tắt tính năng | A feature flag lets us enable the new checkout for beta users without redeploying. |
+| dead letter queue | /dɛd ˈlɛtər kjuː/ | hàng đợi thư chết | Messages that fail processing repeatedly are moved to a dead letter queue for inspection. |
+| write-ahead log | /raɪt əˈhɛd lɔːɡ/ | nhật ký ghi trước (WAL) | The database uses a write-ahead log to guarantee durability after a crash. |
+| consistent hashing | /kənˈsɪstənt ˈhæʃɪŋ/ | băm nhất quán | Consistent hashing minimizes key remapping when a cache node is added or removed. |
+| indexing | /ˈɪndeksɪŋ/ | đánh chỉ mục | Proper indexing turned a 2-second query into a 5-millisecond one. |
+
 ## Hướng dẫn import vào Anki
 
 ### Bước 1 — Tạo file import (tab-separated)
