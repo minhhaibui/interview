@@ -1141,3 +1141,7 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 
 /* 🐛 Sửa bug — tái dùng style .coding-* / .cd-*, chỉ cần list flex giống #coding-list */
 #debug-list { display: flex; flex-direction: column; gap: 8px; }
+
+/* 📡 API/HTTP quiz — câu hỏi & lựa chọn dạng text (tái dùng .oq-* của Đoán output) */
+.oq-question { font-size: 15.5px; line-height: 1.6; font-weight: 600; margin: 6px 0 12px; }
+.oq-otext { display: block; padding: 8px 0; line-height: 1.55; white-space: normal; }

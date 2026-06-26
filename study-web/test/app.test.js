@@ -243,6 +243,30 @@ test('debug-challenges: id duy nhất, fnName đủ, BẤT BIẾN fixed pass h�
   }
 });
 
+test('api-quiz: id duy nhất, answer hợp lệ, options ≥ 2, đủ field', () => {
+  const qs = loadWindow('api-quiz.js').API_QUIZ;
+  assert.ok(Array.isArray(qs) && qs.length >= 10);
+  const ids = qs.map(q => q.id);
+  assert.strictEqual(new Set(ids).size, ids.length, 'id api-quiz trùng');
+  for (const q of qs) {
+    assert.ok(q.q && q.explain && q.topic, `API ${q.id} thiếu field`);
+    assert.ok(Array.isArray(q.options) && q.options.length >= 2, `API ${q.id}: <2 lựa chọn`);
+    assert.ok(Number.isInteger(q.answer) && q.answer >= 0 && q.answer < q.options.length,
+      `API ${q.id}: answer ngoài range`);
+  }
+});
+
+test('wiring: chế độ API/HTTP có đủ id + mode button + script + engine', () => {
+  assert.ok(HTML.includes('id="think-api"'), 'thiếu #think-api');
+  assert.ok(HTML.includes('id="api-body"'), 'thiếu #api-body');
+  assert.ok(HTML.includes('data-mode="api"'), 'thiếu nút mode api');
+  assert.ok(HTML.includes('src="api-quiz.js"'), 'index.html thiếu script api-quiz.js');
+  assert.ok(HTML.indexOf('src="api-quiz.js"') < HTML.indexOf('src="app.js"'), 'api-quiz.js phải nạp trước app.js');
+  assert.ok(/function makeQuiz\b/.test(APP), 'thiếu engine makeQuiz');
+  assert.ok(/renderApiQuiz\(\)/.test(APP), 'initThink chưa gọi renderApiQuiz');
+  assert.ok(/document\.getElementById\('think-api'\)\.hidden/.test(APP), 'setThinkMode chưa toggle think-api');
+});
+
 test('wiring: chế độ Sửa bug có đủ id + mode button + script + render', () => {
   assert.ok(HTML.includes('id="think-debug"'), 'thiếu #think-debug');
   assert.ok(HTML.includes('id="debug-list"'), 'thiếu #debug-list');
