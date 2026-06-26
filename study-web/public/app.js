@@ -406,6 +406,8 @@ function computeBadges() {
   const designDrills = new Set(store.get('prep-design-history', []).map(h => h.id)).size;
   const oqDoneN = Object.keys(store.get('prep-oq-done', {})).length;
   const oqTotal = (window.OUTPUT_QUIZ || []).length;
+  const dbgDoneN = Object.keys(store.get('prep-debug-solved', {})).length;
+  const dbgTotal = (window.DEBUG_CHALLENGES || []).length;
   // Tuần hoàn thành (đủ mọi mục checklist)
   const progress = store.get('prep-progress', {});
   const weeksGroup = TREE.find(g => g.title.includes('12 tuần'));
@@ -433,6 +435,8 @@ function computeBadges() {
     B('design5', '🏛️', 'Kiến trúc sư · 5 đề', designDrills >= 5, `Đã luyện ${designDrills}/5 đề System Design`),
     B('oq5', '🔍', 'Đoán đúng 5 output', oqDoneN >= 5, `Đoán đúng ${oqDoneN} snippet`),
     B('oqall', '🔍', 'Bậc thầy bẫy JS', oqTotal > 0 && oqDoneN >= oqTotal, `Đoán đúng ${oqDoneN}/${oqTotal} snippet`),
+    B('debug1', '🐛', 'Sửa bug đầu tiên', dbgDoneN >= 1, `Đã sửa ${dbgDoneN} bug`),
+    B('debugall', '🐛', 'Thợ săn bug', dbgTotal > 0 && dbgDoneN >= dbgTotal, `Đã sửa ${dbgDoneN}/${dbgTotal} bug`),
     B('wpm40', '⌨️', 'Gõ code 40 WPM', wpm >= 40, `Kỷ lục ${wpm || 0} WPM`),
     B('wpm60', '⌨️', 'Gõ code 60 WPM', wpm >= 60, `Kỷ lục ${wpm || 0} WPM`),
     B('pomo10', '🍅', '10 pomodoro', pomoTotal >= 10, `${pomoTotal}/10 pomodoro`),
@@ -2542,7 +2546,7 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-last-view', 'prep-doc-checks', 'prep-mock-wrong', 'prep-ai-history', 'prep-ai-settings', 'prep-plan',
   'prep-coding-solved', 'prep-coding-code', 'prep-iq-best', 'prep-iq-test-history', 'prep-interview-history',
   'prep-daily-goal', 'prep-badges-seen', 'prep-design-history', 'prep-design-draft',
-  'prep-oq-done', 'prep-oq-best'];
+  'prep-oq-done', 'prep-oq-best', 'prep-debug-solved', 'prep-debug-code'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */
@@ -3102,7 +3106,7 @@ let thinkInit = false, thinkMode = 'code';
 function initThink() {
   document.querySelectorAll('.think-mode').forEach(b => { b.onclick = () => setThinkMode(b.dataset.mode); });
   setThinkMode(thinkMode);
-  if (!thinkInit) { renderCodingFilters(); renderCodingList(); renderIQ(); renderOutputQuiz(); thinkInit = true; }
+  if (!thinkInit) { renderCodingFilters(); renderCodingList(); renderIQ(); renderOutputQuiz(); renderDebugList(); thinkInit = true; }
 }
 
 function setThinkMode(m) {
@@ -3112,6 +3116,7 @@ function setThinkMode(m) {
   document.getElementById('think-code').hidden = m !== 'code';
   document.getElementById('think-iq').hidden = m !== 'iq';
   document.getElementById('think-output').hidden = m !== 'output';
+  document.getElementById('think-debug').hidden = m !== 'debug';
 }
 
 // ----- Chế độ 🔍 Đoán Output (quiz đoán console.log) -----
@@ -3199,6 +3204,102 @@ function finishOutputQuiz() {
       <button id="oq-again" class="dg-go">↻ Làm lại</button>
     </div>`;
   document.getElementById('oq-again').onclick = startOutputQuiz;
+}
+
+// ----- Chế độ 🐛 Tìm & Sửa Bug (tái dùng runInSandbox) -----
+const dbgAll = () => window.DEBUG_CHALLENGES || [];
+const dbgSolved = () => store.get('prep-debug-solved', {});
+
+function renderDebugList() {
+  const all = dbgAll();
+  const pane = document.getElementById('debug-list');
+  if (!pane) return;
+  if (!all.length) { pane.innerHTML = '<p>Chưa nạp được ngân hàng bài sửa bug.</p>'; return; }
+  const solved = dbgSolved();
+  pane.innerHTML = all.map(c => `
+    <button class="coding-item${solved[c.id] ? ' solved' : ''}" data-id="${escHtml(c.id)}">
+      <span class="ci-check">${solved[c.id] ? '✅' : '○'}</span>
+      <span class="ci-title">${escHtml(c.title)}</span>
+      <span class="ci-tags"><span class="ci-diff d-${diffClass(c.difficulty)}">${escHtml(c.difficulty)}</span><span class="ci-topic">${escHtml(c.topic)}</span></span>
+    </button>`).join('');
+  pane.querySelectorAll('.coding-item').forEach(b => b.onclick = () => openDebug(b.dataset.id));
+}
+
+function openDebug(id) {
+  const c = dbgAll().find(x => x.id === id);
+  if (!c) return;
+  const saved = store.get('prep-debug-code', {})[id];
+  const detail = document.getElementById('debug-detail');
+  const listPane = document.getElementById('debug-list-pane');
+  listPane.hidden = true; detail.hidden = false;
+  detail.innerHTML = `
+    <button class="coding-back">← Danh sách bài</button>
+    <h2>🐛 ${escHtml(c.title)}</h2>
+    <div class="cd-tags"><span class="ci-diff d-${diffClass(c.difficulty)}">${escHtml(c.difficulty)}</span><span class="ci-topic">${escHtml(c.topic)}</span></div>
+    <p class="cd-explain">Đoạn code dưới có <b>một bug</b>. Tìm và sửa cho <b>chạy đúng mọi test</b>.</p>
+    <textarea id="dbg-code" class="cd-code" spellcheck="false"></textarea>
+    <div class="cd-actions">
+      <button id="dbg-run" class="cd-run">▶ Chạy test</button>
+      <button id="dbg-hint">💡 Gợi ý</button>
+      <button id="dbg-sol">👁 Đáp án + giải thích</button>
+      <button id="dbg-reset" class="cd-reset" title="Khôi phục code lỗi ban đầu">↺ Reset</button>
+    </div>
+    <div id="dbg-hints" class="cd-hints"></div>
+    <div id="dbg-result" class="cd-result"></div>
+    <div id="dbg-solution" class="cd-solution" hidden></div>`;
+  const ta = document.getElementById('dbg-code');
+  ta.value = saved || c.buggy;
+  detail.querySelector('.coding-back').onclick = () => { detail.hidden = true; listPane.hidden = false; renderDebugList(); };
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const s = ta.selectionStart, en = ta.selectionEnd;
+      ta.value = ta.value.slice(0, s) + '  ' + ta.value.slice(en);
+      ta.selectionStart = ta.selectionEnd = s + 2;
+    }
+  });
+  ta.addEventListener('input', () => { const all = store.get('prep-debug-code', {}); all[id] = ta.value; store.set('prep-debug-code', all); });
+  document.getElementById('dbg-run').onclick = () => runDebug(c, ta.value);
+  document.getElementById('dbg-hint').onclick = () => {
+    document.getElementById('dbg-hints').innerHTML = `<div class="cd-hint">💡 ${escHtml(c.bugHint)}</div>`;
+  };
+  document.getElementById('dbg-sol').onclick = () => {
+    const box = document.getElementById('dbg-solution');
+    box.hidden = !box.hidden;
+    if (!box.dataset.filled) {
+      box.innerHTML = `<h3>Bản đã sửa</h3><pre><code class="language-js">${escHtml(c.fixed)}</code></pre><p class="cd-explain">📝 ${escHtml(c.explain)}</p>`;
+      if (window.hljs) box.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+      box.dataset.filled = '1';
+    }
+  };
+  document.getElementById('dbg-reset').onclick = () => {
+    ta.value = c.buggy;
+    const all = store.get('prep-debug-code', {}); delete all[id]; store.set('prep-debug-code', all);
+  };
+}
+
+function runDebug(c, code) {
+  const res = document.getElementById('dbg-result');
+  res.innerHTML = '<div class="cd-running">⏳ Đang chạy test…</div>';
+  runInSandbox(code, c.fnName, c.tests, data => {
+    if (data.error) { res.innerHTML = `<div class="cd-err">❌ ${escHtml(data.error)}</div>`; return; }
+    const rows = data.results.map((r, i) => {
+      const got = r.error ? `lỗi: ${r.error}` : JSON.stringify(r.got);
+      const argTxt = r.args.map(a => JSON.stringify(a)).join(', ');
+      return `<div class="cd-case ${r.pass ? 'pass' : 'fail'}">
+        <span class="cc-h">${r.pass ? '✅' : '❌'} Test ${i + 1}</span>
+        <code class="cc-in">${escHtml(c.fnName)}(${escHtml(argTxt)})</code>
+        <span class="cc-exp">→ mong đợi <b>${escHtml(JSON.stringify(r.expected))}</b>${r.pass ? '' : `, nhận <b>${escHtml(got)}</b>`}</span>
+      </div>`;
+    }).join('');
+    const passed = data.results.filter(r => r.pass).length;
+    const all = passed === data.results.length;
+    res.innerHTML = `<div class="cd-summary ${all ? 'ok' : 'no'}">${all ? '🎉 Đã sửa xong bug!' : '⚠️'} ${passed}/${data.results.length} test đúng</div>${rows}`;
+    if (all) {
+      const solved = dbgSolved();
+      if (!solved[c.id]) { solved[c.id] = true; store.set('prep-debug-solved', solved); logActivity(); }
+    }
+  });
 }
 
 // ----- Chế độ Lập trình -----

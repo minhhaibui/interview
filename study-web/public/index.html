@@ -275,6 +275,7 @@
       <button class="think-mode active" data-mode="code">💻 Lập trình</button>
       <button class="think-mode" data-mode="iq">🧩 IQ / Logic</button>
       <button class="think-mode" data-mode="output">🔍 Đoán output</button>
+      <button class="think-mode" data-mode="debug">🐛 Sửa bug</button>
     </div>
 
     <!-- Chế độ LẬP TRÌNH -->
@@ -305,6 +306,18 @@
         <h1>🔍 Đoán Output</h1>
         <p class="coding-intro">Đọc snippet JavaScript rồi đoán <b>kết quả in ra console</b>. Rèn các điểm hay bị hỏi: event loop, closure, hoisting, async/await, type coercion, <code>this</code>. Chọn đáp án để biết đúng/sai kèm <b>giải thích</b>.</p>
         <div id="oq-body"></div>
+      </div>
+    </div>
+
+    <!-- Chế độ SỬA BUG -->
+    <div id="think-debug" hidden>
+      <div class="coding-wrap">
+        <div id="debug-list-pane">
+          <h1>🐛 Tìm &amp; Sửa Bug</h1>
+          <p class="coding-intro">Đoạn code có <b>một lỗi tinh vi</b> — đọc, tìm bug rồi sửa và <b>chạy test thật</b> để kiểm. Rèn kỹ năng debug hay gặp khi phỏng vấn: off-by-one, ép kiểu, thiếu return, base case đệ quy…</p>
+          <div id="debug-list"></div>
+        </div>
+        <div id="debug-detail" class="coding-detail" hidden></div>
       </div>
     </div>
   </div>
@@ -372,6 +385,7 @@
   <script src="situational-questions.js"></script>
   <script src="design-drills.js"></script>
   <script src="output-quiz.js"></script>
+  <script src="debug-challenges.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

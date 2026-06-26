@@ -220,6 +220,38 @@ test('output-quiz: CHẠY THẬT mỗi snippet → output đúng = options[answe
   }
 });
 
+test('debug-challenges: id duy nhất, fnName đủ, BẤT BIẾN fixed pass hết & buggy fail ≥1', () => {
+  const cs = loadWindow('debug-challenges.js').DEBUG_CHALLENGES;
+  assert.ok(Array.isArray(cs) && cs.length);
+  const ids = cs.map(c => c.id);
+  assert.strictEqual(new Set(ids).size, ids.length, 'id debug trùng');
+  const run = (code, fnName, tests) => {
+    const fn = new Function(`${code}\n;return typeof ${fnName}==="function"?${fnName}:undefined;`)();
+    assert.strictEqual(typeof fn, 'function', `${fnName} không phải hàm`);
+    return tests.map(t => {
+      try { return JSON.stringify(fn(...JSON.parse(JSON.stringify(t.args)))) === JSON.stringify(t.expected); }
+      catch { return false; }
+    });
+  };
+  for (const c of cs) {
+    assert.ok(c.title && c.fnName && c.buggy && c.fixed && c.bugHint && c.explain, `debug ${c.id} thiếu field`);
+    assert.ok(Array.isArray(c.tests) && c.tests.length, `debug ${c.id} thiếu test`);
+    const fixed = run(c.fixed, c.fnName, c.tests);
+    assert.ok(fixed.every(Boolean), `debug ${c.id}: bản FIXED không pass hết test`);
+    const buggy = run(c.buggy, c.fnName, c.tests);
+    assert.ok(buggy.some(r => !r), `debug ${c.id}: bản BUGGY pass hết → không có bug thật để sửa`);
+  }
+});
+
+test('wiring: chế độ Sửa bug có đủ id + mode button + script + render', () => {
+  assert.ok(HTML.includes('id="think-debug"'), 'thiếu #think-debug');
+  assert.ok(HTML.includes('id="debug-list"'), 'thiếu #debug-list');
+  assert.ok(HTML.includes('data-mode="debug"'), 'thiếu nút mode debug');
+  assert.ok(HTML.includes('src="debug-challenges.js"'), 'index.html thiếu script debug-challenges.js');
+  assert.ok(HTML.indexOf('src="debug-challenges.js"') < HTML.indexOf('src="app.js"'), 'debug-challenges.js phải nạp trước app.js');
+  assert.ok(/renderDebugList\(\)/.test(APP), 'initThink chưa gọi renderDebugList');
+});
+
 test('wiring: chế độ Đoán output có đủ id + mode button + script + render', () => {
   assert.ok(HTML.includes('id="think-output"'), 'thiếu #think-output');
   assert.ok(HTML.includes('id="oq-body"'), 'thiếu #oq-body');

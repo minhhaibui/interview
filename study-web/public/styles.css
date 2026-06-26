@@ -1138,3 +1138,6 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 .oq-explain { line-height: 1.65; color: var(--text); margin: 4px 0 12px; }
 .oq-result { text-align: center; padding: 30px 16px; }
 .oq-result h2 { font-size: 24px; }
+
+/* 🐛 Sửa bug — tái dùng style .coding-* / .cd-*, chỉ cần list flex giống #coding-list */
+#debug-list { display: flex; flex-direction: column; gap: 8px; }
