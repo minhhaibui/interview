@@ -277,6 +277,36 @@ test('wiring: tính năng AI chấm Mock có đủ id + helper + wiring', () => 
   assert.ok(/getElementById\('mk-aigrade'\)\.addEventListener/.test(APP), 'mk-aigrade chưa wire click');
 });
 
+test('regression: switchView tắt mic (wrRecog/aiRecog) + TTS khi rời tab', () => {
+  const block = APP.slice(APP.indexOf('function switchView'), APP.indexOf('function switchView') + 900);
+  assert.ok(/speechSynthesis\.cancel\(\)/.test(block), 'switchView chưa cancel TTS');
+  assert.ok(/wrRecog\.abort\(\)/.test(block), 'switchView chưa abort mic Luyện viết');
+  assert.ok(/aiRecog\.abort\(\)/.test(block), 'switchView chưa abort mic Phỏng vấn AI');
+});
+
+test('regression: aiTurn có session guard chống stream cũ ghi vào phiên mới', () => {
+  assert.ok(/const sid = aiSessionId/.test(APP), 'aiTurn chưa chụp aiSessionId');
+  assert.ok(/sid !== aiSessionId/.test(APP), 'aiTurn chưa kiểm sid sau await');
+  assert.ok(/aiSessionId\+\+/.test(APP), 'chưa tăng aiSessionId khi start/quit');
+});
+
+test('regression: loadMockPool gộp lời gọi đồng thời + helper thứ cấp dùng loadMockPool', () => {
+  assert.ok(/let mockPoolPromise = null/.test(APP), 'chưa memo hoá loadMockPool');
+  // helper điều hướng (gọi sau khi switchView đã kích initMock) phải chờ loadMockPool, không initMock lần 2
+  const gw = APP.slice(APP.indexOf('function goToMockWrong'), APP.indexOf('function goToMockWrong') + 320);
+  assert.ok(/loadMockPool\(\)\.then/.test(gw) && !/initMock\(\)\.then/.test(gw),
+    'goToMockWrong nên dùng loadMockPool().then');
+  // initMock().then chỉ còn đúng 1 chỗ canonical (trong switchView)
+  const cnt = (APP.match(/initMock\(\)\.then/g) || []).length;
+  assert.strictEqual(cnt, 1, `initMock().then chỉ nên còn 1 (canonical trong switchView), thấy ${cnt}`);
+});
+
+test('regression: badge oq/dbg lọc theo id còn tồn tại (tránh đếm vượt)', () => {
+  const block = APP.slice(APP.indexOf('function computeBadges'), APP.indexOf('function computeBadges') + 1600);
+  assert.ok(/oqIds\.has/.test(block), 'oqDoneN chưa lọc id tồn tại');
+  assert.ok(/dbgIds\.has/.test(block), 'dbgDoneN chưa lọc id tồn tại');
+});
+
 test('readiness: tổng trọng số 7 phần = 1.0 (điểm không lệch thang)', () => {
   // trích các weight trong computeReadiness (đứng liền trong mảng parts)
   const block = APP.slice(APP.indexOf('function computeReadiness'), APP.indexOf('function readinessHtml'));

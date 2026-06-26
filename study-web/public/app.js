@@ -127,6 +127,9 @@ function switchView(name) {
   if (typeof dgTimerId !== 'undefined' && dgTimerId) { clearInterval(dgTimerId); dgTimerId = null; } // dừng đồng hồ drill thiết kế
   if (typeof mkTimerId !== 'undefined') clearInterval(mkTimerId); // dừng đồng hồ Mock đang chạy ngầm
   try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch { /* trình duyệt không hỗ trợ */ } // tắt TTS đang đọc
+  try { if (wrRecog) { wrRecog.abort(); wrRecog = null; } } catch { /* noop */ } // tắt mic Luyện viết khi rời tab
+  try { if (aiRecog) { aiRecog.abort(); aiRecog = null; } } catch { /* noop */ } // tắt mic Phỏng vấn AI khi rời tab
+  document.querySelectorAll('.listening').forEach(el => el.classList.remove('listening')); // gỡ trạng thái mic đang nghe
   store.set('prep-last-view', name); // nhớ tab đang mở cho lần reload sau
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.view === name));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === `view-${name}`));
@@ -359,7 +362,7 @@ async function renderHome(pushHash = true) {
     await initWriting();
     // initWriting return sớm nếu đã init dở — chờ dữ liệu thật sự sẵn sàng
     await Promise.all([loadDeck(), loadSentences()]);
-    document.querySelector('.wr-mode[data-mode="mix"]').click();
+    document.querySelector('.wr-mode[data-mode="mix"]')?.click();
   });
   document.getElementById('hc-continue')?.addEventListener('click', () => openDoc(last));
   document.getElementById('hc-week')?.addEventListener('click', () => openDoc(`${nextWeek}/README.md`));
@@ -369,10 +372,10 @@ async function renderHome(pushHash = true) {
   document.getElementById('hc-mock')?.addEventListener('click', () => switchView('mock'));
   document.getElementById('hc-wrong')?.addEventListener('click', () => {
     switchView('mock');
-    initMock().then(() => {
+    loadMockPool().then(() => {
       fillMockWeekSelect();
       const sel = document.getElementById('mk-week');
-      sel.value = '__wrong__';
+      if (sel) sel.value = '__wrong__';
     });
   });
 }
@@ -404,10 +407,12 @@ function computeBadges() {
   const wpm = store.get('prep-code-best', {}).wpm || 0;
   const pomoTotal = Object.values(store.get('prep-pomo', {})).reduce((a, b) => a + b, 0);
   const designDrills = new Set(store.get('prep-design-history', []).map(h => h.id)).size;
-  const oqDoneN = Object.keys(store.get('prep-oq-done', {})).length;
-  const oqTotal = (window.OUTPUT_QUIZ || []).length;
-  const dbgDoneN = Object.keys(store.get('prep-debug-solved', {})).length;
-  const dbgTotal = (window.DEBUG_CHALLENGES || []).length;
+  const oqIds = new Set((window.OUTPUT_QUIZ || []).map(q => q.id));
+  const oqTotal = oqIds.size;
+  const oqDoneN = Object.keys(store.get('prep-oq-done', {})).filter(id => oqIds.has(id)).length;
+  const dbgIds = new Set((window.DEBUG_CHALLENGES || []).map(c => c.id));
+  const dbgTotal = dbgIds.size;
+  const dbgDoneN = Object.keys(store.get('prep-debug-solved', {})).filter(id => dbgIds.has(id)).length;
   // Tuần hoàn thành (đủ mọi mục checklist)
   const progress = store.get('prep-progress', {});
   const weeksGroup = TREE.find(g => g.title.includes('12 tuần'));
@@ -539,7 +544,7 @@ async function renderToday() {
 // Bộ điều hướng dùng chung cho tab Hôm nay (mở tab tương ứng + đặt sẵn bộ lọc).
 function goToFlash(filter) {
   switchView('flashcards');
-  initFlashcards().then(() => {
+  loadDeck().then(() => { // chờ deck sẵn sàng (initFlashcards lần 2 trả về sớm vì fcLoaded đã true)
     fillFcWeekSelect();
     const sel = document.getElementById('fc-week');
     if (sel) { sel.value = filter; sel.dispatchEvent(new Event('change')); }
@@ -553,7 +558,7 @@ async function goToWritingMix() {
 }
 function goToMockWrong() {
   switchView('mock');
-  initMock().then(() => {
+  loadMockPool().then(() => { // chờ pool THẬT SỰ sẵn sàng (initMock lần 2 trả về sớm vì mkInit đã true)
     fillMockWeekSelect();
     const sel = document.getElementById('mk-week');
     if (sel) sel.value = '__wrong__';
@@ -828,12 +833,13 @@ function loadDeck() {
 
 async function initFlashcards() {
   if (fcLoaded) return;
+  fcLoaded = true; // đặt ĐỒNG BỘ ngay để chặn double-bind khi initFlashcards() bị gọi 2 lần cùng tick (switchView + shortcut)
   const deck = await loadDeck();
   if (!deck.length) {
+    fcLoaded = false; // tải hỏng → cho phép thử lại lần sau
     document.querySelector('.fc-front').innerHTML = '<p>Không tải được file từ vựng 😕</p>';
     return;
   }
-  fcLoaded = true;
 
   fillFcWeekSelect();
   updateFcDirLabel();
@@ -1714,8 +1720,14 @@ function parseQA(md, week, weekLabel) {
   return out;
 }
 
+let mockPoolPromise = null;
 async function loadMockPool() {
   if (MK_POOL) return MK_POOL;
+  if (mockPoolPromise) return mockPoolPromise; // gộp các lời gọi đồng thời → tải 1 lần
+  mockPoolPromise = doLoadMockPool();
+  return mockPoolPromise;
+}
+async function doLoadMockPool() {
   const weeksGroup = TREE.find(g => g.title.includes('12 tuần'));
   const weekItems = (weeksGroup?.items || []).filter(i => i.week && !i.sub);
   const all = await Promise.all(weekItems.map(async it => {
@@ -1884,6 +1896,7 @@ function finishMock() {
 let aiInit = false;
 let aiMessages = [];       // lịch sử hội thoại [{role, content}]
 let aiBusy = false;
+let aiSessionId = 0; // tăng mỗi khi bắt đầu/thoát phiên — chống stream cũ ghi vào phiên mới
 let aiFinished = false;
 let aiRecog = null;
 let aiCfg = { lang: 'vi', model: 'claude-opus-4-8', level: 'Mid-level', topic: '', tts: true };
@@ -2048,6 +2061,8 @@ async function aiStart() {
 
   aiMessages = [];
   aiFinished = false;
+  aiBusy = false;        // phòng khi phiên trước thoát giữa stream
+  aiSessionId++;         // đánh dấu phiên mới → stream cũ (nếu còn) sẽ bị bỏ qua
   document.getElementById('ai-setup').hidden = true;
   document.getElementById('ai-session').hidden = false;
   document.getElementById('ai-chat').innerHTML = '';
@@ -2063,6 +2078,7 @@ async function aiStart() {
 async function aiTurn() {
   if (aiBusy) return;
   aiBusy = true;
+  const sid = aiSessionId; // chụp phiên hiện tại
   setAiInputDisabled(true);
   const bubble = addAiBubble('assistant', '');
   const streamEl = bubble.querySelector('.ai-bubble-body');
@@ -2074,8 +2090,9 @@ async function aiTurn() {
       system: aiSystemPrompt(),
       messages: aiMessages,
       maxTokens: aiFinished ? 1200 : 700,
-      onText: t => { streamEl.textContent = t; scrollAiChat(); },
+      onText: t => { if (sid === aiSessionId) { streamEl.textContent = t; scrollAiChat(); } },
     });
+    if (sid !== aiSessionId) return; // đã thoát/bắt đầu phiên khác giữa chừng → bỏ kết quả cũ
     aiMessages.push({ role: 'assistant', content: full });
     // render markdown + đọc to
     streamEl.innerHTML = window.marked ? marked.parse(full) : escHtml(full);
@@ -2085,11 +2102,13 @@ async function aiTurn() {
     logActivity();
     if (aiFinished) saveAiEvaluation(full);
   } catch (err) {
-    streamEl.innerHTML = `<span class="ai-err">⚠️ ${escHtml(err.message)}</span>`;
+    if (sid === aiSessionId) streamEl.innerHTML = `<span class="ai-err">⚠️ ${escHtml(err.message)}</span>`;
   } finally {
-    aiBusy = false;
-    setAiInputDisabled(false);
-    if (!aiFinished) document.getElementById('ai-answer').focus();
+    if (sid === aiSessionId) { // chỉ dọn dẹp nếu vẫn đúng phiên (tránh reset aiBusy của phiên mới)
+      aiBusy = false;
+      setAiInputDisabled(false);
+      if (!aiFinished) document.getElementById('ai-answer').focus();
+    }
   }
 }
 
@@ -2118,6 +2137,8 @@ async function aiEnd() {
 function aiQuit() {
   if ('speechSynthesis' in window) speechSynthesis.cancel();
   if (aiRecog) { try { aiRecog.abort(); } catch {} aiRecog = null; }
+  aiBusy = false; // thoát giữa lúc stream → mở khoá để Bắt đầu lại không bị aiTurn return sớm
+  aiSessionId++;  // vô hiệu hoá stream đang dang dở (nếu có)
   document.getElementById('ai-session').hidden = true;
   document.getElementById('ai-setup').hidden = false;
   document.getElementById('ai-end').disabled = false;
@@ -2708,9 +2729,10 @@ function renderMockWrong() {
   }));
   document.getElementById('mw-review')?.addEventListener('click', () => {
     switchView('mock');
-    initMock().then(() => {
+    loadMockPool().then(() => {
       fillMockWeekSelect();
-      document.getElementById('mk-week').value = '__wrong__';
+      const sel = document.getElementById('mk-week');
+      if (sel) sel.value = '__wrong__';
     });
   });
 }
@@ -3117,6 +3139,13 @@ function setThinkMode(m) {
   document.getElementById('think-iq').hidden = m !== 'iq';
   document.getElementById('think-output').hidden = m !== 'output';
   document.getElementById('think-debug').hidden = m !== 'debug';
+  // Quay lại mode IQ khi đang dở Bài Test (có tính giờ) → khởi động lại đồng hồ
+  // (switchView/đổi mode đã clearInterval; tickIQTest tính theo startMs nên không lệch, và tự nộp nếu hết giờ).
+  if (m === 'iq' && iqState && iqState.mode === 'test') {
+    clearInterval(iqTimerId);
+    tickIQTest();
+    iqTimerId = setInterval(tickIQTest, 1000);
+  }
 }
 
 // ----- Chế độ 🔍 Đoán Output (quiz đoán console.log) -----
