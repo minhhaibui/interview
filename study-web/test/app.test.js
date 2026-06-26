@@ -192,6 +192,22 @@ test('regression: không còn marked.parse() thiếu guard window.marked (vỡ k
   assert.deepStrictEqual(bad, [], 'marked.parse thiếu guard ở dòng');
 });
 
+test('AI chấm câu lẻ: regex bắt điểm "ĐIỂM: N/10" (gồm số thập phân)', () => {
+  const re = /ĐIỂM:\s*(\d+(?:\.\d+)?)\s*\/\s*10/i;
+  assert.strictEqual('nhận xét…\nĐIỂM: 7/10'.match(re)[1], '7');
+  assert.strictEqual('điểm: 8.5 / 10'.match(re)[1], '8.5');
+  assert.strictEqual('chưa chấm'.match(re), null);
+});
+
+test('wiring: tính năng AI chấm Mock có đủ id + helper + wiring', () => {
+  for (const id of ['mk-uans', 'mk-aikey', 'mk-aigrade', 'mk-aiout']) {
+    assert.ok(HTML.includes(`id="${id}"`), `index.html thiếu #${id}`);
+  }
+  assert.ok(/function aiGradeSingle\b/.test(APP), 'thiếu aiGradeSingle');
+  assert.ok(/function mkAiGrade\b/.test(APP), 'thiếu mkAiGrade');
+  assert.ok(/getElementById\('mk-aigrade'\)\.addEventListener/.test(APP), 'mk-aigrade chưa wire click');
+});
+
 test('readiness: tổng trọng số 7 phần = 1.0 (điểm không lệch thang)', () => {
   // trích các weight trong computeReadiness (đứng liền trong mảng parts)
   const block = APP.slice(APP.indexOf('function computeReadiness'), APP.indexOf('function readinessHtml'));

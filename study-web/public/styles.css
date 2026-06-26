@@ -1104,3 +1104,14 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 .dg-ai-badge { margin-top: 12px; padding: 8px 12px; background: rgba(137,87,229,.16); color: #b692f0;
   border-radius: 8px; font-weight: 700; }
 @media (max-width: 560px) { .dg-grid { grid-template-columns: 1fr; } .dg-result { flex-direction: column; text-align: center; } }
+
+/* ============ 🤖 AI chấm câu trả lời lẻ (trong Mock) ============ */
+.mk-aigrade { margin-top: 14px; border: 1px solid var(--border); border-radius: 10px; padding: 4px 14px; background: var(--bg2); }
+.mk-aigrade summary { cursor: pointer; font-weight: 600; padding: 8px 0; color: #b692f0; }
+.mk-uans { width: 100%; box-sizing: border-box; min-height: 110px; background: var(--code-bg); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 14px; line-height: 1.6; resize: vertical; }
+.mk-aig-cfg { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.mk-aig-cfg input { flex: 1; min-width: 200px; padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; }
+.mk-aiout { white-space: pre-wrap; line-height: 1.65; background: var(--code-bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 13.5px; }

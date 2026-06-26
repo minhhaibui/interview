@@ -1733,6 +1733,7 @@ async function initMock() {
   document.getElementById('mk-right').addEventListener('click', () => gradeMock(true));
   document.getElementById('mk-wrong').addEventListener('click', () => gradeMock(false));
   document.getElementById('mk-quit').addEventListener('click', finishMock);
+  document.getElementById('mk-aigrade').addEventListener('click', mkAiGrade);
   document.getElementById('mk-question').textContent = '';
   initAiInterview();
 }
@@ -1781,6 +1782,11 @@ function showMockQ() {
   document.getElementById('mk-reveal').hidden = false;
   document.getElementById('mk-right').hidden = true;
   document.getElementById('mk-wrong').hidden = true;
+  // reset khu AI chấm cho câu mới
+  const ua = document.getElementById('mk-uans'); if (ua) ua.value = '';
+  const aout = document.getElementById('mk-aiout'); if (aout) { aout.hidden = true; aout.textContent = ''; }
+  const akey = document.getElementById('mk-aikey'); if (akey && !akey.value) akey.value = store.get('prep-ai-key', '');
+  const ag = document.getElementById('mk-aigrade'); if (ag) { ag.disabled = false; ag.textContent = 'Chấm câu này'; } // tránh kẹt "Đang chấm…" nếu đổi câu giữa lúc stream
   startMockTimer();
 }
 
@@ -2473,6 +2479,56 @@ Hãy chấm như sau:
     out.textContent = '⚠️ ' + (e.message || 'Lỗi gọi API');
   } finally {
     btn.disabled = false; btn.textContent = 'Chấm ngay';
+  }
+}
+
+// ---------- AI chấm MỘT câu trả lời lẻ (tái dùng cho Mock; BYOK) ----------
+/** Gọi Claude chấm 1 câu trả lời, đối chiếu đáp án tham chiếu. Trả về full text (kết bằng "ĐIỂM: N/10"). */
+function aiGradeSingle({ question, reference, userAnswer, key, model, onText }) {
+  const system = 'Bạn là interviewer kỹ thuật Backend (Node.js) dày dạn, đang chấm câu trả lời của ứng viên cho MỘT câu hỏi phỏng vấn. Chấm công bằng, mang tính xây dựng, NGẮN GỌN. Trả lời TIẾNG VIỆT, thuật ngữ giữ tiếng Anh, không markdown nặng.';
+  const user = `CÂU HỎI: ${question}
+
+ĐÁP ÁN THAM CHIẾU (chuẩn mong đợi, ứng viên không nhất thiết khớp y hệt):
+"""${reference}"""
+
+CÂU TRẢ LỜI CỦA ỨNG VIÊN:
+"""${userAnswer}"""
+
+Hãy: (1) nêu ngắn gọn ứng viên đã ĐÚNG/đủ gì; (2) chỉ ra điểm THIẾU hoặc SAI so với đáp án tham chiếu; (3) một gợi ý để trả lời tốt hơn. KẾT THÚC bằng đúng một dòng theo định dạng: ĐIỂM: N/10`;
+  return callClaudeStream({ apiKey: key, model, system, messages: [{ role: 'user', content: user }], maxTokens: 900, onText });
+}
+
+async function mkAiGrade() {
+  const it = mkQueue[mkIndex];
+  if (!it) return;
+  const key = document.getElementById('mk-aikey').value.trim();
+  const userAnswer = document.getElementById('mk-uans').value.trim();
+  if (!key) { alert('Hãy dán API key Anthropic của bạn (dùng chung với Phỏng vấn AI).'); document.getElementById('mk-aikey').focus(); return; }
+  if (userAnswer.length < 10) { alert('Hãy gõ câu trả lời của bạn trước khi nhờ chấm.'); return; }
+  store.set('prep-ai-key', key); // dùng chung với Mock AI / Design AI
+  const model = (typeof aiCfg !== 'undefined' && aiCfg.model) || 'claude-opus-4-8';
+  const btn = document.getElementById('mk-aigrade');
+  btn.disabled = true; btn.textContent = '⏳ Đang chấm…';
+  const out = document.getElementById('mk-aiout');
+  out.hidden = false; out.textContent = '…';
+  try {
+    const full = await aiGradeSingle({
+      question: it.q, reference: it.a, userAnswer, key, model,
+      onText: t => { if (mkQueue[mkIndex] === it) out.textContent = t; }, // bỏ qua delta nếu đã đổi câu
+    });
+    if (mkQueue[mkIndex] !== it) return; // đã chuyển câu khác giữa lúc stream → không ghi kết quả lệch câu
+    const m = full.match(/ĐIỂM:\s*(\d+(?:\.\d+)?)\s*\/\s*10/i);
+    if (m) {
+      const badge = document.createElement('div');
+      badge.className = 'dg-ai-badge';
+      badge.textContent = `🤖 Điểm Claude cho câu này: ${m[1]}/10`;
+      out.appendChild(badge);
+    }
+    logActivity();
+  } catch (e) {
+    out.textContent = '⚠️ ' + (e.message || 'Lỗi gọi API');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Chấm câu này';
   }
 }
 

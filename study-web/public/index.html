@@ -248,6 +248,16 @@
           <button id="mk-wrong" class="mk-grade-wrong" hidden>✗ Chưa tốt</button>
           <button id="mk-quit">⏹ Dừng</button>
         </div>
+        <details class="mk-aigrade">
+          <summary>🤖 Nhờ AI chấm câu trả lời của bạn (tùy chọn · cần API key)</summary>
+          <p class="mk-tip">Gõ câu trả lời của bạn rồi để Claude đối chiếu với đáp án mẫu, cho điểm /10 + chỉ ra chỗ thiếu. Dùng chung API key với “Phỏng vấn AI”.</p>
+          <textarea id="mk-uans" class="mk-uans" placeholder="Gõ câu trả lời của bạn cho câu hỏi trên…"></textarea>
+          <div class="mk-aig-cfg">
+            <input id="mk-aikey" type="password" autocomplete="off" placeholder="sk-ant-... (lưu cục bộ)">
+            <button id="mk-aigrade" class="dg-go dg-go-ai">Chấm câu này</button>
+          </div>
+          <div id="mk-aiout" class="mk-aiout" hidden></div>
+        </details>
       </div>
       <div id="mk-result" class="mk-result" hidden></div>
       </div><!-- /#mk-self -->
