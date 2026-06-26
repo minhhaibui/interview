@@ -1029,3 +1029,78 @@ body.light .plan-config input[type=date] { color-scheme: light; }
   .td-hero { flex-direction: column; text-align: center; }
   .td-tasks { grid-template-columns: 1fr; }
 }
+
+/* ============ 🏛️ SYSTEM DESIGN DRILL ============ */
+.design-wrap { max-width: 920px; margin: 0 auto; padding: 8px 4px 60px; }
+.dg-intro { color: var(--muted); line-height: 1.6; }
+.dg-filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0; }
+.dg-fbtn { padding: 6px 14px; border: 1px solid var(--border); background: var(--bg2); color: var(--text);
+  border-radius: 20px; cursor: pointer; font-size: 13px; }
+.dg-fbtn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.dg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.dg-card { text-align: left; background: var(--bg2); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px; cursor: pointer; color: var(--text); transition: border-color .15s, transform .1s; }
+.dg-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.dg-card h3 { margin: 8px 0 2px; font-size: 16px; }
+.dg-card-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.dg-company { color: var(--muted); font-size: 12px; }
+.dg-scen { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 8px 0 0;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.dg-diff { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+.dg-diff-0 { background: rgba(63,185,80,.18); color: var(--green); }
+.dg-diff-1 { background: rgba(210,153,34,.18); color: var(--yellow); }
+.dg-diff-2 { background: rgba(248,81,73,.18); color: var(--red); }
+.dg-done { font-size: 11px; color: var(--green); }
+.dg-hist { margin-top: 28px; }
+.dg-hist ul { list-style: none; padding: 0; }
+.dg-hist li { padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--muted); }
+.dg-hist b { color: var(--text); }
+
+/* phiên làm bài */
+.dg-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+.dg-link { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 14px; padding: 4px; }
+.dg-timer { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 20px; margin-left: auto;
+  padding: 4px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg2); }
+.dg-timer.dg-warn { color: var(--yellow); border-color: var(--yellow); }
+.dg-timer.dg-timeup { color: var(--red); border-color: var(--red); }
+.dg-go { padding: 8px 16px; border: none; border-radius: 8px; background: var(--accent); color: #fff;
+  cursor: pointer; font-weight: 600; font-size: 14px; }
+.dg-go:disabled { opacity: .5; cursor: default; }
+.dg-go-ai { background: #8957e5; }
+.dg-scenario { background: var(--bg2); border-left: 3px solid var(--accent); padding: 12px 14px;
+  border-radius: 0 8px 8px 0; line-height: 1.6; margin: 10px 0; }
+.dg-focus { margin: 10px 0; } .dg-focus summary { cursor: pointer; color: var(--muted); font-weight: 600; }
+.dg-focus ul { margin: 8px 0; line-height: 1.6; } .dg-focus li { margin: 3px 0; }
+.dg-tip { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.dg-answer { width: 100%; min-height: 280px; box-sizing: border-box; background: var(--code-bg);
+  color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13.5px; line-height: 1.6; resize: vertical; }
+.dg-rubric { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+.dg-crit { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: start;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; cursor: pointer; }
+.dg-crit input { margin-top: 3px; grid-row: span 2; width: 16px; height: 16px; }
+.dg-crit-main { font-weight: 600; }
+.dg-crit-hint { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+.dg-actions { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0; }
+.dg-result { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; background: var(--bg2);
+  border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-top: 8px; }
+.dg-score-ring { --c: var(--accent); --p: 0; width: 92px; height: 92px; border-radius: 50%; flex: 0 0 auto;
+  background: conic-gradient(var(--c) calc(var(--p) * 1%), var(--bg3) 0); display: grid; place-items: center; }
+.dg-score-num { width: 72px; height: 72px; border-radius: 50%; background: var(--bg2); display: grid;
+  place-items: center; font-size: 22px; font-weight: 800; }
+.dg-score-side { flex: 1; min-width: 220px; }
+.dg-band { font-size: 18px; font-weight: 700; }
+.dg-score-meta { color: var(--muted); font-size: 13px; margin: 4px 0 8px; }
+.dg-miss ul { margin: 6px 0; padding-left: 18px; line-height: 1.6; } .dg-miss li { color: var(--muted); }
+.dg-ref-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-top: 10px; }
+.dg-ref-box ul { line-height: 1.7; padding-left: 18px; }
+.dg-ai { background: var(--bg2); border: 1px solid #8957e5; border-radius: 12px; padding: 16px; margin-top: 10px; }
+.dg-ai-cfg { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.dg-ai-cfg input, .dg-ai-cfg select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg); color: var(--text); font-size: 13px; }
+.dg-ai-cfg input { flex: 1; min-width: 200px; }
+.dg-ai-out { white-space: pre-wrap; line-height: 1.65; background: var(--code-bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 14px; margin-top: 8px; font-size: 13.5px; }
+.dg-ai-badge { margin-top: 12px; padding: 8px 12px; background: rgba(137,87,229,.16); color: #b692f0;
+  border-radius: 8px; font-weight: 700; }
+@media (max-width: 560px) { .dg-grid { grid-template-columns: 1fr; } .dg-result { flex-direction: column; text-align: center; } }

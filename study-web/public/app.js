@@ -118,12 +118,13 @@ document.querySelectorAll('.tab').forEach(btn => {
 
 // Các tab có LƯU TIẾN ĐỘ → cần đăng nhập (chỉ áp dụng khi đã cấu hình Firebase).
 // Tab 📚 Tài liệu để mở tự do cho người chưa đăng nhập còn đọc nội dung.
-const GATED_VIEWS = new Set(['today', 'flashcards', 'writing', 'code', 'coding', 'mock', 'company', 'plan', 'dashboard']);
+const GATED_VIEWS = new Set(['today', 'flashcards', 'writing', 'code', 'coding', 'mock', 'company', 'design', 'plan', 'dashboard']);
 let authResolved = false; // true sau lần onAuthStateChanged đầu tiên
 const viewGated = name => syncReady && GATED_VIEWS.has(name);
 
 function switchView(name) {
   if (typeof iqTimerId !== 'undefined') clearInterval(iqTimerId); // rời tab → dừng bài test IQ đang chạy
+  if (typeof dgTimerId !== 'undefined' && dgTimerId) { clearInterval(dgTimerId); dgTimerId = null; } // dừng đồng hồ drill thiết kế
   store.set('prep-last-view', name); // nhớ tab đang mở cho lần reload sau
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.view === name));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === `view-${name}`));
@@ -140,6 +141,7 @@ function switchView(name) {
   if (name === 'coding') initThink();
   if (name === 'mock') initMock().then(() => mkInit && fillMockWeekSelect());
   if (name === 'company') renderCompany();
+  if (name === 'design') renderDesign();
   if (name === 'plan') renderPlan();
   if (name === 'dashboard') renderDashboard();
 }
@@ -2171,12 +2173,291 @@ function renderAiRecent() {
 }
 
 // ---------- Dashboard ----------
+// ======================================================================
+// 🏛️ SYSTEM DESIGN DRILL — luyện trả lời bài thiết kế theo khung 5 bước,
+// tự chấm theo rubric, hoặc nhờ Claude chấm (BYOK, tái dùng callClaudeStream).
+// ======================================================================
+const DG_MINUTES = 35;            // thời lượng khuyến nghị mỗi bài
+let dgTimerId = null;             // đồng hồ đếm ngược
+let dgState = null;               // { drill, endAt, remain, started }
+const dgDrills = () => window.DESIGN_DRILLS || [];
+const dgEsc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function dgHistory() { return store.get('prep-design-history', []); }
+function dgBestCoverage(id) {
+  const hs = dgHistory().filter(h => h.id === id && typeof h.coverage === 'number');
+  return hs.length ? Math.max(...hs.map(h => h.coverage)) : null;
+}
+function dgDraft(id, val) {
+  const all = store.get('prep-design-draft', {});
+  if (val === undefined) return all[id] || '';
+  all[id] = val; store.set('prep-design-draft', all);
+}
+
+/** Màn chính: đang làm bài thì hiện phiên, không thì hiện danh sách. */
+function renderDesign() {
+  if (dgState) renderDgSession(); else renderDgList();
+}
+
+function renderDgList() {
+  if (dgTimerId) { clearInterval(dgTimerId); dgTimerId = null; }
+  const drills = dgDrills();
+  const el = document.getElementById('design-body');
+  if (!drills.length) { el.innerHTML = '<p>Chưa nạp được ngân hàng đề thiết kế.</p>'; return; }
+  const diffOrder = { 'Dễ': 0, 'TB': 1, 'Khó': 2 };
+  const sel = renderDgList._diff || 'all';
+  const list = drills
+    .filter(d => sel === 'all' || d.difficulty === sel)
+    .sort((a, b) => (diffOrder[a.difficulty] - diffOrder[b.difficulty]));
+  const filterBtn = (val, label) =>
+    `<button class="dg-fbtn${sel === val ? ' active' : ''}" data-diff="${val}">${label}</button>`;
+  const done = new Set(dgHistory().map(h => h.id));
+  const cards = list.map(d => {
+    const best = dgBestCoverage(d.id);
+    const badge = done.has(d.id) ? `<span class="dg-done">✓ đã làm${best != null ? ` · tốt nhất ${best}%` : ''}</span>` : '';
+    return `<button class="dg-card" data-id="${d.id}">
+      <div class="dg-card-top"><span class="dg-diff dg-diff-${diffOrder[d.difficulty]}">${d.difficulty}</span>${badge}</div>
+      <h3>${dgEsc(d.title)}</h3>
+      <div class="dg-company">${dgEsc(d.company)}</div>
+      <p class="dg-scen">${dgEsc(d.scenario)}</p>
+    </button>`;
+  }).join('');
+  const hist = dgHistory().slice(-6).reverse().map(h => {
+    const d = drills.find(x => x.id === h.id);
+    const score = h.mode === 'ai' && typeof h.aiScore === 'number' ? `🤖 ${h.aiScore}/100` : `📋 ${h.coverage}%`;
+    return `<li><b>${dgEsc(d ? d.title : h.id)}</b> — ${score} · ⏱ ${fmtMMSS(h.timeSec || 0)} · ${dgEsc(h.date || '')}</li>`;
+  }).join('');
+  el.innerHTML = `
+    <h1>🏛️ Luyện thiết kế hệ thống</h1>
+    <p class="dg-intro">Chọn một đề, bấm <b>Bắt đầu</b> để chạy đồng hồ ${DG_MINUTES} phút, rồi viết lời giải theo <b>khung 5 bước</b> (làm rõ yêu cầu → ước lượng → API → data model → high-level → đào sâu → trade-offs). Xong thì <b>tự chấm theo rubric</b> hoặc nhờ <b>Claude chấm</b> (cần API key của bạn).</p>
+    <div class="dg-filters">
+      ${filterBtn('all', 'Tất cả')}${filterBtn('Dễ', 'Dễ')}${filterBtn('TB', 'Trung bình')}${filterBtn('Khó', 'Khó')}
+    </div>
+    <div class="dg-grid">${cards}</div>
+    ${hist ? `<div class="dg-hist"><h2>🕒 Lần luyện gần đây</h2><ul>${hist}</ul></div>` : ''}`;
+  el.querySelectorAll('.dg-fbtn').forEach(b => b.onclick = () => { renderDgList._diff = b.dataset.diff; renderDgList(); });
+  el.querySelectorAll('.dg-card').forEach(b => b.onclick = () => openDrill(b.dataset.id));
+}
+
+function openDrill(id) {
+  const drill = dgDrills().find(d => d.id === id);
+  if (!drill) return;
+  dgState = { drill, remain: DG_MINUTES * 60, started: false, endAt: 0 };
+  renderDgSession();
+}
+
+function renderDgSession() {
+  const { drill } = dgState;
+  const el = document.getElementById('design-body');
+  const focus = drill.focus.map(f => `<li>${dgEsc(f)}</li>`).join('');
+  const rubric = drill.rubric.map(r =>
+    `<label class="dg-crit"><input type="checkbox" class="dg-ck" data-k="${r.k}" data-w="${r.w}">
+       <span class="dg-crit-main">${dgEsc(r.label)}</span>
+       <span class="dg-crit-hint">💡 ${dgEsc(r.hint)}</span></label>`).join('');
+  el.innerHTML = `
+    <div class="dg-sess">
+      <div class="dg-bar">
+        <button id="dg-back" class="dg-link">← Danh sách</button>
+        <span class="dg-diff dg-diff-${{ 'Dễ': 0, 'TB': 1, 'Khó': 2 }[drill.difficulty]}">${drill.difficulty}</span>
+        <span id="dg-timer" class="dg-timer">${fmtMMSS(dgState.remain)}</span>
+        <button id="dg-start" class="dg-go">▶ Bắt đầu</button>
+      </div>
+      <h1>${dgEsc(drill.title)}</h1>
+      <div class="dg-scenario"><b>📋 Đề bài:</b> ${dgEsc(drill.scenario)}</div>
+      <details class="dg-focus" open><summary>🧭 Gợi ý cần làm rõ / trọng tâm</summary><ul>${focus}</ul></details>
+
+      <h2>✍️ Lời giải của bạn</h2>
+      <p class="dg-tip">Viết theo khung: <b>1)</b> Làm rõ yêu cầu · <b>2)</b> Ước lượng · <b>3)</b> API · <b>4)</b> Data model · <b>5)</b> High-level · <b>6)</b> Đào sâu bottleneck · <b>7)</b> Trade-offs.</p>
+      <textarea id="dg-answer" class="dg-answer" placeholder="Gõ dàn ý / lời giải của bạn ở đây… (tự lưu nháp)"></textarea>
+
+      <h2>📋 Tự chấm theo rubric</h2>
+      <p class="dg-tip">Tick những phần bạn đã trình bày được. Điểm = tổng trọng số phần đã tick.</p>
+      <div class="dg-rubric">${rubric}</div>
+      <div class="dg-actions">
+        <button id="dg-score" class="dg-go">✅ Chấm rubric &amp; lưu</button>
+        <button id="dg-ai-toggle" class="dg-go dg-go-ai">🤖 Nhờ Claude chấm</button>
+        <button id="dg-ref" class="dg-link">👁 Xem gợi ý đáp án</button>
+      </div>
+      <div id="dg-result" class="dg-result" hidden></div>
+      <div id="dg-ref-box" class="dg-ref-box" hidden></div>
+      <div id="dg-ai" class="dg-ai" hidden></div>
+    </div>`;
+
+  // nạp nháp đã lưu
+  const ta = document.getElementById('dg-answer');
+  ta.value = dgDraft(drill.id);
+  let saveT;
+  ta.addEventListener('input', () => { clearTimeout(saveT); saveT = setTimeout(() => dgDraft(drill.id, ta.value), 500); });
+
+  document.getElementById('dg-back').onclick = () => {
+    if (dgTimerId) { clearInterval(dgTimerId); dgTimerId = null; }
+    dgDraft(drill.id, ta.value);
+    dgState = null; renderDgList();
+  };
+  document.getElementById('dg-start').onclick = dgStartTimer;
+  document.getElementById('dg-score').onclick = dgScoreRubric;
+  document.getElementById('dg-ref').onclick = dgShowRef;
+  document.getElementById('dg-ai-toggle').onclick = dgRenderAiPanel;
+}
+
+function dgStartTimer() {
+  if (dgState.started) return;
+  dgState.started = true;
+  dgState.endAt = Date.now() + dgState.remain * 1000;
+  const btn = document.getElementById('dg-start');
+  if (btn) { btn.textContent = '⏳ Đang chạy'; btn.disabled = true; }
+  dgTick();
+  dgTimerId = setInterval(dgTick, 1000);
+}
+function dgTick() {
+  if (!dgState) return;
+  const left = Math.round((dgState.endAt - Date.now()) / 1000);
+  dgState.remain = left;
+  const el = document.getElementById('dg-timer');
+  if (!el) return;
+  if (left <= 0) {
+    el.textContent = 'Hết giờ ⏰';
+    el.classList.add('dg-timeup');
+    clearInterval(dgTimerId); dgTimerId = null;
+  } else {
+    el.textContent = fmtMMSS(left);
+    el.classList.toggle('dg-warn', left <= 5 * 60);
+  }
+}
+function dgElapsedSec() {
+  return dgState.started ? Math.max(0, DG_MINUTES * 60 - Math.max(0, dgState.remain)) : 0;
+}
+
+function dgScoreRubric() {
+  const { drill } = dgState;
+  const cks = [...document.querySelectorAll('.dg-ck')];
+  const totalW = drill.rubric.reduce((s, r) => s + r.w, 0);
+  const gotW = cks.filter(c => c.checked).reduce((s, c) => s + (+c.dataset.w || 0), 0);
+  const coverage = Math.round((gotW / totalW) * 100);
+  const missing = drill.rubric.filter(r => !cks.find(c => c.dataset.k === r.k && c.checked));
+  const timeSec = dgElapsedSec();
+  // lưu lịch sử
+  const hist = dgHistory();
+  hist.push({ id: drill.id, date: new Date().toISOString().slice(0, 10), ts: Date.now(), coverage, timeSec, mode: 'self' });
+  store.set('prep-design-history', hist.slice(-100));
+  logActivity();
+  const band = coverage >= 85 ? ['🌟 Xuất sắc', '#3fb950'] : coverage >= 65 ? ['👍 Khá', '#58a6ff'] : coverage >= 45 ? ['🟡 Tạm được', '#d29922'] : ['🔴 Cần luyện thêm', '#f85149'];
+  const box = document.getElementById('dg-result');
+  box.hidden = false;
+  box.innerHTML = `
+    <div class="dg-score-ring" style="--c:${band[1]};--p:${coverage}">
+      <div class="dg-score-num">${coverage}%</div>
+    </div>
+    <div class="dg-score-side">
+      <div class="dg-band" style="color:${band[1]}">${band[0]}</div>
+      <div class="dg-score-meta">⏱ ${fmtMMSS(timeSec)} · đã tick ${cks.filter(c => c.checked).length}/${drill.rubric.length} tiêu chí</div>
+      ${missing.length ? `<div class="dg-miss"><b>Còn thiếu / nên bổ sung:</b><ul>${missing.map(m => `<li>${dgEsc(m.label)}</li>`).join('')}</ul></div>` : '<div class="dg-miss">Bạn đã phủ hết rubric. Thử nhờ Claude chấm để soi sâu hơn 👇</div>'}
+    </div>`;
+  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function dgShowRef() {
+  const { drill } = dgState;
+  const box = document.getElementById('dg-ref-box');
+  if (!box.hidden) { box.hidden = true; return; }
+  box.hidden = false;
+  box.innerHTML = `<h3>👁 Gợi ý các điểm chính (đối chiếu sau khi tự làm)</h3>
+    <ul>${drill.keyPoints.map(k => `<li>${dgEsc(k)}</li>`).join('')}</ul>`;
+}
+
+// ---------- AI chấm (BYOK, tái dùng callClaudeStream) ----------
+function dgRenderAiPanel() {
+  const box = document.getElementById('dg-ai');
+  if (!box.hidden) { box.hidden = true; return; }
+  box.hidden = false;
+  const savedKey = store.get('prep-ai-key', '');
+  const model = (typeof aiCfg !== 'undefined' && aiCfg.model) || 'claude-opus-4-8';
+  const opt = (v, l) => `<option value="${v}"${model === v ? ' selected' : ''}>${l}</option>`;
+  box.innerHTML = `
+    <h3>🤖 Nhờ Claude chấm lời giải</h3>
+    <p class="dg-tip">Claude sẽ chấm theo rubric của đề, cho điểm từng tiêu chí + nhận xét + gợi ý cải thiện. Cần API key Anthropic của bạn (lưu cục bộ, không gửi đi đâu khác).</p>
+    <div class="dg-ai-cfg">
+      <input id="dg-key" type="password" placeholder="sk-ant-..." value="${dgEsc(savedKey)}" autocomplete="off">
+      <select id="dg-model">
+        ${opt('claude-opus-4-8', 'Opus 4.8 (sâu nhất)')}
+        ${opt('claude-sonnet-4-6', 'Sonnet 4.6 (cân bằng)')}
+        ${opt('claude-haiku-4-5-20251001', 'Haiku 4.5 (rẻ/nhanh)')}
+      </select>
+      <button id="dg-ai-go" class="dg-go dg-go-ai">Chấm ngay</button>
+    </div>
+    <div id="dg-ai-out" class="dg-ai-out" hidden></div>`;
+  document.getElementById('dg-ai-go').onclick = dgAiGrade;
+}
+
+async function dgAiGrade() {
+  const { drill } = dgState;
+  const key = document.getElementById('dg-key').value.trim();
+  const model = document.getElementById('dg-model').value;
+  const answer = document.getElementById('dg-answer').value.trim();
+  if (!key) { alert('Hãy dán API key Anthropic của bạn.'); document.getElementById('dg-key').focus(); return; }
+  if (answer.length < 30) { alert('Hãy viết lời giải dài hơn một chút trước khi nhờ chấm.'); return; }
+  store.set('prep-ai-key', key); // dùng chung với Mock AI
+  const btn = document.getElementById('dg-ai-go');
+  btn.disabled = true; btn.textContent = '⏳ Đang chấm…';
+  const out = document.getElementById('dg-ai-out');
+  out.hidden = false; out.textContent = '…';
+
+  const rubricList = drill.rubric.map((r, i) => `${i + 1}. [${r.k}] ${r.label} (trọng số ${r.w})`).join('\n');
+  const keyList = drill.keyPoints.map((k, i) => `- ${k}`).join('\n');
+  const system = `Bạn là interviewer kỹ thuật cấp cao đang chấm phần System Design của ứng viên Backend. Chấm NGHIÊM nhưng công bằng, mang tính xây dựng. Trả lời bằng TIẾNG VIỆT, thuật ngữ giữ tiếng Anh. Không markdown nặng (không bảng).`;
+  const user = `ĐỀ BÀI: ${drill.title}
+${drill.scenario}
+
+RUBRIC (các tiêu chí cần chấm):
+${rubricList}
+
+CÁC ĐIỂM CHÍNH MONG ĐỢI (để bạn tham chiếu, ứng viên không nhất thiết phải khớp y hệt):
+${keyList}
+
+LỜI GIẢI CỦA ỨNG VIÊN:
+"""
+${answer}
+"""
+
+Hãy chấm như sau:
+1. Với TỪNG tiêu chí trong rubric: cho điểm 0/1/2 (0=thiếu, 1=có nhắc nhưng sơ sài, 2=trình bày tốt) kèm 1 câu nhận xét ngắn.
+2. Nêu 2-3 điểm MẠNH và 2-3 điểm cần CẢI THIỆN cụ thể (chỉ ra phần còn thiếu so với rubric/điểm chính).
+3. Một gợi ý "nếu là tôi, tôi sẽ nói thêm…" cho phần quan trọng nhất bị bỏ sót.
+4. KẾT THÚC bằng đúng một dòng theo định dạng: ĐIỂM: NN/100 (NN là tổng điểm quy đổi trên thang 100).`;
+
+  try {
+    const full = await callClaudeStream({
+      apiKey: key, model,
+      system,
+      messages: [{ role: 'user', content: user }],
+      maxTokens: 1400,
+      onText: t => { out.textContent = t; },
+    });
+    const m = full.match(/ĐIỂM:\s*(\d+)\s*\/\s*100/i);
+    const aiScore = m ? Math.min(100, +m[1]) : null;
+    const hist = dgHistory();
+    hist.push({ id: drill.id, date: new Date().toISOString().slice(0, 10), ts: Date.now(), aiScore, timeSec: dgElapsedSec(), mode: 'ai' });
+    store.set('prep-design-history', hist.slice(-100));
+    logActivity();
+    if (aiScore != null) {
+      const badge = document.createElement('div');
+      badge.className = 'dg-ai-badge';
+      badge.textContent = `🤖 Điểm Claude: ${aiScore}/100 (đã lưu vào lịch sử)`;
+      out.appendChild(badge);
+    }
+  } catch (e) {
+    out.textContent = '⚠️ ' + (e.message || 'Lỗi gọi API');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Chấm ngay';
+  }
+}
+
 const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-doc',
   'prep-typing-best', 'prep-fails', 'prep-activity', 'prep-mock-history',
   'prep-pomo', 'prep-code-best', 'prep-fc-dir', 'prep-fc-auto', 'prep-code-history', 'prep-theme',
   'prep-last-view', 'prep-doc-checks', 'prep-mock-wrong', 'prep-ai-history', 'prep-ai-settings', 'prep-plan',
   'prep-coding-solved', 'prep-coding-code', 'prep-iq-best', 'prep-iq-test-history', 'prep-interview-history',
-  'prep-daily-goal', 'prep-badges-seen'];
+  'prep-daily-goal', 'prep-badges-seen', 'prep-design-history', 'prep-design-draft'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */
@@ -3361,7 +3642,7 @@ function finishInterview() {
 
 // ---------- Phím tắt ----------
 function initShortcuts() {
-  const order = ['docs', 'today', 'flashcards', 'writing', 'code', 'coding', 'mock', 'company', 'plan', 'dashboard'];
+  const order = ['docs', 'today', 'flashcards', 'writing', 'code', 'coding', 'mock', 'company', 'design', 'plan', 'dashboard'];
   document.addEventListener('keydown', e => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     // Đang gõ trong ô nhập / vùng gõ code thì không cướp phím
