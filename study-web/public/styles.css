@@ -1115,3 +1115,26 @@ body.light .plan-config input[type=date] { color-scheme: light; }
   border-radius: 8px; background: var(--bg); color: var(--text); font-size: 13px; }
 .mk-aiout { white-space: pre-wrap; line-height: 1.65; background: var(--code-bg); border: 1px solid var(--border);
   border-radius: 8px; padding: 12px; margin-bottom: 10px; font-size: 13.5px; }
+
+/* ============ 🔍 Đoán Output quiz ============ */
+.oq-wrap { max-width: 760px; }
+.oq-start p, .oq-result p { color: var(--muted); line-height: 1.6; }
+.oq-bar { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+.oq-topic { background: var(--bg3); padding: 2px 10px; border-radius: 10px; font-weight: 600; }
+.oq-ask { font-weight: 600; margin: 4px 0; }
+.oq-code { background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px;
+  overflow-x: auto; font-size: 13.5px; line-height: 1.55; }
+.oq-opts { display: grid; gap: 10px; margin: 14px 0; }
+.oq-opt { text-align: left; background: var(--bg2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 4px 14px; cursor: pointer; color: var(--text); transition: border-color .12s; }
+.oq-opt:hover:not(:disabled) { border-color: var(--accent); }
+.oq-opt pre { margin: 8px 0; font-size: 13px; white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.oq-opt:disabled { cursor: default; opacity: .92; }
+.oq-opt.right { border-color: var(--green); background: rgba(63,185,80,.12); }
+.oq-opt.wrong { border-color: var(--red); background: rgba(248,81,73,.12); }
+.oq-fb { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-top: 6px; }
+.oq-verdict { font-weight: 700; font-size: 16px; margin-bottom: 6px; }
+.oq-verdict.ok { color: var(--green); } .oq-verdict.no { color: var(--red); }
+.oq-explain { line-height: 1.65; color: var(--text); margin: 4px 0 12px; }
+.oq-result { text-align: center; padding: 30px 16px; }
+.oq-result h2 { font-size: 24px; }

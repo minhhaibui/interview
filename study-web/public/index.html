@@ -274,6 +274,7 @@
     <div class="think-modes">
       <button class="think-mode active" data-mode="code">💻 Lập trình</button>
       <button class="think-mode" data-mode="iq">🧩 IQ / Logic</button>
+      <button class="think-mode" data-mode="output">🔍 Đoán output</button>
     </div>
 
     <!-- Chế độ LẬP TRÌNH -->
@@ -295,6 +296,15 @@
         <h1>🧩 Luyện IQ &amp; Logic</h1>
         <p class="coding-intro">Câu hỏi trắc nghiệm rèn tư duy: dãy số, quy luật, suy luận logic, toán nhanh. Chọn đáp án để biết đúng/sai kèm <b>giải thích</b>. Làm hết một lượt sẽ có điểm IQ ước lượng.</p>
         <div id="iq-body"></div>
+      </div>
+    </div>
+
+    <!-- Chế độ ĐOÁN OUTPUT -->
+    <div id="think-output" hidden>
+      <div class="oq-wrap">
+        <h1>🔍 Đoán Output</h1>
+        <p class="coding-intro">Đọc snippet JavaScript rồi đoán <b>kết quả in ra console</b>. Rèn các điểm hay bị hỏi: event loop, closure, hoisting, async/await, type coercion, <code>this</code>. Chọn đáp án để biết đúng/sai kèm <b>giải thích</b>.</p>
+        <div id="oq-body"></div>
       </div>
     </div>
   </div>
@@ -361,6 +371,7 @@
   <script src="english-questions.js"></script>
   <script src="situational-questions.js"></script>
   <script src="design-drills.js"></script>
+  <script src="output-quiz.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

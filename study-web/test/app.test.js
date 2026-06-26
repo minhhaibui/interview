@@ -192,6 +192,43 @@ test('regression: không còn marked.parse() thiếu guard window.marked (vỡ k
   assert.deepStrictEqual(bad, [], 'marked.parse thiếu guard ở dòng');
 });
 
+test('output-quiz: id duy nhất, answer hợp lệ, options ≥ 2', () => {
+  const qs = loadWindow('output-quiz.js').OUTPUT_QUIZ;
+  assert.ok(Array.isArray(qs) && qs.length);
+  const ids = qs.map(q => q.id);
+  assert.strictEqual(new Set(ids).size, ids.length, 'id output-quiz trùng');
+  for (const q of qs) {
+    assert.ok(q.code && q.explain && q.topic, `OQ ${q.id} thiếu field`);
+    assert.ok(Array.isArray(q.options) && q.options.length >= 2, `OQ ${q.id}: <2 lựa chọn`);
+    assert.ok(Number.isInteger(q.answer) && q.answer >= 0 && q.answer < q.options.length,
+      `OQ ${q.id}: answer ngoài range`);
+  }
+});
+
+test('output-quiz: CHẠY THẬT mỗi snippet → output đúng = options[answer], và đáp án duy nhất', async () => {
+  const qs = loadWindow('output-quiz.js').OUTPUT_QUIZ;
+  for (const q of qs) {
+    const logs = [];
+    const fakeConsole = { log: (...a) => logs.push(a.map(String).join(' ')) };
+    new Function('console', q.code)(fakeConsole);
+    await new Promise(r => setTimeout(r, 60)); // xả micro/macrotask (Promise, setTimeout 0)
+    const out = logs.join('\n');
+    assert.strictEqual(out, q.options[q.answer],
+      `OQ ${q.id}: output thật ${JSON.stringify(out)} ≠ đáp án ${JSON.stringify(q.options[q.answer])}`);
+    assert.strictEqual(q.options.filter(o => o === out).length, 1,
+      `OQ ${q.id}: có >1 option khớp output (đáp án không duy nhất)`);
+  }
+});
+
+test('wiring: chế độ Đoán output có đủ id + mode button + script + render', () => {
+  assert.ok(HTML.includes('id="think-output"'), 'thiếu #think-output');
+  assert.ok(HTML.includes('id="oq-body"'), 'thiếu #oq-body');
+  assert.ok(HTML.includes('data-mode="output"'), 'thiếu nút mode output');
+  assert.ok(HTML.includes('src="output-quiz.js"'), 'index.html thiếu script output-quiz.js');
+  assert.ok(HTML.indexOf('src="output-quiz.js"') < HTML.indexOf('src="app.js"'), 'output-quiz.js phải nạp trước app.js');
+  assert.ok(/renderOutputQuiz\(\)/.test(APP), 'initThink chưa gọi renderOutputQuiz');
+});
+
 test('AI chấm câu lẻ: regex bắt điểm "ĐIỂM: N/10" (gồm số thập phân)', () => {
   const re = /ĐIỂM:\s*(\d+(?:\.\d+)?)\s*\/\s*10/i;
   assert.strictEqual('nhận xét…\nĐIỂM: 7/10'.match(re)[1], '7');

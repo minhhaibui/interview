@@ -404,6 +404,8 @@ function computeBadges() {
   const wpm = store.get('prep-code-best', {}).wpm || 0;
   const pomoTotal = Object.values(store.get('prep-pomo', {})).reduce((a, b) => a + b, 0);
   const designDrills = new Set(store.get('prep-design-history', []).map(h => h.id)).size;
+  const oqDoneN = Object.keys(store.get('prep-oq-done', {})).length;
+  const oqTotal = (window.OUTPUT_QUIZ || []).length;
   // Tuần hoàn thành (đủ mọi mục checklist)
   const progress = store.get('prep-progress', {});
   const weeksGroup = TREE.find(g => g.title.includes('12 tuần'));
@@ -429,6 +431,8 @@ function computeBadges() {
     B('ivpass', '🏢', 'Pass phỏng vấn tổng hợp', ivPass, 'Đạt ≥70 điểm một buổi phỏng vấn 4 vòng'),
     B('design1', '🏛️', 'Đề thiết kế đầu tiên', designDrills >= 1, `Đã luyện ${designDrills} đề System Design`),
     B('design5', '🏛️', 'Kiến trúc sư · 5 đề', designDrills >= 5, `Đã luyện ${designDrills}/5 đề System Design`),
+    B('oq5', '🔍', 'Đoán đúng 5 output', oqDoneN >= 5, `Đoán đúng ${oqDoneN} snippet`),
+    B('oqall', '🔍', 'Bậc thầy bẫy JS', oqTotal > 0 && oqDoneN >= oqTotal, `Đoán đúng ${oqDoneN}/${oqTotal} snippet`),
     B('wpm40', '⌨️', 'Gõ code 40 WPM', wpm >= 40, `Kỷ lục ${wpm || 0} WPM`),
     B('wpm60', '⌨️', 'Gõ code 60 WPM', wpm >= 60, `Kỷ lục ${wpm || 0} WPM`),
     B('pomo10', '🍅', '10 pomodoro', pomoTotal >= 10, `${pomoTotal}/10 pomodoro`),
@@ -2537,7 +2541,8 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-pomo', 'prep-code-best', 'prep-fc-dir', 'prep-fc-auto', 'prep-code-history', 'prep-theme',
   'prep-last-view', 'prep-doc-checks', 'prep-mock-wrong', 'prep-ai-history', 'prep-ai-settings', 'prep-plan',
   'prep-coding-solved', 'prep-coding-code', 'prep-iq-best', 'prep-iq-test-history', 'prep-interview-history',
-  'prep-daily-goal', 'prep-badges-seen', 'prep-design-history', 'prep-design-draft'];
+  'prep-daily-goal', 'prep-badges-seen', 'prep-design-history', 'prep-design-draft',
+  'prep-oq-done', 'prep-oq-best'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */
@@ -3097,7 +3102,7 @@ let thinkInit = false, thinkMode = 'code';
 function initThink() {
   document.querySelectorAll('.think-mode').forEach(b => { b.onclick = () => setThinkMode(b.dataset.mode); });
   setThinkMode(thinkMode);
-  if (!thinkInit) { renderCodingFilters(); renderCodingList(); renderIQ(); thinkInit = true; }
+  if (!thinkInit) { renderCodingFilters(); renderCodingList(); renderIQ(); renderOutputQuiz(); thinkInit = true; }
 }
 
 function setThinkMode(m) {
@@ -3106,6 +3111,94 @@ function setThinkMode(m) {
   document.querySelectorAll('.think-mode').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
   document.getElementById('think-code').hidden = m !== 'code';
   document.getElementById('think-iq').hidden = m !== 'iq';
+  document.getElementById('think-output').hidden = m !== 'output';
+}
+
+// ----- Chế độ 🔍 Đoán Output (quiz đoán console.log) -----
+let oqOrder = [], oqIdx = 0, oqRight = 0;
+const oqAll = () => window.OUTPUT_QUIZ || [];
+const oqDone = () => store.get('prep-oq-done', {});
+
+function renderOutputQuiz() {
+  const all = oqAll();
+  const body = document.getElementById('oq-body');
+  if (!body) return;
+  if (!all.length) { body.innerHTML = '<p>Chưa nạp được ngân hàng câu đoán output.</p>'; return; }
+  const ids = new Set(all.map(q => q.id));
+  const done = Object.keys(oqDone()).filter(id => ids.has(id)).length; // chỉ đếm id còn tồn tại
+
+  const best = store.get('prep-oq-best', null);
+  body.innerHTML = `
+    <div class="oq-start">
+      <p>Có <b>${all.length}</b> snippet. Đã làm đúng: <b>${done}/${all.length}</b>${best ? ` · kỷ lục: <b>${best.score}/${best.total}</b>` : ''}.</p>
+      <button id="oq-go" class="dg-go">▶ Bắt đầu (${all.length} câu, trộn thứ tự)</button>
+    </div>`;
+  document.getElementById('oq-go').onclick = startOutputQuiz;
+}
+
+function startOutputQuiz() {
+  const n = oqAll().length;
+  oqOrder = [...Array(n).keys()].sort(() => Math.random() - 0.5);
+  oqIdx = 0; oqRight = 0;
+  showOutputQuiz();
+}
+
+function showOutputQuiz() {
+  const all = oqAll();
+  const q = all[oqOrder[oqIdx]];
+  if (!q) return finishOutputQuiz();
+  const body = document.getElementById('oq-body');
+  const opts = q.options.map((o, i) =>
+    `<button class="oq-opt" data-i="${i}"><pre>${escHtml(o)}</pre></button>`).join('');
+  body.innerHTML = `
+    <div class="oq-quiz">
+      <div class="oq-bar"><span>Câu ${oqIdx + 1}/${all.length} · ✓ ${oqRight}</span><span class="oq-topic">${escHtml(q.topic)}</span></div>
+      <p class="oq-ask">Đoán xem đoạn code in ra gì?</p>
+      <pre class="oq-code"><code class="language-js">${escHtml(q.code)}</code></pre>
+      <div class="oq-opts">${opts}</div>
+      <div id="oq-fb" class="oq-fb" hidden></div>
+    </div>`;
+  if (window.hljs) body.querySelectorAll('pre code').forEach(el => { try { hljs.highlightElement(el); } catch { /* bỏ qua */ } });
+  body.querySelectorAll('.oq-opt').forEach(b => b.onclick = () => answerOutputQuiz(+b.dataset.i));
+}
+
+function answerOutputQuiz(i) {
+  const all = oqAll();
+  const q = all[oqOrder[oqIdx]];
+  const body = document.getElementById('oq-body');
+  const correct = i === q.answer;
+  body.querySelectorAll('.oq-opt').forEach((b, j) => {
+    b.disabled = true;
+    if (j === q.answer) b.classList.add('right');
+    else if (j === i) b.classList.add('wrong');
+  });
+  if (correct) {
+    oqRight++;
+    const done = oqDone(); done[q.id] = true; store.set('prep-oq-done', done);
+  }
+  logActivity();
+  const fb = document.getElementById('oq-fb');
+  fb.hidden = false;
+  fb.innerHTML = `<div class="oq-verdict ${correct ? 'ok' : 'no'}">${correct ? '✅ Chính xác!' : '❌ Chưa đúng'}</div>
+    <p class="oq-explain">${escHtml(q.explain)}</p>
+    <button id="oq-next" class="dg-go">${oqIdx + 1 < all.length ? 'Câu tiếp →' : 'Xem kết quả'}</button>`;
+  document.getElementById('oq-next').onclick = () => { oqIdx++; showOutputQuiz(); };
+  fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function finishOutputQuiz() {
+  const total = oqAll().length;
+  const best = store.get('prep-oq-best', null);
+  if (!best || oqRight > best.score) store.set('prep-oq-best', { score: oqRight, total });
+  const pct = total ? Math.round(oqRight / total * 100) : 0;
+  const body = document.getElementById('oq-body');
+  body.innerHTML = `
+    <div class="oq-result">
+      <h2>${pct >= 80 ? '🌟' : pct >= 50 ? '👍' : '📚'} Bạn đúng ${oqRight}/${total} (${pct}%)</h2>
+      <p>${pct >= 80 ? 'Nắm rất chắc các bẫy JS!' : pct >= 50 ? 'Khá ổn — ôn lại vài chỗ nữa.' : 'Mấy bẫy này hay gặp khi phỏng vấn — đọc kỹ giải thích nhé.'}</p>
+      <button id="oq-again" class="dg-go">↻ Làm lại</button>
+    </div>`;
+  document.getElementById('oq-again').onclick = startOutputQuiz;
 }
 
 // ----- Chế độ Lập trình -----
