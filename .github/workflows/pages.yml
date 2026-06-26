@@ -23,6 +23,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Test (toàn vẹn dữ liệu + wiring) — chặn deploy nếu có bug
+        run: node --test study-web/test/
       - name: Build static data + firebase-config.js
         run: node study-web/build.js
         env:

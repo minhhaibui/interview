@@ -125,6 +125,8 @@ const viewGated = name => syncReady && GATED_VIEWS.has(name);
 function switchView(name) {
   if (typeof iqTimerId !== 'undefined') clearInterval(iqTimerId); // rời tab → dừng bài test IQ đang chạy
   if (typeof dgTimerId !== 'undefined' && dgTimerId) { clearInterval(dgTimerId); dgTimerId = null; } // dừng đồng hồ drill thiết kế
+  if (typeof mkTimerId !== 'undefined') clearInterval(mkTimerId); // dừng đồng hồ Mock đang chạy ngầm
+  try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch { /* trình duyệt không hỗ trợ */ } // tắt TTS đang đọc
   store.set('prep-last-view', name); // nhớ tab đang mở cho lần reload sau
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.view === name));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === `view-${name}`));
@@ -1092,7 +1094,7 @@ function maskWords(s) {
   return s.split(/\s+/).map(w => w[0] + '·'.repeat(Math.max(w.length - 1, 0))).join(' ');
 }
 
-const escHtml = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const escHtml = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** Từ cần gõ: bỏ ⚠️ và phần chú thích trong ngoặc */
@@ -2228,7 +2230,9 @@ function renderDgList() {
   }).join('');
   const hist = dgHistory().slice(-6).reverse().map(h => {
     const d = drills.find(x => x.id === h.id);
-    const score = h.mode === 'ai' && typeof h.aiScore === 'number' ? `🤖 ${h.aiScore}/100` : `📋 ${h.coverage}%`;
+    const score = h.mode === 'ai'
+      ? (typeof h.aiScore === 'number' ? `🤖 ${h.aiScore}/100` : '🤖 —')
+      : `📋 ${h.coverage}%`;
     return `<li><b>${dgEsc(d ? d.title : h.id)}</b> — ${score} · ⏱ ${fmtMMSS(h.timeSec || 0)} · ${dgEsc(h.date || '')}</li>`;
   }).join('');
   el.innerHTML = `
@@ -2302,6 +2306,22 @@ function renderDgSession() {
   document.getElementById('dg-score').onclick = dgScoreRubric;
   document.getElementById('dg-ref').onclick = dgShowRef;
   document.getElementById('dg-ai-toggle').onclick = dgRenderAiPanel;
+
+  // Nếu đã bấm Bắt đầu trước đó rồi rời tab và quay lại: tiếp tục đồng hồ
+  // (switchView đã clear interval; dgState.started vẫn true → nút bị chặn, cần khôi phục).
+  if (dgState.started) {
+    const sb = document.getElementById('dg-start');
+    if (sb) { sb.textContent = '⏳ Đang chạy'; sb.disabled = true; }
+    if (dgState.remain > 0) {
+      dgState.endAt = Date.now() + dgState.remain * 1000;
+      if (dgTimerId) clearInterval(dgTimerId);
+      dgTick();
+      dgTimerId = setInterval(dgTick, 1000);
+    } else {
+      const t = document.getElementById('dg-timer');
+      if (t) { t.textContent = 'Hết giờ ⏰'; t.classList.add('dg-timeup'); }
+    }
+  }
 }
 
 function dgStartTimer() {
@@ -2634,7 +2654,7 @@ function exportData() {
   const data = {};
   PREP_KEYS.forEach(k => {
     const v = localStorage.getItem(k);
-    if (v != null) data[k] = JSON.parse(v);
+    if (v != null) { try { data[k] = JSON.parse(v); } catch { /* bỏ key hỏng, không phá cả backup */ } }
   });
   const blob = new Blob(
     [JSON.stringify({ app: 'prep-study-web', exportedAt: new Date().toISOString(), data }, null, 2)],
@@ -3081,7 +3101,7 @@ function openCodingProblem(id) {
     <button class="coding-back">← Danh sách bài</button>
     <h2>${escHtml(p.title)}</h2>
     <div class="cd-tags"><span class="ci-diff d-${diffClass(p.difficulty)}">${escHtml(p.difficulty)}</span><span class="ci-topic">${escHtml(p.topic)}</span></div>
-    <div class="cd-prompt md">${marked.parse(p.prompt)}</div>
+    <div class="cd-prompt md">${window.marked ? marked.parse(p.prompt) : escHtml(p.prompt)}</div>
     <textarea id="cd-code" class="cd-code" spellcheck="false"></textarea>
     <div class="cd-actions">
       <button id="cd-run" class="cd-run">▶ Chạy test</button>
@@ -3597,7 +3617,7 @@ function startIvCode(r) {
     <div class="iv-roundhead">⌨️ Lập trình · giải bài rồi chạy test</div>
     <h2>${escHtml(p.title)}</h2>
     <div class="cd-tags"><span class="ci-topic">${escHtml(p.topic)}</span></div>
-    <div class="cd-prompt md">${marked.parse(p.prompt)}</div>
+    <div class="cd-prompt md">${window.marked ? marked.parse(p.prompt) : escHtml(p.prompt)}</div>
     <textarea id="iv-code" class="cd-code" spellcheck="false"></textarea>
     <div class="cd-actions">
       <button id="iv-run" class="cd-run">▶ Chạy test</button>
