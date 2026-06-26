@@ -401,6 +401,7 @@ function computeBadges() {
   const ivPass = store.get('prep-interview-history', []).some(r => (r.overall || 0) >= 70);
   const wpm = store.get('prep-code-best', {}).wpm || 0;
   const pomoTotal = Object.values(store.get('prep-pomo', {})).reduce((a, b) => a + b, 0);
+  const designDrills = new Set(store.get('prep-design-history', []).map(h => h.id)).size;
   // Tuần hoàn thành (đủ mọi mục checklist)
   const progress = store.get('prep-progress', {});
   const weeksGroup = TREE.find(g => g.title.includes('12 tuần'));
@@ -424,6 +425,8 @@ function computeBadges() {
     B('mock1', '🎯', 'Buổi mock đầu tiên', mockCount >= 1, `${mockCount} buổi mock`),
     B('mock10', '🎯', '10 buổi mock', mockCount >= 10, `${mockCount}/10 buổi mock`),
     B('ivpass', '🏢', 'Pass phỏng vấn tổng hợp', ivPass, 'Đạt ≥70 điểm một buổi phỏng vấn 4 vòng'),
+    B('design1', '🏛️', 'Đề thiết kế đầu tiên', designDrills >= 1, `Đã luyện ${designDrills} đề System Design`),
+    B('design5', '🏛️', 'Kiến trúc sư · 5 đề', designDrills >= 5, `Đã luyện ${designDrills}/5 đề System Design`),
     B('wpm40', '⌨️', 'Gõ code 40 WPM', wpm >= 40, `Kỷ lục ${wpm || 0} WPM`),
     B('wpm60', '⌨️', 'Gõ code 60 WPM', wpm >= 60, `Kỷ lục ${wpm || 0} WPM`),
     B('pomo10', '🍅', '10 pomodoro', pomoTotal >= 10, `${pomoTotal}/10 pomodoro`),
@@ -468,6 +471,7 @@ async function renderToday() {
   if (wrongN) tasks.push({ id: 'td-wrong', ic: '🚩', t: `Ôn ${wrongN} câu mock đã sai`, s: 'Trả lời lại cho nhớ', go: goToMockWrong });
   tasks.push({ id: 'td-think', ic: '🧠', t: 'Giải 1 bài luyện tư duy', s: 'Coding hoặc IQ', go: () => switchView('coding') });
   tasks.push({ id: 'td-mock', ic: '🎯', t: 'Mock interview nhanh', s: '5–10 câu ngẫu nhiên', go: () => switchView('mock') });
+  tasks.push({ id: 'td-design', ic: '🏛️', t: 'Luyện 1 đề System Design', s: 'Tự chấm rubric hoặc nhờ AI chấm', go: () => switchView('design') });
 
   // Huy hiệu + đánh dấu cái MỚI đạt
   const badges = computeBadges();
@@ -2826,15 +2830,25 @@ function computeReadiness() {
   const thinkVals = [codingPct, iqPct, ivBest].filter(v => v != null);
   const think = thinkVals.length ? thinkVals.reduce((a, b) => a + b, 0) / thinkVals.length : 0;
 
+  // 7) Thiết kế hệ thống — coverage rubric tốt nhất + điểm AI tốt nhất (TB phần đã có), nhân độ phủ số lần luyện
+  const dh = store.get('prep-design-history', []);
+  const dSelf = dh.filter(h => typeof h.coverage === 'number').map(h => h.coverage);
+  const dAi = dh.filter(h => typeof h.aiScore === 'number').map(h => h.aiScore);
+  const dVals = [dSelf.length ? Math.max(...dSelf) : null, dAi.length ? Math.max(...dAi) : null].filter(v => v != null);
+  const designBase = dVals.length ? dVals.reduce((a, b) => a + b, 0) / dVals.length : 0;
+  const design = designBase * Math.min(dh.length / 3, 1);
+
   const parts = [
-    { key: 'know', label: '📚 Kiến thức', pct: clamp(know), weight: 0.25, view: 'dashboard',
+    { key: 'know', label: '📚 Kiến thức', pct: clamp(know), weight: 0.22, view: 'dashboard',
       tip: 'Tick các mục đã học ở tab 📊 Tiến độ để tăng phần này.' },
-    { key: 'mem', label: '🃏 Trí nhớ (flashcards)', pct: clamp(mem), weight: 0.15, view: 'flashcards',
+    { key: 'mem', label: '🃏 Trí nhớ (flashcards)', pct: clamp(mem), weight: 0.13, view: 'flashcards',
       tip: 'Ôn flashcards đều để đẩy thẻ lên hộp SRS cao hơn.' },
-    { key: 'mock', label: '🎯 Phỏng vấn thử', pct: clamp(mock), weight: 0.25, view: 'mock',
+    { key: 'mock', label: '🎯 Phỏng vấn thử', pct: clamp(mock), weight: 0.22, view: 'mock',
       tip: 'Làm thêm Mock (tự chấm hoặc AI) — đây là phần nặng ký nhất.' },
-    { key: 'think', label: '🧠 Tư duy (code + IQ)', pct: clamp(think), weight: 0.15, view: 'coding',
+    { key: 'think', label: '🧠 Tư duy (code + IQ)', pct: clamp(think), weight: 0.13, view: 'coding',
       tip: 'Giải bài Lập trình, làm Test IQ và Phỏng vấn tổng hợp để tăng phần này.' },
+    { key: 'design', label: '🏛️ Thiết kế hệ thống', pct: clamp(design), weight: 0.10, view: 'design',
+      tip: 'Luyện đề System Design ở tab 🏛️ Thiết kế HT — tự chấm rubric hoặc nhờ AI chấm.' },
     { key: 'code', label: '⌨️ Phản xạ gõ code', pct: clamp(code), weight: 0.10, view: 'code',
       tip: 'Luyện gõ code để tăng độ chính xác & tốc độ.' },
     { key: 'streak', label: '🔥 Đều đặn (14 ngày)', pct: clamp(consistency), weight: 0.10, view: 'plan',
