@@ -116,6 +116,30 @@ document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => switchView(btn.dataset.view));
 });
 
+// ----- Menu xổ điều hướng (gom nhóm tab) -----
+function closeNavGroups() { document.querySelectorAll('.navgroup.open').forEach(g => g.classList.remove('open')); }
+document.querySelectorAll('.navgroup-btn').forEach(btn => {
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const grp = btn.closest('.navgroup');
+    const willOpen = !grp.classList.contains('open');
+    closeNavGroups();
+    if (willOpen) grp.classList.add('open');
+  });
+});
+// chọn 1 mục con hoặc bấm ra ngoài → đóng menu
+document.querySelectorAll('.navgroup-menu .tab').forEach(t => t.addEventListener('click', closeNavGroups));
+document.addEventListener('click', closeNavGroups);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeNavGroups(); });
+
+/** Tô đậm nút NHÓM chứa view đang mở (vì .tab con nằm trong menu ẩn). */
+function updateNavActive(name) {
+  document.querySelectorAll('.navgroup').forEach(g => {
+    const has = !!g.querySelector(`.tab[data-view="${name}"]`);
+    g.querySelector('.navgroup-btn')?.classList.toggle('active', has);
+  });
+}
+
 // Các tab có LƯU TIẾN ĐỘ → cần đăng nhập (chỉ áp dụng khi đã cấu hình Firebase).
 // Tab 📚 Tài liệu để mở tự do cho người chưa đăng nhập còn đọc nội dung.
 const GATED_VIEWS = new Set(['today', 'flashcards', 'writing', 'code', 'coding', 'mock', 'company', 'star', 'design', 'plan', 'dashboard']);
@@ -132,6 +156,7 @@ function switchView(name) {
   document.querySelectorAll('.listening').forEach(el => el.classList.remove('listening')); // gỡ trạng thái mic đang nghe
   store.set('prep-last-view', name); // nhớ tab đang mở cho lần reload sau
   document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  updateNavActive(name); // tô đậm nút nhóm chứa view đang mở
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === `view-${name}`));
   // Chặn tab cần đăng nhập khi chưa login
   if (viewGated(name) && !fbUser) {
@@ -4428,7 +4453,7 @@ function finishInterview() {
 
 // ---------- Phím tắt ----------
 function initShortcuts() {
-  const order = ['docs', 'today', 'flashcards', 'writing', 'code', 'coding', 'mock', 'company', 'star', 'design', 'plan', 'dashboard'];
+  const order = ['today', 'docs', 'flashcards', 'writing', 'code', 'coding', 'design', 'mock', 'company', 'star', 'plan', 'dashboard'];
   document.addEventListener('keydown', e => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     // Đang gõ trong ô nhập / vùng gõ code thì không cướp phím

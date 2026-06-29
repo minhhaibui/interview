@@ -21,18 +21,42 @@
     <button id="sb-toggle" class="sb-toggle" title="Mở/đóng mục lục">☰</button>
     <div class="brand">🚀 Backend Interview Prep</div>
     <nav class="tabs">
-      <button class="tab active" data-view="docs">📚 Tài liệu</button>
-      <button class="tab" data-view="today">🔥 Hôm nay</button>
-      <button class="tab" data-view="flashcards">🃏 Flashcards</button>
-      <button class="tab" data-view="writing">✍️ Luyện viết</button>
-      <button class="tab" data-view="code">⌨️ Gõ code</button>
-      <button class="tab" data-view="coding">🧠 Tư duy</button>
-      <button class="tab" data-view="mock">🎯 Mock PV</button>
-      <button class="tab" data-view="company">🏢 Phỏng vấn</button>
-      <button class="tab" data-view="star">🌟 STAR</button>
-      <button class="tab" data-view="design">🏛️ Thiết kế HT</button>
-      <button class="tab" data-view="plan">📅 Kế hoạch</button>
-      <button class="tab" data-view="dashboard">📊 Tiến độ</button>
+      <button class="tab tab-home" data-view="today">🔥 Hôm nay</button>
+
+      <div class="navgroup" data-group="hoc">
+        <button class="navgroup-btn" type="button">📚 Học <span class="ng-caret">▾</span></button>
+        <div class="navgroup-menu">
+          <button class="tab" data-view="docs">📖 Tài liệu</button>
+          <button class="tab" data-view="flashcards">🃏 Flashcards</button>
+          <button class="tab" data-view="writing">✍️ Luyện viết</button>
+          <button class="tab" data-view="code">⌨️ Gõ code</button>
+        </div>
+      </div>
+
+      <div class="navgroup" data-group="luyen">
+        <button class="navgroup-btn" type="button">🧠 Luyện tập <span class="ng-caret">▾</span></button>
+        <div class="navgroup-menu">
+          <button class="tab" data-view="coding">🧠 Tư duy (code · IQ · quiz)</button>
+          <button class="tab" data-view="design">🏛️ Thiết kế hệ thống</button>
+        </div>
+      </div>
+
+      <div class="navgroup" data-group="pv">
+        <button class="navgroup-btn" type="button">🎯 Phỏng vấn <span class="ng-caret">▾</span></button>
+        <div class="navgroup-menu">
+          <button class="tab" data-view="mock">🎯 Mock phỏng vấn</button>
+          <button class="tab" data-view="company">🏢 Phỏng vấn tổng hợp</button>
+          <button class="tab" data-view="star">🌟 STAR (kể chuyện)</button>
+        </div>
+      </div>
+
+      <div class="navgroup" data-group="theodoi">
+        <button class="navgroup-btn" type="button">📊 Theo dõi <span class="ng-caret">▾</span></button>
+        <div class="navgroup-menu">
+          <button class="tab" data-view="plan">📅 Kế hoạch</button>
+          <button class="tab" data-view="dashboard">📊 Tiến độ &amp; điểm sẵn sàng</button>
+        </div>
+      </div>
     </nav>
     <div class="pomo">
       <button id="sync-btn" title="Đồng bộ tiến độ qua Firebase (đa thiết bị)">☁️ Đồng bộ</button>
