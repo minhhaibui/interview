@@ -7,7 +7,7 @@
  *   - /api/* và các request cross-origin khác (Firebase, Anthropic): không can thiệp.
  * Đổi VERSION mỗi khi muốn ép xoá cache cũ.
  */
-const VERSION = 'v5';
+const VERSION = 'v6';
 const CACHE = `prep-${VERSION}`;
 const CDN_HOSTS = ['cdn.jsdelivr.net', 'www.gstatic.com'];
 
@@ -56,12 +56,33 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Tài nguyên cùng origin → stale-while-revalidate.
   if (url.origin === self.location.origin) {
+    // App shell (trang HTML + code .js/.css) → NETWORK-FIRST: luôn lấy bản mới khi online,
+    // fallback cache khi offline. Tránh tình trạng phục vụ code CŨ một lượt sau mỗi lần deploy
+    // (stale-while-revalidate khiến người dùng thấy bản trước đó tới tận lần tải kế tiếp).
+    if (req.mode === 'navigate' || /\.(?:js|css)(?:\?|$)/.test(url.pathname)) {
+      e.respondWith(networkFirst(req));
+      return;
+    }
+    // Dữ liệu tĩnh khác (data/*.json, icon, manifest…) → stale-while-revalidate cho nhanh.
     e.respondWith(staleWhileRevalidate(req));
   }
   // Còn lại (Firebase, Anthropic…) để trình duyệt tự xử lý.
 });
+
+async function networkFirst(req) {
+  const cache = await caches.open(CACHE);
+  try {
+    const res = await fetch(req);
+    if (res && res.ok) cache.put(req, res.clone());
+    return res;
+  } catch {
+    const hit = await cache.match(req);
+    if (hit) return hit;
+    if (req.mode === 'navigate') return (await cache.match('index.html')) || Response.error();
+    return Response.error();
+  }
+}
 
 async function cacheFirst(req) {
   const cache = await caches.open(CACHE);

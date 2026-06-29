@@ -414,6 +414,20 @@ test('regression: loadMockPool gộp lời gọi đồng thời + helper thứ c
   assert.strictEqual(cnt, 1, `initMock().then chỉ nên còn 1 (canonical trong switchView), thấy ${cnt}`);
 });
 
+test('sw: app shell (HTML/.js/.css) dùng network-first để không phục vụ code cũ sau deploy', () => {
+  const SW = read('sw.js');
+  assert.ok(/function networkFirst/.test(SW), 'sw.js thiếu helper networkFirst');
+  // điều hướng + file .js/.css phải đi qua networkFirst (cùng một nhánh route)
+  const route = SW.slice(SW.indexOf("self.addEventListener('fetch'"), SW.indexOf('async function networkFirst'));
+  assert.ok(/req\.mode === 'navigate'[\s\S]*?networkFirst\(req\)/.test(route), 'navigation chưa route qua networkFirst');
+  assert.ok(/js\|css/.test(route), 'chưa route .js/.css qua networkFirst');
+  assert.ok(SW.indexOf('networkFirst(req)') < SW.indexOf('staleWhileRevalidate(req)'),
+    'shell phải kiểm networkFirst TRƯỚC khi rơi về staleWhileRevalidate');
+  // offline vẫn fallback: networkFirst phải match cache khi fetch lỗi
+  const nf = SW.slice(SW.indexOf('async function networkFirst'), SW.indexOf('async function networkFirst') + 400);
+  assert.ok(/cache\.match\(req\)/.test(nf) && /navigate/.test(nf), 'networkFirst chưa fallback cache/offline');
+});
+
 test('regression: badge oq/dbg lọc theo id còn tồn tại (tránh đếm vượt)', () => {
   const block = APP.slice(APP.indexOf('function computeBadges'), APP.indexOf('function computeBadges') + 1600);
   assert.ok(/oqIds\.has/.test(block), 'oqDoneN chưa lọc id tồn tại');
