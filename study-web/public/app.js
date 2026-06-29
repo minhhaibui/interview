@@ -416,6 +416,9 @@ function computeBadges() {
   const apiIds = new Set((window.API_QUIZ || []).map(q => q.id));
   const apiTotal = apiIds.size;
   const apiDoneN = Object.keys(store.get('prep-api-done', {})).filter(id => apiIds.has(id)).length;
+  const sqlIds = new Set((window.SQL_DRILL || []).map(q => q.id));
+  const sqlTotal = sqlIds.size;
+  const sqlDoneN = Object.keys(store.get('prep-sql-done', {})).filter(id => sqlIds.has(id)).length;
   // Tuần hoàn thành (đủ mọi mục checklist)
   const progress = store.get('prep-progress', {});
   const weeksGroup = TREE.find(g => g.title.includes('12 tuần'));
@@ -447,6 +450,8 @@ function computeBadges() {
     B('debugall', '🐛', 'Thợ săn bug', dbgTotal > 0 && dbgDoneN >= dbgTotal, `Đã sửa ${dbgDoneN}/${dbgTotal} bug`),
     B('api5', '📡', 'Trả lời đúng 5 câu API/HTTP', apiDoneN >= 5, `Đúng ${apiDoneN} câu API/HTTP`),
     B('apiall', '📡', 'Thạo HTTP/REST', apiTotal > 0 && apiDoneN >= apiTotal, `Đúng ${apiDoneN}/${apiTotal} câu API/HTTP`),
+    B('sql5', '🗄️', 'Trả lời đúng 5 câu SQL', sqlDoneN >= 5, `Đúng ${sqlDoneN} câu SQL`),
+    B('sqlall', '🗄️', 'Bậc thầy SQL', sqlTotal > 0 && sqlDoneN >= sqlTotal, `Đúng ${sqlDoneN}/${sqlTotal} câu SQL`),
     B('wpm40', '⌨️', 'Gõ code 40 WPM', wpm >= 40, `Kỷ lục ${wpm || 0} WPM`),
     B('wpm60', '⌨️', 'Gõ code 60 WPM', wpm >= 60, `Kỷ lục ${wpm || 0} WPM`),
     B('pomo10', '🍅', '10 pomodoro', pomoTotal >= 10, `${pomoTotal}/10 pomodoro`),
@@ -2573,7 +2578,7 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-coding-solved', 'prep-coding-code', 'prep-iq-best', 'prep-iq-test-history', 'prep-interview-history',
   'prep-daily-goal', 'prep-badges-seen', 'prep-design-history', 'prep-design-draft',
   'prep-oq-done', 'prep-oq-best', 'prep-debug-solved', 'prep-debug-code',
-  'prep-api-done', 'prep-api-best'];
+  'prep-api-done', 'prep-api-best', 'prep-sql-done', 'prep-sql-best'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */
@@ -2903,9 +2908,11 @@ function renderThinkStats() {
   const oq = cnt(window.OUTPUT_QUIZ, 'prep-oq-done');
   const dbg = cnt(window.DEBUG_CHALLENGES, 'prep-debug-solved');
   const api = cnt(window.API_QUIZ, 'prep-api-done');
+  const sql = cnt(window.SQL_DRILL, 'prep-sql-done');
   const iqBest = (store.get('prep-iq-best', {}) || {}).iq || 0;
   const oqBest = store.get('prep-oq-best', null);
   const apiBest = store.get('prep-api-best', null);
+  const sqlBest = store.get('prep-sql-best', null);
   const bar = (label, done, total, extra = '') => {
     const pct = total ? Math.round(done / total * 100) : 0;
     return `<div class="tk-row"><span class="tk-label">${label}</span>
@@ -2918,6 +2925,7 @@ function renderThinkStats() {
     bar('🔍 Đoán output', oq.done, oq.total, oqBest ? ` · KL ${oqBest.score}/${oqBest.total}` : '') +
     bar('🐛 Sửa bug', dbg.done, dbg.total) +
     bar('📡 API/HTTP', api.done, api.total, apiBest ? ` · KL ${apiBest.score}/${apiBest.total}` : '') +
+    bar('🗄️ SQL Drill', sql.done, sql.total, sqlBest ? ` · KL ${sqlBest.score}/${sqlBest.total}` : '') +
     `<div class="tk-row"><span class="tk-label">🧩 IQ ước lượng</span>
       <div class="tk-track"><div class="tk-fill" style="width:${iqPctBar}%"></div></div>
       <span class="tk-val">${iqBest || '—'}</span></div>`;
@@ -2965,7 +2973,7 @@ function computeReadiness() {
   }
   const consistency = activeDays / 14 * 100;
 
-  // 6) Tư duy — bài code đã giải + IQ + phỏng vấn tổng hợp + 3 quiz mới (đoán output/sửa bug/API)
+  // 6) Tư duy — bài code đã giải + IQ + phỏng vấn tổng hợp + 4 quiz mới (đoán output/sửa bug/API/SQL)
   // % theo id còn tồn tại (giống cách tính badge), lấy TB các phần đã có dữ liệu.
   const donePct = (bankIds, doneKey) =>
     bankIds.size ? Object.keys(store.get(doneKey, {})).filter(id => bankIds.has(id)).length / bankIds.size * 100 : null;
@@ -2979,7 +2987,8 @@ function computeReadiness() {
   const oqPct = donePct(new Set((window.OUTPUT_QUIZ || []).map(q => q.id)), 'prep-oq-done');
   const dbgPct = donePct(new Set((window.DEBUG_CHALLENGES || []).map(c => c.id)), 'prep-debug-solved');
   const apiPct = donePct(new Set((window.API_QUIZ || []).map(q => q.id)), 'prep-api-done');
-  const thinkVals = [codingPct, iqPct, ivBest, oqPct, dbgPct, apiPct].filter(v => v != null);
+  const sqlPct = donePct(new Set((window.SQL_DRILL || []).map(q => q.id)), 'prep-sql-done');
+  const thinkVals = [codingPct, iqPct, ivBest, oqPct, dbgPct, apiPct, sqlPct].filter(v => v != null);
   const think = thinkVals.length ? thinkVals.reduce((a, b) => a + b, 0) / thinkVals.length : 0;
 
   // 7) Thiết kế hệ thống — coverage rubric tốt nhất + điểm AI tốt nhất (TB phần đã có), nhân độ phủ số lần luyện
@@ -3173,7 +3182,7 @@ let thinkInit = false, thinkMode = 'code';
 function initThink() {
   document.querySelectorAll('.think-mode').forEach(b => { b.onclick = () => setThinkMode(b.dataset.mode); });
   setThinkMode(thinkMode);
-  if (!thinkInit) { renderCodingFilters(); renderCodingList(); renderIQ(); renderOutputQuiz(); renderDebugList(); renderApiQuiz(); thinkInit = true; }
+  if (!thinkInit) { renderCodingFilters(); renderCodingList(); renderIQ(); renderOutputQuiz(); renderDebugList(); renderApiQuiz(); renderSqlQuiz(); thinkInit = true; }
 }
 
 function setThinkMode(m) {
@@ -3185,6 +3194,7 @@ function setThinkMode(m) {
   document.getElementById('think-output').hidden = m !== 'output';
   document.getElementById('think-debug').hidden = m !== 'debug';
   document.getElementById('think-api').hidden = m !== 'api';
+  document.getElementById('think-sql').hidden = m !== 'sql';
   // Quay lại mode IQ khi đang dở Bài Test (có tính giờ) → khởi động lại đồng hồ
   // (switchView/đổi mode đã clearInterval; tickIQTest tính theo startMs nên không lệch, và tự nộp nếu hết giờ).
   if (m === 'iq' && iqState && iqState.mode === 'test') {
@@ -3361,6 +3371,22 @@ const apiQuiz = makeQuiz({
   resultMsg: pct => pct >= 80 ? 'Nắm rất chắc HTTP/REST!' : pct >= 50 ? 'Khá ổn — ôn thêm vài status code & quy tắc.' : 'HTTP/API là phần hay bị hỏi — đọc kỹ giải thích nhé.',
 });
 function renderApiQuiz() { apiQuiz.render(); }
+
+// ----- Chế độ 🗄️ SQL Drill (dùng engine makeQuiz) -----
+const sqlQuiz = makeQuiz({
+  bodyId: 'sql-body',
+  data: () => window.SQL_DRILL,
+  doneKey: 'prep-sql-done',
+  bestKey: 'prep-sql-best',
+  ask: 'Chọn đáp án đúng:',
+  optionHtml: o => `<span class="oq-otext">${escHtml(o)}</span>`,
+  // Có thể kèm snippet SQL (q.sql) — render trong pre/code để hljs tô màu.
+  questionHtml: q => `<p class="oq-question">${escHtml(q.q)}</p>` +
+    (q.sql ? `<pre><code class="language-sql">${escHtml(q.sql)}</code></pre>` : ''),
+  highlight: true,
+  resultMsg: pct => pct >= 80 ? 'Rất chắc SQL — sẵn sàng cho vòng database!' : pct >= 50 ? 'Khá ổn — ôn thêm NULL, JOIN và isolation level.' : 'SQL là phần lõi khi phỏng vấn Backend — đọc kỹ giải thích từng câu nhé.',
+});
+function renderSqlQuiz() { sqlQuiz.render(); }
 
 // ----- Chế độ 🐛 Tìm & Sửa Bug (tái dùng runInSandbox) -----
 const dbgAll = () => window.DEBUG_CHALLENGES || [];

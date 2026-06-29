@@ -277,6 +277,7 @@
       <button class="think-mode" data-mode="output">🔍 Đoán output</button>
       <button class="think-mode" data-mode="debug">🐛 Sửa bug</button>
       <button class="think-mode" data-mode="api">📡 API/HTTP</button>
+      <button class="think-mode" data-mode="sql">🗄️ SQL Drill</button>
     </div>
 
     <!-- Chế độ LẬP TRÌNH -->
@@ -328,6 +329,15 @@
           <div id="debug-list"></div>
         </div>
         <div id="debug-detail" class="coding-detail" hidden></div>
+      </div>
+    </div>
+
+    <!-- Chế độ SQL DRILL -->
+    <div id="think-sql" hidden>
+      <div class="oq-wrap">
+        <h1>🗄️ SQL Drill</h1>
+        <p class="coding-intro">Trắc nghiệm SQL hay bị hỏi khi phỏng vấn Backend: JOIN &amp; anti-join, NULL, GROUP BY/HAVING, index &amp; composite index, transaction/ACID/isolation level, normalization, window function, đoán kết quả query, EXPLAIN, deadlock, N+1. Chọn đáp án để biết đúng/sai kèm <b>giải thích</b>.</p>
+        <div id="sql-body"></div>
       </div>
     </div>
   </div>
@@ -399,6 +409,7 @@
   <script src="output-quiz.js"></script>
   <script src="debug-challenges.js"></script>
   <script src="api-quiz.js"></script>
+  <script src="sql-drill.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
