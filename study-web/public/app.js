@@ -3519,19 +3519,24 @@ function renderStarSession() {
       <div id="star-ai" class="dg-ai" hidden></div>
     </div>`;
 
+  // read() trả null nếu các ô đã bị gỡ khỏi DOM (đã rời session) — tránh ghi đè nháp bằng {} rỗng.
   const read = () => {
+    const tas = el.querySelectorAll('.star-ta');
+    if (!tas.length) return null;
     const v = {};
-    el.querySelectorAll('.star-ta').forEach(ta => { v[ta.dataset.k] = ta.value; });
+    tas.forEach(ta => { v[ta.dataset.k] = ta.value; });
     return v;
   };
+  const save = () => { const v = read(); if (v) starDraft(q.id, v); };
   let saveT;
   el.querySelectorAll('.star-ta').forEach(ta => ta.addEventListener('input', () => {
-    clearTimeout(saveT); saveT = setTimeout(() => starDraft(q.id, read()), 500);
-    renderStarCheck(read(), false); // cập nhật checklist trực tiếp (không lưu history)
+    clearTimeout(saveT); saveT = setTimeout(save, 500);
+    renderStarCheck(read() || d, false); // cập nhật checklist trực tiếp (không lưu history)
   }));
-  document.getElementById('star-back').onclick = () => { starDraft(q.id, read()); starState = null; renderStarList(); };
-  document.getElementById('star-score').onclick = () => { starDraft(q.id, read()); renderStarCheck(read(), true); };
-  document.getElementById('star-ai-toggle').onclick = () => starRenderAiPanel(q, read());
+  // clearTimeout khi rời session: nếu không, debounce treo sẽ fire sau renderStarList → read()=null nhưng vẫn an toàn nhờ guard.
+  document.getElementById('star-back').onclick = () => { clearTimeout(saveT); save(); starState = null; renderStarList(); };
+  document.getElementById('star-score').onclick = () => { save(); renderStarCheck(read() || d, true); };
+  document.getElementById('star-ai-toggle').onclick = () => starRenderAiPanel(q, read);
   renderStarCheck(d, false);
 }
 
@@ -3554,8 +3559,9 @@ function renderStarCheck(draft, save) {
   }
 }
 
-/** Panel AI góp ý — tái dùng aiGradeSingle (chung key prep-ai-key với Mock/Design). */
-function starRenderAiPanel(q, draft) {
+/** Panel AI góp ý — tái dùng aiGradeSingle (chung key prep-ai-key với Mock/Design).
+ * getDraft là HÀM đọc nháp tươi từ DOM lúc bấm chấm (không đóng băng lúc mở panel). */
+function starRenderAiPanel(q, getDraft) {
   const box = document.getElementById('star-ai');
   if (!box) return;
   if (!box.hidden) { box.hidden = true; return; }
@@ -3573,7 +3579,8 @@ function starRenderAiPanel(q, draft) {
     <div id="star-aiout" class="dg-ai-out"></div>`;
   const keyEl = document.getElementById('star-aikey');
   keyEl.value = store.get('prep-ai-key', '');
-  document.getElementById('star-aigo').onclick = () => starAiGrade(q, draft, keyEl.value, document.getElementById('star-aimodel').value);
+  document.getElementById('star-aigo').onclick = () =>
+    starAiGrade(q, getDraft() || starDraft(q.id), keyEl.value, document.getElementById('star-aimodel').value);
 }
 
 function starAiGrade(q, draft, key, model) {
