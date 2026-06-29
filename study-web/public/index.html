@@ -278,6 +278,7 @@
       <button class="think-mode" data-mode="debug">🐛 Sửa bug</button>
       <button class="think-mode" data-mode="api">📡 API/HTTP</button>
       <button class="think-mode" data-mode="sql">🗄️ SQL Drill</button>
+      <button class="think-mode" data-mode="cli">🖥️ CLI Quiz</button>
     </div>
 
     <!-- Chế độ LẬP TRÌNH -->
@@ -338,6 +339,15 @@
         <h1>🗄️ SQL Drill</h1>
         <p class="coding-intro">Trắc nghiệm SQL hay bị hỏi khi phỏng vấn Backend: JOIN &amp; anti-join, NULL, GROUP BY/HAVING, index &amp; composite index, transaction/ACID/isolation level, normalization, window function, đoán kết quả query, EXPLAIN, deadlock, N+1. Chọn đáp án để biết đúng/sai kèm <b>giải thích</b>.</p>
         <div id="sql-body"></div>
+      </div>
+    </div>
+
+    <!-- Chế độ CLI QUIZ -->
+    <div id="think-cli" hidden>
+      <div class="oq-wrap">
+        <h1>🖥️ CLI Quiz</h1>
+        <p class="coding-intro">Trắc nghiệm câu lệnh hay dùng &amp; hay bị hỏi khi làm Backend: <b>git</b> (reset/revert/rebase/stash), <b>docker</b> (run/exec/logs/ps), <b>kubectl</b> (describe/rollout/apply), <b>redis-cli</b> (SCAN vs KEYS, SET EX, INCR), <b>psql</b> (\dt, EXPLAIN ANALYZE), <b>bash</b> (grep -r, tail -f, kill -9, chmod). Chọn đáp án để biết đúng/sai kèm <b>giải thích</b>.</p>
+        <div id="cli-body"></div>
       </div>
     </div>
   </div>
@@ -410,6 +420,7 @@
   <script src="debug-challenges.js"></script>
   <script src="api-quiz.js"></script>
   <script src="sql-drill.js"></script>
+  <script src="cli-quiz.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

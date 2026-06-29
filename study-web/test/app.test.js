@@ -292,6 +292,31 @@ test('wiring: chế độ SQL Drill có đủ id + mode button + script + engine
   assert.ok(/window\.SQL_DRILL/.test(APP), 'sqlQuiz chưa trỏ tới window.SQL_DRILL');
 });
 
+test('cli-quiz: id duy nhất, answer hợp lệ, options ≥ 2, đủ field', () => {
+  const qs = loadWindow('cli-quiz.js').CLI_QUIZ;
+  assert.ok(Array.isArray(qs) && qs.length >= 10);
+  const ids = qs.map(q => q.id);
+  assert.strictEqual(new Set(ids).size, ids.length, 'id cli-quiz trùng');
+  for (const q of qs) {
+    assert.ok(q.q && q.explain && q.topic, `CLI ${q.id} thiếu field`);
+    assert.ok(Array.isArray(q.options) && q.options.length >= 2, `CLI ${q.id}: <2 lựa chọn`);
+    assert.ok(Number.isInteger(q.answer) && q.answer >= 0 && q.answer < q.options.length,
+      `CLI ${q.id}: answer ngoài range`);
+    if ('cmd' in q) assert.ok(typeof q.cmd === 'string' && q.cmd.length, `CLI ${q.id}: trường cmd rỗng`);
+  }
+});
+
+test('wiring: chế độ CLI Quiz có đủ id + mode button + script + engine', () => {
+  assert.ok(HTML.includes('id="think-cli"'), 'thiếu #think-cli');
+  assert.ok(HTML.includes('id="cli-body"'), 'thiếu #cli-body');
+  assert.ok(HTML.includes('data-mode="cli"'), 'thiếu nút mode cli');
+  assert.ok(HTML.includes('src="cli-quiz.js"'), 'index.html thiếu script cli-quiz.js');
+  assert.ok(HTML.indexOf('src="cli-quiz.js"') < HTML.indexOf('src="app.js"'), 'cli-quiz.js phải nạp trước app.js');
+  assert.ok(/renderCliQuiz\(\)/.test(APP), 'initThink chưa gọi renderCliQuiz');
+  assert.ok(/document\.getElementById\('think-cli'\)\.hidden/.test(APP), 'setThinkMode chưa toggle think-cli');
+  assert.ok(/window\.CLI_QUIZ/.test(APP), 'cliQuiz chưa trỏ tới window.CLI_QUIZ');
+});
+
 test('wiring: chế độ Sửa bug có đủ id + mode button + script + render', () => {
   assert.ok(HTML.includes('id="think-debug"'), 'thiếu #think-debug');
   assert.ok(HTML.includes('id="debug-list"'), 'thiếu #debug-list');
@@ -365,13 +390,13 @@ test('readiness: tổng trọng số 7 phần = 1.0 (điểm không lệch thang
   assert.ok(Math.abs(sum - 1) < 1e-9, `tổng trọng số = ${sum} ≠ 1.0`);
 });
 
-test('readiness: phần Tư duy gồm cả 4 quiz mới (output/debug/api/sql) + dashboard panel', () => {
+test('readiness: phần Tư duy gồm cả 5 quiz mới (output/debug/api/sql/cli) + dashboard panel', () => {
   const block = APP.slice(APP.indexOf('function computeReadiness'), APP.indexOf('function readinessHtml'));
-  for (const key of ['prep-oq-done', 'prep-debug-solved', 'prep-api-done', 'prep-sql-done']) {
+  for (const key of ['prep-oq-done', 'prep-debug-solved', 'prep-api-done', 'prep-sql-done', 'prep-cli-done']) {
     assert.ok(block.includes(key), `computeReadiness chưa tính ${key} vào phần Tư duy`);
   }
-  assert.ok(/thinkVals = \[codingPct, iqPct, ivBest, oqPct, dbgPct, apiPct, sqlPct\]/.test(block),
-    'thinkVals chưa gộp đủ 7 thành phần');
+  assert.ok(/thinkVals = \[codingPct, iqPct, ivBest, oqPct, dbgPct, apiPct, sqlPct, cliPct\]/.test(block),
+    'thinkVals chưa gộp đủ 8 thành phần');
   // dashboard panel Tư duy
   assert.ok(HTML.includes('id="dash-think"'), 'index.html thiếu #dash-think');
   assert.ok(/function renderThinkStats\b/.test(APP), 'thiếu renderThinkStats');
@@ -397,7 +422,7 @@ test('AI chấm: regex bắt điểm "ĐIỂM: NN/100" đúng', () => {
 
 test('script đủ: index.html nạp mọi file dữ liệu trước app.js', () => {
   for (const f of ['coding-problems.js', 'iq-questions.js', 'english-questions.js',
-    'situational-questions.js', 'design-drills.js', 'api-quiz.js', 'sql-drill.js', 'app.js']) {
+    'situational-questions.js', 'design-drills.js', 'api-quiz.js', 'sql-drill.js', 'cli-quiz.js', 'app.js']) {
     assert.ok(HTML.includes(`src="${f}"`), `index.html thiếu <script src="${f}">`);
   }
   // app.js phải nạp SAU các file dữ liệu
