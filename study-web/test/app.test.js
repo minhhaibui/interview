@@ -428,6 +428,22 @@ test('sw: app shell (HTML/.js/.css) dùng network-first để không phục vụ
   assert.ok(/cache\.match\(req\)/.test(nf) && /navigate/.test(nf), 'networkFirst chưa fallback cache/offline');
 });
 
+test('wiring: 📝 Test gõ từ (Flashcards) đủ nút + container + hàm + SRS + chấm', () => {
+  assert.ok(HTML.includes('id="fc-test-btn"'), 'thiếu nút #fc-test-btn');
+  assert.ok(HTML.includes('id="fc-test"'), 'thiếu container #fc-test');
+  for (const fn of ['function ftStart', 'function ftBegin', 'function ftShow', 'function ftSubmit', 'function ftFinish', 'const ftNorm']) {
+    assert.ok(APP.includes(fn), `thiếu ${fn}`);
+  }
+  assert.ok(/fc-test-btn'\)\.addEventListener\('click', ftStart\)/.test(APP), 'initFlashcards chưa wire nút Test gõ');
+  // chấm đúng: so khớp chuẩn hoá front; SRS: học tiếp = bumpSrs(...,false), thuộc rồi = bumpSrs(...,true)
+  const fin = APP.slice(APP.indexOf('function ftFinish'), APP.indexOf('function ftMarkRow'));
+  assert.ok(/bumpSrs\(ftQueue\[\+b\.dataset\.i\]\.card, false\)/.test(fin), 'nút Học tiếp chưa gọi bumpSrs(...,false)');
+  assert.ok(/bumpSrs\(ftQueue\[\+b\.dataset\.i\]\.card, true\)/.test(fin), 'nút Thuộc rồi chưa gọi bumpSrs(...,true)');
+  const sub = APP.slice(APP.indexOf('function ftSubmit'), APP.indexOf('function ftFinish'));
+  assert.ok(/ftNorm\(it\.answer\) === ftNorm\(it\.card\.front\)/.test(sub), 'ftSubmit chưa so khớp chuẩn hoá');
+  assert.ok(/const PREP_KEYS = \[[\s\S]*?prep-ft-size[\s\S]*?\]/.test(APP), 'PREP_KEYS thiếu prep-ft-size');
+});
+
 test('regression: badge oq/dbg lọc theo id còn tồn tại (tránh đếm vượt)', () => {
   const block = APP.slice(APP.indexOf('function computeBadges'), APP.indexOf('function computeBadges') + 1600);
   assert.ok(/oqIds\.has/.test(block), 'oqDoneN chưa lọc id tồn tại');

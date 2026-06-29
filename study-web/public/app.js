@@ -891,6 +891,7 @@ async function initFlashcards() {
   });
   document.getElementById('fc-again').addEventListener('click', () => gradeCard(false));
   document.getElementById('fc-good').addEventListener('click', () => gradeCard(true));
+  document.getElementById('fc-test-btn').addEventListener('click', ftStart);
   startSession();
 }
 
@@ -948,6 +949,116 @@ function startSession() {
   fcQueue = cards;
   fcIndex = 0;
   showCard();
+}
+
+// ===== 📝 Test gõ từ: hiện nghĩa tiếng Việt → gõ tiếng Anh, Enter sang câu kế, cuối bài chấm + chọn SRS =====
+let ftQueue = [], ftIdx = 0;
+let ftSize = store.get('prep-ft-size', 20); // số từ mỗi lượt (0 = tất cả)
+const ftNorm = s => (s || '').toLowerCase().normalize('NFC')
+  .replace(/\(.*?\)/g, ' ')                    // bỏ chú thích trong ngoặc
+  .replace(/[^\p{L}\p{N}\s'-]/gu, ' ')         // bỏ ký tự đặc biệt, giữ chữ/số/'/-
+  .replace(/\s+/g, ' ').trim();
+
+/** Ẩn UI flashcard lật thường khi đang test (on=true), hiện lại khi xong. */
+function ftToggle(on) {
+  const card = document.getElementById('fc-card'); if (card) card.hidden = on;
+  const prog = document.getElementById('fc-progress'); if (prog) prog.hidden = on;
+  document.querySelectorAll('#view-flashcards .fc-hint, #view-flashcards .fc-actions')
+    .forEach(e => { e.hidden = on; });
+  const t = document.getElementById('fc-test'); if (t) t.hidden = !on;
+}
+
+/** Màn bắt đầu: chọn số từ + xem phạm vi (theo bộ lọc #fc-week hiện tại). */
+function ftStart() {
+  ftToggle(true);
+  const sel = document.getElementById('fc-week');
+  const pool = filterDeck(sel.value);
+  const scope = sel.selectedOptions[0]?.textContent || 'Tất cả';
+  const sizeBtn = n => `<button class="ft-size${ftSize === n ? ' active' : ''}" data-n="${n}">${n === 0 ? 'Tất cả' : n}</button>`;
+  document.getElementById('fc-test').innerHTML = `
+    <div class="ft-start">
+      <h2>📝 Test gõ từ</h2>
+      <p>Hiện <b>nghĩa tiếng Việt</b> — bạn gõ <b>từ tiếng Anh</b> rồi <kbd>Enter</kbd> sang câu kế. Cuối bài chấm điểm và bạn chọn từng từ <b>học tiếp</b> hay <b>thuộc rồi</b>.</p>
+      <p class="ft-scope">Phạm vi (đổi ở ô chọn phía trên): <b>${escHtml(scope)}</b> — <b>${pool.length}</b> từ. Số từ mỗi lượt:</p>
+      <div class="ft-sizes">${[10, 20, 0].map(sizeBtn).join('')}</div>
+      <button id="ft-go" class="dg-go"${pool.length ? '' : ' disabled'}>▶ Bắt đầu</button>
+      <button id="ft-cancel" class="dg-link">← Quay lại lật thẻ</button>
+    </div>`;
+  document.querySelectorAll('.ft-size').forEach(b => b.onclick = () => { ftSize = +b.dataset.n; store.set('prep-ft-size', ftSize); ftStart(); });
+  document.getElementById('ft-go').onclick = ftBegin;
+  document.getElementById('ft-cancel').onclick = () => ftToggle(false);
+}
+
+function ftBegin() {
+  let pool = filterDeck(document.getElementById('fc-week').value).filter(c => c.front && c.meaning);
+  pool = pool.sort(() => Math.random() - 0.5);
+  if (ftSize > 0) pool = pool.slice(0, ftSize);
+  ftQueue = pool.map(c => ({ card: c, answer: '', correct: false }));
+  ftIdx = 0;
+  if (!ftQueue.length) { ftToggle(false); return; }
+  ftShow();
+}
+
+function ftShow() {
+  const it = ftQueue[ftIdx];
+  if (!it) return ftFinish();
+  const c = it.card;
+  document.getElementById('fc-test').innerHTML = `
+    <div class="ft-sess">
+      <div class="ft-bar"><span>Câu ${ftIdx + 1}/${ftQueue.length}</span><span class="ft-topic">${escHtml(c.week)}</span></div>
+      <div class="ft-mean">${escHtml(c.meaning)}</div>
+      <input id="ft-input" class="ft-input" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Gõ từ tiếng Anh rồi Enter…" />
+      <div class="ft-actions"><button id="ft-next" class="dg-go">${ftIdx + 1 < ftQueue.length ? 'Câu kế →' : 'Xem kết quả ✓'}</button><button id="ft-quit" class="dg-link">Dừng</button></div>
+      <p class="ft-tip">↵ <kbd>Enter</kbd> để sang câu kế · đáp án ẩn tới cuối bài</p>
+    </div>`;
+  const inp = document.getElementById('ft-input');
+  inp.value = it.answer;
+  inp.focus();
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ftSubmit(); } });
+  document.getElementById('ft-next').onclick = ftSubmit;
+  document.getElementById('ft-quit').onclick = () => { if (confirm('Dừng bài test? Tiến độ lượt này sẽ bỏ.')) ftToggle(false); };
+}
+
+function ftSubmit() {
+  const it = ftQueue[ftIdx];
+  it.answer = (document.getElementById('ft-input').value || '').trim();
+  it.correct = it.answer !== '' && ftNorm(it.answer) === ftNorm(it.card.front);
+  ftIdx++;
+  ftShow();
+}
+
+function ftFinish() {
+  const right = ftQueue.filter(x => x.correct).length, n = ftQueue.length;
+  const pct = n ? Math.round(right / n * 100) : 0;
+  logActivity();
+  const rows = ftQueue.map((x, i) => `
+    <li class="ft-row ${x.correct ? 'ft-ok' : 'ft-no'}">
+      <div class="ft-row-top">
+        <span class="ft-verd">${x.correct ? '✅' : '❌'}</span>
+        <span class="ft-word"><b>${escHtml(x.card.front)}</b> — ${escHtml(x.card.meaning)}</span>
+      </div>
+      ${x.correct ? '' : `<div class="ft-yours">Bạn gõ: <i>${escHtml(x.answer || '(bỏ trống)')}</i></div>`}
+      <div class="ft-srs">
+        <button class="ft-learn" data-i="${i}">📚 Học tiếp</button>
+        <button class="ft-known" data-i="${i}">✅ Thuộc rồi</button>
+      </div>
+    </li>`).join('');
+  const el = document.getElementById('fc-test');
+  el.innerHTML = `
+    <div class="ft-result">
+      <h2>${pct >= 80 ? '🌟' : pct >= 50 ? '👍' : '📚'} Đúng ${right}/${n} (${pct}%)</h2>
+      <p>Chọn cho từng từ: <b>📚 Học tiếp</b> (đưa về ôn lại sớm) hay <b>✅ Thuộc rồi</b> (giãn lịch ôn).</p>
+      <ul class="ft-list">${rows}</ul>
+      <div class="ft-end"><button id="ft-again" class="dg-go">↻ Test lượt mới</button><button id="ft-done" class="dg-link">← Về lật thẻ</button></div>
+    </div>`;
+  el.querySelectorAll('.ft-learn').forEach(b => b.onclick = () => { bumpSrs(ftQueue[+b.dataset.i].card, false); ftMarkRow(b, 'học tiếp'); });
+  el.querySelectorAll('.ft-known').forEach(b => b.onclick = () => { bumpSrs(ftQueue[+b.dataset.i].card, true); ftMarkRow(b, 'thuộc rồi'); });
+  document.getElementById('ft-again').onclick = ftStart;
+  document.getElementById('ft-done').onclick = () => { ftToggle(false); fillFcWeekSelect(); startSession(); };
+}
+
+function ftMarkRow(btn, label) {
+  btn.closest('.ft-row').querySelector('.ft-srs').innerHTML = `<span class="ft-chosen">✔ Đã đánh dấu: ${label}</span>`;
 }
 
 function showCard() {
@@ -2591,7 +2702,7 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-daily-goal', 'prep-badges-seen', 'prep-design-history', 'prep-design-draft',
   'prep-oq-done', 'prep-oq-best', 'prep-debug-solved', 'prep-debug-code',
   'prep-api-done', 'prep-api-best', 'prep-sql-done', 'prep-sql-best', 'prep-cli-done', 'prep-cli-best',
-  'prep-star-drafts', 'prep-star-history'];
+  'prep-star-drafts', 'prep-star-history', 'prep-ft-size'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */
