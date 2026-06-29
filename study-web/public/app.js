@@ -4446,7 +4446,7 @@ function initShortcuts() {
 // Giữ localStorage làm nguồn chính; khi đăng nhập thì đẩy lên / kéo về Firestore.
 // Chiến lược: last-write-wins theo CẢ GÓI (so sánh updatedAt). Đủ cho 1 người dùng nhiều máy;
 // nếu sửa ở 2 máy mà chưa đồng bộ thì máy có mốc thời gian cũ hơn sẽ bị ghi đè.
-let fbAuth = null, fbDb = null, fbUser = null, syncReady = false, pushTimer = null;
+let fbAuth = null, fbDb = null, fbUser = null, syncReady = false, pushTimer = null, snapUnsub = null;
 
 function syncConfigured() {
   const c = window.FIREBASE_CONFIG;
@@ -4497,6 +4497,7 @@ function initSync() {
     renderSyncBtn();
     renderLoginHint();
     if (user) await onSignedIn();
+    else if (snapUnsub) { snapUnsub(); snapUnsub = null; } // đăng xuất → ngắt lắng nghe realtime
     reapplyView(); // mở khóa / khóa lại tab theo trạng thái đăng nhập mới
   });
 
@@ -4558,6 +4559,37 @@ async function onSignedIn() {
   } else {
     toast('☁️ Đã đồng bộ');
   }
+  attachLiveSync(); // sau khi hoà lần đầu → lắng nghe thay đổi realtime từ thiết bị/tab khác
+}
+
+/** Lắng nghe doc của user theo thời gian thực: thiết bị/tab khác sửa → máy này tự cập nhật. */
+function attachLiveSync() {
+  if (!syncReady || !fbUser) return;
+  if (snapUnsub) { snapUnsub(); snapUnsub = null; } // tránh gắn trùng (onAuthStateChanged có thể bắn lại)
+  snapUnsub = fbDb.collection('users').doc(fbUser.uid)
+    .onSnapshot(handleRemoteSnapshot, err => console.warn('live sync lỗi', err));
+}
+
+function handleRemoteSnapshot(snap) {
+  if (!snap || !snap.exists) return;
+  // Bỏ qua bản echo của CHÍNH MÌNH: ghi cục bộ chưa được server xác nhận (latency compensation).
+  if (snap.metadata && snap.metadata.hasPendingWrites) return;
+  const remote = snap.data();
+  // Chỉ áp dụng khi cloud THỰC SỰ mới hơn bản local (chống cả echo lẫn ghi đè ngược).
+  if (!remote || (remote.updatedAt || 0) <= localUpdatedAt()) return;
+  try {
+    applyPrepData(JSON.parse(remote.blob || '{}')); // dùng localStorage.setItem thẳng → KHÔNG kích push
+    setLocalUpdatedAt(remote.updatedAt || Date.now());
+  } catch (e) { console.warn('áp remote realtime lỗi', e); return; }
+  // Vẽ lại view hiện tại để thấy dữ liệu mới — nhưng đừng phá khi người dùng đang gõ giữa chừng.
+  if (!isEditingNow()) reapplyView();
+  toast('⬇️ Cập nhật từ thiết bị khác');
+}
+
+/** Có đang gõ trong ô nhập/textarea không (để khỏi re-render phá thao tác đang dở). */
+function isEditingNow() {
+  const a = document.activeElement;
+  return !!a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable);
 }
 
 function pullApply(remote) {

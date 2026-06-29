@@ -444,6 +444,20 @@ test('wiring: 📝 Test gõ từ (Flashcards) đủ nút + container + hàm + SR
   assert.ok(/const PREP_KEYS = \[[\s\S]*?prep-ft-size[\s\S]*?\]/.test(APP), 'PREP_KEYS thiếu prep-ft-size');
 });
 
+test('sync realtime: onSnapshot + chống echo + không ghi đè ngược + ngắt khi đăng xuất', () => {
+  assert.ok(/function attachLiveSync/.test(APP), 'thiếu attachLiveSync');
+  assert.ok(/function handleRemoteSnapshot/.test(APP), 'thiếu handleRemoteSnapshot');
+  assert.ok(/\.onSnapshot\(handleRemoteSnapshot/.test(APP), 'attachLiveSync chưa đăng ký onSnapshot');
+  const h = APP.slice(APP.indexOf('function handleRemoteSnapshot'), APP.indexOf('function isEditingNow'));
+  assert.ok(/hasPendingWrites/.test(h), 'handleRemoteSnapshot chưa bỏ echo (hasPendingWrites)');
+  assert.ok(/<= localUpdatedAt\(\)/.test(h), 'chưa chặn ghi đè ngược (updatedAt phải mới hơn)');
+  assert.ok(/applyPrepData\(/.test(h), 'chưa áp dữ liệu remote qua applyPrepData');
+  // onSignedIn phải bật live sync; đăng xuất phải ngắt listener
+  assert.ok(/attachLiveSync\(\);/.test(APP.slice(APP.indexOf('async function onSignedIn'), APP.indexOf('function attachLiveSync'))),
+    'onSignedIn chưa gọi attachLiveSync');
+  assert.ok(/snapUnsub\(\); snapUnsub = null;/.test(APP), 'chưa ngắt listener khi đăng xuất');
+});
+
 test('regression: badge oq/dbg lọc theo id còn tồn tại (tránh đếm vượt)', () => {
   const block = APP.slice(APP.indexOf('function computeBadges'), APP.indexOf('function computeBadges') + 1600);
   assert.ok(/oqIds\.has/.test(block), 'oqDoneN chưa lọc id tồn tại');
