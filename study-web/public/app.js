@@ -118,7 +118,7 @@ document.querySelectorAll('.tab').forEach(btn => {
 
 // Các tab có LƯU TIẾN ĐỘ → cần đăng nhập (chỉ áp dụng khi đã cấu hình Firebase).
 // Tab 📚 Tài liệu để mở tự do cho người chưa đăng nhập còn đọc nội dung.
-const GATED_VIEWS = new Set(['today', 'flashcards', 'writing', 'code', 'coding', 'mock', 'company', 'design', 'plan', 'dashboard']);
+const GATED_VIEWS = new Set(['today', 'flashcards', 'writing', 'code', 'coding', 'mock', 'company', 'star', 'design', 'plan', 'dashboard']);
 let authResolved = false; // true sau lần onAuthStateChanged đầu tiên
 const viewGated = name => syncReady && GATED_VIEWS.has(name);
 
@@ -146,6 +146,7 @@ function switchView(name) {
   if (name === 'coding') initThink();
   if (name === 'mock') initMock().then(() => mkInit && fillMockWeekSelect());
   if (name === 'company') renderCompany();
+  if (name === 'star') renderStar();
   if (name === 'design') renderDesign();
   if (name === 'plan') renderPlan();
   if (name === 'dashboard') renderDashboard();
@@ -422,6 +423,9 @@ function computeBadges() {
   const cliIds = new Set((window.CLI_QUIZ || []).map(q => q.id));
   const cliTotal = cliIds.size;
   const cliDoneN = Object.keys(store.get('prep-cli-done', {})).filter(id => cliIds.has(id)).length;
+  const starIds = new Set((window.STAR_QUESTIONS || []).map(q => q.id));
+  const starDraftsB = store.get('prep-star-drafts', {});
+  const starBuiltN = [...starIds].filter(id => { const d = starDraftsB[id] || {}; return d.s && d.t && d.a && d.r && (d.s + d.t + d.a + d.r).trim().length >= 80; }).length;
   // Tuần hoàn thành (đủ mọi mục checklist)
   const progress = store.get('prep-progress', {});
   const weeksGroup = TREE.find(g => g.title.includes('12 tuần'));
@@ -457,6 +461,8 @@ function computeBadges() {
     B('sqlall', '🗄️', 'Bậc thầy SQL', sqlTotal > 0 && sqlDoneN >= sqlTotal, `Đúng ${sqlDoneN}/${sqlTotal} câu SQL`),
     B('cli5', '🖥️', 'Trả lời đúng 5 câu CLI', cliDoneN >= 5, `Đúng ${cliDoneN} câu CLI`),
     B('cliall', '🖥️', 'Thạo dòng lệnh', cliTotal > 0 && cliDoneN >= cliTotal, `Đúng ${cliDoneN}/${cliTotal} câu CLI`),
+    B('star1', '🌟', 'Soạn câu chuyện STAR đầu tiên', starBuiltN >= 1, `Đã soạn ${starBuiltN} câu chuyện behavioral`),
+    B('star5', '🌟', 'Kho chuyện · 5 câu STAR', starBuiltN >= 5, `Đã soạn ${starBuiltN}/5 câu chuyện behavioral`),
     B('wpm40', '⌨️', 'Gõ code 40 WPM', wpm >= 40, `Kỷ lục ${wpm || 0} WPM`),
     B('wpm60', '⌨️', 'Gõ code 60 WPM', wpm >= 60, `Kỷ lục ${wpm || 0} WPM`),
     B('pomo10', '🍅', '10 pomodoro', pomoTotal >= 10, `${pomoTotal}/10 pomodoro`),
@@ -502,6 +508,7 @@ async function renderToday() {
   tasks.push({ id: 'td-think', ic: '🧠', t: 'Giải 1 bài luyện tư duy', s: 'Coding hoặc IQ', go: () => switchView('coding') });
   tasks.push({ id: 'td-mock', ic: '🎯', t: 'Mock interview nhanh', s: '5–10 câu ngẫu nhiên', go: () => switchView('mock') });
   tasks.push({ id: 'td-design', ic: '🏛️', t: 'Luyện 1 đề System Design', s: 'Tự chấm rubric hoặc nhờ AI chấm', go: () => switchView('design') });
+  tasks.push({ id: 'td-star', ic: '🌟', t: 'Soạn 1 câu chuyện STAR', s: 'Câu hỏi phỏng vấn hành vi', go: () => switchView('star') });
 
   // Huy hiệu + đánh dấu cái MỚI đạt
   const badges = computeBadges();
@@ -2583,7 +2590,8 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-coding-solved', 'prep-coding-code', 'prep-iq-best', 'prep-iq-test-history', 'prep-interview-history',
   'prep-daily-goal', 'prep-badges-seen', 'prep-design-history', 'prep-design-draft',
   'prep-oq-done', 'prep-oq-best', 'prep-debug-solved', 'prep-debug-code',
-  'prep-api-done', 'prep-api-best', 'prep-sql-done', 'prep-sql-best', 'prep-cli-done', 'prep-cli-best'];
+  'prep-api-done', 'prep-api-best', 'prep-sql-done', 'prep-sql-best', 'prep-cli-done', 'prep-cli-best',
+  'prep-star-drafts', 'prep-star-history'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */
@@ -3414,6 +3422,174 @@ const cliQuiz = makeQuiz({
 });
 function renderCliQuiz() { cliQuiz.render(); }
 
+// ============ 🌟 STAR BUILDER (soạn câu trả lời phỏng vấn hành vi) ============
+// Khung STAR: Situation · Task · Action · Result. Công cụ soạn + tự chấm checklist + AI góp ý.
+let starState = null; // { q } khi đang mở một câu để soạn
+const starQs = () => window.STAR_QUESTIONS || [];
+const starDraftsAll = () => store.get('prep-star-drafts', {});
+/** get/set nháp {s,t,a,r} theo id câu hỏi. */
+function starDraft(id, val) {
+  const all = starDraftsAll();
+  if (val === undefined) return all[id] || { s: '', t: '', a: '', r: '' };
+  all[id] = val; store.set('prep-star-drafts', all);
+}
+const starHistory = () => store.get('prep-star-history', []);
+const starHasStory = d => { const v = (d.s || '') + (d.t || '') + (d.a || '') + (d.r || ''); return v.trim().length > 0; };
+const starDone = d => !!(d.s && d.t && d.a && d.r && (d.s + d.t + d.a + d.r).trim().length >= 80);
+
+/** Đánh giá nháp STAR bằng checklist tất định (KHÔNG cần AI). Pure → dễ test. */
+function starEvalDraft(d) {
+  const s = (d.s || '').trim(), t = (d.t || '').trim(), a = (d.a || '').trim(), r = (d.r || '').trim();
+  const total = s.length + t.length + a.length + r.length;
+  const items = [
+    { k: 'context', label: 'Bối cảnh rõ ràng (Situation + Task)', ok: s.length >= 15 && t.length >= 15 },
+    { k: 'action', label: 'Hành động cụ thể, đủ chi tiết (Action)', ok: a.length >= 40 },
+    { k: 'result', label: 'Có nêu kết quả (Result)', ok: r.length >= 15 },
+    { k: 'metric', label: 'Kết quả ĐỊNH LƯỢNG (có con số đo được)', ok: /\d/.test(r) },
+    { k: 'personal', label: 'Dùng "tôi/mình" — nêu rõ vai trò CÁ NHÂN', ok: /(tôi|mình)/i.test(a) },
+    { k: 'concise', label: 'Gọn gàng, không lan man (≤ ~1600 ký tự)', ok: total > 0 && total <= 1600 },
+  ];
+  const coverage = Math.round(items.filter(i => i.ok).length / items.length * 100);
+  return { items, coverage, total };
+}
+
+function renderStar() {
+  if (starState) renderStarSession(); else renderStarList();
+}
+
+function renderStarList() {
+  const qs = starQs();
+  const el = document.getElementById('star-body');
+  if (!el) return;
+  if (!qs.length) { el.innerHTML = '<p>Chưa nạp được ngân hàng câu hỏi hành vi.</p>'; return; }
+  const drafts = starDraftsAll();
+  const builtN = qs.filter(q => starDone(drafts[q.id] || {})).length;
+  // nhóm theo competency
+  const groups = {};
+  qs.forEach(q => { (groups[q.competency] = groups[q.competency] || []).push(q); });
+  const cards = Object.keys(groups).map(comp => {
+    const items = groups[comp].map(q => {
+      const d = drafts[q.id] || {};
+      const badge = starDone(d) ? '<span class="star-done">✓ đã soạn</span>'
+        : starHasStory(d) ? '<span class="star-draft">✎ nháp dở</span>' : '';
+      return `<button class="star-q" data-id="${escHtml(q.id)}">
+        <span class="star-q-text">${escHtml(q.q)}</span>${badge}</button>`;
+    }).join('');
+    return `<div class="star-group"><h3>${escHtml(comp)}</h3>${items}</div>`;
+  }).join('');
+  el.innerHTML = `
+    <h1>🌟 STAR Builder — luyện câu trả lời phỏng vấn hành vi</h1>
+    <p class="coding-intro">Câu hỏi behavioral ("Kể về một lần…") hầu như buổi phỏng vấn nào cũng có. Soạn sẵn câu trả lời theo khung <b>STAR</b>: <b>S</b>ituation (bối cảnh) · <b>T</b>ask (nhiệm vụ) · <b>A</b>ction (hành động của BẠN) · <b>R</b>esult (kết quả, nên có số). Soạn rồi <b>tự chấm theo checklist</b> hoặc nhờ <b>Claude góp ý</b> (cần API key). Nháp tự lưu để bạn xây dần "kho chuyện" của mình.</p>
+    <p class="star-count">📚 Đã soạn hoàn chỉnh: <b>${builtN}/${qs.length}</b> câu chuyện.</p>
+    ${cards}`;
+  el.querySelectorAll('.star-q').forEach(b => b.onclick = () => openStar(b.dataset.id));
+}
+
+function openStar(id) {
+  const q = starQs().find(x => x.id === id);
+  if (!q) return;
+  starState = { q };
+  renderStarSession();
+}
+
+function renderStarSession() {
+  const { q } = starState;
+  const el = document.getElementById('star-body');
+  const d = starDraft(q.id);
+  const field = (k, label, hint) => `
+    <label class="star-field">
+      <span class="star-flabel">${label} <span class="star-fhint">${escHtml(hint)}</span></span>
+      <textarea class="star-ta" data-k="${k}" rows="3" placeholder="${escHtml(hint)}">${escHtml(d[k] || '')}</textarea>
+    </label>`;
+  el.innerHTML = `
+    <div class="star-sess">
+      <button id="star-back" class="dg-link">← Danh sách câu hỏi</button>
+      <div class="star-comp">${escHtml(q.competency)}</div>
+      <h1>${escHtml(q.q)}</h1>
+      ${q.watchout ? `<div class="star-watch">⚠️ <b>Lưu ý:</b> ${escHtml(q.watchout)}</div>` : ''}
+      ${field('s', 'S — Situation (bối cảnh)', q.hints.s)}
+      ${field('t', 'T — Task (nhiệm vụ)', q.hints.t)}
+      ${field('a', 'A — Action (hành động của BẠN)', q.hints.a)}
+      ${field('r', 'R — Result (kết quả)', q.hints.r)}
+      <div class="dg-actions">
+        <button id="star-score" class="dg-go">✅ Tự chấm checklist</button>
+        <button id="star-ai-toggle" class="dg-go dg-go-ai">🤖 Nhờ Claude góp ý</button>
+      </div>
+      <div id="star-check" class="star-check"></div>
+      <div id="star-ai" class="dg-ai" hidden></div>
+    </div>`;
+
+  const read = () => {
+    const v = {};
+    el.querySelectorAll('.star-ta').forEach(ta => { v[ta.dataset.k] = ta.value; });
+    return v;
+  };
+  let saveT;
+  el.querySelectorAll('.star-ta').forEach(ta => ta.addEventListener('input', () => {
+    clearTimeout(saveT); saveT = setTimeout(() => starDraft(q.id, read()), 500);
+    renderStarCheck(read(), false); // cập nhật checklist trực tiếp (không lưu history)
+  }));
+  document.getElementById('star-back').onclick = () => { starDraft(q.id, read()); starState = null; renderStarList(); };
+  document.getElementById('star-score').onclick = () => { starDraft(q.id, read()); renderStarCheck(read(), true); };
+  document.getElementById('star-ai-toggle').onclick = () => starRenderAiPanel(q, read());
+  renderStarCheck(d, false);
+}
+
+/** Vẽ checklist; save=true thì ghi lịch sử + logActivity. */
+function renderStarCheck(draft, save) {
+  const box = document.getElementById('star-check');
+  if (!box) return;
+  const { items, coverage } = starEvalDraft(draft);
+  const rows = items.map(i => `<li class="${i.ok ? 'star-ok' : 'star-no'}">${i.ok ? '✅' : '⬜'} ${escHtml(i.label)}</li>`).join('');
+  const band = coverage >= 80 ? '🌟 Rất chắc' : coverage >= 50 ? '👍 Khá ổn' : '📝 Cần bổ sung';
+  box.innerHTML = `<div class="star-cov">Độ đầy đủ: <b>${coverage}%</b> · ${band}</div><ul class="star-list">${rows}</ul>`;
+  if (save) {
+    const q = starState && starState.q;
+    if (q) {
+      const hist = starHistory();
+      hist.push({ id: q.id, date: new Date().toISOString().slice(0, 10), ts: Date.now(), coverage });
+      store.set('prep-star-history', hist.slice(-100));
+    }
+    logActivity();
+  }
+}
+
+/** Panel AI góp ý — tái dùng aiGradeSingle (chung key prep-ai-key với Mock/Design). */
+function starRenderAiPanel(q, draft) {
+  const box = document.getElementById('star-ai');
+  if (!box) return;
+  if (!box.hidden) { box.hidden = true; return; }
+  box.hidden = false;
+  box.innerHTML = `
+    <div class="dg-ai-cfg">
+      <input id="star-aikey" type="password" class="ai-key-input" placeholder="Anthropic API key (sk-ant-…)" />
+      <select id="star-aimodel" class="ai-model-sel">
+        <option value="claude-opus-4-8">Opus 4.8 (kỹ nhất)</option>
+        <option value="claude-sonnet-4-6">Sonnet 4.6 (cân bằng)</option>
+        <option value="claude-haiku-4-5-20251001">Haiku 4.5 (nhanh/rẻ)</option>
+      </select>
+      <button id="star-aigo" class="dg-go">Gửi chấm</button>
+    </div>
+    <div id="star-aiout" class="dg-ai-out"></div>`;
+  const keyEl = document.getElementById('star-aikey');
+  keyEl.value = store.get('prep-ai-key', '');
+  document.getElementById('star-aigo').onclick = () => starAiGrade(q, draft, keyEl.value, document.getElementById('star-aimodel').value);
+}
+
+function starAiGrade(q, draft, key, model) {
+  const out = document.getElementById('star-aiout');
+  if (!key) { out.innerHTML = '<p class="ai-err">Cần nhập API key để chấm.</p>'; return; }
+  store.set('prep-ai-key', key);
+  const answer = `S (bối cảnh): ${draft.s || '(trống)'}\nT (nhiệm vụ): ${draft.t || '(trống)'}\nA (hành động): ${draft.a || '(trống)'}\nR (kết quả): ${draft.r || '(trống)'}`;
+  const reference = `Một câu trả lời tốt theo khung STAR phải: (1) nêu Bối cảnh + Nhiệm vụ ngắn gọn; (2) Hành động tập trung vào ĐÓNG GÓP CÁ NHÂN của ứng viên (dùng "tôi"); (3) Kết quả có SỐ LIỆU/tác động đo được; (4) bám đúng năng lực được hỏi: "${q.competency}". Tránh lan man, tránh đổ lỗi, tránh chỉ nói "chúng tôi".`;
+  out.innerHTML = '<p class="ai-loading">⏳ Claude đang đọc câu trả lời…</p>';
+  let acc = '';
+  aiGradeSingle({
+    question: q.q, reference, userAnswer: answer, key, model,
+    onText: t => { acc += t; out.innerHTML = `<div class="dg-ai-text">${escHtml(acc)}</div>`; },
+  }).then(() => { logActivity(); }).catch(e => { out.innerHTML = `<p class="ai-err">Lỗi: ${escHtml(e.message || String(e))}</p>`; });
+}
+
 // ----- Chế độ 🐛 Tìm & Sửa Bug (tái dùng runInSandbox) -----
 const dbgAll = () => window.DEBUG_CHALLENGES || [];
 const dbgSolved = () => store.get('prep-debug-solved', {});
@@ -4134,7 +4310,7 @@ function finishInterview() {
 
 // ---------- Phím tắt ----------
 function initShortcuts() {
-  const order = ['docs', 'today', 'flashcards', 'writing', 'code', 'coding', 'mock', 'company', 'design', 'plan', 'dashboard'];
+  const order = ['docs', 'today', 'flashcards', 'writing', 'code', 'coding', 'mock', 'company', 'star', 'design', 'plan', 'dashboard'];
   document.addEventListener('keydown', e => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     // Đang gõ trong ô nhập / vùng gõ code thì không cướp phím

@@ -1154,3 +1154,31 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 .tk-fill { height: 100%; background: var(--accent); border-radius: 5px; transition: width .3s; }
 .tk-val { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 @media (max-width: 560px) { .tk-row { grid-template-columns: 96px 1fr auto; gap: 6px; font-size: 12px; } .tk-label { white-space: normal; } }
+
+/* 🌟 STAR Builder — soạn câu trả lời phỏng vấn hành vi */
+.star-wrap { max-width: 820px; margin: 0 auto; padding: 4px; }
+.star-count { color: var(--muted); font-size: 14px; margin: 4px 0 16px; }
+.star-group { margin-bottom: 18px; }
+.star-group > h3 { font-size: 14px; color: var(--accent); margin: 0 0 8px; text-transform: uppercase; letter-spacing: .4px; }
+.star-q { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 11px 13px; margin-bottom: 7px;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 9px; color: var(--text); cursor: pointer; font: inherit; transition: border-color .15s, background .15s; }
+.star-q:hover { border-color: var(--accent); background: var(--bg3); }
+.star-q-text { flex: 1; line-height: 1.5; font-size: 14.5px; }
+.star-done { color: var(--green); font-size: 12px; white-space: nowrap; font-weight: 600; }
+.star-draft { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.star-sess { max-width: 760px; }
+.star-comp { display: inline-block; font-size: 12px; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; margin: 10px 0 2px; }
+.star-sess > h1 { font-size: 20px; line-height: 1.4; margin: 4px 0 12px; }
+.star-watch { background: var(--bg3); border-left: 3px solid var(--accent); border-radius: 6px; padding: 9px 12px; margin: 0 0 16px; font-size: 13.5px; line-height: 1.6; color: var(--text); }
+.star-field { display: block; margin-bottom: 14px; }
+.star-flabel { display: block; font-weight: 600; font-size: 14px; margin-bottom: 5px; }
+.star-fhint { display: block; font-weight: 400; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.star-ta { width: 100%; box-sizing: border-box; resize: vertical; padding: 9px 11px; background: var(--bg2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px; font: inherit; line-height: 1.55; }
+.star-ta:focus { outline: none; border-color: var(--accent); }
+.star-check { margin-top: 14px; }
+.star-cov { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+.star-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 5px; }
+.star-list li { font-size: 13.5px; line-height: 1.5; }
+.star-list li.star-no { color: var(--muted); }
+.star-list li.star-ok { color: var(--text); }

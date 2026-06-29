@@ -317,6 +317,33 @@ test('wiring: chế độ CLI Quiz có đủ id + mode button + script + engine'
   assert.ok(/window\.CLI_QUIZ/.test(APP), 'cliQuiz chưa trỏ tới window.CLI_QUIZ');
 });
 
+test('star-questions: id duy nhất, đủ competency/q + 4 hints S/T/A/R', () => {
+  const qs = loadWindow('star-questions.js').STAR_QUESTIONS;
+  assert.ok(Array.isArray(qs) && qs.length >= 10, 'phải có ≥10 câu behavioral');
+  const ids = qs.map(q => q.id);
+  assert.strictEqual(new Set(ids).size, ids.length, 'id star trùng');
+  for (const q of qs) {
+    assert.ok(q.competency && q.q, `STAR ${q.id} thiếu competency/q`);
+    assert.ok(q.hints && q.hints.s && q.hints.t && q.hints.a && q.hints.r,
+      `STAR ${q.id} thiếu hint S/T/A/R`);
+  }
+});
+
+test('wiring: tab STAR Builder có đủ tab/view/switchView/script + helper tự chấm', () => {
+  assert.ok(HTML.includes('data-view="star"'), 'thiếu nút tab star');
+  assert.ok(HTML.includes('id="view-star"'), 'thiếu #view-star');
+  assert.ok(HTML.includes('id="star-body"'), 'thiếu #star-body');
+  assert.ok(HTML.includes('src="star-questions.js"'), 'index.html thiếu script star-questions.js');
+  assert.ok(HTML.indexOf('src="star-questions.js"') < HTML.indexOf('src="app.js"'), 'star-questions.js phải nạp trước app.js');
+  assert.ok(/name === 'star'/.test(APP) && /renderStar\(\)/.test(APP), 'switchView thiếu nhánh renderStar');
+  assert.ok(/function starEvalDraft\b/.test(APP), 'thiếu hàm tự chấm starEvalDraft');
+  assert.ok(/window\.STAR_QUESTIONS/.test(APP), 'app.js chưa đọc window.STAR_QUESTIONS');
+  // PREP_KEYS phải gồm key nháp + lịch sử để export/sync
+  const m = APP.match(/const PREP_KEYS = \[([\s\S]*?)\]/);
+  assert.ok(m && m[1].includes('prep-star-drafts') && m[1].includes('prep-star-history'),
+    'PREP_KEYS thiếu key STAR');
+});
+
 test('wiring: chế độ Sửa bug có đủ id + mode button + script + render', () => {
   assert.ok(HTML.includes('id="think-debug"'), 'thiếu #think-debug');
   assert.ok(HTML.includes('id="debug-list"'), 'thiếu #debug-list');
