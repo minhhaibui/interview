@@ -299,13 +299,19 @@
   <!-- ============ VIEW: LUYỆN TƯ DUY (Lập trình + IQ) ============ -->
   <div id="view-coding" class="view">
     <div class="think-modes">
-      <button class="think-mode active" data-mode="code">💻 Lập trình</button>
-      <button class="think-mode" data-mode="iq">🧩 IQ / Logic</button>
-      <button class="think-mode" data-mode="output">🔍 Đoán output</button>
-      <button class="think-mode" data-mode="debug">🐛 Sửa bug</button>
-      <button class="think-mode" data-mode="api">📡 API/HTTP</button>
-      <button class="think-mode" data-mode="sql">🗄️ SQL Drill</button>
-      <button class="think-mode" data-mode="cli">🖥️ CLI Quiz</button>
+      <div class="think-group">
+        <span class="think-glabel">🧑‍💻 Tự code</span>
+        <button class="think-mode active" data-mode="code">💻 Lập trình</button>
+        <button class="think-mode" data-mode="debug">🐛 Sửa bug</button>
+      </div>
+      <div class="think-group">
+        <span class="think-glabel">📝 Trắc nghiệm</span>
+        <button class="think-mode" data-mode="iq">🧩 IQ / Logic</button>
+        <button class="think-mode" data-mode="output">🔍 Đoán output</button>
+        <button class="think-mode" data-mode="api">📡 API/HTTP</button>
+        <button class="think-mode" data-mode="sql">🗄️ SQL</button>
+        <button class="think-mode" data-mode="cli">🖥️ CLI</button>
+      </div>
     </div>
 
     <!-- Chế độ LẬP TRÌNH -->

@@ -529,6 +529,7 @@ async function renderToday() {
   if (due) tasks.push({ id: 'td-due', ic: '📬', t: `Ôn ${due} từ đến hạn`, s: 'Flashcards theo lịch SRS', go: () => goToFlash('__due__') });
   if (leech) tasks.push({ id: 'td-leech', ic: '🔥', t: `Luyện ${leech} từ cứng đầu`, s: 'Những từ sai nhiều lần', go: () => goToFlash('__leech__') });
   tasks.push({ id: 'td-mix', ic: '⚡', t: 'Ôn nhanh ~10 câu (mix)', s: 'Trộn dịch từ + điền câu + nghe', go: goToWritingMix });
+  tasks.push({ id: 'td-fttest', ic: '📝', t: 'Test gõ từ vựng', s: 'Hiện nghĩa Việt → gõ tiếng Anh, chấm điểm', go: goToVocabTest });
   if (wrongN) tasks.push({ id: 'td-wrong', ic: '🚩', t: `Ôn ${wrongN} câu mock đã sai`, s: 'Trả lời lại cho nhớ', go: goToMockWrong });
   tasks.push({ id: 'td-think', ic: '🧠', t: 'Giải 1 bài luyện tư duy', s: 'Coding hoặc IQ', go: () => switchView('coding') });
   tasks.push({ id: 'td-mock', ic: '🎯', t: 'Mock interview nhanh', s: '5–10 câu ngẫu nhiên', go: () => switchView('mock') });
@@ -596,6 +597,10 @@ function goToFlash(filter) {
     const sel = document.getElementById('fc-week');
     if (sel) { sel.value = filter; sel.dispatchEvent(new Event('change')); }
   });
+}
+function goToVocabTest() {
+  switchView('flashcards');
+  loadDeck().then(() => { fillFcWeekSelect(); ftStart(); }); // mở thẳng màn Test gõ
 }
 async function goToWritingMix() {
   switchView('writing');
