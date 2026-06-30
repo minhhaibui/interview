@@ -1142,6 +1142,7 @@ function speakCard(withExample) {
 /** Phím tắt riêng cho tab flashcards: Space lật, ← chưa nhớ, → nhớ rồi, S nghe */
 function initFcHotkeys() {
   document.addEventListener('keydown', e => {
+    if (onboardOpen()) return; // hướng dẫn đang mở → nhường phím cho onboarding
     if (!document.getElementById('view-flashcards').classList.contains('active')) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.target.closest?.('input, textarea, select, [contenteditable]')) return;
@@ -4460,6 +4461,7 @@ function finishInterview() {
 function initShortcuts() {
   const order = ['today', 'docs', 'flashcards', 'writing', 'code', 'coding', 'design', 'mock', 'company', 'star', 'plan', 'dashboard'];
   document.addEventListener('keydown', e => {
+    if (onboardOpen()) return; // hướng dẫn đang mở → không nhảy tab phía sau
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     // Đang gõ trong ô nhập / vùng gõ code thì không cướp phím
     if (e.target.closest?.('input, textarea, select, #ct-code, [contenteditable]')) return;
@@ -4732,12 +4734,112 @@ function initPwa() {
   });
 }
 
+// ---------- Onboarding: hướng dẫn lần đầu + nút ❓ mở lại bất cứ lúc nào ----------
+const ONBOARD_SLIDES = [
+  {
+    ico: '🚀',
+    title: 'Chào mừng đến Backend Interview Prep!',
+    body: 'Bộ công cụ ôn phỏng vấn <b>Backend Node.js</b> theo lộ trình <b>12 tuần</b> — tài liệu, flashcards, luyện tư duy, mock phỏng vấn… gói gọn trong một trang và <b>học được cả khi offline</b>.',
+  },
+  {
+    ico: '🧭',
+    title: '5 nhóm trên thanh menu',
+    body: `<ul class="onb-list">
+      <li><b>🔥 Hôm nay</b> — việc cần ôn mỗi ngày + mục tiêu &amp; chuỗi streak</li>
+      <li><b>📚 Học</b> — tài liệu, flashcards, luyện viết, gõ code</li>
+      <li><b>🧠 Luyện tập</b> — tư duy (code · IQ · quiz) &amp; thiết kế hệ thống</li>
+      <li><b>🎯 Phỏng vấn</b> — mock, Q&amp;A tổng hợp, STAR kể chuyện</li>
+      <li><b>📊 Theo dõi</b> — kế hoạch 12 tuần &amp; điểm sẵn sàng</li>
+    </ul>`,
+  },
+  {
+    ico: '⏱️',
+    title: 'Nhịp học mỗi ngày 30–45 phút',
+    body: '1️⃣ Mở <b>🔥 Hôm nay</b> xem việc cần ôn → 2️⃣ ôn <b>flashcards</b> tới hạn → 3️⃣ giải <b>1 bài tư duy</b> → 4️⃣ thỉnh thoảng làm <b>🎯 Mock</b>. Bật <b>🍅 Pomodoro</b> trên thanh công cụ để tập trung theo phiên 25 phút.',
+  },
+  {
+    ico: '☁️',
+    title: 'Tiến độ được lưu &amp; đồng bộ',
+    body: 'Mọi điểm số lưu ngay trên máy này. Bấm <b>☁️ Đồng bộ</b> để đăng nhập Google → dữ liệu theo bạn qua <b>mọi thiết bị</b>, cập nhật thời gian thực. Có thể bấm <b>📲 Cài app</b> để học offline như một ứng dụng.',
+  },
+  {
+    ico: '🎯',
+    title: 'Sẵn sàng chưa?',
+    body: 'Bắt đầu từ <b>🔥 Hôm nay</b> nhé. Cần xem lại hướng dẫn này bất cứ lúc nào? Bấm nút <b>❓</b> trên thanh công cụ.',
+  },
+];
+let onbIdx = 0;
+const onboardOpen = () => { const o = document.getElementById('onboard'); return !!o && !o.hidden; };
+
+function renderOnboard() {
+  const s = ONBOARD_SLIDES[onbIdx];
+  const last = onbIdx === ONBOARD_SLIDES.length - 1;
+  document.querySelector('#onboard .onb-card').innerHTML = `
+    <button class="onb-x" id="onb-skip" title="Bỏ qua">✕</button>
+    <div class="onb-ico">${s.ico}</div>
+    <h2>${s.title}</h2>
+    <div class="onb-body">${s.body}</div>
+    <div class="onb-dots">${ONBOARD_SLIDES.map((_, i) =>
+      `<span class="${i === onbIdx ? 'on' : ''}"></span>`).join('')}</div>
+    <div class="onb-nav">
+      <button id="onb-prev" class="onb-back"${onbIdx === 0 ? ' hidden' : ''}>← Trước</button>
+      <span class="onb-step">${onbIdx + 1}/${ONBOARD_SLIDES.length}</span>
+      <button id="onb-next" class="onb-cta">${last ? '🔥 Bắt đầu ngay' : 'Tiếp →'}</button>
+    </div>`;
+  document.getElementById('onb-skip').onclick = closeOnboard;
+  document.getElementById('onb-prev').onclick = () => { onbIdx = Math.max(0, onbIdx - 1); renderOnboard(); };
+  document.getElementById('onb-next').onclick = () => {
+    if (last) { closeOnboard(); switchView('today'); }
+    else { onbIdx++; renderOnboard(); }
+  };
+}
+
+function openOnboard() {
+  onbIdx = 0;
+  let ov = document.getElementById('onboard');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'onboard';
+    ov.innerHTML = '<div class="onb-card" role="dialog" aria-modal="true"></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', e => { if (e.target === ov) closeOnboard(); }); // bấm nền tối để đóng
+  }
+  ov.hidden = false;
+  renderOnboard();
+  document.addEventListener('keydown', onbKey);
+}
+
+function closeOnboard() {
+  const ov = document.getElementById('onboard');
+  if (ov) ov.hidden = true;
+  store.set('prep-onboarded', 1);
+  document.removeEventListener('keydown', onbKey);
+}
+
+function onbKey(e) {
+  if (e.key === 'Escape') { e.preventDefault(); closeOnboard(); }
+  else if (e.key === 'ArrowRight') { e.preventDefault(); document.getElementById('onb-next')?.click(); }
+  else if (e.key === 'ArrowLeft') { e.preventDefault(); document.getElementById('onb-prev')?.click(); }
+}
+
+function initOnboarding() {
+  // Nút ❓ cạnh nút đổi giao diện → mở lại hướng dẫn lúc nào cũng được
+  const help = document.createElement('button');
+  help.id = 'help-btn';
+  help.title = 'Xem lại hướng dẫn sử dụng';
+  help.textContent = '❓';
+  help.addEventListener('click', openOnboard);
+  document.getElementById('theme-btn')?.insertAdjacentElement('beforebegin', help);
+  if (!store.get('prep-onboarded', 0)) openOnboard(); // lần đầu mở app → tự hiện
+}
+
 (async function init() {
   initSearch();
   initTheme();
   initPomodoro();
   initSidebarToggle();
   initShortcuts();
+  initOnboarding();
   initPwa();
   initSync();
   document.querySelector('.brand').addEventListener('click', () => renderHome());

@@ -926,6 +926,52 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 .lg-link { background: none; border: none; color: var(--muted); cursor: pointer; margin-top: 14px; font-size: 13.5px; }
 .lg-link:hover { color: var(--text); }
 
+/* ====== Onboarding (hướng dẫn lần đầu) ====== */
+#help-btn { font-size: 15px; }
+#onboard {
+  position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 20px;
+  background: rgba(1, 4, 9, .66); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+  animation: onbFade .18s ease;
+}
+#onboard[hidden] { display: none; }
+@keyframes onbFade { from { opacity: 0; } to { opacity: 1; } }
+.onb-card {
+  position: relative; width: min(460px, 100%); background: var(--bg2);
+  border: 1px solid var(--border); border-radius: 16px; padding: 34px 30px 24px;
+  text-align: center; box-shadow: 0 18px 50px rgba(0, 0, 0, .5);
+  animation: onbPop .2s cubic-bezier(.2, .9, .3, 1.2);
+}
+@keyframes onbPop { from { transform: translateY(10px) scale(.97); opacity: 0; } to { transform: none; opacity: 1; } }
+.onb-x {
+  position: absolute; top: 10px; right: 12px; background: none; border: none;
+  color: var(--muted); font-size: 17px; cursor: pointer; line-height: 1; padding: 6px;
+}
+.onb-x:hover { color: var(--text); }
+.onb-ico { font-size: 46px; line-height: 1; margin-bottom: 10px; }
+.onb-card h2 { margin: 0 0 12px; font-size: 20px; }
+.onb-body { color: var(--muted); line-height: 1.65; font-size: 14.5px; text-align: left; }
+.onb-body b { color: var(--text); font-weight: 600; }
+.onb-list { margin: 0; padding-left: 4px; list-style: none; }
+.onb-list li { padding: 5px 0; border-bottom: 1px dashed var(--border); }
+.onb-list li:last-child { border-bottom: none; }
+.onb-dots { display: flex; gap: 7px; justify-content: center; margin: 22px 0 16px; }
+.onb-dots span { width: 7px; height: 7px; border-radius: 50%; background: var(--border); transition: all .2s; }
+.onb-dots span.on { background: var(--accent); width: 20px; border-radius: 4px; }
+.onb-nav { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.onb-step { color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.onb-back { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 9px; padding: 10px 16px; cursor: pointer; font-size: 14px; }
+.onb-back:hover { color: var(--text); border-color: var(--muted); }
+.onb-back[hidden] { display: none; }
+.onb-cta {
+  background: var(--accent); color: #fff; border: none; border-radius: 9px;
+  padding: 11px 22px; font-size: 14.5px; font-weight: 600; cursor: pointer; margin-left: auto;
+}
+.onb-cta:hover { filter: brightness(1.08); }
+@media (max-width: 520px) {
+  .onb-card { padding: 28px 20px 20px; }
+  .onb-card h2 { font-size: 18px; }
+}
+
 /* ====== Bài Test IQ ====== */
 .iq-modes { display: flex; flex-direction: column; gap: 10px; max-width: 360px; margin: 0 auto; }
 .iq-modes button { display: flex; flex-direction: column; align-items: center; gap: 3px; }

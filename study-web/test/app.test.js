@@ -523,6 +523,36 @@ test('AI chấm: regex bắt điểm "ĐIỂM: NN/100" đúng', () => {
   assert.strictEqual('không có điểm'.match(re), null);
 });
 
+test('onboarding: đủ slide, hàm điều khiển, nút ❓, hookup init + lưu cờ', () => {
+  // có mảng slide với ≥4 bước, mỗi slide đủ ico/title/body
+  const m = APP.match(/const ONBOARD_SLIDES = \[([\s\S]*?)\];/);
+  assert.ok(m, 'thiếu mảng ONBOARD_SLIDES');
+  const nSlides = (m[1].match(/ico:/g) || []).length;
+  assert.ok(nSlides >= 4, `phải có ≥4 slide onboarding (đang ${nSlides})`);
+  assert.strictEqual((m[1].match(/title:/g) || []).length, nSlides, 'mỗi slide phải có title');
+  assert.strictEqual((m[1].match(/body:/g) || []).length, nSlides, 'mỗi slide phải có body');
+  // các hàm cốt lõi
+  for (const fn of ['function openOnboard', 'function closeOnboard', 'function renderOnboard',
+    'function initOnboarding', 'function onbKey']) {
+    assert.ok(APP.includes(fn), `thiếu ${fn}`);
+  }
+  // init() gọi initOnboarding
+  assert.ok(/initOnboarding\(\);/.test(APP), 'init() chưa gọi initOnboarding()');
+  // đóng onboarding ghi cờ để không hiện lại; mở lần đầu khi chưa có cờ
+  assert.ok(/store\.set\('prep-onboarded', 1\)/.test(APP), 'closeOnboard chưa lưu cờ prep-onboarded');
+  assert.ok(/store\.get\('prep-onboarded', 0\)/.test(APP), 'initOnboarding chưa kiểm tra cờ trước khi tự mở');
+  // nút ❓ help được tạo
+  assert.ok(/help\.id = 'help-btn'/.test(APP), 'thiếu nút ❓ help-btn');
+  // hai global keydown nhường phím khi onboarding mở (chống lọt xuống view dưới)
+  assert.ok(/if \(onboardOpen\(\)\) return;/.test(APP), 'global keydown chưa guard onboardOpen()');
+  assert.ok((APP.match(/if \(onboardOpen\(\)\) return;/g) || []).length >= 2,
+    'cần guard onboardOpen() ở cả hotkey flashcards lẫn phím tắt tab');
+  // CSS có khối onboarding
+  const CSS = read('styles.css');
+  assert.ok(/#onboard\s*{/.test(CSS), 'styles.css thiếu #onboard');
+  assert.ok(/\.onb-card/.test(CSS), 'styles.css thiếu .onb-card');
+});
+
 test('script đủ: index.html nạp mọi file dữ liệu trước app.js', () => {
   for (const f of ['coding-problems.js', 'iq-questions.js', 'english-questions.js',
     'situational-questions.js', 'design-drills.js', 'api-quiz.js', 'sql-drill.js', 'cli-quiz.js', 'app.js']) {
