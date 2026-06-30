@@ -1116,6 +1116,13 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 }
 .td-tip b { color: var(--text); }
 .td-tip-ic { font-size: 1.1rem; line-height: 1.4; }
+.td-tip-msg { flex: 1; }
+.td-tip-next {
+  flex: 0 0 auto; background: none; border: 1px solid var(--border); color: var(--muted);
+  border-radius: 7px; padding: 4px 8px; cursor: pointer; font-size: .95rem; line-height: 1; align-self: flex-start;
+}
+.td-tip-next:hover { color: var(--accent); border-color: var(--accent); }
+.td-tip-next:active { transform: rotate(180deg); transition: transform .2s; }
 
 .td-tasks { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
 .td-task {

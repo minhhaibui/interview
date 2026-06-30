@@ -598,6 +598,12 @@ test('mẹo hôm nay: kho tip + pickTip xoay vòng đúng, render vào Today', (
   assert.ok(/class="td-tip"/.test(APP), 'renderToday chưa chèn card .td-tip');
   assert.ok(/escHtml\(tipOfDay\(\)\)/.test(APP), 'mẹo phải qua escHtml (an toàn HTML)');
   assert.ok(/\.td-tip\s*{/.test(read('styles.css')), 'styles.css thiếu .td-tip');
+  // nút 🔄 xoay mẹo: helper index hôm nay + cập nhật text qua textContent (an toàn)
+  assert.ok(/function todayTipIdx\(\)/.test(APP), 'thiếu todayTipIdx');
+  assert.ok(/id="td-tip-next"/.test(APP), 'thiếu nút 🔄 #td-tip-next');
+  assert.ok(/tipIdx = \(tipIdx \+ 1\) % STUDY_TIPS\.length/.test(APP), 'nút 🔄 chưa xoay vòng qua mẹo kế');
+  assert.ok(/getElementById\('td-tip-text'\)\.textContent = STUDY_TIPS\[tipIdx\]/.test(APP),
+    'phải cập nhật mẹo bằng textContent (an toàn HTML)');
 });
 
 test('a11y + empty-state: reduced-motion, dashboard empty-state có CTA', () => {

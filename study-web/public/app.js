@@ -528,11 +528,13 @@ const STUDY_TIPS = [
 ];
 /** Chọn mẹo theo số thứ tự ngày (tách riêng để test thuần). */
 function pickTip(dayNum) { return STUDY_TIPS[((dayNum % STUDY_TIPS.length) + STUDY_TIPS.length) % STUDY_TIPS.length]; }
-function tipOfDay() {
+function todayTipIdx() {
   const d = new Date();
   const dayNum = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
-  return pickTip(dayNum);
+  return ((dayNum % STUDY_TIPS.length) + STUDY_TIPS.length) % STUDY_TIPS.length;
 }
+function tipOfDay() { return STUDY_TIPS[todayTipIdx()]; }
+let tipIdx = 0; // mẹo đang hiển thị (nút 🔄 xoay qua mẹo kế)
 
 async function renderToday() {
   const body = document.getElementById('today-body');
@@ -591,7 +593,7 @@ async function renderToday() {
       </div>
     </div>
 
-    <div class="td-tip"><span class="td-tip-ic">💡</span><span><b>Mẹo hôm nay:</b> ${escHtml(tipOfDay())}</span></div>
+    <div class="td-tip"><span class="td-tip-ic">💡</span><span class="td-tip-msg"><b>Mẹo hôm nay:</b> <span id="td-tip-text">${escHtml(tipOfDay())}</span></span><button id="td-tip-next" class="td-tip-next" title="Xem mẹo khác">🔄</button></div>
 
     <h2 class="td-h2">📋 Buổi ôn hôm nay</h2>
     <div class="td-tasks">
@@ -616,6 +618,13 @@ async function renderToday() {
     renderToday();
   };
   tasks.forEach(t => document.getElementById(t.id)?.addEventListener('click', t.go));
+
+  // Nút 🔄 xoay qua mẹo kế tiếp (đọc hết kho mẹo, không chỉ mẹo của hôm nay)
+  tipIdx = todayTipIdx();
+  document.getElementById('td-tip-next')?.addEventListener('click', () => {
+    tipIdx = (tipIdx + 1) % STUDY_TIPS.length;
+    document.getElementById('td-tip-text').textContent = STUDY_TIPS[tipIdx];
+  });
 }
 
 // Bộ điều hướng dùng chung cho tab Hôm nay (mở tab tương ứng + đặt sẵn bộ lọc).
