@@ -159,4 +159,60 @@ window.API_QUIZ = [
     options: ['500 Internal Server Error', '502 Bad Gateway / 503 Service Unavailable', '400 Bad Request', '404 Not Found'], answer: 1,
     explain: '502 Bad Gateway (upstream trả phản hồi không hợp lệ) hoặc 503 Service Unavailable (tạm quá tải/đang bảo trì), 504 nếu upstream timeout. 500 là lỗi nội tại chung của chính server đó.',
   },
+  {
+    id: 'api-301-302', topic: 'Redirect',
+    q: 'Khác biệt giữa 301 Moved Permanently và 302 Found?',
+    options: [
+      '301 và 302 giống hệt nhau',
+      '301 = chuyển VĨNH VIỄN (client/SEO nên cập nhật URL mới, được cache); 302 = chuyển TẠM THỜI (giữ URL gốc)',
+      '302 là một mã lỗi phía client',
+      '301 chỉ dùng được với HTTPS',
+    ], answer: 1,
+    explain: '301 báo URL đã đổi vĩnh viễn → trình duyệt & search engine cập nhật và cache lại. 302 (và 307) là chuyển tạm thời → giữ URL gốc. Lỡ dùng 301 cho redirect tạm sẽ bị cache "dính" rất khó gỡ.',
+  },
+  {
+    id: 'api-head', topic: 'HTTP method',
+    q: 'Method HEAD khác GET ở điểm nào?',
+    options: [
+      'HEAD ghi dữ liệu lên server',
+      'HEAD giống POST, có body request',
+      'HEAD giống GET nhưng server CHỈ trả headers (không body) — kiểm tra tồn tại / Content-Length / Last-Modified mà không tải nội dung',
+      'HEAD không tồn tại trong HTTP',
+    ], answer: 2,
+    explain: 'HEAD giống hệt GET nhưng phản hồi CHỈ có headers, bỏ body. Hữu ích để kiểm tra resource có tồn tại, kích thước (Content-Length), hay đã đổi chưa (Last-Modified/ETag) trước khi tải. HEAD là safe và idempotent.',
+  },
+  {
+    id: 'api-cookie-flags', topic: 'Bảo mật',
+    q: 'Cookie chứa phiên đăng nhập nên đặt các cờ nào để an toàn?',
+    options: [
+      'Chỉ cần Expires là đủ',
+      'HttpOnly (JS không đọc được → chống XSS trộm cookie) + Secure (chỉ gửi qua HTTPS) + SameSite (chống CSRF)',
+      'Path=/ là đã an toàn',
+      'Đặt Domain=* cho tiện dùng',
+    ], answer: 1,
+    explain: 'HttpOnly chặn JavaScript đọc cookie → giảm rủi ro đánh cắp qua XSS. Secure đảm bảo cookie chỉ truyền trên HTTPS. SameSite (Lax/Strict) hạn chế gửi cookie trong request cross-site → chống CSRF. Bộ ba này là chuẩn cho cookie nhạy cảm.',
+  },
+  {
+    id: 'api-versioning', topic: 'REST design',
+    q: 'Cách phổ biến để đánh version một REST API?',
+    options: [
+      'Không bao giờ cần version API',
+      'Đổi tên toàn bộ endpoint mỗi lần sửa',
+      'Nhúng version vào URL (/v1/users) hoặc qua header (Accept: application/vnd.api.v2+json)',
+      'Chỉ version bằng cách đổi số cổng',
+    ], answer: 2,
+    explain: 'Hai cách hay dùng: (1) version trong URL path /v1/, /v2/ — dễ thấy, dễ route/cache; (2) version qua header (content negotiation) — URL "sạch" nhưng khó debug hơn. Mấu chốt là KHÔNG phá client cũ khi ra phiên bản mới (backward compatibility).',
+  },
+  {
+    id: 'api-413', topic: 'Status code',
+    q: 'Client upload file vượt quá giới hạn kích thước server cho phép. Status code phù hợp nhất?',
+    options: ['413 Payload Too Large', '400 Bad Request', '507 Insufficient Storage', '200 OK'], answer: 0,
+    explain: '413 Content/Payload Too Large: body của request vượt giới hạn server chấp nhận (vd upload quá to). 507 nói về dung lượng LƯU TRỮ của server, khác ngữ cảnh. Nên đặt giới hạn body rõ ràng để tránh lạm dụng bộ nhớ.',
+  },
+  {
+    id: 'api-retry-after', topic: 'Rate limit',
+    q: 'Server trả 429 Too Many Requests (hoặc 503). Header nào cho client biết khi nào nên thử lại?',
+    options: ['X-Forwarded-For', 'Content-Type', 'ETag', 'Retry-After (số giây hoặc mốc thời gian nên chờ trước khi gọi lại)'], answer: 3,
+    explain: 'Retry-After cho client biết nên đợi bao lâu trước khi retry (giá trị là số giây hoặc HTTP-date). Client lịch sự nên tôn trọng nó kết hợp exponential backoff. Thường đi kèm 429 (rate limit) và 503 (tạm quá tải/bảo trì).',
+  },
 ];
