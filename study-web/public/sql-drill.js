@@ -254,4 +254,75 @@ LIMIT 2;`,
     ], answer: 0,
     explain: 'ORDER BY ... DESC mặc định Postgres đặt NULL lên đầu; thêm NULLS LAST để đẩy NULL xuống cuối. Vậy LIMIT 2 lấy 2 user có last_login mới nhất, user NULL không lọt top. Kiểm soát vị trí NULL là điểm hay quên khi sort.',
   },
+  {
+    id: 'sql-tx-05', topic: 'Isolation level',
+    q: 'Ở mức cô lập nào thì "phantom read" (cùng một query range chạy 2 lần trong 1 transaction lại ra số hàng KHÁC nhau vì giao dịch khác chèn hàng mới) bị ngăn hoàn toàn theo chuẩn SQL?',
+    options: ['READ COMMITTED', 'REPEATABLE READ (theo chuẩn SQL)', 'SERIALIZABLE', 'READ UNCOMMITTED'],
+    answer: 2,
+    explain: 'Theo chuẩn SQL: READ COMMITTED ngăn dirty read; REPEATABLE READ ngăn thêm non-repeatable read nhưng VẪN cho phép phantom; chỉ SERIALIZABLE ngăn cả phantom. (Lưu ý: REPEATABLE READ của Postgres dùng snapshot nên thực tế đã chặn phantom, nhưng câu hỏi hỏi theo chuẩn SQL.)',
+  },
+  {
+    id: 'sql-idx-03', topic: 'Composite index',
+    q: 'Có index (a, b, c). Query WHERE nào KHÔNG seek nhanh được theo index này?',
+    sql: `-- chọn câu WHERE không dùng được index (a,b,c)
+WHERE a = 1 AND b = 2        -- (1)
+WHERE a = 1 AND c = 3        -- (2)
+WHERE b = 2 AND c = 3        -- (3)`,
+    options: ['(1)', '(2) — seek theo a rồi lọc c', '(3) — thiếu cột a dẫn đầu nên không seek theo prefix', 'Cả ba đều dùng tốt như nhau'],
+    answer: 2,
+    explain: 'Index composite chỉ seek hiệu quả theo "leftmost prefix": phải dùng a (rồi b, rồi c) từ trái sang. (3) thiếu a dẫn đầu → không seek theo cây index (trừ index-only/skip scan đặc biệt). (2) seek theo a rồi lọc c. Thứ tự cột trong composite index rất quan trọng.',
+  },
+  {
+    id: 'sql-perf-02', topic: 'EXISTS vs IN',
+    q: 'Kiểm tra "user nào CÓ ít nhất 1 order". Cách viết nào thường tối ưu & an toàn với NULL nhất?',
+    sql: `-- A:
+SELECT * FROM users u
+WHERE u.id IN (SELECT o.user_id FROM orders o);
+-- B:
+SELECT * FROM users u
+WHERE EXISTS (SELECT 1 FROM orders o WHERE o.user_id = u.id);`,
+    options: ['A luôn nhanh hơn', 'B (EXISTS) — dừng ngay khi thấy 1 khớp & không bẫy NULL như IN', 'Hai cách luôn giống hệt nhau mọi mặt', 'Cả hai đều sai cú pháp'],
+    answer: 1,
+    explain: 'EXISTS short-circuit (thấy 1 hàng khớp là dừng) và không dính bẫy NULL của "NOT IN" khi subquery có NULL. Nhiều optimizer xem IN/EXISTS tương đương cho trường hợp dương, nhưng với NOT IN/NOT EXISTS thì khác biệt NULL gây bug kinh điển. Thói quen tốt: dùng EXISTS cho kiểm tra tồn tại.',
+  },
+  {
+    id: 'sql-win-02', topic: 'Window function',
+    q: 'Khác nhau giữa ROW_NUMBER(), RANK() và DENSE_RANK() khi có giá trị BẰNG nhau (tie)?',
+    sql: `SELECT name, score,
+  ROW_NUMBER() OVER (ORDER BY score DESC),
+  RANK()       OVER (ORDER BY score DESC),
+  DENSE_RANK() OVER (ORDER BY score DESC)
+FROM players;`,
+    options: [
+      'Cả ba luôn cho số giống nhau',
+      'ROW_NUMBER luôn duy nhất 1,2,3…; RANK nhảy số sau tie (1,1,3); DENSE_RANK không nhảy (1,1,2)',
+      'RANK luôn duy nhất, ROW_NUMBER mới nhảy số',
+      'DENSE_RANK luôn cho số lớn nhất',
+    ], answer: 1,
+    explain: 'ROW_NUMBER đánh số duy nhất theo thứ tự (tie thì tuỳ ý). RANK cho cùng hạng khi tie rồi "nhảy" (1,1,3). DENSE_RANK cũng cùng hạng khi tie nhưng KHÔNG nhảy (1,1,2). Lấy "top-N theo nhóm" thường dùng ROW_NUMBER với PARTITION BY.',
+  },
+  {
+    id: 'sql-upsert-01', topic: 'Upsert',
+    q: 'Cần "có thì cập nhật, chưa có thì chèn" theo khoá duy nhất, an toàn khi nhiều request đồng thời. Cách chuẩn trong Postgres?',
+    sql: `INSERT INTO counters(key, n) VALUES ('hits', 1)
+ON CONFLICT (key) DO UPDATE SET n = counters.n + 1;`,
+    options: [
+      'SELECT trước, nếu không có thì INSERT, có thì UPDATE (2 query rời)',
+      'INSERT ... ON CONFLICT (key) DO UPDATE — atomic, nhờ ràng buộc UNIQUE chống race',
+      'Chỉ UPDATE là đủ',
+      'DELETE rồi INSERT lại',
+    ], answer: 1,
+    explain: 'INSERT ... ON CONFLICT ... DO UPDATE (upsert) là câu lệnh nguyên tử dựa trên ràng buộc UNIQUE/PK, tránh race giữa SELECT-rồi-INSERT (hai request cùng thấy "chưa có" rồi cùng INSERT → trùng hoặc nhân đôi). MySQL có INSERT ... ON DUPLICATE KEY UPDATE tương tự.',
+  },
+  {
+    id: 'sql-explain-02', topic: 'EXPLAIN',
+    q: 'Trong EXPLAIN ANALYZE Postgres, thấy "Seq Scan" trên bảng lớn với điều kiện WHERE chọn lọc ít hàng. Điều này thường gợi ý gì?',
+    options: [
+      'Mọi thứ tối ưu, không cần làm gì',
+      'Có thể THIẾU index phù hợp cho cột trong WHERE (hoặc thống kê cũ) → cân nhắc tạo index / ANALYZE',
+      'Seq Scan luôn nhanh hơn Index Scan',
+      'Phải DROP bảng và tạo lại',
+    ], answer: 1,
+    explain: 'Seq Scan đọc toàn bộ bảng. Với bảng lớn mà WHERE chỉ lấy ít hàng, đó thường là dấu hiệu thiếu index trên cột lọc, hoặc thống kê (ANALYZE) lỗi thời khiến planner ước lượng sai. Tạo index phù hợp hoặc chạy ANALYZE có thể chuyển sang Index Scan nhanh hơn nhiều. (Với bảng nhỏ thì Seq Scan lại hợp lý.)',
+  },
 ];

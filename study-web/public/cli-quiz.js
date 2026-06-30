@@ -250,4 +250,71 @@ window.CLI_QUIZ = [
     answer: 0,
     explain: 'chmod +x thêm bit execute (cho phép chạy ./deploy.sh). 644 = rw-r--r-- (KHÔNG có execute). chown đổi CHỦ SỞ HỮU file, không phải quyền. Sau chmod +x thường chạy bằng `./deploy.sh`.',
   },
+  {
+    id: 'cli-git-06', topic: 'git',
+    q: 'Đang sửa dở (chưa commit) thì cần đổi nhánh gấp để fix bug khác. Cách gọn để CẤT tạm thay đổi rồi lấy lại sau?',
+    cmd: `git stash            # cất thay đổi, working tree sạch
+git switch hotfix    # qua nhánh khác fix
+git switch -         # quay lại
+git stash pop        # lấy lại thay đổi`,
+    options: [
+      'git commit hết rồi reset sau',
+      'git stash để cất tạm, git stash pop để lấy lại',
+      'Xoá file rồi gõ lại',
+      'git rm --cached toàn bộ',
+    ], answer: 1,
+    explain: 'git stash cất các thay đổi chưa commit vào ngăn tạm và trả working tree về sạch; git stash pop áp lại và xoá khỏi stash (git stash apply thì giữ lại bản stash). Hợp khi cần nhảy nhánh nhanh mà chưa muốn tạo commit dở.',
+  },
+  {
+    id: 'cli-docker-05', topic: 'docker',
+    q: 'Container đang chạy tên `api`. Muốn mở shell BÊN TRONG nó để xem file/biến môi trường. Lệnh nào?',
+    cmd: 'docker exec -it api sh',
+    options: [
+      'docker run -it api sh (tạo container MỚI, không vào cái đang chạy)',
+      'docker exec -it api sh',
+      'docker attach api để gõ lệnh mới',
+      'docker shell api',
+    ], answer: 1,
+    explain: 'docker exec chạy một tiến trình MỚI bên trong container ĐANG chạy; -it cấp terminal tương tác. `docker run` lại tạo container mới từ image (không phải cái đang chạy). `docker attach` gắn vào tiến trình chính sẵn có (PID 1), không mở shell riêng nên dễ vô tình dừng container khi Ctrl-C.',
+  },
+  {
+    id: 'cli-k8s-05', topic: 'kubectl',
+    q: 'Vừa rollout một bản deploy lỗi. Lệnh nào để QUAY VỀ bản trước đó nhanh nhất?',
+    cmd: `kubectl rollout undo deployment/api
+kubectl rollout status deployment/api`,
+    options: [
+      'kubectl delete deployment api rồi apply lại từ đầu',
+      'kubectl rollout undo deployment/api',
+      'kubectl scale deployment/api --replicas=0',
+      'kubectl restart api',
+    ], answer: 1,
+    explain: 'kubectl rollout undo quay deployment về revision trước (dùng lịch sử ReplicaSet) — nhanh và không downtime. `delete` rồi apply gây gián đoạn. `scale 0` chỉ tắt pod chứ không sửa bản lỗi. Xem lịch sử bằng `kubectl rollout history deployment/api`.',
+  },
+  {
+    id: 'cli-redis-04', topic: 'redis-cli',
+    q: 'Trên Redis production có hàng triệu key, cần liệt kê các key theo pattern mà KHÔNG làm nghẽn server. Dùng lệnh nào?',
+    cmd: `SCAN 0 MATCH "session:*" COUNT 100   # lặp theo cursor
+# TRÁNH: KEYS session:*   (quét toàn bộ, chặn server)`,
+    options: [
+      'KEYS session:* — nhanh và an toàn',
+      'SCAN với cursor + MATCH — duyệt từng phần, không chặn server',
+      'GET session:* lấy tất cả',
+      'FLUSHALL rồi tạo lại',
+    ], answer: 1,
+    explain: 'KEYS quét TOÀN BỘ keyspace trong một lần, chặn Redis (single-thread) → nguy hiểm trên production. SCAN duyệt tăng dần theo cursor, mỗi lần trả một ít key, không khoá server lâu (cùng họ có HSCAN/SSCAN/ZSCAN). COUNT là gợi ý số phần tử mỗi vòng.',
+  },
+  {
+    id: 'cli-bash-05', topic: 'bash',
+    q: 'Muốn tìm tiến trình đang nghe cổng 3000 (vì "address already in use"). Lệnh nào hợp lý?',
+    cmd: `lsof -i :3000        # liệt kê tiến trình giữ cổng 3000
+# hoặc:
+kill -9 $(lsof -ti :3000)   # lấy PID rồi kill`,
+    options: [
+      'cat :3000',
+      'lsof -i :3000 (hoặc `ss -ltnp | grep 3000`) để tìm PID đang giữ cổng',
+      'ping localhost:3000',
+      'grep 3000 /etc/hosts',
+    ], answer: 1,
+    explain: 'lsof -i :3000 liệt kê tiến trình đang mở/nghe cổng 3000; `lsof -ti :3000` chỉ in PID để truyền vào kill. Trên Linux không có lsof có thể dùng `ss -ltnp` hoặc `netstat -ltnp`. Đây là cách gỡ lỗi "EADDRINUSE / address already in use" rất hay gặp.',
+  },
 ];
