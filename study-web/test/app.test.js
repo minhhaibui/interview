@@ -600,6 +600,26 @@ test('mẹo hôm nay: kho tip + pickTip xoay vòng đúng, render vào Today', (
   assert.ok(/\.td-tip\s*{/.test(read('styles.css')), 'styles.css thiếu .td-tip');
 });
 
+test('a11y + empty-state: reduced-motion, dashboard empty-state có CTA', () => {
+  const CSS = read('styles.css');
+  // tôn trọng prefers-reduced-motion
+  assert.ok(/@media \(prefers-reduced-motion: reduce\)/.test(CSS), 'thiếu @media prefers-reduced-motion');
+  // focus-visible (đã có từ trước) vẫn còn
+  assert.ok(/:focus-visible/.test(CSS), 'mất quy tắc focus-visible');
+  // empty-state dashboard: logic + CTA + style
+  assert.ok(/const isNew = done === 0 && !anyActivity && entries\.length === 0/.test(APP),
+    'renderDashboard thiếu điều kiện isNew (người mới)');
+  assert.ok(/id="dash-empty"|empty\.id = 'dash-empty'/.test(APP), 'thiếu node #dash-empty');
+  assert.ok(/getElementById\('de-today'\)\.onclick = \(\) => switchView\('today'\)/.test(APP),
+    'CTA #de-today chưa nhảy sang Hôm nay');
+  assert.ok(/getElementById\('de-docs'\)\.onclick = \(\) => switchView\('docs'\)/.test(APP),
+    'CTA #de-docs chưa nhảy sang Tài liệu');
+  assert.ok(/\.dash-empty\s*{/.test(CSS), 'styles.css thiếu .dash-empty');
+  // idempotent: ẩn lại khi đã có dữ liệu
+  assert.ok(/} else if \(empty\) \{\s*empty\.hidden = true;/.test(APP),
+    'empty-state chưa ẩn khi người dùng đã có dữ liệu');
+});
+
 test('script đủ: index.html nạp mọi file dữ liệu trước app.js', () => {
   for (const f of ['coding-problems.js', 'iq-questions.js', 'english-questions.js',
     'situational-questions.js', 'design-drills.js', 'api-quiz.js', 'sql-drill.js', 'cli-quiz.js', 'app.js']) {

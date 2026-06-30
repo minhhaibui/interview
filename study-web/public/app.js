@@ -3036,6 +3036,34 @@ function renderDashboard() {
   renderMockHistory();
   renderMockWrong();
 
+  // Empty-state: người mới chưa có dữ liệu gì → hướng dẫn bắt đầu thay vì biểu đồ trống khó hiểu
+  const acts = store.get('prep-activity', {});
+  const anyActivity = Object.values(acts).some(n => n > 0);
+  const isNew = done === 0 && !anyActivity && entries.length === 0;
+  const dashWrap = document.querySelector('.dash-wrap');
+  let empty = document.getElementById('dash-empty');
+  if (isNew) {
+    if (!empty) {
+      empty = document.createElement('div');
+      empty.id = 'dash-empty';
+      empty.className = 'dash-empty';
+      const h1 = dashWrap.querySelector('h1');
+      dashWrap.insertBefore(empty, h1.nextSibling);
+    }
+    empty.hidden = false;
+    empty.innerHTML = `<span class="de-ic">📭</span>
+      <h2>Chưa có dữ liệu tiến độ</h2>
+      <p>Bắt đầu học hôm nay để chuỗi ngày, biểu đồ và điểm sẵn sàng hiện ra ở đây.</p>
+      <div class="de-cta">
+        <button id="de-today" class="onb-cta">🔥 Mở Hôm nay</button>
+        <button id="de-docs" class="onb-back">📖 Đọc tài liệu</button>
+      </div>`;
+    document.getElementById('de-today').onclick = () => switchView('today');
+    document.getElementById('de-docs').onclick = () => switchView('docs');
+  } else if (empty) {
+    empty.hidden = true;
+  }
+
   document.getElementById('dash-export').onclick = exportData;
   const fileInput = document.getElementById('dash-import-file');
   document.getElementById('dash-import').onclick = () => fileInput.click();

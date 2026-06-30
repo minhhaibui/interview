@@ -537,6 +537,15 @@ button { font-family: inherit; cursor: pointer; }
 
 /* ============ Dashboard ============ */
 .dash-wrap { max-width: 860px; margin: 0 auto; padding: 36px 24px 100px; }
+.dash-empty {
+  text-align: center; background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 26px 24px; margin: 6px 0 24px;
+}
+.dash-empty[hidden] { display: none; }
+.de-ic { font-size: 40px; display: block; margin-bottom: 6px; }
+.dash-empty h2 { margin: 0 0 8px; font-size: 1.15rem; }
+.dash-empty p { color: var(--muted); margin: 0 0 18px; line-height: 1.55; }
+.de-cta { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .dash-total { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
 .bar { flex: 1; height: 14px; background: var(--bg3); border-radius: 7px; overflow: hidden; }
 .bar-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--green)); transition: width .4s; }
@@ -1333,6 +1342,13 @@ button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-
   outline: 2px solid var(--accent); outline-offset: 2px;
 }
 button { font-family: inherit; }
+/* Tôn trọng người dùng chọn giảm chuyển động (a11y) — tắt animation/transition mạnh */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important; animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important; scroll-behavior: auto !important;
+  }
+}
 /* Chuyển động mượt + phản hồi nhấn nhất quán cho các nút hay dùng */
 .tab, .navgroup-btn, .think-mode, .dg-go, .dg-link, .btn-good, .btn-again, .ft-size,
 .ft-learn, .ft-known, .td-task, .coding-item, .star-q, .oq-opt, .dg-card {
