@@ -117,4 +117,40 @@ window.OUTPUT_QUIZ = [
     options: ['undefined', '10', 'obj', 'TypeError'], answer: 1,
     explain: 'Hàm thường `reg()` gọi qua `obj.reg()` → `this` là obj → this.v = 10. (Arrow function thì KHÔNG có this riêng — lấy this ngoài scope.)',
   },
+  {
+    id: 'oq-sort-default', topic: 'Array.sort',
+    code: `console.log([1, 10, 2, 21].sort());`,
+    options: ['1,10,2,21', '1,2,10,21', '21,10,2,1', '1,2,21,10'], answer: 0,
+    explain: 'sort() mặc định so sánh theo CHUỖI: "1" < "10" < "2" < "21" → [1,10,2,21]. Muốn sort số phải truyền comparator: .sort((a,b) => a - b).',
+  },
+  {
+    id: 'oq-plus-coerce', topic: 'Type coercion',
+    code: `console.log(1 + '2' + 3);\nconsole.log(1 + 2 + '3');`,
+    options: ['123\n33', '63\n33', '123\n6', '15\n33'], answer: 0,
+    explain: 'Phép + tính TRÁI sang PHẢI. Dòng 1: 1 + "2" → "12" (gặp chuỗi → nối), rồi "12" + 3 → "123". Dòng 2: 1 + 2 = 3 (số), rồi 3 + "3" → "33".',
+  },
+  {
+    id: 'oq-typeof-nan', topic: 'NaN',
+    code: `console.log(typeof NaN, NaN === NaN);`,
+    options: ['number false', 'number true', 'NaN false', 'undefined false'], answer: 0,
+    explain: 'typeof NaN là "number" (NaN vẫn thuộc kiểu number). NaN KHÔNG bằng chính nó (NaN === NaN là false) — đó là lý do dùng Number.isNaN() để kiểm tra.',
+  },
+  {
+    id: 'oq-obj-key-coerce', topic: 'Object key',
+    code: `const o = {};\no[1] = 'a';\no['1'] = 'b';\nconsole.log(o[1]);`,
+    options: ['a', 'b', 'undefined', '1'], answer: 1,
+    explain: 'Key của object thường luôn là CHUỖI: o[1] và o["1"] cùng trỏ tới key "1". Phép gán thứ hai ghi đè → o[1] đọc ra "b". (Map mới phân biệt được key số và chuỗi.)',
+  },
+  {
+    id: 'oq-nullish-or', topic: '?? vs ||',
+    code: `console.log(0 ?? 'a');\nconsole.log(0 || 'a');`,
+    options: ['0\na', 'a\na', '0\n0', 'a\n0'], answer: 0,
+    explain: '?? (nullish) chỉ thay thế khi vế trái là null/undefined → 0 giữ nguyên 0. || thay thế khi vế trái FALSY (0, "", false, NaN…) → 0 bị thay bằng "a". Khác biệt rất hay bị nhầm khi xử lý giá trị 0/"" hợp lệ.',
+  },
+  {
+    id: 'oq-map-parseint', topic: 'map + parseInt',
+    code: `console.log(['1', '2', '3'].map(parseInt));`,
+    options: ['1,2,3', '1,NaN,NaN', 'NaN,NaN,NaN', '1,2,NaN'], answer: 1,
+    explain: 'map gọi callback với (value, index): parseInt("1", 0) → radix 0 ⇒ coi như 10 → 1; parseInt("2", 1) → radix 1 không hợp lệ → NaN; parseInt("3", 2) → "3" không hợp lệ trong cơ số 2 → NaN. Bẫy kinh điển: đừng truyền thẳng parseInt vào map, hãy dùng Number hoặc (x) => parseInt(x, 10).',
+  },
 ];
