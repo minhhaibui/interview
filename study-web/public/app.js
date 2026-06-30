@@ -4519,6 +4519,7 @@ function initShortcuts() {
   const order = ['today', 'docs', 'flashcards', 'writing', 'code', 'coding', 'design', 'mock', 'company', 'star', 'plan', 'dashboard'];
   document.addEventListener('keydown', e => {
     if (onboardOpen() || shortcutsOpen()) return; // hộp thoại đang mở → không nhảy tab phía sau
+    if (e.repeat) return; // giữ phím (key-repeat) không spam chuyển tab / nhấp nháy bảng phím tắt
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     // Đang gõ trong ô nhập / vùng gõ code thì không cướp phím
     if (e.target.closest?.('input, textarea, select, #ct-code, [contenteditable]')) return;
@@ -4874,6 +4875,7 @@ function closeOnboard() {
 }
 
 function onbKey(e) {
+  if (e.repeat) return; // giữ phím không nhảy slide liên tục
   if (e.key === 'Escape') { e.preventDefault(); closeOnboard(); }
   else if (e.key === 'ArrowRight') { e.preventDefault(); document.getElementById('onb-next')?.click(); }
   else if (e.key === 'ArrowLeft') { e.preventDefault(); document.getElementById('onb-prev')?.click(); }
