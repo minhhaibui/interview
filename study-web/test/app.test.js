@@ -577,6 +577,29 @@ test('phím tắt: bảng ⌨️ mở bằng ?, đủ hàm + guard + CSS', () =>
   assert.ok(/\.sc-card/.test(CSS), 'styles.css thiếu .sc-card');
 });
 
+test('mẹo hôm nay: kho tip + pickTip xoay vòng đúng, render vào Today', () => {
+  // trích mảng STUDY_TIPS + hàm pickTip để chạy thật (thuần, không cần DOM)
+  const m = APP.match(/const STUDY_TIPS = \[([\s\S]*?)\];/);
+  assert.ok(m, 'thiếu mảng STUDY_TIPS');
+  const fnM = APP.match(/function pickTip\(dayNum\) \{[^}]*\}/);
+  assert.ok(fnM, 'thiếu hàm pickTip');
+  const { STUDY_TIPS, pickTip } = new Function(
+    `${m[0]}\n${fnM[0]}\nreturn { STUDY_TIPS, pickTip };`)();
+  assert.ok(STUDY_TIPS.length >= 10, `cần ≥10 mẹo (đang ${STUDY_TIPS.length})`);
+  assert.strictEqual(new Set(STUDY_TIPS).size, STUDY_TIPS.length, 'có mẹo trùng');
+  // xoay vòng theo ngày: cùng ngày → cùng mẹo; quanh vòng → khớp; số âm không crash
+  assert.strictEqual(pickTip(0), STUDY_TIPS[0]);
+  assert.strictEqual(pickTip(STUDY_TIPS.length), STUDY_TIPS[0], 'phải lặp vòng');
+  assert.strictEqual(pickTip(3), pickTip(3), 'cùng ngày cùng mẹo');
+  assert.ok(typeof pickTip(-1) === 'string', 'số âm vẫn trả mẹo hợp lệ');
+  assert.strictEqual(pickTip(-1), STUDY_TIPS[STUDY_TIPS.length - 1], 'modulo âm xử lý đúng');
+  // render: có tipOfDay + chèn .td-tip vào renderToday
+  assert.ok(/function tipOfDay\(\)/.test(APP), 'thiếu tipOfDay');
+  assert.ok(/class="td-tip"/.test(APP), 'renderToday chưa chèn card .td-tip');
+  assert.ok(/escHtml\(tipOfDay\(\)\)/.test(APP), 'mẹo phải qua escHtml (an toàn HTML)');
+  assert.ok(/\.td-tip\s*{/.test(read('styles.css')), 'styles.css thiếu .td-tip');
+});
+
 test('script đủ: index.html nạp mọi file dữ liệu trước app.js', () => {
   for (const f of ['coding-problems.js', 'iq-questions.js', 'english-questions.js',
     'situational-questions.js', 'design-drills.js', 'api-quiz.js', 'sql-drill.js', 'cli-quiz.js', 'app.js']) {

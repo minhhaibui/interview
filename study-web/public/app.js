@@ -507,6 +507,33 @@ function goalRing(pct) {
   </svg>`;
 }
 
+// Mẹo phỏng vấn/ôn tập — xoay vòng MỖI NGÀY (deterministic theo số thứ tự ngày).
+const STUDY_TIPS = [
+  'Trả lời câu hỏi hành vi theo cấu trúc STAR (Tình huống → Nhiệm vụ → Hành động → Kết quả) — nhớ nêu kết quả định lượng.',
+  'Khi bí một bài coding, hãy nói to suy nghĩ của bạn — interviewer chấm cả cách tư duy, không chỉ đáp án cuối.',
+  'Ôn theo spaced repetition: gặp lại đúng lúc sắp quên giúp nhớ lâu gấp nhiều lần so với học dồn một lúc.',
+  'Trước bài system design, luôn hỏi rõ yêu cầu & ước lượng quy mô (QPS, dung lượng) TRƯỚC khi vẽ kiến trúc.',
+  'Giải thích được trade-off quan trọng hơn thuộc lòng định nghĩa — ví dụ SQL vs NoSQL tuỳ pattern truy vấn.',
+  'Luyện nói đáp án thành tiếng, đừng chỉ đọc thầm — phỏng vấn là kỹ năng trình bày, không chỉ kiến thức.',
+  'Nắm rõ event loop của Node.js: phân biệt macrotask (setTimeout) và microtask (Promise) — câu rất hay gặp.',
+  'Index tăng tốc đọc nhưng làm chậm ghi và tốn bộ nhớ — biết khi nào KHÔNG nên đánh index cũng quan trọng.',
+  'Idempotency key giúp API an toàn khi client retry — nhớ nêu khi thiết kế thanh toán hoặc đặt hàng.',
+  'Khi nói về cache, luôn nhắc 3 vấn đề kinh điển: cache penetration, cache breakdown, cache avalanche.',
+  'Học 2 lượt: lượt 1 để HIỂU (đọc + lab), lượt 2 để NHỚ (rapid-fire + mock) ngay trước phỏng vấn.',
+  'Chuẩn bị sẵn 3–4 câu chuyện dự án mạnh — mỗi câu xoay được cho nhiều câu hỏi hành vi khác nhau.',
+  'Nghỉ ngắn kiểu Pomodoro (25 phút tập trung / 5 phút nghỉ) giúp giữ năng suất lâu hơn học liền tù tì.',
+  'Kafka đảm bảo thứ tự TRONG một partition, không phải toàn topic — chọn message key cho đúng.',
+  'Đừng giấu khi chưa biết — hãy nói cách bạn sẽ tìm ra câu trả lời; interviewer đánh giá cao sự trung thực.',
+  'Ôn tiếng Anh giao tiếp mỗi ngày một chút — phỏng vấn tốt cần cả kiến thức lẫn khả năng diễn đạt trôi chảy.',
+];
+/** Chọn mẹo theo số thứ tự ngày (tách riêng để test thuần). */
+function pickTip(dayNum) { return STUDY_TIPS[((dayNum % STUDY_TIPS.length) + STUDY_TIPS.length) % STUDY_TIPS.length]; }
+function tipOfDay() {
+  const d = new Date();
+  const dayNum = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+  return pickTip(dayNum);
+}
+
 async function renderToday() {
   const body = document.getElementById('today-body');
   body.innerHTML = '<p style="color:var(--muted)">Đang tải buổi ôn hôm nay…</p>';
@@ -563,6 +590,8 @@ async function renderToday() {
         </div>
       </div>
     </div>
+
+    <div class="td-tip"><span class="td-tip-ic">💡</span><span><b>Mẹo hôm nay:</b> ${escHtml(tipOfDay())}</span></div>
 
     <h2 class="td-h2">📋 Buổi ôn hôm nay</h2>
     <div class="td-tasks">

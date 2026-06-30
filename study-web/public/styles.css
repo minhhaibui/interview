@@ -1100,6 +1100,13 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 
 .td-h2 { font-size: 1.15rem; margin: 26px 0 12px; }
 .td-new { color: var(--green); font-size: .8rem; font-weight: 700; margin-left: 6px; }
+.td-tip {
+  display: flex; align-items: flex-start; gap: 10px; margin-top: 16px;
+  background: var(--bg2); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+  border-radius: 10px; padding: 12px 15px; line-height: 1.55; font-size: .92rem; color: var(--muted);
+}
+.td-tip b { color: var(--text); }
+.td-tip-ic { font-size: 1.1rem; line-height: 1.4; }
 
 .td-tasks { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
 .td-task {
