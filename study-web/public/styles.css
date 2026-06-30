@@ -972,6 +972,32 @@ body.light .plan-config input[type=date] { color-scheme: light; }
   .onb-card h2 { font-size: 18px; }
 }
 
+/* ====== Bảng phím tắt (bấm ?) ====== */
+#shortcuts {
+  position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; padding: 20px;
+  background: rgba(1, 4, 9, .66); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+  animation: onbFade .18s ease;
+}
+#shortcuts[hidden] { display: none; }
+.sc-card {
+  position: relative; width: min(440px, 100%); max-height: 86vh; overflow: auto;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 16px;
+  padding: 28px 26px 16px; box-shadow: 0 18px 50px rgba(0, 0, 0, .5);
+  animation: onbPop .2s cubic-bezier(.2, .9, .3, 1.2);
+}
+.sc-card h2 { margin: 0 0 16px; font-size: 19px; text-align: center; }
+.sc-grp { margin-bottom: 14px; }
+.sc-grp h3 { margin: 0 0 6px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.sc-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px dashed var(--border); }
+.sc-row:last-child { border-bottom: none; }
+.sc-keys { flex: 0 0 104px; display: flex; gap: 4px; flex-wrap: wrap; }
+.sc-desc { color: var(--text); font-size: 14px; }
+.sc-card kbd {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 5px;
+  padding: 2px 7px; font-size: 12px; font-family: inherit; line-height: 1.5; color: var(--text);
+}
+.sc-foot { text-align: center; color: var(--muted); font-size: 12.5px; margin: 10px 0 2px; }
+
 /* ====== Bài Test IQ ====== */
 .iq-modes { display: flex; flex-direction: column; gap: 10px; max-width: 360px; margin: 0 auto; }
 .iq-modes button { display: flex; flex-direction: column; align-items: center; gap: 3px; }

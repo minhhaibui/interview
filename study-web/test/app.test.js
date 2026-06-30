@@ -544,13 +544,37 @@ test('onboarding: đủ slide, hàm điều khiển, nút ❓, hookup init + lư
   // nút ❓ help được tạo
   assert.ok(/help\.id = 'help-btn'/.test(APP), 'thiếu nút ❓ help-btn');
   // hai global keydown nhường phím khi onboarding mở (chống lọt xuống view dưới)
-  assert.ok(/if \(onboardOpen\(\)\) return;/.test(APP), 'global keydown chưa guard onboardOpen()');
-  assert.ok((APP.match(/if \(onboardOpen\(\)\) return;/g) || []).length >= 2,
+  assert.ok(/if \(onboardOpen\(\)/.test(APP), 'global keydown chưa guard onboardOpen()');
+  assert.ok((APP.match(/if \(onboardOpen\(\)/g) || []).length >= 2,
     'cần guard onboardOpen() ở cả hotkey flashcards lẫn phím tắt tab');
   // CSS có khối onboarding
   const CSS = read('styles.css');
   assert.ok(/#onboard\s*{/.test(CSS), 'styles.css thiếu #onboard');
   assert.ok(/\.onb-card/.test(CSS), 'styles.css thiếu .onb-card');
+});
+
+test('phím tắt: bảng ⌨️ mở bằng ?, đủ hàm + guard + CSS', () => {
+  // dữ liệu SHORTCUTS ≥2 nhóm, mỗi mục có keys + desc
+  const m = APP.match(/const SHORTCUTS = \[([\s\S]*?)\];/);
+  assert.ok(m, 'thiếu mảng SHORTCUTS');
+  assert.ok((m[1].match(/group:/g) || []).length >= 2, 'cần ≥2 nhóm phím tắt');
+  assert.ok((m[1].match(/keys:/g) || []).length >= 5, 'cần ≥5 dòng phím tắt');
+  assert.strictEqual((m[1].match(/keys:/g) || []).length, (m[1].match(/desc:/g) || []).length,
+    'mỗi phím tắt phải có mô tả');
+  // hàm cốt lõi
+  for (const fn of ['function openShortcuts', 'function closeShortcuts', 'function toggleShortcuts', 'function scKey']) {
+    assert.ok(APP.includes(fn), `thiếu ${fn}`);
+  }
+  // bind phím ? trong initShortcuts
+  const block = APP.slice(APP.indexOf('function initShortcuts'), APP.indexOf('function initShortcuts') + 1100);
+  assert.ok(/e\.key === '\?'\)\s*{[^}]*toggleShortcuts\(\)/.test(block), "initShortcuts chưa bind phím '?'");
+  // hai global keydown guard shortcutsOpen() (chống lọt phím xuống view dưới)
+  assert.ok((APP.match(/onboardOpen\(\) \|\| shortcutsOpen\(\)/g) || []).length >= 2,
+    'cần guard onboardOpen()||shortcutsOpen() ở cả hotkey flashcards lẫn phím tắt tab');
+  // CSS
+  const CSS = read('styles.css');
+  assert.ok(/#shortcuts\s*{/.test(CSS), 'styles.css thiếu #shortcuts');
+  assert.ok(/\.sc-card/.test(CSS), 'styles.css thiếu .sc-card');
 });
 
 test('script đủ: index.html nạp mọi file dữ liệu trước app.js', () => {

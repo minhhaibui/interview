@@ -1142,7 +1142,7 @@ function speakCard(withExample) {
 /** Phím tắt riêng cho tab flashcards: Space lật, ← chưa nhớ, → nhớ rồi, S nghe */
 function initFcHotkeys() {
   document.addEventListener('keydown', e => {
-    if (onboardOpen()) return; // hướng dẫn đang mở → nhường phím cho onboarding
+    if (onboardOpen() || shortcutsOpen()) return; // hộp thoại đang mở → nhường phím
     if (!document.getElementById('view-flashcards').classList.contains('active')) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.target.closest?.('input, textarea, select, [contenteditable]')) return;
@@ -4461,7 +4461,7 @@ function finishInterview() {
 function initShortcuts() {
   const order = ['today', 'docs', 'flashcards', 'writing', 'code', 'coding', 'design', 'mock', 'company', 'star', 'plan', 'dashboard'];
   document.addEventListener('keydown', e => {
-    if (onboardOpen()) return; // hướng dẫn đang mở → không nhảy tab phía sau
+    if (onboardOpen() || shortcutsOpen()) return; // hộp thoại đang mở → không nhảy tab phía sau
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     // Đang gõ trong ô nhập / vùng gõ code thì không cướp phím
     if (e.target.closest?.('input, textarea, select, #ct-code, [contenteditable]')) return;
@@ -4470,7 +4470,7 @@ function initShortcuts() {
       e.preventDefault();
       switchView('docs');
       document.getElementById('sb-search').focus();
-    }
+    } else if (e.key === '?') { e.preventDefault(); toggleShortcuts(); } // bảng phím tắt
   });
 }
 
@@ -4765,7 +4765,7 @@ const ONBOARD_SLIDES = [
   {
     ico: '🎯',
     title: 'Sẵn sàng chưa?',
-    body: 'Bắt đầu từ <b>🔥 Hôm nay</b> nhé. Cần xem lại hướng dẫn này bất cứ lúc nào? Bấm nút <b>❓</b> trên thanh công cụ.',
+    body: 'Bắt đầu từ <b>🔥 Hôm nay</b> nhé. Cần xem lại hướng dẫn này bất cứ lúc nào? Bấm nút <b>❓</b> trên thanh công cụ. Mẹo: bấm phím <b>?</b> để xem mọi phím tắt.',
   },
 ];
 let onbIdx = 0;
@@ -4832,6 +4832,56 @@ function initOnboarding() {
   document.getElementById('theme-btn')?.insertAdjacentElement('beforebegin', help);
   if (!store.get('prep-onboarded', 0)) openOnboard(); // lần đầu mở app → tự hiện
 }
+
+// ---------- Bảng phím tắt (bấm ? để mở) ----------
+const SHORTCUTS = [
+  { group: '🧭 Điều hướng', items: [
+    { keys: ['1', '…', '9'], desc: 'Chuyển nhanh giữa các tab' },
+    { keys: ['/'], desc: 'Mở &amp; nhảy vào ô tìm tài liệu' },
+    { keys: ['?'], desc: 'Mở bảng phím tắt này' },
+    { keys: ['Esc'], desc: 'Đóng hộp thoại / menu đang mở' },
+  ] },
+  { group: '🃏 Flashcards', items: [
+    { keys: ['Space'], desc: 'Lật thẻ' },
+    { keys: ['→'], desc: 'Nhớ rồi' },
+    { keys: ['←'], desc: 'Chưa nhớ' },
+    { keys: ['S'], desc: 'Nghe phát âm' },
+  ] },
+  { group: '💡 Khác', items: [
+    { keys: ['❓'], desc: 'Nút trên thanh công cụ — mở lại hướng dẫn' },
+  ] },
+];
+const shortcutsOpen = () => { const o = document.getElementById('shortcuts'); return !!o && !o.hidden; };
+
+function closeShortcuts() {
+  const o = document.getElementById('shortcuts');
+  if (o) o.hidden = true;
+  document.removeEventListener('keydown', scKey);
+}
+function scKey(e) { if (e.key === 'Escape' || e.key === '?') { e.preventDefault(); closeShortcuts(); } }
+
+function openShortcuts() {
+  let ov = document.getElementById('shortcuts');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'shortcuts';
+    ov.innerHTML = `<div class="sc-card" role="dialog" aria-modal="true">
+      <button class="onb-x" id="sc-x" title="Đóng">✕</button>
+      <h2>⌨️ Phím tắt</h2>
+      <div class="sc-groups">${SHORTCUTS.map(g => `
+        <div class="sc-grp"><h3>${g.group}</h3>${g.items.map(it =>
+          `<div class="sc-row"><span class="sc-keys">${it.keys.map(k =>
+            `<kbd>${k}</kbd>`).join('')}</span><span class="sc-desc">${it.desc}</span></div>`).join('')}</div>`).join('')}</div>
+      <p class="sc-foot">Bấm <kbd>?</kbd> hoặc <kbd>Esc</kbd> để đóng</p>
+    </div>`;
+    document.body.appendChild(ov);
+    ov.addEventListener('click', e => { if (e.target === ov) closeShortcuts(); });
+    document.getElementById('sc-x').onclick = closeShortcuts;
+  }
+  ov.hidden = false;
+  document.addEventListener('keydown', scKey);
+}
+function toggleShortcuts() { shortcutsOpen() ? closeShortcuts() : openShortcuts(); }
 
 (async function init() {
   initSearch();
