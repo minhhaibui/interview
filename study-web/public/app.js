@@ -111,6 +111,37 @@ function bumpSrs(card, known) {
   }
 }
 
+// ---------- Ôn câu trắc nghiệm đã làm sai (xuyên các mode) ----------
+// Lưu prep-quiz-wrong = { [mode]: { [id]: timestamp } }. Chọn sai → ghi; ôn lại đúng → xoá.
+const WRONG_KEY = 'prep-quiz-wrong';
+function getWrong() { return store.get(WRONG_KEY, {}); }
+function recordWrong(mode, id) {
+  if (!mode || id == null) return;
+  const w = getWrong();
+  (w[mode] = w[mode] || {})[id] = Date.now();
+  store.set(WRONG_KEY, w);
+}
+function clearWrong(mode, id) {
+  if (!mode || id == null) return;
+  const w = getWrong();
+  if (w[mode] && w[mode][id] != null) {
+    delete w[mode][id];
+    if (!Object.keys(w[mode]).length) delete w[mode];
+    store.set(WRONG_KEY, w);
+  }
+}
+function wrongIds(mode) { return Object.keys(getWrong()[mode] || {}); }
+/** Tổng số câu sai còn tồn tại trong ngân hàng (loại id đã bị gỡ khỏi data). */
+function wrongTotal() {
+  const w = getWrong();
+  return Object.keys(w).reduce((sum, mode) => {
+    const live = QUIZ_MODES[mode];
+    if (!live) return sum;
+    const ids = new Set((live.data() || []).map(q => String(q.id)));
+    return sum + Object.keys(w[mode]).filter(id => ids.has(String(id))).length;
+  }, 0);
+}
+
 // ---------- Tabs / views ----------
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => switchView(btn.dataset.view));
@@ -552,6 +583,7 @@ async function renderToday() {
   const due = filterDeck('__due__').length;
   const leech = filterDeck('__leech__').length;
   const wrongN = getMockWrong().length;
+  const quizWrongN = wrongTotal();
 
   // Danh sách việc ôn gợi ý hôm nay
   const tasks = [];
@@ -560,6 +592,7 @@ async function renderToday() {
   tasks.push({ id: 'td-mix', ic: '⚡', t: 'Ôn nhanh ~10 câu (mix)', s: 'Trộn dịch từ + điền câu + nghe', go: goToWritingMix });
   tasks.push({ id: 'td-fttest', ic: '📝', t: 'Test gõ từ vựng', s: 'Hiện nghĩa Việt → gõ tiếng Anh, chấm điểm', go: goToVocabTest });
   if (wrongN) tasks.push({ id: 'td-wrong', ic: '🚩', t: `Ôn ${wrongN} câu mock đã sai`, s: 'Trả lời lại cho nhớ', go: goToMockWrong });
+  if (quizWrongN) tasks.push({ id: 'td-quiz-wrong', ic: '🔁', t: `Ôn ${quizWrongN} câu trắc nghiệm đã sai`, s: 'Đoán output · API · SQL · CLI — gom về một phiên', go: goToQuizReview });
   tasks.push({ id: 'td-think', ic: '🧠', t: 'Giải 1 bài luyện tư duy', s: 'Coding hoặc IQ', go: () => switchView('coding') });
   tasks.push({ id: 'td-mock', ic: '🎯', t: 'Mock interview nhanh', s: '5–10 câu ngẫu nhiên', go: () => switchView('mock') });
   tasks.push({ id: 'td-design', ic: '🏛️', t: 'Luyện 1 đề System Design', s: 'Tự chấm rubric hoặc nhờ AI chấm', go: () => switchView('design') });
@@ -653,6 +686,13 @@ function goToMockWrong() {
     const sel = document.getElementById('mk-week');
     if (sel) sel.value = '__wrong__';
   });
+}
+
+/** Mở tab Tư duy ở chế độ 🔁 Ôn câu sai và bắt đầu phiên ngay. */
+function goToQuizReview() {
+  switchView('coding');
+  setThinkMode('review');
+  startReview();
 }
 
 // ---------- Sidebar ----------
@@ -2771,7 +2811,7 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-daily-goal', 'prep-badges-seen', 'prep-design-history', 'prep-design-draft',
   'prep-oq-done', 'prep-oq-best', 'prep-debug-solved', 'prep-debug-code',
   'prep-api-done', 'prep-api-best', 'prep-sql-done', 'prep-sql-best', 'prep-cli-done', 'prep-cli-best',
-  'prep-star-drafts', 'prep-star-history', 'prep-ft-size'];
+  'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */
@@ -3408,6 +3448,7 @@ function initThink() {
   document.querySelectorAll('.think-mode').forEach(b => { b.onclick = () => setThinkMode(b.dataset.mode); });
   setThinkMode(thinkMode);
   if (!thinkInit) { renderCodingFilters(); renderCodingList(); renderIQ(); renderOutputQuiz(); renderDebugList(); renderApiQuiz(); renderSqlQuiz(); renderCliQuiz(); thinkInit = true; }
+  refreshReviewBadge();
 }
 
 function setThinkMode(m) {
@@ -3421,6 +3462,8 @@ function setThinkMode(m) {
   document.getElementById('think-api').hidden = m !== 'api';
   document.getElementById('think-sql').hidden = m !== 'sql';
   document.getElementById('think-cli').hidden = m !== 'cli';
+  document.getElementById('think-review').hidden = m !== 'review';
+  if (m === 'review') renderReview();
   // Quay lại mode IQ khi đang dở Bài Test (có tính giờ) → khởi động lại đồng hồ
   // (switchView/đổi mode đã clearInterval; tickIQTest tính theo startMs nên không lệch, và tự nộp nếu hết giờ).
   if (m === 'iq' && iqState && iqState.mode === 'test') {
@@ -3491,6 +3534,9 @@ function answerOutputQuiz(i) {
   if (correct) {
     oqRight++;
     const done = oqDone(); done[q.id] = true; store.set('prep-oq-done', done);
+    clearWrong('output', q.id);
+  } else {
+    recordWrong('output', q.id);
   }
   logActivity();
   const fb = document.getElementById('oq-fb');
@@ -3559,7 +3605,8 @@ function makeQuiz(cfg) {
     const all = data(), q = all[order[idx]], el = body();
     const correct = i === q.answer;
     el.querySelectorAll('.oq-opt').forEach((b, j) => { b.disabled = true; if (j === q.answer) b.classList.add('right'); else if (j === i) b.classList.add('wrong'); });
-    if (correct) { right++; const d = doneSet(); d[q.id] = true; store.set(cfg.doneKey, d); }
+    if (correct) { right++; const d = doneSet(); d[q.id] = true; store.set(cfg.doneKey, d); clearWrong(cfg.mode, q.id); }
+    else recordWrong(cfg.mode, q.id);
     logActivity();
     const fb = el.querySelector('.oq-fb-box');
     fb.hidden = false;
@@ -3586,6 +3633,7 @@ function makeQuiz(cfg) {
 
 // ----- Chế độ 📡 API & HTTP (dùng engine makeQuiz) -----
 const apiQuiz = makeQuiz({
+  mode: 'api',
   bodyId: 'api-body',
   data: () => window.API_QUIZ,
   doneKey: 'prep-api-done',
@@ -3600,6 +3648,7 @@ function renderApiQuiz() { apiQuiz.render(); }
 
 // ----- Chế độ 🗄️ SQL Drill (dùng engine makeQuiz) -----
 const sqlQuiz = makeQuiz({
+  mode: 'sql',
   bodyId: 'sql-body',
   data: () => window.SQL_DRILL,
   doneKey: 'prep-sql-done',
@@ -3616,6 +3665,7 @@ function renderSqlQuiz() { sqlQuiz.render(); }
 
 // ----- Chế độ 🖥️ CLI Quiz (dùng engine makeQuiz) -----
 const cliQuiz = makeQuiz({
+  mode: 'cli',
   bodyId: 'cli-body',
   data: () => window.CLI_QUIZ,
   doneKey: 'prep-cli-done',
@@ -3629,6 +3679,150 @@ const cliQuiz = makeQuiz({
   resultMsg: pct => pct >= 80 ? 'Thạo dòng lệnh — tự tin demo thao tác khi phỏng vấn!' : pct >= 50 ? 'Khá ổn — ôn thêm git reset/revert, kubectl rollout, SCAN vs KEYS.' : 'Lệnh CLI hay bị hỏi thực hành — đọc kỹ giải thích từng câu nhé.',
 });
 function renderCliQuiz() { cliQuiz.render(); }
+
+// ============ 🔁 ÔN CÂU SAI (gom câu trắc nghiệm chọn sai qua mọi mode) ============
+// Registry mô tả cách render mỗi mode; dùng chung cho phiên ôn + đếm badge.
+const QUIZ_MODES = {
+  output: {
+    label: '🔍 Đoán output', doneKey: 'prep-oq-done', data: () => window.OUTPUT_QUIZ || [],
+    ask: 'Đoán xem đoạn code in ra gì?',
+    optionHtml: o => `<pre>${escHtml(o)}</pre>`,
+    questionHtml: q => `<pre class="oq-code"><code class="language-js">${escHtml(q.code)}</code></pre>`,
+    highlight: true,
+  },
+  api: {
+    label: '📡 API & HTTP', doneKey: 'prep-api-done', data: () => window.API_QUIZ || [],
+    ask: 'Chọn đáp án đúng:',
+    optionHtml: o => `<span class="oq-otext">${escHtml(o)}</span>`,
+    questionHtml: q => `<p class="oq-question">${escHtml(q.q)}</p>`,
+    highlight: false,
+  },
+  sql: {
+    label: '🗄️ SQL', doneKey: 'prep-sql-done', data: () => window.SQL_DRILL || [],
+    ask: 'Chọn đáp án đúng:',
+    optionHtml: o => `<span class="oq-otext">${escHtml(o)}</span>`,
+    questionHtml: q => `<p class="oq-question">${escHtml(q.q)}</p>` +
+      (q.sql ? `<pre><code class="language-sql">${escHtml(q.sql)}</code></pre>` : ''),
+    highlight: true,
+  },
+  cli: {
+    label: '🖥️ CLI', doneKey: 'prep-cli-done', data: () => window.CLI_QUIZ || [],
+    ask: 'Chọn đáp án đúng:',
+    optionHtml: o => `<span class="oq-otext">${escHtml(o)}</span>`,
+    questionHtml: q => `<p class="oq-question">${escHtml(q.q)}</p>` +
+      (q.cmd ? `<pre><code class="language-bash">${escHtml(q.cmd)}</code></pre>` : ''),
+    highlight: true,
+  },
+};
+
+/** Gom mọi câu sai còn tồn tại thành hàng đợi [{mode, q}] đã trộn thứ tự. */
+function buildReviewQueue() {
+  const out = [];
+  Object.keys(QUIZ_MODES).forEach(mode => {
+    const byId = new Map((QUIZ_MODES[mode].data() || []).map(q => [String(q.id), q]));
+    wrongIds(mode).forEach(id => { const q = byId.get(String(id)); if (q) out.push({ mode, q }); });
+  });
+  return out.sort(() => Math.random() - 0.5);
+}
+
+let reviewQueue = [], reviewIdx = 0, reviewRight = 0;
+
+/** Cập nhật badge số câu sai trên nút mode (gọi sau mỗi lần chấm). */
+function refreshReviewBadge() {
+  const el = document.getElementById('review-count');
+  if (!el) return;
+  const n = wrongTotal();
+  el.hidden = n === 0;
+  el.textContent = n ? String(n) : '';
+}
+
+function renderReview() {
+  refreshReviewBadge();
+  const el = document.getElementById('review-body');
+  if (!el) return;
+  const q = buildReviewQueue();
+  if (!q.length) {
+    el.innerHTML = `<div class="oq-start review-empty">
+      <p>🎉 Chưa có câu trắc nghiệm nào đang sai. Làm các quiz <b>Đoán output · API · SQL · CLI</b> — câu nào chọn sai sẽ được gom về đây để ôn lại cho nhớ.</p>
+    </div>`;
+    return;
+  }
+  // đếm theo mode để hiện phân bố
+  const byMode = {};
+  q.forEach(it => { byMode[it.mode] = (byMode[it.mode] || 0) + 1; });
+  const chips = Object.keys(byMode).map(m => `<span class="review-chip">${QUIZ_MODES[m].label}: <b>${byMode[m]}</b></span>`).join('');
+  el.innerHTML = `
+    <div class="oq-start">
+      <p>Đang có <b>${q.length}</b> câu cần ôn lại.</p>
+      <div class="review-chips">${chips}</div>
+      <button id="review-go" class="dg-go">▶ Ôn ngay (${q.length} câu, trộn thứ tự)</button>
+    </div>`;
+  document.getElementById('review-go').onclick = startReview;
+}
+
+function startReview() {
+  reviewQueue = buildReviewQueue();
+  reviewIdx = 0; reviewRight = 0;
+  if (!reviewQueue.length) return renderReview();
+  showReview();
+}
+
+function showReview() {
+  const item = reviewQueue[reviewIdx];
+  const el = document.getElementById('review-body');
+  if (!el) return;
+  if (!item) return finishReview();
+  const cfg = QUIZ_MODES[item.mode], q = item.q;
+  const opts = q.options.map((o, i) => `<button class="oq-opt" data-i="${i}">${cfg.optionHtml(o)}</button>`).join('');
+  el.innerHTML = `
+    <div class="oq-quiz">
+      <div class="oq-bar"><span>Câu ${reviewIdx + 1}/${reviewQueue.length} · ✓ ${reviewRight}</span><span class="oq-topic">${cfg.label}${q.topic ? ' · ' + escHtml(q.topic) : ''}</span></div>
+      <div class="oq-ask">${cfg.ask}</div>
+      ${cfg.questionHtml(q)}
+      <div class="oq-opts">${opts}</div>
+      <div id="review-fb" class="oq-fb" hidden></div>
+    </div>`;
+  if (cfg.highlight && window.hljs) el.querySelectorAll('pre code').forEach(c => { try { hljs.highlightElement(c); } catch { /* bỏ qua */ } });
+  el.querySelectorAll('.oq-opt').forEach(b => b.onclick = () => answerReview(+b.dataset.i));
+}
+
+function answerReview(i) {
+  const item = reviewQueue[reviewIdx];
+  const cfg = QUIZ_MODES[item.mode], q = item.q;
+  const el = document.getElementById('review-body');
+  const correct = i === q.answer;
+  el.querySelectorAll('.oq-opt').forEach((b, j) => { b.disabled = true; if (j === q.answer) b.classList.add('right'); else if (j === i) b.classList.add('wrong'); });
+  if (correct) {
+    reviewRight++;
+    clearWrong(item.mode, q.id);            // đã nhớ → rời hàng đợi
+    const d = store.get(cfg.doneKey, {}); d[q.id] = true; store.set(cfg.doneKey, d);
+  } else {
+    recordWrong(item.mode, q.id);           // vẫn sai → giữ lại (làm mới timestamp)
+  }
+  logActivity();
+  refreshReviewBadge();
+  const fb = document.getElementById('review-fb');
+  fb.hidden = false;
+  fb.innerHTML = `<div class="oq-verdict ${correct ? 'ok' : 'no'}">${correct ? '✅ Chính xác! Câu này rời hàng đợi.' : '❌ Chưa đúng — giữ lại ôn tiếp.'}</div>
+    <p class="oq-explain">${escHtml(q.explain)}</p>
+    <button id="review-next" class="dg-go">${reviewIdx + 1 < reviewQueue.length ? 'Câu tiếp →' : 'Xem kết quả'}</button>`;
+  document.getElementById('review-next').onclick = () => { reviewIdx++; showReview(); };
+  fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function finishReview() {
+  const total = reviewQueue.length;
+  const pct = total ? Math.round(reviewRight / total * 100) : 0;
+  const left = wrongTotal();
+  const el = document.getElementById('review-body');
+  el.innerHTML = `
+    <div class="oq-result">
+      <h2>${pct >= 80 ? '🌟' : pct >= 50 ? '👍' : '📚'} Ôn xong: đúng ${reviewRight}/${total} (${pct}%)</h2>
+      <p>${left === 0 ? '🎉 Sạch hàng đợi — không còn câu nào sai!' : `Còn <b>${left}</b> câu cần ôn tiếp. Cứ ôn lại cho tới khi nhớ hẳn nhé.`}</p>
+      <button id="review-again" class="dg-go">${left ? '↻ Ôn tiếp câu còn sai' : '↻ Ôn lại'}</button>
+    </div>`;
+  document.getElementById('review-again').onclick = () => (left ? startReview() : renderReview());
+}
 
 // ============ 🌟 STAR BUILDER (soạn câu trả lời phỏng vấn hành vi) ============
 // Khung STAR: Situation · Task · Action · Result. Công cụ soạn + tự chấm checklist + AI góp ý.

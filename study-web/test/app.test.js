@@ -317,6 +317,59 @@ test('wiring: chế độ CLI Quiz có đủ id + mode button + script + engine'
   assert.ok(/window\.CLI_QUIZ/.test(APP), 'cliQuiz chưa trỏ tới window.CLI_QUIZ');
 });
 
+test('wiring: chế độ 🔁 Ôn câu sai đủ HTML + toggle + badge + render', () => {
+  assert.ok(HTML.includes('id="think-review"'), 'thiếu #think-review');
+  assert.ok(HTML.includes('id="review-body"'), 'thiếu #review-body');
+  assert.ok(HTML.includes('id="review-count"'), 'thiếu badge #review-count');
+  assert.ok(HTML.includes('data-mode="review"'), 'thiếu nút mode review');
+  assert.ok(/document\.getElementById\('think-review'\)\.hidden = m !== 'review'/.test(APP),
+    'setThinkMode chưa toggle think-review');
+  assert.ok(/if \(m === 'review'\) renderReview\(\)/.test(APP), 'setThinkMode chưa gọi renderReview khi vào mode');
+  assert.ok(/function renderReview\b/.test(APP) && /function startReview\b/.test(APP) &&
+    /function answerReview\b/.test(APP) && /function finishReview\b/.test(APP), 'thiếu hàm engine review');
+  assert.ok(/function goToQuizReview\b/.test(APP), 'thiếu goToQuizReview để mở từ tab Hôm nay');
+});
+
+test('review: QUIZ_MODES gồm đúng 4 mode, doneKey & bank khớp thực tế', () => {
+  const m = APP.match(/const QUIZ_MODES = \{([\s\S]*?)\n\};/);
+  assert.ok(m, 'không tìm thấy QUIZ_MODES');
+  const block = m[1];
+  const expect = {
+    output: { doneKey: 'prep-oq-done', global: 'OUTPUT_QUIZ', file: 'output-quiz.js' },
+    api: { doneKey: 'prep-api-done', global: 'API_QUIZ', file: 'api-quiz.js' },
+    sql: { doneKey: 'prep-sql-done', global: 'SQL_DRILL', file: 'sql-drill.js' },
+    cli: { doneKey: 'prep-cli-done', global: 'CLI_QUIZ', file: 'cli-quiz.js' },
+  };
+  for (const [mode, e] of Object.entries(expect)) {
+    assert.ok(new RegExp(`\\b${mode}:\\s*\\{`).test(block), `QUIZ_MODES thiếu mode ${mode}`);
+    assert.ok(block.includes(`'${e.doneKey}'`), `QUIZ_MODES.${mode} thiếu doneKey ${e.doneKey}`);
+    assert.ok(block.includes(`window.${e.global}`), `QUIZ_MODES.${mode} chưa trỏ window.${e.global}`);
+    // bank thật load được để phiên ôn render đúng shape
+    const qs = loadWindow(e.file)[e.global];
+    assert.ok(Array.isArray(qs) && qs.length, `bank ${e.global} rỗng`);
+    for (const q of qs) assert.ok('id' in q && Array.isArray(q.options) &&
+      Number.isInteger(q.answer) && q.explain, `${e.global} ${q.id}: thiếu field cho review`);
+  }
+});
+
+test('review: hook ghi/xoá câu sai gắn đúng vào engine quiz + PREP_KEYS', () => {
+  // makeQuiz: đúng → clearWrong, sai → recordWrong
+  assert.ok(/store\.set\(cfg\.doneKey, d\); clearWrong\(cfg\.mode, q\.id\);/.test(APP),
+    'makeQuiz chưa clearWrong khi đúng');
+  assert.ok(/else recordWrong\(cfg\.mode, q\.id\);/.test(APP), 'makeQuiz chưa recordWrong khi sai');
+  // 3 mode makeQuiz phải khai báo mode
+  for (const mode of ['api', 'sql', 'cli']) {
+    assert.ok(new RegExp(`mode: '${mode}',\\s*\\n\\s*bodyId: '${mode}-body'`).test(APP),
+      `makeQuiz ${mode} thiếu khai báo mode`);
+  }
+  // Đoán output cũng ghi/xoá
+  assert.ok(/clearWrong\('output', q\.id\)/.test(APP) && /recordWrong\('output', q\.id\)/.test(APP),
+    'answerOutputQuiz chưa ghi/xoá câu sai');
+  // PREP_KEYS gồm prep-quiz-wrong để export/sync/reset
+  const pk = APP.match(/const PREP_KEYS = \[([\s\S]*?)\]/);
+  assert.ok(pk && pk[1].includes('prep-quiz-wrong'), 'PREP_KEYS thiếu prep-quiz-wrong');
+});
+
 test('star-questions: id duy nhất, đủ competency/q + 4 hints S/T/A/R', () => {
   const qs = loadWindow('star-questions.js').STAR_QUESTIONS;
   assert.ok(Array.isArray(qs) && qs.length >= 10, 'phải có ≥10 câu behavioral');

@@ -312,6 +312,10 @@
         <button class="think-mode" data-mode="sql">🗄️ SQL</button>
         <button class="think-mode" data-mode="cli">🖥️ CLI</button>
       </div>
+      <div class="think-group">
+        <span class="think-glabel">🔁 Ôn lại</span>
+        <button class="think-mode" data-mode="review">🔁 Câu sai <span id="review-count" class="think-badge" hidden></span></button>
+      </div>
     </div>
 
     <!-- Chế độ LẬP TRÌNH -->
@@ -381,6 +385,15 @@
         <h1>🖥️ CLI Quiz</h1>
         <p class="coding-intro">Trắc nghiệm câu lệnh hay dùng &amp; hay bị hỏi khi làm Backend: <b>git</b> (reset/revert/rebase/stash), <b>docker</b> (run/exec/logs/ps), <b>kubectl</b> (describe/rollout/apply), <b>redis-cli</b> (SCAN vs KEYS, SET EX, INCR), <b>psql</b> (\dt, EXPLAIN ANALYZE), <b>bash</b> (grep -r, tail -f, kill -9, chmod). Chọn đáp án để biết đúng/sai kèm <b>giải thích</b>.</p>
         <div id="cli-body"></div>
+      </div>
+    </div>
+
+    <!-- Chế độ ÔN CÂU SAI (gom câu trắc nghiệm đã chọn sai qua mọi mode) -->
+    <div id="think-review" hidden>
+      <div class="oq-wrap">
+        <h1>🔁 Ôn câu sai</h1>
+        <p class="coding-intro">Mọi câu trắc nghiệm bạn từng chọn <b>sai</b> (Đoán output · API/HTTP · SQL · CLI) được gom về đây thành một phiên ôn tập trung. Trả lời đúng ở lần ôn này thì câu đó <b>tự rời khỏi hàng đợi</b>; còn sai thì giữ lại để ôn tiếp lần sau — đúng tinh thần học từ lỗi.</p>
+        <div id="review-body"></div>
       </div>
     </div>
   </div>
