@@ -3448,7 +3448,7 @@ function initThink() {
   document.querySelectorAll('.think-mode').forEach(b => { b.onclick = () => setThinkMode(b.dataset.mode); });
   setThinkMode(thinkMode);
   if (!thinkInit) { renderCodingFilters(); renderCodingList(); renderIQ(); renderOutputQuiz(); renderDebugList(); renderApiQuiz(); renderSqlQuiz(); renderCliQuiz(); thinkInit = true; }
-  refreshReviewBadge();
+  refreshThinkBadges();
 }
 
 function setThinkMode(m) {
@@ -3464,6 +3464,7 @@ function setThinkMode(m) {
   document.getElementById('think-cli').hidden = m !== 'cli';
   document.getElementById('think-review').hidden = m !== 'review';
   if (m === 'review') renderReview();
+  refreshThinkBadges();
   // Quay lại mode IQ khi đang dở Bài Test (có tính giờ) → khởi động lại đồng hồ
   // (switchView/đổi mode đã clearInterval; tickIQTest tính theo startMs nên không lệch, và tự nộp nếu hết giờ).
   if (m === 'iq' && iqState && iqState.mode === 'test') {
@@ -3539,6 +3540,7 @@ function answerOutputQuiz(i) {
     recordWrong('output', q.id);
   }
   logActivity();
+  refreshThinkBadges();
   const fb = document.getElementById('oq-fb');
   fb.hidden = false;
   fb.innerHTML = `<div class="oq-verdict ${correct ? 'ok' : 'no'}">${correct ? '✅ Chính xác!' : '❌ Chưa đúng'}</div>
@@ -3608,6 +3610,7 @@ function makeQuiz(cfg) {
     if (correct) { right++; const d = doneSet(); d[q.id] = true; store.set(cfg.doneKey, d); clearWrong(cfg.mode, q.id); }
     else recordWrong(cfg.mode, q.id);
     logActivity();
+    refreshThinkBadges();
     const fb = el.querySelector('.oq-fb-box');
     fb.hidden = false;
     fb.innerHTML = `<div class="oq-verdict ${correct ? 'ok' : 'no'}">${correct ? '✅ Chính xác!' : '❌ Chưa đúng'}</div>
@@ -3745,6 +3748,30 @@ function refreshReviewBadge() {
   el.textContent = n ? String(n) : '';
 }
 
+/** Độ phủ của một mode quiz: {done, total} — chỉ đếm id còn tồn tại trong bank. */
+function coverageOf(mode) {
+  const m = QUIZ_MODES[mode];
+  if (!m) return { done: 0, total: 0 };
+  const ids = new Set((m.data() || []).map(q => String(q.id)));
+  const total = ids.size;
+  const done = Object.keys(store.get(m.doneKey, {})).filter(id => ids.has(String(id))).length;
+  return { done, total };
+}
+
+/** Hiện "đã đúng/tổng" trên nút mỗi mode trắc nghiệm; đầy đủ thì thêm ✓. */
+function refreshCoverageBadges() {
+  document.querySelectorAll('.think-cov[data-cov]').forEach(el => {
+    const { done, total } = coverageOf(el.dataset.cov);
+    el.hidden = total === 0;
+    if (!total) return;
+    el.textContent = done >= total ? `✓${done}/${total}` : `${done}/${total}`;
+    el.classList.toggle('cov-full', done >= total);
+  });
+}
+
+/** Gộp cập nhật mọi badge của tab Tư duy (câu sai + độ phủ). */
+function refreshThinkBadges() { refreshReviewBadge(); refreshCoverageBadges(); }
+
 function renderReview() {
   refreshReviewBadge();
   const el = document.getElementById('review-body');
@@ -3825,7 +3852,7 @@ function answerReview(i) {
     recordWrong(item.mode, q.id);           // vẫn sai → giữ lại (làm mới timestamp)
   }
   logActivity();
-  refreshReviewBadge();
+  refreshThinkBadges();
   const fb = document.getElementById('review-fb');
   fb.hidden = false;
   fb.innerHTML = `<div class="oq-verdict ${correct ? 'ok' : 'no'}">${correct ? '✅ Chính xác! Câu này rời hàng đợi.' : '❌ Chưa đúng — giữ lại ôn tiếp.'}</div>

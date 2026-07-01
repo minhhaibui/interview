@@ -335,6 +335,18 @@ test('wiring: chế độ 🔁 Ôn câu sai đủ HTML + toggle + badge + render
   assert.ok(/startMixed\(10\)/.test(APP), 'nút trộn nhanh chưa gọi startMixed(10)');
 });
 
+test('wiring: badge độ phủ (đã đúng/tổng) trên nút mode quiz', () => {
+  for (const mode of ['output', 'api', 'sql', 'cli']) {
+    assert.ok(new RegExp(`data-cov="${mode}"`).test(HTML), `thiếu badge độ phủ cho ${mode}`);
+  }
+  assert.ok(/function coverageOf\b/.test(APP) && /function refreshCoverageBadges\b/.test(APP),
+    'thiếu coverageOf/refreshCoverageBadges');
+  assert.ok(/function refreshThinkBadges\b/.test(APP), 'thiếu refreshThinkBadges gộp badge');
+  // phải cập nhật realtime khi chấm ở engine + review + đổi mode
+  assert.ok((APP.match(/refreshThinkBadges\(\)/g) || []).length >= 4,
+    'refreshThinkBadges chưa được gọi đủ chỗ (initThink/setThinkMode/makeQuiz/output/review)');
+});
+
 test('review: QUIZ_MODES gồm đúng 4 mode, doneKey & bank khớp thực tế', () => {
   const m = APP.match(/const QUIZ_MODES = \{([\s\S]*?)\n\};/);
   assert.ok(m, 'không tìm thấy QUIZ_MODES');

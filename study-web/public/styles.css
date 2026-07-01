@@ -816,6 +816,14 @@ body.light .plan-config input[type=date] { color-scheme: light; }
   font-size: 11px; font-weight: 800; line-height: 18px; text-align: center; vertical-align: middle;
 }
 .think-mode.active .think-badge { background: rgba(255, 255, 255, .28); }
+.think-cov {
+  display: inline-block; margin-left: 4px; padding: 0 6px;
+  border-radius: 999px; font-size: 11px; font-weight: 700; line-height: 17px;
+  background: var(--card-bg, rgba(127, 127, 127, .14)); color: var(--muted);
+  border: 1px solid var(--border, rgba(127, 127, 127, .28)); vertical-align: middle;
+}
+.think-cov.cov-full { background: var(--good, #46a758); color: #fff; border-color: transparent; }
+.think-mode.active .think-cov { background: rgba(255, 255, 255, .22); color: #fff; border-color: transparent; }
 .review-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
 .review-chip {
   font-size: 13px; color: var(--muted); background: var(--card-bg, rgba(127, 127, 127, .1));
