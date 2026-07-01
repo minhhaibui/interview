@@ -327,4 +327,33 @@ window.DESIGN_DRILLS = [
       'Trade-off độ chi tiết ô: ô lớn ít ô phải quét nhưng nhiều ứng viên cần lọc; ô nhỏ ngược lại — chọn theo mật độ.',
     ],
   },
+  {
+    id: 'notification',
+    title: 'Hệ thống Thông báo (Notification Service)',
+    company: 'Phổ biến · nền tảng',
+    difficulty: 'TB',
+    scenario: 'Thiết kế dịch vụ gửi thông báo đa kênh (push, email, SMS, in-app) cho nhiều service nội bộ gọi tới. Quy mô hàng chục triệu thông báo/ngày, có loại gấp (OTP) và loại hàng loạt (marketing), cần đáng tin cậy và không gửi trùng.',
+    focus: [
+      'Nhiều kênh (push/email/SMS/in-app) — trừu tượng hoá provider adapter',
+      'Hàng đợi để tách gửi khỏi request gọi đến; ưu tiên OTP vs marketing',
+      'Độ tin cậy: retry, DLQ, chống gửi trùng (idempotency/dedup), tôn trọng tuỳ chọn người dùng',
+    ],
+    rubric: [
+      { k: 'req', label: 'Làm rõ yêu cầu (kênh nào, mức ưu tiên, đảm bảo gửi, chống trùng, opt-out)', hint: 'Hỏi: at-least-once hay exactly-once? OTP có SLA riêng? có template & đa ngôn ngữ? người dùng tắt kênh được không?', w: 12 },
+      { k: 'est', label: 'Ước lượng (QPS gửi, fanout, tỉ lệ theo kênh, dung lượng lưu trạng thái)', hint: '30M/ngày ≈ 350/s trung bình, đỉnh gấp nhiều lần khi gửi chiến dịch → phải đệm bằng queue.', w: 12 },
+      { k: 'api', label: 'API: POST /notify (type, recipients, template, data, priority) + quản lý preferences/subscription', hint: 'Tách API nhận yêu cầu (nhanh, chỉ enqueue) khỏi việc gửi thật (async worker).', w: 10 },
+      { k: 'arch', label: 'Kiến trúc: queue + worker theo kênh + provider adapter', hint: 'Ingest → validate/dedup → hàng đợi ưu tiên (OTP queue riêng) → worker mỗi kênh → adapter (FCM/APNs, SES/SendGrid, Twilio). Tách hàng đợi theo priority để OTP không kẹt sau batch marketing.', w: 20 },
+      { k: 'reliability', label: 'Độ tin cậy: retry có backoff, DLQ, idempotency key chống gửi trùng', hint: 'At-least-once + dedup bằng idempotency key (hash type+recipient+nội dung trong TTL). Provider lỗi → retry exponential backoff, quá số lần → DLQ + cảnh báo.', w: 20 },
+      { k: 'data', label: 'Data model: bản ghi notification + trạng thái (queued/sent/failed) + user preferences', hint: 'Lưu trạng thái để truy vết & thử lại; bảng preferences để lọc kênh người dùng đã tắt; in-app dùng store riêng cho badge/đọc-chưa đọc.', w: 12 },
+      { k: 'trade', label: 'Trade-offs & bottleneck (rate limit theo provider, ordering, template rendering, fan-out lớn)', hint: 'Tôn trọng rate limit từng provider (token bucket per provider); chiến dịch fan-out lớn → chia batch + scheduler; ordering thường không cần tuyệt đối trừ vài ca.', w: 14 },
+    ],
+    keyPoints: [
+      'Tách API nhận yêu cầu (chỉ validate + enqueue, trả nhanh) khỏi worker gửi thật — chịu tải đỉnh bằng hàng đợi.',
+      'Dùng hàng đợi ƯU TIÊN riêng cho loại gấp (OTP) để không kẹt sau chiến dịch marketing hàng loạt.',
+      'Provider adapter chung một interface (send) cho FCM/APNs, email (SES/SendGrid), SMS (Twilio) → dễ thêm kênh/đổi nhà cung cấp.',
+      'Độ tin cậy: at-least-once + idempotency key để dedup; retry exponential backoff; quá hạn đẩy vào DLQ + alert.',
+      'Tôn trọng preferences người dùng (đã opt-out kênh nào) và rate limit của từng provider (token bucket per provider).',
+      'Lưu trạng thái từng notification (queued/sent/failed) để truy vết, báo cáo tỉ lệ gửi và thử lại có kiểm soát.',
+    ],
+  },
 ];
