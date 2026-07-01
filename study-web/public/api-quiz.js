@@ -215,4 +215,60 @@ window.API_QUIZ = [
     options: ['X-Forwarded-For', 'Content-Type', 'ETag', 'Retry-After (số giây hoặc mốc thời gian nên chờ trước khi gọi lại)'], answer: 3,
     explain: 'Retry-After cho client biết nên đợi bao lâu trước khi retry (giá trị là số giây hoặc HTTP-date). Client lịch sự nên tôn trọng nó kết hợp exponential backoff. Thường đi kèm 429 (rate limit) và 503 (tạm quá tải/bảo trì).',
   },
+  {
+    id: 'api-preflight', topic: 'CORS',
+    q: 'Khi nào trình duyệt gửi request "preflight" OPTIONS trước request thật (CORS)?',
+    options: [
+      'Với mọi request cross-origin, không có ngoại lệ',
+      'Chỉ khi request là "non-simple" — vd method PUT/DELETE, hoặc có header tuỳ chỉnh / Content-Type application/json',
+      'Chỉ với request GET',
+      'Chỉ khi server bật HTTPS',
+    ], answer: 1,
+    explain: 'Request "simple" (GET/POST/HEAD với vài Content-Type cơ bản như form/text, không header lạ) KHÔNG cần preflight. Request "non-simple" (PUT/DELETE/PATCH, có header tuỳ chỉnh, hoặc Content-Type: application/json) khiến trình duyệt gửi OPTIONS trước để hỏi server có cho phép không (Access-Control-Allow-*).',
+  },
+  {
+    id: 'api-jwt-stateless', topic: 'Auth',
+    q: 'Nhược điểm chính của JWT (JSON Web Token) so với session lưu ở server là gì?',
+    options: [
+      'JWT không thể mang thông tin user',
+      'JWT khó THU HỒI trước khi hết hạn vì server không lưu trạng thái',
+      'JWT bắt buộc phải dùng cookie',
+      'JWT không dùng được với HTTPS',
+    ], answer: 1,
+    explain: 'JWT là stateless & self-contained: server chỉ verify chữ ký, không tra DB. Ưu điểm là scale tốt, nhưng vì server không lưu, muốn THU HỒI (logout, ban) một token trước hạn thì phải thêm cơ chế (blacklist, token version, hạn ngắn + refresh token). Session server-side thì xoá là mất hiệu lực ngay.',
+  },
+  {
+    id: 'api-202-async', topic: 'Status code',
+    q: 'Client gửi yêu cầu xử lý nặng (vd xuất báo cáo), server nhận và xử lý NỀN bất đồng bộ. Status code phù hợp?',
+    options: ['200 OK', '201 Created', '202 Accepted', '204 No Content'], answer: 2,
+    explain: '202 Accepted: yêu cầu đã được TIẾP NHẬN nhưng CHƯA xử lý xong. Thường trả kèm một URL/id để client poll trạng thái (vd GET /jobs/{id}) hoặc dùng webhook báo khi xong. Tránh giữ kết nối chờ tác vụ dài.',
+  },
+  {
+    id: 'api-406-415', topic: 'Content negotiation',
+    q: 'Client gửi `Content-Type: application/xml` nhưng API chỉ nhận JSON. Status code đúng nhất?',
+    options: [
+      '400 Bad Request',
+      '406 Not Acceptable',
+      '415 Unsupported Media Type',
+      '422 Unprocessable Entity',
+    ], answer: 2,
+    explain: '415 Unsupported Media Type: server từ chối vì ĐỊNH DẠNG BODY (Content-Type) không được hỗ trợ. Phân biệt: 406 Not Acceptable là khi server không tạo được định dạng client YÊU CẦU qua header Accept (chiều response); 422 là body đúng định dạng nhưng sai nghiệp vụ.',
+  },
+  {
+    id: 'api-206-range', topic: 'Caching / streaming',
+    q: 'Trình phát video tua tới giữa clip bằng header `Range: bytes=1000000-`. Server trả status nào khi gửi một phần?',
+    options: ['200 OK', '206 Partial Content', '204 No Content', '302 Found'], answer: 1,
+    explain: '206 Partial Content: server hỗ trợ Range request và trả về ĐÚNG khúc byte được yêu cầu (kèm header Content-Range). Cực quan trọng cho stream video/audio và resume tải file. Server báo hỗ trợ qua Accept-Ranges: bytes.',
+  },
+  {
+    id: 'api-idempotent-methods', topic: 'HTTP methods',
+    q: 'Nhóm method nào SAU đây đều idempotent (gọi nhiều lần cho cùng kết quả trạng thái)?',
+    options: [
+      'GET, PUT, DELETE',
+      'POST, PATCH, GET',
+      'POST, PUT, DELETE',
+      'PATCH, POST, GET',
+    ], answer: 0,
+    explain: 'GET (chỉ đọc), PUT (ghi đè toàn bộ về cùng trạng thái) và DELETE (xoá — gọi lại vẫn "đã xoá") đều IDEMPOTENT. POST thường KHÔNG (tạo mới mỗi lần → cần idempotency key để an toàn khi retry). PATCH có thể idempotent hoặc không, tuỳ nội dung sửa.',
+  },
 ];
