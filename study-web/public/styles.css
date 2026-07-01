@@ -1314,6 +1314,9 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 .tk-track { height: 9px; background: var(--bg3); border-radius: 5px; overflow: hidden; }
 .tk-fill { height: 100%; background: var(--accent); border-radius: 5px; transition: width .3s; }
 .tk-val { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tk-review { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; }
+.tk-review-ok { color: var(--good, #46a758); font-weight: 600; }
 @media (max-width: 560px) { .tk-row { grid-template-columns: 96px 1fr auto; gap: 6px; font-size: 12px; } .tk-label { white-space: normal; } }
 
 /* 🌟 STAR Builder — soạn câu trả lời phỏng vấn hành vi */

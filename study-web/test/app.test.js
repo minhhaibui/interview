@@ -335,6 +335,15 @@ test('wiring: chế độ 🔁 Ôn câu sai đủ HTML + toggle + badge + render
   assert.ok(/startMixed\(10\)/.test(APP), 'nút trộn nhanh chưa gọi startMixed(10)');
 });
 
+test('wiring: Dashboard (renderThinkStats) surface số câu sai + CTA ôn ngay', () => {
+  const m = APP.match(/function renderThinkStats\([\s\S]*?\n}/);
+  assert.ok(m, 'không tìm thấy renderThinkStats');
+  const fn = m[0];
+  assert.ok(/wrongTotal\(\)/.test(fn), 'renderThinkStats chưa đọc wrongTotal()');
+  assert.ok(/id="tk-review-go"/.test(fn), 'thiếu nút CTA tk-review-go');
+  assert.ok(/goToQuizReview/.test(fn), 'CTA chưa nối goToQuizReview');
+});
+
 test('wiring: badge độ phủ (đã đúng/tổng) trên nút mode quiz', () => {
   for (const mode of ['output', 'api', 'sql', 'cli']) {
     assert.ok(new RegExp(`data-cov="${mode}"`).test(HTML), `thiếu badge độ phủ cho ${mode}`);

@@ -3193,6 +3193,17 @@ function renderThinkStats() {
     `<div class="tk-row"><span class="tk-label">🧩 IQ ước lượng</span>
       <div class="tk-track"><div class="tk-fill" style="width:${iqPctBar}%"></div></div>
       <span class="tk-val">${iqBest || '—'}</span></div>`;
+  // Câu trắc nghiệm đã chọn sai (gom từ output/API/SQL/CLI) → CTA ôn lại
+  const wrongN = wrongTotal();
+  const cta = document.createElement('div');
+  cta.className = 'tk-review';
+  cta.innerHTML = wrongN
+    ? `<span>🔁 <b>${wrongN}</b> câu trắc nghiệm cần ôn lại</span>
+       <button id="tk-review-go" class="dg-go dg-link">Ôn ngay →</button>`
+    : `<span class="tk-review-ok">✅ Không còn câu trắc nghiệm nào đang sai — giỏi lắm!</span>`;
+  el.appendChild(cta);
+  const goBtn = document.getElementById('tk-review-go');
+  if (goBtn) goBtn.onclick = goToQuizReview;
 }
 
 function computeReadiness() {
