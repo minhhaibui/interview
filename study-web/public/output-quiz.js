@@ -153,4 +153,40 @@ window.OUTPUT_QUIZ = [
     options: ['1,2,3', '1,NaN,NaN', 'NaN,NaN,NaN', '1,2,NaN'], answer: 1,
     explain: 'map gọi callback với (value, index): parseInt("1", 0) → radix 0 ⇒ coi như 10 → 1; parseInt("2", 1) → radix 1 không hợp lệ → NaN; parseInt("3", 2) → "3" không hợp lệ trong cơ số 2 → NaN. Bẫy kinh điển: đừng truyền thẳng parseInt vào map, hãy dùng Number hoặc (x) => parseInt(x, 10).',
   },
+  {
+    id: 'oq-timer-order', topic: 'Event loop / timer',
+    code: `setTimeout(() => console.log('a'), 20);\nsetTimeout(() => console.log('b'), 10);\nconsole.log('c');`,
+    options: ['c\nb\na', 'c\na\nb', 'a\nb\nc', 'b\na\nc'], answer: 0,
+    explain: 'Đồng bộ chạy trước → in "c". Hai setTimeout xếp theo THỜI GIAN chờ, không theo thứ tự viết: 10ms (b) tới trước 20ms (a). → c b a.',
+  },
+  {
+    id: 'oq-this-unbound', topic: 'this / mất ngữ cảnh',
+    code: `const obj = {\n  val: 42,\n  getVal() { return this.val; },\n};\nconst fn = obj.getVal;\nconsole.log(fn());`,
+    options: ['42', 'undefined', 'NaN', 'sẽ ném lỗi'], answer: 1,
+    explain: 'Gán `obj.getVal` vào biến rồi gọi `fn()` là gọi HÀM THƯỜNG → `this` không còn là `obj` (ở sloppy mode là global) nên `this.val` = undefined. Muốn giữ ngữ cảnh: `obj.getVal()` hoặc `obj.getVal.bind(obj)`.',
+  },
+  {
+    id: 'oq-obj-plus', topic: 'Ép kiểu object',
+    code: `console.log([] + {});`,
+    options: ['[object Object]', '0', '{}', 'undefined'], answer: 0,
+    explain: 'Toán tử `+` ép cả hai về primitive/string: `[]` → "" và `{}` → "[object Object]" → nối lại thành "[object Object]". Bẫy coercion kinh điển của JS.',
+  },
+  {
+    id: 'oq-await-microtask', topic: 'async/await + microtask',
+    code: `async function f() {\n  console.log('a');\n  await Promise.resolve();\n  console.log('b');\n}\nf();\nPromise.resolve().then(() => console.log('c'));`,
+    options: ['a\nb\nc', 'a\nc\nb', 'c\na\nb', 'b\na\nc'], answer: 0,
+    explain: '`f()` in "a" rồi gặp `await` → phần sau (in "b") thành microtask ĐẦU TIÊN. Sau đó dòng `.then(c)` xếp microtask THỨ HAI. Hàng microtask chạy theo thứ tự xếp → b trước c. → a b c.',
+  },
+  {
+    id: 'oq-optional-chain', topic: 'Optional chaining + ??',
+    code: `const user = { profile: null };\nconsole.log(user.profile?.name ?? 'guest');`,
+    options: ['guest', 'null', 'undefined', 'sẽ ném lỗi'], answer: 0,
+    explain: '`user.profile` là null → `?.name` ngắn mạch trả về undefined (không ném lỗi). `undefined ?? "guest"` → "guest". Kết hợp `?.` và `??` để đọc an toàn dữ liệu lồng nhau.',
+  },
+  {
+    id: 'oq-typeof-typeof', topic: 'typeof',
+    code: `console.log(typeof typeof 1);`,
+    options: ['number', 'string', 'undefined', 'object'], answer: 1,
+    explain: '`typeof` luôn trả về một CHUỖI. `typeof 1` → "number"; rồi `typeof "number"` → "string". Vì vậy `typeof typeof <bất kỳ>` luôn là "string".',
+  },
 ];
