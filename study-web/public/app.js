@@ -567,6 +567,39 @@ function todayTipIdx() {
 function tipOfDay() { return STUDY_TIPS[todayTipIdx()]; }
 let tipIdx = 0; // mẹo đang hiển thị (nút 🔄 xoay qua mẹo kế)
 
+/** Số ngày còn lại tới dateStr ('YYYY-MM-DD') tính theo mốc nửa đêm địa phương. Pure → dễ test. */
+function daysUntil(dateStr, now = Date.now()) {
+  if (!dateStr) return null;
+  const t = new Date(dateStr + 'T00:00:00');
+  if (isNaN(t.getTime())) return null;
+  const today = new Date(now); today.setHours(0, 0, 0, 0);
+  return Math.round((t.getTime() - today.getTime()) / 86400000);
+}
+
+/** Card đếm ngược ngày phỏng vấn cho tab Hôm nay (đặt/đổi/xoá ngày). */
+function interviewCountdownHtml() {
+  const date = store.get('prep-interview-date', '');
+  const d = daysUntil(date);
+  if (!date || d == null) {
+    return `<div class="td-countdown td-cd-empty">
+      <span class="td-cd-ic">🎯</span>
+      <div class="td-cd-body"><b>Sắp có buổi phỏng vấn?</b> Đặt ngày để đếm ngược & giữ động lực nước rút.
+        <div class="td-cd-set"><input type="date" id="td-cd-input" aria-label="Ngày phỏng vấn"><button id="td-cd-save" class="dg-go dg-link">Đặt ngày</button></div>
+      </div></div>`;
+  }
+  let msg, cls;
+  if (d > 7) { msg = `Còn <b>${d}</b> ngày đến buổi phỏng vấn — cứ ôn đều mỗi ngày là ổn.`; cls = ''; }
+  else if (d > 1) { msg = `⏰ Chỉ còn <b>${d}</b> ngày — vào chế độ nước rút: 🔁 ôn câu sai + 🎯 mock mỗi ngày!`; cls = 'td-cd-soon'; }
+  else if (d === 1) { msg = `🔥 <b>Ngày mai</b> phỏng vấn! Ôn nhẹ điểm yếu, chuẩn bị câu hỏi ngược, ngủ đủ giấc.`; cls = 'td-cd-soon'; }
+  else if (d === 0) { msg = `💪 <b>Hôm nay</b> là ngày phỏng vấn! Hít thở sâu, tự tin — bạn chuẩn bị kỹ rồi!`; cls = 'td-cd-today'; }
+  else { msg = `Buổi phỏng vấn đặt ngày <b>${escHtml(date)}</b> đã qua. Chúc bạn kết quả tốt! 🍀`; cls = 'td-cd-past'; }
+  return `<div class="td-countdown ${cls}">
+    <span class="td-cd-ic">🎯</span>
+    <div class="td-cd-body">${msg}</div>
+    <button id="td-cd-clear" class="td-cd-clear" title="Đổi / xoá ngày">✕</button>
+  </div>`;
+}
+
 async function renderToday() {
   const body = document.getElementById('today-body');
   body.innerHTML = '<p style="color:var(--muted)">Đang tải buổi ôn hôm nay…</p>';
@@ -626,6 +659,8 @@ async function renderToday() {
       </div>
     </div>
 
+    ${interviewCountdownHtml()}
+
     <div class="td-tip"><span class="td-tip-ic">💡</span><span class="td-tip-msg"><b>Mẹo hôm nay:</b> <span id="td-tip-text">${escHtml(tipOfDay())}</span></span><button id="td-tip-next" class="td-tip-next" title="Xem mẹo khác">🔄</button></div>
 
     <h2 class="td-h2">📋 Buổi ôn hôm nay</h2>
@@ -651,6 +686,15 @@ async function renderToday() {
     renderToday();
   };
   tasks.forEach(t => document.getElementById(t.id)?.addEventListener('click', t.go));
+
+  // Đếm ngược ngày phỏng vấn: đặt / xoá
+  document.getElementById('td-cd-save')?.addEventListener('click', () => {
+    const v = document.getElementById('td-cd-input')?.value;
+    if (v) { store.set('prep-interview-date', v); renderToday(); }
+  });
+  document.getElementById('td-cd-clear')?.addEventListener('click', () => {
+    store.set('prep-interview-date', ''); renderToday();
+  });
 
   // Nút 🔄 xoay qua mẹo kế tiếp (đọc hết kho mẹo, không chỉ mẹo của hôm nay)
   tipIdx = todayTipIdx();
@@ -2811,7 +2855,7 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-daily-goal', 'prep-badges-seen', 'prep-design-history', 'prep-design-draft',
   'prep-oq-done', 'prep-oq-best', 'prep-debug-solved', 'prep-debug-code',
   'prep-api-done', 'prep-api-best', 'prep-sql-done', 'prep-sql-best', 'prep-cli-done', 'prep-cli-best',
-  'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong'];
+  'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */

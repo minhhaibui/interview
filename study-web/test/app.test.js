@@ -335,6 +335,26 @@ test('wiring: chế độ 🔁 Ôn câu sai đủ HTML + toggle + badge + render
   assert.ok(/startMixed\(10\)/.test(APP), 'nút trộn nhanh chưa gọi startMixed(10)');
 });
 
+test('đếm ngược PV: daysUntil tính đúng + card render + PREP_KEYS', () => {
+  const fnM = APP.match(/function daysUntil\(dateStr, now = Date\.now\(\)\) \{[\s\S]*?\n}/);
+  assert.ok(fnM, 'thiếu hàm daysUntil');
+  const daysUntil = new Function(`${fnM[0]}\nreturn daysUntil;`)();
+  const now = new Date('2026-07-01T00:00:00').getTime();
+  assert.strictEqual(daysUntil('2026-07-10', now), 9, 'còn 9 ngày');
+  assert.strictEqual(daysUntil('2026-07-01', now), 0, 'cùng ngày = 0');
+  assert.strictEqual(daysUntil('2026-06-28', now), -3, 'đã qua = âm');
+  assert.strictEqual(daysUntil('', now), null, 'rỗng → null');
+  assert.strictEqual(daysUntil('không-phải-ngày', now), null, 'ngày sai → null');
+  // render + wiring
+  assert.ok(/function interviewCountdownHtml\b/.test(APP), 'thiếu interviewCountdownHtml');
+  assert.ok(/\$\{interviewCountdownHtml\(\)\}/.test(APP), 'renderToday chưa chèn card đếm ngược');
+  assert.ok(/getElementById\('td-cd-save'\)/.test(APP) && /getElementById\('td-cd-clear'\)/.test(APP),
+    'chưa wire nút đặt/xoá ngày');
+  assert.ok(/prep-interview-date/.test(APP), 'chưa dùng key prep-interview-date');
+  const pk = APP.match(/const PREP_KEYS = \[([\s\S]*?)\]/);
+  assert.ok(pk && pk[1].includes('prep-interview-date'), 'PREP_KEYS thiếu prep-interview-date');
+});
+
 test('wiring: phím số 1–9 chọn đáp án quiz khi đang làm, ngược lại chuyển tab', () => {
   assert.ok(/function quizVisibleOptions\b/.test(APP), 'thiếu helper quizVisibleOptions');
   // helper phải ràng buộc theo view-coding active + loại option trong mode ẩn
