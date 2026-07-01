@@ -328,6 +328,11 @@ test('wiring: chế độ 🔁 Ôn câu sai đủ HTML + toggle + badge + render
   assert.ok(/function renderReview\b/.test(APP) && /function startReview\b/.test(APP) &&
     /function answerReview\b/.test(APP) && /function finishReview\b/.test(APP), 'thiếu hàm engine review');
   assert.ok(/function goToQuizReview\b/.test(APP), 'thiếu goToQuizReview để mở từ tab Hôm nay');
+  // warm-up trộn nhanh: dùng chung engine review
+  assert.ok(/function buildMixedQueue\b/.test(APP) && /function startMixed\b/.test(APP),
+    'thiếu buildMixedQueue/startMixed cho phiên trộn nhanh');
+  assert.ok(/id="review-mix"/.test(APP), 'thiếu nút review-mix trong renderReview');
+  assert.ok(/startMixed\(10\)/.test(APP), 'nút trộn nhanh chưa gọi startMixed(10)');
 });
 
 test('review: QUIZ_MODES gồm đúng 4 mode, doneKey & bank khớp thực tế', () => {

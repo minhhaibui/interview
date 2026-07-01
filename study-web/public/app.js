@@ -3725,6 +3725,15 @@ function buildReviewQueue() {
   return out.sort(() => Math.random() - 0.5);
 }
 
+/** Bốc ngẫu nhiên tối đa n câu bất kỳ trên cả 4 mode → phiên warm-up trộn. */
+function buildMixedQueue(n) {
+  const all = [];
+  Object.keys(QUIZ_MODES).forEach(mode => {
+    (QUIZ_MODES[mode].data() || []).forEach(q => all.push({ mode, q }));
+  });
+  return all.sort(() => Math.random() - 0.5).slice(0, Math.max(1, n));
+}
+
 let reviewQueue = [], reviewIdx = 0, reviewRight = 0;
 
 /** Cập nhật badge số câu sai trên nút mode (gọi sau mỗi lần chấm). */
@@ -3740,11 +3749,15 @@ function renderReview() {
   refreshReviewBadge();
   const el = document.getElementById('review-body');
   if (!el) return;
+  // Nút warm-up trộn ngẫu nhiên — luôn hiện để mode này hữu ích cả khi chưa có câu sai.
+  const mixBtn = '<button id="review-mix" class="dg-go dg-link">🎲 Ôn trộn nhanh 10 câu (mọi mode)</button>';
   const q = buildReviewQueue();
   if (!q.length) {
     el.innerHTML = `<div class="oq-start review-empty">
       <p>🎉 Chưa có câu trắc nghiệm nào đang sai. Làm các quiz <b>Đoán output · API · SQL · CLI</b> — câu nào chọn sai sẽ được gom về đây để ôn lại cho nhớ.</p>
+      <div class="review-actions">${mixBtn}</div>
     </div>`;
+    document.getElementById('review-mix').onclick = () => startMixed(10);
     return;
   }
   // đếm theo mode để hiện phân bố
@@ -3755,13 +3768,25 @@ function renderReview() {
     <div class="oq-start">
       <p>Đang có <b>${q.length}</b> câu cần ôn lại.</p>
       <div class="review-chips">${chips}</div>
-      <button id="review-go" class="dg-go">▶ Ôn ngay (${q.length} câu, trộn thứ tự)</button>
+      <div class="review-actions">
+        <button id="review-go" class="dg-go">▶ Ôn ngay (${q.length} câu, trộn thứ tự)</button>
+        ${mixBtn}
+      </div>
     </div>`;
   document.getElementById('review-go').onclick = startReview;
+  document.getElementById('review-mix').onclick = () => startMixed(10);
 }
 
 function startReview() {
   reviewQueue = buildReviewQueue();
+  reviewIdx = 0; reviewRight = 0;
+  if (!reviewQueue.length) return renderReview();
+  showReview();
+}
+
+/** Phiên warm-up: n câu bất kỳ trộn mọi mode (dùng chung engine review). */
+function startMixed(n) {
+  reviewQueue = buildMixedQueue(n);
   reviewIdx = 0; reviewRight = 0;
   if (!reviewQueue.length) return renderReview();
   showReview();
