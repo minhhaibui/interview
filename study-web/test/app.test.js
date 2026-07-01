@@ -726,10 +726,31 @@ test('wiring: câu hỏi ngược render trong tab Phỏng vấn tổng hợp', 
   assert.ok(/\$\{reverseQuestionsHtml\(\)\}/.test(APP), 'renderCompany chưa chèn reverseQuestionsHtml()');
 });
 
+test('english-phrases: nhóm có id/group/icon + mỗi item đủ en & vi', () => {
+  const groups = loadWindow('english-phrases.js').ENGLISH_PHRASES;
+  assert.ok(Array.isArray(groups) && groups.length >= 4, 'phải có ≥4 nhóm mẫu câu');
+  const ids = groups.map(g => g.id);
+  assert.strictEqual(new Set(ids).size, ids.length, 'id nhóm trùng');
+  for (const g of groups) {
+    assert.ok(g.id && g.group && g.icon, `nhóm ${g.id} thiếu field`);
+    assert.ok(Array.isArray(g.items) && g.items.length >= 2, `nhóm ${g.id}: <2 câu`);
+    for (const it of g.items) assert.ok(it.en && it.vi, `nhóm ${g.id}: item thiếu en/vi`);
+  }
+});
+
+test('wiring: mẫu câu tiếng Anh render trong tab STAR', () => {
+  assert.ok(HTML.includes('src="english-phrases.js"'), 'index.html thiếu script english-phrases.js');
+  assert.ok(HTML.indexOf('src="english-phrases.js"') < HTML.indexOf('src="app.js"'),
+    'english-phrases.js phải nạp trước app.js');
+  assert.ok(/function englishPhrasesHtml\b/.test(APP), 'thiếu hàm englishPhrasesHtml');
+  assert.ok(/window\.ENGLISH_PHRASES/.test(APP), 'app.js chưa đọc window.ENGLISH_PHRASES');
+  assert.ok(/\$\{englishPhrasesHtml\(\)\}/.test(APP), 'renderStarList chưa chèn englishPhrasesHtml()');
+});
+
 test('script đủ: index.html nạp mọi file dữ liệu trước app.js', () => {
   for (const f of ['coding-problems.js', 'iq-questions.js', 'english-questions.js',
     'situational-questions.js', 'design-drills.js', 'api-quiz.js', 'sql-drill.js', 'cli-quiz.js',
-    'reverse-questions.js', 'app.js']) {
+    'reverse-questions.js', 'english-phrases.js', 'app.js']) {
     assert.ok(HTML.includes(`src="${f}"`), `index.html thiếu <script src="${f}">`);
   }
   // app.js phải nạp SAU các file dữ liệu

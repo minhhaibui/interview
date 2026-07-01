@@ -1091,6 +1091,9 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 .rq-list { margin: 4px 0 12px; padding-left: 20px; }
 .rq-list li { margin-bottom: 12px; line-height: 1.5; }
 .rq-why { display: block; color: var(--muted); font-size: 12.5px; margin-top: 3px; }
+.ep-en { display: block; font-style: italic; }
+.ep-vi { display: block; color: var(--muted); font-size: 12.5px; margin-top: 3px; }
+.ep-wrap { margin-top: 26px; }
 .iv-inter, .iv-result { text-align: center; background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 30px 24px; }
 .iv-check { font-size: 46px; }
 .iv-verdict { margin: 6px 0 4px; }

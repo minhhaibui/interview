@@ -3946,8 +3946,28 @@ function renderStarList() {
     <h1>🌟 STAR Builder — luyện câu trả lời phỏng vấn hành vi</h1>
     <p class="coding-intro">Câu hỏi behavioral ("Kể về một lần…") hầu như buổi phỏng vấn nào cũng có. Soạn sẵn câu trả lời theo khung <b>STAR</b>: <b>S</b>ituation (bối cảnh) · <b>T</b>ask (nhiệm vụ) · <b>A</b>ction (hành động của BẠN) · <b>R</b>esult (kết quả, nên có số). Soạn rồi <b>tự chấm theo checklist</b> hoặc nhờ <b>Claude góp ý</b> (cần API key). Nháp tự lưu để bạn xây dần "kho chuyện" của mình.</p>
     <p class="star-count">📚 Đã soạn hoàn chỉnh: <b>${builtN}/${qs.length}</b> câu chuyện.</p>
-    ${cards}`;
+    ${cards}
+    ${englishPhrasesHtml()}`;
   el.querySelectorAll('.star-q').forEach(b => b.onclick = () => openStar(b.dataset.id));
+}
+
+/** Accordion "Mẫu câu tiếng Anh khi phỏng vấn" — tham khảo, hiển thị cuối danh sách STAR. */
+function englishPhrasesHtml() {
+  const groups = window.ENGLISH_PHRASES || [];
+  if (!groups.length) return '';
+  const cards = groups.map(g => {
+    const items = g.items.map(it =>
+      `<li><span class="ep-en">${escHtml(it.en)}</span><span class="ep-vi">🇻🇳 ${escHtml(it.vi)}</span></li>`).join('');
+    return `<details class="rq-group">
+      <summary>${g.icon} ${escHtml(g.group)} <span class="rq-n">${g.items.length}</span></summary>
+      <ul class="rq-list ep-list">${items}</ul>
+    </details>`;
+  }).join('');
+  return `<div class="rq-wrap ep-wrap">
+    <h3>🇬🇧 Mẫu câu tiếng Anh khi phỏng vấn</h3>
+    <p class="iq-note">Nếu phỏng vấn (một phần) bằng tiếng Anh: các mẫu câu tự nhiên để giới thiệu bản thân, kể chuyện STAR, mua thời gian suy nghĩ, làm rõ yêu cầu và kết thúc. Bấm từng nhóm để mở.</p>
+    ${cards}
+  </div>`;
 }
 
 function openStar(id) {
