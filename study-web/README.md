@@ -1,13 +1,45 @@
-# 📚 Study Web
+# 📚 Study Web — Ôn phỏng vấn Backend Node.js
 
-Web ôn phỏng vấn: đọc tài liệu, flashcards (SRS), luyện viết/nghe/nói tiếng Anh,
-luyện gõ code, mock interview, dashboard tiến độ. Tiến độ lưu trong `localStorage`.
-
-Tab **🔥 Hôm nay** gộp buổi ôn trong ngày (từ đến hạn, câu mock đã sai, ôn nhanh…),
-vòng tròn **mục tiêu/ngày**, **chuỗi ngày học** và **huy hiệu thành tích**.
+Web ôn luyện phỏng vấn Backend (Node.js · Database · Redis · Kafka · Docker · K8s ·
+System Design) — toàn bộ tiếng Việt, thuật ngữ giữ tiếng Anh. Tiến độ lưu trong
+`localStorage`, có thể **đồng bộ đa thiết bị** qua Firebase.
 
 Là **PWA**: cài như app trên điện thoại/desktop và **học offline** — `sw.js` cache
-app shell + `data/*.json`; `manifest.webmanifest` + `icon.svg` lo phần cài đặt.
+app shell + dữ liệu; `manifest.webmanifest` + `icon.svg` lo phần cài đặt.
+
+## Tính năng chính
+
+- **🔥 Hôm nay** — buổi ôn trong ngày (từ đến hạn SRS, câu đã sai, ôn nhanh…),
+  vòng tròn mục tiêu/ngày, chuỗi ngày học, huy hiệu, mẹo phỏng vấn xoay vòng.
+- **📚 Học** — đọc bộ tài liệu lộ trình 12 tuần + tìm kiếm toàn văn.
+- **🃏 Flashcards** — học từ vựng theo SRS (Leitner box), lọc theo tuần / đến hạn /
+  từ hay sai; kèm chế độ **test gõ từ** (hiện nghĩa Việt → gõ tiếng Anh).
+- **✍️ Luyện viết** — dịch từ, điền câu, nghe & gõ, đọc to (TTS + nhận diện giọng nói).
+- **⌨️ Luyện gõ code** — rèn phản xạ gõ, đo WPM.
+- **🧠 Tư duy** — 8 chế độ:
+  - 💻 **Lập trình** & 🐛 **Sửa bug** — viết/sửa code rồi **chạy test THẬT** trong trình duyệt.
+  - 🧩 **IQ**, 🔍 **Đoán output**, 📡 **API/HTTP**, 🗄️ **SQL**, 🖥️ **CLI** — trắc nghiệm có giải thích.
+  - 🔁 **Ôn câu sai** — gom mọi câu trắc nghiệm từng chọn sai (output/API/SQL/CLI) vào một
+    phiên ôn tập trung (đúng → rời hàng đợi); kèm 🎲 **Ôn trộn nhanh** bốc ngẫu nhiên mọi mode.
+  - Mỗi nút mode có **badge độ phủ** (đã đúng/tổng). Bấm **1–4** chọn đáp án, **Enter** sang câu tiếp.
+- **🏛️ Thiết kế hệ thống** — đề kinh điển + rubric 5 bước, tự chấm hoặc nhờ **AI chấm**.
+- **🎯 Mock interview** & **🏢 Phỏng vấn tổng hợp** — mô phỏng 4 vòng liên tiếp, kèm bộ
+  **💬 câu hỏi nên hỏi lại nhà tuyển dụng**.
+- **🌟 STAR Builder** — soạn câu trả lời behavioral theo khung STAR, tự chấm checklist +
+  AI góp ý; kèm **🇬🇧 mẫu câu tiếng Anh khi phỏng vấn**.
+- **📊 Tiến độ** — heatmap hoạt động, phân bố SRS, biểu đồ, và **Điểm sẵn sàng phỏng vấn**.
+- **☁️ Đồng bộ** đa thiết bị (Firebase Auth + Firestore, realtime).
+- Sáng/tối, **bảng phím tắt** (bấm `?`), onboarding lần đầu.
+
+## Kiểm thử
+
+Bộ test zero-dependency (chạy bằng `node:test`) kiểm toàn vẹn dữ liệu (id duy nhất,
+**chạy thật lời giải coding/bug/đoán-output**, rubric design tổng trọng số = 100…) và
+wiring tĩnh (tab ↔ view ↔ switchView, id `getElementById`, PREP_KEYS…):
+
+```bash
+node --test study-web/test/
+```
 
 ## Chạy local (đầy đủ, có backend đọc file)
 
