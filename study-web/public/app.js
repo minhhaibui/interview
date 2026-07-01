@@ -4829,6 +4829,14 @@ function quizVisibleOptions() {
   return [...coding.querySelectorAll('.oq-opt:not(:disabled)')].filter(b => !b.closest('[hidden]'));
 }
 
+/** Nút "Câu tiếp / Xem kết quả" đang hiện của quiz (để bấm Enter sang câu). */
+function quizNextButton() {
+  const coding = document.getElementById('view-coding');
+  if (!coding || !coding.classList.contains('active')) return null;
+  return [...coding.querySelectorAll('#oq-next, .oq-next-btn, #review-next')]
+    .find(b => !b.closest('[hidden]')) || null;
+}
+
 function initShortcuts() {
   const order = ['today', 'docs', 'flashcards', 'writing', 'code', 'coding', 'design', 'mock', 'company', 'star', 'plan', 'dashboard'];
   document.addEventListener('keydown', e => {
@@ -4848,6 +4856,10 @@ function initShortcuts() {
       e.preventDefault();
       switchView('docs');
       document.getElementById('sb-search').focus();
+    } else if (e.key === 'Enter') {
+      // Sau khi đã chấm một câu quiz → Enter sang câu tiếp (điều khiển quiz hoàn toàn bằng phím)
+      const next = quizNextButton();
+      if (next) { e.preventDefault(); next.click(); }
     } else if (e.key === '?') { e.preventDefault(); toggleShortcuts(); } // bảng phím tắt
   });
 }
@@ -5228,6 +5240,7 @@ const SHORTCUTS = [
   ] },
   { group: '📝 Trắc nghiệm (Tư duy)', items: [
     { keys: ['1', '…', '4'], desc: 'Chọn đáp án A–D khi đang có câu hỏi (thay cho chuyển tab)' },
+    { keys: ['Enter'], desc: 'Sang câu tiếp sau khi đã chấm' },
   ] },
   { group: '💡 Khác', items: [
     { keys: ['❓'], desc: 'Nút trên thanh công cụ — mở lại hướng dẫn' },
