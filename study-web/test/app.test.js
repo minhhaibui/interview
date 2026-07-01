@@ -335,6 +335,18 @@ test('wiring: chế độ 🔁 Ôn câu sai đủ HTML + toggle + badge + render
   assert.ok(/startMixed\(10\)/.test(APP), 'nút trộn nhanh chưa gọi startMixed(10)');
 });
 
+test('wiring: phím số 1–9 chọn đáp án quiz khi đang làm, ngược lại chuyển tab', () => {
+  assert.ok(/function quizVisibleOptions\b/.test(APP), 'thiếu helper quizVisibleOptions');
+  // helper phải ràng buộc theo view-coding active + loại option trong mode ẩn
+  const m = APP.match(/function quizVisibleOptions[\s\S]*?\n}/);
+  assert.ok(m && /view-coding/.test(m[0]) && /classList\.contains\('active'\)/.test(m[0]),
+    'quizVisibleOptions phải kiểm view-coding active');
+  assert.ok(/\[hidden\]/.test(m[0]), 'quizVisibleOptions phải loại option trong mode ẩn ([hidden])');
+  // handler global: nếu có option hiện thì click, else switchView
+  assert.ok(/const opts = quizVisibleOptions\(\);[\s\S]*?opts\[n - 1\]\.click\(\);[\s\S]*?switchView\(order\[n - 1\]\)/.test(APP),
+    'handler phím số chưa ưu tiên chọn đáp án trước khi chuyển tab');
+});
+
 test('wiring: Dashboard (renderThinkStats) surface số câu sai + CTA ôn ngay', () => {
   const m = APP.match(/function renderThinkStats\([\s\S]*?\n}/);
   assert.ok(m, 'không tìm thấy renderThinkStats');
@@ -645,7 +657,7 @@ test('phím tắt: bảng ⌨️ mở bằng ?, đủ hàm + guard + CSS', () =>
     assert.ok(APP.includes(fn), `thiếu ${fn}`);
   }
   // bind phím ? trong initShortcuts
-  const block = APP.slice(APP.indexOf('function initShortcuts'), APP.indexOf('function initShortcuts') + 1100);
+  const block = APP.slice(APP.indexOf('function initShortcuts'), APP.indexOf('function initShortcuts') + 1500);
   assert.ok(/e\.key === '\?'\)\s*{[^}]*toggleShortcuts\(\)/.test(block), "initShortcuts chưa bind phím '?'");
   // hai global keydown guard shortcutsOpen() (chống lọt phím xuống view dưới)
   assert.ok((APP.match(/onboardOpen\(\) \|\| shortcutsOpen\(\)/g) || []).length >= 2,

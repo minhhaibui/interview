@@ -4822,6 +4822,13 @@ function finishInterview() {
 }
 
 // ---------- Phím tắt ----------
+/** Các nút đáp án quiz đang HIỂN THỊ & bấm được (tab Tư duy active, không ở mode ẩn). */
+function quizVisibleOptions() {
+  const coding = document.getElementById('view-coding');
+  if (!coding || !coding.classList.contains('active')) return [];
+  return [...coding.querySelectorAll('.oq-opt:not(:disabled)')].filter(b => !b.closest('[hidden]'));
+}
+
 function initShortcuts() {
   const order = ['today', 'docs', 'flashcards', 'writing', 'code', 'coding', 'design', 'mock', 'company', 'star', 'plan', 'dashboard'];
   document.addEventListener('keydown', e => {
@@ -4830,8 +4837,14 @@ function initShortcuts() {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     // Đang gõ trong ô nhập / vùng gõ code thì không cướp phím
     if (e.target.closest?.('input, textarea, select, #ct-code, [contenteditable]')) return;
-    if (e.key >= '1' && e.key <= '9') switchView(order[+e.key - 1]);
-    else if (e.key === '/') {
+    if (e.key >= '1' && e.key <= '9') {
+      // Đang làm quiz (tab Tư duy active & có nút .oq-opt bật, không nằm trong mode ẩn)
+      // → phím số chọn đáp án thay vì chuyển tab.
+      const opts = quizVisibleOptions();
+      const n = +e.key;
+      if (opts.length && n <= opts.length) { e.preventDefault(); opts[n - 1].click(); return; }
+      switchView(order[n - 1]);
+    } else if (e.key === '/') {
       e.preventDefault();
       switchView('docs');
       document.getElementById('sb-search').focus();
@@ -5212,6 +5225,9 @@ const SHORTCUTS = [
     { keys: ['→'], desc: 'Nhớ rồi' },
     { keys: ['←'], desc: 'Chưa nhớ' },
     { keys: ['S'], desc: 'Nghe phát âm' },
+  ] },
+  { group: '📝 Trắc nghiệm (Tư duy)', items: [
+    { keys: ['1', '…', '4'], desc: 'Chọn đáp án A–D khi đang có câu hỏi (thay cho chuyển tab)' },
   ] },
   { group: '💡 Khác', items: [
     { keys: ['❓'], desc: 'Nút trên thanh công cụ — mở lại hướng dẫn' },
