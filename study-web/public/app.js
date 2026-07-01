@@ -4601,8 +4601,29 @@ function renderCompany() {
       <div class="iq-stat">${best != null ? `<div><b>${best}</b><small>điểm cao nhất</small></div>` : ''}<div><b>${hist.length}</b><small>lần phỏng vấn</small></div></div>
       <button id="iv-start" class="iq-start-btn">🚀 Bắt đầu phỏng vấn</button>
     </div>
+    ${reverseQuestionsHtml()}
     ${histHtml}`;
   document.getElementById('iv-start').onclick = () => startInterview();
+}
+
+/** Accordion "Câu hỏi nên hỏi nhà tuyển dụng" — nội dung tham khảo cuối buổi phỏng vấn. */
+function reverseQuestionsHtml() {
+  const groups = window.REVERSE_QUESTIONS || [];
+  if (!groups.length) return '';
+  const cards = groups.map(g => {
+    const items = g.items.map(it =>
+      `<li><b>${escHtml(it.q)}</b><span class="rq-why">💡 ${escHtml(it.why)}</span></li>`).join('');
+    return `<details class="rq-group">
+      <summary>${g.icon} ${escHtml(g.group)} <span class="rq-n">${g.items.length}</span></summary>
+      ${g.note ? `<p class="rq-note">${escHtml(g.note)}</p>` : ''}
+      <ul class="rq-list">${items}</ul>
+    </details>`;
+  }).join('');
+  return `<div class="rq-wrap">
+    <h3>💬 Câu hỏi nên hỏi lại nhà tuyển dụng</h3>
+    <p class="iq-note">Cuối buổi thường có “Bạn có câu hỏi gì không?” — hỏi câu hay giúp bạn ghi điểm và đánh giá ngược công ty. Bấm từng nhóm để mở.</p>
+    ${cards}
+  </div>`;
 }
 
 function startInterview() { ivState = { idx: 0, scores: {}, startMs: Date.now() }; runRound(); }

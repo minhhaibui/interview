@@ -696,9 +696,31 @@ test('a11y + empty-state: reduced-motion, dashboard empty-state có CTA', () => 
     'empty-state chưa ẩn khi người dùng đã có dữ liệu');
 });
 
+test('reverse-questions: nhóm có id/group/icon + mỗi item đủ q & why', () => {
+  const groups = loadWindow('reverse-questions.js').REVERSE_QUESTIONS;
+  assert.ok(Array.isArray(groups) && groups.length >= 4, 'phải có ≥4 nhóm câu hỏi ngược');
+  const ids = groups.map(g => g.id);
+  assert.strictEqual(new Set(ids).size, ids.length, 'id nhóm trùng');
+  for (const g of groups) {
+    assert.ok(g.id && g.group && g.icon, `nhóm ${g.id} thiếu field`);
+    assert.ok(Array.isArray(g.items) && g.items.length >= 2, `nhóm ${g.id}: <2 câu`);
+    for (const it of g.items) assert.ok(it.q && it.why, `nhóm ${g.id}: item thiếu q/why`);
+  }
+});
+
+test('wiring: câu hỏi ngược render trong tab Phỏng vấn tổng hợp', () => {
+  assert.ok(HTML.includes('src="reverse-questions.js"'), 'index.html thiếu script reverse-questions.js');
+  assert.ok(HTML.indexOf('src="reverse-questions.js"') < HTML.indexOf('src="app.js"'),
+    'reverse-questions.js phải nạp trước app.js');
+  assert.ok(/function reverseQuestionsHtml\b/.test(APP), 'thiếu hàm reverseQuestionsHtml');
+  assert.ok(/window\.REVERSE_QUESTIONS/.test(APP), 'app.js chưa đọc window.REVERSE_QUESTIONS');
+  assert.ok(/\$\{reverseQuestionsHtml\(\)\}/.test(APP), 'renderCompany chưa chèn reverseQuestionsHtml()');
+});
+
 test('script đủ: index.html nạp mọi file dữ liệu trước app.js', () => {
   for (const f of ['coding-problems.js', 'iq-questions.js', 'english-questions.js',
-    'situational-questions.js', 'design-drills.js', 'api-quiz.js', 'sql-drill.js', 'cli-quiz.js', 'app.js']) {
+    'situational-questions.js', 'design-drills.js', 'api-quiz.js', 'sql-drill.js', 'cli-quiz.js',
+    'reverse-questions.js', 'app.js']) {
     assert.ok(HTML.includes(`src="${f}"`), `index.html thiếu <script src="${f}">`);
   }
   // app.js phải nạp SAU các file dữ liệu
