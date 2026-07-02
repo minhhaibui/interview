@@ -1211,6 +1211,7 @@ function ftFinish() {
       <div class="ft-row-top">
         <span class="ft-verd">${x.correct ? '✅' : '❌'}</span>
         <span class="ft-word"><b>${escHtml(x.card.front)}</b> — ${escHtml(x.card.meaning)}</span>
+        <button class="ep-say ft-say" data-i="${i}" title="Nghe phát âm" aria-label="Nghe phát âm">🔊</button>
       </div>
       ${x.correct ? '' : `<div class="ft-yours">Bạn gõ: <i>${escHtml(x.answer || '(bỏ trống)')}</i></div>`}
       <div class="ft-srs">
@@ -1228,6 +1229,10 @@ function ftFinish() {
     </div>`;
   el.querySelectorAll('.ft-learn').forEach(b => b.onclick = () => { bumpSrs(ftQueue[+b.dataset.i].card, false); ftMarkRow(b, 'học tiếp'); });
   el.querySelectorAll('.ft-known').forEach(b => b.onclick = () => { bumpSrs(ftQueue[+b.dataset.i].card, true); ftMarkRow(b, 'thuộc rồi'); });
+  el.querySelectorAll('.ft-say').forEach(b => b.onclick = () => {
+    const c = ftQueue[+b.dataset.i].card;
+    speak(c.example ? `${c.front}. ${c.example}` : c.front);
+  });
   document.getElementById('ft-again').onclick = ftStart;
   document.getElementById('ft-done').onclick = () => { ftToggle(false); fillFcWeekSelect(); startSession(); };
 }
