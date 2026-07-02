@@ -87,18 +87,7 @@ GROUP BY user_id;`,
     ], answer: 2,
     explain: "LIKE với wildcard ở ĐẦU ('%...') không dùng được B-tree (phải quét toàn bộ) vì index sắp theo tiền tố. Bằng (=), tiền tố ('abc%'), và range/order theo cột đều tận dụng được B-tree.",
   },
-  {
-    id: 'sql-idx-02', topic: 'Composite index',
-    q: 'Có composite index (a, b, c). WHERE nào tận dụng được index (ít nhất phần đầu)?',
-    options: [
-      'WHERE b = 2 AND c = 3',
-      'WHERE c = 3',
-      'WHERE a = 1 AND b = 2',
-      'WHERE b = 2',
-    ], answer: 2,
-    explain: 'Composite index dùng theo nguyên tắc "leftmost prefix": phải có a (cột trái nhất) thì mới dùng tiếp b, c. WHERE chỉ có b hoặc c (bỏ qua a) không dùng được index này.',
-  },
-  {
+{
     id: 'sql-tx-01', topic: 'ACID',
     q: 'Trong ACID, chữ "D" (Durability) bảo đảm điều gì?',
     options: [
@@ -148,18 +137,7 @@ WHERE b.id IS NULL;`,
     answer: 1,
     explain: 'Đây là mẫu "anti-join": LEFT JOIN rồi lọc b.id IS NULL → lấy các hàng của a KHÔNG khớp b. a có {1,2,3}, khớp được {2,3}, còn lại {1}. Đây là cách tìm "có ở A nhưng không có ở B".',
   },
-  {
-    id: 'sql-win-01', topic: 'Window function',
-    q: 'Khác biệt giữa ROW_NUMBER(), RANK() và DENSE_RANK() khi có giá trị bằng nhau (ties)?',
-    options: [
-      'Cả ba luôn cho kết quả giống nhau',
-      'ROW_NUMBER luôn duy nhất 1,2,3…; RANK nhảy số sau ties (1,1,3); DENSE_RANK không nhảy (1,1,2)',
-      'RANK luôn duy nhất, ROW_NUMBER mới nhảy số',
-      'DENSE_RANK chỉ chạy trên số nguyên',
-    ], answer: 1,
-    explain: 'Với 2 giá trị bằng nhau ở hạng nhất: ROW_NUMBER = 1,2 (luôn khác nhau, tuỳ ý). RANK = 1,1,3 (bỏ qua hạng 2). DENSE_RANK = 1,1,2 (không bỏ hạng). Câu hỏi rất hay bị hỏi khi làm "top N theo nhóm".',
-  },
-  {
+{
     id: 'sql-out-03', topic: 'Đoán kết quả',
     q: 'Trong PostgreSQL, kết quả của: SELECT NULL = NULL;',
     options: ['true', 'false', 'NULL (UNKNOWN)', 'Lỗi cú pháp'],
@@ -177,18 +155,7 @@ WHERE b.id IS NULL;`,
     ], answer: 1,
     explain: 'N+1: 1 query lấy danh sách cha, rồi vòng lặp chạy thêm 1 query con cho từng cha → 1+N query, rất chậm. Khắc phục: eager loading (JOIN / include / preload) hoặc gom id rồi WHERE id IN (...) chỉ 2 query.',
   },
-  {
-    id: 'sql-explain-01', topic: 'EXPLAIN',
-    q: 'Trong kế hoạch thực thi (EXPLAIN) PostgreSQL, "Seq Scan" trên bảng lớn ở truy vấn lọc theo 1 cột thường báo hiệu gì?',
-    options: [
-      'Truy vấn đang dùng index tối ưu',
-      'Quét tuần tự toàn bảng — thường do thiếu index phù hợp trên cột lọc (cần cân nhắc thêm index)',
-      'Bảng đang bị khoá',
-      'Kết quả đã được cache',
-    ], answer: 1,
-    explain: 'Seq Scan = đọc tuần tự toàn bộ bảng. Với bảng lớn lọc theo cột chọn lọc cao, đó thường là dấu hiệu thiếu index → cân nhắc tạo index. (Với bảng nhỏ hoặc lấy phần lớn hàng thì Seq Scan lại hợp lý hơn Index Scan.)',
-  },
-  {
+{
     id: 'sql-lock-01', topic: 'Deadlock',
     q: 'Deadlock giữa hai transaction xảy ra điển hình khi nào?',
     options: [
@@ -336,19 +303,7 @@ ON CONFLICT (key) DO UPDATE SET n = counters.n + 1;`,
     ], answer: 2,
     explain: 'UNION khử trùng lặp — DB phải sort hoặc hash để so sánh nên tốn kém hơn. UNION ALL nối thẳng kết quả, giữ cả dòng trùng, nhanh hơn. Nếu chắc chắn không trùng (hoặc không cần khử), hãy dùng UNION ALL cho hiệu năng.',
   },
-  {
-    id: 'sql-count-null', topic: 'Đoán kết quả',
-    q: 'Bảng employees có 5 dòng, trong đó 2 dòng có manager_id = NULL. Kết quả trả về?',
-    sql: 'SELECT COUNT(*), COUNT(manager_id) FROM employees;\n-- 5 dòng, 2 dòng manager_id IS NULL',
-    options: [
-      '5 và 5',
-      '5 và 3',
-      '3 và 5',
-      '3 và 3',
-    ], answer: 1,
-    explain: 'COUNT(*) đếm MỌI dòng (kể cả dòng toàn NULL) → 5. COUNT(cột) chỉ đếm dòng có cột đó KHÁC NULL → bỏ 2 dòng NULL → 3. Bẫy kinh điển khi thống kê; muốn đếm giá trị phân biệt thì COUNT(DISTINCT cột).',
-  },
-  {
+{
     id: 'sql-fk-cascade', topic: 'Khoá ngoại',
     q: 'Khóa ngoại khai báo `ON DELETE CASCADE`. Khi xoá một dòng CHA đang được tham chiếu thì sao?',
     options: [

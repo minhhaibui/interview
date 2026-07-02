@@ -51,19 +51,7 @@ window.CLI_QUIZ = [
     ], answer: 1,
     explain: '~n đi NGƯỢC n đời theo dòng first-parent (HEAD~2 = parent của parent). ^n chọn parent THỨ n của một commit merge (HEAD^2 = nhánh thứ hai được gộp). Phân biệt quan trọng khi thao tác với merge commit.',
   },
-  {
-    id: 'cli-git-05', topic: 'git',
-    q: 'Đang sửa dở, cần chuyển nhánh gấp nhưng chưa muốn commit. Lệnh nào cất tạm thay đổi?',
-    cmd: 'git stash',
-    options: [
-      'git stash (rồi git stash pop để lấy lại)',
-      'git rm --cached',
-      'git clean -fd',
-      'git checkout -- .',
-    ], answer: 0,
-    explain: 'git stash cất các thay đổi (tracked) vào ngăn tạm và trả working tree về sạch để chuyển nhánh. Lấy lại bằng git stash pop (áp dụng + xoá stash) hoặc git stash apply (giữ stash). `git clean -fd` và `checkout -- .` sẽ XOÁ thay đổi.',
-  },
-  {
+{
     id: 'cli-docker-01', topic: 'docker',
     q: 'Lệnh chạy container ở chế độ nền (detached) và map cổng 8080 host → 3000 container?',
     cmd: 'docker run -d -p 8080:3000 myimage',
@@ -75,19 +63,7 @@ window.CLI_QUIZ = [
     ], answer: 1,
     explain: '-d (detached) chạy nền; -p HOST:CONTAINER nên 8080:3000 = cổng 8080 trên host trỏ vào 3000 trong container. -it là interactive (ngược với -d). `docker start` chỉ khởi động lại container đã tạo, không nhận -p.',
   },
-  {
-    id: 'cli-docker-02', topic: 'docker',
-    q: 'Container đang chạy tên `api`. Lệnh nào mở shell bên trong nó để debug?',
-    cmd: 'docker exec -it api sh',
-    options: [
-      'docker run -it api sh',
-      'docker exec -it api sh',
-      'docker attach api sh',
-      'docker shell api',
-    ], answer: 1,
-    explain: 'docker exec chạy lệnh MỚI trong container ĐANG chạy; -it cấp terminal tương tác. docker run lại TẠO container mới từ image. docker attach gắn vào tiến trình chính (stdout) chứ không mở shell riêng.',
-  },
-  {
+{
     id: 'cli-docker-03', topic: 'docker',
     q: 'Khác biệt giữa `docker ps` và `docker ps -a`?',
     options: [
@@ -134,19 +110,7 @@ window.CLI_QUIZ = [
     ], answer: 1,
     explain: 'kubectl rollout restart tạo rollout mới (rolling, không downtime) khiến pod được tạo lại và đọc ConfigMap/Secret mới — không cần đổi image hay sửa YAML. delete sẽ gây downtime; scale 0 thì tắt hẳn dịch vụ.',
   },
-  {
-    id: 'cli-k8s-03', topic: 'kubectl',
-    q: 'Lệnh nào hoàn tác (rollback) một Deployment về phiên bản trước?',
-    cmd: 'kubectl rollout undo deployment/web',
-    options: [
-      'kubectl rollout undo deployment/web',
-      'kubectl delete rollout web',
-      'kubectl apply --rollback',
-      'kubectl get rollout web --undo',
-    ], answer: 0,
-    explain: 'kubectl rollout undo deployment/<name> quay về ReplicaSet của bản triển khai trước (thêm --to-revision=N để về bản cụ thể; xem lịch sử bằng rollout history). Đây là cứu cánh khi bản mới lỗi.',
-  },
-  {
+{
     id: 'cli-k8s-04', topic: 'kubectl',
     q: 'Lệnh áp dụng (tạo/cập nhật) tài nguyên từ file YAML theo kiểu khai báo?',
     cmd: 'kubectl apply -f deploy.yaml',
@@ -290,20 +254,7 @@ kubectl rollout status deployment/api`,
     ], answer: 1,
     explain: 'kubectl rollout undo quay deployment về revision trước (dùng lịch sử ReplicaSet) — nhanh và không downtime. `delete` rồi apply gây gián đoạn. `scale 0` chỉ tắt pod chứ không sửa bản lỗi. Xem lịch sử bằng `kubectl rollout history deployment/api`.',
   },
-  {
-    id: 'cli-redis-04', topic: 'redis-cli',
-    q: 'Trên Redis production có hàng triệu key, cần liệt kê các key theo pattern mà KHÔNG làm nghẽn server. Dùng lệnh nào?',
-    cmd: `SCAN 0 MATCH "session:*" COUNT 100   # lặp theo cursor
-# TRÁNH: KEYS session:*   (quét toàn bộ, chặn server)`,
-    options: [
-      'KEYS session:* — nhanh và an toàn',
-      'SCAN với cursor + MATCH — duyệt từng phần, không chặn server',
-      'GET session:* lấy tất cả',
-      'FLUSHALL rồi tạo lại',
-    ], answer: 1,
-    explain: 'KEYS quét TOÀN BỘ keyspace trong một lần, chặn Redis (single-thread) → nguy hiểm trên production. SCAN duyệt tăng dần theo cursor, mỗi lần trả một ít key, không khoá server lâu (cùng họ có HSCAN/SSCAN/ZSCAN). COUNT là gợi ý số phần tử mỗi vòng.',
-  },
-  {
+{
     id: 'cli-bash-05', topic: 'bash',
     q: 'Muốn tìm tiến trình đang nghe cổng 3000 (vì "address already in use"). Lệnh nào hợp lý?',
     cmd: `lsof -i :3000        # liệt kê tiến trình giữ cổng 3000

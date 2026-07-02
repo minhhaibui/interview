@@ -123,19 +123,7 @@ window.OUTPUT_QUIZ = [
     options: ['1,10,2,21', '1,2,10,21', '21,10,2,1', '1,2,21,10'], answer: 0,
     explain: 'sort() mặc định so sánh theo CHUỖI: "1" < "10" < "2" < "21" → [1,10,2,21]. Muốn sort số phải truyền comparator: .sort((a,b) => a - b).',
   },
-  {
-    id: 'oq-plus-coerce', topic: 'Type coercion',
-    code: `console.log(1 + '2' + 3);\nconsole.log(1 + 2 + '3');`,
-    options: ['123\n33', '63\n33', '123\n6', '15\n33'], answer: 0,
-    explain: 'Phép + tính TRÁI sang PHẢI. Dòng 1: 1 + "2" → "12" (gặp chuỗi → nối), rồi "12" + 3 → "123". Dòng 2: 1 + 2 = 3 (số), rồi 3 + "3" → "33".',
-  },
-  {
-    id: 'oq-typeof-nan', topic: 'NaN',
-    code: `console.log(typeof NaN, NaN === NaN);`,
-    options: ['number false', 'number true', 'NaN false', 'undefined false'], answer: 0,
-    explain: 'typeof NaN là "number" (NaN vẫn thuộc kiểu number). NaN KHÔNG bằng chính nó (NaN === NaN là false) — đó là lý do dùng Number.isNaN() để kiểm tra.',
-  },
-  {
+{
     id: 'oq-obj-key-coerce', topic: 'Object key',
     code: `const o = {};\no[1] = 'a';\no['1'] = 'b';\nconsole.log(o[1]);`,
     options: ['a', 'b', 'undefined', '1'], answer: 1,

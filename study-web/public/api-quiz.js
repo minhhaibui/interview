@@ -29,13 +29,7 @@ window.API_QUIZ = [
     ], answer: 0,
     explain: '401 = "chưa biết bạn là ai / credential sai" → cần xác thực lại. 403 = "biết bạn là ai rồi nhưng bạn không được phép" → xác thực lại cũng vô ích.',
   },
-  {
-    id: 'api-idempotent', topic: 'HTTP methods',
-    q: 'Method nào sau đây KHÔNG idempotent (gọi nhiều lần cho kết quả khác)?',
-    options: ['GET', 'PUT', 'DELETE', 'POST'], answer: 3,
-    explain: 'POST không idempotent — gọi 2 lần thường tạo 2 resource. GET/PUT/DELETE idempotent: lặp lại không đổi trạng thái thêm (DELETE lần 2 vẫn "đã xoá").',
-  },
-  {
+{
     id: 'api-safe', topic: 'HTTP methods',
     q: 'Method "safe" (không làm thay đổi trạng thái server) là?',
     options: ['POST', 'GET', 'PUT', 'PATCH'], answer: 1,
@@ -209,13 +203,7 @@ window.API_QUIZ = [
     options: ['413 Payload Too Large', '400 Bad Request', '507 Insufficient Storage', '200 OK'], answer: 0,
     explain: '413 Content/Payload Too Large: body của request vượt giới hạn server chấp nhận (vd upload quá to). 507 nói về dung lượng LƯU TRỮ của server, khác ngữ cảnh. Nên đặt giới hạn body rõ ràng để tránh lạm dụng bộ nhớ.',
   },
-  {
-    id: 'api-retry-after', topic: 'Rate limit',
-    q: 'Server trả 429 Too Many Requests (hoặc 503). Header nào cho client biết khi nào nên thử lại?',
-    options: ['X-Forwarded-For', 'Content-Type', 'ETag', 'Retry-After (số giây hoặc mốc thời gian nên chờ trước khi gọi lại)'], answer: 3,
-    explain: 'Retry-After cho client biết nên đợi bao lâu trước khi retry (giá trị là số giây hoặc HTTP-date). Client lịch sự nên tôn trọng nó kết hợp exponential backoff. Thường đi kèm 429 (rate limit) và 503 (tạm quá tải/bảo trì).',
-  },
-  {
+{
     id: 'api-preflight', topic: 'CORS',
     q: 'Khi nào trình duyệt gửi request "preflight" OPTIONS trước request thật (CORS)?',
     options: [
