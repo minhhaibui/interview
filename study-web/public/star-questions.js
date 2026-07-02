@@ -164,4 +164,59 @@ window.STAR_QUESTIONS = [
     },
     watchout: 'Chọn điểm yếu THẬT (không phải "tôi quá cầu toàn"). Quan trọng là cho thấy lộ trình cải thiện và tiến bộ.',
   },
+  {
+    id: 'star-incident-01', competency: 'Sự cố production',
+    q: 'Kể về một lần hệ thống gặp sự cố nghiêm trọng trên production. Bạn đã xử lý thế nào?',
+    hints: {
+      s: 'Bối cảnh: sự cố gì (sập service, chậm bất thường, mất dữ liệu?), phát hiện qua đâu (alert, khách báo)?',
+      t: 'Vai trò của bạn lúc đó: người trực, người nắm hệ thống, hay tình cờ ở đó? Áp lực ra sao (bao nhiêu user ảnh hưởng)?',
+      a: 'Các bước: khoanh vùng (log/metrics/deploy gần nhất?), giảm thiểu trước (rollback/scale/feature flag) rồi mới tìm root cause? Ai được bạn báo/phối hợp?',
+      r: 'Kết quả: thời gian khôi phục, root cause là gì, postmortem rút ra gì, đã thêm guard nào để không tái diễn?',
+    },
+    watchout: 'Điểm ăn tiền là TRÌNH TỰ đúng (mitigate trước, root-cause sau) + postmortem không đổ lỗi. Tránh kể kiểu "tôi anh hùng một mình" — nêu cả phối hợp và giao tiếp.',
+  },
+  {
+    id: 'star-techdebt-01', competency: 'Technical debt & chất lượng',
+    q: 'Kể về một lần bạn phải cân nhắc giữa làm nhanh cho kịp và làm đúng cho bền. Bạn quyết thế nào?',
+    hints: {
+      s: 'Bối cảnh: tính năng/deadline nào, "làm nhanh" ở đây nghĩa là đánh đổi gì (bỏ test, hardcode, nợ kiến trúc)?',
+      t: 'Bạn là người quyết hay người đề xuất? Ràng buộc thật (ngày ra mắt, cam kết khách hàng)?',
+      a: 'Bạn phân tích thế nào: khoanh vùng nợ có kiểm soát, ghi lại TODO/ticket, thoả thuận thời điểm trả nợ, hay chứng minh làm đúng không chậm hơn bao nhiêu?',
+      r: 'Kết quả: ship đúng hạn không, nợ có được trả không, bài học về giao tiếp trade-off với team/PM?',
+    },
+    watchout: 'Tránh 2 thái cực: "luôn phải làm đúng chuẩn" (thiếu thực tế) và "cứ ship rồi tính" (thiếu trách nhiệm). Cho thấy nợ kỹ thuật là QUYẾT ĐỊNH có ý thức, có kế hoạch trả.',
+  },
+  {
+    id: 'star-manager-01', competency: 'Bất đồng với cấp trên',
+    q: 'Kể về một lần bạn không đồng ý với quyết định của sếp/lead. Bạn làm gì?',
+    hints: {
+      s: 'Bối cảnh: quyết định gì (công nghệ, ưu tiên, cách làm), vì sao bạn thấy chưa ổn?',
+      t: 'Rủi ro nếu im lặng là gì? Bạn muốn đạt điều gì khi lên tiếng?',
+      a: 'Bạn nêu ý kiến thế nào: chọn kênh riêng tư, dùng dữ liệu/ví dụ, đề xuất phương án thay thế, và sau khi chốt thì cam kết thực hiện ("disagree and commit")?',
+      r: 'Kết quả: quyết định có đổi không? Dù đổi hay không, quan hệ và lòng tin với sếp sau đó ra sao?',
+    },
+    watchout: 'Khác câu xung đột đồng nghiệp: ở đây cần khéo léo về VỊ THẾ — thẳng thắn nhưng tôn trọng, và nếu bị bác vẫn commit thực hiện tử tế, không ngầm phá.',
+  },
+  {
+    id: 'star-stakeholder-01', competency: 'Thuyết phục phi kỹ thuật',
+    q: 'Kể về một lần bạn phải giải thích / thuyết phục người không làm kỹ thuật (PM, sếp, khách) về một vấn đề kỹ thuật.',
+    hints: {
+      s: 'Bối cảnh: vấn đề gì (cần thời gian refactor, không thể làm tính năng X như mong muốn, cần nâng hạ tầng)?',
+      t: 'Vì sao phải thuyết phục được họ (họ nắm ngân sách/deadline/quyết định)?',
+      a: 'Bạn "dịch" kỹ thuật sang ngôn ngữ của họ thế nào: ví dụ đời thường, con số tiền/thời gian/rủi ro, demo nhỏ, phương án A/B kèm trade-off?',
+      r: 'Kết quả: họ quyết theo hướng nào, quan hệ làm việc sau đó, bạn rút ra gì về giao tiếp?',
+    },
+    watchout: 'Tránh kể kiểu "họ không hiểu gì" — thái độ trịch thượng là red flag. Điểm cộng là tôn trọng góc nhìn business và nói bằng impact, không bằng thuật ngữ.',
+  },
+  {
+    id: 'star-ownership-01', competency: 'Ownership end-to-end',
+    q: 'Kể về một lần bạn nhận trách nhiệm một việc từ đầu đến cuối, kể cả phần ngoài mô tả công việc của bạn.',
+    hints: {
+      s: 'Bối cảnh: việc gì bị "rơi giữa các team" hoặc không ai nhận (migration, tài liệu, quy trình deploy, điều tra bug lạ)?',
+      t: 'Vì sao bạn quyết định nhận? Nếu không ai làm thì hậu quả gì?',
+      a: 'Bạn tự học/tự tìm nguồn lực thế nào, phối hợp ai, theo việc tới cùng ra sao (kể cả phần vận hành/hỗ trợ sau khi xong)?',
+      r: 'Kết quả: việc hoàn thành ra sao, ai hưởng lợi, có thành quy trình/công cụ lâu dài không?',
+    },
+    watchout: 'Ownership ≠ ôm hết việc một mình. Cho thấy bạn chủ động NHẬN và THEO TỚI CÙNG, nhưng vẫn kéo đúng người vào và bàn giao rõ ràng.',
+  },
 ];
