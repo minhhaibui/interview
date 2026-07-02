@@ -2977,6 +2977,13 @@ function renderHeatmap() {
     (codeBest ? ` · ⌨️ kỷ lục gõ code <b>${codeBest.wpm} WPM</b>` : '');
 }
 
+/** Ghi điểm sẵn sàng hôm nay vào nhật ký (mỗi ngày một giá trị, theo lần tính mới nhất). */
+function logReadiness(score) {
+  const rdLog = store.get('prep-readiness-log', {});
+  const k = dayKey(new Date());
+  if (rdLog[k] !== score) { rdLog[k] = score; store.set('prep-readiness-log', rdLog); }
+}
+
 /** Các đồ thị cột thuần CSS: hoạt động 14 ngày, % mock, WPM gõ code */
 function renderCharts() {
   // Lượt học 14 ngày
@@ -3017,7 +3024,9 @@ function renderCharts() {
         </div>`).join('')
     : '<p class="chart-empty">Chưa có lượt gõ nào — vào tab ⌨️ Gõ code làm một snippet nhé.</p>';
 
-  // 🎯 Điểm sẵn sàng theo ngày (nhật ký ghi ở readinessHtml, tối đa 20 ngày gần nhất)
+  // 🎯 Điểm sẵn sàng theo ngày — ghi nhật ký NGAY TẠI ĐÂY để mở Dashboard là có dữ liệu
+  // (trước đây chỉ ghi ở readinessHtml vốn nằm trong tab Kế hoạch — chart trống vĩnh viễn)
+  logReadiness(computeReadiness().score);
   const rdLog = store.get('prep-readiness-log', {});
   const rdDays = Object.keys(rdLog).sort().slice(-20);
   document.getElementById('dash-chart-readiness').innerHTML = rdDays.length >= 2
@@ -3152,7 +3161,7 @@ async function buildPrintSheetHtml() {
   const drafts = starDraftsAll();
   const stories = starQs()
     .map(q => ({ q, d: drafts[q.id] }))
-    .filter(x => x.d && x.d.s && x.d.t && x.d.a && x.d.r)
+    .filter(x => x.d && x.d.s.trim() && x.d.t.trim() && x.d.a.trim() && x.d.r.trim())
     .slice(0, 8);
   const starHtml = stories.length ? `<h2>🌟 Chuyện STAR bạn đã soạn (${stories.length})</h2>${stories.map(({ q, d }) =>
     `<div class="ps-star"><b>${escHtml(q.q)}</b>
@@ -3467,12 +3476,7 @@ function readinessHtml() {
     : score >= 60 ? { t: 'Khá ổn — sắp tới rồi 💪', c: 'good' }
     : score >= 40 ? { t: 'Đang lên — cố thêm 📈', c: 'mid' }
     : { t: 'Mới bắt đầu — kiên trì nhé 🌱', c: 'low' };
-  // Ghi lại điểm hôm nay vào nhật ký (mỗi ngày một giá trị, cập nhật theo lần xem mới nhất)
-  const rdLog = store.get('prep-readiness-log', {});
-  if (rdLog[dayKey(new Date())] !== score) {
-    rdLog[dayKey(new Date())] = score;
-    store.set('prep-readiness-log', rdLog);
-  }
+  logReadiness(score);
   // Điểm yếu nhất = thành phần kéo tụt điểm nhiều nhất (khoảng trống × hệ số)
   const weak = [...parts].sort((a, b) => (100 - b.pct) * b.weight - (100 - a.pct) * a.weight)[0];
   const bars = parts.map(p => `
@@ -5135,7 +5139,10 @@ function initSync() {
     return;
   }
   syncReady = true;
-  onStoreWrite = key => { if (key !== 'prep-sync-meta') schedulePush(); };
+  // prep-readiness-log ghi tự động trong render (kể cả render do snapshot remote kích) —
+  // nếu để nó trigger push sẽ ping-pong giữa 2 thiết bị lệch điểm; giá trị vẫn được sync
+  // kèm theo mọi lần push khác (push là whole-blob theo PREP_KEYS).
+  onStoreWrite = key => { if (key !== 'prep-sync-meta' && key !== 'prep-readiness-log') schedulePush(); };
 
   fbAuth.onAuthStateChanged(async user => {
     fbUser = user;

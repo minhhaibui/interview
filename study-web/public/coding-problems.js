@@ -741,6 +741,8 @@ window.CODING_PROBLEMS = [
       { args: [2, [['put', 1, 1], ['put', 2, 2], ['get', 1], ['put', 3, 3], ['get', 2], ['get', 1], ['get', 3]]], expected: [1, -1, 1, 3] },
       { args: [1, [['put', 1, 1], ['get', 1], ['put', 2, 2], ['get', 1], ['get', 2]]], expected: [1, -1, 2] },
       { args: [2, [['put', 1, 1], ['put', 1, 9], ['get', 1], ['put', 2, 2], ['put', 3, 3], ['get', 1]]], expected: [9, -1] },
+      // put key ĐÃ TỒN TẠI phải refresh thứ tự: put(1,9) làm 1 "mới hơn" 2 → put(3) evict 2 chứ không phải 1
+      { args: [2, [['put', 1, 1], ['put', 2, 2], ['put', 1, 9], ['put', 3, 3], ['get', 2], ['get', 1]]], expected: [-1, 9] },
     ],
     hints: [
       'Map của JS duyệt theo thứ tự chèn → phần tử "cũ nhất" là map.keys().next().value.',
