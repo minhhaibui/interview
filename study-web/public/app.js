@@ -3108,8 +3108,8 @@ async function buildPrintSheetHtml() {
   const wrong = buildReviewQueue().slice(0, 12);
   const wrongHtml = wrong.length ? `<h2>🔁 Câu bạn đang sai (${wrong.length} câu gần nhất)</h2>${wrong.map(({ mode, q }) => {
     const cfg = QUIZ_MODES[mode];
-    const body = q.q ? escHtml(q.q) : '(câu đọc code — xem trong app)';
-    const snip = q.sql || q.cmd;
+    const body = q.q ? escHtml(q.q) : (cfg ? escHtml(cfg.ask) : 'Đoán output:');
+    const snip = q.sql || q.cmd || q.code;
     return `<div class="ps-q"><span class="ps-mode">${cfg ? cfg.label : mode}</span> ${body}
       ${snip ? `<pre>${escHtml(snip)}</pre>` : ''}
       <div class="ps-a">✅ ${escHtml(q.options[q.answer])}</div>

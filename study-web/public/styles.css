@@ -1448,7 +1448,7 @@ select:hover { border-color: var(--accent); }
   #print-sheet .ps-2col { columns: 2; column-gap: 24px; }
   #print-sheet .ps-q { margin-bottom: 7px; break-inside: avoid; }
   #print-sheet .ps-mode { font-size: 10px; border: 1px solid #999; border-radius: 4px; padding: 0 4px; margin-right: 4px; }
-  #print-sheet .ps-a { margin: 1px 0 0 12px; }
+  #print-sheet .ps-a { margin: 1px 0 0 12px; white-space: pre-wrap; }
   #print-sheet .ps-why { margin-left: 12px; color: #444; }
   #print-sheet pre { margin: 3px 0 3px 12px; padding: 4px 6px; border: 1px solid #ccc; font-size: 10.5px; white-space: pre-wrap; }
   #print-sheet .ps-drill { margin-bottom: 7px; break-inside: avoid; }
