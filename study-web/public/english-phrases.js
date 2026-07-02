@@ -59,4 +59,32 @@ window.ENGLISH_PHRASES = [
       { en: "When can I expect to hear back about the next steps?", vi: 'Hỏi về bước tiếp theo — chủ động và chuyên nghiệp.' },
     ],
   },
+  {
+    id: 'ep-smalltalk', group: 'Small talk mở đầu & sự cố video call', icon: '☕',
+    items: [
+      { en: "Hi, nice to meet you! Thanks for taking the time to talk with me today.", vi: 'Câu chào mở đầu an toàn, thân thiện cho mọi buổi phỏng vấn.' },
+      { en: "Can you hear me clearly? My connection seems a bit unstable today.", vi: 'Kiểm tra/báo sự cố mạng khi phỏng vấn online — bình tĩnh, không cuống.' },
+      { en: "Sorry, you cut out for a second — could you repeat the last part?", vi: '"cut out" = mất tiếng giữa chừng; xin nhắc lại phần vừa nghe sót.' },
+      { en: "I'm doing well, thanks! A bit excited about this conversation, actually.", vi: 'Đáp "How are you?" tự nhiên + thể hiện thiện chí (thay vì chỉ "fine").' },
+    ],
+  },
+  {
+    id: 'ep-leaving', group: 'Lý do nghỉ việc / khoảng trống CV', icon: '🚪',
+    items: [
+      { en: "I've learned a lot in my current role, but I'm looking for new technical challenges.", vi: 'Công thức an toàn: ghi nhận chỗ cũ + hướng về phía trước. KHÔNG chê công ty cũ.' },
+      { en: "I'm looking for an environment with a stronger engineering culture and more room to grow.", vi: 'Nói về "fit" và phát triển — tích cực, không đổ lỗi.' },
+      { en: "The company went through a restructuring, and my team was affected.", vi: 'Nói về layoff một cách trung tính — chuyện bình thường, không cần xấu hổ.' },
+      { en: "I took some time off to upskill — I focused on system design and improving my English.", vi: 'Giải thích khoảng trống CV bằng việc CÓ CHỦ ĐÍCH (học, dự án cá nhân).' },
+    ],
+  },
+  {
+    id: 'ep-salary', group: 'Đàm phán lương & offer', icon: '💰',
+    items: [
+      { en: "Could you share the salary range for this position?", vi: 'Hỏi range trước khi lộ con số của mình — thế chủ động.' },
+      { en: "Based on my experience and the market rate, I'm looking for something around X.", vi: 'Neo con số kèm CĂN CỨ (kinh nghiệm + mặt bằng thị trường).' },
+      { en: "I'm flexible on the base salary if there's room in other areas, like a signing bonus or review timeline.", vi: 'Mở đường thương lượng gói tổng thể thay vì chỉ lương cứng.' },
+      { en: "That's a bit below my expectations. Is there any flexibility on that number?", vi: 'Từ chối mềm một offer thấp — lịch sự nhưng rõ ràng.' },
+      { en: "Thank you for the offer! Could I have a couple of days to consider it?", vi: 'Xin thời gian suy nghĩ — hoàn toàn bình thường và chuyên nghiệp.' },
+    ],
+  },
 ];
