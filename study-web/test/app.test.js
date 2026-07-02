@@ -817,6 +817,14 @@ test('dashboard: 🖨️ Bản in ôn nhanh wiring đủ', () => {
   assert.ok(CSS.includes('#print-sheet') && CSS.includes('@media print'), 'styles.css thiếu CSS in');
 });
 
+test('design: nút 🎲 bốc đề ngẫu nhiên wiring đủ', () => {
+  assert.ok(/id="dg-random"/.test(APP), 'renderDgList thiếu nút dg-random');
+  assert.ok(/dg-random'\)\.onclick/.test(APP), 'chưa bind click dg-random');
+  assert.ok(/list\.filter\(d => !done\.has\(d\.id\)\)/.test(APP), 'bốc ngẫu nhiên chưa ưu tiên đề chưa làm');
+  // nút lọc độ khó chỉ bind cho nút có data-diff (không đè lên dg-random)
+  assert.ok(/\.dg-fbtn\[data-diff\]/.test(APP), 'selector filter phải là .dg-fbtn[data-diff]');
+});
+
 test('script đủ: index.html nạp mọi file dữ liệu trước app.js', () => {
   for (const f of ['coding-problems.js', 'iq-questions.js', 'english-questions.js',
     'situational-questions.js', 'design-drills.js', 'api-quiz.js', 'sql-drill.js', 'cli-quiz.js',

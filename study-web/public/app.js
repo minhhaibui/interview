@@ -2596,11 +2596,18 @@ function renderDgList() {
     <p class="dg-intro">Chọn một đề, bấm <b>Bắt đầu</b> để chạy đồng hồ ${DG_MINUTES} phút, rồi viết lời giải theo <b>khung 5 bước</b> (làm rõ yêu cầu → ước lượng → API → data model → high-level → đào sâu → trade-offs). Xong thì <b>tự chấm theo rubric</b> hoặc nhờ <b>Claude chấm</b> (cần API key của bạn).</p>
     <div class="dg-filters">
       ${filterBtn('all', 'Tất cả')}${filterBtn('Dễ', 'Dễ')}${filterBtn('TB', 'Trung bình')}${filterBtn('Khó', 'Khó')}
+      <button id="dg-random" class="dg-fbtn dg-random" title="Ưu tiên đề chưa làm trong bộ lọc hiện tại">🎲 Bốc đề ngẫu nhiên</button>
     </div>
     <div class="dg-grid">${cards}</div>
     ${hist ? `<div class="dg-hist"><h2>🕒 Lần luyện gần đây</h2><ul>${hist}</ul></div>` : ''}`;
-  el.querySelectorAll('.dg-fbtn').forEach(b => b.onclick = () => { renderDgList._diff = b.dataset.diff; renderDgList(); });
+  el.querySelectorAll('.dg-fbtn[data-diff]').forEach(b => b.onclick = () => { renderDgList._diff = b.dataset.diff; renderDgList(); });
   el.querySelectorAll('.dg-card').forEach(b => b.onclick = () => openDrill(b.dataset.id));
+  // 🎲 Bốc ngẫu nhiên trong bộ lọc hiện tại, ưu tiên đề CHƯA làm cho phủ hết bank
+  document.getElementById('dg-random').onclick = () => {
+    const pool = list.filter(d => !done.has(d.id));
+    const from = pool.length ? pool : list;
+    if (from.length) openDrill(from[Math.floor(Math.random() * from.length)].id);
+  };
 }
 
 function openDrill(id) {
