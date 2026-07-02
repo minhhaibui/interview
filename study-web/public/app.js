@@ -4746,7 +4746,8 @@ function answerIQ(i) {
   if (s.answered) return;
   s.answered = true;
   const q = s.qs[s.idx];
-  document.querySelectorAll('.iq-opt').forEach(b => {
+  // Scoped vào #iq-body: tránh dính class chấm sang .iq-opt của view khác còn trong DOM
+  document.getElementById('iq-body').querySelectorAll('.iq-opt').forEach(b => {
     b.disabled = true;
     const oi = +b.dataset.i;
     if (oi === q.answer) b.classList.add('correct');
@@ -4896,7 +4897,7 @@ function answerMcq(i) {
   if (m.answered) return;
   m.answered = true;
   const q = m.qs[m.idx];
-  document.querySelectorAll('.iq-opt').forEach(b => { b.disabled = true; const oi = +b.dataset.i; if (oi === q.answer) b.classList.add('correct'); else if (oi === i) b.classList.add('wrong'); });
+  document.getElementById('iv-body').querySelectorAll('.iq-opt').forEach(b => { b.disabled = true; const oi = +b.dataset.i; if (oi === q.answer) b.classList.add('correct'); else if (oi === i) b.classList.add('wrong'); });
   const ok = i === q.answer;
   if (ok) m.correct++;
   // Đổ câu sai về hệ 🔁 Ôn câu sai (mode english/situational trong QUIZ_MODES)
