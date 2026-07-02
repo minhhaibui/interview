@@ -834,6 +834,14 @@ test('quiz: đáp án shuffle hiển thị — mọi engine chấm theo dataset.
   assert.ok(!/forEach\(\(b, (j|idx)\) =>/.test(APP), 'còn hàm chấm dùng index vị trí DOM (b, j|idx)');
 });
 
+test('dashboard: đồ thị 🎯 điểm sẵn sàng theo ngày wiring đủ', () => {
+  assert.ok(HTML.includes('id="dash-chart-readiness"'), 'index.html thiếu dash-chart-readiness');
+  assert.ok(/prep-readiness-log/.test(APP), 'app.js chưa dùng prep-readiness-log');
+  assert.ok(/dash-chart-readiness'\)\.innerHTML/.test(APP), 'renderCharts chưa render đồ thị readiness');
+  const pk = APP.match(/const PREP_KEYS = \[([\s\S]*?)\]/);
+  assert.ok(pk && pk[1].includes('prep-readiness-log'), 'PREP_KEYS thiếu prep-readiness-log');
+});
+
 test('script đủ: index.html nạp mọi file dữ liệu trước app.js', () => {
   for (const f of ['coding-problems.js', 'iq-questions.js', 'english-questions.js',
     'situational-questions.js', 'design-drills.js', 'api-quiz.js', 'sql-drill.js', 'cli-quiz.js',

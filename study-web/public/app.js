@@ -2899,7 +2899,7 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-daily-goal', 'prep-badges-seen', 'prep-design-history', 'prep-design-draft',
   'prep-oq-done', 'prep-oq-best', 'prep-debug-solved', 'prep-debug-code',
   'prep-api-done', 'prep-api-best', 'prep-sql-done', 'prep-sql-best', 'prep-cli-done', 'prep-cli-best',
-  'prep-en-done', 'prep-sit-done',
+  'prep-en-done', 'prep-sit-done', 'prep-readiness-log',
   'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
@@ -3016,6 +3016,17 @@ function renderCharts() {
           <span class="bar-label">${w.wpm}</span>
         </div>`).join('')
     : '<p class="chart-empty">Chưa có lượt gõ nào — vào tab ⌨️ Gõ code làm một snippet nhé.</p>';
+
+  // 🎯 Điểm sẵn sàng theo ngày (nhật ký ghi ở readinessHtml, tối đa 20 ngày gần nhất)
+  const rdLog = store.get('prep-readiness-log', {});
+  const rdDays = Object.keys(rdLog).sort().slice(-20);
+  document.getElementById('dash-chart-readiness').innerHTML = rdDays.length >= 2
+    ? rdDays.map(k => `
+        <div class="bar-col" title="${k}: ${rdLog[k]}/100">
+          <div class="bar-v ${rdLog[k] >= 80 ? 'ok' : ''}" style="height:${Math.max(rdLog[k], 4)}%"></div>
+          <span class="bar-label">${rdLog[k]}</span>
+        </div>`).join('')
+    : '<p class="chart-empty">Cần ít nhất 2 ngày dữ liệu — mở Dashboard mỗi ngày để thấy đường tiến bộ.</p>';
 }
 
 function renderMockHistory() {
@@ -3445,6 +3456,12 @@ function readinessHtml() {
     : score >= 60 ? { t: 'Khá ổn — sắp tới rồi 💪', c: 'good' }
     : score >= 40 ? { t: 'Đang lên — cố thêm 📈', c: 'mid' }
     : { t: 'Mới bắt đầu — kiên trì nhé 🌱', c: 'low' };
+  // Ghi lại điểm hôm nay vào nhật ký (mỗi ngày một giá trị, cập nhật theo lần xem mới nhất)
+  const rdLog = store.get('prep-readiness-log', {});
+  if (rdLog[dayKey(new Date())] !== score) {
+    rdLog[dayKey(new Date())] = score;
+    store.set('prep-readiness-log', rdLog);
+  }
   // Điểm yếu nhất = thành phần kéo tụt điểm nhiều nhất (khoảng trống × hệ số)
   const weak = [...parts].sort((a, b) => (100 - b.pct) * b.weight - (100 - a.pct) * a.weight)[0];
   const bars = parts.map(p => `
