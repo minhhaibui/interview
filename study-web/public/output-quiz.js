@@ -178,10 +178,10 @@ window.OUTPUT_QUIZ = [
     explain: '`typeof` luôn trả về một CHUỖI. `typeof 1` → "number"; rồi `typeof "number"` → "string". Vì vậy `typeof typeof <bất kỳ>` luôn là "string".',
   },
   {
-    id: 'oq-float-precision', topic: 'Floating point',
-    code: `console.log(0.1 + 0.2);\nconsole.log(0.1 + 0.2 === 0.3);`,
-    options: ['0.3\ntrue', '0.30000000000000004\nfalse', '0.3\nfalse', 'NaN\nfalse'], answer: 1,
-    explain: 'Số thực IEEE 754: 0.1 và 0.2 không biểu diễn chính xác được ở nhị phân → tổng là 0.30000000000000004, so sánh === 0.3 ra false. So sánh tiền tệ/thực dụng: dùng số nguyên (đếm theo cent/đồng) hoặc `Math.abs(a-b) < Number.EPSILON`.',
+    id: 'oq-math-max-empty', topic: 'Math.max/min',
+    code: `console.log(Math.max());\nconsole.log(Math.min() > Math.max());`,
+    options: ['0\nfalse', 'undefined\nfalse', '-Infinity\ntrue', 'Infinity\nfalse'], answer: 2,
+    explain: '`Math.max()` không đối số trả `-Infinity` (phần tử trung hoà của phép max) và `Math.min()` trả `Infinity` — nên `Math.min() > Math.max()` là true! Bẫy thật khi `Math.max(...arr)` với mảng RỖNG: nhận -Infinity thay vì lỗi — nhớ check `arr.length` trước.',
   },
   {
     id: 'oq-string-compare', topic: 'So sánh chuỗi',

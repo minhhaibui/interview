@@ -359,7 +359,7 @@ kill -9 $(lsof -ti :3000)   # lấy PID rồi kill`,
     explain: 'Thiếu header `Content-Type: application/json` (đáp án A) thì curl gửi mặc định `application/x-www-form-urlencoded` — nhiều framework sẽ không parse body JSON. Thêm `-i` xem response header, `-s` tắt progress. (curl bản mới có sẵn cờ `--json` gộp cả hai.)',
   },
   {
-    id: 'cli-redis-05', topic: 'redis',
+    id: 'cli-redis-05', topic: 'redis-cli',
     q: 'Trong redis-cli, `TTL session:9` trả về `-1` nghĩa là gì?',
     cmd: '> TTL session:9\n(integer) -1',
     options: [
