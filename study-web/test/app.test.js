@@ -834,6 +834,12 @@ test('quiz: đáp án shuffle hiển thị — mọi engine chấm theo dataset.
   assert.ok(!/forEach\(\(b, (j|idx)\) =>/.test(APP), 'còn hàm chấm dùng index vị trí DOM (b, j|idx)');
 });
 
+test('today: task 🖨️ in bản ôn hiện khi còn ≤3 ngày đến PV', () => {
+  assert.ok(/id: 'td-print'/.test(APP), 'renderToday thiếu task td-print');
+  assert.ok(/cdDays >= 0 && cdDays <= 3/.test(APP), 'điều kiện ≤3 ngày chưa đúng');
+  assert.ok(/go: printSheet/.test(APP), 'task td-print chưa trỏ printSheet');
+});
+
 test('dashboard: đồ thị 🎯 điểm sẵn sàng theo ngày wiring đủ', () => {
   assert.ok(HTML.includes('id="dash-chart-readiness"'), 'index.html thiếu dash-chart-readiness');
   assert.ok(/prep-readiness-log/.test(APP), 'app.js chưa dùng prep-readiness-log');

@@ -640,6 +640,11 @@ async function renderToday() {
 
   // Danh sách việc ôn gợi ý hôm nay
   const tasks = [];
+  // Sát ngày phỏng vấn (≤3 ngày) → gợi ý in cheat sheet lên ĐẦU danh sách
+  const cdDays = daysUntil(store.get('prep-interview-date', ''));
+  if (cdDays != null && cdDays >= 0 && cdDays <= 3) {
+    tasks.push({ id: 'td-print', ic: '🖨️', t: 'In bản ôn nhanh trước giờ G', s: 'Từ hay quên · câu đang sai · ý chính design · chuyện STAR', go: printSheet });
+  }
   if (due) tasks.push({ id: 'td-due', ic: '📬', t: `Ôn ${due} từ đến hạn`, s: 'Flashcards theo lịch SRS', go: () => goToFlash('__due__') });
   if (leech) tasks.push({ id: 'td-leech', ic: '🔥', t: `Luyện ${leech} từ cứng đầu`, s: 'Những từ sai nhiều lần', go: () => goToFlash('__leech__') });
   tasks.push({ id: 'td-mix', ic: '⚡', t: 'Ôn nhanh ~10 câu (mix)', s: 'Trộn dịch từ + điền câu + nghe', go: goToWritingMix });
