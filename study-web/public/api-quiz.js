@@ -272,17 +272,6 @@ window.API_QUIZ = [
     explain: 'GET (chỉ đọc), PUT (ghi đè toàn bộ về cùng trạng thái) và DELETE (xoá — gọi lại vẫn "đã xoá") đều IDEMPOTENT. POST thường KHÔNG (tạo mới mỗi lần → cần idempotency key để an toàn khi retry). PATCH có thể idempotent hoặc không, tuỳ nội dung sửa.',
   },
   {
-    id: 'api-idem-key', topic: 'Reliability',
-    q: 'Client gọi POST /payments, mạng timeout không rõ server đã xử lý chưa. Cách retry AN TOÀN nhất?',
-    options: [
-      'Retry ngay với đúng request cũ — server tự biết',
-      'Đổi sang PUT vì PUT idempotent',
-      'Gửi kèm Idempotency-Key giống lần trước — server dedup theo key',
-      'Không bao giờ retry POST',
-    ], answer: 2,
-    explain: 'Idempotency-Key (chuẩn Stripe dùng): client sinh key duy nhất cho một "ý định" thanh toán; server lưu key → request trùng key trả lại kết quả cũ thay vì trừ tiền lần 2. Retry mù (A) có thể tạo giao dịch đôi; đổi method (B) sai ngữ nghĩa.',
-  },
-  {
     id: 'api-webhook-sig', topic: 'Bảo mật',
     q: 'Endpoint nhận webhook từ bên thứ 3 (VD Stripe). Cách xác thực payload ĐÚNG là?',
     options: [
@@ -292,17 +281,6 @@ window.API_QUIZ = [
       'Chỉ cần dùng HTTPS là không cần xác thực thêm',
     ], answer: 1,
     explain: 'Chuẩn webhook: provider ký HMAC(raw body, secret) vào header (vd Stripe-Signature); server tính lại trên RAW body (trước khi parse JSON!) và so sánh. IP whitelist dễ vỡ (IP đổi/proxy); HTTPS chỉ mã hoá đường truyền, không chứng minh người gửi.',
-  },
-  {
-    id: 'api-cursor-page', topic: 'API design',
-    q: 'API danh sách 10 triệu bản ghi, client cuộn vô hạn + dữ liệu chèn mới liên tục. Nên phân trang kiểu gì?',
-    options: [
-      'offset/limit — đơn giản, chuẩn REST',
-      'Trả toàn bộ, để client tự lọc',
-      'Random sampling mỗi trang',
-      'Cursor (keyset) theo id/thời gian — ?after=<cursor>&limit=20',
-    ], answer: 3,
-    explain: 'Cursor/keyset pagination: WHERE id < cursor ORDER BY id LIMIT 20 — không quét bỏ N hàng như OFFSET (chậm dần), không lặp/sót bản ghi khi có insert mới giữa 2 lần gọi. Offset/limit ổn cho trang nhỏ tĩnh, tệ cho feed lớn thay đổi liên tục.',
   },
   {
     id: 'api-sse-ws', topic: 'API design',
