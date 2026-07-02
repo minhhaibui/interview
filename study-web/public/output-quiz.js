@@ -177,4 +177,28 @@ window.OUTPUT_QUIZ = [
     options: ['number', 'string', 'undefined', 'object'], answer: 1,
     explain: '`typeof` luôn trả về một CHUỖI. `typeof 1` → "number"; rồi `typeof "number"` → "string". Vì vậy `typeof typeof <bất kỳ>` luôn là "string".',
   },
+  {
+    id: 'oq-float-precision', topic: 'Floating point',
+    code: `console.log(0.1 + 0.2);\nconsole.log(0.1 + 0.2 === 0.3);`,
+    options: ['0.3\ntrue', '0.30000000000000004\nfalse', '0.3\nfalse', 'NaN\nfalse'], answer: 1,
+    explain: 'Số thực IEEE 754: 0.1 và 0.2 không biểu diễn chính xác được ở nhị phân → tổng là 0.30000000000000004, so sánh === 0.3 ra false. So sánh tiền tệ/thực dụng: dùng số nguyên (đếm theo cent/đồng) hoặc `Math.abs(a-b) < Number.EPSILON`.',
+  },
+  {
+    id: 'oq-string-compare', topic: 'So sánh chuỗi',
+    code: `console.log('10' > '9');\nconsole.log(10 > 9);`,
+    options: ['true\ntrue', 'true\nfalse', 'false\nfalse', 'false\ntrue'], answer: 3,
+    explain: 'Hai CHUỖI so sánh theo từ điển từng ký tự: `\'1\' < \'9\'` nên `\'10\' > \'9\'` là false. Hai SỐ so bình thường: true. Bẫy hay gặp khi so version/id đọc từ query string mà quên ép kiểu.',
+  },
+  {
+    id: 'oq-try-finally', topic: 'try / finally',
+    code: `function f() {\n  try {\n    return 'try';\n  } finally {\n    console.log('finally');\n  }\n}\nconsole.log(f());`,
+    options: ['finally\ntry', 'try\nfinally', 'try', 'finally\nundefined'], answer: 0,
+    explain: '`finally` LUÔN chạy trước khi hàm thực sự thoát — kể cả khi `try` đã `return`. Nên log "finally" in ra trước, rồi giá trị return "try" mới được in. (Cẩn thận: `return` trong finally sẽ NUỐT luôn return/throw của try.)',
+  },
+  {
+    id: 'oq-sparse-array', topic: 'Mảng thưa (sparse)',
+    code: `const a = [1, 2, 3];\na[10] = 99;\nconsole.log(a.length);\nconsole.log(a[5]);`,
+    options: ['4\n99', '3\nundefined', '11\nundefined', 'Lỗi RangeError'], answer: 2,
+    explain: 'Gán vượt biên không lỗi — mảng thành SPARSE: `length` = chỉ số lớn nhất + 1 (11), các "lỗ" ở giữa đọc ra undefined. Bẫy: `length` không phải số phần tử thật; map/forEach bỏ qua lỗ nhưng JSON.stringify điền null.',
+  },
 ];
