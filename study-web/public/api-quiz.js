@@ -271,4 +271,70 @@ window.API_QUIZ = [
     ], answer: 0,
     explain: 'GET (chỉ đọc), PUT (ghi đè toàn bộ về cùng trạng thái) và DELETE (xoá — gọi lại vẫn "đã xoá") đều IDEMPOTENT. POST thường KHÔNG (tạo mới mỗi lần → cần idempotency key để an toàn khi retry). PATCH có thể idempotent hoặc không, tuỳ nội dung sửa.',
   },
+  {
+    id: 'api-idem-key', topic: 'Reliability',
+    q: 'Client gọi POST /payments, mạng timeout không rõ server đã xử lý chưa. Cách retry AN TOÀN nhất?',
+    options: [
+      'Retry ngay với đúng request cũ — server tự biết',
+      'Đổi sang PUT vì PUT idempotent',
+      'Gửi kèm Idempotency-Key giống lần trước — server dedup theo key',
+      'Không bao giờ retry POST',
+    ], answer: 2,
+    explain: 'Idempotency-Key (chuẩn Stripe dùng): client sinh key duy nhất cho một "ý định" thanh toán; server lưu key → request trùng key trả lại kết quả cũ thay vì trừ tiền lần 2. Retry mù (A) có thể tạo giao dịch đôi; đổi method (B) sai ngữ nghĩa.',
+  },
+  {
+    id: 'api-webhook-sig', topic: 'Bảo mật',
+    q: 'Endpoint nhận webhook từ bên thứ 3 (VD Stripe). Cách xác thực payload ĐÚNG là?',
+    options: [
+      'Kiểm tra IP nguồn nằm trong whitelist là đủ',
+      'Verify chữ ký HMAC trong header bằng secret chia sẻ, trên RAW body',
+      'Yêu cầu bên gửi kèm username/password trong body',
+      'Chỉ cần dùng HTTPS là không cần xác thực thêm',
+    ], answer: 1,
+    explain: 'Chuẩn webhook: provider ký HMAC(raw body, secret) vào header (vd Stripe-Signature); server tính lại trên RAW body (trước khi parse JSON!) và so sánh. IP whitelist dễ vỡ (IP đổi/proxy); HTTPS chỉ mã hoá đường truyền, không chứng minh người gửi.',
+  },
+  {
+    id: 'api-cursor-page', topic: 'API design',
+    q: 'API danh sách 10 triệu bản ghi, client cuộn vô hạn + dữ liệu chèn mới liên tục. Nên phân trang kiểu gì?',
+    options: [
+      'offset/limit — đơn giản, chuẩn REST',
+      'Trả toàn bộ, để client tự lọc',
+      'Random sampling mỗi trang',
+      'Cursor (keyset) theo id/thời gian — ?after=<cursor>&limit=20',
+    ], answer: 3,
+    explain: 'Cursor/keyset pagination: WHERE id < cursor ORDER BY id LIMIT 20 — không quét bỏ N hàng như OFFSET (chậm dần), không lặp/sót bản ghi khi có insert mới giữa 2 lần gọi. Offset/limit ổn cho trang nhỏ tĩnh, tệ cho feed lớn thay đổi liên tục.',
+  },
+  {
+    id: 'api-sse-ws', topic: 'API design',
+    q: 'Cần đẩy thông báo một chiều server→client (giá, tiến độ) cho web, càng đơn giản càng tốt. Chọn gì?',
+    options: [
+      'WebSocket — luôn là lựa chọn realtime tốt nhất',
+      'Client polling mỗi 100ms',
+      'SSE (Server-Sent Events) — một chiều, chạy trên HTTP thường, tự reconnect',
+      'FTP push',
+    ], answer: 2,
+    explain: 'Một chiều server→client thì SSE đơn giản hơn hẳn: HTTP thuần (qua được proxy/LB dễ), EventSource tự reconnect + Last-Event-ID. WebSocket đáng dùng khi cần HAI chiều (chat, game). Polling 100ms phí tài nguyên.',
+  },
+  {
+    id: 'api-retry-jitter', topic: 'Reliability',
+    q: 'Service downstream chập chờn, hàng nghìn client retry. Chiến lược retry nên là?',
+    options: [
+      'Retry ngay lập tức, tối đa 100 lần',
+      'Exponential backoff + jitter (ngẫu nhiên hoá khoảng chờ), có giới hạn số lần',
+      'Chờ đúng 1 giây giữa mọi lần retry',
+      'Không retry, trả lỗi luôn cho user',
+    ], answer: 1,
+    explain: 'Backoff mũ (1s→2s→4s…) giảm áp lực; JITTER (cộng ngẫu nhiên) tránh "thundering herd" — vạn client cùng retry đúng một nhịp sẽ dập chết service vừa gượng dậy. Kèm giới hạn lần + circuit breaker là combo chuẩn.',
+  },
+  {
+    id: 'api-grpc-rest', topic: 'API design',
+    q: 'Khi nào gRPC hợp lý hơn REST/JSON?',
+    options: [
+      'Giao tiếp NỘI BỘ giữa các microservice cần hiệu năng cao, contract chặt',
+      'API public cho bên thứ 3 tích hợp từ trình duyệt',
+      'Trang web tĩnh cần SEO',
+      'Khi muốn debug bằng curl cho dễ',
+    ], answer: 0,
+    explain: 'gRPC (HTTP/2 + protobuf nhị phân): nhanh, contract sinh code từ .proto, streaming 2 chiều — hợp service-to-service nội bộ. REST/JSON thắng ở public API: người dùng đọc được, curl/browser gọi thẳng, hệ sinh thái rộng.',
+  },
 ];
