@@ -3840,8 +3840,10 @@ function renderCliQuiz() { cliQuiz.render(); }
 /** Render nút đáp án theo thứ tự hiển thị NGẪU NHIÊN (chống học vẹt vị trí);
  *  data-i giữ CHỈ SỐ GỐC nên mọi hàm chấm phải so theo dataset.i, không theo vị trí DOM. */
 function shuffledOptsHtml(q, inner, cls = 'oq-opt') {
-  return [...q.options.keys()].sort(() => Math.random() - 0.5)
-    .map(i => `<button class="${cls}" data-i="${i}">${inner(q.options[i])}</button>`).join('');
+  // Fisher–Yates: sort(random-0.5) lệch mạnh ở n≥3 (option hay ở lại vị trí cũ ~39% thay vì 25%)
+  const k = [...q.options.keys()];
+  for (let j = k.length - 1; j > 0; j--) { const r = Math.floor(Math.random() * (j + 1)); [k[j], k[r]] = [k[r], k[j]]; }
+  return k.map(i => `<button class="${cls}" data-i="${i}">${inner(q.options[i])}</button>`).join('');
 }
 
 // ============ 🔁 ÔN CÂU SAI (gom câu trắc nghiệm chọn sai qua mọi mode) ============
