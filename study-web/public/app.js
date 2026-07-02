@@ -3090,6 +3090,59 @@ function importData(file) {
   reader.readAsText(file);
 }
 
+// ---------- 🖨️ Bản in ôn nhanh (cheat sheet trước giờ phỏng vấn) ----------
+/** Gom những thứ yếu nhất thành HTML trang in: từ cứng đầu, câu đang sai (kèm đáp án),
+ *  keyPoints các đề design yếu, câu hỏi ngược & mẫu câu tiếng Anh cứu nguy. */
+async function buildPrintSheetHtml() {
+  await loadDeck();
+  const date = store.get('prep-interview-date', '');
+  const d = daysUntil(date);
+  const head = date && d != null && d >= 0
+    ? `Phỏng vấn ${d === 0 ? 'HÔM NAY' : `sau ${d} ngày (${escHtml(date)})`}`
+    : `In ngày ${dayKey(new Date())}`;
+
+  const leech = filterDeck('__leech__').slice(0, 20);
+  const leechHtml = leech.length ? `<h2>🔥 Từ hay quên (${leech.length})</h2><ul class="ps-2col">${leech.map(c =>
+    `<li><b>${escHtml(c.front)}</b> — ${escHtml(c.meaning)}</li>`).join('')}</ul>` : '';
+
+  const wrong = buildReviewQueue().slice(0, 12);
+  const wrongHtml = wrong.length ? `<h2>🔁 Câu bạn đang sai (${wrong.length} câu gần nhất)</h2>${wrong.map(({ mode, q }) => {
+    const cfg = QUIZ_MODES[mode];
+    const body = q.q ? escHtml(q.q) : '(câu đọc code — xem trong app)';
+    const snip = q.sql || q.cmd;
+    return `<div class="ps-q"><span class="ps-mode">${cfg ? cfg.label : mode}</span> ${body}
+      ${snip ? `<pre>${escHtml(snip)}</pre>` : ''}
+      <div class="ps-a">✅ ${escHtml(q.options[q.answer])}</div>
+      <div class="ps-why">${escHtml(q.explain || '')}</div></div>`;
+  }).join('')}` : '';
+
+  const scored = dgDrills().map(x => ({ x, best: dgBestCoverage(x.id) }));
+  const weakDrills = [...scored.filter(s => s.best == null), ...scored.filter(s => s.best != null).sort((a, b) => a.best - b.best)]
+    .slice(0, 3);
+  const designHtml = weakDrills.length ? `<h2>🏛️ Ý chính 3 đề thiết kế cần xem lại</h2>${weakDrills.map(({ x, best }) =>
+    `<div class="ps-drill"><b>${escHtml(x.title)}</b> <small>${best == null ? 'chưa luyện' : `tốt nhất ${best}%`}</small>
+     <ul>${x.keyPoints.slice(0, 4).map(k => `<li>${escHtml(k)}</li>`).join('')}</ul></div>`).join('')}` : '';
+
+  const rq = (window.REVERSE_QUESTIONS || []).flatMap(g => g.items).slice(0, 5);
+  const rqHtml = rq.length ? `<h2>💬 5 câu hỏi ngược nên hỏi</h2><ul>${rq.map(i => `<li>${escHtml(i.q)}</li>`).join('')}</ul>` : '';
+
+  const eps = (window.ENGLISH_PHRASES || []).filter(g => ['ep-buytime', 'ep-close'].includes(g.id));
+  const epHtml = eps.length ? `<h2>🇬🇧 Mẫu câu cứu nguy & chốt buổi</h2><ul>${eps.flatMap(g => g.items).map(i =>
+    `<li><i>${escHtml(i.en)}</i></li>`).join('')}</ul>` : '';
+
+  return `<div class="ps-head"><h1>🏁 Ôn nhanh trước phỏng vấn</h1><p>${head} · minhhaibui.github.io/interview</p></div>
+    ${leechHtml}${wrongHtml}${designHtml}${rqHtml}${epHtml}
+    <p class="ps-foot">Hít thở sâu — bạn chuẩn bị kỹ rồi. Chúc may mắn! 💪</p>`;
+}
+
+/** Đổ cheat sheet vào #print-sheet rồi mở hộp thoại in (CSS @media print chỉ hiện phần này). */
+async function printSheet() {
+  let el = document.getElementById('print-sheet');
+  if (!el) { el = document.createElement('div'); el.id = 'print-sheet'; document.body.appendChild(el); }
+  el.innerHTML = await buildPrintSheetHtml();
+  window.print();
+}
+
 const WEEK_TASKS = [
   ['theory', '📚 Lý thuyết'],
   ['exercises', '💪 Bài tập'],
@@ -3189,6 +3242,7 @@ function renderDashboard() {
   }
 
   document.getElementById('dash-export').onclick = exportData;
+  document.getElementById('dash-print').onclick = printSheet;
   const fileInput = document.getElementById('dash-import-file');
   document.getElementById('dash-import').onclick = () => fileInput.click();
   fileInput.onchange = () => {

@@ -807,6 +807,16 @@ test('today: panel 🏁 Ưu tiên nước rút wiring đủ', () => {
   assert.ok(CSS.includes('.td-sprint-row'), 'styles.css thiếu .td-sprint-row');
 });
 
+test('dashboard: 🖨️ Bản in ôn nhanh wiring đủ', () => {
+  assert.ok(/async function buildPrintSheetHtml\b/.test(APP), 'thiếu hàm buildPrintSheetHtml');
+  assert.ok(/async function printSheet\b/.test(APP), 'thiếu hàm printSheet');
+  assert.ok(/window\.print\(\)/.test(APP), 'printSheet chưa gọi window.print()');
+  assert.ok(/dash-print'\)\.onclick = printSheet/.test(APP), 'renderDashboard chưa bind dash-print');
+  assert.ok(HTML.includes('id="dash-print"'), 'index.html thiếu nút dash-print');
+  const CSS = read('styles.css');
+  assert.ok(CSS.includes('#print-sheet') && CSS.includes('@media print'), 'styles.css thiếu CSS in');
+});
+
 test('script đủ: index.html nạp mọi file dữ liệu trước app.js', () => {
   for (const f of ['coding-problems.js', 'iq-questions.js', 'english-questions.js',
     'situational-questions.js', 'design-drills.js', 'api-quiz.js', 'sql-drill.js', 'cli-quiz.js',
