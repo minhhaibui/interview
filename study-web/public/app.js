@@ -4001,6 +4001,8 @@ function renderStarList() {
     ${englishPhrasesHtml()}`;
   el.querySelectorAll('.star-q').forEach(b => b.onclick = () => openStar(b.dataset.id));
   bindEnglishPhraseAudio(el);
+  // Warm danh sách voice sớm (Chrome trả [] cho getVoices() lần gọi đầu) để click 🔊 đầu tiên đã có voice en.
+  try { if (window.speechSynthesis) speechSynthesis.getVoices(); } catch { /* không hỗ trợ TTS */ }
 }
 
 /** Gắn nút 🔊 nghe từng câu + ▶️ nghe cả nhóm cho accordion mẫu câu tiếng Anh. */
@@ -4039,6 +4041,8 @@ function englishPhrasesHtml() {
 function openStar(id) {
   const q = starQs().find(x => x.id === id);
   if (!q) return;
+  // Đang phát "nghe cả nhóm" mà mở phiên soạn STAR thì dừng đọc — audio không còn ngữ cảnh.
+  try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch { /* không hỗ trợ TTS */ }
   starState = { q };
   renderStarSession();
 }
