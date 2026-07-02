@@ -7,7 +7,7 @@
  *   - /api/* và các request cross-origin khác (Firebase, Anthropic): không can thiệp.
  * Đổi VERSION mỗi khi muốn ép xoá cache cũ.
  */
-const VERSION = 'v60';
+const VERSION = 'v61';
 const CACHE = `prep-${VERSION}`;
 const CDN_HOSTS = ['cdn.jsdelivr.net', 'www.gstatic.com'];
 
