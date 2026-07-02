@@ -3811,7 +3811,7 @@ const QUIZ_MODES = {
     highlight: false,
   },
   situational: {
-    label: '🤝 Tình huống', doneKey: 'prep-sit-done', data: () => window.SITUATIONAL_QUESTIONS || [],
+    label: '🎭 Xử lý tình huống', doneKey: 'prep-sit-done', data: () => window.SITUATIONAL_QUESTIONS || [],
     ask: 'Chọn cách xử lý tốt nhất:',
     optionHtml: o => `<span class="oq-otext">${escHtml(o)}</span>`,
     questionHtml: q => `<p class="oq-question">${escHtml(q.q)}</p>`,

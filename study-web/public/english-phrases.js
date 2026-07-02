@@ -82,7 +82,7 @@ window.ENGLISH_PHRASES = [
     items: [
       { en: "Could you share the salary range for this position?", vi: 'Hỏi range trước khi lộ con số của mình — thế chủ động.' },
       { en: "Based on my experience and the market rate, I'm looking for something around X.", vi: 'Neo con số kèm CĂN CỨ (kinh nghiệm + mặt bằng thị trường).' },
-      { en: "I'm flexible on the base salary if there's room in other areas, like a signing bonus or review timeline.", vi: 'Mở đường thương lượng gói tổng thể thay vì chỉ lương cứng.' },
+      { en: "I'm flexible on the base salary if there's room in other areas, like a signing bonus or an earlier salary review.", vi: 'Mở đường thương lượng gói tổng thể thay vì chỉ lương cứng.' },
       { en: "That's a bit below my expectations. Is there any flexibility on that number?", vi: 'Từ chối mềm một offer thấp — lịch sự nhưng rõ ràng.' },
       { en: "Thank you for the offer! Could I have a couple of days to consider it?", vi: 'Xin thời gian suy nghĩ — hoàn toàn bình thường và chuyên nghiệp.' },
     ],
