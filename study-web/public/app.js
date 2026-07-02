@@ -1231,7 +1231,9 @@ function ftFinish() {
   el.querySelectorAll('.ft-known').forEach(b => b.onclick = () => { bumpSrs(ftQueue[+b.dataset.i].card, true); ftMarkRow(b, 'thuộc rồi'); });
   el.querySelectorAll('.ft-say').forEach(b => b.onclick = () => {
     const c = ftQueue[+b.dataset.i].card;
-    speak(c.example ? `${c.front}. ${c.example}` : c.front);
+    // Sanitize như speakCard: bỏ ⚠️/ngoặc ở từ, bỏ backtick + chú thích "— ⚠️…" tiếng Việt ở ví dụ
+    const ex = (c.example || '').replace(/[`*]/g, '').replace(/—.*$/, '').trim();
+    speak(ex ? `${cleanTarget(c.front)}. ${ex}` : cleanTarget(c.front));
   });
   document.getElementById('ft-again').onclick = ftStart;
   document.getElementById('ft-done').onclick = () => { ftToggle(false); fillFcWeekSelect(); startSession(); };
