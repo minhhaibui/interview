@@ -1318,14 +1318,21 @@ let wrTotalAnswered = 0;
 let WR_SENTENCES = null; // { pairs: [{en, vi, week}], questions: [{en}] }
 
 function speak(text) {
-  if (!('speechSynthesis' in window) || !text) return;
+  if (text) speakList([text]);
+}
+
+/** Đọc lần lượt nhiều câu tiếng Anh: cancel một lần rồi xếp hàng utterance. */
+function speakList(texts) {
+  if (!('speechSynthesis' in window) || !texts.length) return;
   speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'en-US';
-  u.rate = 0.92;
   const voice = speechSynthesis.getVoices().find(v => v.lang && v.lang.startsWith('en'));
-  if (voice) u.voice = voice;
-  speechSynthesis.speak(u);
+  for (const t of texts) {
+    const u = new SpeechSynthesisUtterance(t);
+    u.lang = 'en-US';
+    u.rate = 0.92;
+    if (voice) u.voice = voice;
+    speechSynthesis.speak(u);
+  }
 }
 
 // ---------- Speech Recognition (chế độ 🎤 Đọc to) ----------
@@ -3993,17 +4000,32 @@ function renderStarList() {
     ${cards}
     ${englishPhrasesHtml()}`;
   el.querySelectorAll('.star-q').forEach(b => b.onclick = () => openStar(b.dataset.id));
+  bindEnglishPhraseAudio(el);
+}
+
+/** Gắn nút 🔊 nghe từng câu + ▶️ nghe cả nhóm cho accordion mẫu câu tiếng Anh. */
+function bindEnglishPhraseAudio(root) {
+  const groups = window.ENGLISH_PHRASES || [];
+  root.querySelectorAll('.ep-say').forEach(b => b.onclick = () => {
+    const it = (groups[+b.dataset.g] || { items: [] }).items[+b.dataset.i];
+    if (it) speak(it.en);
+  });
+  root.querySelectorAll('.ep-sayall').forEach(b => b.onclick = () => {
+    const g = groups[+b.dataset.g];
+    if (g) speakList(g.items.map(it => it.en));
+  });
 }
 
 /** Accordion "Mẫu câu tiếng Anh khi phỏng vấn" — tham khảo, hiển thị cuối danh sách STAR. */
 function englishPhrasesHtml() {
   const groups = window.ENGLISH_PHRASES || [];
   if (!groups.length) return '';
-  const cards = groups.map(g => {
-    const items = g.items.map(it =>
-      `<li><span class="ep-en">${escHtml(it.en)}</span><span class="ep-vi">🇻🇳 ${escHtml(it.vi)}</span></li>`).join('');
+  const cards = groups.map((g, gi) => {
+    const items = g.items.map((it, ii) =>
+      `<li><span class="ep-en">${escHtml(it.en)}<button class="ep-say" data-g="${gi}" data-i="${ii}" title="Nghe câu này" aria-label="Nghe câu này">🔊</button></span><span class="ep-vi">🇻🇳 ${escHtml(it.vi)}</span></li>`).join('');
     return `<details class="rq-group">
       <summary>${g.icon} ${escHtml(g.group)} <span class="rq-n">${g.items.length}</span></summary>
+      <button class="ep-sayall" data-g="${gi}">▶️ Nghe cả nhóm — nghe rồi nhắc lại (shadowing)</button>
       <ul class="rq-list ep-list">${items}</ul>
     </details>`;
   }).join('');

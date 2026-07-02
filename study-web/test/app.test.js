@@ -783,6 +783,16 @@ test('wiring: mẫu câu tiếng Anh render trong tab STAR', () => {
   assert.ok(/\$\{englishPhrasesHtml\(\)\}/.test(APP), 'renderStarList chưa chèn englishPhrasesHtml()');
 });
 
+test('english phrases: có TTS — nút 🔊 từng câu + ▶️ nghe cả nhóm', () => {
+  assert.ok(/function speakList\b/.test(APP), 'thiếu hàm speakList (đọc xếp hàng nhiều câu)');
+  assert.ok(/class="ep-say"/.test(APP), 'englishPhrasesHtml thiếu nút 🔊 từng câu (.ep-say)');
+  assert.ok(/class="ep-sayall"/.test(APP), 'englishPhrasesHtml thiếu nút nghe cả nhóm (.ep-sayall)');
+  assert.ok(/function bindEnglishPhraseAudio\b/.test(APP), 'thiếu hàm bindEnglishPhraseAudio');
+  assert.ok(/bindEnglishPhraseAudio\(el\)/.test(APP), 'renderStarList chưa gọi bindEnglishPhraseAudio');
+  const CSS = read('styles.css');
+  assert.ok(CSS.includes('.ep-say') && CSS.includes('.ep-sayall'), 'styles.css thiếu style nút nghe');
+});
+
 test('script đủ: index.html nạp mọi file dữ liệu trước app.js', () => {
   for (const f of ['coding-problems.js', 'iq-questions.js', 'english-questions.js',
     'situational-questions.js', 'design-drills.js', 'api-quiz.js', 'sql-drill.js', 'cli-quiz.js',

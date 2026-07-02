@@ -1107,6 +1107,10 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 .ep-en { display: block; font-style: italic; }
 .ep-vi { display: block; color: var(--muted); font-size: 12.5px; margin-top: 3px; }
 .ep-wrap { margin-top: 26px; }
+.ep-say { background: none; border: none; cursor: pointer; font-size: 13px; padding: 0 2px; margin-left: 6px; vertical-align: baseline; opacity: .75; }
+.ep-say:hover { opacity: 1; }
+.ep-sayall { display: inline-block; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; color: var(--accent); cursor: pointer; font-size: 12.5px; padding: 4px 12px; margin: 2px 0 10px; }
+.ep-sayall:hover { border-color: var(--accent); }
 .iv-inter, .iv-result { text-align: center; background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 30px 24px; }
 .iv-check { font-size: 46px; }
 .iv-verdict { margin: 6px 0 4px; }
