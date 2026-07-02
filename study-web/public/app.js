@@ -3662,8 +3662,7 @@ function showOutputQuiz() {
   const q = all[oqOrder[oqIdx]];
   if (!q) return finishOutputQuiz();
   const body = document.getElementById('oq-body');
-  const opts = q.options.map((o, i) =>
-    `<button class="oq-opt" data-i="${i}"><pre>${escHtml(o)}</pre></button>`).join('');
+  const opts = shuffledOptsHtml(q, o => `<pre>${escHtml(o)}</pre>`);
   body.innerHTML = `
     <div class="oq-quiz">
       <div class="oq-bar"><span>Câu ${oqIdx + 1}/${all.length} · ✓ ${oqRight}</span><span class="oq-topic">${escHtml(q.topic)}</span></div>
@@ -3681,10 +3680,11 @@ function answerOutputQuiz(i) {
   const q = all[oqOrder[oqIdx]];
   const body = document.getElementById('oq-body');
   const correct = i === q.answer;
-  body.querySelectorAll('.oq-opt').forEach((b, j) => {
+  body.querySelectorAll('.oq-opt').forEach(b => {
     b.disabled = true;
-    if (j === q.answer) b.classList.add('right');
-    else if (j === i) b.classList.add('wrong');
+    const oi = +b.dataset.i; // chỉ số GỐC (thứ tự hiển thị đã shuffle)
+    if (oi === q.answer) b.classList.add('right');
+    else if (oi === i) b.classList.add('wrong');
   });
   if (correct) {
     oqRight++;
@@ -3745,7 +3745,7 @@ function makeQuiz(cfg) {
     const all = data(), q = all[order[idx]];
     if (!q) return finish();
     const el = body();
-    const opts = q.options.map((o, i) => `<button class="oq-opt" data-i="${i}">${cfg.optionHtml(o)}</button>`).join('');
+    const opts = shuffledOptsHtml(q, cfg.optionHtml);
     el.innerHTML = `
       <div class="oq-quiz">
         <div class="oq-bar"><span>Câu ${idx + 1}/${all.length} · ✓ ${right}</span><span class="oq-topic">${escHtml(q.topic)}</span></div>
@@ -3760,7 +3760,7 @@ function makeQuiz(cfg) {
   function answer(i) {
     const all = data(), q = all[order[idx]], el = body();
     const correct = i === q.answer;
-    el.querySelectorAll('.oq-opt').forEach((b, j) => { b.disabled = true; if (j === q.answer) b.classList.add('right'); else if (j === i) b.classList.add('wrong'); });
+    el.querySelectorAll('.oq-opt').forEach(b => { b.disabled = true; const oi = +b.dataset.i; if (oi === q.answer) b.classList.add('right'); else if (oi === i) b.classList.add('wrong'); });
     if (correct) { right++; const d = doneSet(); d[q.id] = true; store.set(cfg.doneKey, d); clearWrong(cfg.mode, q.id); }
     else recordWrong(cfg.mode, q.id);
     logActivity();
@@ -3836,6 +3836,13 @@ const cliQuiz = makeQuiz({
   resultMsg: pct => pct >= 80 ? 'Thạo dòng lệnh — tự tin demo thao tác khi phỏng vấn!' : pct >= 50 ? 'Khá ổn — ôn thêm git reset/revert, kubectl rollout, SCAN vs KEYS.' : 'Lệnh CLI hay bị hỏi thực hành — đọc kỹ giải thích từng câu nhé.',
 });
 function renderCliQuiz() { cliQuiz.render(); }
+
+/** Render nút đáp án theo thứ tự hiển thị NGẪU NHIÊN (chống học vẹt vị trí);
+ *  data-i giữ CHỈ SỐ GỐC nên mọi hàm chấm phải so theo dataset.i, không theo vị trí DOM. */
+function shuffledOptsHtml(q, inner, cls = 'oq-opt') {
+  return [...q.options.keys()].sort(() => Math.random() - 0.5)
+    .map(i => `<button class="${cls}" data-i="${i}">${inner(q.options[i])}</button>`).join('');
+}
 
 // ============ 🔁 ÔN CÂU SAI (gom câu trắc nghiệm chọn sai qua mọi mode) ============
 // Registry mô tả cách render mỗi mode; dùng chung cho phiên ôn + đếm badge.
@@ -3994,7 +4001,7 @@ function showReview() {
   if (!el) return;
   if (!item) return finishReview();
   const cfg = QUIZ_MODES[item.mode], q = item.q;
-  const opts = q.options.map((o, i) => `<button class="oq-opt" data-i="${i}">${cfg.optionHtml(o)}</button>`).join('');
+  const opts = shuffledOptsHtml(q, cfg.optionHtml);
   el.innerHTML = `
     <div class="oq-quiz">
       <div class="oq-bar"><span>Câu ${reviewIdx + 1}/${reviewQueue.length} · ✓ ${reviewRight}</span><span class="oq-topic">${cfg.label}${q.topic ? ' · ' + escHtml(q.topic) : ''}</span></div>
@@ -4012,7 +4019,7 @@ function answerReview(i) {
   const cfg = QUIZ_MODES[item.mode], q = item.q;
   const el = document.getElementById('review-body');
   const correct = i === q.answer;
-  el.querySelectorAll('.oq-opt').forEach((b, j) => { b.disabled = true; if (j === q.answer) b.classList.add('right'); else if (j === i) b.classList.add('wrong'); });
+  el.querySelectorAll('.oq-opt').forEach(b => { b.disabled = true; const oi = +b.dataset.i; if (oi === q.answer) b.classList.add('right'); else if (oi === i) b.classList.add('wrong'); });
   if (correct) {
     reviewRight++;
     clearWrong(item.mode, q.id);            // đã nhớ → rời hàng đợi
@@ -4638,7 +4645,7 @@ function showIQTest() {
     <div class="iq-track"><div class="iq-fill" style="width:${s.idx / s.qs.length * 100}%"></div></div>
     <div class="iq-cat" style="margin-bottom:6px">${escHtml(q.category)}</div>
     <div class="iq-q">${escHtml(q.q)}</div>
-    <div class="iq-opts">${q.options.map((o, i) => `<button class="iq-opt" data-i="${i}">${escHtml(o)}</button>`).join('')}</div>
+    <div class="iq-opts">${shuffledOptsHtml(q, escHtml, 'iq-opt')}</div>
     <p class="iq-note">Bài test không hiện đáp án ngay — kết quả & giải thích sẽ có ở cuối.</p>`;
   body.querySelectorAll('.iq-opt').forEach(b => b.onclick = () => answerIQTest(+b.dataset.i));
   document.getElementById('iqt-quit').onclick = () => { if (confirm('Thoát bài test? Kết quả sẽ không được lưu.')) { clearInterval(iqTimerId); renderIQ(); } };
@@ -4726,7 +4733,7 @@ function showIQ() {
     <div class="iq-prog">Câu ${s.idx + 1}/${s.qs.length} · <span class="iq-cat">${escHtml(q.category)}</span> · ✅ ${s.correct} đúng</div>
     <div class="iq-track"><div class="iq-fill" style="width:${s.idx / s.qs.length * 100}%"></div></div>
     <div class="iq-q">${escHtml(q.q)}</div>
-    <div class="iq-opts">${q.options.map((o, i) => `<button class="iq-opt" data-i="${i}">${escHtml(o)}</button>`).join('')}</div>
+    <div class="iq-opts">${shuffledOptsHtml(q, escHtml, 'iq-opt')}</div>
     <div id="iq-fb" class="iq-fb"></div>
     <button id="iq-next" class="iq-next" hidden></button>`;
   body.querySelectorAll('.iq-opt').forEach(b => b.onclick = () => answerIQ(+b.dataset.i));
@@ -4737,10 +4744,11 @@ function answerIQ(i) {
   if (s.answered) return;
   s.answered = true;
   const q = s.qs[s.idx];
-  document.querySelectorAll('.iq-opt').forEach((b, idx) => {
+  document.querySelectorAll('.iq-opt').forEach(b => {
     b.disabled = true;
-    if (idx === q.answer) b.classList.add('correct');
-    else if (idx === i) b.classList.add('wrong');
+    const oi = +b.dataset.i;
+    if (oi === q.answer) b.classList.add('correct');
+    else if (oi === i) b.classList.add('wrong');
   });
   const ok = i === q.answer;
   if (ok) s.correct++;
@@ -4876,7 +4884,7 @@ function showMcq() {
     <div class="iv-roundhead">${escHtml(m.label)} · Câu ${m.idx + 1}/${m.qs.length}</div>
     <div class="iq-track"><div class="iq-fill" style="width:${m.idx / m.qs.length * 100}%"></div></div>
     <div class="iq-q">${escHtml(q.q)}</div>
-    <div class="iq-opts">${q.options.map((o, i) => `<button class="iq-opt" data-i="${i}">${escHtml(o)}</button>`).join('')}</div>
+    <div class="iq-opts">${shuffledOptsHtml(q, escHtml, 'iq-opt')}</div>
     <div id="iv-fb" class="iq-fb"></div>
     <button id="iv-mnext" class="iq-next" hidden></button>`;
   body.querySelectorAll('.iq-opt').forEach(b => b.onclick = () => answerMcq(+b.dataset.i));
@@ -4886,7 +4894,7 @@ function answerMcq(i) {
   if (m.answered) return;
   m.answered = true;
   const q = m.qs[m.idx];
-  document.querySelectorAll('.iq-opt').forEach((b, idx) => { b.disabled = true; if (idx === q.answer) b.classList.add('correct'); else if (idx === i) b.classList.add('wrong'); });
+  document.querySelectorAll('.iq-opt').forEach(b => { b.disabled = true; const oi = +b.dataset.i; if (oi === q.answer) b.classList.add('correct'); else if (oi === i) b.classList.add('wrong'); });
   const ok = i === q.answer;
   if (ok) m.correct++;
   // Đổ câu sai về hệ 🔁 Ôn câu sai (mode english/situational trong QUIZ_MODES)
@@ -4930,7 +4938,7 @@ function showIvIq() {
     <div class="iq-track"><div class="iq-fill" style="width:${s.idx / s.qs.length * 100}%"></div></div>
     <div class="iq-cat" style="margin-bottom:6px">${escHtml(q.category)}</div>
     <div class="iq-q">${escHtml(q.q)}</div>
-    <div class="iq-opts">${q.options.map((o, i) => `<button class="iq-opt" data-i="${i}">${escHtml(o)}</button>`).join('')}</div>`;
+    <div class="iq-opts">${shuffledOptsHtml(q, escHtml, 'iq-opt')}</div>`;
   body.querySelectorAll('.iq-opt').forEach(b => b.onclick = () => { if (+b.dataset.i === q.answer) s.wGot += qDiff(q); s.idx++; showIvIq(); });
 }
 function finishIvIq() {

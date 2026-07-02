@@ -825,6 +825,15 @@ test('design: nút 🎲 bốc đề ngẫu nhiên wiring đủ', () => {
   assert.ok(/\.dg-fbtn\[data-diff\]/.test(APP), 'selector filter phải là .dg-fbtn[data-diff]');
 });
 
+test('quiz: đáp án shuffle hiển thị — mọi engine chấm theo dataset.i, không theo vị trí DOM', () => {
+  assert.ok(/function shuffledOptsHtml\b/.test(APP), 'thiếu helper shuffledOptsHtml');
+  const renders = (APP.match(/shuffledOptsHtml\(q/g) || []).length;
+  assert.ok(renders >= 7, `phải ≥7 chỗ render dùng shuffledOptsHtml (được ${renders})`);
+  // Không còn render option theo thứ tự gốc hay chấm theo vị trí DOM
+  assert.ok(!/options\.map\(\(o, i\)/.test(APP), 'còn chỗ render options.map((o, i) chưa shuffle');
+  assert.ok(!/forEach\(\(b, (j|idx)\) =>/.test(APP), 'còn hàm chấm dùng index vị trí DOM (b, j|idx)');
+});
+
 test('script đủ: index.html nạp mọi file dữ liệu trước app.js', () => {
   for (const f of ['coding-problems.js', 'iq-questions.js', 'english-questions.js',
     'situational-questions.js', 'design-drills.js', 'api-quiz.js', 'sql-drill.js', 'cli-quiz.js',
