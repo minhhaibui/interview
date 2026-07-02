@@ -600,6 +600,26 @@ function interviewCountdownHtml() {
   </div>`;
 }
 
+/** Panel "🏁 Ưu tiên nước rút" ở tab Hôm nay: 3 mảng Readiness kéo điểm nhiều nhất, chỉ hiện khi còn ≤14 ngày đến buổi phỏng vấn. */
+function sprintPanelHtml() {
+  const d = daysUntil(store.get('prep-interview-date', ''));
+  if (d == null || d < 0 || d > 14) return '';
+  const top = [...computeReadiness().parts]
+    .sort((a, b) => (100 - b.pct) * b.weight - (100 - a.pct) * a.weight)
+    .slice(0, 3);
+  const rows = top.map(p => `
+    <button class="td-sprint-row" data-view="${p.view}" title="${escHtml(p.tip)}">
+      <span class="td-sprint-label">${p.label}</span>
+      <span class="td-sprint-track"><span class="td-sprint-fill" style="width:${p.pct}%"></span></span>
+      <b class="td-sprint-val">${p.pct}</b>
+      <span class="td-go">▶</span>
+    </button>`).join('');
+  return `<div class="td-sprint">
+    <h2 class="td-h2">🏁 Ưu tiên nước rút — 3 mảng đang kéo điểm sẵn sàng nhiều nhất</h2>
+    <div class="td-sprint-rows">${rows}</div>
+  </div>`;
+}
+
 async function renderToday() {
   const body = document.getElementById('today-body');
   body.innerHTML = '<p style="color:var(--muted)">Đang tải buổi ôn hôm nay…</p>';
@@ -660,6 +680,7 @@ async function renderToday() {
     </div>
 
     ${interviewCountdownHtml()}
+    ${sprintPanelHtml()}
 
     <div class="td-tip"><span class="td-tip-ic">💡</span><span class="td-tip-msg"><b>Mẹo hôm nay:</b> <span id="td-tip-text">${escHtml(tipOfDay())}</span></span><button id="td-tip-next" class="td-tip-next" title="Xem mẹo khác">🔄</button></div>
 
@@ -686,6 +707,8 @@ async function renderToday() {
     renderToday();
   };
   tasks.forEach(t => document.getElementById(t.id)?.addEventListener('click', t.go));
+  body.querySelectorAll('.td-sprint-row').forEach(b =>
+    b.addEventListener('click', () => switchView(b.dataset.view)));
 
   // Đếm ngược ngày phỏng vấn: đặt / xoá
   document.getElementById('td-cd-save')?.addEventListener('click', () => {

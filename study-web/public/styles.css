@@ -843,6 +843,15 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 .td-cd-soon { border-left-color: var(--bad, #e5484d); }
 .td-cd-today { border-left-color: var(--good, #46a758); background: color-mix(in srgb, var(--good, #46a758) 10%, var(--bg2)); }
 .td-cd-past { border-left-color: var(--muted); opacity: .85; }
+.td-sprint-rows { display: flex; flex-direction: column; gap: 8px; }
+.td-sprint-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 14px; cursor: pointer;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font: inherit; text-align: left; }
+.td-sprint-row:hover { border-color: var(--accent); }
+.td-sprint-label { flex: 0 0 220px; font-size: 14px; }
+.td-sprint-track { flex: 1; height: 8px; background: var(--bg3); border-radius: 5px; overflow: hidden; }
+.td-sprint-fill { display: block; height: 100%; background: var(--accent); border-radius: 5px; }
+.td-sprint-val { flex: 0 0 auto; font-size: 13px; }
+@media (max-width: 560px) { .td-sprint-label { flex-basis: 130px; } }
 .review-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 6px; }
 @media (max-width: 560px) { .think-modes { gap: 12px; padding: 12px 12px 0; } .think-group { width: 100%; } }
 

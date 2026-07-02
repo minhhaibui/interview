@@ -793,6 +793,14 @@ test('english phrases: có TTS — nút 🔊 từng câu + ▶️ nghe cả nhó
   assert.ok(CSS.includes('.ep-say') && CSS.includes('.ep-sayall'), 'styles.css thiếu style nút nghe');
 });
 
+test('today: panel 🏁 Ưu tiên nước rút wiring đủ', () => {
+  assert.ok(/function sprintPanelHtml\b/.test(APP), 'thiếu hàm sprintPanelHtml');
+  assert.ok(/\$\{sprintPanelHtml\(\)\}/.test(APP), 'renderToday chưa chèn sprintPanelHtml()');
+  assert.ok(/\.td-sprint-row'\)\.forEach/.test(APP), 'chưa bind click .td-sprint-row');
+  const CSS = read('styles.css');
+  assert.ok(CSS.includes('.td-sprint-row'), 'styles.css thiếu .td-sprint-row');
+});
+
 test('script đủ: index.html nạp mọi file dữ liệu trước app.js', () => {
   for (const f of ['coding-problems.js', 'iq-questions.js', 'english-questions.js',
     'situational-questions.js', 'design-drills.js', 'api-quiz.js', 'sql-drill.js', 'cli-quiz.js',
