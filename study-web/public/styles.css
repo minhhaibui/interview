@@ -1454,6 +1454,8 @@ select:hover { border-color: var(--accent); }
   #print-sheet .ps-why { margin-left: 12px; color: #444; }
   #print-sheet pre { margin: 3px 0 3px 12px; padding: 4px 6px; border: 1px solid #ccc; font-size: 10.5px; white-space: pre-wrap; }
   #print-sheet .ps-drill { margin-bottom: 7px; break-inside: avoid; }
+  #print-sheet .ps-star { margin-bottom: 9px; break-inside: avoid; }
+  #print-sheet .ps-star p { margin: 1px 0 1px 12px; }
   #print-sheet .ps-drill small { color: #444; }
   #print-sheet .ps-foot { margin-top: 14px; text-align: center; font-style: italic; }
 }

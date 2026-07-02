@@ -3148,6 +3148,17 @@ async function buildPrintSheetHtml() {
     `<div class="ps-drill"><b>${escHtml(x.title)}</b> <small>${best == null ? 'chưa luyện' : `tốt nhất ${best}%`}</small>
      <ul>${x.keyPoints.slice(0, 4).map(k => `<li>${escHtml(k)}</li>`).join('')}</ul></div>`).join('')}` : '';
 
+  // Chuyện STAR đã soạn HOÀN CHỈNH (đủ 4 ô) — nội dung tự viết là thứ đáng đọc lại nhất
+  const drafts = starDraftsAll();
+  const stories = starQs()
+    .map(q => ({ q, d: drafts[q.id] }))
+    .filter(x => x.d && x.d.s && x.d.t && x.d.a && x.d.r)
+    .slice(0, 8);
+  const starHtml = stories.length ? `<h2>🌟 Chuyện STAR bạn đã soạn (${stories.length})</h2>${stories.map(({ q, d }) =>
+    `<div class="ps-star"><b>${escHtml(q.q)}</b>
+     <p><b>S:</b> ${escHtml(d.s)}</p><p><b>T:</b> ${escHtml(d.t)}</p>
+     <p><b>A:</b> ${escHtml(d.a)}</p><p><b>R:</b> ${escHtml(d.r)}</p></div>`).join('')}` : '';
+
   const rq = (window.REVERSE_QUESTIONS || []).flatMap(g => g.items).slice(0, 5);
   const rqHtml = rq.length ? `<h2>💬 5 câu hỏi ngược nên hỏi</h2><ul>${rq.map(i => `<li>${escHtml(i.q)}</li>`).join('')}</ul>` : '';
 
@@ -3156,7 +3167,7 @@ async function buildPrintSheetHtml() {
     `<li><i>${escHtml(i.en)}</i></li>`).join('')}</ul>` : '';
 
   return `<div class="ps-head"><h1>🏁 Ôn nhanh trước phỏng vấn</h1><p>${head} · minhhaibui.github.io/interview</p></div>
-    ${leechHtml}${wrongHtml}${designHtml}${rqHtml}${epHtml}
+    ${leechHtml}${wrongHtml}${designHtml}${starHtml}${rqHtml}${epHtml}
     <p class="ps-foot">Hít thở sâu — bạn chuẩn bị kỹ rồi. Chúc may mắn! 💪</p>`;
 }
 
