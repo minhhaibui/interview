@@ -645,7 +645,7 @@ async function renderToday() {
   tasks.push({ id: 'td-mix', ic: '⚡', t: 'Ôn nhanh ~10 câu (mix)', s: 'Trộn dịch từ + điền câu + nghe', go: goToWritingMix });
   tasks.push({ id: 'td-fttest', ic: '📝', t: 'Test gõ từ vựng', s: 'Hiện nghĩa Việt → gõ tiếng Anh, chấm điểm', go: goToVocabTest });
   if (wrongN) tasks.push({ id: 'td-wrong', ic: '🚩', t: `Ôn ${wrongN} câu mock đã sai`, s: 'Trả lời lại cho nhớ', go: goToMockWrong });
-  if (quizWrongN) tasks.push({ id: 'td-quiz-wrong', ic: '🔁', t: `Ôn ${quizWrongN} câu trắc nghiệm đã sai`, s: 'Đoán output · API · SQL · CLI — gom về một phiên', go: goToQuizReview });
+  if (quizWrongN) tasks.push({ id: 'td-quiz-wrong', ic: '🔁', t: `Ôn ${quizWrongN} câu trắc nghiệm đã sai`, s: 'Output · API · SQL · CLI · Anh · Tình huống — gom về một phiên', go: goToQuizReview });
   tasks.push({ id: 'td-think', ic: '🧠', t: 'Giải 1 bài luyện tư duy', s: 'Coding hoặc IQ', go: () => switchView('coding') });
   tasks.push({ id: 'td-mock', ic: '🎯', t: 'Mock interview nhanh', s: '5–10 câu ngẫu nhiên', go: () => switchView('mock') });
   tasks.push({ id: 'td-design', ic: '🏛️', t: 'Luyện 1 đề System Design', s: 'Tự chấm rubric hoặc nhờ AI chấm', go: () => switchView('design') });
@@ -2885,6 +2885,7 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-daily-goal', 'prep-badges-seen', 'prep-design-history', 'prep-design-draft',
   'prep-oq-done', 'prep-oq-best', 'prep-debug-solved', 'prep-debug-code',
   'prep-api-done', 'prep-api-best', 'prep-sql-done', 'prep-sql-best', 'prep-cli-done', 'prep-cli-best',
+  'prep-en-done', 'prep-sit-done',
   'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
@@ -3801,6 +3802,21 @@ const QUIZ_MODES = {
       (q.cmd ? `<pre><code class="language-bash">${escHtml(q.cmd)}</code></pre>` : ''),
     highlight: true,
   },
+  // 2 vòng trắc nghiệm của Phỏng vấn tổng hợp cũng đổ câu sai về đây (ghi ở answerMcq).
+  english: {
+    label: '🇬🇧 Tiếng Anh', doneKey: 'prep-en-done', data: () => window.ENGLISH_QUESTIONS || [],
+    ask: 'Chọn đáp án đúng:',
+    optionHtml: o => `<span class="oq-otext">${escHtml(o)}</span>`,
+    questionHtml: q => `<p class="oq-question">${escHtml(q.q)}</p>`,
+    highlight: false,
+  },
+  situational: {
+    label: '🤝 Tình huống', doneKey: 'prep-sit-done', data: () => window.SITUATIONAL_QUESTIONS || [],
+    ask: 'Chọn cách xử lý tốt nhất:',
+    optionHtml: o => `<span class="oq-otext">${escHtml(o)}</span>`,
+    questionHtml: q => `<p class="oq-question">${escHtml(q.q)}</p>`,
+    highlight: false,
+  },
 };
 
 /** Gom mọi câu sai còn tồn tại thành hàng đợi [{mode, q}] đã trộn thứ tự. */
@@ -3813,7 +3829,7 @@ function buildReviewQueue() {
   return out.sort(() => Math.random() - 0.5);
 }
 
-/** Bốc ngẫu nhiên tối đa n câu bất kỳ trên cả 4 mode → phiên warm-up trộn. */
+/** Bốc ngẫu nhiên tối đa n câu bất kỳ trên mọi mode trong QUIZ_MODES → phiên warm-up trộn. */
 function buildMixedQueue(n) {
   const all = [];
   Object.keys(QUIZ_MODES).forEach(mode => {
@@ -3866,7 +3882,7 @@ function renderReview() {
   const q = buildReviewQueue();
   if (!q.length) {
     el.innerHTML = `<div class="oq-start review-empty">
-      <p>🎉 Chưa có câu trắc nghiệm nào đang sai. Làm các quiz <b>Đoán output · API · SQL · CLI</b> — câu nào chọn sai sẽ được gom về đây để ôn lại cho nhớ.</p>
+      <p>🎉 Chưa có câu trắc nghiệm nào đang sai. Làm các quiz <b>Đoán output · API · SQL · CLI</b> hoặc vòng <b>Tiếng Anh · Tình huống</b> trong Phỏng vấn tổng hợp — câu nào chọn sai sẽ được gom về đây để ôn lại cho nhớ.</p>
       <div class="review-actions">${mixBtn}</div>
     </div>`;
     document.getElementById('review-mix').onclick = () => startMixed(10);
@@ -4781,7 +4797,7 @@ function roundDone(scorePct) {
 
 // --- Vòng trắc nghiệm (Tiếng Anh / Tình huống), có giải thích sau mỗi câu ---
 function startMcqRound(bank, r) {
-  ivState.mcq = { qs: shuffleArr(bank).slice(0, Math.min(r.n, bank.length)), idx: 0, correct: 0, answered: false, label: r.label };
+  ivState.mcq = { qs: shuffleArr(bank).slice(0, Math.min(r.n, bank.length)), idx: 0, correct: 0, answered: false, label: r.label, modeKey: r.key };
   showMcq();
 }
 function showMcq() {
@@ -4805,6 +4821,14 @@ function answerMcq(i) {
   document.querySelectorAll('.iq-opt').forEach((b, idx) => { b.disabled = true; if (idx === q.answer) b.classList.add('correct'); else if (idx === i) b.classList.add('wrong'); });
   const ok = i === q.answer;
   if (ok) m.correct++;
+  // Đổ câu sai về hệ 🔁 Ôn câu sai (mode english/situational trong QUIZ_MODES)
+  const cfg = QUIZ_MODES[m.modeKey];
+  if (cfg) {
+    if (ok) {
+      clearWrong(m.modeKey, q.id);
+      const d = store.get(cfg.doneKey, {}); d[q.id] = true; store.set(cfg.doneKey, d);
+    } else recordWrong(m.modeKey, q.id);
+  }
   document.getElementById('iv-fb').innerHTML = `<div class="${ok ? 'iq-ok' : 'iq-no'}">${ok ? '✅ Đúng! ' : '❌ Chưa đúng. '}${escHtml(q.explain)}</div>`;
   const nx = document.getElementById('iv-mnext');
   nx.hidden = false;

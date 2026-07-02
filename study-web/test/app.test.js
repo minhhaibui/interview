@@ -392,7 +392,7 @@ test('wiring: badge độ phủ (đã đúng/tổng) trên nút mode quiz', () =
     'refreshThinkBadges chưa được gọi đủ chỗ (initThink/setThinkMode/makeQuiz/output/review)');
 });
 
-test('review: QUIZ_MODES gồm đúng 4 mode, doneKey & bank khớp thực tế', () => {
+test('review: QUIZ_MODES gồm đúng 6 mode, doneKey & bank khớp thực tế', () => {
   const m = APP.match(/const QUIZ_MODES = \{([\s\S]*?)\n\};/);
   assert.ok(m, 'không tìm thấy QUIZ_MODES');
   const block = m[1];
@@ -401,6 +401,8 @@ test('review: QUIZ_MODES gồm đúng 4 mode, doneKey & bank khớp thực tế'
     api: { doneKey: 'prep-api-done', global: 'API_QUIZ', file: 'api-quiz.js' },
     sql: { doneKey: 'prep-sql-done', global: 'SQL_DRILL', file: 'sql-drill.js' },
     cli: { doneKey: 'prep-cli-done', global: 'CLI_QUIZ', file: 'cli-quiz.js' },
+    english: { doneKey: 'prep-en-done', global: 'ENGLISH_QUESTIONS', file: 'english-questions.js' },
+    situational: { doneKey: 'prep-sit-done', global: 'SITUATIONAL_QUESTIONS', file: 'situational-questions.js' },
   };
   for (const [mode, e] of Object.entries(expect)) {
     assert.ok(new RegExp(`\\b${mode}:\\s*\\{`).test(block), `QUIZ_MODES thiếu mode ${mode}`);
@@ -427,6 +429,10 @@ test('review: hook ghi/xoá câu sai gắn đúng vào engine quiz + PREP_KEYS',
   // Đoán output cũng ghi/xoá
   assert.ok(/clearWrong\('output', q\.id\)/.test(APP) && /recordWrong\('output', q\.id\)/.test(APP),
     'answerOutputQuiz chưa ghi/xoá câu sai');
+  // Vòng MCQ Phỏng vấn tổng hợp (english/situational) ghi/xoá qua modeKey
+  assert.ok(/modeKey: r\.key/.test(APP), 'startMcqRound chưa lưu modeKey');
+  assert.ok(/clearWrong\(m\.modeKey, q\.id\)/.test(APP) && /recordWrong\(m\.modeKey, q\.id\)/.test(APP),
+    'answerMcq chưa ghi/xoá câu sai theo modeKey');
   // PREP_KEYS gồm prep-quiz-wrong để export/sync/reset
   const pk = APP.match(/const PREP_KEYS = \[([\s\S]*?)\]/);
   assert.ok(pk && pk[1].includes('prep-quiz-wrong'), 'PREP_KEYS thiếu prep-quiz-wrong');
