@@ -3254,6 +3254,21 @@ function renderDashboard() {
   document.getElementById('dash-bar-fill').style.width = pct + '%';
   document.getElementById('dash-percent').textContent = pct + '%';
 
+  // 🧪 Capstone: tiến độ nghiệm thu Upgrade 1→5 (tick ở tab Kế hoạch)
+  const capEl = document.getElementById('dash-capstone');
+  if (capEl) {
+    const ups = window.CAPSTONE_UPGRADES || [];
+    const cap = store.get('prep-capstone', {});
+    const capTotal = ups.reduce((s, u) => s + u.items.length, 0);
+    const capDone = ups.reduce((s, u) => s + u.items.filter((_, i) => (cap[u.id] || {})[i]).length, 0);
+    capEl.innerHTML = ups.length ? `
+      <span class="dc-label">🧪 Capstone Upgrade 1→5</span>
+      <div class="bar"><div class="bar-fill" style="width:${capTotal ? Math.round(capDone / capTotal * 100) : 0}%"></div></div>
+      <span>${capDone}/${capTotal}</span>
+      <button type="button" id="dash-cap-open">📅 Kế hoạch</button>` : '';
+    document.getElementById('dash-cap-open')?.addEventListener('click', () => switchView('plan'));
+  }
+
   // Điểm quiz đã lưu
   const scores = store.get('prep-quiz-scores', {});
   const scoreWrap = document.getElementById('dash-scores');

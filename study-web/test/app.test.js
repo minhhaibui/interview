@@ -799,6 +799,9 @@ test('wiring: capstone tracker trong tab Kế hoạch', () => {
   // Task nhắc capstone ở tab Hôm nay: chỉ hiện khi tuần kế hoạch đã tới upgrade chưa tick đủ
   assert.ok(/id: 'td-capstone'/.test(APP), 'tab Hôm nay thiếu task td-capstone');
   assert.ok(/u\.week <= wk && u\.items\.some/.test(APP), 'td-capstone thiếu điều kiện tuần + chưa tick đủ');
+  // Dòng tiến độ capstone ở Dashboard
+  assert.ok(HTML.includes('id="dash-capstone"'), 'index.html thiếu #dash-capstone');
+  assert.ok(/dash-cap-open/.test(APP), 'renderDashboard chưa render tiến độ capstone');
 });
 
 test('wiring: câu hỏi ngược render trong tab Phỏng vấn tổng hợp', () => {
