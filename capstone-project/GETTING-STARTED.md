@@ -44,6 +44,6 @@ test/
 | 6 (Kafka) | Publish event `OrderCreated` — làm theo [UPGRADE-03-KAFKA.md](UPGRADE-03-KAFKA.md) | Outbox, at-least-once |
 | 7 (Docker) | Build image — `Dockerfile` có sẵn, xem [UPGRADE-04-DOCKER-K8S.md](UPGRADE-04-DOCKER-K8S.md) | Layer caching |
 | 8 (K8s) | Apply `k8s/order-service.yaml` — cùng guide Upgrade 4 | Probes, rolling update |
-| 9 (AWS) | Thay outbox consumer bằng SQS, file invoice lên S3 presigned URL | Managed services |
+| 9 (AWS) | SQS thay Kafka + invoice S3 presigned URL — làm theo [UPGRADE-05-AWS.md](UPGRADE-05-AWS.md) | Managed services, DLQ, presigned URL |
 
 > Spec đầy đủ của hệ thống (inventory, payment, notification service…) xem `README.md` cùng thư mục. Skeleton này là service đầu tiên — làm chủ nó rồi mới tách tiếp các service khác.

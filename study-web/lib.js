@@ -29,6 +29,7 @@ function buildTree(ROOT) {
       exists('capstone-project/UPGRADE-02-REDIS.md') && { label: '↳ Upgrade 2 — Redis cache', path: 'capstone-project/UPGRADE-02-REDIS.md', sub: true },
       exists('capstone-project/UPGRADE-03-KAFKA.md') && { label: '↳ Upgrade 3 — Kafka outbox', path: 'capstone-project/UPGRADE-03-KAFKA.md', sub: true },
       exists('capstone-project/UPGRADE-04-DOCKER-K8S.md') && { label: '↳ Upgrade 4 — Docker & K8s', path: 'capstone-project/UPGRADE-04-DOCKER-K8S.md', sub: true },
+      exists('capstone-project/UPGRADE-05-AWS.md') && { label: '↳ Upgrade 5 — AWS (SQS + S3)', path: 'capstone-project/UPGRADE-05-AWS.md', sub: true },
     ].filter(Boolean),
   });
 
