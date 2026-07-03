@@ -764,10 +764,11 @@ test('capstone-tracker: 5 upgrade đủ field, doc có thật trong docs.json', 
   assert.ok(Array.isArray(ups) && ups.length === 5, 'phải có đúng 5 upgrade');
   const ids = ups.map(u => u.id);
   assert.strictEqual(new Set(ids).size, ids.length, 'id upgrade trùng');
-  const docs = JSON.parse(read('data/docs.json'));
+  // Đối chiếu file .md nguồn ở repo (KHÔNG dùng data/docs.json — gitignored, CI test chạy TRƯỚC build)
+  const ROOT = path.resolve(__dirname, '..', '..');
   for (const u of ups) {
     assert.ok(u.id && u.icon && u.label && u.doc && u.week, `upgrade ${u.id} thiếu field`);
-    assert.ok(docs[u.doc], `upgrade ${u.id}: doc ${u.doc} không có trong docs.json`);
+    assert.ok(fs.existsSync(path.join(ROOT, u.doc)), `upgrade ${u.id}: doc ${u.doc} không tồn tại trong repo`);
     assert.ok(Array.isArray(u.items) && u.items.length >= 4, `upgrade ${u.id}: <4 mục nghiệm thu`);
     for (const it of u.items) assert.ok(typeof it === 'string' && it.length > 10, `upgrade ${u.id}: mục rỗng/quá ngắn`);
   }
