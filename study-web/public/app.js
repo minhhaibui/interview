@@ -651,6 +651,18 @@ async function renderToday() {
   tasks.push({ id: 'td-fttest', ic: '📝', t: 'Test gõ từ vựng', s: 'Hiện nghĩa Việt → gõ tiếng Anh, chấm điểm', go: goToVocabTest });
   if (wrongN) tasks.push({ id: 'td-wrong', ic: '🚩', t: `Ôn ${wrongN} câu mock đã sai`, s: 'Trả lời lại cho nhớ', go: goToMockWrong });
   if (quizWrongN) tasks.push({ id: 'td-quiz-wrong', ic: '🔁', t: `Ôn ${quizWrongN} câu trắc nghiệm đã sai`, s: 'Output · API · SQL · CLI · Anh · Tình huống — gom về một phiên', go: goToQuizReview });
+  // 🧪 Capstone: theo tuần kế hoạch đã tới upgrade nào mà chưa tick đủ nghiệm thu → nhắc làm
+  const capUp = (() => {
+    const ups = window.CAPSTONE_UPGRADES || [];
+    const plan = store.get('prep-plan', null);
+    if (!ups.length || !plan || !plan.start) return null;
+    const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+    const wk = Math.floor((parse(dayKey(new Date())) - parse(plan.start)) / (7 * 86400000)) + 1;
+    if (wk < 1) return null;
+    const cap = store.get('prep-capstone', {});
+    return ups.find(u => u.week <= wk && u.items.some((_, i) => !(cap[u.id] || {})[i])) || null;
+  })();
+  if (capUp) tasks.push({ id: 'td-capstone', ic: '🧪', t: `Capstone: ${capUp.label}`, s: 'Làm tận tay rồi tick nghiệm thu ở tab Kế hoạch', go: () => switchView('plan') });
   tasks.push({ id: 'td-think', ic: '🧠', t: 'Giải 1 bài luyện tư duy', s: 'Coding hoặc IQ', go: () => switchView('coding') });
   tasks.push({ id: 'td-mock', ic: '🎯', t: 'Mock interview nhanh', s: '5–10 câu ngẫu nhiên', go: () => switchView('mock') });
   tasks.push({ id: 'td-design', ic: '🏛️', t: 'Luyện 1 đề System Design', s: 'Tự chấm rubric hoặc nhờ AI chấm', go: () => switchView('design') });

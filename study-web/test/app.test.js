@@ -796,6 +796,9 @@ test('wiring: capstone tracker trong tab Kế hoạch', () => {
   assert.ok(pk && pk[1].includes('prep-capstone'), 'PREP_KEYS thiếu prep-capstone (mất sync/export)');
   const SW = read('sw.js');
   assert.ok(/capstone-tracker\.js/.test(SW), 'sw.js PRECACHE thiếu capstone-tracker.js');
+  // Task nhắc capstone ở tab Hôm nay: chỉ hiện khi tuần kế hoạch đã tới upgrade chưa tick đủ
+  assert.ok(/id: 'td-capstone'/.test(APP), 'tab Hôm nay thiếu task td-capstone');
+  assert.ok(/u\.week <= wk && u\.items\.some/.test(APP), 'td-capstone thiếu điều kiện tuần + chưa tick đủ');
 });
 
 test('wiring: câu hỏi ngược render trong tab Phỏng vấn tổng hợp', () => {
