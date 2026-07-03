@@ -3520,7 +3520,7 @@ function capstoneHtml() {
     const full = n === u.items.length;
     return `<details class="rq-group cap-up${full ? ' done' : ''}" data-up="${u.id}">
       <summary>${u.icon} ${escHtml(u.label)}
-        <span class="cap-open" role="button" data-doc="${escHtml(u.doc)}">📖 guide</span>
+        <button type="button" class="cap-open" data-doc="${escHtml(u.doc)}">📖 guide</button>
         <span class="rq-n cap-n">${full ? '✅ ' : ''}${n}/${u.items.length}</span>
       </summary>
       <ul class="cap-list">${u.items.map((it, i) =>

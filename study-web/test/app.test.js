@@ -768,7 +768,14 @@ test('capstone-tracker: 5 upgrade đủ field, doc có thật trong docs.json', 
   const ROOT = path.resolve(__dirname, '..', '..');
   for (const u of ups) {
     assert.ok(u.id && u.icon && u.label && u.doc && u.week, `upgrade ${u.id} thiếu field`);
-    assert.ok(fs.existsSync(path.join(ROOT, u.doc)), `upgrade ${u.id}: doc ${u.doc} không tồn tại trong repo`);
+    const mdPath = path.join(ROOT, u.doc);
+    assert.ok(fs.existsSync(mdPath), `upgrade ${u.id}: doc ${u.doc} không tồn tại trong repo`);
+    // Chống drift: số mục tracker phải bằng số "- [ ]" trong section Checklist nghiệm thu của guide
+    const md = fs.readFileSync(mdPath, 'utf8');
+    const sec = md.split(/Checklist nghiệm thu/)[1]?.split(/\n## /)[0] || '';
+    const boxes = (sec.match(/^- \[ \]/gm) || []).length;
+    assert.strictEqual(u.items.length, boxes,
+      `upgrade ${u.id}: tracker có ${u.items.length} mục nhưng ${u.doc} có ${boxes} ô checklist — sửa guide thì cập nhật capstone-tracker.js`);
     assert.ok(Array.isArray(u.items) && u.items.length >= 4, `upgrade ${u.id}: <4 mục nghiệm thu`);
     for (const it of u.items) assert.ok(typeof it === 'string' && it.length > 10, `upgrade ${u.id}: mục rỗng/quá ngắn`);
   }
@@ -783,7 +790,8 @@ test('wiring: capstone tracker trong tab Kế hoạch', () => {
   assert.ok(/function capstoneHtml\b/.test(APP), 'thiếu hàm capstoneHtml');
   assert.ok(/function bindCapstone\b/.test(APP), 'thiếu hàm bindCapstone');
   assert.ok(/\$\{capstoneHtml\(\)\}/.test(APP), 'renderPlan chưa chèn capstoneHtml()');
-  assert.ok(/bindCapstone\(body\)/.test(APP), 'renderPlan chưa gọi bindCapstone');
+  assert.ok((APP.match(/bindCapstone\(body\)/g) || []).length >= 2,
+    'renderPlan chưa gọi bindCapstone (chỉ thấy dòng khai báo hàm)');
   const pk = APP.match(/const PREP_KEYS = \[([\s\S]*?)\]/);
   assert.ok(pk && pk[1].includes('prep-capstone'), 'PREP_KEYS thiếu prep-capstone (mất sync/export)');
   const SW = read('sw.js');
