@@ -42,7 +42,10 @@ Không cần `npm install` (server viết bằng Node.js core — chính nó là
 **Hệ thống xử lý đơn hàng e-commerce (microservices)** — tích hợp toàn bộ stack:
 Node.js services + PostgreSQL + MongoDB + Redis cache + Kafka event streaming + Docker + Kubernetes + deploy AWS.
 
-👉 Xem chi tiết spec tại [capstone-project/README.md](./capstone-project/README.md)
+👉 Xem chi tiết spec tại [capstone-project/README.md](./capstone-project/README.md).
+Làm dần theo **5 Upgrade** sau mỗi tuần tương ứng ([bắt đầu ở đây](./capstone-project/GETTING-STARTED.md)):
+Postgres (tuần 3) → Redis (5) → Kafka (6) → Docker/K8s (7-8) → AWS SQS+S3 (9) —
+mỗi guide có checklist nghiệm thu, tick theo dõi được ở tab 📅 Kế hoạch của study-web.
 
 ## 🏗️ Thiết kế hệ thống & Case thực tế theo từng tuần
 
