@@ -482,6 +482,10 @@ function computeBadges() {
   const starIds = new Set((window.STAR_QUESTIONS || []).map(q => q.id));
   const starDraftsB = store.get('prep-star-drafts', {});
   const starBuiltN = [...starIds].filter(id => { const d = starDraftsB[id] || {}; return d.s && d.t && d.a && d.r && (d.s + d.t + d.a + d.r).trim().length >= 80; }).length;
+  // Capstone: upgrade đã nghiệm thu đủ mọi mục
+  const capB = store.get('prep-capstone', {});
+  const capUps = window.CAPSTONE_UPGRADES || [];
+  const capUpsDone = capUps.filter(u => u.items.every((_, i) => (capB[u.id] || {})[i])).length;
   // Tuần hoàn thành (đủ mọi mục checklist)
   const progress = store.get('prep-progress', {});
   const weeksGroup = TREE.find(g => g.title.includes('12 tuần'));
@@ -523,6 +527,8 @@ function computeBadges() {
     B('wpm60', '⌨️', 'Gõ code 60 WPM', wpm >= 60, `Kỷ lục ${wpm || 0} WPM`),
     B('pomo10', '🍅', '10 pomodoro', pomoTotal >= 10, `${pomoTotal}/10 pomodoro`),
     B('pomo50', '🍅', '50 pomodoro', pomoTotal >= 50, `${pomoTotal}/50 pomodoro`),
+    B('cap1', '🧪', 'Thực chiến · nghiệm thu 1 upgrade', capUpsDone >= 1, `${capUpsDone}/${capUps.length || 5} upgrade capstone xong`),
+    B('capAll', '🏗️', 'Full-stack sẹo · đủ 5 upgrade', capUps.length > 0 && capUpsDone >= capUps.length, `${capUpsDone}/${capUps.length || 5} upgrade capstone xong`),
     B('week1', '✅', 'Hoàn thành 1 tuần', weeksDone >= 1, `${weeksDone}/${weeks.length || 12} tuần xong`),
     B('weekAll', '🏁', 'Hoàn thành 12 tuần', weeks.length > 0 && weeksDone >= weeks.length, `${weeksDone}/${weeks.length || 12} tuần xong`),
   ];

@@ -805,6 +805,10 @@ test('wiring: capstone tracker trong tab Kế hoạch', () => {
   // Dòng tiến độ capstone ở Dashboard
   assert.ok(HTML.includes('id="dash-capstone"'), 'index.html thiếu #dash-capstone');
   assert.ok(/dash-cap-open/.test(APP), 'renderDashboard chưa render tiến độ capstone');
+  // 2 huy hiệu capstone
+  assert.ok(/B\('cap1'/.test(APP) && /B\('capAll'/.test(APP), 'computeBadges thiếu huy hiệu cap1/capAll');
+  assert.ok(/u\.items\.every\(\(_, i\) => \(capB\[u\.id\] \|\| \{\}\)\[i\]\)/.test(APP),
+    'điều kiện nghiệm thu đủ upgrade sai/thiếu');
 });
 
 test('wiring: câu hỏi ngược render trong tab Phỏng vấn tổng hợp', () => {
