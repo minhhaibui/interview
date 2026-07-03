@@ -624,7 +624,10 @@ test('readiness: phần Tư duy gồm cả 5 quiz mới (output/debug/api/sql/cl
   // dashboard panel Tư duy
   assert.ok(HTML.includes('id="dash-think"'), 'index.html thiếu #dash-think');
   assert.ok(/function renderThinkStats\b/.test(APP), 'thiếu renderThinkStats');
-  assert.ok(/renderThinkStats\(\)/.test(APP.slice(APP.indexOf('function renderDashboard'), APP.indexOf('function renderDashboard') + 2500)),
+  // cắt đúng thân renderDashboard (tới function kế tiếp) thay vì cửa sổ ký tự cứng
+  const rdStart = APP.indexOf('function renderDashboard');
+  const rdEnd = APP.indexOf('\nfunction ', rdStart + 1);
+  assert.ok(/renderThinkStats\(\)/.test(APP.slice(rdStart, rdEnd)),
     'renderDashboard chưa gọi renderThinkStats');
 });
 
