@@ -476,3 +476,5 @@ Trên schema users/products/orders/order_items (seed ≥ 500k orders):
 - Hoàn thành tất cả bài tập bắt buộc (5/5), riêng bài 3 phải tái hiện được deadlock thật trước khi fix
 - Bài thực hành đạt đủ checklist (8/8 mục)
 - Cầm một query plan EXPLAIN ANALYZE lạ (do người khác đưa) và chỉ ra được bottleneck + đề xuất index trong vòng 5 phút
+
+> 🧪 **Capstone**: học xong tuần này, quay lại làm [Upgrade 1 — Postgres](../capstone-project/UPGRADE-01-POSTGRES.md) và tick nghiệm thu ở tab 📅 Kế hoạch của study-web.

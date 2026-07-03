@@ -660,3 +660,5 @@ A. Cho app thời gian khởi động  B. Chờ endpoints/ingress cập nhật t
 - Bài thực hành đạt ≥ 8/10 checklist
 - Vẽ lại được sơ đồ K8s architecture và giải thích luồng `kubectl apply` end-to-end không nhìn tài liệu
 - Trả lời trôi chảy bộ 3 câu "định mệnh": liveness vs readiness, requests vs limits, debug CrashLoopBackOff
+
+> 🧪 **Capstone**: học xong tuần này, hoàn tất [Upgrade 4 — Docker & K8s](../capstone-project/UPGRADE-04-DOCKER-K8S.md) và tick nghiệm thu ở tab 📅 Kế hoạch của study-web.

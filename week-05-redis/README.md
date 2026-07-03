@@ -464,3 +464,5 @@ Bối cảnh: sale 1.000 sản phẩm X lúc 9h sáng, dự kiến 50.000 user b
 - Hoàn thành tất cả bài tập bắt buộc (bài 3 và 5 phải có log/counter chứng minh, không chỉ "chạy được")
 - Bài thực hành đạt ≥ 7/9 mục checklist, trong đó mục Lua atomic + load test là **bắt buộc**
 - Vẽ lại được từ trí nhớ sơ đồ xử lý 3 vấn đề: stampede / penetration / avalanche, và giải thích miệng trôi chảy trong 3 phút
+
+> 🧪 **Capstone**: học xong tuần này, quay lại làm [Upgrade 2 — Redis cache](../capstone-project/UPGRADE-02-REDIS.md) và tick nghiệm thu ở tab 📅 Kế hoạch của study-web.

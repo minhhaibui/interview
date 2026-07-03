@@ -425,3 +425,5 @@ Kết quả phải nghiệm thu được: tổng (reserved + rejected) = 500, kh
 - Hoàn thành tất cả bài tập bắt buộc (bài 3 phải có số liệu duplicate trước/sau dedupe; bài 5 phải pass cả 2 test)
 - Bài thực hành đạt ≥ 7/9 mục checklist, trong đó outbox + idempotent consumer là **bắt buộc**
 - Vẽ lại được từ trí nhớ sơ đồ: topic/partition/consumer group, luồng outbox pattern, và luồng retry→DLQ; giải thích miệng delivery semantics trong 3 phút không nhìn tài liệu
+
+> 🧪 **Capstone**: học xong tuần này, quay lại làm [Upgrade 3 — Kafka outbox](../capstone-project/UPGRADE-03-KAFKA.md) và tick nghiệm thu ở tab 📅 Kế hoạch của study-web.

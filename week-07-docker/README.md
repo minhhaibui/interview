@@ -556,3 +556,5 @@ A. --max-old-space-size=512  B. --max-old-space-size=400 (≈75-80% limit)  C. -
 - Bài thực hành đạt ≥ 8/10 checklist
 - Giải thích miệng (mock interview) được trôi chảy: PID 1 problem, multi-stage build, layer caching — không nhìn tài liệu
 - Image cuối của bài thực hành < 180MB và stop time < 5s
+
+> 🧪 **Capstone**: học xong tuần này, làm phần Docker của [Upgrade 4 — Docker & K8s](../capstone-project/UPGRADE-04-DOCKER-K8S.md); phần K8s để sau tuần 8. Tick nghiệm thu ở tab 📅 Kế hoạch của study-web.

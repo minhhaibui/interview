@@ -471,3 +471,5 @@ A. Route 53 hosted zone  B. NAT Gateway data processing per GB  C. Security Grou
 - Bài thực hành đạt ≥ 8/10 checklist
 - Vẽ và trình bày miệng được kiến trúc mẫu production (VPC, multi-AZ, SG chain, messaging) trong 10 phút không nhìn tài liệu
 - Trả lời chắc 4 cặp so sánh "định mệnh": SG vs NACL, Multi-AZ vs read replica, SQS vs SNS vs EventBridge vs Kafka, Secrets Manager vs Parameter Store
+
+> 🧪 **Capstone**: học xong tuần này, làm [Upgrade 5 — AWS (SQS + S3)](../capstone-project/UPGRADE-05-AWS.md) — upgrade cuối của chuỗi — và tick nghiệm thu ở tab 📅 Kế hoạch của study-web.
