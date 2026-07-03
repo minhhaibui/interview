@@ -2,7 +2,7 @@
 
 Hai bài toán rất hay gặp khi PV hỏi "đưa hệ của em lên AWS thì đổi gì?":
 
-1. **Kafka → SQS**: team nhỏ không muốn vận hành broker (patch, rebalance, scale partition). SQS là queue managed — trả tiền theo request, không có gì để vá. Đổi lấy gì? Mất replay (message đọc xong là mất, Kafka giữ theo retention), mất fan-out tự nhiên (1 queue = 1 nhóm consumer; muốn nhiều nhóm phải thêm SNS trước SQS), FIFO throughput trần 300 msg/s/MessageGroupId. Nói được trade-off này là ăn điểm câu "SQS vs Kafka".
+1. **Kafka → SQS**: team nhỏ không muốn vận hành broker (patch, rebalance, scale partition). Được thêm: managed không có gì để vá, DLQ có sẵn (Kafka phải tự viết), dedup 5 phút có sẵn. Mất đi: replay (message đọc xong là mất, Kafka giữ theo retention), fan-out tự nhiên (1 queue = 1 nhóm consumer; muốn nhiều nhóm phải thêm SNS trước SQS), throughput (FIFO mặc định trần 300 request/s cho CẢ queue, ≈3.000 msg/s nếu batch 10; bật high-throughput mode thì trần scale theo số MessageGroupId nhưng mỗi group vẫn kẹt ~300 msg/s — thấp hơn Kafka partition nhiều). Nói được trade-off 2 chiều này là ăn điểm câu "SQS vs Kafka".
 2. **Invoice qua S3 presigned URL**: file KHÔNG đi qua Node server (không nghẽn event loop, không tốn băng thông server) — server chỉ ký một URL có hạn dùng, client tự tải thẳng từ S3.
 
 Thực hành **miễn phí 100% bằng LocalStack** — giả lập AWS chạy local, SDK trỏ endpoint `localhost:4566` là xong, code giữ nguyên khi lên AWS thật.
@@ -34,7 +34,7 @@ docker exec prep-localstack awslocal sqs create-queue --queue-name orders.fifo \
 
 ## 2. Relay: đổi `producer.send` thành SQS — `src/sqs-relay.js`
 
-Copy `outbox-relay.js`, phần poll outbox + `SKIP LOCKED` giữ NGUYÊN (pattern không đổi, chỉ đổi transport), thay Kafka producer bằng:
+Copy `outbox-relay.js`, phần poll outbox + `SKIP LOCKED` giữ NGUYÊN pattern, chỉ đổi transport — nhưng **đổi `LIMIT 100` thành `LIMIT 10`**: `SendMessageBatch` trần cứng 10 entries/request (và 256KB/batch), gửi 11 là ném `TooManyEntriesInBatchRequest` — khác kafkajs nhận batch tùy ý, đây là khác biệt Kafka↔SQS đầu tiên đập vào mặt khi migrate. Thay Kafka producer bằng:
 
 ```js
 const { SQSClient, SendMessageBatchCommand } = require('@aws-sdk/client-sqs');
@@ -47,7 +47,7 @@ const sqs = new SQSClient({
 const QUEUE_URL = 'http://localhost:4566/000000000000/orders.fifo';
 
 // trong relayBatch(), thay producer.send bằng:
-await sqs.send(new SendMessageBatchCommand({
+const res = await sqs.send(new SendMessageBatchCommand({
   QueueUrl: QUEUE_URL,
   Entries: rows.map(r => ({
     Id: String(r.id),
@@ -56,6 +56,10 @@ await sqs.send(new SendMessageBatchCommand({
     MessageDeduplicationId: String(r.id), // = outbox id → SQS TỰ nuốt bản trùng trong 5 phút
   })),
 }));
+// BẪY khác kafkajs: producer.send fail là THROW, còn SendMessageBatch fail MỘT PHẦN
+// vẫn resolve — nuốt res.Failed rồi UPDATE published_at là MẤT event vĩnh viễn
+// (đúng cái lỗi mà outbox sinh ra để chống!). Tối thiểu phải:
+if (res.Failed?.length) throw new Error(`SQS batch failed: ${res.Failed.length} entries`);
 ```
 
 Chi tiết đắt giá: relay crash sau send trước `UPDATE published_at` → lần sau gửi LẠI, nhưng `MessageDeduplicationId` là outbox id nên SQS **tự dedup trong cửa sổ 5 phút** — consumer đỡ nhận trùng mà không cần code gì. (Vẫn phải idempotent: quá 5 phút hoặc queue standard thì dedup không cứu.)
@@ -75,17 +79,19 @@ const QUEUE_URL = 'http://localhost:4566/000000000000/orders.fifo';
 (async () => {
   console.log('SQS consumer chạy — long polling 20s');
   while (true) {
-    const { Messages = [] } = await sqs.send(new ReceiveMessageCommand({
-      QueueUrl: QUEUE_URL,
-      MaxNumberOfMessages: 10,
-      WaitTimeSeconds: 20, // LONG POLLING: giữ kết nối chờ 20s, không có message mới trả rỗng
-    }));
-    for (const m of Messages) {
-      const event = JSON.parse(m.Body);
-      console.log(`📧 Gửi email xác nhận order ${event.orderId} (${event.total}đ)`);
-      // Delete = "ack". Xử lý fail → KHÔNG delete → hiện lại sau visibility timeout → quá 3 lần → DLQ
-      await sqs.send(new DeleteMessageCommand({ QueueUrl: QUEUE_URL, ReceiptHandle: m.ReceiptHandle }));
-    }
+    try {
+      const { Messages = [] } = await sqs.send(new ReceiveMessageCommand({
+        QueueUrl: QUEUE_URL,
+        MaxNumberOfMessages: 10,
+        WaitTimeSeconds: 20, // LONG POLLING: giữ kết nối chờ 20s, không có message mới trả rỗng
+      }));
+      for (const m of Messages) {
+        const event = JSON.parse(m.Body);
+        console.log(`📧 Gửi email xác nhận order ${event.orderId} (${event.total}đ)`);
+        // Delete = "ack". Xử lý fail → KHÔNG delete → hiện lại sau visibility timeout → quá 3 lần → DLQ
+        await sqs.send(new DeleteMessageCommand({ QueueUrl: QUEUE_URL, ReceiptHandle: m.ReceiptHandle }));
+      }
+    } catch (err) { console.error('[consumer]', err.message); } // lỗi mạng thoáng qua không được giết process
   }
 })();
 ```
@@ -106,23 +112,27 @@ const s3 = new S3Client({
 });
 const BUCKET = 'prep-invoices';
 
-// Khi order được tạo (hoặc trong consumer): sinh invoice lên S3
+// Sinh invoice lên S3 — đặt TRONG handler POST /orders (sau khi save) hoặc trong consumer,
+// KHÔNG để top-level (file là CommonJS, không có top-level await)
 await s3.send(new PutObjectCommand({
   Bucket: BUCKET, Key: `invoices/${order.id}.txt`,
   Body: `HOA DON ${order.id} — ${order.total}đ`,
   ContentType: 'text/plain; charset=utf-8',
 }));
 
-// GET /orders/:id/invoice-url → trả URL ký sẵn, client tự tải thẳng từ S3
-router.get('/orders/:id/invoice-url', async (req, res) => {
+// GET /orders/:id/invoice-url → trả URL ký sẵn, client tự tải thẳng từ S3.
+// Router capstone: handler nhận (req, params) và TRẢ VỀ { status, body } — không có res/res.json
+router.add('GET', '/orders/:id/invoice-url', async (req, params) => {
   const url = await getSignedUrl(
     s3,
-    new GetObjectCommand({ Bucket: BUCKET, Key: `invoices/${req.params.id}.txt` }),
+    new GetObjectCommand({ Bucket: BUCKET, Key: `invoices/${params.id}.txt` }),
     { expiresIn: 300 }, // 5 phút — URL là "chìa khóa tạm", lộ ra cũng tự chết
   );
-  res.json({ url });
+  return { status: 200, body: { url } };
 });
 ```
+
+Chiều ngược lại (upload): client xin presigned **PUT** (`getSignedUrl` với `PutObjectCommand`) rồi tự đẩy file thẳng lên S3 — server không đụng một byte nào của file. Đó là đáp án chuẩn cho câu "user upload ảnh 50MB qua đâu?".
 
 Tạo bucket một lần: `docker exec prep-localstack awslocal s3 mb s3://prep-invoices`
 
@@ -130,7 +140,9 @@ Tạo bucket một lần: `docker exec prep-localstack awslocal s3 mb s3://prep-
 
 ```bash
 # 1. Poison message → DLQ: trong consumer, throw với 1 orderId cụ thể (không delete)
-#    → chứng kiến message hiện lại sau mỗi 10s, đúng 3 lần rồi biến mất → check DLQ:
+#    → chứng kiến message hiện lại sau mỗi 10s, đúng 3 lần rồi biến mất → check DLQ.
+#    Để ý HEAD-OF-LINE BLOCKING: message CÙNG MessageGroupId phía sau bị kẹt theo
+#    cho tới khi poison message văng sang DLQ — cái giá của FIFO:
 docker exec prep-localstack awslocal sqs receive-message \
   --queue-url http://localhost:4566/000000000000/orders-dlq.fifo
 
