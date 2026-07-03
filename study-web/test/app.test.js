@@ -759,6 +759,36 @@ test('reverse-questions: nhóm có id/group/icon + mỗi item đủ q & why', ()
   }
 });
 
+test('capstone-tracker: 5 upgrade đủ field, doc có thật trong docs.json', () => {
+  const ups = loadWindow('capstone-tracker.js').CAPSTONE_UPGRADES;
+  assert.ok(Array.isArray(ups) && ups.length === 5, 'phải có đúng 5 upgrade');
+  const ids = ups.map(u => u.id);
+  assert.strictEqual(new Set(ids).size, ids.length, 'id upgrade trùng');
+  const docs = JSON.parse(read('data/docs.json'));
+  for (const u of ups) {
+    assert.ok(u.id && u.icon && u.label && u.doc && u.week, `upgrade ${u.id} thiếu field`);
+    assert.ok(docs[u.doc], `upgrade ${u.id}: doc ${u.doc} không có trong docs.json`);
+    assert.ok(Array.isArray(u.items) && u.items.length >= 4, `upgrade ${u.id}: <4 mục nghiệm thu`);
+    for (const it of u.items) assert.ok(typeof it === 'string' && it.length > 10, `upgrade ${u.id}: mục rỗng/quá ngắn`);
+  }
+  const weeks = ups.map(u => u.week);
+  assert.deepStrictEqual([...weeks].sort((a, b) => a - b), weeks, 'upgrade phải xếp theo tuần tăng dần');
+});
+
+test('wiring: capstone tracker trong tab Kế hoạch', () => {
+  assert.ok(HTML.includes('src="capstone-tracker.js"'), 'index.html thiếu script capstone-tracker.js');
+  assert.ok(HTML.indexOf('src="capstone-tracker.js"') < HTML.indexOf('src="app.js"'),
+    'capstone-tracker.js phải nạp trước app.js');
+  assert.ok(/function capstoneHtml\b/.test(APP), 'thiếu hàm capstoneHtml');
+  assert.ok(/function bindCapstone\b/.test(APP), 'thiếu hàm bindCapstone');
+  assert.ok(/\$\{capstoneHtml\(\)\}/.test(APP), 'renderPlan chưa chèn capstoneHtml()');
+  assert.ok(/bindCapstone\(body\)/.test(APP), 'renderPlan chưa gọi bindCapstone');
+  const pk = APP.match(/const PREP_KEYS = \[([\s\S]*?)\]/);
+  assert.ok(pk && pk[1].includes('prep-capstone'), 'PREP_KEYS thiếu prep-capstone (mất sync/export)');
+  const SW = read('sw.js');
+  assert.ok(/capstone-tracker\.js/.test(SW), 'sw.js PRECACHE thiếu capstone-tracker.js');
+});
+
 test('wiring: câu hỏi ngược render trong tab Phỏng vấn tổng hợp', () => {
   assert.ok(HTML.includes('src="reverse-questions.js"'), 'index.html thiếu script reverse-questions.js');
   assert.ok(HTML.indexOf('src="reverse-questions.js"') < HTML.indexOf('src="app.js"'),

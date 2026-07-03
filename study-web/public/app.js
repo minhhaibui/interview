@@ -2905,7 +2905,8 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-oq-done', 'prep-oq-best', 'prep-debug-solved', 'prep-debug-code',
   'prep-api-done', 'prep-api-best', 'prep-sql-done', 'prep-sql-best', 'prep-cli-done', 'prep-cli-best',
   'prep-en-done', 'prep-sit-done', 'prep-readiness-log',
-  'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date'];
+  'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date',
+  'prep-capstone'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */
@@ -3506,6 +3507,58 @@ function readinessHtml() {
   return html;
 }
 
+/** Section 🧪 Capstone trong tab Kế hoạch: checklist nghiệm thu Upgrade 1→5 (prep-capstone). */
+function capstoneHtml() {
+  const ups = window.CAPSTONE_UPGRADES || [];
+  if (!ups.length) return '';
+  const cap = store.get('prep-capstone', {});
+  const total = ups.reduce((s, u) => s + u.items.length, 0);
+  const done = ups.reduce((s, u) => s + u.items.filter((_, i) => (cap[u.id] || {})[i]).length, 0);
+  const rows = ups.map(u => {
+    const c = cap[u.id] || {};
+    const n = u.items.filter((_, i) => c[i]).length;
+    const full = n === u.items.length;
+    return `<details class="rq-group cap-up${full ? ' done' : ''}" data-up="${u.id}">
+      <summary>${u.icon} ${escHtml(u.label)}
+        <span class="cap-open" role="button" data-doc="${escHtml(u.doc)}">📖 guide</span>
+        <span class="rq-n cap-n">${full ? '✅ ' : ''}${n}/${u.items.length}</span>
+      </summary>
+      <ul class="cap-list">${u.items.map((it, i) =>
+        `<li><label><input type="checkbox" data-up="${u.id}" data-i="${i}"${c[i] ? ' checked' : ''}> <span>${escHtml(it)}</span></label></li>`).join('')}
+      </ul>
+    </details>`;
+  }).join('');
+  return `<div class="plan-capstone">
+    <h2>🧪 Capstone — nghiệm thu Upgrade 1→5</h2>
+    <p class="plan-hint" style="color:var(--muted)">Tick khi đã TẬN TAY làm và chứng kiến từng mục — đây là phần kể được "bằng sẹo" khi phỏng vấn. Đã xong <b id="cap-total">${done}</b>/${total} mục.</p>
+    ${rows}
+  </div>`;
+}
+
+/** Cập nhật tick capstone tại chỗ (không re-render để accordion không bị đóng). */
+function bindCapstone(body) {
+  const ups = window.CAPSTONE_UPGRADES || [];
+  body.querySelectorAll('.cap-open').forEach(b => b.addEventListener('click', (e) => {
+    e.preventDefault(); e.stopPropagation(); // đừng toggle <details>
+    switchView('docs'); openDoc(b.dataset.doc);
+  }));
+  body.querySelectorAll('.cap-list input[type="checkbox"]').forEach(cb => cb.addEventListener('change', () => {
+    const cap = store.get('prep-capstone', {});
+    const o = cap[cb.dataset.up] || (cap[cb.dataset.up] = {});
+    if (cb.checked) o[cb.dataset.i] = true; else delete o[cb.dataset.i];
+    store.set('prep-capstone', cap);
+    const det = cb.closest('.cap-up');
+    const u = ups.find(x => x.id === cb.dataset.up);
+    const n = u.items.filter((_, i) => o[i]).length;
+    const full = n === u.items.length;
+    det.classList.toggle('done', full);
+    det.querySelector('.cap-n').textContent = `${full ? '✅ ' : ''}${n}/${u.items.length}`;
+    const totalEl = document.getElementById('cap-total');
+    if (totalEl) totalEl.textContent = ups.reduce((s, x) => s + x.items.filter((_, i) => (cap[x.id] || {})[i]).length, 0);
+    logActivity();
+  }));
+}
+
 function renderPlan() {
   const body = document.getElementById('plan-body');
   if (!body) return;
@@ -3609,6 +3662,8 @@ function renderPlan() {
       </div>
     </div>
 
+    ${capstoneHtml()}
+
     <h2>🗺️ Lộ trình 12 tuần theo lịch</h2>
     <p class="plan-hint" style="color:var(--muted)">Bấm một tuần để mở tài liệu. Tick mục hoàn thành ở tab 📊 Tiến độ.</p>
     <div class="plan-timeline">${rows}</div>
@@ -3630,6 +3685,7 @@ function renderPlan() {
     const it = items.find(i => i.week === r.dataset.week && !i.sub) || items.find(i => i.week === r.dataset.week);
     if (it) { switchView('docs'); openDoc(it.path); }
   }));
+  bindCapstone(body);
 }
 
 // ========== LUYỆN TƯ DUY: Lập trình + IQ ==========
