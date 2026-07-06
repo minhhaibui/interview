@@ -706,6 +706,8 @@ async function renderToday() {
   tasks.push({ id: 'td-fttest', ic: '📝', t: 'Test gõ từ vựng', s: 'Hiện nghĩa Việt → gõ tiếng Anh, chấm điểm', go: goToVocabTest });
   if (wrongN) tasks.push({ id: 'td-wrong', ic: '🚩', t: `Ôn ${wrongN} câu mock đã sai`, s: 'Trả lời lại cho nhớ', go: goToMockWrong });
   if (quizWrongN) tasks.push({ id: 'td-quiz-wrong', ic: '🔁', t: `Ôn ${quizWrongN} câu trắc nghiệm đã sai`, s: 'Output · API · SQL · CLI · Anh · Tình huống — gom về một phiên', go: goToQuizReview });
+  const pinnedN = pinnedTotal();
+  if (pinnedN) tasks.push({ id: 'td-pinned', ic: '📌', t: `Ôn ${pinnedN} câu đã ghim`, s: 'Câu bạn tự đánh dấu để xem lại trước giờ G', go: goToPinnedReview });
   // 🧪 Capstone: theo tuần kế hoạch đã tới upgrade nào mà chưa tick đủ nghiệm thu → nhắc làm
   const capUp = (() => {
     const ups = window.CAPSTONE_UPGRADES || [];
@@ -832,6 +834,12 @@ function goToQuizReview() {
   switchView('coding');
   setThinkMode('review');
   startReview();
+}
+
+function goToPinnedReview() {
+  switchView('coding');
+  setThinkMode('review');
+  startPinned();
 }
 
 // ---------- Sidebar ----------
@@ -3197,6 +3205,25 @@ function renderCharts() {
           <span class="bar-label">${rdLog[k]}</span>
         </div>`).join('')
     : '<p class="chart-empty">Cần ít nhất 2 ngày dữ liệu — mở Dashboard mỗi ngày để thấy đường tiến bộ.</p>';
+
+  // 📬 dự báo từ vựng đến hạn 7 ngày tới — quá hạn dồn vào cột "Nay" để thấy nợ ôn tập
+  const srs = store.get('prep-srs', {});
+  const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+  const dueBuckets = Array(7).fill(0);
+  Object.values(srs).forEach(e => {
+    const diff = Math.floor((srsDue(e) - t0.getTime()) / 864e5);
+    const i = Math.max(0, diff);
+    if (i < 7) dueBuckets[i]++;
+  });
+  const maxDue = Math.max(...dueBuckets, 1);
+  const dueTotal = dueBuckets.reduce((a, b) => a + b, 0);
+  document.getElementById('dash-chart-due').innerHTML = dueTotal
+    ? dueBuckets.map((n, i) => `
+      <div class="bar-col" title="${i === 0 ? 'Hôm nay (gồm quá hạn)' : `+${i} ngày nữa`}: ${n} từ">
+        <div class="bar-v ${i === 0 && n ? 'low' : ''}" style="height:${Math.max(Math.round(n / maxDue * 100), n ? 4 : 0)}%"></div>
+        <span class="bar-label">${i === 0 ? 'Nay' : '+' + i}</span>
+      </div>`).join('')
+    : '<p class="chart-empty">Chưa có thẻ nào tới hạn trong 7 ngày — học flashcards để xây lịch ôn SRS.</p>';
 }
 
 function renderMockHistory() {

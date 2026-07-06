@@ -962,6 +962,20 @@ test('📌 ghim câu hỏi: helper + nút ở 4 engine chấm + phiên ôn + b�
   assert.ok(CSS.includes('.oq-pin') && CSS.includes('.oq-fb-actions'), 'styles.css thiếu style nút 📌');
 });
 
+test('today 📌 + dashboard 📬: task câu ghim + đồ thị SRS đến hạn 7 ngày', () => {
+  // task 📌 ở tab Hôm nay khi có câu ghim, đi thẳng vào phiên ôn ghim
+  assert.ok(/id: 'td-pinned'/.test(APP), 'renderToday thiếu task td-pinned');
+  assert.ok(/function goToPinnedReview\b/.test(APP), 'thiếu goToPinnedReview');
+  const gp = APP.slice(APP.indexOf('function goToPinnedReview'), APP.indexOf('function goToPinnedReview') + 200);
+  assert.ok(gp.includes("setThinkMode('review')") && gp.includes('startPinned()'), 'goToPinnedReview phải mở mode review rồi startPinned');
+  // đồ thị đến hạn: container + render + dồn quá hạn vào cột Nay
+  assert.ok(HTML.includes('id="dash-chart-due"'), 'index.html thiếu dash-chart-due');
+  assert.ok(/dash-chart-due'\)\.innerHTML/.test(APP), 'renderCharts chưa render đồ thị đến hạn');
+  assert.ok(/Math\.max\(0, diff\)/.test(APP), 'quá hạn phải dồn vào cột hôm nay (Math.max(0, diff))');
+  // bucket dùng srsDue thật (không tự cộng interval lần nữa)
+  assert.ok(/srsDue\(e\) - t0\.getTime\(\)/.test(APP), 'bucket phải tính từ srsDue(entry)');
+});
+
 test('script đủ: index.html nạp mọi file dữ liệu trước app.js', () => {
   for (const f of ['coding-problems.js', 'iq-questions.js', 'english-questions.js',
     'situational-questions.js', 'design-drills.js', 'api-quiz.js', 'sql-drill.js', 'cli-quiz.js',
