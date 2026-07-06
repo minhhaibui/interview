@@ -3217,7 +3217,10 @@ function renderCharts() {
   });
   const maxDue = Math.max(...dueBuckets, 1);
   const dueTotal = dueBuckets.reduce((a, b) => a + b, 0);
-  document.getElementById('dash-chart-due').innerHTML = dueTotal
+  // Guard: HTML cũ (SW rơi về cache lúc mạng chập chờn) chưa có container này —
+  // không được ném để renderMockHistory/renderMockWrong phía sau vẫn chạy.
+  const dueEl = document.getElementById('dash-chart-due');
+  if (dueEl) dueEl.innerHTML = dueTotal
     ? dueBuckets.map((n, i) => `
       <div class="bar-col" title="${i === 0 ? 'Hôm nay (gồm quá hạn)' : `+${i} ngày nữa`}: ${n} từ">
         <div class="bar-v ${i === 0 && n ? 'low' : ''}" style="height:${Math.max(Math.round(n / maxDue * 100), n ? 4 : 0)}%"></div>

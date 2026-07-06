@@ -970,7 +970,7 @@ test('today 📌 + dashboard 📬: task câu ghim + đồ thị SRS đến hạn
   assert.ok(gp.includes("setThinkMode('review')") && gp.includes('startPinned()'), 'goToPinnedReview phải mở mode review rồi startPinned');
   // đồ thị đến hạn: container + render + dồn quá hạn vào cột Nay
   assert.ok(HTML.includes('id="dash-chart-due"'), 'index.html thiếu dash-chart-due');
-  assert.ok(/dash-chart-due'\)\.innerHTML/.test(APP), 'renderCharts chưa render đồ thị đến hạn');
+  assert.ok(/if \(dueEl\) dueEl\.innerHTML/.test(APP), 'renderCharts phải render đồ thị đến hạn CÓ guard null (HTML cũ do SW cache)');
   assert.ok(/Math\.max\(0, diff\)/.test(APP), 'quá hạn phải dồn vào cột hôm nay (Math.max(0, diff))');
   // bucket dùng srsDue thật (không tự cộng interval lần nữa)
   assert.ok(/srsDue\(e\) - t0\.getTime\(\)/.test(APP), 'bucket phải tính từ srsDue(entry)');
