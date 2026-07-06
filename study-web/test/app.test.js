@@ -918,9 +918,14 @@ test('🎙️ nói-để-điền: helper + wiring Mock/STAR + dọn dẹp + PREP
   // Design drill: nút trong template session + bind vào #dg-answer
   assert.ok(/id="dg-dict"/.test(APP) && /id="dg-dict-lang"/.test(APP), 'session design thiếu nút dg-dict / dg-dict-lang');
   assert.ok(/bindDictation\(document\.getElementById\('dg-dict'\), ta\)/.test(APP), 'renderDgSession chưa bind 🎙️ vào #dg-answer');
-  // dọn dẹp: rời tab / sang câu mock mới / mở câu STAR khác / rời đề design đều tắt micro
+  // dọn dẹp: mọi lối ra khỏi ô đang nghe đều tắt micro (QA 06/07: finishMock + đổi chế độ .mkm + mkAiGrade từng bị sót)
   const cleanups = APP.match(/stopDictation\(\);/g) || [];
-  assert.ok(cleanups.length >= 5, `cần ≥5 điểm gọi stopDictation() (switchView/showMockQ/openStar/star-back/dg-back), thấy ${cleanups.length}`);
+  assert.ok(cleanups.length >= 8, `cần ≥8 điểm gọi stopDictation() (switchView/showMockQ/openStar/star-back/dg-back/finishMock/.mkm/mkAiGrade), thấy ${cleanups.length}`);
+  // cờ VI/EN ở Mock repaint mỗi câu (prep-dict-lang dùng chung với STAR/Design — từng bị stale)
+  assert.ok(/bindDictLang\(document\.getElementById\('mk-dict-lang'\), dictationSupported\(\)\)/.test(APP),
+    'showMockQ chưa repaint cờ VI/EN');
+  // đang đọc chính tả = đang soạn — live sync không được re-render giết mic giữa câu
+  assert.ok(/if \(dictState\) return true;/.test(APP), 'isEditingNow chưa coi dictState là đang soạn');
   // ngôn ngữ lưu lại + xuất/nhập backup
   const pk = APP.match(/const PREP_KEYS = \[([\s\S]*?)\]/);
   assert.ok(pk && pk[1].includes('prep-dict-lang'), 'PREP_KEYS thiếu prep-dict-lang');
