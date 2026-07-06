@@ -277,7 +277,11 @@
         </div>
         <details class="mk-aigrade">
           <summary>🤖 Nhờ AI chấm câu trả lời của bạn (tùy chọn · cần API key)</summary>
-          <p class="mk-tip">Gõ câu trả lời của bạn rồi để Claude đối chiếu với đáp án mẫu, cho điểm /10 + chỉ ra chỗ thiếu. Dùng chung API key với “Phỏng vấn AI”.</p>
+          <p class="mk-tip">Gõ (hoặc bấm 🎙️ nói) câu trả lời của bạn rồi để Claude đối chiếu với đáp án mẫu, cho điểm /10 + chỉ ra chỗ thiếu. Dùng chung API key với “Phỏng vấn AI”.</p>
+          <div class="dict-row">
+            <button id="mk-dict" class="dict-btn" type="button" hidden>🎙️ Nói để điền</button>
+            <button id="mk-dict-lang" class="dict-lang" type="button" title="Ngôn ngữ nói-để-điền" hidden></button>
+          </div>
           <textarea id="mk-uans" class="mk-uans" placeholder="Gõ câu trả lời của bạn cho câu hỏi trên…"></textarea>
           <div class="mk-aig-cfg">
             <input id="mk-aikey" type="password" autocomplete="off" placeholder="sk-ant-... (lưu cục bộ)">

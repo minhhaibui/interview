@@ -183,6 +183,7 @@ function switchView(name) {
   if (typeof mkTimerId !== 'undefined') clearInterval(mkTimerId); // dừng đồng hồ Mock đang chạy ngầm
   try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch { /* trình duyệt không hỗ trợ */ } // tắt TTS đang đọc
   try { if (wrRecog) { wrRecog.abort(); wrRecog = null; } } catch { /* noop */ } // tắt mic Luyện viết khi rời tab
+  stopDictation(); // tắt micro 🎙️ nói-để-điền (Mock/STAR) khi rời tab
   try { if (aiRecog) { aiRecog.abort(); aiRecog = null; } } catch { /* noop */ } // tắt mic Phỏng vấn AI khi rời tab
   document.querySelectorAll('.listening').forEach(el => el.classList.remove('listening')); // gỡ trạng thái mic đang nghe
   store.set('prep-last-view', name); // nhớ tab đang mở cho lần reload sau
@@ -1422,6 +1423,75 @@ function startListening() {
   wrRecog.start();
 }
 
+// ---------- 🎙️ Nói để điền (dictation vào ô trả lời) ----------
+// Đối xứng với speak(): TTS đọc cho nghe, phần này nghe user NÓI và điền vào textarea.
+// Khác 🎤 Đọc to (wrRecog — 1 câu tiếng Anh, chấm phát âm): đây là đọc chính tả
+// liên tục để soạn câu trả lời dài (Mock, STAR), chọn được VI/EN.
+let dictState = null; // { rec, btn, label } — chỉ 1 phiên nghe tại một thời điểm
+
+const dictLang = () => store.get('prep-dict-lang', 'vi-VN');
+
+function stopDictation() {
+  if (!dictState) return;
+  const { rec, btn, label } = dictState;
+  dictState = null;
+  rec.onresult = rec.onerror = rec.onend = null;
+  try { rec.abort(); } catch { /* đã dừng sẵn */ }
+  btn.classList.remove('dict-on');
+  btn.textContent = label;
+}
+
+/** Gắn nút 🎙️ nói-để-điền cho 1 textarea. Trả false + ẩn nút nếu trình duyệt không hỗ trợ. */
+function bindDictation(btn, ta) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR || !btn || !ta) { if (btn) btn.hidden = true; return false; }
+  btn.hidden = false;
+  const label = btn.textContent;
+  btn.onclick = () => {
+    if (dictState && dictState.btn === btn) return stopDictation(); // đang nghe ô này → dừng
+    stopDictation(); // đang nghe ô khác → chuyển micro sang ô này
+    const rec = new SR();
+    rec.lang = dictLang();
+    rec.continuous = true;
+    rec.interimResults = false;
+    rec.onresult = e => {
+      let text = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) text += e.results[i][0].transcript;
+      }
+      text = text.trim();
+      if (!text) return;
+      ta.value = (ta.value.trim() ? ta.value.replace(/\s+$/, '') + ' ' : '') + text;
+      ta.dispatchEvent(new Event('input', { bubbles: true })); // STAR autosave lắng nghe 'input'
+    };
+    rec.onerror = ev => {
+      stopDictation();
+      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed')
+        alert('Trình duyệt đang chặn micro — cấp quyền micro cho trang này rồi bấm 🎙️ lại nhé.');
+    };
+    rec.onend = () => stopDictation(); // trình duyệt tự ngắt (im lặng lâu) → trả nút về bình thường
+    try { rec.start(); } catch { return; } // start() ném nếu phiên cũ chưa nhả — bỏ qua, bấm lại là được
+    dictState = { rec, btn, label };
+    btn.classList.add('dict-on');
+    btn.textContent = btn.dataset.rec || '🔴 Đang nghe… (bấm để dừng)'; // nút nhỏ (STAR) tự khai nhãn ngắn qua data-rec
+  };
+  return true;
+}
+
+/** Nút 🇻🇳/🇬🇧 cạnh nút 🎙️ — đổi ngôn ngữ nhận giọng nói, lưu prep-dict-lang. */
+function bindDictLang(btn, supported) {
+  if (!btn) return;
+  btn.hidden = !supported;
+  if (!supported) return;
+  const paint = () => { btn.textContent = dictLang() === 'vi-VN' ? '🇻🇳 VI' : '🇬🇧 EN'; };
+  btn.onclick = () => {
+    store.set('prep-dict-lang', dictLang() === 'vi-VN' ? 'en-US' : 'vi-VN');
+    stopDictation(); // phiên đang chạy vẫn dùng lang cũ — dừng để lần bấm sau nhận lang mới
+    paint();
+  };
+  paint();
+}
+
 /** Chuẩn hóa để so sánh: thường hóa, bỏ dấu câu, gạch nối → khoảng trắng */
 function normAnswer(s) {
   return s.toLowerCase()
@@ -2100,6 +2170,8 @@ async function initMock() {
   document.getElementById('mk-wrong').addEventListener('click', () => gradeMock(false));
   document.getElementById('mk-quit').addEventListener('click', finishMock);
   document.getElementById('mk-aigrade').addEventListener('click', mkAiGrade);
+  const dictOk = bindDictation(document.getElementById('mk-dict'), document.getElementById('mk-uans'));
+  bindDictLang(document.getElementById('mk-dict-lang'), dictOk);
   document.getElementById('mk-question').textContent = '';
   initAiInterview();
 }
@@ -2149,6 +2221,7 @@ function showMockQ() {
   document.getElementById('mk-right').hidden = true;
   document.getElementById('mk-wrong').hidden = true;
   // reset khu AI chấm cho câu mới
+  stopDictation(); // đang đọc dở câu trước mà sang câu mới thì tắt micro — tránh điền nhầm
   const ua = document.getElementById('mk-uans'); if (ua) ua.value = '';
   const aout = document.getElementById('mk-aiout'); if (aout) { aout.hidden = true; aout.textContent = ''; }
   const akey = document.getElementById('mk-aikey'); if (akey && !akey.value) akey.value = store.get('prep-ai-key', '');
@@ -2924,7 +2997,7 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-api-done', 'prep-api-best', 'prep-sql-done', 'prep-sql-best', 'prep-cli-done', 'prep-cli-best',
   'prep-en-done', 'prep-sit-done', 'prep-readiness-log',
   'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date',
-  'prep-capstone'];
+  'prep-capstone', 'prep-dict-lang'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */
@@ -4285,6 +4358,7 @@ function openStar(id) {
   if (!q) return;
   // Đang phát "nghe cả nhóm" mà mở phiên soạn STAR thì dừng đọc — audio không còn ngữ cảnh.
   try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch { /* không hỗ trợ TTS */ }
+  stopDictation(); // micro đang gắn vào ô của câu cũ — DOM sắp bị thay
   starState = { q };
   renderStarSession();
 }
@@ -4294,10 +4368,11 @@ function renderStarSession() {
   const el = document.getElementById('star-body');
   const d = starDraft(q.id);
   const field = (k, label, hint) => `
-    <label class="star-field">
-      <span class="star-flabel">${label} <span class="star-fhint">${escHtml(hint)}</span></span>
+    <div class="star-field">
+      <span class="star-flabel">${label} <span class="star-fhint">${escHtml(hint)}</span>
+        <button class="dict-btn star-dict" data-k="${k}" data-rec="🔴 Dừng" type="button" title="Nói để điền ô này" hidden>🎙️</button></span>
       <textarea class="star-ta" data-k="${k}" rows="3" placeholder="${escHtml(hint)}">${escHtml(d[k] || '')}</textarea>
-    </label>`;
+    </div>`;
   el.innerHTML = `
     <div class="star-sess">
       <button id="star-back" class="dg-link">← Danh sách câu hỏi</button>
@@ -4311,6 +4386,7 @@ function renderStarSession() {
       <div class="dg-actions">
         <button id="star-score" class="dg-go">✅ Tự chấm checklist</button>
         <button id="star-ai-toggle" class="dg-go dg-go-ai">🤖 Nhờ Claude góp ý</button>
+        <button id="star-dict-lang" class="dict-lang" type="button" title="Ngôn ngữ nói-để-điền" hidden></button>
       </div>
       <div id="star-check" class="star-check"></div>
       <div id="star-ai" class="dg-ai" hidden></div>
@@ -4330,8 +4406,14 @@ function renderStarSession() {
     clearTimeout(saveT); saveT = setTimeout(save, 500);
     renderStarCheck(read() || d, false); // cập nhật checklist trực tiếp (không lưu history)
   }));
+  // 🎙️ nói-để-điền từng ô S/T/A/R — transcript bắn event 'input' nên autosave/checklist chạy như gõ tay
+  let starDictOk = false;
+  el.querySelectorAll('.star-dict').forEach(b => {
+    starDictOk = bindDictation(b, el.querySelector(`.star-ta[data-k="${b.dataset.k}"]`)) || starDictOk;
+  });
+  bindDictLang(document.getElementById('star-dict-lang'), starDictOk);
   // clearTimeout khi rời session: nếu không, debounce treo sẽ fire sau renderStarList → read()=null nhưng vẫn an toàn nhờ guard.
-  document.getElementById('star-back').onclick = () => { clearTimeout(saveT); save(); starState = null; renderStarList(); };
+  document.getElementById('star-back').onclick = () => { clearTimeout(saveT); save(); stopDictation(); starState = null; renderStarList(); };
   document.getElementById('star-score').onclick = () => { save(); renderStarCheck(read() || d, true); };
   document.getElementById('star-ai-toggle').onclick = () => starRenderAiPanel(q, read);
   renderStarCheck(d, false);

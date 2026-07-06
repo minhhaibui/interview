@@ -1137,6 +1137,16 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 .ep-say:hover { opacity: 1; }
 .ep-sayall { display: inline-block; background: var(--bg); border: 1px solid var(--border); border-radius: 999px; color: var(--accent); cursor: pointer; font-size: 12.5px; padding: 4px 12px; margin: 2px 0 10px; }
 .ep-sayall:hover { border-color: var(--accent); }
+
+/* 🎙️ Nói để điền (dictation vào ô trả lời Mock/STAR) */
+.dict-row { display: flex; gap: 8px; align-items: center; margin: 4px 0 8px; }
+.dict-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 999px; color: var(--accent); cursor: pointer; font-size: 12.5px; padding: 4px 12px; }
+.dict-btn:hover { border-color: var(--accent); }
+.dict-btn.dict-on { background: #d73a49; border-color: #d73a49; color: #fff; animation: dict-pulse 1.2s ease-in-out infinite; }
+.dict-lang { background: none; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); cursor: pointer; font-size: 12px; padding: 4px 10px; }
+.dict-lang:hover { border-color: var(--accent); color: var(--accent); }
+.star-dict { font-size: 12px; padding: 1px 8px; margin-left: 6px; vertical-align: baseline; }
+@keyframes dict-pulse { 50% { opacity: .65; } }
 .iv-inter, .iv-result { text-align: center; background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 30px 24px; }
 .iv-check { font-size: 46px; }
 .iv-verdict { margin: 6px 0 4px; }

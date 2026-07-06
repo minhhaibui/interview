@@ -900,6 +900,31 @@ test('dashboard: đồ thị 🎯 điểm sẵn sàng theo ngày wiring đủ', 
   assert.ok(pk && pk[1].includes('prep-readiness-log'), 'PREP_KEYS thiếu prep-readiness-log');
 });
 
+test('🎙️ nói-để-điền: helper + wiring Mock/STAR + dọn dẹp + PREP_KEYS + CSS', () => {
+  // helper dùng chung
+  assert.ok(/function bindDictation\b/.test(APP), 'thiếu hàm bindDictation');
+  assert.ok(/function stopDictation\b/.test(APP), 'thiếu hàm stopDictation');
+  assert.ok(/function bindDictLang\b/.test(APP), 'thiếu hàm bindDictLang (đổi VI/EN)');
+  assert.ok(/dispatchEvent\(new Event\('input', \{ bubbles: true \}\)\)/.test(APP),
+    'transcript phải bắn event input (autosave STAR/checklist lắng nghe input)');
+  // Mock: nút trong index.html + bind ở initMock
+  assert.ok(HTML.includes('id="mk-dict"') && HTML.includes('id="mk-dict-lang"'), 'index.html thiếu nút mk-dict / mk-dict-lang');
+  assert.ok(/bindDictation\(document\.getElementById\('mk-dict'\), document\.getElementById\('mk-uans'\)\)/.test(APP),
+    'initMock chưa bind 🎙️ vào #mk-uans');
+  // STAR: nút từng ô + bind theo data-k + lang toggle trong session
+  assert.ok(/class="dict-btn star-dict" data-k="\$\{k\}"/.test(APP), 'field STAR thiếu nút .star-dict');
+  assert.ok(/\.star-ta\[data-k="\$\{b\.dataset\.k\}"\]/.test(APP), 'renderStarSession chưa nối nút mic với textarea cùng data-k');
+  assert.ok(/id="star-dict-lang"/.test(APP), 'session STAR thiếu nút đổi ngôn ngữ');
+  // dọn dẹp: rời tab / sang câu mock mới / mở câu STAR khác đều tắt micro
+  const cleanups = APP.match(/stopDictation\(\);/g) || [];
+  assert.ok(cleanups.length >= 4, `cần ≥4 điểm gọi stopDictation() (switchView/showMockQ/openStar/star-back), thấy ${cleanups.length}`);
+  // ngôn ngữ lưu lại + xuất/nhập backup
+  const pk = APP.match(/const PREP_KEYS = \[([\s\S]*?)\]/);
+  assert.ok(pk && pk[1].includes('prep-dict-lang'), 'PREP_KEYS thiếu prep-dict-lang');
+  const CSS = read('styles.css');
+  assert.ok(CSS.includes('.dict-btn') && CSS.includes('.dict-on') && CSS.includes('.dict-lang'), 'styles.css thiếu style nút 🎙️');
+});
+
 test('script đủ: index.html nạp mọi file dữ liệu trước app.js', () => {
   for (const f of ['coding-problems.js', 'iq-questions.js', 'english-questions.js',
     'situational-questions.js', 'design-drills.js', 'api-quiz.js', 'sql-drill.js', 'cli-quiz.js',
