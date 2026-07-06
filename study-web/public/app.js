@@ -2737,6 +2737,10 @@ function renderDgSession() {
 
       <h2>✍️ Lời giải của bạn</h2>
       <p class="dg-tip">Viết theo khung: <b>1)</b> Làm rõ yêu cầu · <b>2)</b> Ước lượng · <b>3)</b> API · <b>4)</b> Data model · <b>5)</b> High-level · <b>6)</b> Đào sâu bottleneck · <b>7)</b> Trade-offs.</p>
+      <div class="dict-row">
+        <button id="dg-dict" class="dict-btn" type="button" hidden>🎙️ Nói để điền</button>
+        <button id="dg-dict-lang" class="dict-lang" type="button" title="Ngôn ngữ nói-để-điền" hidden></button>
+      </div>
       <textarea id="dg-answer" class="dg-answer" placeholder="Gõ dàn ý / lời giải của bạn ở đây… (tự lưu nháp)"></textarea>
 
       <h2>📋 Tự chấm theo rubric</h2>
@@ -2757,9 +2761,13 @@ function renderDgSession() {
   ta.value = dgDraft(drill.id);
   let saveT;
   ta.addEventListener('input', () => { clearTimeout(saveT); saveT = setTimeout(() => dgDraft(drill.id, ta.value), 500); });
+  // 🎙️ nói-để-điền dàn ý — transcript bắn 'input' nên nháp tự lưu như gõ tay
+  bindDictLang(document.getElementById('dg-dict-lang'),
+    bindDictation(document.getElementById('dg-dict'), ta));
 
   document.getElementById('dg-back').onclick = () => {
     if (dgTimerId) { clearInterval(dgTimerId); dgTimerId = null; }
+    stopDictation(); // ô dàn ý sắp rời DOM
     dgDraft(drill.id, ta.value);
     dgState = null; renderDgList();
   };

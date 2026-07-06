@@ -915,9 +915,12 @@ test('🎙️ nói-để-điền: helper + wiring Mock/STAR + dọn dẹp + PREP
   assert.ok(/class="dict-btn star-dict" data-k="\$\{k\}"/.test(APP), 'field STAR thiếu nút .star-dict');
   assert.ok(/\.star-ta\[data-k="\$\{b\.dataset\.k\}"\]/.test(APP), 'renderStarSession chưa nối nút mic với textarea cùng data-k');
   assert.ok(/id="star-dict-lang"/.test(APP), 'session STAR thiếu nút đổi ngôn ngữ');
-  // dọn dẹp: rời tab / sang câu mock mới / mở câu STAR khác đều tắt micro
+  // Design drill: nút trong template session + bind vào #dg-answer
+  assert.ok(/id="dg-dict"/.test(APP) && /id="dg-dict-lang"/.test(APP), 'session design thiếu nút dg-dict / dg-dict-lang');
+  assert.ok(/bindDictation\(document\.getElementById\('dg-dict'\), ta\)/.test(APP), 'renderDgSession chưa bind 🎙️ vào #dg-answer');
+  // dọn dẹp: rời tab / sang câu mock mới / mở câu STAR khác / rời đề design đều tắt micro
   const cleanups = APP.match(/stopDictation\(\);/g) || [];
-  assert.ok(cleanups.length >= 4, `cần ≥4 điểm gọi stopDictation() (switchView/showMockQ/openStar/star-back), thấy ${cleanups.length}`);
+  assert.ok(cleanups.length >= 5, `cần ≥5 điểm gọi stopDictation() (switchView/showMockQ/openStar/star-back/dg-back), thấy ${cleanups.length}`);
   // ngôn ngữ lưu lại + xuất/nhập backup
   const pk = APP.match(/const PREP_KEYS = \[([\s\S]*?)\]/);
   assert.ok(pk && pk[1].includes('prep-dict-lang'), 'PREP_KEYS thiếu prep-dict-lang');
