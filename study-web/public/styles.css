@@ -853,6 +853,12 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 .td-sprint-val { flex: 0 0 auto; font-size: 13px; }
 @media (max-width: 560px) { .td-sprint-label { flex-basis: 130px; } }
 .review-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 6px; }
+
+/* 📌 Ghim câu hỏi */
+.oq-fb-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px; }
+.oq-pin { background: var(--bg); border: 1px solid var(--border); border-radius: 999px; color: var(--muted); cursor: pointer; font-size: 12.5px; padding: 5px 12px; }
+.oq-pin:hover { border-color: var(--accent); color: var(--accent); }
+.oq-pin.pinned { background: var(--accent); border-color: var(--accent); color: #fff; }
 @media (max-width: 560px) { .think-modes { gap: 12px; padding: 12px 12px 0; } .think-group { width: 100%; } }
 
 .coding-wrap, .iq-wrap { max-width: 980px; margin: 0 auto; padding: 20px 24px 100px; }

@@ -142,6 +142,51 @@ function wrongTotal() {
   }, 0);
 }
 
+// ---------- 📌 Ghim câu hỏi (bookmark thủ công, khác hàng đợi câu sai tự động) ----------
+// Cùng cấu trúc {mode: {id: timestamp}} như prep-quiz-wrong; chỉ user gỡ ghim, chấm đúng KHÔNG tự gỡ.
+const PIN_KEY = 'prep-quiz-pinned';
+function getPinned() { return store.get(PIN_KEY, {}); }
+function isPinned(mode, id) { const p = getPinned(); return !!(p[mode] && p[mode][id] != null); }
+/** Đảo trạng thái ghim, trả về trạng thái MỚI (true = vừa ghim). */
+function togglePin(mode, id) {
+  if (!mode || id == null) return false;
+  const p = getPinned();
+  if (p[mode] && p[mode][id] != null) {
+    delete p[mode][id];
+    if (!Object.keys(p[mode]).length) delete p[mode];
+    store.set(PIN_KEY, p);
+    return false;
+  }
+  (p[mode] = p[mode] || {})[id] = Date.now();
+  store.set(PIN_KEY, p);
+  return true;
+}
+function pinnedIds(mode) { return Object.keys(getPinned()[mode] || {}); }
+/** Tổng số câu ghim còn tồn tại trong ngân hàng (loại id đã bị gỡ khỏi data). */
+function pinnedTotal() {
+  const p = getPinned();
+  return Object.keys(p).reduce((sum, mode) => {
+    const live = QUIZ_MODES[mode];
+    if (!live) return sum;
+    const ids = new Set((live.data() || []).map(q => String(q.id)));
+    return sum + Object.keys(p[mode]).filter(id => ids.has(String(id))).length;
+  }, 0);
+}
+/** Nút 📌 cho ô feedback sau khi chấm — dùng chung mọi engine trắc nghiệm. */
+function pinBtnHtml(mode, id) {
+  if (!mode || id == null || !QUIZ_MODES[mode]) return '';
+  const on = isPinned(mode, id);
+  return `<button class="oq-pin${on ? ' pinned' : ''}" data-mode="${mode}" data-qid="${escHtml(String(id))}" type="button"
+    title="Ghim để ôn lại trước phỏng vấn (gỡ ghim thủ công, chấm đúng không tự gỡ)">${on ? '📌 Đã ghim' : '📌 Ghim câu này'}</button>`;
+}
+function bindPinBtns(scope) {
+  scope.querySelectorAll('.oq-pin').forEach(b => b.onclick = () => {
+    const on = togglePin(b.dataset.mode, b.dataset.qid);
+    b.classList.toggle('pinned', on);
+    b.textContent = on ? '📌 Đã ghim' : '📌 Ghim câu này';
+  });
+}
+
 // ---------- Tabs / views ----------
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => switchView(btn.dataset.view));
@@ -3013,7 +3058,7 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-api-done', 'prep-api-best', 'prep-sql-done', 'prep-sql-best', 'prep-cli-done', 'prep-cli-best',
   'prep-en-done', 'prep-sit-done', 'prep-readiness-log',
   'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date',
-  'prep-capstone', 'prep-dict-lang'];
+  'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */
@@ -3252,8 +3297,7 @@ async function buildPrintSheetHtml() {
   const leechHtml = leech.length ? `<h2>🔥 Từ hay quên (${leech.length})</h2><ul class="ps-2col">${leech.map(c =>
     `<li><b>${escHtml(c.front)}</b> — ${escHtml(c.meaning)}</li>`).join('')}</ul>` : '';
 
-  const wrong = buildReviewQueue().slice(0, 12);
-  const wrongHtml = wrong.length ? `<h2>🔁 Câu bạn đang sai (${wrong.length} câu gần nhất)</h2>${wrong.map(({ mode, q }) => {
+  const psQHtml = ({ mode, q }) => {
     const cfg = QUIZ_MODES[mode];
     const body = q.q ? escHtml(q.q) : (cfg ? escHtml(cfg.ask) : 'Đoán output:');
     const snip = q.sql || q.cmd || q.code;
@@ -3261,7 +3305,13 @@ async function buildPrintSheetHtml() {
       ${snip ? `<pre>${escHtml(snip)}</pre>` : ''}
       <div class="ps-a">✅ ${escHtml(q.options[q.answer])}</div>
       <div class="ps-why">${escHtml(q.explain || '')}</div></div>`;
-  }).join('')}` : '';
+  };
+  const wrong = buildReviewQueue().slice(0, 12);
+  const wrongHtml = wrong.length ? `<h2>🔁 Câu bạn đang sai (${wrong.length} câu gần nhất)</h2>${wrong.map(psQHtml).join('')}` : '';
+  // Câu 📌 tự ghim — đúng mục đích "xem lại trước giờ G"; loại câu đã nằm ở khối đang-sai cho khỏi in trùng
+  const wrongKeys = new Set(wrong.map(it => `${it.mode}:${it.q.id}`));
+  const pinned = buildPinnedQueue().filter(it => !wrongKeys.has(`${it.mode}:${it.q.id}`)).slice(0, 12);
+  const pinnedHtml = pinned.length ? `<h2>📌 Câu bạn đã ghim (${pinned.length})</h2>${pinned.map(psQHtml).join('')}` : '';
 
   const scored = dgDrills().map(x => ({ x, best: dgBestCoverage(x.id) }));
   const weakDrills = [...scored.filter(s => s.best == null), ...scored.filter(s => s.best != null).sort((a, b) => a.best - b.best)]
@@ -3289,7 +3339,7 @@ async function buildPrintSheetHtml() {
     `<li><i>${escHtml(i.en)}</i></li>`).join('')}</ul>` : '';
 
   return `<div class="ps-head"><h1>🏁 Ôn nhanh trước phỏng vấn</h1><p>${head} · minhhaibui.github.io/interview</p></div>
-    ${leechHtml}${wrongHtml}${designHtml}${starHtml}${rqHtml}${epHtml}
+    ${leechHtml}${wrongHtml}${pinnedHtml}${designHtml}${starHtml}${rqHtml}${epHtml}
     <p class="ps-foot">Hít thở sâu — bạn chuẩn bị kỹ rồi. Chúc may mắn! 💪</p>`;
 }
 
@@ -3914,7 +3964,9 @@ function answerOutputQuiz(i) {
   fb.hidden = false;
   fb.innerHTML = `<div class="oq-verdict ${correct ? 'ok' : 'no'}">${correct ? '✅ Chính xác!' : '❌ Chưa đúng'}</div>
     <p class="oq-explain">${escHtml(q.explain)}</p>
-    <button id="oq-next" class="dg-go">${oqIdx + 1 < all.length ? 'Câu tiếp →' : 'Xem kết quả'}</button>`;
+    <div class="oq-fb-actions">${pinBtnHtml('output', q.id)}
+    <button id="oq-next" class="dg-go">${oqIdx + 1 < all.length ? 'Câu tiếp →' : 'Xem kết quả'}</button></div>`;
+  bindPinBtns(fb);
   document.getElementById('oq-next').onclick = () => { oqIdx++; showOutputQuiz(); };
   fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
@@ -3984,7 +4036,9 @@ function makeQuiz(cfg) {
     fb.hidden = false;
     fb.innerHTML = `<div class="oq-verdict ${correct ? 'ok' : 'no'}">${correct ? '✅ Chính xác!' : '❌ Chưa đúng'}</div>
       <p class="oq-explain">${escHtml(q.explain)}</p>
-      <button class="dg-go oq-next-btn">${idx + 1 < all.length ? 'Câu tiếp →' : 'Xem kết quả'}</button>`;
+      <div class="oq-fb-actions">${pinBtnHtml(cfg.mode, q.id)}
+      <button class="dg-go oq-next-btn">${idx + 1 < all.length ? 'Câu tiếp →' : 'Xem kết quả'}</button></div>`;
+    bindPinBtns(fb);
     fb.querySelector('.oq-next-btn').onclick = () => { idx++; show(); };
     fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
@@ -4121,6 +4175,16 @@ function buildReviewQueue() {
   return out.sort(() => Math.random() - 0.5);
 }
 
+/** Gom mọi câu 📌 đã ghim còn tồn tại thành hàng đợi [{mode, q}] đã trộn thứ tự. */
+function buildPinnedQueue() {
+  const out = [];
+  Object.keys(QUIZ_MODES).forEach(mode => {
+    const byId = new Map((QUIZ_MODES[mode].data() || []).map(q => [String(q.id), q]));
+    pinnedIds(mode).forEach(id => { const q = byId.get(String(id)); if (q) out.push({ mode, q }); });
+  });
+  return out.sort(() => Math.random() - 0.5);
+}
+
 /** Bốc ngẫu nhiên tối đa n câu bất kỳ trên mọi mode trong QUIZ_MODES → phiên warm-up trộn. */
 function buildMixedQueue(n) {
   const all = [];
@@ -4171,13 +4235,21 @@ function renderReview() {
   if (!el) return;
   // Nút warm-up trộn ngẫu nhiên — luôn hiện để mode này hữu ích cả khi chưa có câu sai.
   const mixBtn = '<button id="review-mix" class="dg-go dg-link">🎲 Ôn trộn nhanh 10 câu (mọi mode)</button>';
+  // Nút ôn câu 📌 đã ghim — chỉ hiện khi có ghim (ghim ở ô giải thích sau khi chấm bất kỳ quiz nào).
+  const pinN = pinnedTotal();
+  const pinBtn = pinN ? `<button id="review-pinned" class="dg-go dg-link">📌 Ôn câu đã ghim (${pinN})</button>` : '';
+  const bindExtra = () => {
+    document.getElementById('review-mix').onclick = () => startMixed(10);
+    const pb = document.getElementById('review-pinned');
+    if (pb) pb.onclick = startPinned;
+  };
   const q = buildReviewQueue();
   if (!q.length) {
     el.innerHTML = `<div class="oq-start review-empty">
-      <p>🎉 Chưa có câu trắc nghiệm nào đang sai. Làm các quiz <b>Đoán output · API · SQL · CLI</b> hoặc vòng <b>Tiếng Anh · Tình huống</b> trong Phỏng vấn tổng hợp — câu nào chọn sai sẽ được gom về đây để ôn lại cho nhớ.</p>
-      <div class="review-actions">${mixBtn}</div>
+      <p>🎉 Chưa có câu trắc nghiệm nào đang sai. Làm các quiz <b>Đoán output · API · SQL · CLI</b> hoặc vòng <b>Tiếng Anh · Tình huống</b> trong Phỏng vấn tổng hợp — câu nào chọn sai sẽ được gom về đây để ôn lại cho nhớ. Thấy câu nào đáng xem lại thì bấm <b>📌 Ghim</b> ở phần giải thích.</p>
+      <div class="review-actions">${pinBtn}${mixBtn}</div>
     </div>`;
-    document.getElementById('review-mix').onclick = () => startMixed(10);
+    bindExtra();
     return;
   }
   // đếm theo mode để hiện phân bố
@@ -4190,11 +4262,11 @@ function renderReview() {
       <div class="review-chips">${chips}</div>
       <div class="review-actions">
         <button id="review-go" class="dg-go">▶ Ôn ngay (${q.length} câu, trộn thứ tự)</button>
-        ${mixBtn}
+        ${pinBtn}${mixBtn}
       </div>
     </div>`;
   document.getElementById('review-go').onclick = startReview;
-  document.getElementById('review-mix').onclick = () => startMixed(10);
+  bindExtra();
 }
 
 function startReview() {
@@ -4207,6 +4279,14 @@ function startReview() {
 /** Phiên warm-up: n câu bất kỳ trộn mọi mode (dùng chung engine review). */
 function startMixed(n) {
   reviewQueue = buildMixedQueue(n);
+  reviewIdx = 0; reviewRight = 0;
+  if (!reviewQueue.length) return renderReview();
+  showReview();
+}
+
+/** Phiên ôn câu 📌 đã ghim (dùng chung engine review; chấm đúng KHÔNG gỡ ghim). */
+function startPinned() {
+  reviewQueue = buildPinnedQueue();
   reviewIdx = 0; reviewRight = 0;
   if (!reviewQueue.length) return renderReview();
   showReview();
@@ -4250,7 +4330,9 @@ function answerReview(i) {
   fb.hidden = false;
   fb.innerHTML = `<div class="oq-verdict ${correct ? 'ok' : 'no'}">${correct ? '✅ Chính xác! Câu này rời hàng đợi.' : '❌ Chưa đúng — giữ lại ôn tiếp.'}</div>
     <p class="oq-explain">${escHtml(q.explain)}</p>
-    <button id="review-next" class="dg-go">${reviewIdx + 1 < reviewQueue.length ? 'Câu tiếp →' : 'Xem kết quả'}</button>`;
+    <div class="oq-fb-actions">${pinBtnHtml(item.mode, q.id)}
+    <button id="review-next" class="dg-go">${reviewIdx + 1 < reviewQueue.length ? 'Câu tiếp →' : 'Xem kết quả'}</button></div>`;
+  bindPinBtns(fb);
   document.getElementById('review-next').onclick = () => { reviewIdx++; showReview(); };
   fb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
@@ -5132,7 +5214,9 @@ function answerMcq(i) {
       const d = store.get(cfg.doneKey, {}); d[q.id] = true; store.set(cfg.doneKey, d);
     } else recordWrong(m.modeKey, q.id);
   }
-  document.getElementById('iv-fb').innerHTML = `<div class="${ok ? 'iq-ok' : 'iq-no'}">${ok ? '✅ Đúng! ' : '❌ Chưa đúng. '}${escHtml(q.explain)}</div>`;
+  const ivFb = document.getElementById('iv-fb');
+  ivFb.innerHTML = `<div class="${ok ? 'iq-ok' : 'iq-no'}">${ok ? '✅ Đúng! ' : '❌ Chưa đúng. '}${escHtml(q.explain)}</div>${pinBtnHtml(m.modeKey, q.id)}`;
+  bindPinBtns(ivFb);
   const nx = document.getElementById('iv-mnext');
   nx.hidden = false;
   nx.textContent = m.idx + 1 >= m.qs.length ? 'Hoàn tất vòng →' : 'Câu tiếp →';

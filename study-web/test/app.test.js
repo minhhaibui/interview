@@ -933,6 +933,29 @@ test('🎙️ nói-để-điền: helper + wiring Mock/STAR + dọn dẹp + PREP
   assert.ok(CSS.includes('.dict-btn') && CSS.includes('.dict-on') && CSS.includes('.dict-lang'), 'styles.css thiếu style nút 🎙️');
 });
 
+test('📌 ghim câu hỏi: helper + nút ở 4 engine chấm + phiên ôn + bản in + PREP_KEYS + CSS', () => {
+  // helper
+  for (const fn of ['togglePin', 'isPinned', 'pinnedIds', 'pinnedTotal', 'buildPinnedQueue', 'startPinned', 'pinBtnHtml', 'bindPinBtns']) {
+    assert.ok(new RegExp(`function ${fn}\\b`).test(APP), `thiếu hàm ${fn}`);
+  }
+  const pk = APP.match(/const PREP_KEYS = \[([\s\S]*?)\]/);
+  assert.ok(pk && pk[1].includes('prep-quiz-pinned'), 'PREP_KEYS thiếu prep-quiz-pinned');
+  // nút 📌 ở cả 4 chỗ chấm: makeQuiz (api/sql/cli), output, review session, vòng MCQ phỏng vấn
+  assert.ok(/pinBtnHtml\(cfg\.mode, q\.id\)/.test(APP), 'makeQuiz answer() thiếu nút ghim');
+  assert.ok(/pinBtnHtml\('output', q\.id\)/.test(APP), 'answerOutputQuiz thiếu nút ghim');
+  assert.ok(/pinBtnHtml\(item\.mode, q\.id\)/.test(APP), 'answerReview thiếu nút ghim');
+  assert.ok(/pinBtnHtml\(m\.modeKey, q\.id\)/.test(APP), 'answerMcq (vòng english/tình huống) thiếu nút ghim');
+  const binds = APP.match(/bindPinBtns\(/g) || [];
+  assert.ok(binds.length >= 5, `cần ≥5 lời gọi bindPinBtns (4 engine + khai báo), thấy ${binds.length}`);
+  // phiên ôn câu ghim trong view 🔁 + bản in có khối 📌 (loại trùng với khối đang-sai)
+  assert.ok(/id="review-pinned"/.test(APP), 'renderReview thiếu nút 📌 Ôn câu đã ghim');
+  assert.ok(/pinnedHtml/.test(APP) && /wrongKeys\.has/.test(APP), 'printSheet thiếu khối 📌 hoặc chưa loại trùng câu đang-sai');
+  // chấm đúng KHÔNG được tự gỡ ghim — không tồn tại lời gọi gỡ ghim theo kết quả chấm
+  assert.ok(!/clearPin|unpinOnCorrect/.test(APP), 'ghim chỉ gỡ thủ công qua togglePin');
+  const CSS = read('styles.css');
+  assert.ok(CSS.includes('.oq-pin') && CSS.includes('.oq-fb-actions'), 'styles.css thiếu style nút 📌');
+});
+
 test('script đủ: index.html nạp mọi file dữ liệu trước app.js', () => {
   for (const f of ['coding-problems.js', 'iq-questions.js', 'english-questions.js',
     'situational-questions.js', 'design-drills.js', 'api-quiz.js', 'sql-drill.js', 'cli-quiz.js',
