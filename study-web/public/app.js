@@ -180,10 +180,13 @@ function pinBtnHtml(mode, id) {
     title="Ghim để ôn lại trước phỏng vấn (gỡ ghim thủ công, chấm đúng không tự gỡ)">${on ? '📌 Đã ghim' : '📌 Ghim câu này'}</button>`;
 }
 function bindPinBtns(scope) {
-  scope.querySelectorAll('.oq-pin').forEach(b => b.onclick = () => {
+  scope.querySelectorAll('.oq-pin').forEach(b => b.onclick = (ev) => {
     const on = togglePin(b.dataset.mode, b.dataset.qid);
     b.classList.toggle('pinned', on);
     b.textContent = on ? '📌 Đã ghim' : '📌 Ghim câu này';
+    // Click CHUỘT thì nhả focus: Enter ngay sau đó phải là "sang câu tiếp" chứ không toggle lại ghim.
+    // Kích hoạt bằng bàn phím (detail=0) giữ focus để người dùng phím thao tác tiếp.
+    if (ev && ev.detail) b.blur();
   });
 }
 
@@ -4195,6 +4198,7 @@ function buildMixedQueue(n) {
 }
 
 let reviewQueue = [], reviewIdx = 0, reviewRight = 0;
+let reviewKind = 'wrong'; // 'wrong' | 'mixed' | 'pinned' — chỉnh lời chấm/kết thúc cho đúng ngữ cảnh phiên
 
 /** Cập nhật badge số câu sai trên nút mode (gọi sau mỗi lần chấm). */
 function refreshReviewBadge() {
@@ -4271,7 +4275,7 @@ function renderReview() {
 
 function startReview() {
   reviewQueue = buildReviewQueue();
-  reviewIdx = 0; reviewRight = 0;
+  reviewIdx = 0; reviewRight = 0; reviewKind = 'wrong';
   if (!reviewQueue.length) return renderReview();
   showReview();
 }
@@ -4279,7 +4283,7 @@ function startReview() {
 /** Phiên warm-up: n câu bất kỳ trộn mọi mode (dùng chung engine review). */
 function startMixed(n) {
   reviewQueue = buildMixedQueue(n);
-  reviewIdx = 0; reviewRight = 0;
+  reviewIdx = 0; reviewRight = 0; reviewKind = 'mixed';
   if (!reviewQueue.length) return renderReview();
   showReview();
 }
@@ -4287,7 +4291,7 @@ function startMixed(n) {
 /** Phiên ôn câu 📌 đã ghim (dùng chung engine review; chấm đúng KHÔNG gỡ ghim). */
 function startPinned() {
   reviewQueue = buildPinnedQueue();
-  reviewIdx = 0; reviewRight = 0;
+  reviewIdx = 0; reviewRight = 0; reviewKind = 'pinned';
   if (!reviewQueue.length) return renderReview();
   showReview();
 }
@@ -4328,7 +4332,11 @@ function answerReview(i) {
   refreshThinkBadges();
   const fb = document.getElementById('review-fb');
   fb.hidden = false;
-  fb.innerHTML = `<div class="oq-verdict ${correct ? 'ok' : 'no'}">${correct ? '✅ Chính xác! Câu này rời hàng đợi.' : '❌ Chưa đúng — giữ lại ôn tiếp.'}</div>
+  // Lời chấm theo loại phiên: chỉ phiên câu-sai mới nói chuyện "rời/giữ hàng đợi";
+  // phiên 🎲/📌 câu sai vẫn recordWrong nên nhắc là đã đưa vào 🔁.
+  const okText = reviewKind === 'wrong' ? '✅ Chính xác! Câu này rời hàng đợi.' : '✅ Chính xác!';
+  const noText = reviewKind === 'wrong' ? '❌ Chưa đúng — giữ lại ôn tiếp.' : '❌ Chưa đúng — đã đưa vào hàng đợi 🔁 ôn lại.';
+  fb.innerHTML = `<div class="oq-verdict ${correct ? 'ok' : 'no'}">${correct ? okText : noText}</div>
     <p class="oq-explain">${escHtml(q.explain)}</p>
     <div class="oq-fb-actions">${pinBtnHtml(item.mode, q.id)}
     <button id="review-next" class="dg-go">${reviewIdx + 1 < reviewQueue.length ? 'Câu tiếp →' : 'Xem kết quả'}</button></div>`;
@@ -4342,13 +4350,30 @@ function finishReview() {
   const pct = total ? Math.round(reviewRight / total * 100) : 0;
   const left = wrongTotal();
   const el = document.getElementById('review-body');
+  // Câu chốt + nút "làm nữa" theo loại phiên — phiên 📌/🎲 không nói chuyện "sạch hàng đợi sai"
+  const leftNote = left ? `Câu chưa đúng đã nằm trong hàng đợi 🔁 (<b>${left}</b> câu).` : '';
+  const kinds = {
+    wrong: {
+      p: left === 0 ? '🎉 Sạch hàng đợi — không còn câu nào sai!' : `Còn <b>${left}</b> câu cần ôn tiếp. Cứ ôn lại cho tới khi nhớ hẳn nhé.`,
+      btn: left ? '↻ Ôn tiếp câu còn sai' : '↻ Ôn lại', act: () => (left ? startReview() : renderReview()),
+    },
+    pinned: {
+      p: `📌 Ghim vẫn giữ nguyên — muốn gỡ thì bấm nút 📌 ở phần giải thích. ${leftNote}`,
+      btn: '↻ Ôn câu ghim lại', act: startPinned,
+    },
+    mixed: {
+      p: leftNote || 'Không phát sinh câu sai nào — quá ổn!',
+      btn: '🎲 Trộn 10 câu khác', act: () => startMixed(10),
+    },
+  };
+  const k = kinds[reviewKind] || kinds.wrong;
   el.innerHTML = `
     <div class="oq-result">
       <h2>${pct >= 80 ? '🌟' : pct >= 50 ? '👍' : '📚'} Ôn xong: đúng ${reviewRight}/${total} (${pct}%)</h2>
-      <p>${left === 0 ? '🎉 Sạch hàng đợi — không còn câu nào sai!' : `Còn <b>${left}</b> câu cần ôn tiếp. Cứ ôn lại cho tới khi nhớ hẳn nhé.`}</p>
-      <button id="review-again" class="dg-go">${left ? '↻ Ôn tiếp câu còn sai' : '↻ Ôn lại'}</button>
+      <p>${k.p}</p>
+      <button id="review-again" class="dg-go">${k.btn}</button>
     </div>`;
-  document.getElementById('review-again').onclick = () => (left ? startReview() : renderReview());
+  document.getElementById('review-again').onclick = k.act;
 }
 
 // ============ 🌟 STAR BUILDER (soạn câu trả lời phỏng vấn hành vi) ============
@@ -5215,7 +5240,8 @@ function answerMcq(i) {
     } else recordWrong(m.modeKey, q.id);
   }
   const ivFb = document.getElementById('iv-fb');
-  ivFb.innerHTML = `<div class="${ok ? 'iq-ok' : 'iq-no'}">${ok ? '✅ Đúng! ' : '❌ Chưa đúng. '}${escHtml(q.explain)}</div>${pinBtnHtml(m.modeKey, q.id)}`;
+  const pin = pinBtnHtml(m.modeKey, q.id);
+  ivFb.innerHTML = `<div class="${ok ? 'iq-ok' : 'iq-no'}">${ok ? '✅ Đúng! ' : '❌ Chưa đúng. '}${escHtml(q.explain)}</div>${pin ? `<div class="oq-fb-actions">${pin}</div>` : ''}`;
   bindPinBtns(ivFb);
   const nx = document.getElementById('iv-mnext');
   nx.hidden = false;
@@ -5361,6 +5387,8 @@ function initShortcuts() {
       switchView('docs');
       document.getElementById('sb-search').focus();
     } else if (e.key === 'Enter') {
+      // Nút 📌 đang focus (điều hướng bằng Tab) → để Enter kích hoạt ghim như nút thường
+      if (document.activeElement?.classList?.contains('oq-pin')) return;
       // Sau khi đã chấm một câu quiz → Enter sang câu tiếp (điều khiển quiz hoàn toàn bằng phím)
       const next = quizNextButton();
       if (next) { e.preventDefault(); next.click(); }
