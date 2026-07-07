@@ -3390,7 +3390,9 @@ const WEEK_TASKS = [
   ['english', '🇬🇧 English tuần này'],
 ];
 
-function renderDashboard() {
+/** Checklist 12 tuần + thanh % + empty-state người mới — phần duy nhất phụ thuộc tick ô tuần.
+ *  Tách khỏi renderDashboard để mỗi lần tick không dựng lại heatmap/danh sách mock/SRS. */
+function renderWeekChecklist() {
   const progress = store.get('prep-progress', {});
   const weeksGroup = TREE.find(g => g.title.includes('12 tuần'));
   const weeks = [...new Set((weeksGroup?.items || []).map(i => i.week).filter(Boolean))];
@@ -3417,7 +3419,10 @@ function renderDashboard() {
         const prog = store.get('prep-progress', {});
         prog[wk] = { ...(prog[wk] || {}), [key]: cb.checked };
         store.set('prep-progress', prog);
-        renderDashboard();
+        // Tick chỉ đổi checklist + điểm sẵn sàng (phần Kiến thức) — vẽ lại đúng 2 thứ đó,
+        // không dựng lại heatmap/danh sách mock/SRS như renderDashboard() đầy đủ trước đây.
+        renderWeekChecklist();
+        renderCharts();
       });
       lb.append(cb, label);
       row.appendChild(lb);
@@ -3429,6 +3434,39 @@ function renderDashboard() {
   const pct = totalTasks ? Math.round((done / totalTasks) * 100) : 0;
   document.getElementById('dash-bar-fill').style.width = pct + '%';
   document.getElementById('dash-percent').textContent = pct + '%';
+
+  // Empty-state: người mới chưa có dữ liệu gì → hướng dẫn bắt đầu thay vì biểu đồ trống khó hiểu
+  const entries = Object.entries(store.get('prep-quiz-scores', {}));
+  const acts = store.get('prep-activity', {});
+  const anyActivity = Object.values(acts).some(n => n > 0);
+  const isNew = done === 0 && !anyActivity && entries.length === 0;
+  const dashWrap = document.querySelector('.dash-wrap');
+  let empty = document.getElementById('dash-empty');
+  if (isNew) {
+    if (!empty) {
+      empty = document.createElement('div');
+      empty.id = 'dash-empty';
+      empty.className = 'dash-empty';
+      const h1 = dashWrap.querySelector('h1');
+      dashWrap.insertBefore(empty, h1.nextSibling);
+    }
+    empty.hidden = false;
+    empty.innerHTML = `<span class="de-ic">📭</span>
+      <h2>Chưa có dữ liệu tiến độ</h2>
+      <p>Bắt đầu học hôm nay để chuỗi ngày, biểu đồ và điểm sẵn sàng hiện ra ở đây.</p>
+      <div class="de-cta">
+        <button id="de-today" class="onb-cta">🔥 Mở Hôm nay</button>
+        <button id="de-docs" class="onb-back">📖 Đọc tài liệu</button>
+      </div>`;
+    document.getElementById('de-today').onclick = () => switchView('today');
+    document.getElementById('de-docs').onclick = () => switchView('docs');
+  } else if (empty) {
+    empty.hidden = true;
+  }
+}
+
+function renderDashboard() {
+  renderWeekChecklist();
 
   // 🧪 Capstone: tiến độ nghiệm thu Upgrade 1→5 (tick ở tab Kế hoạch)
   const capEl = document.getElementById('dash-capstone');
@@ -3466,34 +3504,6 @@ function renderDashboard() {
   renderCharts();
   renderMockHistory();
   renderMockWrong();
-
-  // Empty-state: người mới chưa có dữ liệu gì → hướng dẫn bắt đầu thay vì biểu đồ trống khó hiểu
-  const acts = store.get('prep-activity', {});
-  const anyActivity = Object.values(acts).some(n => n > 0);
-  const isNew = done === 0 && !anyActivity && entries.length === 0;
-  const dashWrap = document.querySelector('.dash-wrap');
-  let empty = document.getElementById('dash-empty');
-  if (isNew) {
-    if (!empty) {
-      empty = document.createElement('div');
-      empty.id = 'dash-empty';
-      empty.className = 'dash-empty';
-      const h1 = dashWrap.querySelector('h1');
-      dashWrap.insertBefore(empty, h1.nextSibling);
-    }
-    empty.hidden = false;
-    empty.innerHTML = `<span class="de-ic">📭</span>
-      <h2>Chưa có dữ liệu tiến độ</h2>
-      <p>Bắt đầu học hôm nay để chuỗi ngày, biểu đồ và điểm sẵn sàng hiện ra ở đây.</p>
-      <div class="de-cta">
-        <button id="de-today" class="onb-cta">🔥 Mở Hôm nay</button>
-        <button id="de-docs" class="onb-back">📖 Đọc tài liệu</button>
-      </div>`;
-    document.getElementById('de-today').onclick = () => switchView('today');
-    document.getElementById('de-docs').onclick = () => switchView('docs');
-  } else if (empty) {
-    empty.hidden = true;
-  }
 
   document.getElementById('dash-export').onclick = exportData;
   document.getElementById('dash-print').onclick = printSheet;
