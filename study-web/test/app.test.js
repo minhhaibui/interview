@@ -988,3 +988,35 @@ test('script đủ: index.html nạp mọi file dữ liệu trước app.js', ()
     assert.ok(HTML.indexOf(`src="${f}"`) < idxApp, `${f} phải nạp trước app.js`);
   }
 });
+
+test('wiring: 🔎 tìm kiếm toàn cục — nút topbar, hotkey /, index đủ nguồn, điều hướng đúng', () => {
+  // nút topbar + khởi tạo + overlay
+  assert.ok(HTML.includes('id="gsearch-btn"'), 'index.html thiếu nút 🔎 gsearch-btn');
+  assert.ok(/function initGSearch\b/.test(APP) && /initGSearch\(\);/.test(APP), 'initGSearch chưa được gọi trong init()');
+  assert.ok(/function openGSearch\b/.test(APP) && /gsearchOpen\(\)/.test(APP), 'thiếu openGSearch/gsearchOpen (guard phím tắt)');
+  // phím / giờ mở tìm kiếm toàn cục (không còn nhảy thẳng vào docs)
+  const slash = APP.slice(APP.indexOf("e.key === '/'"), APP.indexOf("e.key === '/'") + 160);
+  assert.ok(slash.includes('openGSearch()'), 'phím / phải mở openGSearch');
+  // index phủ đủ: 6 mode QUIZ_MODES + 4 bank ngoài + lối tắt tìm docs
+  const gs = APP.slice(APP.indexOf('function buildGsIndex'), APP.indexOf('function gsSearch'));
+  for (const src of ['QUIZ_MODES', 'CODING_PROBLEMS', 'DEBUG_CHALLENGES', 'DESIGN_DRILLS', 'STAR_QUESTIONS']) {
+    assert.ok(gs.includes(src), `buildGsIndex thiếu nguồn ${src}`);
+  }
+  assert.ok(/function gsToDocs\b/.test(APP) && /dispatchEvent\(new Event\('input'\)\)/.test(APP), 'thiếu lối tắt tìm tiếp trong tài liệu');
+  // kết quả trắc nghiệm luyện ngay 1 câu qua engine review (không đụng Readiness/hàng đợi sai)
+  const gp = APP.slice(APP.indexOf('function gsPractice'), APP.indexOf('function gsPractice') + 300);
+  assert.ok(gp.includes("setThinkMode('review')") && gp.includes("reviewKind = 'mixed'") && gp.includes('showReview()'),
+    'gsPractice phải mượn engine review với reviewKind mixed');
+  const CSS = read('styles.css');
+  assert.ok(CSS.includes('#gsearch') && CSS.includes('.gs-row'), 'styles.css thiếu style modal 🔎');
+});
+
+test('gsNorm: bỏ dấu tiếng Việt + thường hoá để tìm không dấu', () => {
+  const m = APP.match(/const gsNorm = (s => .+);/);
+  assert.ok(m, 'không tìm thấy gsNorm');
+  const gsNorm = new Function('return (' + m[1] + ')')();
+  assert.strictEqual(gsNorm('Tình Huống'), 'tinh huong');
+  assert.strictEqual(gsNorm('Điều Độ ĐÚNG'), 'dieu do dung');
+  assert.strictEqual(gsNorm(null), '');
+  assert.strictEqual(gsNorm('Event Loop'), 'event loop');
+});

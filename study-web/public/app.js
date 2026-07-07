@@ -5400,7 +5400,7 @@ function quizNextButton() {
 function initShortcuts() {
   const order = ['today', 'docs', 'flashcards', 'writing', 'code', 'coding', 'design', 'mock', 'company', 'star', 'plan', 'dashboard'];
   document.addEventListener('keydown', e => {
-    if (onboardOpen() || shortcutsOpen()) return; // hộp thoại đang mở → không nhảy tab phía sau
+    if (onboardOpen() || shortcutsOpen() || gsearchOpen()) return; // hộp thoại đang mở → không nhảy tab phía sau
     if (e.repeat) return; // giữ phím (key-repeat) không spam chuyển tab / nhấp nháy bảng phím tắt
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     // Đang gõ trong ô nhập / vùng gõ code thì không cướp phím
@@ -5414,8 +5414,7 @@ function initShortcuts() {
       switchView(order[n - 1]);
     } else if (e.key === '/') {
       e.preventDefault();
-      switchView('docs');
-      document.getElementById('sb-search').focus();
+      openGSearch(); // tìm kiếm toàn cục (trong modal có lối tắt tìm tiếp trong tài liệu)
     } else if (e.key === 'Enter') {
       // Nút 📌 đang focus (điều hướng bằng Tab) → để Enter kích hoạt ghim như nút thường
       if (document.activeElement?.classList?.contains('oq-pin')) return;
@@ -5424,6 +5423,146 @@ function initShortcuts() {
       if (next) { e.preventDefault(); next.click(); }
     } else if (e.key === '?') { e.preventDefault(); toggleShortcuts(); } // bảng phím tắt
   });
+}
+
+// ============ 🔎 TÌM KIẾM TOÀN CỤC (khắp mọi ngân hàng câu hỏi) ============
+// Mở bằng nút 🔎 topbar hoặc phím /. Gõ không dấu vẫn khớp ("tinh huong" ra "tình huống").
+// Chọn kết quả trắc nghiệm → luyện ngay 1 câu qua engine review; loại khác → mở đúng bài.
+
+/** Chuẩn hoá chuỗi để so khớp: thường hoá + bỏ dấu tiếng Việt. */
+const gsNorm = s => String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+
+let gsIndex = null; // build lười ở lần tìm đầu (bank tĩnh nên chỉ cần 1 lần)
+let gsSel = 0;      // hàng đang chọn bằng phím ↑↓
+
+/** Luyện ngay 1 câu trắc nghiệm từ kết quả tìm kiếm (mượn engine phiên review). */
+function gsPractice(mode, q) {
+  switchView('coding');
+  setThinkMode('review');
+  reviewQueue = [{ mode, q }];
+  reviewIdx = 0; reviewRight = 0; reviewKind = 'mixed';
+  showReview();
+}
+
+/** Gom mọi bank thành index phẳng [{badge, title, sub, hay, thay, go}]. */
+function buildGsIndex() {
+  const out = [];
+  const add = (badge, title, sub, hayParts, go) =>
+    out.push({ badge, title, sub, hay: gsNorm(hayParts.filter(Boolean).join(' ')), thay: gsNorm(title), go });
+  Object.keys(QUIZ_MODES).forEach(mode => {
+    const cfg = QUIZ_MODES[mode];
+    (cfg.data() || []).forEach(q => {
+      const title = q.q || String(q.code || '').split('\n').find(l => l.trim()) || String(q.id);
+      add(cfg.label, title, q.topic || '', [q.q, q.code, q.cmd, q.sql, q.topic, q.explain, ...(q.options || [])], () => gsPractice(mode, q));
+    });
+  });
+  (window.CODING_PROBLEMS || []).forEach(p =>
+    add('💻 Lập trình', p.title, p.topic || '', [p.title, p.topic, p.prompt], () => { switchView('coding'); setThinkMode('code'); openCodingProblem(p.id); }));
+  (window.DEBUG_CHALLENGES || []).forEach(c =>
+    add('🐛 Sửa bug', c.title, c.topic || '', [c.title, c.topic, c.bugHint, c.explain], () => { switchView('coding'); setThinkMode('debug'); openDebug(c.id); }));
+  (window.DESIGN_DRILLS || []).forEach(d =>
+    add('🏛️ Thiết kế', d.title, d.company || '', [d.title, d.company, d.scenario, ...(d.focus || []), ...(d.keyPoints || [])], () => { switchView('design'); openDrill(d.id); }));
+  (window.STAR_QUESTIONS || []).forEach(s =>
+    add('🌟 STAR', s.q, s.competency || '', [s.q, s.competency], () => { switchView('star'); openStar(s.id); }));
+  return out;
+}
+
+/** Tìm theo AND mọi từ khoá; khớp ngay tiêu đề xếp trước; tối đa 30 kết quả. */
+function gsSearch(qstr) {
+  const terms = gsNorm(qstr).split(/\s+/).filter(Boolean);
+  if (!terms.length) return [];
+  if (!gsIndex) gsIndex = buildGsIndex();
+  const hits = [];
+  for (const it of gsIndex) {
+    if (!terms.every(t => it.hay.includes(t))) continue;
+    hits.push({ it, score: terms.every(t => it.thay.includes(t)) ? 0 : 1 });
+  }
+  hits.sort((a, b) => a.score - b.score);
+  return hits.slice(0, 30).map(h => h.it);
+}
+
+let gsHits = [];
+
+function renderGsResults() {
+  const box = document.getElementById('gs-results');
+  const qstr = document.getElementById('gs-input').value.trim();
+  if (qstr.length < 2) {
+    gsHits = [];
+    box.innerHTML = '<div class="gs-empty">Gõ ≥ 2 ký tự — tìm khắp quiz trắc nghiệm · 💻 lập trình · 🐛 sửa bug · 🏛️ thiết kế · 🌟 STAR. Không cần gõ dấu.</div>';
+    return;
+  }
+  gsHits = gsSearch(qstr);
+  const rows = gsHits.map((it, i) => `<button class="gs-row" data-n="${i}">
+      <span class="gs-badge">${it.badge}</span>
+      <span class="gs-title">${escHtml(it.title)}</span>
+      ${it.sub ? `<span class="gs-sub">${escHtml(it.sub)}</span>` : ''}
+    </button>`).join('');
+  // Lối tắt tìm tiếp trong tài liệu markdown (search docs sẵn có ở tab Tài liệu)
+  const docsBtn = `<button class="gs-row gs-docs"><span class="gs-badge">📖 Tài liệu</span><span class="gs-title">Tìm “${escHtml(qstr)}” trong toàn bộ tài liệu →</span></button>`;
+  box.innerHTML = (rows || '<div class="gs-empty">Không thấy câu hỏi nào khớp — thử từ khoá ngắn hơn hoặc ít từ hơn.</div>') + docsBtn;
+  box.querySelectorAll('.gs-row').forEach(b =>
+    b.onclick = () => (b.classList.contains('gs-docs') ? gsToDocs(qstr) : gsGo(+b.dataset.n)));
+  gsSel = 0;
+  gsMove(0);
+}
+
+function gsGo(n) { const it = gsHits[n]; if (!it) return; closeGSearch(); it.go(); }
+
+function gsToDocs(qstr) {
+  closeGSearch();
+  switchView('docs');
+  const inp = document.getElementById('sb-search');
+  inp.value = qstr;
+  inp.focus();
+  inp.dispatchEvent(new Event('input')); // kích search docs sẵn có
+}
+
+/** Di chuyển vệt chọn bằng ↑↓ (d = ±1; d = 0 chỉ tô lại hàng đầu). */
+function gsMove(d) {
+  const rows = [...document.querySelectorAll('#gs-results .gs-row')];
+  if (!rows.length) return;
+  gsSel = (gsSel + d + rows.length) % rows.length;
+  rows.forEach((r, i) => r.classList.toggle('sel', i === gsSel));
+  rows[gsSel].scrollIntoView({ block: 'nearest' });
+}
+
+const gsearchOpen = () => { const o = document.getElementById('gsearch'); return !!o && !o.hidden; };
+function closeGSearch() { const o = document.getElementById('gsearch'); if (o) o.hidden = true; }
+
+function openGSearch() {
+  let ov = document.getElementById('gsearch');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'gsearch';
+    ov.innerHTML = `<div class="sc-card gs-card" role="dialog" aria-modal="true" aria-label="Tìm kiếm câu hỏi toàn cục">
+      <div class="gs-inputrow"><span>🔎</span><input id="gs-input" type="search" placeholder="Tìm câu hỏi: index, docker, deadlock, event loop…" autocomplete="off"><kbd>Esc</kbd></div>
+      <div id="gs-results" class="gs-results"></div>
+    </div>`;
+    document.body.appendChild(ov);
+    ov.addEventListener('click', e => { if (e.target === ov) closeGSearch(); });
+    ov.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeGSearch(); } });
+    const inp = document.getElementById('gs-input');
+    inp.addEventListener('input', renderGsResults);
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); gsMove(1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); gsMove(-1); }
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        const rows = document.querySelectorAll('#gs-results .gs-row');
+        (rows[gsSel] || rows[0])?.click();
+      }
+    });
+  }
+  ov.hidden = false;
+  renderGsResults();
+  const inp = document.getElementById('gs-input');
+  inp.focus();
+  inp.select();
+}
+
+function initGSearch() {
+  const btn = document.getElementById('gsearch-btn');
+  if (btn) btn.onclick = openGSearch;
 }
 
 // ---------- Đồng bộ Firebase (Auth Google + Firestore) ----------
@@ -5796,7 +5935,7 @@ function initOnboarding() {
 const SHORTCUTS = [
   { group: '🧭 Điều hướng', items: [
     { keys: ['1', '…', '9'], desc: 'Chuyển nhanh giữa các tab' },
-    { keys: ['/'], desc: 'Mở &amp; nhảy vào ô tìm tài liệu' },
+    { keys: ['/'], desc: 'Tìm kiếm câu hỏi toàn cục (mọi bank + tài liệu)' },
     { keys: ['?'], desc: 'Mở bảng phím tắt này' },
     { keys: ['Esc'], desc: 'Đóng hộp thoại / menu đang mở' },
   ] },
@@ -5852,6 +5991,7 @@ function toggleShortcuts() { shortcutsOpen() ? closeShortcuts() : openShortcuts(
   initPomodoro();
   initSidebarToggle();
   initShortcuts();
+  initGSearch();
   initOnboarding();
   initPwa();
   initSync();
