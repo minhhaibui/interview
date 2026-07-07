@@ -62,6 +62,9 @@ async function apiSearch(q) {
   return results;
 }
 
+// Xáo trộn Fisher-Yates (trả về bản sao) — dùng chung mọi chỗ cần ngẫu nhiên đều
+const shuffleArr = a => { const r = [...a]; for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; };
+
 // ---------- SRS + thống kê dùng chung ----------
 const SRS_INTERVALS = [0, 1, 3, 7, 14, 30]; // số ngày chờ trước khi ôn lại, theo box 0→5
 const LEECH_THRESHOLD = 3;          // sai từ này trở lên → "từ cứng đầu"
@@ -1200,7 +1203,7 @@ function startSession() {
   const srs = store.get('prep-srs', {});
   let cards = filterDeck(week);
   // Ưu tiên từ chưa thuộc (box thấp lên trước), trong cùng box thì xáo ngẫu nhiên
-  cards.sort((a, b) => ((srs[a.id]?.box || 0) - (srs[b.id]?.box || 0)) || Math.random() - 0.5);
+  cards = shuffleArr(cards).sort((a, b) => (srs[a.id]?.box || 0) - (srs[b.id]?.box || 0));
   fcQueue = cards;
   fcIndex = 0;
   showCard();
@@ -1246,7 +1249,7 @@ function ftStart() {
 
 function ftBegin() {
   let pool = filterDeck(document.getElementById('fc-week').value).filter(c => c.front && c.meaning);
-  pool = pool.sort(() => Math.random() - 0.5);
+  pool = shuffleArr(pool);
   if (ftSize > 0) pool = pool.slice(0, ftSize);
   ftQueue = pool.map(c => ({ card: c, answer: '', correct: false }));
   ftIdx = 0;
@@ -1781,14 +1784,13 @@ function buildWrQueue() {
 
   if (wrMode === 'word') {
     let cards = filterDeck(week);
-    cards.sort((a, b) => ((srs[a.id]?.box || 0) - (srs[b.id]?.box || 0)) || Math.random() - 0.5);
+    cards = shuffleArr(cards).sort((a, b) => (srs[a.id]?.box || 0) - (srs[b.id]?.box || 0));
     return cards.map(wrWordItem).filter(Boolean);
   }
 
   if (wrMode === 'cloze') {
     const items = filterDeck(week).map(wrClozeItem).filter(Boolean);
-    items.sort((a, b) => ((srs[a.card.id]?.box || 0) - (srs[b.card.id]?.box || 0)) || Math.random() - 0.5);
-    return items;
+    return shuffleArr(items).sort((a, b) => (srs[a.card.id]?.box || 0) - (srs[b.card.id]?.box || 0));
   }
 
   // mix: phiên ôn nhanh ~10 câu — 5 từ (ưu tiên đến hạn) + 3 cloze + 2 câu nói
@@ -1797,17 +1799,17 @@ function buildWrQueue() {
     const pool = due.length >= 8
       ? [...due]
       : [...due, ...filterDeck('').filter(c => !due.includes(c))];
-    pool.sort((a, b) => ((srs[a.id]?.box || 0) - (srs[b.id]?.box || 0)) || Math.random() - 0.5);
-    const words = pool.slice(0, 5).map(wrWordItem).filter(Boolean);
-    const cloze = pool.slice(5).map(wrClozeItem).filter(Boolean).slice(0, 3);
-    const sents = [...WR_SENTENCES.pairs].sort(() => Math.random() - 0.5).slice(0, 2).map(p => ({
+    const ordered = shuffleArr(pool).sort((a, b) => (srs[a.id]?.box || 0) - (srs[b.id]?.box || 0));
+    const words = ordered.slice(0, 5).map(wrWordItem).filter(Boolean);
+    const cloze = ordered.slice(5).map(wrClozeItem).filter(Boolean).slice(0, 3);
+    const sents = shuffleArr(WR_SENTENCES.pairs).slice(0, 2).map(p => ({
       type: 'sentence',
       prompt: `<div class="wr-label">📝 Dịch sang tiếng Anh (bấm 🔊 để nghe):</div><div class="wr-vi">${escHtml(p.vi)}</div><div class="wr-sub">${escHtml(p.week)}</div>`,
       answer: p.en,
       say: p.en,
       hint1: maskWords(p.en),
     }));
-    return [...words, ...cloze, ...sents].sort(() => Math.random() - 0.5);
+    return shuffleArr([...words, ...cloze, ...sents]);
   }
 
   // listen mode: nghe câu, nhìn câu khuyết 2-3 từ khóa, chỉ gõ từ còn thiếu
@@ -1823,7 +1825,7 @@ function buildWrQueue() {
       const it = listenItem(p);
       if (it) items.push(it);
     }
-    return items.sort(() => Math.random() - 0.5);
+    return shuffleArr(items);
   }
 
   // speak mode: hiện câu tiếng Anh, đọc to, máy nghe và chấm từng từ
@@ -1851,7 +1853,7 @@ function buildWrQueue() {
         hint1: 'Bấm 🔊 nghe giọng mẫu rồi đọc theo, chú ý trọng âm',
       })));
     }
-    return items.sort(() => Math.random() - 0.5);
+    return shuffleArr(items);
   }
 
   // sentence mode
@@ -1876,7 +1878,7 @@ function buildWrQueue() {
       autoplay: true,
     })));
   }
-  return items.sort(() => Math.random() - 0.5);
+  return shuffleArr(items);
 }
 
 function startWrSession() {
@@ -2257,7 +2259,7 @@ function startMock() {
   const pool = mkReviewMode ? getMockWrong()
     : week ? MK_POOL.filter(q => q.week === week) : [...MK_POOL];
   // Chế độ ôn câu sai: lấy hết (đến count) để xử lý cho cạn kho; còn lại bốc ngẫu nhiên
-  mkQueue = pool.sort(() => Math.random() - 0.5).slice(0, count);
+  mkQueue = shuffleArr(pool).slice(0, count);
   mkIndex = 0;
   mkRight = 0;
   mkWrong = [];
@@ -2704,7 +2706,6 @@ const DG_MINUTES = 35;            // thời lượng khuyến nghị mỗi bài
 let dgTimerId = null;             // đồng hồ đếm ngược
 let dgState = null;               // { drill, endAt, remain, started }
 const dgDrills = () => window.DESIGN_DRILLS || [];
-const dgEsc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 function dgHistory() { return store.get('prep-design-history', []); }
 function dgBestCoverage(id) {
@@ -2740,9 +2741,9 @@ function renderDgList() {
     const badge = done.has(d.id) ? `<span class="dg-done">✓ đã làm${best != null ? ` · tốt nhất ${best}%` : ''}</span>` : '';
     return `<button class="dg-card" data-id="${d.id}">
       <div class="dg-card-top"><span class="dg-diff dg-diff-${diffOrder[d.difficulty]}">${d.difficulty}</span>${badge}</div>
-      <h3>${dgEsc(d.title)}</h3>
-      <div class="dg-company">${dgEsc(d.company)}</div>
-      <p class="dg-scen">${dgEsc(d.scenario)}</p>
+      <h3>${escHtml(d.title)}</h3>
+      <div class="dg-company">${escHtml(d.company)}</div>
+      <p class="dg-scen">${escHtml(d.scenario)}</p>
     </button>`;
   }).join('');
   const hist = dgHistory().slice(-6).reverse().map(h => {
@@ -2750,7 +2751,7 @@ function renderDgList() {
     const score = h.mode === 'ai'
       ? (typeof h.aiScore === 'number' ? `🤖 ${h.aiScore}/100` : '🤖 —')
       : `📋 ${h.coverage}%`;
-    return `<li><b>${dgEsc(d ? d.title : h.id)}</b> — ${score} · ⏱ ${fmtMMSS(h.timeSec || 0)} · ${dgEsc(h.date || '')}</li>`;
+    return `<li><b>${escHtml(d ? d.title : h.id)}</b> — ${score} · ⏱ ${fmtMMSS(h.timeSec || 0)} · ${escHtml(h.date || '')}</li>`;
   }).join('');
   el.innerHTML = `
     <h1>🏛️ Luyện thiết kế hệ thống</h1>
@@ -2781,11 +2782,11 @@ function openDrill(id) {
 function renderDgSession() {
   const { drill } = dgState;
   const el = document.getElementById('design-body');
-  const focus = drill.focus.map(f => `<li>${dgEsc(f)}</li>`).join('');
+  const focus = drill.focus.map(f => `<li>${escHtml(f)}</li>`).join('');
   const rubric = drill.rubric.map(r =>
     `<label class="dg-crit"><input type="checkbox" class="dg-ck" data-k="${r.k}" data-w="${r.w}">
-       <span class="dg-crit-main">${dgEsc(r.label)}</span>
-       <span class="dg-crit-hint">💡 ${dgEsc(r.hint)}</span></label>`).join('');
+       <span class="dg-crit-main">${escHtml(r.label)}</span>
+       <span class="dg-crit-hint">💡 ${escHtml(r.hint)}</span></label>`).join('');
   el.innerHTML = `
     <div class="dg-sess">
       <div class="dg-bar">
@@ -2794,8 +2795,8 @@ function renderDgSession() {
         <span id="dg-timer" class="dg-timer">${fmtMMSS(dgState.remain)}</span>
         <button id="dg-start" class="dg-go">▶ Bắt đầu</button>
       </div>
-      <h1>${dgEsc(drill.title)}</h1>
-      <div class="dg-scenario"><b>📋 Đề bài:</b> ${dgEsc(drill.scenario)}</div>
+      <h1>${escHtml(drill.title)}</h1>
+      <div class="dg-scenario"><b>📋 Đề bài:</b> ${escHtml(drill.scenario)}</div>
       <details class="dg-focus" open><summary>🧭 Gợi ý cần làm rõ / trọng tâm</summary><ul>${focus}</ul></details>
 
       <h2>✍️ Lời giải của bạn</h2>
@@ -2907,7 +2908,7 @@ function dgScoreRubric() {
     <div class="dg-score-side">
       <div class="dg-band" style="color:${band[1]}">${band[0]}</div>
       <div class="dg-score-meta">⏱ ${fmtMMSS(timeSec)} · đã tick ${cks.filter(c => c.checked).length}/${drill.rubric.length} tiêu chí</div>
-      ${missing.length ? `<div class="dg-miss"><b>Còn thiếu / nên bổ sung:</b><ul>${missing.map(m => `<li>${dgEsc(m.label)}</li>`).join('')}</ul></div>` : '<div class="dg-miss">Bạn đã phủ hết rubric. Thử nhờ Claude chấm để soi sâu hơn 👇</div>'}
+      ${missing.length ? `<div class="dg-miss"><b>Còn thiếu / nên bổ sung:</b><ul>${missing.map(m => `<li>${escHtml(m.label)}</li>`).join('')}</ul></div>` : '<div class="dg-miss">Bạn đã phủ hết rubric. Thử nhờ Claude chấm để soi sâu hơn 👇</div>'}
     </div>`;
   box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
@@ -2918,7 +2919,7 @@ function dgShowRef() {
   if (!box.hidden) { box.hidden = true; return; }
   box.hidden = false;
   box.innerHTML = `<h3>👁 Gợi ý các điểm chính (đối chiếu sau khi tự làm)</h3>
-    <ul>${drill.keyPoints.map(k => `<li>${dgEsc(k)}</li>`).join('')}</ul>`;
+    <ul>${drill.keyPoints.map(k => `<li>${escHtml(k)}</li>`).join('')}</ul>`;
 }
 
 // ---------- AI chấm (BYOK, tái dùng callClaudeStream) ----------
@@ -2933,7 +2934,7 @@ function dgRenderAiPanel() {
     <h3>🤖 Nhờ Claude chấm lời giải</h3>
     <p class="dg-tip">Claude sẽ chấm theo rubric của đề, cho điểm từng tiêu chí + nhận xét + gợi ý cải thiện. Cần API key Anthropic của bạn (lưu cục bộ, không gửi đi đâu khác).</p>
     <div class="dg-ai-cfg">
-      <input id="dg-key" type="password" placeholder="sk-ant-..." value="${dgEsc(savedKey)}" autocomplete="off">
+      <input id="dg-key" type="password" placeholder="sk-ant-..." value="${escHtml(savedKey)}" autocomplete="off">
       <select id="dg-model">
         ${opt('claude-opus-4-8', 'Opus 4.8 (sâu nhất)')}
         ${opt('claude-sonnet-4-6', 'Sonnet 4.6 (cân bằng)')}
@@ -3950,7 +3951,7 @@ function renderOutputQuiz() {
 
 function startOutputQuiz() {
   const n = oqAll().length;
-  oqOrder = [...Array(n).keys()].sort(() => Math.random() - 0.5);
+  oqOrder = shuffleArr([...Array(n).keys()]);
   oqIdx = 0; oqRight = 0;
   showOutputQuiz();
 }
@@ -4040,7 +4041,7 @@ function makeQuiz(cfg) {
       </div>`;
     el.querySelector('.oq-go-btn').onclick = start;
   }
-  function start() { const n = data().length; order = [...Array(n).keys()].sort(() => Math.random() - 0.5); idx = 0; right = 0; show(); }
+  function start() { const n = data().length; order = shuffleArr([...Array(n).keys()]); idx = 0; right = 0; show(); }
   function show() {
     const all = data(), q = all[order[idx]];
     if (!q) return finish();
@@ -4205,7 +4206,7 @@ function buildReviewQueue() {
     const byId = new Map((QUIZ_MODES[mode].data() || []).map(q => [String(q.id), q]));
     wrongIds(mode).forEach(id => { const q = byId.get(String(id)); if (q) out.push({ mode, q }); });
   });
-  return out.sort(() => Math.random() - 0.5);
+  return shuffleArr(out);
 }
 
 /** Gom mọi câu 📌 đã ghim còn tồn tại thành hàng đợi [{mode, q}] đã trộn thứ tự. */
@@ -4215,7 +4216,7 @@ function buildPinnedQueue() {
     const byId = new Map((QUIZ_MODES[mode].data() || []).map(q => [String(q.id), q]));
     pinnedIds(mode).forEach(id => { const q = byId.get(String(id)); if (q) out.push({ mode, q }); });
   });
-  return out.sort(() => Math.random() - 0.5);
+  return shuffleArr(out);
 }
 
 /** Bốc ngẫu nhiên tối đa n câu bất kỳ trên mọi mode trong QUIZ_MODES → phiên warm-up trộn. */
@@ -4224,7 +4225,7 @@ function buildMixedQueue(n) {
   Object.keys(QUIZ_MODES).forEach(mode => {
     (QUIZ_MODES[mode].data() || []).forEach(q => all.push({ mode, q }));
   });
-  return all.sort(() => Math.random() - 0.5).slice(0, Math.max(1, n));
+  return shuffleArr(all).slice(0, Math.max(1, n));
 }
 
 let reviewQueue = [], reviewIdx = 0, reviewRight = 0;
@@ -4891,7 +4892,6 @@ function runDirect(code, fnName, tests) {
 
 // ----- Chế độ IQ / Logic -----
 let iqState = null;
-const shuffleArr = a => { const r = [...a]; for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; };
 
 const IQ_TEST_N = 30, IQ_TEST_SEC = 20 * 60; // 30 câu trong 20 phút
 let iqTimerId = null;
