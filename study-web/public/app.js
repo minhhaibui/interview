@@ -65,10 +65,20 @@ async function apiSearch(q) {
 // Xáo trộn Fisher-Yates (trả về bản sao) — dùng chung mọi chỗ cần ngẫu nhiên đều
 const shuffleArr = a => { const r = [...a]; for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; };
 
+// Cache Set id theo MẢNG bank (bank tĩnh, window.X giữ nguyên reference) — badge/coverage
+// được tính lại sau MỖI câu trả lời nên không dựng lại Set ~200 phần tử mỗi lần.
+const bankIdCache = new WeakMap();
+function bankIds(bank) {
+  const arr = bank || [];
+  let ids = bankIdCache.get(arr);
+  if (!ids) { ids = new Set(arr.map(x => String(x.id))); if (arr.length) bankIdCache.set(arr, ids); }
+  return ids;
+}
+
 /** Độ phủ một bank câu hỏi bất kỳ: {done, total} — chỉ đếm id đã làm CÒN tồn tại trong bank.
  *  Nguồn sự thật duy nhất cho badge / readiness / think-stats / coverage tab Tư duy. */
 function bankCoverage(bank, doneKey) {
-  const ids = new Set((bank || []).map(x => String(x.id)));
+  const ids = bankIds(bank);
   const done = Object.keys(store.get(doneKey, {})).filter(id => ids.has(String(id))).length;
   return { done, total: ids.size };
 }
@@ -148,7 +158,7 @@ function wrongTotal() {
   return Object.keys(w).reduce((sum, mode) => {
     const live = QUIZ_MODES[mode];
     if (!live) return sum;
-    const ids = new Set((live.data() || []).map(q => String(q.id)));
+    const ids = bankIds(live.data());
     return sum + Object.keys(w[mode]).filter(id => ids.has(String(id))).length;
   }, 0);
 }
@@ -179,7 +189,7 @@ function pinnedTotal() {
   return Object.keys(p).reduce((sum, mode) => {
     const live = QUIZ_MODES[mode];
     if (!live) return sum;
-    const ids = new Set((live.data() || []).map(q => String(q.id)));
+    const ids = bankIds(live.data());
     return sum + Object.keys(p[mode]).filter(id => ids.has(String(id))).length;
   }, 0);
 }
@@ -776,8 +786,13 @@ async function renderToday() {
     </div>`;
 
   document.getElementById('td-goal-sel').onchange = (e) => {
-    store.set('prep-daily-goal', +e.target.value);
-    renderToday();
+    const newGoal = +e.target.value;
+    store.set('prep-daily-goal', newGoal);
+    // Đổi mục tiêu chỉ ảnh hưởng vòng ring + nhãn — thay tại chỗ, khỏi dựng lại cả tab
+    // (renderToday đầy đủ sẽ await loadDeck + computeBadges 37 huy hiệu mỗi lần đổi select)
+    const newPct = newGoal ? Math.min(100, Math.round(todayN / newGoal * 100)) : 0;
+    document.querySelector('.td-ring-wrap').innerHTML =
+      `${goalRing(newPct)}<span class="td-ring-label"><b>${todayN}</b><small>/ ${newGoal}</small></span>`;
   };
   tasks.forEach(t => document.getElementById(t.id)?.addEventListener('click', t.go));
   body.querySelectorAll('.td-sprint-row').forEach(b =>
