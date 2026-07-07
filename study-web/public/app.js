@@ -3150,7 +3150,22 @@ function logReadiness(score) {
   if (rdLog[k] !== score) { rdLog[k] = score; store.set('prep-readiness-log', rdLog); }
 }
 
-/** Các đồ thị cột thuần CSS: hoạt động 14 ngày, % mock, WPM gõ code */
+/** Vẽ 1 đồ thị cột CSS thuần vào #id: cols = [{title, hPct (0-100 đã tính), cls?, label}].
+ *  cols rỗng → hiện emptyMsg. Guard null: HTML cũ (SW rơi về cache lúc mạng chập chờn)
+ *  chưa có container — bỏ qua để các render phía sau vẫn chạy. */
+function barChart(id, cols, emptyMsg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = cols.length
+    ? cols.map(c => `
+      <div class="bar-col" title="${c.title}">
+        <div class="bar-v ${c.cls || ''}" style="height:${c.hPct}%"></div>
+        <span class="bar-label">${c.label}</span>
+      </div>`).join('')
+    : `<p class="chart-empty">${emptyMsg}</p>`;
+}
+
+/** Các đồ thị cột thuần CSS: hoạt động 14 ngày, % mock, WPM gõ code, readiness, SRS đến hạn */
 function renderCharts() {
   // Lượt học 14 ngày
   const acts = store.get('prep-activity', {});
@@ -3161,47 +3176,37 @@ function renderCharts() {
     days.push({ key: dayKey(d), n: acts[dayKey(d)] || 0 });
   }
   const maxAct = Math.max(...days.map(d => d.n), 1);
-  document.getElementById('dash-chart-activity').innerHTML = days.map(d => `
-    <div class="bar-col" title="${d.key}: ${d.n} lượt học">
-      <div class="bar-v" style="height:${Math.max(Math.round(d.n / maxAct * 100), d.n ? 4 : 0)}%"></div>
-      <span class="bar-label">${+d.key.slice(8)}</span>
-    </div>`).join('');
+  barChart('dash-chart-activity', days.map(d => ({
+    title: `${d.key}: ${d.n} lượt học`,
+    hPct: Math.max(Math.round(d.n / maxAct * 100), d.n ? 4 : 0),
+    label: +d.key.slice(8),
+  })), 'Chưa có hoạt động nào.');
 
   // % đúng các buổi mock gần nhất
   const hist = store.get('prep-mock-history', []).slice(-15);
-  document.getElementById('dash-chart-mock').innerHTML = hist.length
-    ? hist.map(h => {
-        const pct = Math.round((h.correct / h.total) * 100);
-        return `<div class="bar-col" title="${h.date}: ${h.correct}/${h.total} (${pct}%)">
-          <div class="bar-v ${pct >= 80 ? 'ok' : 'low'}" style="height:${Math.max(pct, 4)}%"></div>
-          <span class="bar-label">${pct}</span>
-        </div>`;
-      }).join('')
-    : '<p class="chart-empty">Chưa có buổi mock nào — đồ thị sẽ hiện khi bạn làm mock đầu tiên.</p>';
+  barChart('dash-chart-mock', hist.map(h => {
+    const pct = Math.round((h.correct / h.total) * 100);
+    return { title: `${h.date}: ${h.correct}/${h.total} (${pct}%)`, hPct: Math.max(pct, 4), cls: pct >= 80 ? 'ok' : 'low', label: pct };
+  }), 'Chưa có buổi mock nào — đồ thị sẽ hiện khi bạn làm mock đầu tiên.');
 
   // WPM các lượt gõ code gần nhất
   const wpms = store.get('prep-code-history', []).slice(-20);
   const maxWpm = Math.max(...wpms.map(w => w.wpm), 1);
-  document.getElementById('dash-chart-wpm').innerHTML = wpms.length
-    ? wpms.map(w => `
-        <div class="bar-col" title="${w.date}: ${w.wpm} WPM · ${w.acc}% chính xác">
-          <div class="bar-v ${w.acc >= 95 ? 'ok' : ''}" style="height:${Math.max(Math.round(w.wpm / maxWpm * 100), 4)}%"></div>
-          <span class="bar-label">${w.wpm}</span>
-        </div>`).join('')
-    : '<p class="chart-empty">Chưa có lượt gõ nào — vào tab ⌨️ Gõ code làm một snippet nhé.</p>';
+  barChart('dash-chart-wpm', wpms.map(w => ({
+    title: `${w.date}: ${w.wpm} WPM · ${w.acc}% chính xác`,
+    hPct: Math.max(Math.round(w.wpm / maxWpm * 100), 4),
+    cls: w.acc >= 95 ? 'ok' : '',
+    label: w.wpm,
+  })), 'Chưa có lượt gõ nào — vào tab ⌨️ Gõ code làm một snippet nhé.');
 
   // 🎯 Điểm sẵn sàng theo ngày — ghi nhật ký NGAY TẠI ĐÂY để mở Dashboard là có dữ liệu
   // (trước đây chỉ ghi ở readinessHtml vốn nằm trong tab Kế hoạch — chart trống vĩnh viễn)
   logReadiness(computeReadiness().score);
   const rdLog = store.get('prep-readiness-log', {});
   const rdDays = Object.keys(rdLog).sort().slice(-20);
-  document.getElementById('dash-chart-readiness').innerHTML = rdDays.length >= 2
-    ? rdDays.map(k => `
-        <div class="bar-col" title="${k}: ${rdLog[k]}/100">
-          <div class="bar-v ${rdLog[k] >= 80 ? 'ok' : ''}" style="height:${Math.max(rdLog[k], 4)}%"></div>
-          <span class="bar-label">${rdLog[k]}</span>
-        </div>`).join('')
-    : '<p class="chart-empty">Cần ít nhất 2 ngày dữ liệu — mở Dashboard mỗi ngày để thấy đường tiến bộ.</p>';
+  barChart('dash-chart-readiness', rdDays.length < 2 ? [] : rdDays.map(k => ({
+    title: `${k}: ${rdLog[k]}/100`, hPct: Math.max(rdLog[k], 4), cls: rdLog[k] >= 80 ? 'ok' : '', label: rdLog[k],
+  })), 'Cần ít nhất 2 ngày dữ liệu — mở Dashboard mỗi ngày để thấy đường tiến bộ.');
 
   // 📬 dự báo từ vựng đến hạn 7 ngày tới — quá hạn dồn vào cột "Nay" để thấy nợ ôn tập
   const srs = store.get('prep-srs', {});
@@ -3214,16 +3219,12 @@ function renderCharts() {
   });
   const maxDue = Math.max(...dueBuckets, 1);
   const dueTotal = dueBuckets.reduce((a, b) => a + b, 0);
-  // Guard: HTML cũ (SW rơi về cache lúc mạng chập chờn) chưa có container này —
-  // không được ném để renderMockHistory/renderMockWrong phía sau vẫn chạy.
-  const dueEl = document.getElementById('dash-chart-due');
-  if (dueEl) dueEl.innerHTML = dueTotal
-    ? dueBuckets.map((n, i) => `
-      <div class="bar-col" title="${i === 0 ? 'Hôm nay (gồm quá hạn)' : `+${i} ngày nữa`}: ${n} từ">
-        <div class="bar-v ${i === 0 && n ? 'low' : ''}" style="height:${Math.max(Math.round(n / maxDue * 100), n ? 4 : 0)}%"></div>
-        <span class="bar-label">${i === 0 ? 'Nay' : '+' + i}</span>
-      </div>`).join('')
-    : '<p class="chart-empty">Chưa có thẻ nào tới hạn trong 7 ngày — học flashcards để xây lịch ôn SRS.</p>';
+  barChart('dash-chart-due', !dueTotal ? [] : dueBuckets.map((n, i) => ({
+    title: `${i === 0 ? 'Hôm nay (gồm quá hạn)' : `+${i} ngày nữa`}: ${n} từ`,
+    hPct: Math.max(Math.round(n / maxDue * 100), n ? 4 : 0),
+    cls: i === 0 && n ? 'low' : '',
+    label: i === 0 ? 'Nay' : '+' + i,
+  })), 'Chưa có thẻ nào tới hạn trong 7 ngày — học flashcards để xây lịch ôn SRS.');
 }
 
 function renderMockHistory() {

@@ -910,7 +910,7 @@ test('today: task 🖨️ in bản ôn hiện khi còn ≤3 ngày đến PV', ()
 test('dashboard: đồ thị 🎯 điểm sẵn sàng theo ngày wiring đủ', () => {
   assert.ok(HTML.includes('id="dash-chart-readiness"'), 'index.html thiếu dash-chart-readiness');
   assert.ok(/prep-readiness-log/.test(APP), 'app.js chưa dùng prep-readiness-log');
-  assert.ok(/dash-chart-readiness'\)\.innerHTML/.test(APP), 'renderCharts chưa render đồ thị readiness');
+  assert.ok(/barChart\('dash-chart-readiness'/.test(APP), 'renderCharts chưa render đồ thị readiness');
   const pk = APP.match(/const PREP_KEYS = \[([\s\S]*?)\]/);
   assert.ok(pk && pk[1].includes('prep-readiness-log'), 'PREP_KEYS thiếu prep-readiness-log');
 });
@@ -982,7 +982,10 @@ test('today 📌 + dashboard 📬: task câu ghim + đồ thị SRS đến hạn
   assert.ok(gp.includes("setThinkMode('review')") && gp.includes('startPinned()'), 'goToPinnedReview phải mở mode review rồi startPinned');
   // đồ thị đến hạn: container + render + dồn quá hạn vào cột Nay
   assert.ok(HTML.includes('id="dash-chart-due"'), 'index.html thiếu dash-chart-due');
-  assert.ok(/if \(dueEl\) dueEl\.innerHTML/.test(APP), 'renderCharts phải render đồ thị đến hạn CÓ guard null (HTML cũ do SW cache)');
+  // guard null giờ nằm chung trong barChart (if (!el) return) — vẫn phải tồn tại
+  assert.ok(/barChart\('dash-chart-due'/.test(APP), 'renderCharts chưa render đồ thị đến hạn qua barChart');
+  const bcBlock = APP.slice(APP.indexOf('function barChart'), APP.indexOf('function barChart') + 400);
+  assert.ok(/if \(!el\) return;/.test(bcBlock), 'barChart phải guard null container (HTML cũ do SW cache)');
   assert.ok(/Math\.max\(0, diff\)/.test(APP), 'quá hạn phải dồn vào cột hôm nay (Math.max(0, diff))');
   // bucket dùng srsDue thật (không tự cộng interval lần nữa)
   assert.ok(/srsDue\(e\) - t0\.getTime\(\)/.test(APP), 'bucket phải tính từ srsDue(entry)');
