@@ -3158,9 +3158,9 @@ function barChart(id, cols, emptyMsg) {
   if (!el) return;
   el.innerHTML = cols.length
     ? cols.map(c => `
-      <div class="bar-col" title="${c.title}">
+      <div class="bar-col" title="${escHtml(c.title)}">
         <div class="bar-v ${c.cls || ''}" style="height:${c.hPct}%"></div>
-        <span class="bar-label">${c.label}</span>
+        <span class="bar-label">${escHtml(c.label)}</span>
       </div>`).join('')
     : `<p class="chart-empty">${emptyMsg}</p>`;
 }
