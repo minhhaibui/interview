@@ -5438,6 +5438,8 @@ let gsSel = 0;      // hàng đang chọn bằng phím ↑↓
 /** Luyện ngay 1 câu trắc nghiệm từ kết quả tìm kiếm (mượn engine phiên review). */
 function gsPractice(mode, q) {
   switchView('coding');
+  // Tab đang khoá login → gate đã hiện; đừng set queue kẻo sau khi login renderReview vẽ đè mất câu
+  if (viewGated('coding') && !fbUser) return;
   setThinkMode('review');
   reviewQueue = [{ mode, q }];
   reviewIdx = 0; reviewRight = 0; reviewKind = 'mixed';
@@ -5511,6 +5513,7 @@ function gsGo(n) { const it = gsHits[n]; if (!it) return; closeGSearch(); it.go(
 function gsToDocs(qstr) {
   closeGSearch();
   switchView('docs');
+  document.getElementById('sidebar')?.classList.add('open'); // mobile: sidebar off-canvas phải mở mới thấy ô tìm
   const inp = document.getElementById('sb-search');
   inp.value = qstr;
   inp.focus();
@@ -5527,7 +5530,12 @@ function gsMove(d) {
 }
 
 const gsearchOpen = () => { const o = document.getElementById('gsearch'); return !!o && !o.hidden; };
-function closeGSearch() { const o = document.getElementById('gsearch'); if (o) o.hidden = true; }
+function gsKey(e) { if (e.key === 'Escape') { e.preventDefault(); closeGSearch(); } }
+function closeGSearch() {
+  const o = document.getElementById('gsearch');
+  if (o) o.hidden = true;
+  document.removeEventListener('keydown', gsKey);
+}
 
 function openGSearch() {
   let ov = document.getElementById('gsearch');
@@ -5540,7 +5548,6 @@ function openGSearch() {
     </div>`;
     document.body.appendChild(ov);
     ov.addEventListener('click', e => { if (e.target === ov) closeGSearch(); });
-    ov.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); closeGSearch(); } });
     const inp = document.getElementById('gs-input');
     inp.addEventListener('input', renderGsResults);
     inp.addEventListener('keydown', e => {
@@ -5554,6 +5561,7 @@ function openGSearch() {
     });
   }
   ov.hidden = false;
+  document.addEventListener('keydown', gsKey); // Esc đóng được cả khi focus đã rời modal (mẫu scKey)
   renderGsResults();
   const inp = document.getElementById('gs-input');
   inp.focus();
