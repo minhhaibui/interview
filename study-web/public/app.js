@@ -4093,66 +4093,8 @@ function makeQuiz(cfg) {
   return { render, start };
 }
 
-// ----- Chế độ 📡 API & HTTP (dùng engine makeQuiz) -----
-const apiQuiz = makeQuiz({
-  mode: 'api',
-  bodyId: 'api-body',
-  data: () => window.API_QUIZ,
-  doneKey: 'prep-api-done',
-  bestKey: 'prep-api-best',
-  ask: 'Chọn đáp án đúng:',
-  optionHtml: o => `<span class="oq-otext">${escHtml(o)}</span>`,
-  questionHtml: q => `<p class="oq-question">${escHtml(q.q)}</p>`,
-  highlight: false,
-  resultMsg: pct => pct >= 80 ? 'Nắm rất chắc HTTP/REST!' : pct >= 50 ? 'Khá ổn — ôn thêm vài status code & quy tắc.' : 'HTTP/API là phần hay bị hỏi — đọc kỹ giải thích nhé.',
-});
-function renderApiQuiz() { apiQuiz.render(); }
-
-// ----- Chế độ 🗄️ SQL Drill (dùng engine makeQuiz) -----
-const sqlQuiz = makeQuiz({
-  mode: 'sql',
-  bodyId: 'sql-body',
-  data: () => window.SQL_DRILL,
-  doneKey: 'prep-sql-done',
-  bestKey: 'prep-sql-best',
-  ask: 'Chọn đáp án đúng:',
-  optionHtml: o => `<span class="oq-otext">${escHtml(o)}</span>`,
-  // Có thể kèm snippet SQL (q.sql) — render trong pre/code để hljs tô màu.
-  questionHtml: q => `<p class="oq-question">${escHtml(q.q)}</p>` +
-    (q.sql ? `<pre><code class="language-sql">${escHtml(q.sql)}</code></pre>` : ''),
-  highlight: true,
-  resultMsg: pct => pct >= 80 ? 'Rất chắc SQL — sẵn sàng cho vòng database!' : pct >= 50 ? 'Khá ổn — ôn thêm NULL, JOIN và isolation level.' : 'SQL là phần lõi khi phỏng vấn Backend — đọc kỹ giải thích từng câu nhé.',
-});
-function renderSqlQuiz() { sqlQuiz.render(); }
-
-// ----- Chế độ 🖥️ CLI Quiz (dùng engine makeQuiz) -----
-const cliQuiz = makeQuiz({
-  mode: 'cli',
-  bodyId: 'cli-body',
-  data: () => window.CLI_QUIZ,
-  doneKey: 'prep-cli-done',
-  bestKey: 'prep-cli-best',
-  ask: 'Chọn đáp án đúng:',
-  optionHtml: o => `<span class="oq-otext">${escHtml(o)}</span>`,
-  // Có thể kèm lệnh shell (q.cmd) — render trong pre/code để hljs tô màu.
-  questionHtml: q => `<p class="oq-question">${escHtml(q.q)}</p>` +
-    (q.cmd ? `<pre><code class="language-bash">${escHtml(q.cmd)}</code></pre>` : ''),
-  highlight: true,
-  resultMsg: pct => pct >= 80 ? 'Thạo dòng lệnh — tự tin demo thao tác khi phỏng vấn!' : pct >= 50 ? 'Khá ổn — ôn thêm git reset/revert, kubectl rollout, SCAN vs KEYS.' : 'Lệnh CLI hay bị hỏi thực hành — đọc kỹ giải thích từng câu nhé.',
-});
-function renderCliQuiz() { cliQuiz.render(); }
-
-/** Render nút đáp án theo thứ tự hiển thị NGẪU NHIÊN (chống học vẹt vị trí);
- *  data-i giữ CHỈ SỐ GỐC nên mọi hàm chấm phải so theo dataset.i, không theo vị trí DOM. */
-function shuffledOptsHtml(q, inner, cls = 'oq-opt') {
-  // Fisher–Yates: sort(random-0.5) lệch mạnh ở n≥3 (option hay ở lại vị trí cũ ~39% thay vì 25%)
-  const k = [...q.options.keys()];
-  for (let j = k.length - 1; j > 0; j--) { const r = Math.floor(Math.random() * (j + 1)); [k[j], k[r]] = [k[r], k[j]]; }
-  return k.map(i => `<button class="${cls}" data-i="${i}">${inner(q.options[i])}</button>`).join('');
-}
-
-// ============ 🔁 ÔN CÂU SAI (gom câu trắc nghiệm chọn sai qua mọi mode) ============
-// Registry mô tả cách render mỗi mode; dùng chung cho phiên ôn + đếm badge.
+// Registry mô tả cách render mỗi mode trắc nghiệm — NGUỒN DUY NHẤT cho engine makeQuiz
+// (spread làm cfg nền), phiên ôn 🔁/🎲/📌, đếm badge độ phủ và 🔎 tìm kiếm toàn cục.
 const QUIZ_MODES = {
   output: {
     label: '🔍 Đoán output', doneKey: 'prep-oq-done', data: () => window.OUTPUT_QUIZ || [],
@@ -4200,6 +4142,47 @@ const QUIZ_MODES = {
     highlight: false,
   },
 };
+
+// ----- Chế độ 📡 API & HTTP (dùng engine makeQuiz) -----
+const apiQuiz = makeQuiz({
+  ...QUIZ_MODES.api, // data/doneKey/ask/optionHtml/questionHtml/highlight
+  mode: 'api',
+  bodyId: 'api-body',
+  bestKey: 'prep-api-best',
+  resultMsg: pct => pct >= 80 ? 'Nắm rất chắc HTTP/REST!' : pct >= 50 ? 'Khá ổn — ôn thêm vài status code & quy tắc.' : 'HTTP/API là phần hay bị hỏi — đọc kỹ giải thích nhé.',
+});
+function renderApiQuiz() { apiQuiz.render(); }
+
+// ----- Chế độ 🗄️ SQL Drill (dùng engine makeQuiz) -----
+const sqlQuiz = makeQuiz({
+  ...QUIZ_MODES.sql, // kèm snippet SQL trong questionHtml + hljs
+  mode: 'sql',
+  bodyId: 'sql-body',
+  bestKey: 'prep-sql-best',
+  resultMsg: pct => pct >= 80 ? 'Rất chắc SQL — sẵn sàng cho vòng database!' : pct >= 50 ? 'Khá ổn — ôn thêm NULL, JOIN và isolation level.' : 'SQL là phần lõi khi phỏng vấn Backend — đọc kỹ giải thích từng câu nhé.',
+});
+function renderSqlQuiz() { sqlQuiz.render(); }
+
+// ----- Chế độ 🖥️ CLI Quiz (dùng engine makeQuiz) -----
+const cliQuiz = makeQuiz({
+  ...QUIZ_MODES.cli, // kèm lệnh shell trong questionHtml + hljs
+  mode: 'cli',
+  bodyId: 'cli-body',
+  bestKey: 'prep-cli-best',
+  resultMsg: pct => pct >= 80 ? 'Thạo dòng lệnh — tự tin demo thao tác khi phỏng vấn!' : pct >= 50 ? 'Khá ổn — ôn thêm git reset/revert, kubectl rollout, SCAN vs KEYS.' : 'Lệnh CLI hay bị hỏi thực hành — đọc kỹ giải thích từng câu nhé.',
+});
+function renderCliQuiz() { cliQuiz.render(); }
+
+/** Render nút đáp án theo thứ tự hiển thị NGẪU NHIÊN (chống học vẹt vị trí);
+ *  data-i giữ CHỈ SỐ GỐC nên mọi hàm chấm phải so theo dataset.i, không theo vị trí DOM. */
+function shuffledOptsHtml(q, inner, cls = 'oq-opt') {
+  // Fisher–Yates: sort(random-0.5) lệch mạnh ở n≥3 (option hay ở lại vị trí cũ ~39% thay vì 25%)
+  const k = [...q.options.keys()];
+  for (let j = k.length - 1; j > 0; j--) { const r = Math.floor(Math.random() * (j + 1)); [k[j], k[r]] = [k[r], k[j]]; }
+  return k.map(i => `<button class="${cls}" data-i="${i}">${inner(q.options[i])}</button>`).join('');
+}
+
+// ============ 🔁 ÔN CÂU SAI (gom câu trắc nghiệm chọn sai qua mọi mode) ============
 
 /** Gom mọi câu sai còn tồn tại thành hàng đợi [{mode, q}] đã trộn thứ tự. */
 function buildReviewQueue() {
