@@ -5478,6 +5478,16 @@ function buildGsIndex() {
     add('🏛️ Thiết kế', d.title, d.company || '', [d.title, d.company, d.scenario, ...(d.focus || []), ...(d.keyPoints || [])], () => { switchView('design'); openDrill(d.id); }));
   (window.STAR_QUESTIONS || []).forEach(s =>
     add('🌟 STAR', s.q, s.competency || '', [s.q, s.competency], () => { switchView('star'); openStar(s.id); }));
+  // 2 bank tham khảo (accordion .rq-group render theo đúng thứ tự group) — mở đúng nhóm chứa kết quả
+  const openRefGroup = (view, gi) => {
+    switchView(view);
+    const d = document.querySelectorAll(`#view-${view} details.rq-group`)[gi];
+    if (d) { d.open = true; d.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
+  };
+  (window.REVERSE_QUESTIONS || []).forEach((g, gi) => (g.items || []).forEach(it =>
+    add('💬 Hỏi ngược', it.q, g.group, [it.q, it.why, g.group], () => openRefGroup('company', gi))));
+  (window.ENGLISH_PHRASES || []).forEach((g, gi) => (g.items || []).forEach(it =>
+    add('🇬🇧 Mẫu câu', it.en, g.group, [it.en, it.vi, g.group], () => openRefGroup('star', gi))));
   return out;
 }
 
@@ -5502,7 +5512,7 @@ function renderGsResults() {
   const qstr = document.getElementById('gs-input').value.trim();
   if (qstr.length < 2) {
     gsHits = [];
-    box.innerHTML = '<div class="gs-empty">Gõ ≥ 2 ký tự — tìm khắp quiz trắc nghiệm · 💻 lập trình · 🐛 sửa bug · 🏛️ thiết kế · 🌟 STAR. Không cần gõ dấu.</div>';
+    box.innerHTML = '<div class="gs-empty">Gõ ≥ 2 ký tự — tìm khắp quiz trắc nghiệm · 💻 lập trình · 🐛 sửa bug · 🏛️ thiết kế · 🌟 STAR · 💬 hỏi ngược · 🇬🇧 mẫu câu. Không cần gõ dấu.</div>';
     return;
   }
   gsHits = gsSearch(qstr);
