@@ -1035,3 +1035,20 @@ test('gsNorm: bỏ dấu tiếng Việt + thường hoá để tìm không dấu
   assert.strictEqual(gsNorm(null), '');
   assert.strictEqual(gsNorm('Event Loop'), 'event loop');
 });
+
+test('wiring: 📉 ôn câu sai theo chủ đề — chip topic + filter queue + guard MouseEvent', () => {
+  assert.ok(/const reviewTopicOf = it => it\.q\.topic \|\| QUIZ_MODES\[it\.mode\]\.label/.test(APP),
+    'thiếu reviewTopicOf (bank không topic gom theo label mode)');
+  assert.ok(/function buildReviewQueue\(topicFilter\)/.test(APP), 'buildReviewQueue chưa nhận topicFilter');
+  assert.ok(/topicFilter \? out\.filter\(it => reviewTopicOf\(it\) === topicFilter\) : out/.test(APP),
+    'buildReviewQueue chưa lọc theo chủ đề');
+  // renderReview: chip topic chỉ hiện khi ≥2 chủ đề, bind mở phiên lọc
+  assert.ok(/topics\.length >= 2/.test(APP), 'chip topic phải ẩn khi chỉ có 1 chủ đề (không có gì để lọc riêng)');
+  assert.ok(/\.rt-chip'\)\.forEach\(b => b\.onclick = \(\) => startReview\(b\.dataset\.topic\)\)/.test(APP),
+    'chip topic chưa bind startReview(topic)');
+  // startReview nhận cả MouseEvent (nút Ôn ngay gắn thẳng handler) lẫn string (chip)
+  assert.ok(/typeof topic === 'string' \? topic : undefined/.test(APP),
+    'startReview phải phân biệt string topic vs MouseEvent');
+  const CSS = read('styles.css');
+  assert.ok(CSS.includes('.rt-chip'), 'styles.css thiếu style chip chủ đề');
+});

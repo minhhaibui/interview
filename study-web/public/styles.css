@@ -1522,3 +1522,9 @@ select:hover { border-color: var(--accent); }
 .gs-sub { flex: 0 0 auto; color: var(--muted); font-size: 12px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gs-empty { color: var(--muted); font-size: 13.5px; padding: 10px 6px; line-height: 1.55; }
 .gs-docs { border-top: 1px dashed var(--border); border-radius: 0 0 8px 8px; margin-top: 4px; }
+
+/* 📉 chip chủ đề yếu trong màn bắt đầu 🔁 — bấm để ôn riêng chủ đề */
+.review-topics { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 6px; }
+.rt-label { color: var(--muted); font-size: 12.5px; }
+button.rt-chip { cursor: pointer; font-family: inherit; transition: border-color .15s, color .15s; }
+button.rt-chip:hover { border-color: var(--accent); color: var(--accent); }

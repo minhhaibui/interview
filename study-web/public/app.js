@@ -4199,14 +4199,18 @@ function shuffledOptsHtml(q, inner, cls = 'oq-opt') {
 
 // ============ 🔁 ÔN CÂU SAI (gom câu trắc nghiệm chọn sai qua mọi mode) ============
 
-/** Gom mọi câu sai còn tồn tại thành hàng đợi [{mode, q}] đã trộn thứ tự. */
-function buildReviewQueue() {
+/** Chủ đề của một câu trong hàng đợi ôn — bank không gắn topic (Anh/Tình huống) gom theo label mode. */
+const reviewTopicOf = it => it.q.topic || QUIZ_MODES[it.mode].label;
+
+/** Gom mọi câu sai còn tồn tại thành hàng đợi [{mode, q}] đã trộn thứ tự.
+ *  topicFilter (tuỳ chọn): chỉ lấy câu thuộc chủ đề đó — phiên ôn tập trung chủ đề yếu. */
+function buildReviewQueue(topicFilter) {
   const out = [];
   Object.keys(QUIZ_MODES).forEach(mode => {
     const byId = new Map((QUIZ_MODES[mode].data() || []).map(q => [String(q.id), q]));
     wrongIds(mode).forEach(id => { const q = byId.get(String(id)); if (q) out.push({ mode, q }); });
   });
-  return shuffleArr(out);
+  return shuffleArr(topicFilter ? out.filter(it => reviewTopicOf(it) === topicFilter) : out);
 }
 
 /** Gom mọi câu 📌 đã ghim còn tồn tại thành hàng đợi [{mode, q}] đã trộn thứ tự. */
@@ -4287,21 +4291,33 @@ function renderReview() {
   const byMode = {};
   q.forEach(it => { byMode[it.mode] = (byMode[it.mode] || 0) + 1; });
   const chips = Object.keys(byMode).map(m => `<span class="review-chip">${QUIZ_MODES[m].label}: <b>${byMode[m]}</b></span>`).join('');
+  // 📉 đếm theo chủ đề: câu sai dồn cụm ở đâu → bấm chip để ôn RIÊNG chủ đề đó
+  const byTopic = {};
+  q.forEach(it => { const t = reviewTopicOf(it); byTopic[t] = (byTopic[t] || 0) + 1; });
+  const topics = Object.entries(byTopic).sort((a, b) => b[1] - a[1]);
+  const topicChips = topics.length >= 2
+    ? `<div class="review-topics"><span class="rt-label">📉 Ôn riêng chủ đề yếu:</span>${topics.slice(0, 8).map(([t, n]) =>
+        `<button class="review-chip rt-chip" data-topic="${escHtml(t)}">${escHtml(t)} <b>×${n}</b></button>`).join('')}</div>`
+    : '';
   el.innerHTML = `
     <div class="oq-start">
       <p>Đang có <b>${q.length}</b> câu cần ôn lại.</p>
       <div class="review-chips">${chips}</div>
+      ${topicChips}
       <div class="review-actions">
         <button id="review-go" class="dg-go">▶ Ôn ngay (${q.length} câu, trộn thứ tự)</button>
         ${pinBtn}${mixBtn}
       </div>
     </div>`;
   document.getElementById('review-go').onclick = startReview;
+  el.querySelectorAll('.rt-chip').forEach(b => b.onclick = () => startReview(b.dataset.topic));
   bindExtra();
 }
 
-function startReview() {
-  reviewQueue = buildReviewQueue();
+function startReview(topic) {
+  // Chip chủ đề truyền string; nút "Ôn ngay"/"Ôn tiếp" gắn thẳng handler nên arg là MouseEvent — bỏ qua.
+  const topicFilter = typeof topic === 'string' ? topic : undefined;
+  reviewQueue = buildReviewQueue(topicFilter);
   reviewIdx = 0; reviewRight = 0; reviewKind = 'wrong';
   if (!reviewQueue.length) return renderReview();
   showReview();
