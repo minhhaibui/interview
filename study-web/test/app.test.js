@@ -599,10 +599,20 @@ test('nav gom nhóm: 4 menu xổ + Hôm nay riêng, mọi view nằm trong nav, 
   assert.ok(/updateNavActive\(name\)/.test(APP), 'switchView chưa gọi updateNavActive');
 });
 
-test('regression: badge oq/dbg lọc theo id còn tồn tại (tránh đếm vượt)', () => {
-  const block = APP.slice(APP.indexOf('function computeBadges'), APP.indexOf('function computeBadges') + 1600);
-  assert.ok(/oqIds\.has/.test(block), 'oqDoneN chưa lọc id tồn tại');
-  assert.ok(/dbgIds\.has/.test(block), 'dbgDoneN chưa lọc id tồn tại');
+test('regression: đếm độ phủ bank lọc theo id còn tồn tại, cùng 1 nguồn bankCoverage', () => {
+  // helper chung phải lọc id còn tồn tại trong bank (tránh đếm vượt khi bank xoá câu)
+  const bc = APP.slice(APP.indexOf('function bankCoverage'), APP.indexOf('function bankCoverage') + 400);
+  assert.ok(/ids\.has\(String\(id\)\)/.test(bc), 'bankCoverage chưa lọc id tồn tại');
+  // 4 nơi tiêu thụ đều đi qua coverageOf/bankCoverage — không tự đếm tay nữa
+  const badgeBlock = APP.slice(APP.indexOf('function computeBadges'), APP.indexOf('function goalRing'));
+  assert.ok(/coverageOf\('output'\)/.test(badgeBlock) && /bankCoverage\(window\.DEBUG_CHALLENGES/.test(badgeBlock),
+    'computeBadges phải dùng coverageOf/bankCoverage');
+  const statsBlock = APP.slice(APP.indexOf('function renderThinkStats'), APP.indexOf('function computeReadiness'));
+  assert.ok(/coverageOf\('output'\)/.test(statsBlock), 'renderThinkStats phải dùng coverageOf');
+  const readyBlock = APP.slice(APP.indexOf('function computeReadiness'), APP.indexOf('function readinessHtml'));
+  assert.ok(/covPct\(coverageOf\('output'\)\)/.test(readyBlock), 'computeReadiness phải dùng coverageOf');
+  const covOf = APP.slice(APP.indexOf('function coverageOf'), APP.indexOf('function coverageOf') + 300);
+  assert.ok(/bankCoverage\(m\.data\(\), m\.doneKey\)/.test(covOf), 'coverageOf phải uỷ quyền bankCoverage');
 });
 
 test('readiness: tổng trọng số 7 phần = 1.0 (điểm không lệch thang)', () => {
@@ -616,8 +626,10 @@ test('readiness: tổng trọng số 7 phần = 1.0 (điểm không lệch thang
 
 test('readiness: phần Tư duy gồm cả 5 quiz mới (output/debug/api/sql/cli) + dashboard panel', () => {
   const block = APP.slice(APP.indexOf('function computeReadiness'), APP.indexOf('function readinessHtml'));
-  for (const key of ['prep-oq-done', 'prep-debug-solved', 'prep-api-done', 'prep-sql-done', 'prep-cli-done']) {
-    assert.ok(block.includes(key), `computeReadiness chưa tính ${key} vào phần Tư duy`);
+  // 5 bank quiz đi qua coverageOf/bankCoverage (doneKey nằm trong QUIZ_MODES — test registry riêng đã phủ)
+  for (const call of ["coverageOf('output')", "bankCoverage(window.DEBUG_CHALLENGES, 'prep-debug-solved')",
+    "coverageOf('api')", "coverageOf('sql')", "coverageOf('cli')"]) {
+    assert.ok(block.includes(call), `computeReadiness chưa tính ${call} vào phần Tư duy`);
   }
   assert.ok(/thinkVals = \[codingPct, iqPct, ivBest, oqPct, dbgPct, apiPct, sqlPct, cliPct\]/.test(block),
     'thinkVals chưa gộp đủ 8 thành phần');

@@ -65,6 +65,14 @@ async function apiSearch(q) {
 // Xáo trộn Fisher-Yates (trả về bản sao) — dùng chung mọi chỗ cần ngẫu nhiên đều
 const shuffleArr = a => { const r = [...a]; for (let i = r.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [r[i], r[j]] = [r[j], r[i]]; } return r; };
 
+/** Độ phủ một bank câu hỏi bất kỳ: {done, total} — chỉ đếm id đã làm CÒN tồn tại trong bank.
+ *  Nguồn sự thật duy nhất cho badge / readiness / think-stats / coverage tab Tư duy. */
+function bankCoverage(bank, doneKey) {
+  const ids = new Set((bank || []).map(x => String(x.id)));
+  const done = Object.keys(store.get(doneKey, {})).filter(id => ids.has(String(id))).length;
+  return { done, total: ids.size };
+}
+
 // ---------- SRS + thống kê dùng chung ----------
 const SRS_INTERVALS = [0, 1, 3, 7, 14, 30]; // số ngày chờ trước khi ôn lại, theo box 0→5
 const LEECH_THRESHOLD = 3;          // sai từ này trở lên → "từ cứng đầu"
@@ -516,21 +524,9 @@ function computeBadges() {
   const wpm = store.get('prep-code-best', {}).wpm || 0;
   const pomoTotal = Object.values(store.get('prep-pomo', {})).reduce((a, b) => a + b, 0);
   const designDrills = new Set(store.get('prep-design-history', []).map(h => h.id)).size;
-  const oqIds = new Set((window.OUTPUT_QUIZ || []).map(q => q.id));
-  const oqTotal = oqIds.size;
-  const oqDoneN = Object.keys(store.get('prep-oq-done', {})).filter(id => oqIds.has(id)).length;
-  const dbgIds = new Set((window.DEBUG_CHALLENGES || []).map(c => c.id));
-  const dbgTotal = dbgIds.size;
-  const dbgDoneN = Object.keys(store.get('prep-debug-solved', {})).filter(id => dbgIds.has(id)).length;
-  const apiIds = new Set((window.API_QUIZ || []).map(q => q.id));
-  const apiTotal = apiIds.size;
-  const apiDoneN = Object.keys(store.get('prep-api-done', {})).filter(id => apiIds.has(id)).length;
-  const sqlIds = new Set((window.SQL_DRILL || []).map(q => q.id));
-  const sqlTotal = sqlIds.size;
-  const sqlDoneN = Object.keys(store.get('prep-sql-done', {})).filter(id => sqlIds.has(id)).length;
-  const cliIds = new Set((window.CLI_QUIZ || []).map(q => q.id));
-  const cliTotal = cliIds.size;
-  const cliDoneN = Object.keys(store.get('prep-cli-done', {})).filter(id => cliIds.has(id)).length;
+  // Độ phủ 4 quiz + sửa bug — cùng nguồn bankCoverage với readiness/think-stats
+  const oqCov = coverageOf('output'), apiCov = coverageOf('api'), sqlCov = coverageOf('sql'), cliCov = coverageOf('cli');
+  const dbgCov = bankCoverage(window.DEBUG_CHALLENGES, 'prep-debug-solved');
   const starIds = new Set((window.STAR_QUESTIONS || []).map(q => q.id));
   const starDraftsB = store.get('prep-star-drafts', {});
   const starBuiltN = [...starIds].filter(id => { const d = starDraftsB[id] || {}; return d.s && d.t && d.a && d.r && (d.s + d.t + d.a + d.r).trim().length >= 80; }).length;
@@ -563,16 +559,16 @@ function computeBadges() {
     B('ivpass', '🏢', 'Pass phỏng vấn tổng hợp', ivPass, 'Đạt ≥70 điểm một buổi phỏng vấn 4 vòng'),
     B('design1', '🏛️', 'Đề thiết kế đầu tiên', designDrills >= 1, `Đã luyện ${designDrills} đề System Design`),
     B('design5', '🏛️', 'Kiến trúc sư · 5 đề', designDrills >= 5, `Đã luyện ${designDrills}/5 đề System Design`),
-    B('oq5', '🔍', 'Đoán đúng 5 output', oqDoneN >= 5, `Đoán đúng ${oqDoneN} snippet`),
-    B('oqall', '🔍', 'Bậc thầy bẫy JS', oqTotal > 0 && oqDoneN >= oqTotal, `Đoán đúng ${oqDoneN}/${oqTotal} snippet`),
-    B('debug1', '🐛', 'Sửa bug đầu tiên', dbgDoneN >= 1, `Đã sửa ${dbgDoneN} bug`),
-    B('debugall', '🐛', 'Thợ săn bug', dbgTotal > 0 && dbgDoneN >= dbgTotal, `Đã sửa ${dbgDoneN}/${dbgTotal} bug`),
-    B('api5', '📡', 'Trả lời đúng 5 câu API/HTTP', apiDoneN >= 5, `Đúng ${apiDoneN} câu API/HTTP`),
-    B('apiall', '📡', 'Thạo HTTP/REST', apiTotal > 0 && apiDoneN >= apiTotal, `Đúng ${apiDoneN}/${apiTotal} câu API/HTTP`),
-    B('sql5', '🗄️', 'Trả lời đúng 5 câu SQL', sqlDoneN >= 5, `Đúng ${sqlDoneN} câu SQL`),
-    B('sqlall', '🗄️', 'Bậc thầy SQL', sqlTotal > 0 && sqlDoneN >= sqlTotal, `Đúng ${sqlDoneN}/${sqlTotal} câu SQL`),
-    B('cli5', '🖥️', 'Trả lời đúng 5 câu CLI', cliDoneN >= 5, `Đúng ${cliDoneN} câu CLI`),
-    B('cliall', '🖥️', 'Thạo dòng lệnh', cliTotal > 0 && cliDoneN >= cliTotal, `Đúng ${cliDoneN}/${cliTotal} câu CLI`),
+    B('oq5', '🔍', 'Đoán đúng 5 output', oqCov.done >= 5, `Đoán đúng ${oqCov.done} snippet`),
+    B('oqall', '🔍', 'Bậc thầy bẫy JS', oqCov.total > 0 && oqCov.done >= oqCov.total, `Đoán đúng ${oqCov.done}/${oqCov.total} snippet`),
+    B('debug1', '🐛', 'Sửa bug đầu tiên', dbgCov.done >= 1, `Đã sửa ${dbgCov.done} bug`),
+    B('debugall', '🐛', 'Thợ săn bug', dbgCov.total > 0 && dbgCov.done >= dbgCov.total, `Đã sửa ${dbgCov.done}/${dbgCov.total} bug`),
+    B('api5', '📡', 'Trả lời đúng 5 câu API/HTTP', apiCov.done >= 5, `Đúng ${apiCov.done} câu API/HTTP`),
+    B('apiall', '📡', 'Thạo HTTP/REST', apiCov.total > 0 && apiCov.done >= apiCov.total, `Đúng ${apiCov.done}/${apiCov.total} câu API/HTTP`),
+    B('sql5', '🗄️', 'Trả lời đúng 5 câu SQL', sqlCov.done >= 5, `Đúng ${sqlCov.done} câu SQL`),
+    B('sqlall', '🗄️', 'Bậc thầy SQL', sqlCov.total > 0 && sqlCov.done >= sqlCov.total, `Đúng ${sqlCov.done}/${sqlCov.total} câu SQL`),
+    B('cli5', '🖥️', 'Trả lời đúng 5 câu CLI', cliCov.done >= 5, `Đúng ${cliCov.done} câu CLI`),
+    B('cliall', '🖥️', 'Thạo dòng lệnh', cliCov.total > 0 && cliCov.done >= cliCov.total, `Đúng ${cliCov.done}/${cliCov.total} câu CLI`),
     B('star1', '🌟', 'Soạn câu chuyện STAR đầu tiên', starBuiltN >= 1, `Đã soạn ${starBuiltN} câu chuyện behavioral`),
     B('star5', '🌟', 'Kho chuyện · 5 câu STAR', starBuiltN >= 5, `Đã soạn ${starBuiltN}/5 câu chuyện behavioral`),
     B('wpm40', '⌨️', 'Gõ code 40 WPM', wpm >= 40, `Kỷ lục ${wpm || 0} WPM`),
@@ -3547,16 +3543,12 @@ function initTheme() {
 function renderThinkStats() {
   const el = document.getElementById('dash-think');
   if (!el) return;
-  const cnt = (bank, key) => {
-    const ids = new Set((bank || []).map(x => x.id));
-    return { done: Object.keys(store.get(key, {})).filter(id => ids.has(id)).length, total: ids.size };
-  };
-  const coding = cnt(window.CODING_PROBLEMS, 'prep-coding-solved');
-  const oq = cnt(window.OUTPUT_QUIZ, 'prep-oq-done');
-  const dbg = cnt(window.DEBUG_CHALLENGES, 'prep-debug-solved');
-  const api = cnt(window.API_QUIZ, 'prep-api-done');
-  const sql = cnt(window.SQL_DRILL, 'prep-sql-done');
-  const cli = cnt(window.CLI_QUIZ, 'prep-cli-done');
+  const coding = bankCoverage(window.CODING_PROBLEMS, 'prep-coding-solved');
+  const oq = coverageOf('output');
+  const dbg = bankCoverage(window.DEBUG_CHALLENGES, 'prep-debug-solved');
+  const api = coverageOf('api');
+  const sql = coverageOf('sql');
+  const cli = coverageOf('cli');
   const iqBest = (store.get('prep-iq-best', {}) || {}).iq || 0;
   const oqBest = store.get('prep-oq-best', null);
   const apiBest = store.get('prep-api-best', null);
@@ -3636,8 +3628,7 @@ function computeReadiness() {
 
   // 6) Tư duy — bài code đã giải + IQ + phỏng vấn tổng hợp + 5 quiz mới (đoán output/sửa bug/API/SQL/CLI)
   // % theo id còn tồn tại (giống cách tính badge), lấy TB các phần đã có dữ liệu.
-  const donePct = (bankIds, doneKey) =>
-    bankIds.size ? Object.keys(store.get(doneKey, {})).filter(id => bankIds.has(id)).length / bankIds.size * 100 : null;
+  const covPct = c => (c.total ? c.done / c.total * 100 : null);
   const codingTotal = (window.CODING_PROBLEMS || []).length;
   const solvedN = Object.keys(store.get('prep-coding-solved', {})).length;
   const codingPct = codingTotal ? solvedN / codingTotal * 100 : null;
@@ -3645,11 +3636,11 @@ function computeReadiness() {
   const iqPct = iqBest ? (iqBest - 80) / (130 - 80) * 100 : null; // 80→0, 130→100
   const ivHist = store.get('prep-interview-history', []);
   const ivBest = ivHist.length ? Math.max(...ivHist.map(r => r.overall || 0)) : null;
-  const oqPct = donePct(new Set((window.OUTPUT_QUIZ || []).map(q => q.id)), 'prep-oq-done');
-  const dbgPct = donePct(new Set((window.DEBUG_CHALLENGES || []).map(c => c.id)), 'prep-debug-solved');
-  const apiPct = donePct(new Set((window.API_QUIZ || []).map(q => q.id)), 'prep-api-done');
-  const sqlPct = donePct(new Set((window.SQL_DRILL || []).map(q => q.id)), 'prep-sql-done');
-  const cliPct = donePct(new Set((window.CLI_QUIZ || []).map(q => q.id)), 'prep-cli-done');
+  const oqPct = covPct(coverageOf('output'));
+  const dbgPct = covPct(bankCoverage(window.DEBUG_CHALLENGES, 'prep-debug-solved'));
+  const apiPct = covPct(coverageOf('api'));
+  const sqlPct = covPct(coverageOf('sql'));
+  const cliPct = covPct(coverageOf('cli'));
   const thinkVals = [codingPct, iqPct, ivBest, oqPct, dbgPct, apiPct, sqlPct, cliPct].filter(v => v != null);
   const think = thinkVals.length ? thinkVals.reduce((a, b) => a + b, 0) / thinkVals.length : 0;
 
@@ -4240,14 +4231,10 @@ function refreshReviewBadge() {
   el.textContent = n ? String(n) : '';
 }
 
-/** Độ phủ của một mode quiz: {done, total} — chỉ đếm id còn tồn tại trong bank. */
+/** Độ phủ của một mode quiz trong QUIZ_MODES: {done, total} (uỷ quyền bankCoverage). */
 function coverageOf(mode) {
   const m = QUIZ_MODES[mode];
-  if (!m) return { done: 0, total: 0 };
-  const ids = new Set((m.data() || []).map(q => String(q.id)));
-  const total = ids.size;
-  const done = Object.keys(store.get(m.doneKey, {})).filter(id => ids.has(String(id))).length;
-  return { done, total };
+  return m ? bankCoverage(m.data(), m.doneKey) : { done: 0, total: 0 };
 }
 
 /** Hiện "đã đúng/tổng" trên nút mỗi mode trắc nghiệm; đầy đủ thì thêm ✓. */
