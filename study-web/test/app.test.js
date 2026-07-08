@@ -429,6 +429,22 @@ test('wiring: flashcards đa ngôn ngữ — select, FC_LANGS, fcDeck, TTS lang,
   assert.ok(sw.includes("'ko-vocab.js'") && sw.includes("'zh-vocab.js'"), 'sw.js PRECACHE thiếu bank Hàn/Trung');
 });
 
+test('wiring: 🎯 Quiz chọn nghĩa (Flashcards) — nút + hàm + distractor + chấm SRS', () => {
+  assert.ok(HTML.includes('id="fc-quiz-btn"'), 'thiếu nút #fc-quiz-btn');
+  assert.ok(/fc-quiz-btn'\)\.addEventListener\('click', fqStart\)/.test(APP), 'initFlashcards chưa wire nút Quiz nghĩa');
+  for (const fn of ['function fqStart', 'function fqBegin', 'function fqShow', 'function fqAnswer', 'function fqFinish']) {
+    assert.ok(APP.includes(fn), `thiếu ${fn}`);
+  }
+  const beg = APP.slice(APP.indexOf('function fqBegin'), APP.indexOf('function fqShow'));
+  assert.ok(/meanings\.filter\(m => m !== card\.meaning\)/.test(beg), 'distractor chưa loại nghĩa đúng');
+  assert.ok(/options\.indexOf\(card\.meaning\)/.test(beg), 'answer chưa trỏ đúng vị trí nghĩa đúng sau khi trộn');
+  const ans = APP.slice(APP.indexOf('function fqAnswer'), APP.indexOf('function fqFinish'));
+  assert.ok(/bumpSrs\(it\.card, correct\)/.test(ans), 'fqAnswer chưa cập nhật SRS theo đúng/sai');
+  assert.ok(/if \(it\.picked != null\) return/.test(ans), 'fqAnswer chưa chặn chấm 2 lần');
+  const css = read('styles.css');
+  assert.ok(css.includes('.fq-opt') && css.includes('.fq-word'), 'styles.css thiếu .fq-opt/.fq-word');
+});
+
 test('đếm ngược PV: daysUntil tính đúng + card render + PREP_KEYS', () => {
   const fnM = APP.match(/function daysUntil\(dateStr, now = Date\.now\(\)\) \{[\s\S]*?\n}/);
   assert.ok(fnM, 'thiếu hàm daysUntil');
