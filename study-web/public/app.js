@@ -836,8 +836,8 @@ function goToFlash(filter) {
 }
 function goToVocabTest() {
   switchView('flashcards');
-  // Test gõ hiện chỉ có bản tiếng Anh — đang học Hàn/Trung thì chuyển về Anh trước
-  loadDeck().then(() => { if (fcLang !== 'en') setFcLang('en'); fillFcWeekSelect(); ftStart(); });
+  // Test gõ chạy với ngôn ngữ đang học (EN gõ từ, Hàn/Trung gõ phiên âm)
+  loadDeck().then(() => { fillFcWeekSelect(); ftStart(); });
 }
 async function goToWritingMix() {
   switchView('writing');
@@ -1142,7 +1142,6 @@ function setFcLang(v) {
   store.set('prep-fc-lang', fcLang);
   const sel = document.getElementById('fc-lang');
   if (sel && sel.value !== fcLang) sel.value = fcLang;
-  document.getElementById('fc-test-btn').hidden = fcLang !== 'en';
   ftToggle(false); // đang dở màn test gõ thì đóng lại cho khỏi lệch deck
   fillFcWeekSelect();
   updateFcDirLabel();
@@ -1187,7 +1186,6 @@ async function initFlashcards() {
   const langSel = document.getElementById('fc-lang');
   langSel.value = fcLang;
   langSel.addEventListener('change', () => setFcLang(langSel.value));
-  document.getElementById('fc-test-btn').hidden = fcLang !== 'en';
   document.getElementById('fc-week').addEventListener('change', startSession);
   document.getElementById('fc-shuffle').addEventListener('click', startSession);
   document.getElementById('fc-dir').addEventListener('click', () => {
@@ -1283,10 +1281,15 @@ function startSession() {
 // ===== 📝 Test gõ từ: hiện nghĩa tiếng Việt → gõ tiếng Anh, Enter sang câu kế, cuối bài chấm + chọn SRS =====
 let ftQueue = [], ftIdx = 0;
 let ftSize = store.get('prep-ft-size', 20); // số từ mỗi lượt (0 = tất cả)
-const ftNorm = s => (s || '').toLowerCase().normalize('NFC')
+const ftNorm = s => (s || '').toLowerCase().normalize('NFD')
+  .replace(/[̀-ͯ]/g, '')             // bỏ dấu thanh điệu (pinyin nǐ→ni) + dấu phụ → chấm phiên âm dễ hơn
   .replace(/\(.*?\)/g, ' ')                    // bỏ chú thích trong ngoặc
   .replace(/[^\p{L}\p{N}\s'-]/gu, ' ')         // bỏ ký tự đặc biệt, giữ chữ/số/'/-
   .replace(/\s+/g, ' ').trim();
+
+/** Chuỗi cần GÕ trong Test gõ: tiếng Anh gõ chính từ; Hàn/Trung gõ PHIÊN ÂM (gõ hangul/hanzi quá khó). */
+const ftForeign = c => !!(c.lang && c.lang !== 'en-US');
+const ftTarget = c => ftForeign(c) ? c.ipa : c.front;
 
 /** Ẩn UI flashcard lật thường khi đang test (on=true), hiện lại khi xong. */
 function ftToggle(on) {
@@ -1301,13 +1304,18 @@ function ftToggle(on) {
 function ftStart() {
   ftToggle(true);
   const sel = document.getElementById('fc-week');
-  const pool = filterDeck(sel.value);
+  const pool = filterDeck(sel.value, fcDeck());
   const scope = sel.selectedOptions[0]?.textContent || 'Tất cả';
+  const foreign = fcLang !== 'en';
+  const nm = FC_LANGS[fcLang].name;
+  const howto = foreign
+    ? `Hiện <b>chữ ${nm}</b> + nghĩa — bạn gõ <b>phiên âm</b> (${fcLang === 'zh' ? 'pinyin, không cần dấu thanh' : 'romanization'}) rồi <kbd>Enter</kbd> sang câu kế.`
+    : 'Hiện <b>nghĩa tiếng Việt</b> — bạn gõ <b>từ tiếng Anh</b> rồi <kbd>Enter</kbd> sang câu kế.';
   const sizeBtn = n => `<button class="ft-size${ftSize === n ? ' active' : ''}" data-n="${n}">${n === 0 ? 'Tất cả' : n}</button>`;
   document.getElementById('fc-test').innerHTML = `
     <div class="ft-start">
-      <h2>📝 Test gõ từ</h2>
-      <p>Hiện <b>nghĩa tiếng Việt</b> — bạn gõ <b>từ tiếng Anh</b> rồi <kbd>Enter</kbd> sang câu kế. Cuối bài chấm điểm và bạn chọn từng từ <b>học tiếp</b> hay <b>thuộc rồi</b>.</p>
+      <h2>📝 Test gõ ${foreign ? nm : 'từ'}</h2>
+      <p>${howto} Cuối bài chấm điểm và bạn chọn từng từ <b>học tiếp</b> hay <b>thuộc rồi</b>.</p>
       <p class="ft-scope">Phạm vi (đổi ở ô chọn phía trên): <b>${escHtml(scope)}</b> — <b>${pool.length}</b> từ. Số từ mỗi lượt:</p>
       <div class="ft-sizes">${[10, 20, 0].map(sizeBtn).join('')}</div>
       <button id="ft-go" class="dg-go"${pool.length ? '' : ' disabled'}>▶ Bắt đầu</button>
@@ -1319,7 +1327,7 @@ function ftStart() {
 }
 
 function ftBegin() {
-  let pool = filterDeck(document.getElementById('fc-week').value).filter(c => c.front && c.meaning);
+  let pool = filterDeck(document.getElementById('fc-week').value, fcDeck()).filter(c => ftTarget(c) && c.meaning);
   pool = shuffleArr(pool);
   if (ftSize > 0) pool = pool.slice(0, ftSize);
   ftQueue = pool.map(c => ({ card: c, answer: '', correct: false }));
@@ -1332,11 +1340,18 @@ function ftShow() {
   const it = ftQueue[ftIdx];
   if (!it) return ftFinish();
   const c = it.card;
+  const foreign = ftForeign(c);
+  // Hàn/Trung: hiện CHỮ GỐC (hangul/hanzi) to + nghĩa Việt nhỏ, gõ phiên âm — rèn đọc mặt chữ.
+  // Tiếng Anh: hiện nghĩa Việt, gõ từ Anh (như cũ).
+  const promptHtml = foreign
+    ? `<div class="ft-mean ft-script" lang="${c.lang.slice(0, 2)}">${escHtml(c.front)}</div><div class="ft-submean">${escHtml(c.meaning)}</div>`
+    : `<div class="ft-mean">${escHtml(c.meaning)}</div>`;
+  const ph = foreign ? 'Gõ phiên âm rồi Enter…' : 'Gõ từ tiếng Anh rồi Enter…';
   document.getElementById('fc-test').innerHTML = `
     <div class="ft-sess">
       <div class="ft-bar"><span>Câu ${ftIdx + 1}/${ftQueue.length}</span><span class="ft-topic">${escHtml(c.week)}</span></div>
-      <div class="ft-mean">${escHtml(c.meaning)}</div>
-      <input id="ft-input" class="ft-input" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Gõ từ tiếng Anh rồi Enter…" />
+      ${promptHtml}
+      <input id="ft-input" class="ft-input" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="${ph}" />
       <div class="ft-actions"><button id="ft-next" class="dg-go">${ftIdx + 1 < ftQueue.length ? 'Câu kế →' : 'Xem kết quả ✓'}</button><button id="ft-quit" class="dg-link">Dừng</button></div>
       <p class="ft-tip">↵ <kbd>Enter</kbd> để sang câu kế · đáp án ẩn tới cuối bài</p>
     </div>`;
@@ -1351,7 +1366,7 @@ function ftShow() {
 function ftSubmit() {
   const it = ftQueue[ftIdx];
   it.answer = (document.getElementById('ft-input').value || '').trim();
-  it.correct = it.answer !== '' && ftNorm(it.answer) === ftNorm(it.card.front);
+  it.correct = it.answer !== '' && ftNorm(it.answer) === ftNorm(ftTarget(it.card));
   ftIdx++;
   ftShow();
 }
@@ -1364,10 +1379,10 @@ function ftFinish() {
     <li class="ft-row ${x.correct ? 'ft-ok' : 'ft-no'}">
       <div class="ft-row-top">
         <span class="ft-verd">${x.correct ? '✅' : '❌'}</span>
-        <span class="ft-word"><b>${escHtml(x.card.front)}</b> — ${escHtml(x.card.meaning)}</span>
+        <span class="ft-word"><b>${escHtml(x.card.front)}</b>${x.card.ipa ? ` <span class="ft-rom">${escHtml(x.card.ipa)}</span>` : ''} — ${escHtml(x.card.meaning)}</span>
         <button class="ep-say ft-say" data-i="${i}" title="Nghe phát âm" aria-label="Nghe phát âm">🔊</button>
       </div>
-      ${x.correct ? '' : `<div class="ft-yours">Bạn gõ: <i>${escHtml(x.answer || '(bỏ trống)')}</i></div>`}
+      ${x.correct ? '' : `<div class="ft-yours">Bạn gõ: <i>${escHtml(x.answer || '(bỏ trống)')}</i>${ftForeign(x.card) ? ` · đáp án: <b>${escHtml(ftTarget(x.card))}</b>` : ''}</div>`}
       <div class="ft-srs">
         <button class="ft-learn" data-i="${i}">📚 Học tiếp</button>
         <button class="ft-known" data-i="${i}">✅ Thuộc rồi</button>
@@ -1387,7 +1402,7 @@ function ftFinish() {
     const c = ftQueue[+b.dataset.i].card;
     // Sanitize như speakCard: bỏ ⚠️/ngoặc ở từ, bỏ backtick + chú thích "— ⚠️…" tiếng Việt ở ví dụ
     const ex = (c.example || '').replace(/[`*]/g, '').replace(/—.*$/, '').trim();
-    speak(ex ? `${cleanTarget(c.front)}. ${ex}` : cleanTarget(c.front));
+    speak(ex ? `${cleanTarget(c.front)}. ${ex}` : cleanTarget(c.front), c.lang || 'en-US');
   });
   document.getElementById('ft-again').onclick = ftStart;
   document.getElementById('ft-done').onclick = () => { ftToggle(false); fillFcWeekSelect(); startSession(); };

@@ -655,8 +655,12 @@ test('wiring: 📝 Test gõ từ (Flashcards) đủ nút + container + hàm + SR
   assert.ok(/bumpSrs\(ftQueue\[\+b\.dataset\.i\]\.card, false\)/.test(fin), 'nút Học tiếp chưa gọi bumpSrs(...,false)');
   assert.ok(/bumpSrs\(ftQueue\[\+b\.dataset\.i\]\.card, true\)/.test(fin), 'nút Thuộc rồi chưa gọi bumpSrs(...,true)');
   const sub = APP.slice(APP.indexOf('function ftSubmit'), APP.indexOf('function ftFinish'));
-  assert.ok(/ftNorm\(it\.answer\) === ftNorm\(it\.card\.front\)/.test(sub), 'ftSubmit chưa so khớp chuẩn hoá');
+  assert.ok(/ftNorm\(it\.answer\) === ftNorm\(ftTarget\(it\.card\)\)/.test(sub), 'ftSubmit chưa so khớp chuẩn hoá theo ftTarget');
   assert.ok(/const PREP_KEYS = \[[\s\S]*?prep-ft-size[\s\S]*?\]/.test(APP), 'PREP_KEYS thiếu prep-ft-size');
+  // Test gõ đa ngôn ngữ: Hàn/Trung gõ phiên âm (ipa), chấm bỏ dấu thanh điệu
+  assert.ok(/const ftTarget = c => ftForeign\(c\) \? c\.ipa : c\.front/.test(APP), 'ftTarget chưa gõ phiên âm cho Hàn/Trung');
+  assert.ok(/normalize\('NFD'\)[\s\S]{0,80}\\u0300-\\u036f|\.replace\(\/[̀-ͯ]/.test(APP) || /ftNorm = s =>[\s\S]{0,200}NFD/.test(APP),
+    'ftNorm chưa bỏ dấu thanh điệu (pinyin)');
 });
 
 test('sync realtime: onSnapshot + chống echo + không ghi đè ngược + ngắt khi đăng xuất', () => {
