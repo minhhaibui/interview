@@ -113,4 +113,22 @@ window.KO_VOCAB = [
   { id: 'ko-emo-6', w: '화나다', r: 'hwanada', m: 'tức giận', ex: '동생이 화났어요.', exv: 'Em tôi tức giận rồi.', t: '😊 Cảm xúc' },
   { id: 'ko-emo-7', w: '무섭다', r: 'museopda', m: 'sợ hãi', ex: '저는 개가 무서워요.', exv: 'Tôi sợ chó.', t: '😊 Cảm xúc' },
   { id: 'ko-emo-8', w: '아프다', r: 'apeuda', m: 'đau / ốm', ex: '머리가 아파요.', exv: 'Tôi đau đầu.', t: '😊 Cảm xúc' },
+  // 🌤️ Thời tiết
+  { id: 'ko-wthr-1', w: '날씨', r: 'nalssi', m: 'thời tiết', ex: '오늘 날씨가 좋아요.', exv: 'Hôm nay thời tiết đẹp.', t: '🌤️ Thời tiết' },
+  { id: 'ko-wthr-2', w: '덥다', r: 'deopda', m: 'nóng', ex: '여름은 더워요.', exv: 'Mùa hè nóng.', t: '🌤️ Thời tiết' },
+  { id: 'ko-wthr-3', w: '춥다', r: 'chupda', m: 'lạnh', ex: '겨울은 추워요.', exv: 'Mùa đông lạnh.', t: '🌤️ Thời tiết' },
+  { id: 'ko-wthr-4', w: '비', r: 'bi', m: 'mưa', ex: '비가 와요.', exv: 'Trời đang mưa.', t: '🌤️ Thời tiết' },
+  { id: 'ko-wthr-5', w: '눈', r: 'nun', m: 'tuyết', ex: '눈이 많이 와요.', exv: 'Tuyết rơi nhiều.', t: '🌤️ Thời tiết' },
+  { id: 'ko-wthr-6', w: '바람', r: 'baram', m: 'gió', ex: '바람이 불어요.', exv: 'Gió thổi.', t: '🌤️ Thời tiết' },
+  { id: 'ko-wthr-7', w: '맑다', r: 'makda', m: 'trong / nắng đẹp', ex: '하늘이 맑아요.', exv: 'Bầu trời trong xanh.', t: '🌤️ Thời tiết' },
+  { id: 'ko-wthr-8', w: '따뜻하다', r: 'ttatteuthada', m: 'ấm áp', ex: '봄은 따뜻해요.', exv: 'Mùa xuân ấm áp.', t: '🌤️ Thời tiết' },
+  // 🚗 Đi lại
+  { id: 'ko-move-1', w: '버스', r: 'beoseu', m: 'xe buýt', ex: '버스를 타요.', exv: 'Tôi đi xe buýt.', t: '🚗 Đi lại' },
+  { id: 'ko-move-2', w: '지하철', r: 'jihacheol', m: 'tàu điện ngầm', ex: '지하철이 빨라요.', exv: 'Tàu điện ngầm nhanh.', t: '🚗 Đi lại' },
+  { id: 'ko-move-3', w: '택시', r: 'taeksi', m: 'taxi', ex: '택시를 불러요.', exv: 'Tôi gọi taxi.', t: '🚗 Đi lại' },
+  { id: 'ko-move-4', w: '자동차', r: 'jadongcha', m: 'ô tô', ex: '자동차가 비싸요.', exv: 'Ô tô đắt.', t: '🚗 Đi lại' },
+  { id: 'ko-move-5', w: '자전거', r: 'jajeongeo', m: 'xe đạp', ex: '자전거를 타요.', exv: 'Tôi đi xe đạp.', t: '🚗 Đi lại' },
+  { id: 'ko-move-6', w: '비행기', r: 'bihaenggi', m: 'máy bay', ex: '비행기로 가요.', exv: 'Tôi đi bằng máy bay.', t: '🚗 Đi lại' },
+  { id: 'ko-move-7', w: '기차', r: 'gicha', m: 'tàu hỏa', ex: '기차가 늦어요.', exv: 'Tàu hỏa trễ.', t: '🚗 Đi lại' },
+  { id: 'ko-move-8', w: '타다', r: 'tada', m: 'lên xe / đi (phương tiện)', ex: '버스를 타고 가요.', exv: 'Tôi đi bằng xe buýt.', t: '🚗 Đi lại' },
 ];

@@ -113,4 +113,22 @@ window.ZH_VOCAB = [
   { id: 'zh-emo-6', w: '生气', r: 'shēngqì', m: 'tức giận', ex: '别生气。', exv: 'Đừng tức giận.', t: '😊 Cảm xúc' },
   { id: 'zh-emo-7', w: '害怕', r: 'hàipà', m: 'sợ hãi', ex: '我害怕狗。', exv: 'Tôi sợ chó.', t: '😊 Cảm xúc' },
   { id: 'zh-emo-8', w: '疼', r: 'téng', m: 'đau', ex: '我头疼。', exv: 'Tôi đau đầu.', t: '😊 Cảm xúc' },
+  // 🌤️ Thời tiết
+  { id: 'zh-wthr-1', w: '天气', r: 'tiānqì', m: 'thời tiết', ex: '今天天气很好。', exv: 'Hôm nay thời tiết đẹp.', t: '🌤️ Thời tiết' },
+  { id: 'zh-wthr-2', w: '热', r: 'rè', m: 'nóng', ex: '夏天很热。', exv: 'Mùa hè rất nóng.', t: '🌤️ Thời tiết' },
+  { id: 'zh-wthr-3', w: '冷', r: 'lěng', m: 'lạnh', ex: '冬天很冷。', exv: 'Mùa đông rất lạnh.', t: '🌤️ Thời tiết' },
+  { id: 'zh-wthr-4', w: '下雨', r: 'xià yǔ', m: 'mưa (trời mưa)', ex: '今天下雨。', exv: 'Hôm nay trời mưa.', t: '🌤️ Thời tiết' },
+  { id: 'zh-wthr-5', w: '雪', r: 'xuě', m: 'tuyết', ex: '外面下雪了。', exv: 'Bên ngoài có tuyết.', t: '🌤️ Thời tiết' },
+  { id: 'zh-wthr-6', w: '风', r: 'fēng', m: 'gió', ex: '今天风很大。', exv: 'Hôm nay gió lớn.', t: '🌤️ Thời tiết' },
+  { id: 'zh-wthr-7', w: '晴天', r: 'qíngtiān', m: 'trời nắng đẹp', ex: '明天是晴天。', exv: 'Ngày mai trời nắng.', t: '🌤️ Thời tiết' },
+  { id: 'zh-wthr-8', w: '暖和', r: 'nuǎnhuo', m: 'ấm áp', ex: '春天很暖和。', exv: 'Mùa xuân ấm áp.', t: '🌤️ Thời tiết' },
+  // 🚗 Đi lại
+  { id: 'zh-move-1', w: '公共汽车', r: 'gōnggòng qìchē', m: 'xe buýt', ex: '我坐公共汽车。', exv: 'Tôi đi xe buýt.', t: '🚗 Đi lại' },
+  { id: 'zh-move-2', w: '地铁', r: 'dìtiě', m: 'tàu điện ngầm', ex: '地铁很快。', exv: 'Tàu điện ngầm rất nhanh.', t: '🚗 Đi lại' },
+  { id: 'zh-move-3', w: '出租车', r: 'chūzūchē', m: 'taxi', ex: '我们叫出租车吧。', exv: 'Chúng ta gọi taxi đi.', t: '🚗 Đi lại' },
+  { id: 'zh-move-4', w: '汽车', r: 'qìchē', m: 'ô tô', ex: '这辆汽车很贵。', exv: 'Chiếc ô tô này rất đắt.', t: '🚗 Đi lại' },
+  { id: 'zh-move-5', w: '自行车', r: 'zìxíngchē', m: 'xe đạp', ex: '我骑自行车。', exv: 'Tôi đi xe đạp.', t: '🚗 Đi lại' },
+  { id: 'zh-move-6', w: '飞机', r: 'fēijī', m: 'máy bay', ex: '我坐飞机去。', exv: 'Tôi đi bằng máy bay.', t: '🚗 Đi lại' },
+  { id: 'zh-move-7', w: '火车', r: 'huǒchē', m: 'tàu hỏa', ex: '火车晚点了。', exv: 'Tàu hỏa trễ giờ.', t: '🚗 Đi lại' },
+  { id: 'zh-move-8', w: '坐', r: 'zuò', m: 'ngồi / đi (phương tiện)', ex: '我坐地铁上班。', exv: 'Tôi đi làm bằng tàu điện.', t: '🚗 Đi lại' },
 ];
