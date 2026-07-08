@@ -713,8 +713,13 @@ async function renderToday() {
   if (cdDays != null && cdDays >= 0 && cdDays <= 3) {
     tasks.push({ id: 'td-print', ic: '🖨️', t: 'In bản ôn nhanh trước giờ G', s: 'Từ hay quên · câu đang sai · ý chính design · chuyện STAR', go: printSheet });
   }
-  if (due) tasks.push({ id: 'td-due', ic: '📬', t: `Ôn ${due} từ đến hạn`, s: 'Flashcards theo lịch SRS', go: () => goToFlash('__due__') });
+  if (due) tasks.push({ id: 'td-due', ic: '📬', t: `Ôn ${due} từ tiếng Anh đến hạn`, s: 'Flashcards theo lịch SRS', go: () => goToFlash('__due__') });
   if (leech) tasks.push({ id: 'td-leech', ic: '🔥', t: `Luyện ${leech} từ cứng đầu`, s: 'Những từ sai nhiều lần', go: () => goToFlash('__leech__') });
+  // 🌏 Nhắc ôn ngoại ngữ Hàn/Trung đến hạn — chỉ hiện khi user ĐÃ học (có SRS entry đến hạn)
+  for (const [lang, ic] of [['ko', '🇰🇷'], ['zh', '🇨🇳']]) {
+    const n = langDueCount(lang);
+    if (n) tasks.push({ id: `td-due-${lang}`, ic, t: `Ôn ${n} từ tiếng ${FC_LANGS[lang].name} đến hạn`, s: 'Flashcards theo lịch SRS', go: () => goToFlashLang(lang, '__due__') });
+  }
   tasks.push({ id: 'td-mix', ic: '⚡', t: 'Ôn nhanh ~10 câu (mix)', s: 'Trộn dịch từ + điền câu + nghe', go: goToWritingMix });
   tasks.push({ id: 'td-fttest', ic: '📝', t: 'Test gõ từ vựng', s: 'Hiện nghĩa Việt → gõ tiếng Anh, chấm điểm', go: goToVocabTest });
   if (wrongN) tasks.push({ id: 'td-wrong', ic: '🚩', t: `Ôn ${wrongN} câu mock đã sai`, s: 'Trả lời lại cho nhớ', go: goToMockWrong });
@@ -832,6 +837,16 @@ function goToFlash(filter) {
     fillFcWeekSelect();
     const sel = document.getElementById('fc-week');
     if (sel) { sel.value = filter; sel.dispatchEvent(new Event('change')); }
+  });
+}
+
+/** Mở Flashcards ở ĐÚNG ngôn ngữ + bộ lọc (dùng khi nhắc ôn ngoại ngữ từ tab Hôm nay). */
+function goToFlashLang(lang, filter) {
+  switchView('flashcards');
+  loadDeck().then(() => {
+    setFcLang(lang); // đổi ngôn ngữ → fillFcWeekSelect + startSession
+    const sel = document.getElementById('fc-week');
+    if (sel) { sel.value = filter || ''; sel.dispatchEvent(new Event('change')); }
   });
 }
 function goToVocabTest() {
@@ -1125,15 +1140,25 @@ const FC_LANGS = {
 let fcLang = FC_LANGS[store.get('prep-fc-lang', 'en')] ? store.get('prep-fc-lang', 'en') : 'en';
 const langDecks = {}; // cache bank Hàn/Trung đã map sang dạng thẻ
 
-/** Deck đang học ở tab Flashcards. SRS/leech dùng chung store — id bank có prefix ko-/zh- nên không va id thẻ Anh. */
-function fcDeck() {
-  if (fcLang === 'en') return DECK;
-  langDecks[fcLang] ??= FC_LANGS[fcLang].bank().map(v => ({
+/** Deck của một ngôn ngữ (map bank tĩnh Hàn/Trung sang dạng thẻ; EN là DECK đã parse từ md).
+ *  SRS/leech dùng chung store — id bank có prefix ko-/zh- nên không va id thẻ Anh. */
+function langDeck(lang) {
+  if (lang === 'en') return DECK;
+  langDecks[lang] ??= FC_LANGS[lang].bank().map(v => ({
     id: v.id, front: v.w, ipa: v.r, meaning: v.m,
     example: `${v.ex} — ${v.exv}`, // speakCard chỉ đọc phần trước "—" → TTS không đọc phần dịch Việt
-    week: v.t, daily: true, lang: FC_LANGS[fcLang].tts,
+    week: v.t, daily: true, lang: FC_LANGS[lang].tts,
   }));
-  return langDecks[fcLang];
+  return langDecks[lang];
+}
+
+/** Deck đang học ở tab Flashcards (theo fcLang hiện tại). */
+function fcDeck() { return langDeck(fcLang); }
+
+/** Số từ của một ngôn ngữ đang ĐẾN HẠN ôn (SRS) — cho tab Hôm nay nhắc ôn ngoại ngữ. */
+function langDueCount(lang) {
+  const srs = store.get('prep-srs', {});
+  return langDeck(lang).filter(c => srs[c.id] && srsDue(srs[c.id]) <= Date.now()).length;
 }
 
 /** Đổi ngôn ngữ học: lưu chọn, ẩn Test gõ (chỉ có bản tiếng Anh), dựng lại bộ lọc + phiên. */

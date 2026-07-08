@@ -445,6 +445,17 @@ test('wiring: 🎯 Quiz chọn nghĩa (Flashcards) — nút + hàm + distractor 
   assert.ok(css.includes('.fq-opt') && css.includes('.fq-word'), 'styles.css thiếu .fq-opt/.fq-word');
 });
 
+test('wiring: tab Hôm nay nhắc ôn ngoại ngữ Hàn/Trung đến hạn', () => {
+  assert.ok(/function langDueCount\b/.test(APP), 'thiếu langDueCount');
+  assert.ok(/function goToFlashLang\b/.test(APP), 'thiếu goToFlashLang');
+  assert.ok(/function langDeck\b/.test(APP), 'thiếu langDeck (refactor từ fcDeck)');
+  assert.ok(/id: `td-due-\$\{lang\}`/.test(APP), 'renderToday chưa thêm task ôn ngoại ngữ đến hạn');
+  assert.ok(/\['ko', '🇰🇷'\], \['zh', '🇨🇳'\]/.test(APP), 'chưa lặp ko/zh cho task nhắc ôn');
+  // goToFlashLang phải đổi ngôn ngữ trước rồi mới set filter
+  const g = APP.slice(APP.indexOf('function goToFlashLang'), APP.indexOf('function goToFlashLang') + 400);
+  assert.ok(/setFcLang\(lang\)/.test(g) && /sel\.value = filter/.test(g), 'goToFlashLang chưa setFcLang + set filter');
+});
+
 test('đếm ngược PV: daysUntil tính đúng + card render + PREP_KEYS', () => {
   const fnM = APP.match(/function daysUntil\(dateStr, now = Date\.now\(\)\) \{[\s\S]*?\n}/);
   assert.ok(fnM, 'thiếu hàm daysUntil');
