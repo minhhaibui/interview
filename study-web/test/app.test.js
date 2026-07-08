@@ -377,6 +377,10 @@ test('wiring: chế độ 🎓 Thi thử đủ HTML + toggle + engine + dọn ti
   assert.ok(/clearExamState\(\)/.test(finBlock), 'finishExam chưa xoá bài dở đã lưu');
   assert.ok(/key !== EXAM_STATE_KEY\) schedulePush/.test(APP),
     'onStoreWrite chưa loại prep-exam-state — mỗi câu trả lời sẽ đẩy blob không đổi lên Firestore');
+  // 📋 copy kết quả + phân bố theo mảng trong lịch sử
+  assert.ok(/modes: byMode/.test(APP), 'lịch sử thi chưa lưu phân bố modes (nguồn trend chart)');
+  assert.ok(/function copyText\b/.test(APP) && /function examResultText\b/.test(APP), 'thiếu copyText/examResultText');
+  assert.ok(/id="exam-copy"/.test(APP) && /examResultText\(entry\)/.test(APP), 'màn kết quả thiếu nút 📋 copy');
 });
 
 test('đếm ngược PV: daysUntil tính đúng + card render + PREP_KEYS', () => {

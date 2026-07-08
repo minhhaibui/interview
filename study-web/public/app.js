@@ -4475,6 +4475,28 @@ function saveExamState() {
 }
 const clearExamState = () => localStorage.removeItem(EXAM_STATE_KEY);
 
+/** Copy văn bản vào clipboard; fallback textarea+execCommand cho trình duyệt cũ. true nếu thành công. */
+async function copyText(txt) {
+  try { await navigator.clipboard.writeText(txt); return true; } catch { /* thử fallback */ }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  } catch { return false; }
+}
+
+/** Tóm tắt một lần thi thành văn bản chia sẻ được (pure — dễ test). h cần {d,n,right,pct,secs,timeout,sprint,modes}. */
+function examResultText(h) {
+  const parts = Object.keys(h.modes || {}).map(m =>
+    `${QUIZ_MODES[m] ? QUIZ_MODES[m].label : m}: ${h.modes[m].right}/${h.modes[m].total}`);
+  return `🎓 Thi thử Backend Interview${h.sprint ? ' (🔥 nước rút)' : ''} — ${new Date(h.d).toLocaleDateString('vi-VN')}\n` +
+    `Kết quả: ${h.right}/${h.n} (${h.pct}%) · ⏱ ${fmtClock(h.secs)}${h.timeout ? ' · hết giờ' : ''}\n` +
+    parts.join(' · ');
+}
+
 /** Dựng lại bài dở từ localStorage (sau reload). true nếu khôi phục được. */
 function restoreExamState() {
   const s = store.get(EXAM_STATE_KEY, null);
@@ -4650,7 +4672,9 @@ function finishExam(timedOut) {
   });
   const pct = Math.round(right / total * 100);
   const hist = examHistory();
-  hist.push({ d: Date.now(), n: total, right, pct, secs, timeout: !!timedOut, sprint: examSprint });
+  // modes: phân bố đúng/tổng theo mảng — nguồn cho đồ thị trend từng mảng & nút copy chia sẻ
+  const entry = { d: Date.now(), n: total, right, pct, secs, timeout: !!timedOut, sprint: examSprint, modes: byMode };
+  hist.push(entry);
   store.set('prep-exam-history', hist.slice(-30));
   logActivity();
   refreshThinkBadges();
@@ -4676,6 +4700,7 @@ function finishExam(timedOut) {
       <div class="review-actions">
         <button id="exam-again" class="dg-go">↻ Thi đề khác</button>
         ${wrongItems.length ? '<button id="exam-review" class="dg-go dg-link">🔁 Ôn ngay câu sai</button>' : ''}
+        <button id="exam-copy" class="dg-go dg-link" title="Copy tóm tắt điểm + phân bố theo mảng để chia sẻ">📋 Copy kết quả</button>
       </div>
       ${wrongItems.length ? `<h3 class="exam-wrong-h">Xem lại ${wrongItems.length} câu chưa đúng</h3>${wrongHtml}` : ''}
     </div>`;
@@ -4684,6 +4709,8 @@ function finishExam(timedOut) {
   document.getElementById('exam-again').onclick = renderExam;
   const rv = document.getElementById('exam-review');
   if (rv) rv.onclick = () => setThinkMode('review');
+  const cp = document.getElementById('exam-copy');
+  cp.onclick = () => copyText(examResultText(entry)).then(ok => { cp.textContent = ok ? '✅ Đã copy' : '❌ Không copy được'; });
 }
 
 // ============ 🌟 STAR BUILDER (soạn câu trả lời phỏng vấn hành vi) ============
