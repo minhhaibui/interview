@@ -149,4 +149,22 @@ window.KO_VOCAB = [
   { id: 'ko-cloth-6', w: '안경', r: 'angyeong', m: 'kính (mắt)', ex: '안경을 써요.', exv: 'Tôi đeo kính.', t: '👕 Quần áo' },
   { id: 'ko-cloth-7', w: '가방', r: 'gabang', m: 'túi xách / cặp', ex: '가방이 무거워요.', exv: 'Túi nặng.', t: '👕 Quần áo' },
   { id: 'ko-cloth-8', w: '입다', r: 'ipda', m: 'mặc (quần áo)', ex: '코트를 입어요.', exv: 'Tôi mặc áo khoác.', t: '👕 Quần áo' },
+  // 📅 Thứ ngày
+  { id: 'ko-day-1', w: '요일', r: 'yoil', m: 'thứ (trong tuần)', ex: '오늘 무슨 요일이에요?', exv: 'Hôm nay thứ mấy?', t: '📅 Thứ ngày' },
+  { id: 'ko-day-2', w: '월요일', r: 'woryoil', m: 'thứ Hai', ex: '월요일에 회의가 있어요.', exv: 'Thứ Hai có cuộc họp.', t: '📅 Thứ ngày' },
+  { id: 'ko-day-3', w: '화요일', r: 'hwayoil', m: 'thứ Ba', ex: '화요일에 만나요.', exv: 'Thứ Ba gặp nhé.', t: '📅 Thứ ngày' },
+  { id: 'ko-day-4', w: '수요일', r: 'suyoil', m: 'thứ Tư', ex: '수요일은 바빠요.', exv: 'Thứ Tư tôi bận.', t: '📅 Thứ ngày' },
+  { id: 'ko-day-5', w: '목요일', r: 'mogyoil', m: 'thứ Năm', ex: '목요일에 시험이 있어요.', exv: 'Thứ Năm có bài thi.', t: '📅 Thứ ngày' },
+  { id: 'ko-day-6', w: '금요일', r: 'geumyoil', m: 'thứ Sáu', ex: '금요일 저녁에 놀아요.', exv: 'Tối thứ Sáu đi chơi.', t: '📅 Thứ ngày' },
+  { id: 'ko-day-7', w: '토요일', r: 'toyoil', m: 'thứ Bảy', ex: '토요일에 쉬어요.', exv: 'Thứ Bảy tôi nghỉ.', t: '📅 Thứ ngày' },
+  { id: 'ko-day-8', w: '일요일', r: 'iryoil', m: 'Chủ nhật', ex: '일요일에 교회에 가요.', exv: 'Chủ nhật tôi đi nhà thờ.', t: '📅 Thứ ngày' },
+  // 🏠 Trong nhà
+  { id: 'ko-home-1', w: '방', r: 'bang', m: 'phòng', ex: '방이 깨끗해요.', exv: 'Phòng sạch sẽ.', t: '🏠 Trong nhà' },
+  { id: 'ko-home-2', w: '문', r: 'mun', m: 'cửa', ex: '문을 열어 주세요.', exv: 'Xin mở cửa giúp.', t: '🏠 Trong nhà' },
+  { id: 'ko-home-3', w: '창문', r: 'changmun', m: 'cửa sổ', ex: '창문을 닫으세요.', exv: 'Hãy đóng cửa sổ.', t: '🏠 Trong nhà' },
+  { id: 'ko-home-4', w: '책상', r: 'chaeksang', m: 'bàn (học/làm việc)', ex: '책상 위에 책이 있어요.', exv: 'Trên bàn có sách.', t: '🏠 Trong nhà' },
+  { id: 'ko-home-5', w: '의자', r: 'uija', m: 'ghế', ex: '의자에 앉으세요.', exv: 'Mời ngồi ghế.', t: '🏠 Trong nhà' },
+  { id: 'ko-home-6', w: '침대', r: 'chimdae', m: 'giường', ex: '침대가 편해요.', exv: 'Giường êm.', t: '🏠 Trong nhà' },
+  { id: 'ko-home-7', w: '시계', r: 'sigye', m: 'đồng hồ', ex: '시계가 벽에 있어요.', exv: 'Đồng hồ ở trên tường.', t: '🏠 Trong nhà' },
+  { id: 'ko-home-8', w: '텔레비전', r: 'tellebijeon', m: 'tivi', ex: '텔레비전을 봐요.', exv: 'Tôi xem tivi.', t: '🏠 Trong nhà' },
 ];

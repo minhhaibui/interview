@@ -149,4 +149,22 @@ window.ZH_VOCAB = [
   { id: 'zh-cloth-6', w: '眼镜', r: 'yǎnjìng', m: 'kính (mắt)', ex: '他戴眼镜。', exv: 'Anh ấy đeo kính.', t: '👕 Quần áo' },
   { id: 'zh-cloth-7', w: '包', r: 'bāo', m: 'túi xách / cặp', ex: '这个包很重。', exv: 'Cái túi này nặng.', t: '👕 Quần áo' },
   { id: 'zh-cloth-8', w: '穿', r: 'chuān', m: 'mặc (quần áo)', ex: '我穿外套。', exv: 'Tôi mặc áo khoác.', t: '👕 Quần áo' },
+  // 📅 Thứ ngày
+  { id: 'zh-day-1', w: '星期', r: 'xīngqī', m: 'tuần / thứ', ex: '今天星期几？', exv: 'Hôm nay thứ mấy?', t: '📅 Thứ ngày' },
+  { id: 'zh-day-2', w: '星期一', r: 'xīngqīyī', m: 'thứ Hai', ex: '星期一有会议。', exv: 'Thứ Hai có cuộc họp.', t: '📅 Thứ ngày' },
+  { id: 'zh-day-3', w: '星期二', r: 'xīngqī èr', m: 'thứ Ba', ex: '星期二见。', exv: 'Thứ Ba gặp nhé.', t: '📅 Thứ ngày' },
+  { id: 'zh-day-4', w: '星期三', r: 'xīngqīsān', m: 'thứ Tư', ex: '星期三我很忙。', exv: 'Thứ Tư tôi rất bận.', t: '📅 Thứ ngày' },
+  { id: 'zh-day-5', w: '星期四', r: 'xīngqīsì', m: 'thứ Năm', ex: '星期四有考试。', exv: 'Thứ Năm có bài thi.', t: '📅 Thứ ngày' },
+  { id: 'zh-day-6', w: '星期五', r: 'xīngqīwǔ', m: 'thứ Sáu', ex: '星期五晚上去玩。', exv: 'Tối thứ Sáu đi chơi.', t: '📅 Thứ ngày' },
+  { id: 'zh-day-7', w: '星期六', r: 'xīngqīliù', m: 'thứ Bảy', ex: '星期六我休息。', exv: 'Thứ Bảy tôi nghỉ.', t: '📅 Thứ ngày' },
+  { id: 'zh-day-8', w: '星期日', r: 'xīngqīrì', m: 'Chủ nhật', ex: '星期日在家。', exv: 'Chủ nhật tôi ở nhà.', t: '📅 Thứ ngày' },
+  // 🏠 Trong nhà
+  { id: 'zh-home-1', w: '房间', r: 'fángjiān', m: 'phòng', ex: '房间很干净。', exv: 'Phòng rất sạch.', t: '🏠 Trong nhà' },
+  { id: 'zh-home-2', w: '门', r: 'mén', m: 'cửa', ex: '请开门。', exv: 'Xin mở cửa.', t: '🏠 Trong nhà' },
+  { id: 'zh-home-3', w: '窗户', r: 'chuānghu', m: 'cửa sổ', ex: '请关窗户。', exv: 'Xin đóng cửa sổ.', t: '🏠 Trong nhà' },
+  { id: 'zh-home-4', w: '桌子', r: 'zhuōzi', m: 'bàn', ex: '桌子上有书。', exv: 'Trên bàn có sách.', t: '🏠 Trong nhà' },
+  { id: 'zh-home-5', w: '椅子', r: 'yǐzi', m: 'ghế', ex: '请坐椅子。', exv: 'Mời ngồi ghế.', t: '🏠 Trong nhà' },
+  { id: 'zh-home-6', w: '床', r: 'chuáng', m: 'giường', ex: '床很舒服。', exv: 'Giường êm.', t: '🏠 Trong nhà' },
+  { id: 'zh-home-7', w: '电视', r: 'diànshì', m: 'tivi', ex: '我看电视。', exv: 'Tôi xem tivi.', t: '🏠 Trong nhà' },
+  { id: 'zh-home-8', w: '灯', r: 'dēng', m: 'đèn', ex: '请开灯。', exv: 'Xin bật đèn.', t: '🏠 Trong nhà' },
 ];
