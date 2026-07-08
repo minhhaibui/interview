@@ -461,6 +461,20 @@ test('wiring: tab Hôm nay nhắc ôn ngoại ngữ Hàn/Trung đến hạn', ()
   assert.ok(/function setFcLang\(v, weekFilter\)/.test(APP), 'setFcLang chưa nhận weekFilter');
 });
 
+test('wiring: 🌏 Tiến độ học ngoại ngữ ở Dashboard', () => {
+  assert.ok(HTML.includes('id="dash-langs"'), 'Dashboard thiếu #dash-langs');
+  assert.ok(/function langProgress\b/.test(APP) && /function renderLangProgress\b/.test(APP), 'thiếu langProgress/renderLangProgress');
+  assert.ok(/renderLangProgress\(\)/.test(APP.slice(APP.indexOf('function renderDashboard'), APP.indexOf('function renderDashboard') + 200)),
+    'renderDashboard chưa gọi renderLangProgress');
+  // chỉ hiện khi ≥2 ngôn ngữ đã bắt đầu học (r.started > 0)
+  const r = APP.slice(APP.indexOf('function renderLangProgress'), APP.indexOf('function renderLangProgress') + 900);
+  assert.ok(/rows\.length < 2/.test(r) && /r\.started > 0/.test(r), 'renderLangProgress chưa lọc theo ngôn ngữ đã học/≥2');
+  assert.ok(/\(e\.box \|\| 0\) >= 2/.test(APP.slice(APP.indexOf('function langProgress'), APP.indexOf('function langProgress') + 400)),
+    'langProgress chưa đếm "đã thuộc" theo box≥2');
+  const css = read('styles.css');
+  assert.ok(css.includes('.lang-prog') && css.includes('.lp-fill'), 'styles.css thiếu .lang-prog/.lp-fill');
+});
+
 test('đếm ngược PV: daysUntil tính đúng + card render + PREP_KEYS', () => {
   const fnM = APP.match(/function daysUntil\(dateStr, now = Date\.now\(\)\) \{[\s\S]*?\n}/);
   assert.ok(fnM, 'thiếu hàm daysUntil');

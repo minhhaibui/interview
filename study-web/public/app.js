@@ -1155,6 +1155,41 @@ function langDueCount(lang) {
   return langDeck(lang).filter(c => srs[c.id] && srsDue(srs[c.id]) <= Date.now()).length;
 }
 
+/** Thống kê một ngôn ngữ: {mastered (box≥2), started (đã có SRS), total}. */
+function langProgress(lang) {
+  const srs = store.get('prep-srs', {});
+  const deck = langDeck(lang);
+  let mastered = 0, started = 0;
+  for (const c of deck) {
+    const e = srs[c.id];
+    if (!e) continue;
+    started++;
+    if ((e.box || 0) >= 2) mastered++;
+  }
+  return { mastered, started, total: deck.length };
+}
+
+/** Panel "🌏 Tiến độ học ngoại ngữ" ở Dashboard — chỉ hiện ngôn ngữ ĐÃ bắt đầu học. */
+function renderLangProgress() {
+  const el = document.getElementById('dash-langs');
+  if (!el) return;
+  // Tiến độ tiếng Anh cần DECK đã parse; vào Dashboard trực tiếp có thể chưa nạp → nạp rồi vẽ lại 1 lần
+  if (!DECK.length) loadDeck().then(() => { if (DECK.length) renderLangProgress(); });
+  const rows = ['en', 'ko', 'zh'].map(lang => ({ lang, ...langProgress(lang) }))
+    .filter(r => r.started > 0);
+  if (rows.length < 2) { el.innerHTML = ''; return; } // chỉ học 1 ngôn ngữ → không cần bảng so sánh
+  const flag = { en: '🇬🇧', ko: '🇰🇷', zh: '🇨🇳' };
+  el.innerHTML = `<h2>🌏 Tiến độ học ngoại ngữ</h2>
+    <div class="lang-prog">${rows.map(r => {
+      const pct = r.total ? Math.round(r.mastered / r.total * 100) : 0;
+      return `<div class="lp-row">
+        <span class="lp-name">${flag[r.lang]} ${FC_LANGS[r.lang].name === 'Anh' ? 'Tiếng Anh' : 'Tiếng ' + FC_LANGS[r.lang].name}</span>
+        <div class="lp-track"><span class="lp-fill" style="width:${pct}%"></span></div>
+        <span class="lp-val">${r.mastered}/${r.total} thuộc</span>
+      </div>`;
+    }).join('')}</div>`;
+}
+
 /** Đổi ngôn ngữ học: lưu chọn, dựng lại bộ lọc + phiên. weekFilter (tuỳ chọn): đặt luôn bộ lọc tuần/đến-hạn
  *  rồi chỉ startSession MỘT lần — dùng khi mở từ tab Hôm nay để không render/xáo bài 2 lượt. */
 function setFcLang(v, weekFilter) {
@@ -3689,6 +3724,7 @@ function renderWeekChecklist() {
 
 function renderDashboard() {
   renderWeekChecklist();
+  renderLangProgress();
 
   // 🧪 Capstone: tiến độ nghiệm thu Upgrade 1→5 (tick ở tab Kế hoạch)
   const capEl = document.getElementById('dash-capstone');
