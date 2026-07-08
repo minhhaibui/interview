@@ -451,9 +451,14 @@ test('wiring: tab Hôm nay nhắc ôn ngoại ngữ Hàn/Trung đến hạn', ()
   assert.ok(/function langDeck\b/.test(APP), 'thiếu langDeck (refactor từ fcDeck)');
   assert.ok(/id: `td-due-\$\{lang\}`/.test(APP), 'renderToday chưa thêm task ôn ngoại ngữ đến hạn');
   assert.ok(/\['ko', '🇰🇷'\], \['zh', '🇨🇳'\]/.test(APP), 'chưa lặp ko/zh cho task nhắc ôn');
-  // goToFlashLang phải đổi ngôn ngữ trước rồi mới set filter
-  const g = APP.slice(APP.indexOf('function goToFlashLang'), APP.indexOf('function goToFlashLang') + 400);
-  assert.ok(/setFcLang\(lang\)/.test(g) && /sel\.value = filter/.test(g), 'goToFlashLang chưa setFcLang + set filter');
+  // goToFlashLang mở đúng ngôn ngữ + filter qua setFcLang(lang, filter)
+  const g = APP.slice(APP.indexOf('function goToFlashLang'), APP.indexOf('function goToFlashLang') + 300);
+  assert.ok(/setFcLang\(lang, filter/.test(g), 'goToFlashLang chưa setFcLang(lang, filter)');
+  // goToFlash (đường tiếng Anh) PHẢI reset về 'en' — task Hôm nay đếm theo DECK tiếng Anh
+  const gf = APP.slice(APP.indexOf('function goToFlash('), APP.indexOf('function goToFlash(') + 300);
+  assert.ok(/setFcLang\('en', filter\)/.test(gf), 'goToFlash chưa reset về tiếng Anh (mở nhầm deck ngoại ngữ)');
+  // setFcLang nhận weekFilter để startSession 1 lần
+  assert.ok(/function setFcLang\(v, weekFilter\)/.test(APP), 'setFcLang chưa nhận weekFilter');
 });
 
 test('đếm ngược PV: daysUntil tính đúng + card render + PREP_KEYS', () => {

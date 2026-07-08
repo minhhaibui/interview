@@ -721,7 +721,7 @@ async function renderToday() {
     if (n) tasks.push({ id: `td-due-${lang}`, ic, t: `Ôn ${n} từ tiếng ${FC_LANGS[lang].name} đến hạn`, s: 'Flashcards theo lịch SRS', go: () => goToFlashLang(lang, '__due__') });
   }
   tasks.push({ id: 'td-mix', ic: '⚡', t: 'Ôn nhanh ~10 câu (mix)', s: 'Trộn dịch từ + điền câu + nghe', go: goToWritingMix });
-  tasks.push({ id: 'td-fttest', ic: '📝', t: 'Test gõ từ vựng', s: 'Hiện nghĩa Việt → gõ tiếng Anh, chấm điểm', go: goToVocabTest });
+  tasks.push({ id: 'td-fttest', ic: '📝', t: 'Test gõ từ vựng', s: 'Anh: gõ từ · Hàn/Trung: gõ phiên âm — chấm điểm', go: goToVocabTest });
   if (wrongN) tasks.push({ id: 'td-wrong', ic: '🚩', t: `Ôn ${wrongN} câu mock đã sai`, s: 'Trả lời lại cho nhớ', go: goToMockWrong });
   if (quizWrongN) tasks.push({ id: 'td-quiz-wrong', ic: '🔁', t: `Ôn ${quizWrongN} câu trắc nghiệm đã sai`, s: 'Output · API · SQL · CLI · Anh · Tình huống — gom về một phiên', go: goToQuizReview });
   const pinnedN = pinnedTotal();
@@ -833,21 +833,15 @@ async function renderToday() {
 // Bộ điều hướng dùng chung cho tab Hôm nay (mở tab tương ứng + đặt sẵn bộ lọc).
 function goToFlash(filter) {
   switchView('flashcards');
-  loadDeck().then(() => { // chờ deck sẵn sàng (initFlashcards lần 2 trả về sớm vì fcLoaded đã true)
-    fillFcWeekSelect();
-    const sel = document.getElementById('fc-week');
-    if (sel) { sel.value = filter; sel.dispatchEvent(new Event('change')); }
-  });
+  // Task "Ôn từ tiếng Anh đến hạn"/"từ cứng đầu" đếm theo DECK tiếng Anh → PHẢI mở deck Anh
+  // (nếu user đang học Hàn/Trung, không reset ngôn ngữ sẽ rơi nhầm deck ngoại ngữ).
+  loadDeck().then(() => setFcLang('en', filter));
 }
 
 /** Mở Flashcards ở ĐÚNG ngôn ngữ + bộ lọc (dùng khi nhắc ôn ngoại ngữ từ tab Hôm nay). */
 function goToFlashLang(lang, filter) {
   switchView('flashcards');
-  loadDeck().then(() => {
-    setFcLang(lang); // đổi ngôn ngữ → fillFcWeekSelect + startSession
-    const sel = document.getElementById('fc-week');
-    if (sel) { sel.value = filter || ''; sel.dispatchEvent(new Event('change')); }
-  });
+  loadDeck().then(() => setFcLang(lang, filter || ''));
 }
 function goToVocabTest() {
   switchView('flashcards');
@@ -1161,15 +1155,20 @@ function langDueCount(lang) {
   return langDeck(lang).filter(c => srs[c.id] && srsDue(srs[c.id]) <= Date.now()).length;
 }
 
-/** Đổi ngôn ngữ học: lưu chọn, ẩn Test gõ (chỉ có bản tiếng Anh), dựng lại bộ lọc + phiên. */
-function setFcLang(v) {
+/** Đổi ngôn ngữ học: lưu chọn, dựng lại bộ lọc + phiên. weekFilter (tuỳ chọn): đặt luôn bộ lọc tuần/đến-hạn
+ *  rồi chỉ startSession MỘT lần — dùng khi mở từ tab Hôm nay để không render/xáo bài 2 lượt. */
+function setFcLang(v, weekFilter) {
   fcLang = FC_LANGS[v] ? v : 'en';
   store.set('prep-fc-lang', fcLang);
-  const sel = document.getElementById('fc-lang');
-  if (sel && sel.value !== fcLang) sel.value = fcLang;
+  const langSel = document.getElementById('fc-lang');
+  if (langSel && langSel.value !== fcLang) langSel.value = fcLang;
   ftToggle(false); // đang dở màn test gõ thì đóng lại cho khỏi lệch deck
   fillFcWeekSelect();
   updateFcDirLabel();
+  if (weekFilter !== undefined) {
+    const wsel = document.getElementById('fc-week');
+    if (wsel) wsel.value = weekFilter;
+  }
   startSession();
 }
 
