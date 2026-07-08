@@ -630,6 +630,7 @@ const STUDY_TIPS = [
   'Đừng giấu khi chưa biết — hãy nói cách bạn sẽ tìm ra câu trả lời; interviewer đánh giá cao sự trung thực.',
   'Ôn tiếng Anh giao tiếp mỗi ngày một chút — phỏng vấn tốt cần cả kiến thức lẫn khả năng diễn đạt trôi chảy.',
   'Mỗi tuần làm một bài 🎓 Thi thử có tính giờ — áp lực đồng hồ khi luyện giúp bạn bình tĩnh hơn ở bài test thật.',
+  'Tab 🃏 Flashcards có bộ chọn 🌏 ngôn ngữ: học thêm tiếng Hàn/Trung (chữ + phiên âm + phát âm) song song với tiếng Anh, chung một cơ chế ôn SRS.',
   'Điểm thi thử thấp ở mảng nào? Đề 🔥 nước rút (trong 🎓 Thi thử) sẽ tự dồn câu vào đúng mảng yếu đó cho bạn.',
 ];
 /** Chọn mẹo theo số thứ tự ngày (tách riêng để test thuần). */
@@ -6442,7 +6443,7 @@ const ONBOARD_SLIDES = [
     title: '5 nhóm trên thanh menu',
     body: `<ul class="onb-list">
       <li><b>🔥 Hôm nay</b> — việc cần ôn mỗi ngày + mục tiêu &amp; chuỗi streak</li>
-      <li><b>📚 Học</b> — tài liệu, flashcards, luyện viết, gõ code</li>
+      <li><b>📚 Học</b> — tài liệu, flashcards (🇬🇧 Anh · 🇰🇷 Hàn · 🇨🇳 Trung), luyện viết, gõ code</li>
       <li><b>🧠 Luyện tập</b> — tư duy (code · IQ · quiz · 🎓 thi thử) &amp; thiết kế hệ thống</li>
       <li><b>🎯 Phỏng vấn</b> — mock, Q&amp;A tổng hợp, STAR kể chuyện</li>
       <li><b>📊 Theo dõi</b> — kế hoạch 12 tuần &amp; điểm sẵn sàng</li>
