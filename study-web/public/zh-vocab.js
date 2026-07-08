@@ -116,7 +116,7 @@ window.ZH_VOCAB = [
   { id: 'zh-emo-7', w: '害怕', r: 'hàipà', m: 'sợ hãi', ex: '我害怕狗。', exv: 'Tôi sợ chó.', t: '😊 Cảm xúc' },
   { id: 'zh-emo-8', w: '疼', r: 'téng', m: 'đau', ex: '我头疼。', exv: 'Tôi đau đầu.', t: '😊 Cảm xúc' },
   // 🌤️ Thời tiết
-  { id: 'zh-wthr-1', w: '天气', r: 'tiānqì', m: 'thời tiết', ex: '今天天气很好。', exv: 'Hôm nay thời tiết đẹp.', t: '🌤️ Thời tiết' },
+  { id: 'zh-wthr-1', w: '天气', r: 'tiānqì', m: 'thời tiết', ex: '天气怎么样？', exv: 'Thời tiết thế nào?', t: '🌤️ Thời tiết' },
   { id: 'zh-wthr-2', w: '热', r: 'rè', m: 'nóng', ex: '夏天很热。', exv: 'Mùa hè rất nóng.', t: '🌤️ Thời tiết' },
   { id: 'zh-wthr-3', w: '冷', r: 'lěng', m: 'lạnh', ex: '冬天很冷。', exv: 'Mùa đông rất lạnh.', t: '🌤️ Thời tiết' },
   { id: 'zh-wthr-4', w: '下雨', r: 'xià yǔ', m: 'mưa (trời mưa)', ex: '今天下雨。', exv: 'Hôm nay trời mưa.', t: '🌤️ Thời tiết' },
@@ -134,7 +134,7 @@ window.ZH_VOCAB = [
   { id: 'zh-move-7', w: '火车', r: 'huǒchē', m: 'tàu hỏa', ex: '火车晚点了。', exv: 'Tàu hỏa trễ giờ.', t: '🚗 Đi lại' },
   { id: 'zh-move-8', w: '坐', r: 'zuò', m: 'ngồi / đi (phương tiện)', ex: '我坐地铁上班。', exv: 'Tôi đi làm bằng tàu điện.', t: '🚗 Đi lại' },
   // 🧍 Cơ thể
-  { id: 'zh-body-1', w: '头', r: 'tóu', m: 'đầu', ex: '我头疼。', exv: 'Tôi đau đầu.', t: '🧍 Cơ thể' },
+  { id: 'zh-body-1', w: '头', r: 'tóu', m: 'đầu', ex: '他的头很大。', exv: 'Đầu anh ấy to.', t: '🧍 Cơ thể' },
   { id: 'zh-body-2', w: '脸', r: 'liǎn', m: 'khuôn mặt', ex: '她的脸很漂亮。', exv: 'Khuôn mặt cô ấy đẹp.', t: '🧍 Cơ thể' },
   { id: 'zh-body-3', w: '眼睛', r: 'yǎnjing', m: 'mắt', ex: '你的眼睛很大。', exv: 'Mắt bạn to.', t: '🧍 Cơ thể' },
   { id: 'zh-body-4', w: '鼻子', r: 'bízi', m: 'mũi', ex: '他的鼻子很高。', exv: 'Mũi anh ấy cao.', t: '🧍 Cơ thể' },
@@ -154,7 +154,7 @@ window.ZH_VOCAB = [
   // 📅 Thứ ngày
   { id: 'zh-day-1', w: '星期', r: 'xīngqī', m: 'tuần / thứ', ex: '今天星期几？', exv: 'Hôm nay thứ mấy?', t: '📅 Thứ ngày' },
   { id: 'zh-day-2', w: '星期一', r: 'xīngqīyī', m: 'thứ Hai', ex: '星期一有会议。', exv: 'Thứ Hai có cuộc họp.', t: '📅 Thứ ngày' },
-  { id: 'zh-day-3', w: '星期二', r: 'xīngqī èr', m: 'thứ Ba', ex: '星期二见。', exv: 'Thứ Ba gặp nhé.', t: '📅 Thứ ngày' },
+  { id: 'zh-day-3', w: '星期二', r: 'xīngqīèr', m: 'thứ Ba', ex: '星期二见。', exv: 'Thứ Ba gặp nhé.', t: '📅 Thứ ngày' },
   { id: 'zh-day-4', w: '星期三', r: 'xīngqīsān', m: 'thứ Tư', ex: '星期三我很忙。', exv: 'Thứ Tư tôi rất bận.', t: '📅 Thứ ngày' },
   { id: 'zh-day-5', w: '星期四', r: 'xīngqīsì', m: 'thứ Năm', ex: '星期四有考试。', exv: 'Thứ Năm có bài thi.', t: '📅 Thứ ngày' },
   { id: 'zh-day-6', w: '星期五', r: 'xīngqīwǔ', m: 'thứ Sáu', ex: '星期五晚上去玩。', exv: 'Tối thứ Sáu đi chơi.', t: '📅 Thứ ngày' },
@@ -191,7 +191,7 @@ window.ZH_VOCAB = [
   { id: 'zh-big-1', w: '零', r: 'líng', m: 'số không (0)', ex: '现在零度。', exv: 'Bây giờ 0 độ.', t: '🔟 Số lớn' },
   { id: 'zh-big-2', w: '二十', r: 'èrshí', m: 'hai mươi (20)', ex: '我等二十分钟。', exv: 'Tôi đợi 20 phút.', t: '🔟 Số lớn' },
   { id: 'zh-big-3', w: '三十', r: 'sānshí', m: 'ba mươi (30)', ex: '三十个人来了。', exv: '30 người đã đến.', t: '🔟 Số lớn' },
-  { id: 'zh-big-4', w: '五十', r: 'wǔshí', m: 'năm mươi (50)', ex: '有五十个。', exv: 'Có 50 cái.', t: '🔟 Số lớn' },
+  { id: 'zh-big-4', w: '四十', r: 'sìshí', m: 'bốn mươi (40)', ex: '有四十个。', exv: 'Có 40 cái.', t: '🔟 Số lớn' },
   { id: 'zh-big-5', w: '一百', r: 'yìbǎi', m: 'một trăm (100)', ex: '一百块钱。', exv: '100 tệ.', t: '🔟 Số lớn' },
   { id: 'zh-big-6', w: '一千', r: 'yìqiān', m: 'một nghìn (1000)', ex: '一千块钱。', exv: '1000 tệ.', t: '🔟 Số lớn' },
   { id: 'zh-big-7', w: '一万', r: 'yíwàn', m: 'mười nghìn (10000)', ex: '一万块钱。', exv: '10000 tệ.', t: '🔟 Số lớn' },

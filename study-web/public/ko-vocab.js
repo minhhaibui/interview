@@ -116,7 +116,7 @@ window.KO_VOCAB = [
   { id: 'ko-emo-7', w: '무섭다', r: 'museopda', m: 'sợ hãi', ex: '저는 개가 무서워요.', exv: 'Tôi sợ chó.', t: '😊 Cảm xúc' },
   { id: 'ko-emo-8', w: '아프다', r: 'apeuda', m: 'đau / ốm', ex: '머리가 아파요.', exv: 'Tôi đau đầu.', t: '😊 Cảm xúc' },
   // 🌤️ Thời tiết
-  { id: 'ko-wthr-1', w: '날씨', r: 'nalssi', m: 'thời tiết', ex: '오늘 날씨가 좋아요.', exv: 'Hôm nay thời tiết đẹp.', t: '🌤️ Thời tiết' },
+  { id: 'ko-wthr-1', w: '날씨', r: 'nalssi', m: 'thời tiết', ex: '날씨가 어때요?', exv: 'Thời tiết thế nào?', t: '🌤️ Thời tiết' },
   { id: 'ko-wthr-2', w: '덥다', r: 'deopda', m: 'nóng', ex: '여름은 더워요.', exv: 'Mùa hè nóng.', t: '🌤️ Thời tiết' },
   { id: 'ko-wthr-3', w: '춥다', r: 'chupda', m: 'lạnh', ex: '겨울은 추워요.', exv: 'Mùa đông lạnh.', t: '🌤️ Thời tiết' },
   { id: 'ko-wthr-4', w: '비', r: 'bi', m: 'mưa', ex: '비가 와요.', exv: 'Trời đang mưa.', t: '🌤️ Thời tiết' },
@@ -134,7 +134,7 @@ window.KO_VOCAB = [
   { id: 'ko-move-7', w: '기차', r: 'gicha', m: 'tàu hỏa', ex: '기차가 늦어요.', exv: 'Tàu hỏa trễ.', t: '🚗 Đi lại' },
   { id: 'ko-move-8', w: '타다', r: 'tada', m: 'lên xe / đi (phương tiện)', ex: '버스를 타고 가요.', exv: 'Tôi đi bằng xe buýt.', t: '🚗 Đi lại' },
   // 🧍 Cơ thể
-  { id: 'ko-body-1', w: '머리', r: 'meori', m: 'đầu / tóc', ex: '머리가 아파요.', exv: 'Tôi đau đầu.', t: '🧍 Cơ thể' },
+  { id: 'ko-body-1', w: '머리', r: 'meori', m: 'đầu / tóc', ex: '머리를 감아요.', exv: 'Tôi gội đầu.', t: '🧍 Cơ thể' },
   { id: 'ko-body-2', w: '얼굴', r: 'eolgul', m: 'khuôn mặt', ex: '얼굴이 예뻐요.', exv: 'Khuôn mặt xinh.', t: '🧍 Cơ thể' },
   { id: 'ko-body-3', w: '눈', r: 'nun', m: 'mắt', ex: '눈이 커요.', exv: 'Mắt to.', t: '🧍 Cơ thể' },
   { id: 'ko-body-4', w: '코', r: 'ko', m: 'mũi', ex: '코가 높아요.', exv: 'Mũi cao.', t: '🧍 Cơ thể' },
@@ -191,7 +191,7 @@ window.KO_VOCAB = [
   { id: 'ko-big-1', w: '영', r: 'yeong', m: 'số không (0)', ex: '온도가 영 도예요.', exv: 'Nhiệt độ 0 độ.', t: '🔟 Số lớn' },
   { id: 'ko-big-2', w: '이십', r: 'isip', m: 'hai mươi (20)', ex: '이십 분 걸려요.', exv: 'Mất 20 phút.', t: '🔟 Số lớn' },
   { id: 'ko-big-3', w: '삼십', r: 'samsip', m: 'ba mươi (30)', ex: '삼십 명이 왔어요.', exv: '30 người đã đến.', t: '🔟 Số lớn' },
-  { id: 'ko-big-4', w: '오십', r: 'osip', m: 'năm mươi (50)', ex: '오십 개 있어요.', exv: 'Có 50 cái.', t: '🔟 Số lớn' },
+  { id: 'ko-big-4', w: '사십', r: 'sasip', m: 'bốn mươi (40)', ex: '사십 개 있어요.', exv: 'Có 40 cái.', t: '🔟 Số lớn' },
   { id: 'ko-big-5', w: '백', r: 'baek', m: 'một trăm (100)', ex: '백 원이에요.', exv: '100 won.', t: '🔟 Số lớn' },
   { id: 'ko-big-6', w: '천', r: 'cheon', m: 'một nghìn (1000)', ex: '천 원이에요.', exv: '1000 won.', t: '🔟 Số lớn' },
   { id: 'ko-big-7', w: '만', r: 'man', m: 'mười nghìn (10000)', ex: '만 원이에요.', exv: '10000 won.', t: '🔟 Số lớn' },
