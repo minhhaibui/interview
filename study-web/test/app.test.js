@@ -413,6 +413,29 @@ for (const [file, key, prefix] of [['ko-vocab.js', 'KO_VOCAB', 'ko-'], ['zh-voca
       assert.ok(v.ex.includes(v.w.replace(/\(.*\)/, '').trim().split(' ')[0]) || v.ex.length > 0, `${v.id} ví dụ rỗng`);
     }
   });
+
+  // Chặn hồi quy các lỗ hổng đã phát hiện qua audit (V18-V21):
+  test(`${file}: KHÔNG đồng âm khác nghĩa / KHÔNG trùng nghĩa Việt / KHÔNG trùng ví dụ / số đếm đủ 1-10`, () => {
+    const bank = loadWindow(file)[key];
+    // 1. Cùng chữ gốc (w) mà KHÁC nghĩa → flashcard/quiz mơ hồ (vd ko 눈 tuyết vs mắt đã sửa)
+    const byWord = new Map();
+    for (const v of bank) {
+      if (byWord.has(v.w) && byWord.get(v.w) !== v.m)
+        assert.fail(`đồng âm khác nghĩa: "${v.w}" = "${byWord.get(v.w)}" và "${v.m}" (flashcard sẽ mơ hồ)`);
+      byWord.set(v.w, v.m);
+    }
+    // 2. Nghĩa Việt trùng → quiz chọn nghĩa có thể có 2 đáp án đúng
+    const meanings = bank.map(v => v.m);
+    const dupM = meanings.filter((m, i) => meanings.indexOf(m) !== i);
+    assert.strictEqual(dupM.length, 0, `nghĩa Việt trùng (quiz 2 đáp án đúng): ${[...new Set(dupM)].join(', ')}`);
+    // 3. Câu ví dụ trùng y hệt giữa 2 thẻ → nên đa dạng hoá
+    const exs = bank.map(v => v.ex);
+    const dupEx = exs.filter((e, i) => exs.indexOf(e) !== i);
+    assert.strictEqual(dupEx.length, 0, `câu ví dụ trùng: ${[...new Set(dupEx)].join(' / ')}`);
+    // 4. Chủ đề Số đếm phải đủ 1..10 (đã từng thiếu 8,9)
+    const nums = bank.filter(v => v.t.includes('Số đếm')).map(v => (v.m.match(/\((\d+)\)/) || [])[1]).filter(Boolean).map(Number);
+    for (let n = 1; n <= 10; n++) assert.ok(nums.includes(n), `Số đếm thiếu số ${n}`);
+  });
 }
 
 test('wiring: flashcards đa ngôn ngữ — select, FC_LANGS, fcDeck, TTS lang, script + precache', () => {
