@@ -167,4 +167,22 @@ window.KO_VOCAB = [
   { id: 'ko-home-6', w: '침대', r: 'chimdae', m: 'giường', ex: '침대가 편해요.', exv: 'Giường êm.', t: '🏠 Trong nhà' },
   { id: 'ko-home-7', w: '시계', r: 'sigye', m: 'đồng hồ', ex: '시계가 벽에 있어요.', exv: 'Đồng hồ ở trên tường.', t: '🏠 Trong nhà' },
   { id: 'ko-home-8', w: '텔레비전', r: 'tellebijeon', m: 'tivi', ex: '텔레비전을 봐요.', exv: 'Tôi xem tivi.', t: '🏠 Trong nhà' },
+  // ❓ Từ để hỏi
+  { id: 'ko-q-1', w: '누구', r: 'nugu', m: 'ai', ex: '저 사람은 누구예요?', exv: 'Người kia là ai?', t: '❓ Từ để hỏi' },
+  { id: 'ko-q-2', w: '무엇', r: 'mueot', m: 'cái gì', ex: '이것은 무엇이에요?', exv: 'Cái này là cái gì?', t: '❓ Từ để hỏi' },
+  { id: 'ko-q-3', w: '언제', r: 'eonje', m: 'khi nào', ex: '언제 만나요?', exv: 'Khi nào gặp nhau?', t: '❓ Từ để hỏi' },
+  { id: 'ko-q-4', w: '왜', r: 'wae', m: 'tại sao', ex: '왜 늦었어요?', exv: 'Tại sao đến muộn?', t: '❓ Từ để hỏi' },
+  { id: 'ko-q-5', w: '어떻게', r: 'eotteoke', m: 'như thế nào', ex: '어떻게 가요?', exv: 'Đi như thế nào?', t: '❓ Từ để hỏi' },
+  { id: 'ko-q-6', w: '어느', r: 'eoneu', m: 'cái nào', ex: '어느 것이 좋아요?', exv: 'Cái nào tốt?', t: '❓ Từ để hỏi' },
+  { id: 'ko-q-7', w: '몇', r: 'myeot', m: 'mấy (số lượng)', ex: '몇 살이에요?', exv: 'Bạn bao nhiêu tuổi?', t: '❓ Từ để hỏi' },
+  { id: 'ko-q-8', w: '무슨', r: 'museun', m: 'gì / loại nào', ex: '무슨 일이에요?', exv: 'Có chuyện gì vậy?', t: '❓ Từ để hỏi' },
+  // 📏 Tính từ
+  { id: 'ko-adj-1', w: '크다', r: 'keuda', m: 'to / lớn', ex: '집이 커요.', exv: 'Nhà to.', t: '📏 Tính từ' },
+  { id: 'ko-adj-2', w: '작다', r: 'jakda', m: 'nhỏ', ex: '방이 작아요.', exv: 'Phòng nhỏ.', t: '📏 Tính từ' },
+  { id: 'ko-adj-3', w: '많다', r: 'manta', m: 'nhiều', ex: '사람이 많아요.', exv: 'Nhiều người.', t: '📏 Tính từ' },
+  { id: 'ko-adj-4', w: '적다', r: 'jeokda', m: 'ít', ex: '돈이 적어요.', exv: 'Ít tiền.', t: '📏 Tính từ' },
+  { id: 'ko-adj-5', w: '빠르다', r: 'ppareuda', m: 'nhanh', ex: '기차가 빨라요.', exv: 'Tàu nhanh.', t: '📏 Tính từ' },
+  { id: 'ko-adj-6', w: '느리다', r: 'neurida', m: 'chậm', ex: '버스가 느려요.', exv: 'Xe buýt chậm.', t: '📏 Tính từ' },
+  { id: 'ko-adj-7', w: '새롭다', r: 'saeropda', m: 'mới', ex: '새로운 가방이에요.', exv: 'Là cái túi mới.', t: '📏 Tính từ' },
+  { id: 'ko-adj-8', w: '비슷하다', r: 'biseutada', m: 'giống / tương tự', ex: '두 개가 비슷해요.', exv: 'Hai cái giống nhau.', t: '📏 Tính từ' },
 ];

@@ -167,4 +167,22 @@ window.ZH_VOCAB = [
   { id: 'zh-home-6', w: '床', r: 'chuáng', m: 'giường', ex: '床很舒服。', exv: 'Giường êm.', t: '🏠 Trong nhà' },
   { id: 'zh-home-7', w: '电视', r: 'diànshì', m: 'tivi', ex: '我看电视。', exv: 'Tôi xem tivi.', t: '🏠 Trong nhà' },
   { id: 'zh-home-8', w: '灯', r: 'dēng', m: 'đèn', ex: '请开灯。', exv: 'Xin bật đèn.', t: '🏠 Trong nhà' },
+  // ❓ Từ để hỏi
+  { id: 'zh-q-1', w: '谁', r: 'shéi', m: 'ai', ex: '他是谁？', exv: 'Anh ấy là ai?', t: '❓ Từ để hỏi' },
+  { id: 'zh-q-2', w: '什么', r: 'shénme', m: 'cái gì', ex: '这是什么？', exv: 'Đây là cái gì?', t: '❓ Từ để hỏi' },
+  { id: 'zh-q-3', w: '什么时候', r: 'shénme shíhou', m: 'khi nào', ex: '你什么时候来？', exv: 'Khi nào bạn đến?', t: '❓ Từ để hỏi' },
+  { id: 'zh-q-4', w: '为什么', r: 'wèishénme', m: 'tại sao', ex: '你为什么迟到？', exv: 'Tại sao bạn đến muộn?', t: '❓ Từ để hỏi' },
+  { id: 'zh-q-5', w: '怎么', r: 'zěnme', m: 'như thế nào', ex: '怎么去车站？', exv: 'Đi đến bến xe như thế nào?', t: '❓ Từ để hỏi' },
+  { id: 'zh-q-6', w: '哪个', r: 'nǎge', m: 'cái nào', ex: '你要哪个？', exv: 'Bạn muốn cái nào?', t: '❓ Từ để hỏi' },
+  { id: 'zh-q-7', w: '几', r: 'jǐ', m: 'mấy (số nhỏ)', ex: '你几岁？', exv: 'Bạn mấy tuổi?', t: '❓ Từ để hỏi' },
+  { id: 'zh-q-8', w: '多少', r: 'duōshao', m: 'bao nhiêu (số lượng)', ex: '有多少人？', exv: 'Có bao nhiêu người?', t: '❓ Từ để hỏi' },
+  // 📏 Tính từ
+  { id: 'zh-adj-1', w: '大', r: 'dà', m: 'to / lớn', ex: '房子很大。', exv: 'Nhà rất to.', t: '📏 Tính từ' },
+  { id: 'zh-adj-2', w: '小', r: 'xiǎo', m: 'nhỏ', ex: '房间很小。', exv: 'Phòng rất nhỏ.', t: '📏 Tính từ' },
+  { id: 'zh-adj-3', w: '多', r: 'duō', m: 'nhiều', ex: '人很多。', exv: 'Rất nhiều người.', t: '📏 Tính từ' },
+  { id: 'zh-adj-4', w: '少', r: 'shǎo', m: 'ít', ex: '钱很少。', exv: 'Rất ít tiền.', t: '📏 Tính từ' },
+  { id: 'zh-adj-5', w: '快', r: 'kuài', m: 'nhanh', ex: '火车很快。', exv: 'Tàu rất nhanh.', t: '📏 Tính từ' },
+  { id: 'zh-adj-6', w: '慢', r: 'màn', m: 'chậm', ex: '公共汽车很慢。', exv: 'Xe buýt chậm.', t: '📏 Tính từ' },
+  { id: 'zh-adj-7', w: '新', r: 'xīn', m: 'mới', ex: '这是新包。', exv: 'Đây là túi mới.', t: '📏 Tính từ' },
+  { id: 'zh-adj-8', w: '旧', r: 'jiù', m: 'cũ', ex: '这本书很旧。', exv: 'Cuốn sách này cũ.', t: '📏 Tính từ' },
 ];
