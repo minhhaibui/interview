@@ -475,6 +475,15 @@ test('wiring: 🌏 Tiến độ học ngoại ngữ ở Dashboard', () => {
   assert.ok(css.includes('.lang-prog') && css.includes('.lp-fill'), 'styles.css thiếu .lang-prog/.lp-fill');
 });
 
+test('wiring: huy hiệu học ngoại ngữ trong computeBadges', () => {
+  const b = APP.slice(APP.indexOf('function computeBadges'), APP.indexOf('function goalRing'));
+  for (const id of ['lang_start', 'ko20', 'zh20', 'polyglot']) {
+    assert.ok(new RegExp(`B\\('${id}'`).test(b), `thiếu huy hiệu ${id}`);
+  }
+  assert.ok(/const koM = langProgress\('ko'\)\.mastered/.test(b), 'chưa tính koM từ langProgress');
+  assert.ok(/koM \+ zhM >= 50/.test(b), 'điều kiện polyglot (Hàn+Trung ≥50) sai/thiếu');
+});
+
 test('đếm ngược PV: daysUntil tính đúng + card render + PREP_KEYS', () => {
   const fnM = APP.match(/function daysUntil\(dateStr, now = Date\.now\(\)\) \{[\s\S]*?\n}/);
   assert.ok(fnM, 'thiếu hàm daysUntil');

@@ -536,6 +536,9 @@ function computeBadges() {
   const wpm = store.get('prep-code-best', {}).wpm || 0;
   const pomoTotal = Object.values(store.get('prep-pomo', {})).reduce((a, b) => a + b, 0);
   const designDrills = new Set(store.get('prep-design-history', []).map(h => h.id)).size;
+  // 🌏 Ngoại ngữ: số từ đã thuộc (box≥2) mỗi tiếng + số ngoại ngữ đã bắt đầu học
+  const koM = langProgress('ko').mastered, zhM = langProgress('zh').mastered;
+  const foreignLangs = ['ko', 'zh'].filter(l => langProgress(l).started > 0).length;
   // Độ phủ 4 quiz + sửa bug — cùng nguồn bankCoverage với readiness/think-stats
   const oqCov = coverageOf('output'), apiCov = coverageOf('api'), sqlCov = coverageOf('sql'), cliCov = coverageOf('cli');
   const dbgCov = bankCoverage(window.DEBUG_CHALLENGES, 'prep-debug-solved');
@@ -589,6 +592,10 @@ function computeBadges() {
     B('pomo50', '🍅', '50 pomodoro', pomoTotal >= 50, `${pomoTotal}/50 pomodoro`),
     B('cap1', '🧪', 'Thực chiến · nghiệm thu 1 upgrade', capUpsDone >= 1, `${capUpsDone}/${capUps.length || 5} upgrade capstone xong`),
     B('capAll', '🏗️', 'Full-stack sẹo · đủ 5 upgrade', capUps.length > 0 && capUpsDone >= capUps.length, `${capUpsDone}/${capUps.length || 5} upgrade capstone xong`),
+    B('lang_start', '🌏', 'Chào thế giới · học ngoại ngữ mới', foreignLangs >= 1, `Đã bắt đầu ${foreignLangs} ngoại ngữ (Hàn/Trung)`),
+    B('ko20', '🇰🇷', 'Nhập môn tiếng Hàn · 20 từ', koM >= 20, `Thuộc ${koM}/20 từ tiếng Hàn`),
+    B('zh20', '🇨🇳', 'Nhập môn tiếng Trung · 20 từ', zhM >= 20, `Thuộc ${zhM}/20 từ tiếng Trung`),
+    B('polyglot', '🗣️', 'Đa ngữ · thuộc 50 từ Hàn+Trung', koM + zhM >= 50, `Thuộc ${koM + zhM}/50 từ Hàn+Trung`),
     B('week1', '✅', 'Hoàn thành 1 tuần', weeksDone >= 1, `${weeksDone}/${weeks.length || 12} tuần xong`),
     B('weekAll', '🏁', 'Hoàn thành 12 tuần', weeks.length > 0 && weeksDone >= weeks.length, `${weeksDone}/${weeks.length || 12} tuần xong`),
   ];
