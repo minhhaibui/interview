@@ -367,6 +367,14 @@ test('wiring: chế độ 🎓 Thi thử đủ HTML + toggle + engine + dọn ti
   assert.ok(/function buildSprintExamQueue\b/.test(APP), 'thiếu buildSprintExamQueue');
   assert.ok(/id="exam-go-sprint"/.test(APP) && /startExam\(15, 10, true\)/.test(APP), 'màn bắt đầu thiếu nút 🔥 nước rút');
   assert.ok(/sprint: examSprint/.test(APP), 'lịch sử thi chưa ghi cờ sprint');
+  // 💾 bài thi dở sống qua reload (F5 không thoát án hết giờ)
+  assert.ok(/function saveExamState\b/.test(APP) && /function restoreExamState\b/.test(APP), 'thiếu save/restoreExamState');
+  const keys2 = APP.slice(APP.indexOf('const PREP_KEYS'), APP.indexOf('const PREP_KEYS') + 2000);
+  assert.ok(!/'prep-exam-state'/.test(keys2), 'prep-exam-state KHÔNG được vào PREP_KEYS (bài dở là của riêng thiết bị)');
+  const resetBlock = APP.slice(APP.indexOf("dash-reset"), APP.indexOf("dash-reset") + 500);
+  assert.ok(/clearExamState\(\)/.test(resetBlock), 'reset dữ liệu chưa xoá kèm bài thi dở');
+  const finBlock = APP.slice(APP.indexOf('function finishExam'), APP.indexOf('function finishExam') + 800);
+  assert.ok(/clearExamState\(\)/.test(finBlock), 'finishExam chưa xoá bài dở đã lưu');
 });
 
 test('đếm ngược PV: daysUntil tính đúng + card render + PREP_KEYS', () => {
