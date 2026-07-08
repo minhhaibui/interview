@@ -77,4 +77,22 @@ window.KO_VOCAB = [
   { id: 'ko-place-6', w: '공항', r: 'gonghang', m: 'sân bay', ex: '공항에 가요.', exv: 'Tôi đi sân bay.', t: '📍 Nơi chốn' },
   { id: 'ko-place-7', w: '어디', r: 'eodi', m: 'ở đâu', ex: '어디에 있어요?', exv: 'Ở đâu vậy?', t: '📍 Nơi chốn' },
   { id: 'ko-place-8', w: '여기', r: 'yeogi', m: 'ở đây', ex: '여기 앉으세요.', exv: 'Mời ngồi đây.', t: '📍 Nơi chốn' },
+  // 🎨 Màu sắc
+  { id: 'ko-color-1', w: '색깔', r: 'saekkkal', m: 'màu sắc', ex: '무슨 색깔을 좋아해요?', exv: 'Bạn thích màu gì?', t: '🎨 Màu sắc' },
+  { id: 'ko-color-2', w: '빨간색', r: 'ppalgansaek', m: 'màu đỏ', ex: '저는 빨간색을 좋아해요.', exv: 'Tôi thích màu đỏ.', t: '🎨 Màu sắc' },
+  { id: 'ko-color-3', w: '파란색', r: 'paransaek', m: 'màu xanh dương', ex: '하늘은 파란색이에요.', exv: 'Bầu trời màu xanh.', t: '🎨 Màu sắc' },
+  { id: 'ko-color-4', w: '노란색', r: 'noransaek', m: 'màu vàng', ex: '바나나는 노란색이에요.', exv: 'Chuối màu vàng.', t: '🎨 Màu sắc' },
+  { id: 'ko-color-5', w: '초록색', r: 'choroksaek', m: 'màu xanh lá', ex: '나무는 초록색이에요.', exv: 'Cây màu xanh lá.', t: '🎨 Màu sắc' },
+  { id: 'ko-color-6', w: '검은색', r: 'geomeunsaek', m: 'màu đen', ex: '검은색 가방이 있어요.', exv: 'Tôi có cái túi màu đen.', t: '🎨 Màu sắc' },
+  { id: 'ko-color-7', w: '흰색', r: 'huinsaek', m: 'màu trắng', ex: '눈은 흰색이에요.', exv: 'Tuyết màu trắng.', t: '🎨 Màu sắc' },
+  { id: 'ko-color-8', w: '분홍색', r: 'bunhongsaek', m: 'màu hồng', ex: '분홍색 꽃이 예뻐요.', exv: 'Hoa màu hồng đẹp.', t: '🎨 Màu sắc' },
+  // 🛒 Mua sắm
+  { id: 'ko-shop-1', w: '얼마예요', r: 'eolmayeyo', m: 'bao nhiêu tiền', ex: '이거 얼마예요?', exv: 'Cái này bao nhiêu tiền?', t: '🛒 Mua sắm' },
+  { id: 'ko-shop-2', w: '비싸요', r: 'bissayo', m: 'đắt', ex: '너무 비싸요.', exv: 'Đắt quá.', t: '🛒 Mua sắm' },
+  { id: 'ko-shop-3', w: '싸요', r: 'ssayo', m: 'rẻ', ex: '이 가게는 싸요.', exv: 'Cửa hàng này rẻ.', t: '🛒 Mua sắm' },
+  { id: 'ko-shop-4', w: '돈', r: 'don', m: 'tiền', ex: '돈이 없어요.', exv: 'Tôi không có tiền.', t: '🛒 Mua sắm' },
+  { id: 'ko-shop-5', w: '사다', r: 'sada', m: 'mua', ex: '커피를 사요.', exv: 'Tôi mua cà phê.', t: '🛒 Mua sắm' },
+  { id: 'ko-shop-6', w: '팔다', r: 'palda', m: 'bán', ex: '여기서 과일을 팔아요.', exv: 'Ở đây bán trái cây.', t: '🛒 Mua sắm' },
+  { id: 'ko-shop-7', w: '시장', r: 'sijang', m: 'chợ', ex: '시장에 가요.', exv: 'Tôi đi chợ.', t: '🛒 Mua sắm' },
+  { id: 'ko-shop-8', w: '가게', r: 'gage', m: 'cửa hàng', ex: '가게가 문을 닫았어요.', exv: 'Cửa hàng đóng cửa rồi.', t: '🛒 Mua sắm' },
 ];

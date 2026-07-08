@@ -77,4 +77,22 @@ window.ZH_VOCAB = [
   { id: 'zh-place-6', w: '哪里', r: 'nǎlǐ', m: 'ở đâu', ex: '你在哪里？', exv: 'Bạn đang ở đâu?', t: '📍 Nơi chốn' },
   { id: 'zh-place-7', w: '这里', r: 'zhèlǐ', m: 'ở đây', ex: '请来这里。', exv: 'Mời đến đây.', t: '📍 Nơi chốn' },
   { id: 'zh-place-8', w: '商店', r: 'shāngdiàn', m: 'cửa hàng', ex: '商店几点开门？', exv: 'Cửa hàng mấy giờ mở cửa?', t: '📍 Nơi chốn' },
+  // 🎨 Màu sắc
+  { id: 'zh-color-1', w: '颜色', r: 'yánsè', m: 'màu sắc', ex: '你喜欢什么颜色？', exv: 'Bạn thích màu gì?', t: '🎨 Màu sắc' },
+  { id: 'zh-color-2', w: '红色', r: 'hóngsè', m: 'màu đỏ', ex: '我喜欢红色。', exv: 'Tôi thích màu đỏ.', t: '🎨 Màu sắc' },
+  { id: 'zh-color-3', w: '蓝色', r: 'lánsè', m: 'màu xanh dương', ex: '天空是蓝色的。', exv: 'Bầu trời màu xanh.', t: '🎨 Màu sắc' },
+  { id: 'zh-color-4', w: '黄色', r: 'huángsè', m: 'màu vàng', ex: '香蕉是黄色的。', exv: 'Chuối màu vàng.', t: '🎨 Màu sắc' },
+  { id: 'zh-color-5', w: '绿色', r: 'lǜsè', m: 'màu xanh lá', ex: '树是绿色的。', exv: 'Cây màu xanh lá.', t: '🎨 Màu sắc' },
+  { id: 'zh-color-6', w: '黑色', r: 'hēisè', m: 'màu đen', ex: '我有一个黑色的包。', exv: 'Tôi có một cái túi màu đen.', t: '🎨 Màu sắc' },
+  { id: 'zh-color-7', w: '白色', r: 'báisè', m: 'màu trắng', ex: '雪是白色的。', exv: 'Tuyết màu trắng.', t: '🎨 Màu sắc' },
+  { id: 'zh-color-8', w: '粉色', r: 'fěnsè', m: 'màu hồng', ex: '粉色的花很漂亮。', exv: 'Hoa màu hồng rất đẹp.', t: '🎨 Màu sắc' },
+  // 🛒 Mua sắm
+  { id: 'zh-shop-1', w: '多少钱', r: 'duōshǎo qián', m: 'bao nhiêu tiền', ex: '这个多少钱？', exv: 'Cái này bao nhiêu tiền?', t: '🛒 Mua sắm' },
+  { id: 'zh-shop-2', w: '贵', r: 'guì', m: 'đắt', ex: '太贵了。', exv: 'Đắt quá.', t: '🛒 Mua sắm' },
+  { id: 'zh-shop-3', w: '便宜', r: 'piányi', m: 'rẻ', ex: '这家店很便宜。', exv: 'Cửa hàng này rẻ.', t: '🛒 Mua sắm' },
+  { id: 'zh-shop-4', w: '钱', r: 'qián', m: 'tiền', ex: '我没有钱。', exv: 'Tôi không có tiền.', t: '🛒 Mua sắm' },
+  { id: 'zh-shop-5', w: '买', r: 'mǎi', m: 'mua', ex: '我要买咖啡。', exv: 'Tôi muốn mua cà phê.', t: '🛒 Mua sắm' },
+  { id: 'zh-shop-6', w: '卖', r: 'mài', m: 'bán', ex: '这里卖水果。', exv: 'Ở đây bán trái cây.', t: '🛒 Mua sắm' },
+  { id: 'zh-shop-7', w: '市场', r: 'shìchǎng', m: 'chợ', ex: '我去市场。', exv: 'Tôi đi chợ.', t: '🛒 Mua sắm' },
+  { id: 'zh-shop-8', w: '超市', r: 'chāoshì', m: 'siêu thị', ex: '超市在那边。', exv: 'Siêu thị ở đằng kia.', t: '🛒 Mua sắm' },
 ];
