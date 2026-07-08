@@ -335,6 +335,27 @@ test('wiring: chế độ 🔁 Ôn câu sai đủ HTML + toggle + badge + render
   assert.ok(/startMixed\(10\)/.test(APP), 'nút trộn nhanh chưa gọi startMixed(10)');
 });
 
+test('wiring: chế độ 🎓 Thi thử đủ HTML + toggle + engine + dọn timer + PREP_KEYS', () => {
+  assert.ok(HTML.includes('id="think-exam"'), 'thiếu #think-exam');
+  assert.ok(HTML.includes('id="exam-body"'), 'thiếu #exam-body');
+  assert.ok(HTML.includes('data-mode="exam"'), 'thiếu nút mode exam');
+  assert.ok(/document\.getElementById\('think-exam'\)\.hidden = m !== 'exam'/.test(APP),
+    'setThinkMode chưa toggle think-exam');
+  assert.ok(/if \(m === 'exam'\) renderExam\(\)/.test(APP), 'setThinkMode chưa gọi renderExam khi vào mode');
+  assert.ok(/function buildExamQueue\b/.test(APP) && /function renderExam\b/.test(APP) &&
+    /function startExam\b/.test(APP) && /function answerExam\b/.test(APP) && /function finishExam\b/.test(APP),
+    'thiếu hàm engine thi thử');
+  // Rời tab / đổi mode phải dừng ticker (bài dở giữ nguyên, đồng hồ tính theo deadline examEndMs)
+  const clears = APP.match(/clearInterval\(examTimerId\)/g) || [];
+  assert.ok(clears.length >= 3, 'switchView/setThinkMode/showExamQ chưa dọn examTimerId đủ chỗ');
+  // Câu sai của bài thi phải đổ về hàng đợi 🔁 và câu đúng tính độ phủ (doneKey)
+  const fin = APP.slice(APP.indexOf('function finishExam'));
+  assert.ok(/recordWrong\(item\.mode, item\.q\.id\)/.test(fin), 'finishExam chưa recordWrong câu sai');
+  assert.ok(/clearWrong\(item\.mode, item\.q\.id\)/.test(fin), 'finishExam chưa clearWrong câu đúng');
+  const keys = APP.slice(APP.indexOf('const PREP_KEYS'), APP.indexOf('const PREP_KEYS') + 2000);
+  assert.ok(/'prep-exam-history'/.test(keys), 'PREP_KEYS thiếu prep-exam-history (sync/export/reset sẽ bỏ sót)');
+});
+
 test('đếm ngược PV: daysUntil tính đúng + card render + PREP_KEYS', () => {
   const fnM = APP.match(/function daysUntil\(dateStr, now = Date\.now\(\)\) \{[\s\S]*?\n}/);
   assert.ok(fnM, 'thiếu hàm daysUntil');
@@ -512,7 +533,7 @@ test('wiring: tính năng AI chấm Mock có đủ id + helper + wiring', () => 
 });
 
 test('regression: switchView tắt mic (wrRecog/aiRecog) + TTS khi rời tab', () => {
-  const block = APP.slice(APP.indexOf('function switchView'), APP.indexOf('function switchView') + 900);
+  const block = APP.slice(APP.indexOf('function switchView'), APP.indexOf('function switchView') + 1400);
   assert.ok(/speechSynthesis\.cancel\(\)/.test(block), 'switchView chưa cancel TTS');
   assert.ok(/wrRecog\.abort\(\)/.test(block), 'switchView chưa abort mic Luyện viết');
   assert.ok(/aiRecog\.abort\(\)/.test(block), 'switchView chưa abort mic Phỏng vấn AI');

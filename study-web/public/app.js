@@ -250,6 +250,7 @@ function switchView(name) {
   if (typeof iqTimerId !== 'undefined') clearInterval(iqTimerId); // rời tab → dừng bài test IQ đang chạy
   if (typeof dgTimerId !== 'undefined' && dgTimerId) { clearInterval(dgTimerId); dgTimerId = null; } // dừng đồng hồ drill thiết kế
   if (typeof mkTimerId !== 'undefined') clearInterval(mkTimerId); // dừng đồng hồ Mock đang chạy ngầm
+  if (typeof examTimerId !== 'undefined' && examTimerId) { clearInterval(examTimerId); examTimerId = null; } // dừng ticker Thi thử (bài dở vẫn giữ, quay lại chạy tiếp theo deadline)
   try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch { /* trình duyệt không hỗ trợ */ } // tắt TTS đang đọc
   try { if (wrRecog) { wrRecog.abort(); wrRecog = null; } } catch { /* noop */ } // tắt mic Luyện viết khi rời tab
   stopDictation(); // tắt micro 🎙️ nói-để-điền (Mock/STAR) khi rời tab
@@ -3081,7 +3082,7 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-api-done', 'prep-api-best', 'prep-sql-done', 'prep-sql-best', 'prep-cli-done', 'prep-cli-best',
   'prep-en-done', 'prep-sit-done', 'prep-readiness-log',
   'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date',
-  'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned'];
+  'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned', 'prep-exam-history'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */
@@ -3933,7 +3934,12 @@ function setThinkMode(m) {
   document.getElementById('think-sql').hidden = m !== 'sql';
   document.getElementById('think-cli').hidden = m !== 'cli';
   document.getElementById('think-review').hidden = m !== 'review';
+  document.getElementById('think-exam').hidden = m !== 'exam';
   if (m === 'review') renderReview();
+  // Rời/vào mode Thi thử: ticker dừng khi rời, vào lại thì renderExam tự nối tiếp bài đang dở
+  // (đồng hồ tính theo deadline examEndMs nên tạm rời không "câu giờ" được; hết hạn thì tự nộp).
+  if (m !== 'exam' && examTimerId) { clearInterval(examTimerId); examTimerId = null; }
+  if (m === 'exam') renderExam();
   refreshThinkBadges();
   // Quay lại mode IQ khi đang dở Bài Test (có tính giờ) → khởi động lại đồng hồ
   // (switchView/đổi mode đã clearInterval; tickIQTest tính theo startMs nên không lệch, và tự nộp nếu hết giờ).
@@ -4417,6 +4423,160 @@ function finishReview() {
       <button id="review-again" class="dg-go">${k.btn}</button>
     </div>`;
   document.getElementById('review-again').onclick = k.act;
+}
+
+// ============ 🎓 THI THỬ (bài kiểm tra tổng hợp có tính giờ) ============
+// Khác các quiz luyện: không hiện đúng/sai giữa chừng, nộp xong mới chấm — mô phỏng screening test.
+// Đồng hồ tính theo DEADLINE (examEndMs) chứ không đếm tick, nên rời tab/đổi mode không câu giờ được.
+
+let examQueue = [], examIdx = 0, examAnswers = [];
+let examEndMs = 0, examDurSec = 0, examTimerId = null;
+
+const examHistory = () => store.get('prep-exam-history', []);
+const examRunning = () => examEndMs > 0 && examIdx < examQueue.length;
+
+/** Bốc n câu XEN KẼ ĐỀU mọi mode trong QUIZ_MODES (mỗi bank đã trộn) → đề phủ rộng, không dồn một mảng. */
+function buildExamQueue(n) {
+  const banks = shuffleArr(Object.keys(QUIZ_MODES))
+    .map(mode => ({ mode, qs: shuffleArr(QUIZ_MODES[mode].data() || []) }))
+    .filter(b => b.qs.length);
+  const out = [];
+  for (let round = 0; out.length < n && banks.some(b => round < b.qs.length); round++) {
+    for (const b of banks) {
+      if (out.length >= n) break;
+      if (round < b.qs.length) out.push({ mode: b.mode, q: b.qs[round] });
+    }
+  }
+  return shuffleArr(out);
+}
+
+function renderExam() {
+  const el = document.getElementById('exam-body');
+  if (!el) return;
+  if (examRunning()) return showExamQ(); // đang dở bài (vd vừa quay lại tab) → hiện tiếp câu hiện tại
+  const hist = examHistory();
+  const best = hist.length ? Math.max(...hist.map(h => h.pct)) : 0;
+  const rows = hist.slice(-5).reverse().map(h =>
+    `<li>${h.pct >= 80 ? '🌟' : h.pct >= 50 ? '👍' : '📚'} <b>${h.right}/${h.n}</b> (${h.pct}%) · ${fmtClock(h.secs)}${h.timeout ? ' · ⏰ hết giờ' : ''}</li>`).join('');
+  el.innerHTML = `
+    <div class="oq-start">
+      ${hist.length ? `<p>Đã thi <b>${hist.length}</b> lần · điểm cao nhất <b>${best}%</b>.</p><ul class="exam-hist">${rows}</ul>` : '<p>Chưa thi lần nào — làm một đề để biết mình đang ở đâu nhé.</p>'}
+      <div class="review-actions">
+        <button id="exam-go-20" class="dg-go">🎓 Thi 20 câu · 15 phút</button>
+        <button id="exam-go-10" class="dg-go dg-link">⚡ Thi nhanh 10 câu · 7 phút</button>
+      </div>
+    </div>`;
+  document.getElementById('exam-go-20').onclick = () => startExam(20, 15);
+  document.getElementById('exam-go-10').onclick = () => startExam(10, 7);
+}
+
+function startExam(n, mins) {
+  examQueue = buildExamQueue(n);
+  if (!examQueue.length) { renderExam(); return; }
+  examIdx = 0; examAnswers = [];
+  examDurSec = mins * 60;
+  examEndMs = Date.now() + examDurSec * 1000;
+  showExamQ();
+}
+
+const fmtClock = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+function tickExam() {
+  const left = Math.max(0, Math.round((examEndMs - Date.now()) / 1000));
+  const el = document.getElementById('exam-clock');
+  if (el) { el.textContent = `⏱ ${fmtClock(left)}`; el.classList.toggle('low', left <= 60); }
+  if (left <= 0) finishExam(true);
+}
+
+function showExamQ() {
+  const el = document.getElementById('exam-body');
+  if (!el) return;
+  const item = examQueue[examIdx];
+  if (!item) return finishExam(false);
+  const cfg = QUIZ_MODES[item.mode], q = item.q;
+  el.innerHTML = `
+    <div class="oq-quiz">
+      <div class="oq-bar"><span>Câu ${examIdx + 1}/${examQueue.length}</span><span id="exam-clock" class="iqt-timer">⏱ …</span><span class="oq-topic">${cfg.label}</span></div>
+      <div class="oq-ask">${cfg.ask}</div>
+      ${cfg.questionHtml(q)}
+      <div class="oq-opts">${shuffledOptsHtml(q, cfg.optionHtml)}</div>
+      <p class="exam-note">Chọn đáp án là <b>qua câu luôn</b> (không hiện đúng/sai — như thi thật). <button id="exam-skip" class="exam-skip" type="button">⏭ Bỏ qua câu này</button></p>
+    </div>`;
+  if (cfg.highlight && window.hljs) el.querySelectorAll('pre code').forEach(c => { try { hljs.highlightElement(c); } catch { /* bỏ qua */ } });
+  el.querySelectorAll('.oq-opt').forEach(b => b.onclick = () => answerExam(+b.dataset.i));
+  document.getElementById('exam-skip').onclick = () => answerExam(null);
+  clearInterval(examTimerId);
+  tickExam();
+  if (examRunning()) examTimerId = setInterval(tickExam, 1000);
+}
+
+function answerExam(i) {
+  examAnswers[examIdx] = i;
+  examIdx++;
+  if (examIdx >= examQueue.length) finishExam(false); else showExamQ();
+}
+
+function finishExam(timedOut) {
+  clearInterval(examTimerId); examTimerId = null;
+  const total = examQueue.length;
+  if (!total || !examEndMs) { examEndMs = 0; return; } // gọi trùng (tick + answer) → chỉ chấm 1 lần
+  const secs = Math.min(examDurSec, Math.max(0, examDurSec - Math.round((examEndMs - Date.now()) / 1000)));
+  examEndMs = 0;
+  // Chấm cả bài: đúng → tính độ phủ + rời hàng đợi sai; sai/bỏ qua/chưa tới → vào hàng đợi 🔁
+  let right = 0, skipped = 0;
+  const wrongItems = [];
+  const byMode = {};
+  examQueue.forEach((item, idx) => {
+    const picked = examAnswers[idx];
+    const ok = picked === item.q.answer;
+    byMode[item.mode] = byMode[item.mode] || { right: 0, total: 0 };
+    byMode[item.mode].total++;
+    if (ok) {
+      right++; byMode[item.mode].right++;
+      clearWrong(item.mode, item.q.id);
+      const d = store.get(QUIZ_MODES[item.mode].doneKey, {}); d[item.q.id] = true; store.set(QUIZ_MODES[item.mode].doneKey, d);
+    } else {
+      if (picked == null) skipped++;
+      recordWrong(item.mode, item.q.id);
+      wrongItems.push({ item, picked });
+    }
+  });
+  const pct = Math.round(right / total * 100);
+  const hist = examHistory();
+  hist.push({ d: Date.now(), n: total, right, pct, secs, timeout: !!timedOut });
+  store.set('prep-exam-history', hist.slice(-30));
+  logActivity();
+  refreshThinkBadges();
+  const el = document.getElementById('exam-body');
+  if (!el) return; // nộp ngầm khi đang ở tab khác (hết giờ) → điểm đã lưu, quay lại thấy màn hình bắt đầu
+  const chips = Object.keys(byMode).map(m => `<span class="review-chip">${QUIZ_MODES[m].label}: <b>${byMode[m].right}/${byMode[m].total}</b></span>`).join('');
+  const wrongHtml = wrongItems.map(({ item, picked }) => {
+    const cfg = QUIZ_MODES[item.mode], q = item.q;
+    return `<div class="exam-wrong">
+      <div class="oq-topic">${cfg.label}${q.topic ? ' · ' + escHtml(q.topic) : ''}${picked == null ? ' · ⏭ đã bỏ qua' : ''}</div>
+      ${cfg.questionHtml(q)}
+      ${picked != null ? `<div class="exam-picked">❌ Bạn chọn: ${cfg.optionHtml(q.options[picked])}</div>` : ''}
+      <div class="exam-right">✅ Đáp án đúng: ${cfg.optionHtml(q.options[q.answer])}</div>
+      <p class="oq-explain">${escHtml(q.explain)}</p>
+      <div class="oq-fb-actions">${pinBtnHtml(item.mode, q.id)}</div>
+    </div>`;
+  }).join('');
+  el.innerHTML = `
+    <div class="oq-result">
+      <h2>${pct >= 80 ? '🌟' : pct >= 50 ? '👍' : '📚'} ${timedOut ? '⏰ Hết giờ! ' : ''}Kết quả: đúng ${right}/${total} (${pct}%)</h2>
+      <p>Thời gian: <b>${fmtClock(secs)}</b>/${fmtClock(examDurSec)}${skipped ? ` · bỏ qua <b>${skipped}</b> câu` : ''}${wrongItems.length ? ` · <b>${wrongItems.length}</b> câu chưa đúng đã vào hàng đợi 🔁 Ôn câu sai.` : ' · Không sai câu nào — quá đỉnh! 🎉'}</p>
+      <div class="review-chips">${chips}</div>
+      <div class="review-actions">
+        <button id="exam-again" class="dg-go">↻ Thi đề khác</button>
+        ${wrongItems.length ? '<button id="exam-review" class="dg-go dg-link">🔁 Ôn ngay câu sai</button>' : ''}
+      </div>
+      ${wrongItems.length ? `<h3 class="exam-wrong-h">Xem lại ${wrongItems.length} câu chưa đúng</h3>${wrongHtml}` : ''}
+    </div>`;
+  if (window.hljs) el.querySelectorAll('.exam-wrong pre code').forEach(c => { try { hljs.highlightElement(c); } catch { /* bỏ qua */ } });
+  bindPinBtns(el);
+  document.getElementById('exam-again').onclick = renderExam;
+  const rv = document.getElementById('exam-review');
+  if (rv) rv.onclick = () => setThinkMode('review');
 }
 
 // ============ 🌟 STAR BUILDER (soạn câu trả lời phỏng vấn hành vi) ============

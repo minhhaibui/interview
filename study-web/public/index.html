@@ -318,8 +318,9 @@
         <button class="think-mode" data-mode="cli">🖥️ CLI <span class="think-cov" data-cov="cli" hidden></span></button>
       </div>
       <div class="think-group">
-        <span class="think-glabel">🔁 Ôn lại</span>
+        <span class="think-glabel">🔁 Ôn &amp; thi</span>
         <button class="think-mode" data-mode="review">🔁 Câu sai <span id="review-count" class="think-badge" hidden></span></button>
+        <button class="think-mode" data-mode="exam">🎓 Thi thử</button>
       </div>
     </div>
 
@@ -399,6 +400,15 @@
         <h1>🔁 Ôn câu sai</h1>
         <p class="coding-intro">Mọi câu trắc nghiệm bạn từng chọn <b>sai</b> (Đoán output · API/HTTP · SQL · CLI) được gom về đây thành một phiên ôn tập trung. Trả lời đúng ở lần ôn này thì câu đó <b>tự rời khỏi hàng đợi</b>; còn sai thì giữ lại để ôn tiếp lần sau — đúng tinh thần học từ lỗi.</p>
         <div id="review-body"></div>
+      </div>
+    </div>
+
+    <!-- Chế độ THI THỬ (bài kiểm tra tổng hợp có tính giờ, mô phỏng vòng screening test) -->
+    <div id="think-exam" hidden>
+      <div class="oq-wrap">
+        <h1>🎓 Thi thử</h1>
+        <p class="coding-intro">Bài kiểm tra tổng hợp <b>có tính giờ</b> mô phỏng vòng screening test online: câu hỏi bốc đều từ mọi mảng trắc nghiệm (Đoán output · API/HTTP · SQL · CLI · Tiếng Anh · Tình huống). Khác lúc luyện: <b>không hiện đúng/sai giữa chừng</b> — nộp bài xong mới chấm và xem lại từng câu sai. Câu sai tự đưa vào hàng đợi 🔁 Ôn câu sai.</p>
+        <div id="exam-body"></div>
       </div>
     </div>
   </div>
