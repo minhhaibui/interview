@@ -22,6 +22,8 @@ window.ZH_VOCAB = [
   { id: 'zh-num-5', w: '五', r: 'wǔ', m: 'năm (5)', ex: '等五分钟。', exv: 'Đợi 5 phút.', t: '🔢 Số đếm' },
   { id: 'zh-num-6', w: '六', r: 'liù', m: 'sáu (6)', ex: '我六点下班。', exv: 'Tôi tan làm lúc 6 giờ.', t: '🔢 Số đếm' },
   { id: 'zh-num-7', w: '七', r: 'qī', m: 'bảy (7)', ex: '七月很热。', exv: 'Tháng 7 rất nóng.', t: '🔢 Số đếm' },
+  { id: 'zh-num-9', w: '八', r: 'bā', m: 'tám (8)', ex: '八点见。', exv: 'Gặp lúc 8 giờ.', t: '🔢 Số đếm' },
+  { id: 'zh-num-10', w: '九', r: 'jiǔ', m: 'chín (9)', ex: '九个人。', exv: '9 người.', t: '🔢 Số đếm' },
   { id: 'zh-num-8', w: '十', r: 'shí', m: 'mười (10)', ex: '十个人来了。', exv: '10 người đã đến.', t: '🔢 Số đếm' },
   // 👨‍👩‍👧 Gia đình
   { id: 'zh-fam-1', w: '爸爸', r: 'bàba', m: 'bố', ex: '爸爸在工作。', exv: 'Bố đang làm việc.', t: '👨‍👩‍👧 Gia đình' },

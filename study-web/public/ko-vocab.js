@@ -22,6 +22,8 @@ window.KO_VOCAB = [
   { id: 'ko-num-5', w: '오', r: 'o', m: 'năm (5)', ex: '오 분 후에 시작해요.', exv: 'Bắt đầu sau 5 phút.', t: '🔢 Số đếm' },
   { id: 'ko-num-6', w: '육', r: 'yuk', m: 'sáu (6)', ex: '육 개 주세요.', exv: 'Cho tôi 6 cái.', t: '🔢 Số đếm' },
   { id: 'ko-num-7', w: '칠', r: 'chil', m: 'bảy (7)', ex: '칠월에 휴가 가요.', exv: 'Tháng 7 tôi đi nghỉ.', t: '🔢 Số đếm' },
+  { id: 'ko-num-9', w: '팔', r: 'pal', m: 'tám (8)', ex: '팔 시에 만나요.', exv: 'Gặp nhau lúc 8 giờ.', t: '🔢 Số đếm' },
+  { id: 'ko-num-10', w: '구', r: 'gu', m: 'chín (9)', ex: '구 번 버스를 타세요.', exv: 'Hãy đi xe buýt số 9.', t: '🔢 Số đếm' },
   { id: 'ko-num-8', w: '십', r: 'sip', m: 'mười (10)', ex: '십 분 걸려요.', exv: 'Mất 10 phút.', t: '🔢 Số đếm' },
   // 👨‍👩‍👧 Gia đình
   { id: 'ko-fam-1', w: '아버지', r: 'abeoji', m: 'bố', ex: '아버지는 회사에 가세요.', exv: 'Bố đi làm ở công ty.', t: '👨‍👩‍👧 Gia đình' },
