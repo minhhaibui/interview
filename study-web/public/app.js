@@ -621,6 +621,8 @@ const STUDY_TIPS = [
   'Kafka đảm bảo thứ tự TRONG một partition, không phải toàn topic — chọn message key cho đúng.',
   'Đừng giấu khi chưa biết — hãy nói cách bạn sẽ tìm ra câu trả lời; interviewer đánh giá cao sự trung thực.',
   'Ôn tiếng Anh giao tiếp mỗi ngày một chút — phỏng vấn tốt cần cả kiến thức lẫn khả năng diễn đạt trôi chảy.',
+  'Mỗi tuần làm một bài 🎓 Thi thử có tính giờ — áp lực đồng hồ khi luyện giúp bạn bình tĩnh hơn ở bài test thật.',
+  'Điểm thi thử thấp ở mảng nào? Đề 🔥 nước rút (trong 🎓 Thi thử) sẽ tự dồn câu vào đúng mảng yếu đó cho bạn.',
 ];
 /** Chọn mẹo theo số thứ tự ngày (tách riêng để test thuần). */
 function pickTip(dayNum) { return STUDY_TIPS[((dayNum % STUDY_TIPS.length) + STUDY_TIPS.length) % STUDY_TIPS.length]; }
@@ -654,7 +656,7 @@ function interviewCountdownHtml() {
   }
   let msg, cls;
   if (d > 7) { msg = `Còn <b>${d}</b> ngày đến buổi phỏng vấn — cứ ôn đều mỗi ngày là ổn.`; cls = ''; }
-  else if (d > 1) { msg = `⏰ Chỉ còn <b>${d}</b> ngày — vào chế độ nước rút: 🔁 ôn câu sai + 🎯 mock mỗi ngày!`; cls = 'td-cd-soon'; }
+  else if (d > 1) { msg = `⏰ Chỉ còn <b>${d}</b> ngày — vào chế độ nước rút: 🔁 ôn câu sai + 🎓 thi thử đề 🔥 mảng yếu + 🎯 mock mỗi ngày!`; cls = 'td-cd-soon'; }
   else if (d === 1) { msg = `🔥 <b>Ngày mai</b> phỏng vấn! Ôn nhẹ điểm yếu, chuẩn bị câu hỏi ngược, ngủ đủ giấc.`; cls = 'td-cd-soon'; }
   else if (d === 0) { msg = `💪 <b>Hôm nay</b> là ngày phỏng vấn! Hít thở sâu, tự tin — bạn chuẩn bị kỹ rồi!`; cls = 'td-cd-today'; }
   else { msg = `Buổi phỏng vấn đặt ngày <b>${escHtml(date)}</b> đã qua. Chúc bạn kết quả tốt! 🍀`; cls = 'td-cd-past'; }
@@ -6144,7 +6146,7 @@ const ONBOARD_SLIDES = [
     body: `<ul class="onb-list">
       <li><b>🔥 Hôm nay</b> — việc cần ôn mỗi ngày + mục tiêu &amp; chuỗi streak</li>
       <li><b>📚 Học</b> — tài liệu, flashcards, luyện viết, gõ code</li>
-      <li><b>🧠 Luyện tập</b> — tư duy (code · IQ · quiz) &amp; thiết kế hệ thống</li>
+      <li><b>🧠 Luyện tập</b> — tư duy (code · IQ · quiz · 🎓 thi thử) &amp; thiết kế hệ thống</li>
       <li><b>🎯 Phỏng vấn</b> — mock, Q&amp;A tổng hợp, STAR kể chuyện</li>
       <li><b>📊 Theo dõi</b> — kế hoạch 12 tuần &amp; điểm sẵn sàng</li>
     </ul>`,
