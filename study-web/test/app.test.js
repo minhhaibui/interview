@@ -354,6 +354,10 @@ test('wiring: chế độ 🎓 Thi thử đủ HTML + toggle + engine + dọn ti
   assert.ok(/clearWrong\(item\.mode, item\.q\.id\)/.test(fin), 'finishExam chưa clearWrong câu đúng');
   const keys = APP.slice(APP.indexOf('const PREP_KEYS'), APP.indexOf('const PREP_KEYS') + 2000);
   assert.ok(/'prep-exam-history'/.test(keys), 'PREP_KEYS thiếu prep-exam-history (sync/export/reset sẽ bỏ sót)');
+  // Tích hợp: đồ thị Dashboard + task gợi ý ở tab Hôm nay
+  assert.ok(HTML.includes('id="dash-chart-exam"'), 'Dashboard thiếu #dash-chart-exam');
+  assert.ok(/barChart\('dash-chart-exam'/.test(APP), 'renderCharts chưa vẽ dash-chart-exam');
+  assert.ok(/id: 'td-exam'/.test(APP) && /function goToExam\b/.test(APP), 'tab Hôm nay thiếu task td-exam/goToExam');
 });
 
 test('đếm ngược PV: daysUntil tính đúng + card render + PREP_KEYS', () => {

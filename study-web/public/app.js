@@ -718,6 +718,12 @@ async function renderToday() {
   if (quizWrongN) tasks.push({ id: 'td-quiz-wrong', ic: '🔁', t: `Ôn ${quizWrongN} câu trắc nghiệm đã sai`, s: 'Output · API · SQL · CLI · Anh · Tình huống — gom về một phiên', go: goToQuizReview });
   const pinnedN = pinnedTotal();
   if (pinnedN) tasks.push({ id: 'td-pinned', ic: '📌', t: `Ôn ${pinnedN} câu đã ghim`, s: 'Câu bạn tự đánh dấu để xem lại trước giờ G', go: goToPinnedReview });
+  // 🎓 Chưa thi thử bao giờ, hoặc lần gần nhất đã quá 7 ngày → nhắc đo phong độ định kỳ
+  const exams = store.get('prep-exam-history', []);
+  const lastExam = exams.length ? exams[exams.length - 1].d : 0;
+  if (!exams.length || Date.now() - lastExam > 7 * 864e5) {
+    tasks.push({ id: 'td-exam', ic: '🎓', t: exams.length ? 'Thi thử — hơn 1 tuần chưa đo phong độ' : 'Làm bài thi thử đầu tiên', s: 'Đề trộn 6 mảng, có tính giờ, chấm như thi thật', go: goToExam });
+  }
   // 🧪 Capstone: theo tuần kế hoạch đã tới upgrade nào mà chưa tick đủ nghiệm thu → nhắc làm
   const capUp = (() => {
     const ups = window.CAPSTONE_UPGRADES || [];
@@ -849,6 +855,11 @@ function goToQuizReview() {
   switchView('coding');
   setThinkMode('review');
   startReview();
+}
+
+function goToExam() {
+  switchView('coding');
+  setThinkMode('exam');
 }
 
 function goToPinnedReview() {
@@ -3204,6 +3215,15 @@ function renderCharts() {
     const pct = Math.round((h.correct / h.total) * 100);
     return { title: `${h.date}: ${h.correct}/${h.total} (${pct}%)`, hPct: Math.max(pct, 4), cls: pct >= 80 ? 'ok' : 'low', label: pct };
   }), 'Chưa có buổi mock nào — đồ thị sẽ hiện khi bạn làm mock đầu tiên.');
+
+  // 🎓 Điểm các lần thi thử gần nhất
+  const exams = store.get('prep-exam-history', []).slice(-15);
+  barChart('dash-chart-exam', exams.map(h => ({
+    title: `${new Date(h.d).toLocaleDateString('vi-VN')}: ${h.right}/${h.n} (${h.pct}%) · ${fmtClock(h.secs)}${h.timeout ? ' · ⏰ hết giờ' : ''}`,
+    hPct: Math.max(h.pct, 4),
+    cls: h.pct >= 80 ? 'ok' : h.pct < 50 ? 'low' : '',
+    label: h.pct,
+  })), 'Chưa thi thử lần nào — vào 🧠 Tư duy → 🎓 Thi thử làm một đề đo phong độ.');
 
   // WPM các lượt gõ code gần nhất
   const wpms = store.get('prep-code-history', []).slice(-20);
