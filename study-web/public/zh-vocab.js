@@ -1,0 +1,80 @@
+/*
+ * 🇨🇳 Từ vựng tiếng Trung nhập môn (giản thể) — 64 từ/cụm, 8 chủ đề.
+ * Trường: id (zh-*), w (chữ Hán), r (pinyin có thanh điệu), m (nghĩa Việt),
+ *         ex (câu ví dụ tiếng Trung), exv (nghĩa Việt của ví dụ), t (chủ đề).
+ * app.js map sang thẻ flashcard: front=w, ipa=r, example=`${ex} — ${exv}` (TTS chỉ đọc phần trước "—").
+ */
+window.ZH_VOCAB = [
+  // 👋 Chào hỏi
+  { id: 'zh-hi-1', w: '你好', r: 'nǐ hǎo', m: 'xin chào', ex: '你好，我是海。', exv: 'Xin chào, tôi là Hải.', t: '👋 Chào hỏi' },
+  { id: 'zh-hi-2', w: '谢谢', r: 'xièxie', m: 'cảm ơn', ex: '谢谢你的帮助。', exv: 'Cảm ơn sự giúp đỡ của bạn.', t: '👋 Chào hỏi' },
+  { id: 'zh-hi-3', w: '对不起', r: 'duìbuqǐ', m: 'xin lỗi', ex: '对不起，我来晚了。', exv: 'Xin lỗi, tôi đến muộn.', t: '👋 Chào hỏi' },
+  { id: 'zh-hi-4', w: '是', r: 'shì', m: 'phải / đúng / là', ex: '是，没错。', exv: 'Phải, không sai.', t: '👋 Chào hỏi' },
+  { id: 'zh-hi-5', w: '不是', r: 'bú shì', m: 'không phải', ex: '不是我做的。', exv: 'Không phải tôi làm.', t: '👋 Chào hỏi' },
+  { id: 'zh-hi-6', w: '再见', r: 'zàijiàn', m: 'tạm biệt', ex: '明天见，再见!', exv: 'Mai gặp, tạm biệt!', t: '👋 Chào hỏi' },
+  { id: 'zh-hi-7', w: '没关系', r: 'méi guānxi', m: 'không sao đâu', ex: '没关系，别担心。', exv: 'Không sao, đừng lo.', t: '👋 Chào hỏi' },
+  { id: 'zh-hi-8', w: '请', r: 'qǐng', m: 'mời / xin (lịch sự)', ex: '请坐。', exv: 'Mời ngồi.', t: '👋 Chào hỏi' },
+  // 🔢 Số đếm
+  { id: 'zh-num-1', w: '一', r: 'yī', m: 'một (1)', ex: '我要一杯咖啡。', exv: 'Tôi muốn một ly cà phê.', t: '🔢 Số đếm' },
+  { id: 'zh-num-2', w: '二', r: 'èr', m: 'hai (2)', ex: '二楼在上面。', exv: 'Tầng 2 ở trên.', t: '🔢 Số đếm' },
+  { id: 'zh-num-3', w: '三', r: 'sān', m: 'ba (3)', ex: '我们有三个人。', exv: 'Chúng tôi có 3 người.', t: '🔢 Số đếm' },
+  { id: 'zh-num-4', w: '四', r: 'sì', m: 'bốn (4)', ex: '现在四点。', exv: 'Bây giờ là 4 giờ.', t: '🔢 Số đếm' },
+  { id: 'zh-num-5', w: '五', r: 'wǔ', m: 'năm (5)', ex: '等五分钟。', exv: 'Đợi 5 phút.', t: '🔢 Số đếm' },
+  { id: 'zh-num-6', w: '六', r: 'liù', m: 'sáu (6)', ex: '我六点下班。', exv: 'Tôi tan làm lúc 6 giờ.', t: '🔢 Số đếm' },
+  { id: 'zh-num-7', w: '七', r: 'qī', m: 'bảy (7)', ex: '七月很热。', exv: 'Tháng 7 rất nóng.', t: '🔢 Số đếm' },
+  { id: 'zh-num-8', w: '十', r: 'shí', m: 'mười (10)', ex: '十个人来了。', exv: '10 người đã đến.', t: '🔢 Số đếm' },
+  // 👨‍👩‍👧 Gia đình
+  { id: 'zh-fam-1', w: '爸爸', r: 'bàba', m: 'bố', ex: '爸爸在工作。', exv: 'Bố đang làm việc.', t: '👨‍👩‍👧 Gia đình' },
+  { id: 'zh-fam-2', w: '妈妈', r: 'māma', m: 'mẹ', ex: '妈妈做饭很好吃。', exv: 'Mẹ nấu ăn rất ngon.', t: '👨‍👩‍👧 Gia đình' },
+  { id: 'zh-fam-3', w: '哥哥', r: 'gēge', m: 'anh trai', ex: '我有一个哥哥。', exv: 'Tôi có một anh trai.', t: '👨‍👩‍👧 Gia đình' },
+  { id: 'zh-fam-4', w: '姐姐', r: 'jiějie', m: 'chị gái', ex: '姐姐是老师。', exv: 'Chị gái là giáo viên.', t: '👨‍👩‍👧 Gia đình' },
+  { id: 'zh-fam-5', w: '弟弟', r: 'dìdi', m: 'em trai', ex: '弟弟在上学。', exv: 'Em trai đang đi học.', t: '👨‍👩‍👧 Gia đình' },
+  { id: 'zh-fam-6', w: '妹妹', r: 'mèimei', m: 'em gái', ex: '妹妹很可爱。', exv: 'Em gái rất đáng yêu.', t: '👨‍👩‍👧 Gia đình' },
+  { id: 'zh-fam-7', w: '家', r: 'jiā', m: 'nhà / gia đình', ex: '我家有四口人。', exv: 'Nhà tôi có 4 người.', t: '👨‍👩‍👧 Gia đình' },
+  { id: 'zh-fam-8', w: '孩子', r: 'háizi', m: 'con / trẻ con', ex: '孩子们在玩。', exv: 'Bọn trẻ đang chơi.', t: '👨‍👩‍👧 Gia đình' },
+  // 🍚 Ăn uống
+  { id: 'zh-food-1', w: '饭', r: 'fàn', m: 'cơm / bữa ăn', ex: '你吃饭了吗？', exv: 'Bạn ăn cơm chưa?', t: '🍚 Ăn uống' },
+  { id: 'zh-food-2', w: '水', r: 'shuǐ', m: 'nước', ex: '请给我一杯水。', exv: 'Cho tôi xin một cốc nước.', t: '🍚 Ăn uống' },
+  { id: 'zh-food-3', w: '咖啡', r: 'kāfēi', m: 'cà phê', ex: '我喜欢喝咖啡。', exv: 'Tôi thích uống cà phê.', t: '🍚 Ăn uống' },
+  { id: 'zh-food-4', w: '茶', r: 'chá', m: 'trà', ex: '中国茶很有名。', exv: 'Trà Trung Quốc rất nổi tiếng.', t: '🍚 Ăn uống' },
+  { id: 'zh-food-5', w: '好吃', r: 'hǎochī', m: 'ngon', ex: '这个菜很好吃。', exv: 'Món này rất ngon.', t: '🍚 Ăn uống' },
+  { id: 'zh-food-6', w: '吃', r: 'chī', m: 'ăn', ex: '我们去吃午饭吧。', exv: 'Chúng ta đi ăn trưa đi.', t: '🍚 Ăn uống' },
+  { id: 'zh-food-7', w: '喝', r: 'hē', m: 'uống', ex: '多喝水。', exv: 'Uống nhiều nước vào.', t: '🍚 Ăn uống' },
+  { id: 'zh-food-8', w: '饭馆', r: 'fànguǎn', m: 'quán ăn / nhà hàng', ex: '这家饭馆很好。', exv: 'Quán ăn này rất tốt.', t: '🍚 Ăn uống' },
+  // ⏰ Thời gian
+  { id: 'zh-time-1', w: '今天', r: 'jīntiān', m: 'hôm nay', ex: '今天天气很好。', exv: 'Hôm nay thời tiết đẹp.', t: '⏰ Thời gian' },
+  { id: 'zh-time-2', w: '明天', r: 'míngtiān', m: 'ngày mai', ex: '明天见!', exv: 'Ngày mai gặp nhé!', t: '⏰ Thời gian' },
+  { id: 'zh-time-3', w: '昨天', r: 'zuótiān', m: 'hôm qua', ex: '昨天你做什么了？', exv: 'Hôm qua bạn làm gì?', t: '⏰ Thời gian' },
+  { id: 'zh-time-4', w: '现在', r: 'xiànzài', m: 'bây giờ', ex: '现在几点？', exv: 'Bây giờ mấy giờ?', t: '⏰ Thời gian' },
+  { id: 'zh-time-5', w: '早上', r: 'zǎoshang', m: 'buổi sáng', ex: '早上好!', exv: 'Chào buổi sáng!', t: '⏰ Thời gian' },
+  { id: 'zh-time-6', w: '晚上', r: 'wǎnshang', m: 'buổi tối', ex: '晚上有时间吗？', exv: 'Buổi tối có thời gian không?', t: '⏰ Thời gian' },
+  { id: 'zh-time-7', w: '时间', r: 'shíjiān', m: 'thời gian', ex: '我没有时间。', exv: 'Tôi không có thời gian.', t: '⏰ Thời gian' },
+  { id: 'zh-time-8', w: '周末', r: 'zhōumò', m: 'cuối tuần', ex: '周末我休息。', exv: 'Cuối tuần tôi nghỉ.', t: '⏰ Thời gian' },
+  // 💼 Công việc & IT
+  { id: 'zh-work-1', w: '公司', r: 'gōngsī', m: 'công ty', ex: '我在公司上班。', exv: 'Tôi làm việc ở công ty.', t: '💼 Công việc' },
+  { id: 'zh-work-2', w: '工作', r: 'gōngzuò', m: 'công việc / làm việc', ex: '我喜欢我的工作。', exv: 'Tôi thích công việc của mình.', t: '💼 Công việc' },
+  { id: 'zh-work-3', w: '会议', r: 'huìyì', m: 'cuộc họp', ex: '下午有会议。', exv: 'Buổi chiều có cuộc họp.', t: '💼 Công việc' },
+  { id: 'zh-work-4', w: '程序员', r: 'chéngxùyuán', m: 'lập trình viên', ex: '我是程序员。', exv: 'Tôi là lập trình viên.', t: '💼 Công việc' },
+  { id: 'zh-work-5', w: '电脑', r: 'diànnǎo', m: 'máy tính', ex: '我的电脑很快。', exv: 'Máy tính của tôi rất nhanh.', t: '💼 Công việc' },
+  { id: 'zh-work-6', w: '办公室', r: 'bàngōngshì', m: 'văn phòng', ex: '办公室在三楼。', exv: 'Văn phòng ở tầng 3.', t: '💼 Công việc' },
+  { id: 'zh-work-7', w: '同事', r: 'tóngshì', m: 'đồng nghiệp', ex: '同事们都很好。', exv: 'Đồng nghiệp đều rất tốt.', t: '💼 Công việc' },
+  { id: 'zh-work-8', w: '工资', r: 'gōngzī', m: 'lương', ex: '这个月的工资到了。', exv: 'Lương tháng này đã về.', t: '💼 Công việc' },
+  // 🗣️ Giao tiếp cơ bản
+  { id: 'zh-talk-1', w: '名字', r: 'míngzi', m: 'tên', ex: '你叫什么名字？', exv: 'Bạn tên là gì?', t: '🗣️ Giao tiếp' },
+  { id: 'zh-talk-2', w: '人', r: 'rén', m: 'người', ex: '我是越南人。', exv: 'Tôi là người Việt Nam.', t: '🗣️ Giao tiếp' },
+  { id: 'zh-talk-3', w: '朋友', r: 'péngyou', m: 'bạn / bạn bè', ex: '他是我的朋友。', exv: 'Anh ấy là bạn tôi.', t: '🗣️ Giao tiếp' },
+  { id: 'zh-talk-4', w: '汉语', r: 'Hànyǔ', m: 'tiếng Trung', ex: '我在学汉语。', exv: 'Tôi đang học tiếng Trung.', t: '🗣️ Giao tiếp' },
+  { id: 'zh-talk-5', w: '知道', r: 'zhīdào', m: 'biết', ex: '我知道了。', exv: 'Tôi biết rồi.', t: '🗣️ Giao tiếp' },
+  { id: 'zh-talk-6', w: '不知道', r: 'bù zhīdào', m: 'không biết', ex: '对不起，我不知道。', exv: 'Xin lỗi, tôi không biết.', t: '🗣️ Giao tiếp' },
+  { id: 'zh-talk-7', w: '好', r: 'hǎo', m: 'tốt / được', ex: '好，没问题。', exv: 'Được, không vấn đề gì.', t: '🗣️ Giao tiếp' },
+  { id: 'zh-talk-8', w: '请再说一遍', r: 'qǐng zài shuō yí biàn', m: 'xin nói lại lần nữa', ex: '请再说一遍，慢一点。', exv: 'Xin nói lại lần nữa, chậm một chút.', t: '🗣️ Giao tiếp' },
+  // 📍 Nơi chốn
+  { id: 'zh-place-1', w: '学校', r: 'xuéxiào', m: 'trường học', ex: '学校离家很近。', exv: 'Trường học gần nhà.', t: '📍 Nơi chốn' },
+  { id: 'zh-place-2', w: '医院', r: 'yīyuàn', m: 'bệnh viện', ex: '医院在哪里？', exv: 'Bệnh viện ở đâu?', t: '📍 Nơi chốn' },
+  { id: 'zh-place-3', w: '洗手间', r: 'xǐshǒujiān', m: 'nhà vệ sinh', ex: '洗手间在哪里？', exv: 'Nhà vệ sinh ở đâu?', t: '📍 Nơi chốn' },
+  { id: 'zh-place-4', w: '车站', r: 'chēzhàn', m: 'bến xe / ga', ex: '车站很远。', exv: 'Bến xe rất xa.', t: '📍 Nơi chốn' },
+  { id: 'zh-place-5', w: '机场', r: 'jīchǎng', m: 'sân bay', ex: '我去机场。', exv: 'Tôi đi sân bay.', t: '📍 Nơi chốn' },
+  { id: 'zh-place-6', w: '哪里', r: 'nǎlǐ', m: 'ở đâu', ex: '你在哪里？', exv: 'Bạn đang ở đâu?', t: '📍 Nơi chốn' },
+  { id: 'zh-place-7', w: '这里', r: 'zhèlǐ', m: 'ở đây', ex: '请来这里。', exv: 'Mời đến đây.', t: '📍 Nơi chốn' },
+  { id: 'zh-place-8', w: '商店', r: 'shāngdiàn', m: 'cửa hàng', ex: '商店几点开门？', exv: 'Cửa hàng mấy giờ mở cửa?', t: '📍 Nơi chốn' },
+];

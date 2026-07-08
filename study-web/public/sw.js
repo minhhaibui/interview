@@ -7,7 +7,7 @@
  *   - /api/* và các request cross-origin khác (Firebase, Anthropic): không can thiệp.
  * Đổi VERSION mỗi khi muốn ép xoá cache cũ.
  */
-const VERSION = 'v99';
+const VERSION = 'v100';
 const CACHE = `prep-${VERSION}`;
 const CDN_HOSTS = ['cdn.jsdelivr.net', 'www.gstatic.com'];
 
@@ -17,6 +17,7 @@ const PRECACHE = [
   'coding-problems.js', 'iq-questions.js', 'english-questions.js', 'situational-questions.js',
   'design-drills.js', 'output-quiz.js', 'debug-challenges.js', 'api-quiz.js', 'sql-drill.js', 'cli-quiz.js',
   'star-questions.js', 'reverse-questions.js', 'english-phrases.js', 'capstone-tracker.js',
+  'ko-vocab.js', 'zh-vocab.js',
   'icon.svg', 'manifest.webmanifest',
   'data/tree.json', 'data/snippets.json', 'data/docs.json',
 ];

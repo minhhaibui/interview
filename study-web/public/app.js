@@ -95,19 +95,20 @@ function srsDue(entry) {
   return entry.at + SRS_INTERVALS[entry.box || 0] * 864e5;
 }
 
-/** Lọc deck theo lựa chọn tuần / đến hạn / từ cứng đầu / kỹ thuật / giao tiếp */
-function filterDeck(week) {
+/** Lọc deck theo lựa chọn tuần / đến hạn / từ cứng đầu / kỹ thuật / giao tiếp.
+ *  deck mặc định là bộ tiếng Anh (DECK); tab Flashcards truyền fcDeck() để học Hàn/Trung. */
+function filterDeck(week, deck = DECK) {
   if (week === '__due__') {
     const srs = store.get('prep-srs', {});
-    return DECK.filter(c => srs[c.id] && srsDue(srs[c.id]) <= Date.now());
+    return deck.filter(c => srs[c.id] && srsDue(srs[c.id]) <= Date.now());
   }
   if (week === '__leech__') {
     const fails = store.get('prep-fails', {});
-    return DECK.filter(c => (fails[c.id] || 0) >= LEECH_THRESHOLD);
+    return deck.filter(c => (fails[c.id] || 0) >= LEECH_THRESHOLD);
   }
-  if (week === '__tech__') return DECK.filter(c => !c.daily);
-  if (week === '__daily__') return DECK.filter(c => c.daily);
-  return week ? DECK.filter(c => c.week === week) : [...DECK];
+  if (week === '__tech__') return deck.filter(c => !c.daily);
+  if (week === '__daily__') return deck.filter(c => c.daily);
+  return week ? deck.filter(c => c.week === week) : [...deck];
 }
 
 /** Ghi nhận một lượt học vào heatmap hoạt động */
@@ -835,7 +836,8 @@ function goToFlash(filter) {
 }
 function goToVocabTest() {
   switchView('flashcards');
-  loadDeck().then(() => { fillFcWeekSelect(); ftStart(); }); // mở thẳng màn Test gõ
+  // Test gõ hiện chỉ có bản tiếng Anh — đang học Hàn/Trung thì chuyển về Anh trước
+  loadDeck().then(() => { if (fcLang !== 'en') setFcLang('en'); fillFcWeekSelect(); ftStart(); });
 }
 async function goToWritingMix() {
   switchView('writing');
@@ -1111,8 +1113,41 @@ let DECK = [];       // toàn bộ card
 let fcQueue = [];    // hàng đợi phiên học hiện tại
 let fcIndex = 0;
 let fcLoaded = false;
-let fcReverse = store.get('prep-fc-dir', false); // false: Anh→Việt, true: Việt→Anh
+let fcReverse = store.get('prep-fc-dir', false); // false: Ngoại ngữ→Việt, true: Việt→Ngoại ngữ
 let fcAuto = store.get('prep-fc-auto', false);   // tự đọc to khi hiện/lật thẻ
+
+// ---------- 🌏 Đa ngôn ngữ flashcards (Anh từ md; Hàn/Trung từ bank tĩnh) ----------
+const FC_LANGS = {
+  en: { name: 'Anh', tts: 'en-US' },
+  ko: { name: 'Hàn', tts: 'ko-KR', bank: () => window.KO_VOCAB || [] },
+  zh: { name: 'Trung', tts: 'zh-CN', bank: () => window.ZH_VOCAB || [] },
+};
+let fcLang = FC_LANGS[store.get('prep-fc-lang', 'en')] ? store.get('prep-fc-lang', 'en') : 'en';
+const langDecks = {}; // cache bank Hàn/Trung đã map sang dạng thẻ
+
+/** Deck đang học ở tab Flashcards. SRS/leech dùng chung store — id bank có prefix ko-/zh- nên không va id thẻ Anh. */
+function fcDeck() {
+  if (fcLang === 'en') return DECK;
+  langDecks[fcLang] ??= FC_LANGS[fcLang].bank().map(v => ({
+    id: v.id, front: v.w, ipa: v.r, meaning: v.m,
+    example: `${v.ex} — ${v.exv}`, // speakCard chỉ đọc phần trước "—" → TTS không đọc phần dịch Việt
+    week: v.t, daily: true, lang: FC_LANGS[fcLang].tts,
+  }));
+  return langDecks[fcLang];
+}
+
+/** Đổi ngôn ngữ học: lưu chọn, ẩn Test gõ (chỉ có bản tiếng Anh), dựng lại bộ lọc + phiên. */
+function setFcLang(v) {
+  fcLang = FC_LANGS[v] ? v : 'en';
+  store.set('prep-fc-lang', fcLang);
+  const sel = document.getElementById('fc-lang');
+  if (sel && sel.value !== fcLang) sel.value = fcLang;
+  document.getElementById('fc-test-btn').hidden = fcLang !== 'en';
+  ftToggle(false); // đang dở màn test gõ thì đóng lại cho khỏi lệch deck
+  fillFcWeekSelect();
+  updateFcDirLabel();
+  startSession();
+}
 
 /** Tải file markdown thô (dùng chung cho flashcards + luyện viết) */
 function fetchMd(relPath) {
@@ -1149,6 +1184,10 @@ async function initFlashcards() {
 
   fillFcWeekSelect();
   updateFcDirLabel();
+  const langSel = document.getElementById('fc-lang');
+  langSel.value = fcLang;
+  langSel.addEventListener('change', () => setFcLang(langSel.value));
+  document.getElementById('fc-test-btn').hidden = fcLang !== 'en';
   document.getElementById('fc-week').addEventListener('change', startSession);
   document.getElementById('fc-shuffle').addEventListener('click', startSession);
   document.getElementById('fc-dir').addEventListener('click', () => {
@@ -1210,24 +1249,30 @@ function parseVocab(md, everyHeading = false) {
   return cards;
 }
 
-/** Dựng option tuần + 📬 đến hạn + 🔥 từ cứng đầu (đếm lại mỗi lần mở tab) */
+/** Dựng option tuần/chủ đề + 📬 đến hạn + 🔥 từ cứng đầu (đếm lại mỗi lần mở tab, theo ngôn ngữ đang học) */
 function fillFcWeekSelect() {
   const sel = document.getElementById('fc-week');
   const prev = sel.value;
-  const weeks = [...new Set(DECK.map(c => c.week))];
-  sel.innerHTML = '<option value="">— Tất cả các tuần —</option>' +
-    `<option value="__due__">📬 Đến hạn ôn hôm nay (${filterDeck('__due__').length})</option>` +
-    `<option value="__leech__">🔥 Từ cứng đầu — sai ≥${LEECH_THRESHOLD} lần (${filterDeck('__leech__').length})</option>` +
-    `<option value="__tech__">💻 Toàn bộ từ kỹ thuật (${filterDeck('__tech__').length})</option>` +
-    `<option value="__daily__">🗣️ Toàn bộ từ giao tiếp (${filterDeck('__daily__').length})</option>` +
-    weeks.map(w => `<option value="${w}">${w} (${DECK.filter(c => c.week === w).length} từ)</option>`).join('');
+  const dk = fcDeck();
+  const weeks = [...new Set(dk.map(c => c.week))];
+  const label = fcLang === 'en' ? 'Tất cả các tuần' : 'Tất cả chủ đề';
+  // Hàn/Trung: toàn bộ là từ giao tiếp → 2 option kỹ thuật/giao tiếp chỉ có nghĩa với deck tiếng Anh
+  const enOnly = fcLang === 'en'
+    ? `<option value="__tech__">💻 Toàn bộ từ kỹ thuật (${filterDeck('__tech__', dk).length})</option>` +
+      `<option value="__daily__">🗣️ Toàn bộ từ giao tiếp (${filterDeck('__daily__', dk).length})</option>`
+    : '';
+  sel.innerHTML = `<option value="">— ${label} —</option>` +
+    `<option value="__due__">📬 Đến hạn ôn hôm nay (${filterDeck('__due__', dk).length})</option>` +
+    `<option value="__leech__">🔥 Từ cứng đầu — sai ≥${LEECH_THRESHOLD} lần (${filterDeck('__leech__', dk).length})</option>` +
+    enOnly +
+    weeks.map(w => `<option value="${w}">${w} (${dk.filter(c => c.week === w).length} từ)</option>`).join('');
   if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
 }
 
 function startSession() {
   const week = document.getElementById('fc-week').value;
   const srs = store.get('prep-srs', {});
-  let cards = filterDeck(week);
+  let cards = filterDeck(week, fcDeck());
   // Ưu tiên từ chưa thuộc (box thấp lên trước), trong cùng box thì xáo ngẫu nhiên
   cards = shuffleArr(cards).sort((a, b) => (srs[a.id]?.box || 0) - (srs[b.id]?.box || 0));
   fcQueue = cards;
@@ -1384,7 +1429,8 @@ function showCard() {
 }
 
 function updateFcDirLabel() {
-  document.getElementById('fc-dir').textContent = fcReverse ? '🔄 Việt→Anh' : '🔄 Anh→Việt';
+  const n = FC_LANGS[fcLang].name;
+  document.getElementById('fc-dir').textContent = fcReverse ? `🔄 Việt→${n}` : `🔄 ${n}→Việt`;
 }
 
 function updateFcAutoLabel() {
@@ -1397,7 +1443,7 @@ function speakCard(withExample) {
   if (!card) return;
   const word = cleanTarget(card.front);
   const example = (card.example || '').replace(/[`*]/g, '').replace(/—.*$/, '').trim();
-  speak(withExample && example ? `${word}. ${example}` : word);
+  speak(withExample && example ? `${word}. ${example}` : word, card.lang || 'en-US');
 }
 
 /** Phím tắt riêng cho tab flashcards: Space lật, ← chưa nhớ, → nhớ rồi, S nghe */
@@ -1435,7 +1481,7 @@ function gradeCard(known) {
 function updateFcStats() {
   const srs = store.get('prep-srs', {});
   const week = document.getElementById('fc-week').value;
-  const cards = filterDeck(week);
+  const cards = filterDeck(week, fcDeck());
   const known = cards.filter(c => (srs[c.id]?.box || 0) >= 2).length;
   document.getElementById('fc-stats').textContent = `Đã thuộc ${known}/${cards.length} từ`;
   document.getElementById('fc-progress').textContent =
@@ -1456,18 +1502,18 @@ let wrCorrect = 0;
 let wrTotalAnswered = 0;
 let WR_SENTENCES = null; // { pairs: [{en, vi, week}], questions: [{en}] }
 
-function speak(text) {
-  if (text) speakList([text]);
+function speak(text, lang) {
+  if (text) speakList([text], lang);
 }
 
-/** Đọc lần lượt nhiều câu tiếng Anh: cancel một lần rồi xếp hàng utterance. */
-function speakList(texts) {
+/** Đọc lần lượt nhiều câu: cancel một lần rồi xếp hàng utterance. lang: 'en-US' | 'ko-KR' | 'zh-CN'… */
+function speakList(texts, lang = 'en-US') {
   if (!('speechSynthesis' in window) || !texts.length) return;
   speechSynthesis.cancel();
-  const voice = speechSynthesis.getVoices().find(v => v.lang && v.lang.startsWith('en'));
+  const voice = speechSynthesis.getVoices().find(v => v.lang && v.lang.startsWith(lang.slice(0, 2)));
   for (const t of texts) {
     const u = new SpeechSynthesisUtterance(t);
-    u.lang = 'en-US';
+    u.lang = lang; // không có voice cài sẵn thì engine vẫn tự chọn theo lang hint
     u.rate = 0.92;
     if (voice) u.voice = voice;
     speechSynthesis.speak(u);
@@ -3096,7 +3142,7 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-api-done', 'prep-api-best', 'prep-sql-done', 'prep-sql-best', 'prep-cli-done', 'prep-cli-best',
   'prep-en-done', 'prep-sit-done', 'prep-readiness-log',
   'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date',
-  'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned', 'prep-exam-history'];
+  'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned', 'prep-exam-history', 'prep-fc-lang'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */

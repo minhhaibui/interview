@@ -96,8 +96,13 @@
   <!-- ============ VIEW: FLASHCARDS ============ -->
   <div id="view-flashcards" class="view">
     <div class="fc-wrap">
-      <h1>🃏 Flashcards từ vựng kỹ thuật</h1>
+      <h1>🃏 Flashcards từ vựng</h1>
       <div class="fc-controls">
+        <select id="fc-lang" title="Chọn ngôn ngữ học">
+          <option value="en">🇬🇧 Tiếng Anh</option>
+          <option value="ko">🇰🇷 Tiếng Hàn</option>
+          <option value="zh">🇨🇳 Tiếng Trung</option>
+        </select>
         <select id="fc-week"></select>
         <button id="fc-shuffle">🔀 Xáo bài</button>
         <button id="fc-dir" title="Đổi chiều hỏi">🔄 Anh→Việt</button>
@@ -499,6 +504,8 @@
   <script src="reverse-questions.js"></script>
   <script src="english-phrases.js"></script>
   <script src="capstone-tracker.js"></script>
+  <script src="ko-vocab.js"></script>
+  <script src="zh-vocab.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

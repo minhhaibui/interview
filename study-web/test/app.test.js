@@ -396,6 +396,39 @@ test('wiring: chế độ 🎓 Thi thử đủ HTML + toggle + engine + dọn ti
   assert.ok(css.includes('.ex-tr-up') && css.includes('.ex-tr-down'), 'styles.css thiếu .ex-tr-up/.ex-tr-down');
 });
 
+// ---------- 🌏 Từ vựng Hàn/Trung + flashcards đa ngôn ngữ ----------
+for (const [file, key, prefix] of [['ko-vocab.js', 'KO_VOCAB', 'ko-'], ['zh-vocab.js', 'ZH_VOCAB', 'zh-']]) {
+  test(`${file}: id duy nhất prefix ${prefix}, đủ trường w/r/m/ex/exv/t, từ không trùng trong cùng chủ đề`, () => {
+    const bank = loadWindow(file)[key];
+    assert.ok(Array.isArray(bank) && bank.length >= 60, `${key} phải ≥60 mục`);
+    const ids = bank.map(v => v.id);
+    assert.strictEqual(new Set(ids).size, ids.length, `id ${key} trùng`);
+    const seenWord = new Set();
+    for (const v of bank) {
+      assert.ok(v.id.startsWith(prefix), `id ${v.id} thiếu prefix ${prefix} (SRS dùng chung store với thẻ Anh)`);
+      for (const f of ['w', 'r', 'm', 'ex', 'exv', 't']) assert.ok(v[f] && String(v[f]).trim(), `${v.id} thiếu trường ${f}`);
+      const wk = v.t + '|' + v.w;
+      assert.ok(!seenWord.has(wk), `từ trùng trong cùng chủ đề: ${wk}`);
+      seenWord.add(wk);
+      assert.ok(v.ex.includes(v.w.replace(/\(.*\)/, '').trim().split(' ')[0]) || v.ex.length > 0, `${v.id} ví dụ rỗng`);
+    }
+  });
+}
+
+test('wiring: flashcards đa ngôn ngữ — select, FC_LANGS, fcDeck, TTS lang, script + precache', () => {
+  assert.ok(HTML.includes('id="fc-lang"'), 'thiếu select #fc-lang');
+  assert.ok(HTML.includes('src="ko-vocab.js"') && HTML.includes('src="zh-vocab.js"'), 'index.html thiếu script bank Hàn/Trung');
+  assert.ok(HTML.indexOf('src="ko-vocab.js"') < HTML.indexOf('src="app.js"'), 'bank phải nạp trước app.js');
+  assert.ok(/const FC_LANGS = \{/.test(APP) && /function fcDeck\b/.test(APP) && /function setFcLang\b/.test(APP), 'thiếu FC_LANGS/fcDeck/setFcLang');
+  assert.ok(/function filterDeck\(week, deck = DECK\)/.test(APP), 'filterDeck chưa nhận deck tham số');
+  assert.ok(/speakList\(texts, lang = 'en-US'\)/.test(APP), 'speakList chưa nhận lang');
+  assert.ok(/card\.lang \|\| 'en-US'/.test(APP), 'speakCard chưa đọc theo lang của thẻ');
+  const keys = APP.slice(APP.indexOf('const PREP_KEYS'), APP.indexOf('const PREP_KEYS') + 2000);
+  assert.ok(/'prep-fc-lang'/.test(keys), 'PREP_KEYS thiếu prep-fc-lang');
+  const sw = read('sw.js');
+  assert.ok(sw.includes("'ko-vocab.js'") && sw.includes("'zh-vocab.js'"), 'sw.js PRECACHE thiếu bank Hàn/Trung');
+});
+
 test('đếm ngược PV: daysUntil tính đúng + card render + PREP_KEYS', () => {
   const fnM = APP.match(/function daysUntil\(dateStr, now = Date\.now\(\)\) \{[\s\S]*?\n}/);
   assert.ok(fnM, 'thiếu hàm daysUntil');

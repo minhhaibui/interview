@@ -1,0 +1,80 @@
+/*
+ * 🇰🇷 Từ vựng tiếng Hàn nhập môn — 64 từ/cụm, 8 chủ đề.
+ * Trường: id (ko-*), w (hangul), r (romanization chuẩn RR), m (nghĩa Việt),
+ *         ex (câu ví dụ tiếng Hàn), exv (nghĩa Việt của ví dụ), t (chủ đề).
+ * app.js map sang thẻ flashcard: front=w, ipa=r, example=`${ex} — ${exv}` (TTS chỉ đọc phần trước "—").
+ */
+window.KO_VOCAB = [
+  // 👋 Chào hỏi
+  { id: 'ko-hi-1', w: '안녕하세요', r: 'annyeonghaseyo', m: 'xin chào', ex: '안녕하세요, 저는 하이입니다.', exv: 'Xin chào, tôi là Hải.', t: '👋 Chào hỏi' },
+  { id: 'ko-hi-2', w: '감사합니다', r: 'gamsahamnida', m: 'cảm ơn', ex: '도와주셔서 감사합니다.', exv: 'Cảm ơn vì đã giúp đỡ.', t: '👋 Chào hỏi' },
+  { id: 'ko-hi-3', w: '죄송합니다', r: 'joesonghamnida', m: 'xin lỗi (trang trọng)', ex: '늦어서 죄송합니다.', exv: 'Xin lỗi vì đến muộn.', t: '👋 Chào hỏi' },
+  { id: 'ko-hi-4', w: '네', r: 'ne', m: 'vâng / dạ', ex: '네, 맞아요.', exv: 'Vâng, đúng rồi.', t: '👋 Chào hỏi' },
+  { id: 'ko-hi-5', w: '아니요', r: 'aniyo', m: 'không (phải)', ex: '아니요, 괜찮아요.', exv: 'Không, tôi ổn.', t: '👋 Chào hỏi' },
+  { id: 'ko-hi-6', w: '안녕히 가세요', r: 'annyeonghi gaseyo', m: 'tạm biệt (nói với người rời đi)', ex: '내일 봐요. 안녕히 가세요!', exv: 'Mai gặp nhé. Tạm biệt!', t: '👋 Chào hỏi' },
+  { id: 'ko-hi-7', w: '만나서 반갑습니다', r: 'mannaseo bangapseumnida', m: 'rất vui được gặp', ex: '만나서 반갑습니다!', exv: 'Rất vui được gặp bạn!', t: '👋 Chào hỏi' },
+  { id: 'ko-hi-8', w: '괜찮아요', r: 'gwaenchanayo', m: 'không sao / ổn', ex: '걱정하지 마세요. 괜찮아요.', exv: 'Đừng lo. Không sao đâu.', t: '👋 Chào hỏi' },
+  // 🔢 Số đếm (Hán-Hàn)
+  { id: 'ko-num-1', w: '일', r: 'il', m: 'một (1)', ex: '일 번 출구예요.', exv: 'Là cửa ra số 1.', t: '🔢 Số đếm' },
+  { id: 'ko-num-2', w: '이', r: 'i', m: 'hai (2)', ex: '이 층에 있어요.', exv: 'Ở tầng 2.', t: '🔢 Số đếm' },
+  { id: 'ko-num-3', w: '삼', r: 'sam', m: 'ba (3)', ex: '삼 분만 기다려 주세요.', exv: 'Xin đợi 3 phút thôi.', t: '🔢 Số đếm' },
+  { id: 'ko-num-4', w: '사', r: 'sa', m: 'bốn (4)', ex: '사 번 버스를 타세요.', exv: 'Hãy đi xe buýt số 4.', t: '🔢 Số đếm' },
+  { id: 'ko-num-5', w: '오', r: 'o', m: 'năm (5)', ex: '오 분 후에 시작해요.', exv: 'Bắt đầu sau 5 phút.', t: '🔢 Số đếm' },
+  { id: 'ko-num-6', w: '육', r: 'yuk', m: 'sáu (6)', ex: '육 개 주세요.', exv: 'Cho tôi 6 cái.', t: '🔢 Số đếm' },
+  { id: 'ko-num-7', w: '칠', r: 'chil', m: 'bảy (7)', ex: '칠월에 휴가 가요.', exv: 'Tháng 7 tôi đi nghỉ.', t: '🔢 Số đếm' },
+  { id: 'ko-num-8', w: '십', r: 'sip', m: 'mười (10)', ex: '십 분 걸려요.', exv: 'Mất 10 phút.', t: '🔢 Số đếm' },
+  // 👨‍👩‍👧 Gia đình
+  { id: 'ko-fam-1', w: '아버지', r: 'abeoji', m: 'bố', ex: '아버지는 회사에 가세요.', exv: 'Bố đi làm ở công ty.', t: '👨‍👩‍👧 Gia đình' },
+  { id: 'ko-fam-2', w: '어머니', r: 'eomeoni', m: 'mẹ', ex: '어머니가 요리를 하세요.', exv: 'Mẹ đang nấu ăn.', t: '👨‍👩‍👧 Gia đình' },
+  { id: 'ko-fam-3', w: '형', r: 'hyeong', m: 'anh trai (em trai gọi)', ex: '형이 한 명 있어요.', exv: 'Tôi có một anh trai.', t: '👨‍👩‍👧 Gia đình' },
+  { id: 'ko-fam-4', w: '누나', r: 'nuna', m: 'chị gái (em trai gọi)', ex: '누나는 의사예요.', exv: 'Chị gái tôi là bác sĩ.', t: '👨‍👩‍👧 Gia đình' },
+  { id: 'ko-fam-5', w: '동생', r: 'dongsaeng', m: 'em (trai/gái)', ex: '동생은 학생이에요.', exv: 'Em tôi là học sinh.', t: '👨‍👩‍👧 Gia đình' },
+  { id: 'ko-fam-6', w: '가족', r: 'gajok', m: 'gia đình', ex: '가족이 네 명이에요.', exv: 'Gia đình tôi có 4 người.', t: '👨‍👩‍👧 Gia đình' },
+  { id: 'ko-fam-7', w: '아들', r: 'adeul', m: 'con trai', ex: '아들이 두 명 있어요.', exv: 'Tôi có hai con trai.', t: '👨‍👩‍👧 Gia đình' },
+  { id: 'ko-fam-8', w: '딸', r: 'ttal', m: 'con gái', ex: '딸이 아주 귀여워요.', exv: 'Con gái tôi rất đáng yêu.', t: '👨‍👩‍👧 Gia đình' },
+  // 🍚 Ăn uống
+  { id: 'ko-food-1', w: '밥', r: 'bap', m: 'cơm / bữa ăn', ex: '밥 먹었어요?', exv: 'Bạn ăn cơm chưa?', t: '🍚 Ăn uống' },
+  { id: 'ko-food-2', w: '물', r: 'mul', m: 'nước', ex: '물 좀 주세요.', exv: 'Cho tôi xin chút nước.', t: '🍚 Ăn uống' },
+  { id: 'ko-food-3', w: '커피', r: 'keopi', m: 'cà phê', ex: '커피 한 잔 주세요.', exv: 'Cho tôi một ly cà phê.', t: '🍚 Ăn uống' },
+  { id: 'ko-food-4', w: '김치', r: 'gimchi', m: 'kim chi', ex: '김치가 조금 매워요.', exv: 'Kim chi hơi cay.', t: '🍚 Ăn uống' },
+  { id: 'ko-food-5', w: '맛있어요', r: 'masisseoyo', m: 'ngon', ex: '이 음식은 정말 맛있어요.', exv: 'Món này thật sự ngon.', t: '🍚 Ăn uống' },
+  { id: 'ko-food-6', w: '먹다', r: 'meokda', m: 'ăn', ex: '아침을 먹다.', exv: 'Ăn sáng.', t: '🍚 Ăn uống' },
+  { id: 'ko-food-7', w: '마시다', r: 'masida', m: 'uống', ex: '물을 마시다.', exv: 'Uống nước.', t: '🍚 Ăn uống' },
+  { id: 'ko-food-8', w: '식당', r: 'sikdang', m: 'quán ăn / nhà hàng', ex: '식당이 어디에 있어요?', exv: 'Quán ăn ở đâu?', t: '🍚 Ăn uống' },
+  // ⏰ Thời gian
+  { id: 'ko-time-1', w: '오늘', r: 'oneul', m: 'hôm nay', ex: '오늘 날씨가 좋아요.', exv: 'Hôm nay thời tiết đẹp.', t: '⏰ Thời gian' },
+  { id: 'ko-time-2', w: '내일', r: 'naeil', m: 'ngày mai', ex: '내일 만나요.', exv: 'Ngày mai gặp nhé.', t: '⏰ Thời gian' },
+  { id: 'ko-time-3', w: '어제', r: 'eoje', m: 'hôm qua', ex: '어제 뭐 했어요?', exv: 'Hôm qua bạn làm gì?', t: '⏰ Thời gian' },
+  { id: 'ko-time-4', w: '지금', r: 'jigeum', m: 'bây giờ', ex: '지금 몇 시예요?', exv: 'Bây giờ là mấy giờ?', t: '⏰ Thời gian' },
+  { id: 'ko-time-5', w: '아침', r: 'achim', m: 'buổi sáng / bữa sáng', ex: '아침에 운동해요.', exv: 'Buổi sáng tôi tập thể dục.', t: '⏰ Thời gian' },
+  { id: 'ko-time-6', w: '저녁', r: 'jeonyeok', m: 'buổi tối / bữa tối', ex: '저녁에 시간 있어요?', exv: 'Buổi tối bạn có thời gian không?', t: '⏰ Thời gian' },
+  { id: 'ko-time-7', w: '시간', r: 'sigan', m: 'thời gian', ex: '시간이 없어요.', exv: 'Tôi không có thời gian.', t: '⏰ Thời gian' },
+  { id: 'ko-time-8', w: '주말', r: 'jumal', m: 'cuối tuần', ex: '주말에 쉬어요.', exv: 'Cuối tuần tôi nghỉ.', t: '⏰ Thời gian' },
+  // 💼 Công việc & IT
+  { id: 'ko-work-1', w: '회사', r: 'hoesa', m: 'công ty', ex: '회사에 다녀요.', exv: 'Tôi đi làm ở công ty.', t: '💼 Công việc' },
+  { id: 'ko-work-2', w: '일하다', r: 'ilhada', m: 'làm việc', ex: '저는 하노이에서 일해요.', exv: 'Tôi làm việc ở Hà Nội.', t: '💼 Công việc' },
+  { id: 'ko-work-3', w: '회의', r: 'hoeui', m: 'cuộc họp', ex: '오후에 회의가 있어요.', exv: 'Buổi chiều có cuộc họp.', t: '💼 Công việc' },
+  { id: 'ko-work-4', w: '개발자', r: 'gaebalja', m: 'lập trình viên', ex: '저는 개발자예요.', exv: 'Tôi là lập trình viên.', t: '💼 Công việc' },
+  { id: 'ko-work-5', w: '컴퓨터', r: 'keompyuteo', m: 'máy tính', ex: '컴퓨터로 일해요.', exv: 'Tôi làm việc bằng máy tính.', t: '💼 Công việc' },
+  { id: 'ko-work-6', w: '사무실', r: 'samusil', m: 'văn phòng', ex: '사무실이 커요.', exv: 'Văn phòng rộng.', t: '💼 Công việc' },
+  { id: 'ko-work-7', w: '동료', r: 'dongnyo', m: 'đồng nghiệp', ex: '동료들이 친절해요.', exv: 'Đồng nghiệp thân thiện.', t: '💼 Công việc' },
+  { id: 'ko-work-8', w: '월급', r: 'wolgeup', m: 'lương tháng', ex: '월급을 받았어요.', exv: 'Tôi đã nhận lương.', t: '💼 Công việc' },
+  // 🗣️ Giao tiếp cơ bản
+  { id: 'ko-talk-1', w: '이름', r: 'ireum', m: 'tên', ex: '이름이 뭐예요?', exv: 'Bạn tên là gì?', t: '🗣️ Giao tiếp' },
+  { id: 'ko-talk-2', w: '사람', r: 'saram', m: 'người', ex: '저는 베트남 사람이에요.', exv: 'Tôi là người Việt Nam.', t: '🗣️ Giao tiếp' },
+  { id: 'ko-talk-3', w: '친구', r: 'chingu', m: 'bạn / bạn bè', ex: '친구를 만나요.', exv: 'Tôi gặp bạn.', t: '🗣️ Giao tiếp' },
+  { id: 'ko-talk-4', w: '한국어', r: 'hangugeo', m: 'tiếng Hàn', ex: '한국어를 공부해요.', exv: 'Tôi học tiếng Hàn.', t: '🗣️ Giao tiếp' },
+  { id: 'ko-talk-5', w: '알아요', r: 'arayo', m: 'biết', ex: '네, 알아요.', exv: 'Vâng, tôi biết.', t: '🗣️ Giao tiếp' },
+  { id: 'ko-talk-6', w: '몰라요', r: 'mollayo', m: 'không biết', ex: '죄송해요, 몰라요.', exv: 'Xin lỗi, tôi không biết.', t: '🗣️ Giao tiếp' },
+  { id: 'ko-talk-7', w: '좋아요', r: 'joayo', m: 'tốt / thích', ex: '이 노래가 좋아요.', exv: 'Tôi thích bài hát này.', t: '🗣️ Giao tiếp' },
+  { id: 'ko-talk-8', w: '천천히 말해 주세요', r: 'cheoncheonhi malhae juseyo', m: 'xin nói chậm thôi', ex: '천천히 말해 주세요.', exv: 'Xin hãy nói chậm thôi.', t: '🗣️ Giao tiếp' },
+  // 📍 Nơi chốn
+  { id: 'ko-place-1', w: '집', r: 'jip', m: 'nhà', ex: '집에 가요.', exv: 'Tôi về nhà.', t: '📍 Nơi chốn' },
+  { id: 'ko-place-2', w: '학교', r: 'hakgyo', m: 'trường học', ex: '학교가 가까워요.', exv: 'Trường học ở gần.', t: '📍 Nơi chốn' },
+  { id: 'ko-place-3', w: '병원', r: 'byeongwon', m: 'bệnh viện', ex: '병원에 가야 해요.', exv: 'Tôi phải đi bệnh viện.', t: '📍 Nơi chốn' },
+  { id: 'ko-place-4', w: '화장실', r: 'hwajangsil', m: 'nhà vệ sinh', ex: '화장실이 어디예요?', exv: 'Nhà vệ sinh ở đâu?', t: '📍 Nơi chốn' },
+  { id: 'ko-place-5', w: '역', r: 'yeok', m: 'ga (tàu điện)', ex: '역에서 만나요.', exv: 'Gặp nhau ở ga nhé.', t: '📍 Nơi chốn' },
+  { id: 'ko-place-6', w: '공항', r: 'gonghang', m: 'sân bay', ex: '공항에 가요.', exv: 'Tôi đi sân bay.', t: '📍 Nơi chốn' },
+  { id: 'ko-place-7', w: '어디', r: 'eodi', m: 'ở đâu', ex: '어디에 있어요?', exv: 'Ở đâu vậy?', t: '📍 Nơi chốn' },
+  { id: 'ko-place-8', w: '여기', r: 'yeogi', m: 'ở đây', ex: '여기 앉으세요.', exv: 'Mời ngồi đây.', t: '📍 Nơi chốn' },
+];
