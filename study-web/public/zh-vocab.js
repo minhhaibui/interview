@@ -131,4 +131,22 @@ window.ZH_VOCAB = [
   { id: 'zh-move-6', w: '飞机', r: 'fēijī', m: 'máy bay', ex: '我坐飞机去。', exv: 'Tôi đi bằng máy bay.', t: '🚗 Đi lại' },
   { id: 'zh-move-7', w: '火车', r: 'huǒchē', m: 'tàu hỏa', ex: '火车晚点了。', exv: 'Tàu hỏa trễ giờ.', t: '🚗 Đi lại' },
   { id: 'zh-move-8', w: '坐', r: 'zuò', m: 'ngồi / đi (phương tiện)', ex: '我坐地铁上班。', exv: 'Tôi đi làm bằng tàu điện.', t: '🚗 Đi lại' },
+  // 🧍 Cơ thể
+  { id: 'zh-body-1', w: '头', r: 'tóu', m: 'đầu', ex: '我头疼。', exv: 'Tôi đau đầu.', t: '🧍 Cơ thể' },
+  { id: 'zh-body-2', w: '脸', r: 'liǎn', m: 'khuôn mặt', ex: '她的脸很漂亮。', exv: 'Khuôn mặt cô ấy đẹp.', t: '🧍 Cơ thể' },
+  { id: 'zh-body-3', w: '眼睛', r: 'yǎnjing', m: 'mắt', ex: '你的眼睛很大。', exv: 'Mắt bạn to.', t: '🧍 Cơ thể' },
+  { id: 'zh-body-4', w: '鼻子', r: 'bízi', m: 'mũi', ex: '他的鼻子很高。', exv: 'Mũi anh ấy cao.', t: '🧍 Cơ thể' },
+  { id: 'zh-body-5', w: '嘴', r: 'zuǐ', m: 'miệng', ex: '请张开嘴。', exv: 'Xin há miệng ra.', t: '🧍 Cơ thể' },
+  { id: 'zh-body-6', w: '手', r: 'shǒu', m: 'tay', ex: '请洗手。', exv: 'Hãy rửa tay.', t: '🧍 Cơ thể' },
+  { id: 'zh-body-7', w: '脚', r: 'jiǎo', m: 'chân (bàn chân)', ex: '我的脚疼。', exv: 'Tôi đau chân.', t: '🧍 Cơ thể' },
+  { id: 'zh-body-8', w: '肚子', r: 'dùzi', m: 'bụng', ex: '我肚子饿了。', exv: 'Tôi đói bụng rồi.', t: '🧍 Cơ thể' },
+  // 👕 Quần áo
+  { id: 'zh-cloth-1', w: '衣服', r: 'yīfu', m: 'quần áo', ex: '这件衣服很漂亮。', exv: 'Bộ quần áo này đẹp.', t: '👕 Quần áo' },
+  { id: 'zh-cloth-2', w: '裤子', r: 'kùzi', m: 'quần', ex: '这条裤子太长了。', exv: 'Cái quần này dài quá.', t: '👕 Quần áo' },
+  { id: 'zh-cloth-3', w: '裙子', r: 'qúnzi', m: 'váy', ex: '她穿裙子。', exv: 'Cô ấy mặc váy.', t: '👕 Quần áo' },
+  { id: 'zh-cloth-4', w: '鞋', r: 'xié', m: 'giày', ex: '这双鞋很贵。', exv: 'Đôi giày này đắt.', t: '👕 Quần áo' },
+  { id: 'zh-cloth-5', w: '帽子', r: 'màozi', m: 'mũ / nón', ex: '我戴帽子。', exv: 'Tôi đội mũ.', t: '👕 Quần áo' },
+  { id: 'zh-cloth-6', w: '眼镜', r: 'yǎnjìng', m: 'kính (mắt)', ex: '他戴眼镜。', exv: 'Anh ấy đeo kính.', t: '👕 Quần áo' },
+  { id: 'zh-cloth-7', w: '包', r: 'bāo', m: 'túi xách / cặp', ex: '这个包很重。', exv: 'Cái túi này nặng.', t: '👕 Quần áo' },
+  { id: 'zh-cloth-8', w: '穿', r: 'chuān', m: 'mặc (quần áo)', ex: '我穿外套。', exv: 'Tôi mặc áo khoác.', t: '👕 Quần áo' },
 ];
