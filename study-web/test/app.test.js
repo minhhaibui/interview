@@ -381,6 +381,14 @@ test('wiring: chế độ 🎓 Thi thử đủ HTML + toggle + engine + dọn ti
   assert.ok(/modes: byMode/.test(APP), 'lịch sử thi chưa lưu phân bố modes (nguồn trend chart)');
   assert.ok(/function copyText\b/.test(APP) && /function examResultText\b/.test(APP), 'thiếu copyText/examResultText');
   assert.ok(/id="exam-copy"/.test(APP) && /examResultText\(entry\)/.test(APP), 'màn kết quả thiếu nút 📋 copy');
+  // Fix QA đợt 2 (08/07): rò bài dở giữa 2 tài khoản, bài quên nhiều ngày nổ chậm, id sai mồ côi thổi trọng số
+  const restoreB = APP.slice(APP.indexOf('function restoreExamState'), APP.indexOf('function restoreExamState') + 1600);
+  assert.ok(/uid:/.test(APP.slice(APP.indexOf('function saveExamState'), APP.indexOf('function saveExamState') + 700)),
+    'saveExamState chưa lưu uid (chống rò bài dở giữa 2 tài khoản cùng máy)');
+  assert.ok(/s\.uid \?\? null/.test(restoreB), 'restoreExamState chưa so uid');
+  assert.ok(/s\.endMs \+ 36e5/.test(restoreB), 'restoreExamState chưa bỏ bài quá deadline >1h (nổ chậm rác điểm)');
+  assert.ok(/bankIds\.has\(id\)/.test(APP.slice(APP.indexOf('function buildSprintExamQueue'), APP.indexOf('function buildSprintExamQueue') + 1200)),
+    'buildSprintExamQueue chưa lọc id sai mồ côi khỏi trọng số');
 });
 
 test('đếm ngược PV: daysUntil tính đúng + card render + PREP_KEYS', () => {

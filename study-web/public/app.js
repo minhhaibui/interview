@@ -4471,6 +4471,7 @@ function saveExamState() {
     endMs: examEndMs, durSec: examDurSec, sprint: examSprint, idx: examIdx,
     answers: examAnswers, // chỉ chứa các câu đã qua (đáp án hoặc null-bỏ-qua) → JSON không phá undefined
     items: examQueue.map(it => ({ m: it.mode, id: it.q.id })),
+    uid: (syncReady && fbUser) ? fbUser.uid : null, // bài của ai — chống rò bài dở giữa 2 tài khoản cùng máy
   });
 }
 const clearExamState = () => localStorage.removeItem(EXAM_STATE_KEY);
@@ -4500,7 +4501,15 @@ function examResultText(h) {
 /** Dựng lại bài dở từ localStorage (sau reload). true nếu khôi phục được. */
 function restoreExamState() {
   const s = store.get(EXAM_STATE_KEY, null);
-  if (!s || !s.endMs || !Array.isArray(s.items) || !s.items.length) return false;
+  if (!s) return false;
+  if (!s.endMs || !Array.isArray(s.items) || !s.items.length || (s.idx || 0) >= s.items.length) {
+    clearExamState(); return false; // state hỏng — dọn luôn, đừng parse lại mãi
+  }
+  // Bài của TÀI KHOẢN KHÁC trên cùng máy (A thi dở → B đăng nhập): bỏ, không chấm chéo hồ sơ.
+  if ((s.uid ?? null) !== ((syncReady && fbUser) ? fbUser.uid : null)) { clearExamState(); return false; }
+  // Quá deadline hơn 1 giờ: "nộp hộ" bài bỏ quên nhiều ngày chỉ tạo rác điểm + hàng đợi 🔁 → bỏ không chấm.
+  // (Trong vòng 1 giờ vẫn tự nộp như thường — vừa bỏ dở thì phải chịu điểm, không lách được.)
+  if (Date.now() > s.endMs + 36e5) { clearExamState(); return false; }
   const q = [];
   for (const it of s.items) {
     const cfg = QUIZ_MODES[it.m];
@@ -4541,7 +4550,9 @@ function buildSprintExamQueue(n) {
     const data = cfg.data() || [];
     if (!data.length) return null;
     const done = store.get(cfg.doneKey, {});
-    const wrongSet = new Set(wrongIds(mode).map(String));
+    // Lọc id sai "mồ côi" (câu đã bị xoá khỏi bank sau deploy) — kẻo cộng ảo vào trọng số độ yếu
+    const bankIds = new Set(data.map(q => String(q.id)));
+    const wrongSet = new Set(wrongIds(mode).map(String).filter(id => bankIds.has(id)));
     const qs = [
       ...shuffleArr(data.filter(q => wrongSet.has(String(q.id)))),
       ...shuffleArr(data.filter(q => !wrongSet.has(String(q.id)) && !done[q.id])),
