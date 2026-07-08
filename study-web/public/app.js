@@ -3220,7 +3220,7 @@ function renderCharts() {
   // 🎓 Điểm các lần thi thử gần nhất
   const exams = store.get('prep-exam-history', []).slice(-15);
   barChart('dash-chart-exam', exams.map(h => ({
-    title: `${new Date(h.d).toLocaleDateString('vi-VN')}: ${h.right}/${h.n} (${h.pct}%) · ${fmtClock(h.secs)}${h.timeout ? ' · ⏰ hết giờ' : ''}`,
+    title: `${new Date(h.d).toLocaleDateString('vi-VN')}: ${h.sprint ? '🔥 nước rút · ' : ''}${h.right}/${h.n} (${h.pct}%) · ${fmtClock(h.secs)}${h.timeout ? ' · ⏰ hết giờ' : ''}`,
     hPct: Math.max(h.pct, 4),
     cls: h.pct >= 80 ? 'ok' : h.pct < 50 ? 'low' : '',
     label: h.pct,
@@ -4472,6 +4472,38 @@ function buildExamQueue(n) {
   return shuffleArr(out);
 }
 
+/** Đề 🔥 nước rút: chia n câu theo ĐỘ YẾU từng mảng (độ phủ thấp + nhiều câu đang sai);
+ *  trong mỗi mảng ưu tiên câu đang sai → chưa từng đúng → còn lại. Điền slot kiểu
+ *  chia ghế theo trọng số: mỗi vòng lấy từ mảng có chi phí (đã lấy + 1)/độ yếu nhỏ nhất. */
+function buildSprintExamQueue(n) {
+  const banks = Object.keys(QUIZ_MODES).map(mode => {
+    const cfg = QUIZ_MODES[mode];
+    const data = cfg.data() || [];
+    if (!data.length) return null;
+    const done = store.get(cfg.doneKey, {});
+    const wrongSet = new Set(wrongIds(mode).map(String));
+    const qs = [
+      ...shuffleArr(data.filter(q => wrongSet.has(String(q.id)))),
+      ...shuffleArr(data.filter(q => !wrongSet.has(String(q.id)) && !done[q.id])),
+      ...shuffleArr(data.filter(q => !wrongSet.has(String(q.id)) && done[q.id])),
+    ];
+    const cov = bankCoverage(data, cfg.doneKey);
+    // 0.1 nền để mảng đã vững vẫn thi thoảng góp mặt (không bao giờ chia cho 0)
+    const weak = 0.1 + (1 - cov.done / cov.total) + wrongSet.size / cov.total;
+    return { mode, qs, weak };
+  }).filter(Boolean);
+  const out = [], taken = new Map(banks.map(b => [b.mode, 0]));
+  while (out.length < n) {
+    const avail = banks.filter(b => taken.get(b.mode) < b.qs.length);
+    if (!avail.length) break;
+    const b = avail.reduce((best, cur) =>
+      (taken.get(cur.mode) + 1) / cur.weak < (taken.get(best.mode) + 1) / best.weak ? cur : best);
+    out.push({ mode: b.mode, q: b.qs[taken.get(b.mode)] });
+    taken.set(b.mode, taken.get(b.mode) + 1);
+  }
+  return shuffleArr(out);
+}
+
 function renderExam() {
   const el = document.getElementById('exam-body');
   if (!el) return;
@@ -4479,21 +4511,25 @@ function renderExam() {
   const hist = examHistory();
   const best = hist.length ? Math.max(...hist.map(h => h.pct)) : 0;
   const rows = hist.slice(-5).reverse().map(h =>
-    `<li>${h.pct >= 80 ? '🌟' : h.pct >= 50 ? '👍' : '📚'} <b>${h.right}/${h.n}</b> (${h.pct}%) · ${fmtClock(h.secs)}${h.timeout ? ' · ⏰ hết giờ' : ''}</li>`).join('');
+    `<li>${h.pct >= 80 ? '🌟' : h.pct >= 50 ? '👍' : '📚'} ${h.sprint ? '🔥 ' : ''}<b>${h.right}/${h.n}</b> (${h.pct}%) · ${fmtClock(h.secs)}${h.timeout ? ' · ⏰ hết giờ' : ''}</li>`).join('');
   el.innerHTML = `
     <div class="oq-start">
       ${hist.length ? `<p>Đã thi <b>${hist.length}</b> lần · điểm cao nhất <b>${best}%</b>.</p><ul class="exam-hist">${rows}</ul>` : '<p>Chưa thi lần nào — làm một đề để biết mình đang ở đâu nhé.</p>'}
       <div class="review-actions">
         <button id="exam-go-20" class="dg-go">🎓 Thi 20 câu · 15 phút</button>
         <button id="exam-go-10" class="dg-go dg-link">⚡ Thi nhanh 10 câu · 7 phút</button>
+        <button id="exam-go-sprint" class="dg-go dg-link" title="Chia câu theo độ yếu từng mảng: độ phủ thấp + đang sai nhiều được hỏi nhiều hơn; ưu tiên câu đang sai và câu chưa từng làm đúng">🔥 Nước rút 15 câu · 10 phút — dồn vào mảng yếu</button>
       </div>
     </div>`;
   document.getElementById('exam-go-20').onclick = () => startExam(20, 15);
   document.getElementById('exam-go-10').onclick = () => startExam(10, 7);
+  document.getElementById('exam-go-sprint').onclick = () => startExam(15, 10, true);
 }
 
-function startExam(n, mins) {
-  examQueue = buildExamQueue(n);
+let examSprint = false; // đề đang thi có phải nước rút không (ghi vào lịch sử lúc nộp)
+function startExam(n, mins, sprint) {
+  examSprint = !!sprint;
+  examQueue = sprint ? buildSprintExamQueue(n) : buildExamQueue(n);
   if (!examQueue.length) { renderExam(); return; }
   examIdx = 0; examAnswers = [];
   examDurSec = mins * 60;
@@ -4571,7 +4607,7 @@ function finishExam(timedOut) {
   });
   const pct = Math.round(right / total * 100);
   const hist = examHistory();
-  hist.push({ d: Date.now(), n: total, right, pct, secs, timeout: !!timedOut });
+  hist.push({ d: Date.now(), n: total, right, pct, secs, timeout: !!timedOut, sprint: examSprint });
   store.set('prep-exam-history', hist.slice(-30));
   logActivity();
   refreshThinkBadges();
@@ -4591,7 +4627,7 @@ function finishExam(timedOut) {
   }).join('');
   el.innerHTML = `
     <div class="oq-result">
-      <h2>${pct >= 80 ? '🌟' : pct >= 50 ? '👍' : '📚'} ${timedOut ? '⏰ Hết giờ! ' : ''}Kết quả: đúng ${right}/${total} (${pct}%)</h2>
+      <h2>${pct >= 80 ? '🌟' : pct >= 50 ? '👍' : '📚'} ${timedOut ? '⏰ Hết giờ! ' : ''}${examSprint ? '🔥 Nước rút — ' : ''}Kết quả: đúng ${right}/${total} (${pct}%)</h2>
       <p>Thời gian: <b>${fmtClock(secs)}</b>/${fmtClock(examDurSec)}${skipped ? ` · bỏ qua <b>${skipped}</b> câu` : ''}${wrongItems.length ? ` · <b>${wrongItems.length}</b> câu chưa đúng đã vào hàng đợi 🔁 Ôn câu sai.` : ' · Không sai câu nào — quá đỉnh! 🎉'}</p>
       <div class="review-chips">${chips}</div>
       <div class="review-actions">

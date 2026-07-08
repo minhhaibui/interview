@@ -363,6 +363,10 @@ test('wiring: chế độ 🎓 Thi thử đủ HTML + toggle + engine + dọn ti
     'answerExam thiếu guard 300ms chống double-click trả lời chui câu kế');
   assert.ok(/if \(examRunning\(\)\) return true/.test(APP), 'isEditingNow chưa coi đang-thi là đang-soạn (reapplyView sẽ vẽ đè)');
   assert.ok(/if \(idx <= examIdx\) recordWrong/.test(APP), 'finishExam vẫn recordWrong cả câu chưa từng hiển thị');
+  // 🔥 đề nước rút ưu tiên mảng yếu
+  assert.ok(/function buildSprintExamQueue\b/.test(APP), 'thiếu buildSprintExamQueue');
+  assert.ok(/id="exam-go-sprint"/.test(APP) && /startExam\(15, 10, true\)/.test(APP), 'màn bắt đầu thiếu nút 🔥 nước rút');
+  assert.ok(/sprint: examSprint/.test(APP), 'lịch sử thi chưa ghi cờ sprint');
 });
 
 test('đếm ngược PV: daysUntil tính đúng + card render + PREP_KEYS', () => {
