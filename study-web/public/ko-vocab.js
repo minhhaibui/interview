@@ -95,4 +95,22 @@ window.KO_VOCAB = [
   { id: 'ko-shop-6', w: '팔다', r: 'palda', m: 'bán', ex: '여기서 과일을 팔아요.', exv: 'Ở đây bán trái cây.', t: '🛒 Mua sắm' },
   { id: 'ko-shop-7', w: '시장', r: 'sijang', m: 'chợ', ex: '시장에 가요.', exv: 'Tôi đi chợ.', t: '🛒 Mua sắm' },
   { id: 'ko-shop-8', w: '가게', r: 'gage', m: 'cửa hàng', ex: '가게가 문을 닫았어요.', exv: 'Cửa hàng đóng cửa rồi.', t: '🛒 Mua sắm' },
+  // 🔤 Động từ
+  { id: 'ko-verb-1', w: '가다', r: 'gada', m: 'đi', ex: '학교에 가요.', exv: 'Tôi đi học.', t: '🔤 Động từ' },
+  { id: 'ko-verb-2', w: '오다', r: 'oda', m: 'đến', ex: '친구가 와요.', exv: 'Bạn đến.', t: '🔤 Động từ' },
+  { id: 'ko-verb-3', w: '보다', r: 'boda', m: 'xem / nhìn', ex: '영화를 봐요.', exv: 'Tôi xem phim.', t: '🔤 Động từ' },
+  { id: 'ko-verb-4', w: '듣다', r: 'deutda', m: 'nghe', ex: '음악을 들어요.', exv: 'Tôi nghe nhạc.', t: '🔤 Động từ' },
+  { id: 'ko-verb-5', w: '하다', r: 'hada', m: 'làm', ex: '숙제를 해요.', exv: 'Tôi làm bài tập.', t: '🔤 Động từ' },
+  { id: 'ko-verb-6', w: '자다', r: 'jada', m: 'ngủ', ex: '일찍 자요.', exv: 'Tôi ngủ sớm.', t: '🔤 Động từ' },
+  { id: 'ko-verb-7', w: '읽다', r: 'ikda', m: 'đọc', ex: '책을 읽어요.', exv: 'Tôi đọc sách.', t: '🔤 Động từ' },
+  { id: 'ko-verb-8', w: '쓰다', r: 'sseuda', m: 'viết', ex: '편지를 써요.', exv: 'Tôi viết thư.', t: '🔤 Động từ' },
+  // 😊 Cảm xúc
+  { id: 'ko-emo-1', w: '기쁘다', r: 'gippeuda', m: 'vui mừng', ex: '시험에 합격해서 기뻐요.', exv: 'Tôi vui vì đỗ kỳ thi.', t: '😊 Cảm xúc' },
+  { id: 'ko-emo-2', w: '슬프다', r: 'seulpeuda', m: 'buồn', ex: '이 영화는 슬퍼요.', exv: 'Phim này buồn.', t: '😊 Cảm xúc' },
+  { id: 'ko-emo-3', w: '피곤하다', r: 'pigonhada', m: 'mệt mỏi', ex: '오늘 너무 피곤해요.', exv: 'Hôm nay tôi mệt quá.', t: '😊 Cảm xúc' },
+  { id: 'ko-emo-4', w: '바쁘다', r: 'bappeuda', m: 'bận', ex: '요즘 바빠요.', exv: 'Dạo này tôi bận.', t: '😊 Cảm xúc' },
+  { id: 'ko-emo-5', w: '행복하다', r: 'haengbokhada', m: 'hạnh phúc', ex: '저는 정말 행복해요.', exv: 'Tôi thật sự hạnh phúc.', t: '😊 Cảm xúc' },
+  { id: 'ko-emo-6', w: '화나다', r: 'hwanada', m: 'tức giận', ex: '동생이 화났어요.', exv: 'Em tôi tức giận rồi.', t: '😊 Cảm xúc' },
+  { id: 'ko-emo-7', w: '무섭다', r: 'museopda', m: 'sợ hãi', ex: '저는 개가 무서워요.', exv: 'Tôi sợ chó.', t: '😊 Cảm xúc' },
+  { id: 'ko-emo-8', w: '아프다', r: 'apeuda', m: 'đau / ốm', ex: '머리가 아파요.', exv: 'Tôi đau đầu.', t: '😊 Cảm xúc' },
 ];

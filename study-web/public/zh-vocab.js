@@ -95,4 +95,22 @@ window.ZH_VOCAB = [
   { id: 'zh-shop-6', w: '卖', r: 'mài', m: 'bán', ex: '这里卖水果。', exv: 'Ở đây bán trái cây.', t: '🛒 Mua sắm' },
   { id: 'zh-shop-7', w: '市场', r: 'shìchǎng', m: 'chợ', ex: '我去市场。', exv: 'Tôi đi chợ.', t: '🛒 Mua sắm' },
   { id: 'zh-shop-8', w: '超市', r: 'chāoshì', m: 'siêu thị', ex: '超市在那边。', exv: 'Siêu thị ở đằng kia.', t: '🛒 Mua sắm' },
+  // 🔤 Động từ
+  { id: 'zh-verb-1', w: '去', r: 'qù', m: 'đi', ex: '我去学校。', exv: 'Tôi đến trường.', t: '🔤 Động từ' },
+  { id: 'zh-verb-2', w: '来', r: 'lái', m: 'đến', ex: '朋友来了。', exv: 'Bạn đến rồi.', t: '🔤 Động từ' },
+  { id: 'zh-verb-3', w: '看', r: 'kàn', m: 'xem / nhìn', ex: '我看电影。', exv: 'Tôi xem phim.', t: '🔤 Động từ' },
+  { id: 'zh-verb-4', w: '听', r: 'tīng', m: 'nghe', ex: '我听音乐。', exv: 'Tôi nghe nhạc.', t: '🔤 Động từ' },
+  { id: 'zh-verb-5', w: '做', r: 'zuò', m: 'làm', ex: '我做作业。', exv: 'Tôi làm bài tập.', t: '🔤 Động từ' },
+  { id: 'zh-verb-6', w: '睡觉', r: 'shuìjiào', m: 'ngủ', ex: '我要睡觉了。', exv: 'Tôi đi ngủ đây.', t: '🔤 Động từ' },
+  { id: 'zh-verb-7', w: '读', r: 'dú', m: 'đọc', ex: '我读书。', exv: 'Tôi đọc sách.', t: '🔤 Động từ' },
+  { id: 'zh-verb-8', w: '写', r: 'xiě', m: 'viết', ex: '我写信。', exv: 'Tôi viết thư.', t: '🔤 Động từ' },
+  // 😊 Cảm xúc
+  { id: 'zh-emo-1', w: '高兴', r: 'gāoxìng', m: 'vui mừng', ex: '见到你很高兴。', exv: 'Gặp bạn rất vui.', t: '😊 Cảm xúc' },
+  { id: 'zh-emo-2', w: '难过', r: 'nánguò', m: 'buồn', ex: '我很难过。', exv: 'Tôi rất buồn.', t: '😊 Cảm xúc' },
+  { id: 'zh-emo-3', w: '累', r: 'lèi', m: 'mệt mỏi', ex: '今天很累。', exv: 'Hôm nay mệt.', t: '😊 Cảm xúc' },
+  { id: 'zh-emo-4', w: '忙', r: 'máng', m: 'bận', ex: '最近很忙。', exv: 'Dạo này bận.', t: '😊 Cảm xúc' },
+  { id: 'zh-emo-5', w: '幸福', r: 'xìngfú', m: 'hạnh phúc', ex: '我很幸福。', exv: 'Tôi rất hạnh phúc.', t: '😊 Cảm xúc' },
+  { id: 'zh-emo-6', w: '生气', r: 'shēngqì', m: 'tức giận', ex: '别生气。', exv: 'Đừng tức giận.', t: '😊 Cảm xúc' },
+  { id: 'zh-emo-7', w: '害怕', r: 'hàipà', m: 'sợ hãi', ex: '我害怕狗。', exv: 'Tôi sợ chó.', t: '😊 Cảm xúc' },
+  { id: 'zh-emo-8', w: '疼', r: 'téng', m: 'đau', ex: '我头疼。', exv: 'Tôi đau đầu.', t: '😊 Cảm xúc' },
 ];
