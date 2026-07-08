@@ -4691,7 +4691,17 @@ function finishExam(timedOut) {
   refreshThinkBadges();
   const el = document.getElementById('exam-body');
   if (!el) return; // nộp ngầm khi đang ở tab khác (hết giờ) → điểm đã lưu, quay lại thấy màn hình bắt đầu
-  const chips = Object.keys(byMode).map(m => `<span class="review-chip">${QUIZ_MODES[m].label}: <b>${byMode[m].right}/${byMode[m].total}</b></span>`).join('');
+  // Xu hướng theo mảng so với LẦN THI TRƯỚC (entry có modes gần nhất trước bài này)
+  const prevM = [...hist].reverse().find(h => h !== entry && h.modes) || null;
+  const trendOf = m => {
+    const p = prevM && prevM.modes[m];
+    if (!p || !p.total || !byMode[m].total) return '';
+    const diff = byMode[m].right / byMode[m].total - p.right / p.total;
+    if (diff > 0.001) return ' <span class="ex-tr-up" title="Khá hơn lần thi trước">▲</span>';
+    if (diff < -0.001) return ' <span class="ex-tr-down" title="Tụt so với lần thi trước">▼</span>';
+    return '';
+  };
+  const chips = Object.keys(byMode).map(m => `<span class="review-chip">${QUIZ_MODES[m].label}: <b>${byMode[m].right}/${byMode[m].total}</b>${trendOf(m)}</span>`).join('');
   const wrongHtml = wrongItems.map(({ item, picked }) => {
     const cfg = QUIZ_MODES[item.mode], q = item.q;
     return `<div class="exam-wrong">

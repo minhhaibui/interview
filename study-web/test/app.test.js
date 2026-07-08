@@ -389,6 +389,11 @@ test('wiring: chế độ 🎓 Thi thử đủ HTML + toggle + engine + dọn ti
   assert.ok(/s\.endMs \+ 36e5/.test(restoreB), 'restoreExamState chưa bỏ bài quá deadline >1h (nổ chậm rác điểm)');
   assert.ok(/bankIds\.has\(id\)/.test(APP.slice(APP.indexOf('function buildSprintExamQueue'), APP.indexOf('function buildSprintExamQueue') + 1200)),
     'buildSprintExamQueue chưa lọc id sai mồ côi khỏi trọng số');
+  // 📈 mũi tên xu hướng theo mảng (so với lần thi trước có modes)
+  assert.ok(/ex-tr-up/.test(APP) && /ex-tr-down/.test(APP) && /h\.modes\)/.test(APP),
+    'màn kết quả thiếu mũi tên xu hướng theo mảng');
+  const css = read('styles.css');
+  assert.ok(css.includes('.ex-tr-up') && css.includes('.ex-tr-down'), 'styles.css thiếu .ex-tr-up/.ex-tr-down');
 });
 
 test('đếm ngược PV: daysUntil tính đúng + card render + PREP_KEYS', () => {
