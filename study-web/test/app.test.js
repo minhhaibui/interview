@@ -436,13 +436,17 @@ test('wiring: 🎯 Quiz chọn nghĩa (Flashcards) — nút + hàm + distractor 
     assert.ok(APP.includes(fn), `thiếu ${fn}`);
   }
   const beg = APP.slice(APP.indexOf('function fqBegin'), APP.indexOf('function fqShow'));
-  assert.ok(/meanings\.filter\(m => m !== card\.meaning\)/.test(beg), 'distractor chưa loại nghĩa đúng');
-  assert.ok(/options\.indexOf\(card\.meaning\)/.test(beg), 'answer chưa trỏ đúng vị trí nghĩa đúng sau khi trộn');
+  assert.ok(/allVals\.filter\(v => v !== correct\)/.test(beg), 'distractor chưa loại đáp án đúng');
+  assert.ok(/options\.indexOf\(correct\)/.test(beg), 'answer chưa trỏ đúng vị trí đáp án sau khi trộn');
   const ans = APP.slice(APP.indexOf('function fqAnswer'), APP.indexOf('function fqFinish'));
   assert.ok(/bumpSrs\(it\.card, correct\)/.test(ans), 'fqAnswer chưa cập nhật SRS theo đúng/sai');
   assert.ok(/if \(it\.picked != null\) return/.test(ans), 'fqAnswer chưa chặn chấm 2 lần');
   const css = read('styles.css');
   assert.ok(css.includes('.fq-opt') && css.includes('.fq-word'), 'styles.css thiếu .fq-opt/.fq-word');
+  // Quiz 2 chiều: field theo fqReverse (front↔meaning), nút đổi chiều, options ngoại ngữ khi chiều ngược
+  assert.ok(/let fqReverse = false/.test(APP) && /const field = rev \? 'front' : 'meaning'/.test(beg), 'thiếu chiều Nghĩa→Từ (fqReverse/field)');
+  assert.ok(/id="fq-dir"/.test(APP) && /fqReverse = !fqReverse/.test(APP), 'thiếu nút đổi chiều fq-dir');
+  assert.ok(css.includes('.fq-opt-script'), 'styles.css thiếu .fq-opt-script (lựa chọn chữ ngoại ngữ)');
 });
 
 test('wiring: tab Hôm nay nhắc ôn ngoại ngữ Hàn/Trung đến hạn', () => {

@@ -1482,6 +1482,7 @@ function ftMarkRow(btn, label) {
 // ===== 🎯 Quiz chọn nghĩa: hiện từ (chữ gốc + phiên âm + 🔊) → chọn nghĩa đúng trong 4, chấm ngay + SRS =====
 // Dùng chung container #fc-test + ftToggle; hợp mọi ngôn ngữ, đặc biệt tốt để nhận diện mặt chữ Hàn/Trung.
 let fqQueue = [], fqIdx = 0, fqRight = 0;
+let fqReverse = false; // false: Từ→Nghĩa (nhận diện); true: Nghĩa→Từ (recall chủ động)
 
 function fqStart() {
   ftToggle(true);
@@ -1489,12 +1490,17 @@ function fqStart() {
   const pool = filterDeck(sel.value, fcDeck()).filter(c => c.front && c.meaning);
   const scope = sel.selectedOptions[0]?.textContent || 'Tất cả';
   const nm = FC_LANGS[fcLang].name;
+  const wordLabel = fcLang === 'en' ? 'từ tiếng Anh' : 'từ ' + nm;
   const sizeBtn = n => `<button class="ft-size${ftSize === n ? ' active' : ''}" data-n="${n}">${n === 0 ? 'Tất cả' : n}</button>`;
   const enough = pool.length >= 4;
+  const howto = fqReverse
+    ? `Hiện <b>nghĩa tiếng Việt</b> — bạn <b>chọn ${wordLabel} đúng</b> trong 4 lựa chọn (ôn kiểu nhớ chủ động).`
+    : `Hiện <b>${wordLabel}</b> kèm phát âm — bạn <b>chọn nghĩa đúng</b> trong 4 lựa chọn.`;
   document.getElementById('fc-test').innerHTML = `
     <div class="ft-start">
       <h2>🎯 Quiz nghĩa ${fcLang === 'en' ? '' : nm}</h2>
-      <p>Hiện <b>từ${fcLang === 'en' ? ' tiếng Anh' : ' ' + nm}</b> kèm phát âm — bạn <b>chọn nghĩa đúng</b> trong 4 lựa chọn. Chấm ngay và tự cập nhật lịch ôn SRS.</p>
+      <p>${howto} Chấm ngay và tự cập nhật lịch ôn SRS.</p>
+      <p class="ft-scope">Chiều hỏi: <button id="fq-dir" class="fq-dir-btn">🔄 ${fqReverse ? 'Nghĩa → Từ' : 'Từ → Nghĩa'}</button></p>
       <p class="ft-scope">Phạm vi: <b>${escHtml(scope)}</b> — <b>${pool.length}</b> từ. Số câu mỗi lượt:</p>
       <div class="ft-sizes">${[10, 20, 0].map(sizeBtn).join('')}</div>
       ${enough ? '' : '<p class="ft-scope" style="color:var(--red)">Cần ít nhất 4 từ trong phạm vi này để tạo quiz — chọn phạm vi rộng hơn nhé.</p>'}
@@ -1502,21 +1508,24 @@ function fqStart() {
       <button id="fq-cancel" class="dg-link">← Quay lại lật thẻ</button>
     </div>`;
   document.querySelectorAll('.ft-size').forEach(b => b.onclick = () => { ftSize = +b.dataset.n; store.set('prep-ft-size', ftSize); fqStart(); });
+  document.getElementById('fq-dir').onclick = () => { fqReverse = !fqReverse; fqStart(); };
   document.getElementById('fq-go').onclick = fqBegin;
   document.getElementById('fq-cancel').onclick = () => ftToggle(false);
 }
 
 function fqBegin() {
   const all = filterDeck(document.getElementById('fc-week').value, fcDeck()).filter(c => c.front && c.meaning);
-  const meanings = [...new Set(all.map(c => c.meaning))];
   if (all.length < 4) { ftToggle(false); return; }
+  const rev = fqReverse;
+  const field = rev ? 'front' : 'meaning';           // giá trị cần CHỌN: chiều ngược chọn chữ, thuận chọn nghĩa
+  const allVals = [...new Set(all.map(c => c[field]))];
   let pool = shuffleArr(all);
   if (ftSize > 0) pool = pool.slice(0, ftSize);
   fqQueue = pool.map(card => {
-    // 3 nghĩa nhiễu khác nghĩa đúng, lấy từ chính deck đang học
-    const distract = shuffleArr(meanings.filter(m => m !== card.meaning)).slice(0, 3);
-    const options = shuffleArr([card.meaning, ...distract]);
-    return { card, options, answer: options.indexOf(card.meaning), picked: null };
+    const correct = card[field];
+    const distract = shuffleArr(allVals.filter(v => v !== correct)).slice(0, 3);
+    const options = shuffleArr([correct, ...distract]);
+    return { card, options, answer: options.indexOf(correct), picked: null, reverse: rev };
   });
   fqIdx = 0; fqRight = 0;
   fqShow();
@@ -1527,18 +1536,28 @@ function fqShow() {
   if (!it) return fqFinish();
   const c = it.card;
   const foreign = ftForeign(c);
+  const rev = it.reverse;
+  const lang2 = foreign ? c.lang.slice(0, 2) : '';
+  // Chiều thuận: đề là CHỮ (ngoại ngữ, có 🔊 + phiên âm), lựa chọn là NGHĨA (chữ thường).
+  // Chiều ngược: đề là NGHĨA Việt, lựa chọn là CHỮ (ngoại ngữ, cỡ lớn) — KHÔNG đọc trước kẻo lộ đáp án.
+  const promptHtml = rev
+    ? `<div class="fq-word">${escHtml(c.meaning)}</div>`
+    : `<div class="fq-word ${foreign ? 'ft-script' : ''}"${foreign ? ` lang="${lang2}"` : ''}>${escHtml(c.front)}
+        <button id="fq-say" class="ep-say" title="Nghe phát âm" aria-label="Nghe phát âm">🔊</button></div>
+      ${c.ipa ? `<div class="fq-rom">${escHtml(c.ipa)}</div>` : ''}`;
+  const optCls = (rev && foreign) ? 'fq-opt fq-opt-script' : 'fq-opt';
+  const optLang = (rev && foreign) ? ` lang="${lang2}"` : '';
   document.getElementById('fc-test').innerHTML = `
     <div class="ft-sess">
       <div class="ft-bar"><span>Câu ${fqIdx + 1}/${fqQueue.length} · ✓ ${fqRight}</span><span class="ft-topic">${escHtml(c.week)}</span></div>
-      <div class="fq-word ${foreign ? 'ft-script' : ''}"${foreign ? ` lang="${c.lang.slice(0, 2)}"` : ''}>${escHtml(c.front)}
-        <button id="fq-say" class="ep-say" title="Nghe phát âm" aria-label="Nghe phát âm">🔊</button></div>
-      ${c.ipa ? `<div class="fq-rom">${escHtml(c.ipa)}</div>` : ''}
-      <div class="fq-opts">${it.options.map((opt, idx) => `<button class="fq-opt" data-i="${idx}">${escHtml(opt)}</button>`).join('')}</div>
+      ${promptHtml}
+      <div class="fq-opts">${it.options.map((opt, idx) => `<button class="${optCls}"${optLang} data-i="${idx}">${escHtml(opt)}</button>`).join('')}</div>
       <div id="fq-fb" class="oq-fb" hidden></div>
     </div>`;
-  document.getElementById('fq-say').onclick = () => speak(cleanTarget(c.front), c.lang || 'en-US');
+  const say = document.getElementById('fq-say');
+  if (say) say.onclick = () => speak(cleanTarget(c.front), c.lang || 'en-US');
   document.querySelectorAll('.fq-opt').forEach(b => b.onclick = () => fqAnswer(+b.dataset.i));
-  if (fcAuto && foreign) speak(cleanTarget(c.front), c.lang); // tự đọc khi hiện (chữ lạ nghe cho quen)
+  if (fcAuto && foreign && !rev) speak(cleanTarget(c.front), c.lang); // tự đọc chỉ ở chiều thuận
 }
 
 function fqAnswer(i) {
@@ -1557,7 +1576,11 @@ function fqAnswer(i) {
   logActivity();
   const fb = document.getElementById('fq-fb');
   fb.hidden = false;
-  fb.innerHTML = `<div class="oq-verdict ${correct ? 'ok' : 'no'}">${correct ? '✅ Chính xác!' : '❌ Chưa đúng — đáp án: ' + escHtml(it.card.meaning)}</div>
+  // Đáp án đúng: chiều thuận là nghĩa, chiều ngược là chữ gốc (+ phiên âm cho dễ nhớ)
+  const answerText = it.reverse
+    ? `${escHtml(it.card.front)}${it.card.ipa ? ' (' + escHtml(it.card.ipa) + ')' : ''}`
+    : escHtml(it.card.meaning);
+  fb.innerHTML = `<div class="oq-verdict ${correct ? 'ok' : 'no'}">${correct ? '✅ Chính xác!' : '❌ Chưa đúng — đáp án: ' + answerText}</div>
     ${it.card.example ? `<p class="oq-explain">${escHtml(it.card.example)}</p>` : ''}
     <button id="fq-next" class="dg-go">${fqIdx + 1 < fqQueue.length ? 'Câu kế →' : 'Xem kết quả'}</button>`;
   document.getElementById('fq-next').onclick = () => { fqIdx++; fqShow(); };

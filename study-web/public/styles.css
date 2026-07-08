@@ -1453,6 +1453,10 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 .fq-opt:not(:disabled):hover { border-color: var(--accent); }
 .fq-opt.right { border-color: var(--green); background: color-mix(in srgb, var(--green) 14%, var(--bg2)); }
 .fq-opt.wrong { border-color: var(--red); background: color-mix(in srgb, var(--red) 14%, var(--bg2)); }
+.fq-opt-script { font-size: 22px; text-align: center; }  /* lựa chọn là chữ Hàn/Trung (chiều Nghĩa→Từ) */
+.fq-dir-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 999px; color: var(--accent);
+  cursor: pointer; font-size: 13px; padding: 3px 12px; }
+.fq-dir-btn:hover { border-color: var(--accent); }
 
 /* 🌏 Tiến độ học ngoại ngữ (Dashboard) */
 .lang-prog { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 4px; }
