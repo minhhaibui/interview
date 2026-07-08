@@ -185,4 +185,13 @@ window.KO_VOCAB = [
   { id: 'ko-adj-6', w: '느리다', r: 'neurida', m: 'chậm', ex: '버스가 느려요.', exv: 'Xe buýt chậm.', t: '📏 Tính từ' },
   { id: 'ko-adj-7', w: '새롭다', r: 'saeropda', m: 'mới', ex: '새로운 가방이에요.', exv: 'Là cái túi mới.', t: '📏 Tính từ' },
   { id: 'ko-adj-8', w: '비슷하다', r: 'biseutada', m: 'giống / tương tự', ex: '두 개가 비슷해요.', exv: 'Hai cái giống nhau.', t: '📏 Tính từ' },
+  // 🔟 Số lớn (Hán-Hàn)
+  { id: 'ko-big-1', w: '영', r: 'yeong', m: 'số không (0)', ex: '온도가 영 도예요.', exv: 'Nhiệt độ 0 độ.', t: '🔟 Số lớn' },
+  { id: 'ko-big-2', w: '이십', r: 'isip', m: 'hai mươi (20)', ex: '이십 분 걸려요.', exv: 'Mất 20 phút.', t: '🔟 Số lớn' },
+  { id: 'ko-big-3', w: '삼십', r: 'samsip', m: 'ba mươi (30)', ex: '삼십 명이 왔어요.', exv: '30 người đã đến.', t: '🔟 Số lớn' },
+  { id: 'ko-big-4', w: '오십', r: 'osip', m: 'năm mươi (50)', ex: '오십 개 있어요.', exv: 'Có 50 cái.', t: '🔟 Số lớn' },
+  { id: 'ko-big-5', w: '백', r: 'baek', m: 'một trăm (100)', ex: '백 원이에요.', exv: '100 won.', t: '🔟 Số lớn' },
+  { id: 'ko-big-6', w: '천', r: 'cheon', m: 'một nghìn (1000)', ex: '천 원이에요.', exv: '1000 won.', t: '🔟 Số lớn' },
+  { id: 'ko-big-7', w: '만', r: 'man', m: 'mười nghìn (10000)', ex: '만 원이에요.', exv: '10000 won.', t: '🔟 Số lớn' },
+  { id: 'ko-big-8', w: '십만', r: 'simman', m: 'một trăm nghìn (100000)', ex: '십만 원이에요.', exv: '100000 won.', t: '🔟 Số lớn' },
 ];

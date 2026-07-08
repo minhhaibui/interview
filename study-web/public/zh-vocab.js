@@ -185,4 +185,13 @@ window.ZH_VOCAB = [
   { id: 'zh-adj-6', w: '慢', r: 'màn', m: 'chậm', ex: '公共汽车很慢。', exv: 'Xe buýt chậm.', t: '📏 Tính từ' },
   { id: 'zh-adj-7', w: '新', r: 'xīn', m: 'mới', ex: '这是新包。', exv: 'Đây là túi mới.', t: '📏 Tính từ' },
   { id: 'zh-adj-8', w: '旧', r: 'jiù', m: 'cũ', ex: '这本书很旧。', exv: 'Cuốn sách này cũ.', t: '📏 Tính từ' },
+  // 🔟 Số lớn
+  { id: 'zh-big-1', w: '零', r: 'líng', m: 'số không (0)', ex: '现在零度。', exv: 'Bây giờ 0 độ.', t: '🔟 Số lớn' },
+  { id: 'zh-big-2', w: '二十', r: 'èrshí', m: 'hai mươi (20)', ex: '我等二十分钟。', exv: 'Tôi đợi 20 phút.', t: '🔟 Số lớn' },
+  { id: 'zh-big-3', w: '三十', r: 'sānshí', m: 'ba mươi (30)', ex: '三十个人来了。', exv: '30 người đã đến.', t: '🔟 Số lớn' },
+  { id: 'zh-big-4', w: '五十', r: 'wǔshí', m: 'năm mươi (50)', ex: '有五十个。', exv: 'Có 50 cái.', t: '🔟 Số lớn' },
+  { id: 'zh-big-5', w: '一百', r: 'yìbǎi', m: 'một trăm (100)', ex: '一百块钱。', exv: '100 tệ.', t: '🔟 Số lớn' },
+  { id: 'zh-big-6', w: '一千', r: 'yìqiān', m: 'một nghìn (1000)', ex: '一千块钱。', exv: '1000 tệ.', t: '🔟 Số lớn' },
+  { id: 'zh-big-7', w: '一万', r: 'yíwàn', m: 'mười nghìn (10000)', ex: '一万块钱。', exv: '10000 tệ.', t: '🔟 Số lớn' },
+  { id: 'zh-big-8', w: '十万', r: 'shíwàn', m: 'một trăm nghìn (100000)', ex: '十万块钱。', exv: '100000 tệ.', t: '🔟 Số lớn' },
 ];
