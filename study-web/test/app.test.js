@@ -375,6 +375,8 @@ test('wiring: chế độ 🎓 Thi thử đủ HTML + toggle + engine + dọn ti
   assert.ok(/clearExamState\(\)/.test(resetBlock), 'reset dữ liệu chưa xoá kèm bài thi dở');
   const finBlock = APP.slice(APP.indexOf('function finishExam'), APP.indexOf('function finishExam') + 800);
   assert.ok(/clearExamState\(\)/.test(finBlock), 'finishExam chưa xoá bài dở đã lưu');
+  assert.ok(/key !== EXAM_STATE_KEY\) schedulePush/.test(APP),
+    'onStoreWrite chưa loại prep-exam-state — mỗi câu trả lời sẽ đẩy blob không đổi lên Firestore');
 });
 
 test('đếm ngược PV: daysUntil tính đúng + card render + PREP_KEYS', () => {

@@ -5910,7 +5910,9 @@ function initSync() {
   // prep-readiness-log ghi tự động trong render (kể cả render do snapshot remote kích) —
   // nếu để nó trigger push sẽ ping-pong giữa 2 thiết bị lệch điểm; giá trị vẫn được sync
   // kèm theo mọi lần push khác (push là whole-blob theo PREP_KEYS).
-  onStoreWrite = key => { if (key !== 'prep-sync-meta' && key !== 'prep-readiness-log') schedulePush(); };
+  // prep-exam-state ghi SAU MỖI CÂU thi thử nhưng nằm ngoài PREP_KEYS (không sync) —
+  // để nó trigger là mỗi câu trả lời đẩy nguyên blob không đổi lên Firestore, noise thuần.
+  onStoreWrite = key => { if (key !== 'prep-sync-meta' && key !== 'prep-readiness-log' && key !== EXAM_STATE_KEY) schedulePush(); };
 
   fbAuth.onAuthStateChanged(async user => {
     fbUser = user;
