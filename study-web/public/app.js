@@ -859,6 +859,7 @@ function goToQuizReview() {
 
 function goToExam() {
   switchView('coding');
+  if (viewGated('coding') && !fbUser) return; // gate đang hiện — đừng đổi mode sau lưng nó
   setThinkMode('exam');
 }
 
@@ -4451,6 +4452,7 @@ function finishReview() {
 
 let examQueue = [], examIdx = 0, examAnswers = [];
 let examEndMs = 0, examDurSec = 0, examTimerId = null;
+let examShownAt = 0; // lúc render câu hiện tại — chặn double-click/gõ phím kép "trả lời chui" câu kế
 
 const examHistory = () => store.get('prep-exam-history', []);
 const examRunning = () => examEndMs > 0 && examIdx < examQueue.length;
@@ -4525,12 +4527,16 @@ function showExamQ() {
   if (cfg.highlight && window.hljs) el.querySelectorAll('pre code').forEach(c => { try { hljs.highlightElement(c); } catch { /* bỏ qua */ } });
   el.querySelectorAll('.oq-opt').forEach(b => b.onclick = () => answerExam(+b.dataset.i));
   document.getElementById('exam-skip').onclick = () => answerExam(null);
+  examShownAt = Date.now();
   clearInterval(examTimerId);
   tickExam();
   if (examRunning()) examTimerId = setInterval(tickExam, 1000);
 }
 
 function answerExam(i) {
+  // Exam là chỗ duy nhất "chọn là qua câu luôn": cú click thứ 2 của double-click (hoặc gõ phím kép)
+  // sẽ rơi trúng nút CÙNG VỊ TRÍ của câu vừa render → trả lời câu chưa kịp đọc. Nuốt input quá sớm.
+  if (Date.now() - examShownAt < 300) return;
   examAnswers[examIdx] = i;
   examIdx++;
   if (examIdx >= examQueue.length) finishExam(false); else showExamQ();
@@ -4557,7 +4563,9 @@ function finishExam(timedOut) {
       const d = store.get(QUIZ_MODES[item.mode].doneKey, {}); d[item.q.id] = true; store.set(QUIZ_MODES[item.mode].doneKey, d);
     } else {
       if (picked == null) skipped++;
-      recordWrong(item.mode, item.q.id);
+      // Bài bỏ dở quá hạn: câu CHƯA TỪNG HIỂN THỊ (idx > examIdx) chỉ trượt điểm,
+      // không đổ vào hàng đợi 🔁 — "sai" một câu chưa nhìn thấy là dữ liệu ôn tập giả.
+      if (idx <= examIdx) recordWrong(item.mode, item.q.id);
       wrongItems.push({ item, picked });
     }
   });
@@ -4573,7 +4581,7 @@ function finishExam(timedOut) {
   const wrongHtml = wrongItems.map(({ item, picked }) => {
     const cfg = QUIZ_MODES[item.mode], q = item.q;
     return `<div class="exam-wrong">
-      <div class="oq-topic">${cfg.label}${q.topic ? ' · ' + escHtml(q.topic) : ''}${picked == null ? ' · ⏭ đã bỏ qua' : ''}</div>
+      <div class="oq-topic">${cfg.label}${q.topic ? ' · ' + escHtml(q.topic) : ''}${picked === null ? ' · ⏭ đã bỏ qua' : picked === undefined ? ' · ⏳ chưa làm tới' : ''}</div>
       ${cfg.questionHtml(q)}
       ${picked != null ? `<div class="exam-picked">❌ Bạn chọn: ${cfg.optionHtml(q.options[picked])}</div>` : ''}
       <div class="exam-right">✅ Đáp án đúng: ${cfg.optionHtml(q.options[q.answer])}</div>
@@ -5927,6 +5935,9 @@ function isEditingNow() {
   // Đang đọc chính tả cũng là đang soạn: focus nằm ở NÚT 🎙️ chứ không phải textarea,
   // nhưng re-render lúc này sẽ tắt mic giữa câu + đè đoạn chưa kịp autosave (debounce 500ms).
   if (dictState) return true;
+  // Đang GIỮA BÀI THI có đồng hồ: reapplyView sẽ vẽ lại câu hỏi với thứ tự đáp án trộn MỚI
+  // ngay lúc user sắp bấm → click nhầm theo vị trí cũ. Điểm/deadline không đổi nên cứ hoãn re-render.
+  if (examRunning()) return true;
   const a = document.activeElement;
   return !!a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.isContentEditable);
 }

@@ -358,6 +358,11 @@ test('wiring: chế độ 🎓 Thi thử đủ HTML + toggle + engine + dọn ti
   assert.ok(HTML.includes('id="dash-chart-exam"'), 'Dashboard thiếu #dash-chart-exam');
   assert.ok(/barChart\('dash-chart-exam'/.test(APP), 'renderCharts chưa vẽ dash-chart-exam');
   assert.ok(/id: 'td-exam'/.test(APP) && /function goToExam\b/.test(APP), 'tab Hôm nay thiếu task td-exam/goToExam');
+  // 3 fix từ vòng QA 08/07: double-click xuyên câu, snapshot vẽ đè giữa bài, câu chưa hiển thị đổ vào 🔁
+  assert.ok(/examShownAt/.test(APP) && /Date\.now\(\) - examShownAt < 300/.test(APP),
+    'answerExam thiếu guard 300ms chống double-click trả lời chui câu kế');
+  assert.ok(/if \(examRunning\(\)\) return true/.test(APP), 'isEditingNow chưa coi đang-thi là đang-soạn (reapplyView sẽ vẽ đè)');
+  assert.ok(/if \(idx <= examIdx\) recordWrong/.test(APP), 'finishExam vẫn recordWrong cả câu chưa từng hiển thị');
 });
 
 test('đếm ngược PV: daysUntil tính đúng + card render + PREP_KEYS', () => {
