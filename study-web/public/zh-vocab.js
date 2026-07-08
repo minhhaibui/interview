@@ -96,7 +96,7 @@ window.ZH_VOCAB = [
   { id: 'zh-shop-7', w: '市场', r: 'shìchǎng', m: 'chợ', ex: '我去市场。', exv: 'Tôi đi chợ.', t: '🛒 Mua sắm' },
   { id: 'zh-shop-8', w: '超市', r: 'chāoshì', m: 'siêu thị', ex: '超市在那边。', exv: 'Siêu thị ở đằng kia.', t: '🛒 Mua sắm' },
   // 🔤 Động từ
-  { id: 'zh-verb-1', w: '去', r: 'qù', m: 'đi', ex: '我去学校。', exv: 'Tôi đến trường.', t: '🔤 Động từ' },
+  { id: 'zh-verb-1', w: '去', r: 'qù', m: 'đi', ex: '我去学校。', exv: 'Tôi đi học.', t: '🔤 Động từ' },
   { id: 'zh-verb-2', w: '来', r: 'lái', m: 'đến', ex: '朋友来了。', exv: 'Bạn đến rồi.', t: '🔤 Động từ' },
   { id: 'zh-verb-3', w: '看', r: 'kàn', m: 'xem / nhìn', ex: '我看电影。', exv: 'Tôi xem phim.', t: '🔤 Động từ' },
   { id: 'zh-verb-4', w: '听', r: 'tīng', m: 'nghe', ex: '我听音乐。', exv: 'Tôi nghe nhạc.', t: '🔤 Động từ' },
