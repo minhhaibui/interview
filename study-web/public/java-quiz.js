@@ -356,4 +356,116 @@ window.JAVA_QUIZ = [
     ], answer: 1,
     explain: 'LAZY: hoãn nạp quan hệ tới khi truy cập (nhưng coi chừng LazyInitializationException ngoài session). EAGER: nạp ngay, dễ gây nạp thừa/N+1. Mặc định: *ToMany LAZY, *ToOne EAGER. Thực hành tốt: để LAZY và chủ động JOIN FETCH khi cần.',
   },
+  // ---------- Concurrency nâng cao ----------
+  {
+    id: 'java-con-6', topic: 'Concurrency / synchronized',
+    q: 'synchronized hoạt động ở tầng dưới (bytecode/JVM) như thế nào?',
+    options: [
+      'Dùng cờ boolean trong biến',
+      'Dựa trên monitor của object (monitorenter/monitorexit); Mark Word trong object header lưu trạng thái khoá, JVM nâng cấp khoá: không khoá → biased → lightweight (CAS) → heavyweight',
+      'Gọi thẳng OS mutex mỗi lần',
+      'Chỉ là gợi ý cho compiler',
+    ], answer: 1,
+    explain: 'synchronized biên dịch thành monitorenter/monitorexit (hoặc cờ ACC_SYNCHRONIZED cho method). Mỗi object có monitor; trạng thái khoá lưu ở Mark Word (object header). JVM tối ưu bằng lock escalation: biased lock (1 thread) → lightweight (CAS, ít tranh chấp) → heavyweight (OS mutex, tranh chấp cao). Từ Java 6+ nên synchronized không còn “chậm” như xưa.',
+  },
+  {
+    id: 'java-con-7', topic: 'Concurrency / Lock',
+    q: 'ReentrantLock cho gì mà synchronized không có?',
+    options: [
+      'Không có gì khác',
+      'tryLock (không chặn/timeout), lockInterruptibly (chờ có thể ngắt), khoá công bằng (fair), nhiều Condition; nhưng PHẢI unlock trong finally (synchronized tự nhả)',
+      'Tự động unlock, synchronized thì không',
+      'Chỉ dùng được 1 thread',
+    ], answer: 1,
+    explain: 'ReentrantLock (AQS) linh hoạt hơn: tryLock()/tryLock(timeout) tránh chặn vô hạn, lockInterruptibly() cho phép ngắt khi chờ, fair lock theo thứ tự, và nhiều Condition (await/signal riêng). Đổi lại phải nhớ unlock() trong finally. synchronized đơn giản, tự nhả khi rời block, JVM tối ưu sẵn — dùng khi không cần các tính năng trên.',
+  },
+  {
+    id: 'java-con-8', topic: 'Concurrency / ThreadPool',
+    q: 'Khi submit task vào ThreadPoolExecutor, thứ tự xử lý là?',
+    options: [
+      'Luôn tạo thread mới ngay',
+      'corePoolSize chưa đầy → tạo core thread; đầy → vào hàng đợi (workQueue); hàng đợi đầy → tạo tới maximumPoolSize; vẫn đầy → RejectedExecutionHandler',
+      'Đưa hết vào hàng đợi rồi mới tạo thread',
+      'Ngẫu nhiên',
+    ], answer: 1,
+    explain: 'Luồng: (1) < core → tạo core thread; (2) core đầy → đẩy vào workQueue; (3) queue đầy → tạo thêm thread tới max; (4) max + queue đầy → chạy chính sách từ chối (AbortPolicy ném exception, CallerRunsPolicy chạy ở thread gọi, Discard/DiscardOldest bỏ task). Hiểu 7 tham số + thứ tự này là câu ThreadPool kinh điển. TRÁNH Executors.newFixedThreadPool (queue vô hạn dễ OOM) — tự tạo ThreadPoolExecutor với queue có giới hạn.',
+  },
+  {
+    id: 'java-con-9', topic: 'Concurrency / CAS',
+    q: 'CAS (Compare-And-Swap) là gì và gặp vấn đề ABA như thế nào?',
+    options: [
+      'CAS là một loại khoá bi quan',
+      'CAS = so sánh giá trị hiện tại với kỳ vọng, nếu khớp thì cập nhật (nguyên tử, không khoá); vấn đề ABA: giá trị đổi A→B→A khiến CAS tưởng chưa đổi — giải quyết bằng version/stamp (AtomicStampedReference)',
+      'CAS luôn chặn thread',
+      'ABA là tên một thuật toán GC',
+    ], answer: 1,
+    explain: 'CAS là lệnh phần cứng nguyên tử, nền tảng của Atomic* và AQS (lock-free, lạc quan). Nhược điểm: (1) ABA — biến bị đổi rồi đổi lại giá trị cũ, CAS không phát hiện → dùng AtomicStampedReference (thêm version); (2) spin lâu tốn CPU khi tranh chấp cao; (3) chỉ đảm bảo 1 biến.',
+  },
+  {
+    id: 'java-con-10', topic: 'Concurrency / Deadlock',
+    q: 'Bốn điều kiện cần để xảy ra deadlock (bế tắc) là gì?',
+    options: [
+      'Chỉ cần 2 thread là deadlock',
+      'Loại trừ lẫn nhau (mutual exclusion), giữ và chờ (hold-and-wait), không thể tước đoạt (no preemption), và chờ vòng tròn (circular wait) — phá 1 điều kiện là hết deadlock',
+      'Chỉ xảy ra khi thiếu bộ nhớ',
+      'Do không dùng volatile',
+    ], answer: 1,
+    explain: 'Deadlock cần đồng thời 4 điều kiện Coffman: mutual exclusion, hold-and-wait, no preemption, circular wait. Phá 1 điều kiện là tránh được — phổ biến nhất: luôn lấy khoá theo MỘT THỨ TỰ cố định (phá circular wait), hoặc dùng tryLock có timeout (phá hold-and-wait).',
+  },
+  // ---------- JVM chuyên sâu ----------
+  {
+    id: 'java-jvm-1', topic: 'JVM / Class loading',
+    q: 'Quá trình nạp một class (class loading) gồm các bước nào theo thứ tự?',
+    options: [
+      'Chỉ có 1 bước: đọc file .class',
+      'Loading (nạp bytecode) → Linking (Verification → Preparation: cấp bộ nhớ + giá trị mặc định cho static → Resolution: phân giải tham chiếu) → Initialization (chạy static block + gán giá trị static)',
+      'Compile → Run → GC',
+      'Load → Delete → Reload',
+    ], answer: 1,
+    explain: 'Class loading: Loading (tìm & nạp bytecode, tạo Class object) → Linking gồm Verification (kiểm bytecode hợp lệ), Preparation (cấp bộ nhớ cho static, gán giá trị MẶC ĐỊNH 0/null), Resolution (phân giải symbolic reference) → Initialization (thực thi <clinit>: static block + khởi tạo static thật). Class chỉ được init khi lần đầu dùng (lazy).',
+  },
+  {
+    id: 'java-jvm-2', topic: 'JVM / ClassLoader',
+    q: 'Mô hình “parent delegation” (song thân uỷ nhiệm) của ClassLoader là gì và để làm gì?',
+    options: [
+      'ClassLoader con luôn tự nạp trước',
+      'Khi nạp class, loader UỶ THÁC LÊN loader cha trước; cha không nạp được mới tới con — bảo vệ class lõi (vd java.lang.String không bị class giả mạo thay thế) & tránh nạp trùng',
+      'Nạp song song bằng nhiều thread',
+      'Mô hình chỉ có trên Android',
+    ], answer: 1,
+    explain: 'Parent delegation: Application → Extension/Platform → Bootstrap. Loader con hỏi cha trước; cha nạp được thì dùng của cha. Nhờ vậy các class lõi (java.*) luôn do Bootstrap nạp, một class chỉ nạp 1 lần, và người dùng không thể thay java.lang.Object bằng bản giả (an toàn). Tomcat/OSGi phá vỡ mô hình này có chủ đích để cô lập ứng dụng.',
+  },
+  {
+    id: 'java-jvm-3', topic: 'JVM / GC',
+    q: 'Ba thuật toán GC nền tảng và nhược điểm chính của mỗi loại?',
+    options: [
+      'Chỉ có một thuật toán duy nhất',
+      'Mark-Sweep (đánh dấu-xoá: sinh phân mảnh); Copying (sao chép: tốn nửa bộ nhớ nhưng không phân mảnh); Mark-Compact (đánh dấu-nén: không phân mảnh nhưng chậm hơn do di chuyển)',
+      'Reference counting là thuật toán chính của JVM',
+      'Cả ba đều giống hệt nhau',
+    ], answer: 1,
+    explain: 'Mark-Sweep: đánh dấu object sống rồi xoá object chết → nhanh nhưng để lại phân mảnh. Copying: chia đôi vùng, chép object sống sang nửa kia → không phân mảnh, phù hợp Young (đa số chết trẻ) nhưng lãng phí 50%. Mark-Compact: đánh dấu rồi dồn object sống về một đầu → không phân mảnh, hợp Old nhưng tốn công di chuyển. JVM dùng generational: Young=Copying, Old=Mark-Compact. Java KHÔNG dùng reference counting (không xử lý được vòng tham chiếu).',
+  },
+  {
+    id: 'java-jvm-4', topic: 'JVM / Reference',
+    q: 'Bốn loại tham chiếu (strong/soft/weak/phantom) khác nhau về cách GC xử lý ra sao?',
+    options: [
+      'Tất cả đều bị thu hồi ngay',
+      'Strong: không bao giờ bị thu khi còn tham chiếu (dễ gây leak). Soft: thu khi SẮP hết bộ nhớ (hợp cho cache). Weak: thu ở lần GC KẾ TIẾP (WeakHashMap). Phantom: đã bị thu, dùng để nhận thông báo dọn dẹp',
+      'Chỉ khác nhau về cú pháp',
+      'Weak mạnh hơn Strong',
+    ], answer: 1,
+    explain: 'Strong (mặc định): GC không đụng khi còn được trỏ. SoftReference: giữ lại đến khi gần OOM mới thu → cache nhạy bộ nhớ. WeakReference: thu ngay lần GC tới → WeakHashMap, tránh leak. PhantomReference: không lấy được object, dùng cùng ReferenceQueue để làm dọn dẹp thay finalize. Hiểu 4 loại này liên quan trực tiếp tới rò rỉ bộ nhớ.',
+  },
+  {
+    id: 'java-jvm-5', topic: 'JVM / bộ nhớ',
+    q: 'Memory leak và memory overflow (OutOfMemoryError) trong Java khác nhau thế nào?',
+    options: [
+      'Giống nhau hoàn toàn',
+      'Leak: object không còn dùng nhưng vẫn bị tham chiếu nên GC không thu (tích tụ dần); Overflow (OOM): bộ nhớ thực sự không đủ để cấp phát — leak kéo dài thường DẪN ĐẾN OOM',
+      'Overflow xảy ra khi CPU quá tải',
+      'Leak chỉ xảy ra ở C++, không có ở Java',
+    ], answer: 1,
+    explain: 'Memory leak: vẫn còn tham chiếu tới object không dùng nữa (static collection phình mãi, ThreadLocal không remove, listener không gỡ…) → GC không thu được, bộ nhớ tăng dần. OOM: JVM không cấp nổi bộ nhớ nữa (java.lang.OutOfMemoryError: Java heap space). Leak tích tụ lâu ngày thường là NGUYÊN NHÂN gây OOM; điều tra bằng heap dump + phân tích (MAT, jmap).',
+  },
 ];
