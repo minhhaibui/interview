@@ -698,4 +698,62 @@ window.JAVA_QUIZ = [
     ], answer: 1,
     explain: 'Optional thiết kế để làm KIỂU TRẢ VỀ, buộc caller xử lý trường hợp vắng. KHÔNG nên: (1) làm field entity (tốn bộ nhớ, không Serializable, JPA không hỗ trợ); (2) làm tham số method (gọi rườm rà — cứ overload hoặc cho null); (3) gọi get() không kiểm (ném NoSuchElement). Nên dùng map/filter/orElse/orElseThrow/ifPresent. get() mù là anti-pattern.',
   },
+
+  // ---------- MyBatis (SQL mapper, hay hỏi ở backend VN/Á) ----------
+  {
+    id: 'java-mybatis-hash-dollar', topic: 'MyBatis / #{} vs ${}',
+    q: 'Trong MyBatis, khác nhau cốt lõi giữa #{} và ${} là gì (liên quan bảo mật)?',
+    options: [
+      'Giống hệt nhau, chỉ khác cú pháp gõ',
+      '#{} sinh placeholder ? của PreparedStatement (tham số hoá → chống SQL injection); ${} nối THẲNG chuỗi vào SQL (nguy cơ injection) — chỉ dùng ${} cho tên bảng/cột/chiều ORDER BY và phải tự whitelist',
+      '${} an toàn hơn vì giá trị được mã hoá',
+      '#{} chỉ dùng cho số, ${} chỉ dùng cho chuỗi',
+    ], answer: 1,
+    explain: '#{param} → MyBatis thay bằng dấu ? và dùng PreparedStatement.setXxx() → dữ liệu TÁCH khỏi câu lệnh, chống SQL injection, tự xử lý kiểu/escape. ${param} → chèn TRỰC TIẾP giá trị vào chuỗi SQL trước khi biên dịch → dính SQL injection nếu là input người dùng. Chỉ dùng ${} khi bắt buộc động phần KHÔNG thể tham số hoá (tên bảng, tên cột, chiều ASC/DESC) và phải whitelist. Mặc định luôn ưu tiên #{}.',
+    code: "SELECT * FROM user WHERE name = #{name}   -- an toàn → ... WHERE name = ?\nORDER BY ${col} ${dir}                     -- nối thẳng → BẮT BUỘC whitelist col, dir",
+  },
+  {
+    id: 'java-mybatis-mapper-proxy', topic: 'MyBatis / Mapper proxy',
+    q: 'Interface Mapper của MyBatis không có class cài đặt — khi gọi userMapper.findById(1) thì cái gì thực thi?',
+    options: [
+      'Trình biên dịch tự sinh file .class cài đặt lúc build',
+      'MyBatis tạo PROXY động (JDK dynamic proxy — MapperProxy) lúc chạy; proxy ánh xạ method sang MappedStatement (id = tên đầy đủ package.Interface.method) rồi thực thi SQL tương ứng',
+      'Phải tự viết class implements Mapper thì mới chạy',
+      'Nó chỉ gọi một bean Spring khác trùng tên qua reflection',
+    ], answer: 1,
+    explain: 'Mapper chỉ là interface, KHÔNG có implementation. MyBatis dùng JDK dynamic proxy sinh MapperProxy lúc runtime. Mỗi lời gọi method → MapperProxy tra MappedStatement theo id = "package.Interface.method" (khớp namespace + id trong XML/annotation) → chọn loại SELECT/INSERT/... → SqlSession thực thi và map kết quả về object. Nhờ đó ta chỉ khai báo interface + SQL, không phải viết code JDBC lặp lại.',
+  },
+  {
+    id: 'java-mybatis-cache-levels', topic: 'MyBatis / Cache',
+    q: 'Cache cấp 1 (first-level) và cấp 2 (second-level) của MyBatis khác nhau thế nào?',
+    options: [
+      'Cả hai đều toàn cục và bật sẵn như nhau',
+      'Cấp 1 gắn với 1 SqlSession (bật mặc định, bị xoá khi có update/commit/close trong session); cấp 2 gắn với namespace/mapper, chia sẻ GIỮA các session nhưng phải bật thủ công (<cache/>) và entity nên Serializable',
+      'Cấp 1 nằm ở Redis, cấp 2 nằm ở bộ nhớ JVM',
+      'MyBatis chỉ có cache cấp 1, không tồn tại cache cấp 2',
+    ], answer: 1,
+    explain: 'First-level cache: phạm vi 1 SqlSession, BẬT mặc định — cùng một truy vấn trong cùng session lấy từ cache; mọi INSERT/UPDATE/DELETE (hoặc commit/close) làm sạch cache của session đó. Second-level cache: phạm vi namespace (mapper), chia sẻ across session, phải khai <cache/> + cacheEnabled; commit ở session này mới flush cho session khác. Thực tế cache cấp 2 hay bị TẮT vì dễ đọc dữ liệu cũ (nhiều bảng/nhiều node) → thường dùng Redis ngoài thay thế.',
+  },
+  {
+    id: 'java-mybatis-vs-hibernate', topic: 'MyBatis / vs Hibernate',
+    q: 'MyBatis khác Hibernate/JPA ở điểm cốt lõi nào?',
+    options: [
+      'MyBatis luôn nhanh hơn Hibernate trong mọi trường hợp',
+      'MyBatis là "semi-ORM"/SQL mapper — LẬP TRÌNH VIÊN TỰ VIẾT SQL rồi map kết quả, toàn quyền kiểm soát & tối ưu câu lệnh; Hibernate/JPA là ORM đầy đủ, tự SINH SQL từ entity, trừu tượng cao hơn nhưng khó kiểm soát SQL',
+      'MyBatis không cần viết SQL, hoàn toàn giống JPA',
+      'Hibernate chỉ chạy được với MySQL còn MyBatis chạy mọi DB',
+    ], answer: 1,
+    explain: 'MyBatis: bạn viết SQL (XML/annotation), MyBatis lo map tham số & kết quả ↔ object → kiểm soát SQL tối đa, dễ tối ưu, hợp truy vấn phức tạp/báo cáo. Hibernate/JPA: ORM đầy đủ, sinh SQL tự động từ entity/JPQL, năng suất cao cho CRUD chuẩn nhưng SQL bị "giấu" (dễ dính N+1, khó tinh chỉnh). Chọn: SQL phức tạp/cần hiệu năng → MyBatis; domain chuẩn, muốn đổi DB linh hoạt → JPA. Nhiều dự án dùng cả hai.',
+  },
+  {
+    id: 'java-mybatis-dynamic-where', topic: 'MyBatis / Dynamic SQL',
+    q: 'Thẻ <where> trong dynamic SQL của MyBatis giải quyết vấn đề gì so với tự viết "WHERE 1=1"?',
+    options: [
+      'Không khác gì, chỉ trông đẹp hơn',
+      '<where> chỉ chèn từ khoá WHERE khi bên trong có ít nhất một điều kiện, và tự CẮT "AND"/"OR" thừa ở đầu → SQL đúng cú pháp khi ghép <if> động mà không cần mẹo "WHERE 1=1"',
+      '<where> tự tạo index cho câu truy vấn',
+      '<where> chống SQL injection thay cho #{}',
+    ], answer: 1,
+    explain: 'Khi ghép nhiều <if> để build điều kiện động, tự nối tay dễ sinh SQL sai kiểu "WHERE AND age=..." hoặc thiếu hẳn WHERE. Thẻ <where>: chỉ chèn WHERE khi bên trong có nội dung và tự bỏ "AND"/"OR" dư ở đầu → SQL luôn đúng cú pháp, khỏi cần thủ thuật "WHERE 1=1". Tương tự có <set> cho UPDATE (bỏ dấu phẩy thừa) và <trim> tuỳ biến. Lưu ý: <where> KHÔNG liên quan bảo mật — chống injection vẫn là #{}.',
+  },
 ];
