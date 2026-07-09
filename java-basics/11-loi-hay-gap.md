@@ -29,12 +29,14 @@ Scanner sc = new Scanner(System.in);   // ❌ cannot find symbol: class Scanner
 ### `incompatible types: X cannot be converted to Y`
 Gán sai kiểu.
 ```java
-int x = 3.5;          // ❌ double không tự về int
+int x = 3.5;          // ❌ javac: "possible lossy conversion from double to int"
 int x = (int) 3.5;    // ✅ ép kiểu (mất phần lẻ → 3)
 
-String s = 5;         // ❌
+String s = 5;         // ❌ "incompatible types: int cannot be converted to String"
 String s = "5";       // ✅  hoặc String.valueOf(5)
 ```
+
+> Java báo nhóm này bằng nhiều câu chữ khác nhau: **"incompatible types: X cannot be converted to Y"** (khác kiểu hẳn nhau) hoặc **"possible lossy conversion from X to Y"** (thu hẹp kiểu số, vd double→int). Cùng bản chất: gán sai/thu hẹp kiểu → thêm ép kiểu `(Y)` hoặc sửa kiểu biến.
 
 ### `class X is public, should be declared in a file named X.java`
 Tên **file** phải trùng tên **public class**.
