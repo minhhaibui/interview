@@ -109,7 +109,7 @@ window.DEVOPS_QUIZ = [
     q: 'ConfigMap và Secret dùng để làm gì?',
     options: [
       'Chạy pod',
-      'Tách CẤU HÌNH ra khỏi image: ConfigMap cho config thường (key-value, file), Secret cho dữ liệu nhạy cảm (mật khẩu, token — mã hoá base64, kiểm soát truy cập); nạp vào pod qua env hoặc volume → đổi config không cần build lại image',
+      'Tách CẤU HÌNH ra khỏi image: ConfigMap cho config thường (key-value, file), Secret cho dữ liệu nhạy cảm (mật khẩu, token — CHỈ encode base64, KHÔNG phải mã hoá bảo mật; cần bật encryption-at-rest + RBAC mới an toàn); nạp vào pod qua env hoặc volume → đổi config không cần build lại image',
       'Lưu trữ database',
       'Cân bằng tải',
     ], answer: 1,
