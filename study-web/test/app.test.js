@@ -352,6 +352,38 @@ test('wiring: chế độ ☕ Java có đủ id + mode button + script + engine 
   assert.ok(sw.includes("'java-quiz.js'"), 'sw.js PRECACHE thiếu java-quiz.js');
 });
 
+test('redis-quiz: id duy nhất, answer hợp lệ, options ≥ 2, đủ field', () => {
+  const qs = loadWindow('redis-quiz.js').REDIS_QUIZ;
+  assert.ok(Array.isArray(qs) && qs.length >= 10, 'REDIS_QUIZ phải ≥10 câu');
+  const ids = qs.map(q => q.id);
+  assert.strictEqual(new Set(ids).size, ids.length, 'id redis-quiz trùng');
+  for (const q of qs) {
+    assert.ok(q.q && q.explain && q.topic, `REDIS ${q.id} thiếu field`);
+    assert.ok(q.id.startsWith('redis-'), `REDIS ${q.id} thiếu prefix redis-`);
+    assert.ok(Array.isArray(q.options) && q.options.length >= 2, `REDIS ${q.id}: <2 lựa chọn`);
+    assert.ok(Number.isInteger(q.answer) && q.answer >= 0 && q.answer < q.options.length, `REDIS ${q.id}: answer ngoài range`);
+    assert.strictEqual(new Set(q.options).size, q.options.length, `REDIS ${q.id}: options trùng nhau`);
+    if ('cmd' in q) assert.ok(typeof q.cmd === 'string' && q.cmd.length, `REDIS ${q.id}: trường cmd rỗng`);
+  }
+});
+
+test('wiring: chế độ ☁️ Redis có đủ id + mode button + script + engine + QUIZ_MODES', () => {
+  assert.ok(HTML.includes('id="think-redis"'), 'thiếu #think-redis');
+  assert.ok(HTML.includes('id="redis-body"'), 'thiếu #redis-body');
+  assert.ok(HTML.includes('data-mode="redis"'), 'thiếu nút mode redis');
+  assert.ok(HTML.includes('data-cov="redis"'), 'thiếu badge độ phủ redis');
+  assert.ok(HTML.includes('src="redis-quiz.js"'), 'index.html thiếu script redis-quiz.js');
+  assert.ok(HTML.indexOf('src="redis-quiz.js"') < HTML.indexOf('src="app.js"'), 'redis-quiz.js phải nạp trước app.js');
+  assert.ok(/renderRedisQuiz\(\)/.test(APP), 'initThink chưa gọi renderRedisQuiz');
+  assert.ok(/document\.getElementById\('think-redis'\)\.hidden = m !== 'redis'/.test(APP), 'setThinkMode chưa toggle think-redis');
+  assert.ok(/window\.REDIS_QUIZ/.test(APP), 'redisQuiz chưa trỏ tới window.REDIS_QUIZ');
+  assert.ok(/redis: \{[\s\S]*?doneKey: 'prep-redis-done'/.test(APP), 'QUIZ_MODES thiếu entry redis');
+  const keys = APP.slice(APP.indexOf('const PREP_KEYS'), APP.indexOf('const PREP_KEYS') + 2200);
+  assert.ok(/'prep-redis-done'/.test(keys) && /'prep-redis-best'/.test(keys), 'PREP_KEYS thiếu prep-redis-done/best');
+  const sw = read('sw.js');
+  assert.ok(sw.includes("'redis-quiz.js'"), 'sw.js PRECACHE thiếu redis-quiz.js');
+});
+
 test('wiring: chế độ 🔁 Ôn câu sai đủ HTML + toggle + badge + render', () => {
   assert.ok(HTML.includes('id="think-review"'), 'thiếu #think-review');
   assert.ok(HTML.includes('id="review-body"'), 'thiếu #review-body');
