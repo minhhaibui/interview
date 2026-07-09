@@ -370,4 +370,60 @@ window.API_QUIZ = [
     ], answer: 1,
     explain: 'GET: safe (không đổi trạng thái) + idempotent, tham số ở query string → bị cache, lưu lịch sử/log, bookmark được, giới hạn độ dài URL. Dùng để đọc. POST: không idempotent (gửi 2 lần tạo 2 bản ghi), dữ liệu ở body, không cache mặc định → dùng để tạo/đổi trạng thái. Lưu ý “POST an toàn hơn” là hiểu lầm — cả hai đều lộ nếu không có HTTPS; khác biệt nằm ở ngữ nghĩa idempotent/safe, không phải bảo mật.',
   },
+  // ---------- Bảo mật web (theo JavaGuide) ----------
+  {
+    id: 'sec-sqli', topic: 'Bảo mật',
+    q: 'SQL injection là gì và cách phòng chống ĐÚNG nhất?',
+    options: [
+      'Chặn bằng cách ẩn thông báo lỗi',
+      'Kẻ tấn công chèn mã SQL qua input (vd \' OR 1=1--) để lách/đọc/xoá dữ liệu. Phòng: dùng PREPARED STATEMENT / tham số hoá (?), KHÔNG nối chuỗi SQL; kèm validate input & quyền tối thiểu',
+      'Chỉ cần escape dấu nháy đơn là đủ tuyệt đối',
+      'Dùng NoSQL thì miễn nhiễm hoàn toàn',
+    ], answer: 1,
+    explain: 'SQLi: nối input thẳng vào câu SQL (`"... WHERE name=\'" + input + "\'"`) → input `\' OR 1=1--` phá cấu trúc query. Phòng chống GỐC RỄ: dùng prepared statement / parameterized query (PreparedStatement, `?` placeholder) — dữ liệu và câu lệnh tách bạch, DB không hiểu input là mã. Bổ sung: validate input, nguyên tắc quyền tối thiểu, ORM dùng đúng. Escape thủ công dễ sót; NoSQL cũng có injection riêng (NoSQL injection).',
+  },
+  {
+    id: 'sec-xss', topic: 'Bảo mật',
+    q: 'XSS (Cross-Site Scripting) là gì và chống thế nào?',
+    options: [
+      'Tấn công vào server database',
+      'Chèn <script> độc vào trang để chạy trong TRÌNH DUYỆT nạn nhân (đánh cắp cookie/session…). Chống: ESCAPE/encode output theo ngữ cảnh (HTML), CSP header, HttpOnly cookie, validate input',
+      'Chỉ xảy ra khi không dùng HTTPS',
+      'Là lỗi phía server, không liên quan client',
+    ], answer: 1,
+    explain: 'XSS: kẻ tấn công nhét mã JS vào nội dung (comment, tên…); khi render ra HTML mà không escape, script chạy trong trình duyệt người khác → trộm cookie/session, giả mạo thao tác. Chống: (1) ESCAPE output theo ngữ cảnh (HTML entity encode) — quan trọng nhất; (2) Content-Security-Policy chặn script lạ; (3) cookie HttpOnly (JS không đọc được) + Secure; (4) validate/sanitize input. Framework hiện đại tự escape mặc định (React/Thymeleaf).',
+  },
+  {
+    id: 'sec-csrf', topic: 'Bảo mật',
+    q: 'CSRF (Cross-Site Request Forgery) khai thác điều gì và chống ra sao?',
+    options: [
+      'Chèn script vào trang',
+      'Lợi dụng việc trình duyệt TỰ ĐÍNH KÈM cookie: dụ nạn nhân (đang đăng nhập site A) bấm link/form độc → gửi request thay đổi trạng thái tới A. Chống: CSRF token, SameSite cookie, kiểm Origin/Referer',
+      'Đọc trộm database',
+      'Bẻ khoá mật khẩu',
+    ], answer: 1,
+    explain: 'CSRF: nạn nhân đang đăng nhập bank.com; kẻ xấu dụ bấm form ẩn POST tới bank.com/transfer → trình duyệt TỰ gửi kèm cookie phiên → giao dịch được thực hiện dù nạn nhân không chủ ý. Chống: (1) CSRF token (token ngẫu nhiên gắn form, server kiểm — kẻ tấn công không đoán được); (2) cookie SameSite=Lax/Strict (không gửi cookie cho request cross-site); (3) kiểm Origin/Referer. Khác XSS: CSRF lợi dụng phiên hợp lệ, không cần chèn script.',
+  },
+  {
+    id: 'sec-oauth2', topic: 'Bảo mật / OAuth2',
+    q: 'OAuth2 Authorization Code flow dùng để làm gì?',
+    options: [
+      'Mã hoá dữ liệu truyền',
+      'Cho phép app bên thứ 3 truy cập tài nguyên người dùng mà KHÔNG cần biết mật khẩu: user đồng ý → nhận authorization code → app đổi code lấy access token (ở backend) → gọi API bằng token',
+      'Thay thế HTTPS',
+      'Là cách hash mật khẩu',
+    ], answer: 1,
+    explain: 'OAuth2 = uỷ quyền (authorization), không phải xác thực. Authorization Code flow (chuẩn cho web có backend): (1) app chuyển user tới trang đồng ý của provider (Google…); (2) user đồng ý → provider trả AUTHORIZATION CODE về redirect_uri; (3) BACKEND app đổi code + client_secret lấy ACCESS TOKEN (không lộ token ra trình duyệt); (4) app dùng access token gọi API. Ưu điểm: app không bao giờ thấy mật khẩu user; token có scope + hết hạn. OIDC thêm id_token cho xác thực danh tính.',
+  },
+  {
+    id: 'sec-pwhash', topic: 'Bảo mật / Password',
+    q: 'Lưu mật khẩu người dùng trong DB đúng cách là?',
+    options: [
+      'Mã hoá AES rồi giải mã khi cần so sánh',
+      'HASH một chiều bằng thuật toán CHẬM chuyên dụng (bcrypt/scrypt/Argon2) + SALT ngẫu nhiên mỗi user — KHÔNG bao giờ lưu plaintext, không dùng MD5/SHA1 (quá nhanh, dễ brute-force/rainbow table)',
+      'Lưu plaintext cho dễ so sánh',
+      'Base64 encode mật khẩu',
+    ], answer: 1,
+    explain: 'Mật khẩu phải HASH MỘT CHIỀU (không giải ngược được), KHÔNG mã hoá 2 chiều (lộ key là lộ hết). Dùng thuật toán CHẬM có chủ đích: bcrypt/scrypt/Argon2 (Argon2 hiện đại nhất) → làm brute-force cực đắt. SALT ngẫu nhiên MỖI user → hai người cùng mật khẩu ra hash khác nhau, vô hiệu rainbow table. TRÁNH MD5/SHA-1/SHA-256 trần (quá nhanh) và base64 (chỉ encode). Khi đăng nhập: hash lại input rồi so với hash đã lưu.',
+  },
 ];
