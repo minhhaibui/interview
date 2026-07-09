@@ -10,6 +10,7 @@
 
 ## Mục lục
 
+**Java core**
 | # | Bài | Nội dung cốt lõi |
 |---|-----|------------------|
 | 01 | **JVM & Bộ nhớ** | Heap/Stack/Metaspace, class loading, GC, tham chiếu, leak vs OOM |
@@ -17,7 +18,14 @@
 | 03 | **Collections** | HashMap nội bộ, ConcurrentHashMap, List/Set/Map chọn cái nào |
 | 04 | **Spring & JPA** | IoC/DI, bean lifecycle, AOP, @Transactional, N+1 |
 
-> Các bài 02–04 sẽ được bổ sung dần. Mỗi bài kết bằng phần **"Câu hỏi phỏng vấn hay gặp"** để bạn tự trả lời trước khi xem đáp án trong quiz.
+**Hệ sinh thái backend** (bám JavaGuide)
+| # | Bài | Nội dung cốt lõi |
+|---|-----|------------------|
+| 05 | **MySQL** | Index B+Tree, clustered/回表, isolation, MVCC, khoá, EXPLAIN |
+| 06 | **Redis** | Kiểu dữ liệu, RDB/AOF, cache穿透/击穿/雪崩, khoá phân tán, HA |
+| 07 | **Mạng** | TCP handshake, TCP vs UDP, HTTPS/TLS, HTTP 1.1/2/3 |
+
+> Mỗi bài kết bằng phần **"Câu hỏi phỏng vấn hay gặp"** để bạn tự trả lời trước khi xem đáp án trong quiz. (Bài 06–07 đang bổ sung.)
 
 ## Lộ trình gợi ý (nếu ít thời gian)
 
