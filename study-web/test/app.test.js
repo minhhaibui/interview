@@ -317,6 +317,41 @@ test('wiring: chế độ CLI Quiz có đủ id + mode button + script + engine'
   assert.ok(/window\.CLI_QUIZ/.test(APP), 'cliQuiz chưa trỏ tới window.CLI_QUIZ');
 });
 
+test('java-quiz: id duy nhất, answer hợp lệ, options ≥ 2, đủ field', () => {
+  const qs = loadWindow('java-quiz.js').JAVA_QUIZ;
+  assert.ok(Array.isArray(qs) && qs.length >= 20, 'JAVA_QUIZ phải ≥20 câu');
+  const ids = qs.map(q => q.id);
+  assert.strictEqual(new Set(ids).size, ids.length, 'id java-quiz trùng');
+  for (const q of qs) {
+    assert.ok(q.q && q.explain && q.topic, `JAVA ${q.id} thiếu field`);
+    assert.ok(q.id.startsWith('java-'), `JAVA ${q.id} thiếu prefix java-`);
+    assert.ok(Array.isArray(q.options) && q.options.length >= 2, `JAVA ${q.id}: <2 lựa chọn`);
+    assert.ok(Number.isInteger(q.answer) && q.answer >= 0 && q.answer < q.options.length,
+      `JAVA ${q.id}: answer ngoài range`);
+    if ('code' in q) assert.ok(typeof q.code === 'string' && q.code.length, `JAVA ${q.id}: trường code rỗng`);
+  }
+  // đáp án đúng không trùng với lựa chọn khác trong cùng câu (tránh 2 đáp án)
+  for (const q of qs) assert.strictEqual(new Set(q.options).size, q.options.length, `JAVA ${q.id}: options trùng nhau`);
+});
+
+test('wiring: chế độ ☕ Java có đủ id + mode button + script + engine + QUIZ_MODES', () => {
+  assert.ok(HTML.includes('id="think-java"'), 'thiếu #think-java');
+  assert.ok(HTML.includes('id="java-body"'), 'thiếu #java-body');
+  assert.ok(HTML.includes('data-mode="java"'), 'thiếu nút mode java');
+  assert.ok(HTML.includes('data-cov="java"'), 'thiếu badge độ phủ java');
+  assert.ok(HTML.includes('src="java-quiz.js"'), 'index.html thiếu script java-quiz.js');
+  assert.ok(HTML.indexOf('src="java-quiz.js"') < HTML.indexOf('src="app.js"'), 'java-quiz.js phải nạp trước app.js');
+  assert.ok(/renderJavaQuiz\(\)/.test(APP), 'initThink chưa gọi renderJavaQuiz');
+  assert.ok(/document\.getElementById\('think-java'\)\.hidden = m !== 'java'/.test(APP), 'setThinkMode chưa toggle think-java');
+  assert.ok(/window\.JAVA_QUIZ/.test(APP), 'javaQuiz chưa trỏ tới window.JAVA_QUIZ');
+  // java phải là 1 mode trong QUIZ_MODES → tự vào 🔁 ôn câu sai + 🎓 thi thử + độ phủ
+  assert.ok(/java: \{[\s\S]*?doneKey: 'prep-java-done'/.test(APP), 'QUIZ_MODES thiếu entry java');
+  const keys = APP.slice(APP.indexOf('const PREP_KEYS'), APP.indexOf('const PREP_KEYS') + 2200);
+  assert.ok(/'prep-java-done'/.test(keys) && /'prep-java-best'/.test(keys), 'PREP_KEYS thiếu prep-java-done/best');
+  const sw = read('sw.js');
+  assert.ok(sw.includes("'java-quiz.js'"), 'sw.js PRECACHE thiếu java-quiz.js');
+});
+
 test('wiring: chế độ 🔁 Ôn câu sai đủ HTML + toggle + badge + render', () => {
   assert.ok(HTML.includes('id="think-review"'), 'thiếu #think-review');
   assert.ok(HTML.includes('id="review-body"'), 'thiếu #review-body');

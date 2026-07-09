@@ -3343,6 +3343,7 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-daily-goal', 'prep-badges-seen', 'prep-design-history', 'prep-design-draft',
   'prep-oq-done', 'prep-oq-best', 'prep-debug-solved', 'prep-debug-code',
   'prep-api-done', 'prep-api-best', 'prep-sql-done', 'prep-sql-best', 'prep-cli-done', 'prep-cli-best',
+  'prep-java-done', 'prep-java-best',
   'prep-en-done', 'prep-sit-done', 'prep-readiness-log',
   'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date',
   'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned', 'prep-exam-history', 'prep-fc-lang'];
@@ -4192,7 +4193,7 @@ let thinkInit = false, thinkMode = 'code';
 function initThink() {
   document.querySelectorAll('.think-mode').forEach(b => { b.onclick = () => setThinkMode(b.dataset.mode); });
   setThinkMode(thinkMode);
-  if (!thinkInit) { renderCodingFilters(); renderCodingList(); renderIQ(); renderOutputQuiz(); renderDebugList(); renderApiQuiz(); renderSqlQuiz(); renderCliQuiz(); thinkInit = true; }
+  if (!thinkInit) { renderCodingFilters(); renderCodingList(); renderIQ(); renderOutputQuiz(); renderDebugList(); renderApiQuiz(); renderSqlQuiz(); renderCliQuiz(); renderJavaQuiz(); thinkInit = true; }
   refreshThinkBadges();
 }
 
@@ -4207,6 +4208,7 @@ function setThinkMode(m) {
   document.getElementById('think-api').hidden = m !== 'api';
   document.getElementById('think-sql').hidden = m !== 'sql';
   document.getElementById('think-cli').hidden = m !== 'cli';
+  document.getElementById('think-java').hidden = m !== 'java';
   document.getElementById('think-review').hidden = m !== 'review';
   document.getElementById('think-exam').hidden = m !== 'exam';
   if (m === 'review') renderReview();
@@ -4421,6 +4423,14 @@ const QUIZ_MODES = {
       (q.cmd ? `<pre><code class="language-bash">${escHtml(q.cmd)}</code></pre>` : ''),
     highlight: true,
   },
+  java: {
+    label: '☕ Java', doneKey: 'prep-java-done', data: () => window.JAVA_QUIZ || [],
+    ask: 'Chọn đáp án đúng:',
+    optionHtml: o => `<span class="oq-otext">${escHtml(o)}</span>`,
+    questionHtml: q => `<p class="oq-question">${escHtml(q.q)}</p>` +
+      (q.code ? `<pre><code class="language-java">${escHtml(q.code)}</code></pre>` : ''),
+    highlight: true,
+  },
   // 2 vòng trắc nghiệm của Phỏng vấn tổng hợp cũng đổ câu sai về đây (ghi ở answerMcq).
   english: {
     label: '🇬🇧 Tiếng Anh', doneKey: 'prep-en-done', data: () => window.ENGLISH_QUESTIONS || [],
@@ -4467,6 +4477,16 @@ const cliQuiz = makeQuiz({
   resultMsg: pct => pct >= 80 ? 'Thạo dòng lệnh — tự tin demo thao tác khi phỏng vấn!' : pct >= 50 ? 'Khá ổn — ôn thêm git reset/revert, kubectl rollout, SCAN vs KEYS.' : 'Lệnh CLI hay bị hỏi thực hành — đọc kỹ giải thích từng câu nhé.',
 });
 function renderCliQuiz() { cliQuiz.render(); }
+
+// ----- Chế độ ☕ Java (dùng engine makeQuiz) -----
+const javaQuiz = makeQuiz({
+  ...QUIZ_MODES.java, // kèm snippet Java trong questionHtml + hljs
+  mode: 'java',
+  bodyId: 'java-body',
+  bestKey: 'prep-java-best',
+  resultMsg: pct => pct >= 80 ? 'Rất chắc Java — tự tin vào vòng phỏng vấn backend!' : pct >= 50 ? 'Khá ổn — ôn thêm JVM/GC, HashMap nội bộ, concurrency và Spring/JPA.' : 'Java là phần lõi khi phỏng vấn Backend Java — đọc kỹ giải thích từng câu để nhớ sâu nhé.',
+});
+function renderJavaQuiz() { javaQuiz.render(); }
 
 /** Render nút đáp án theo thứ tự hiển thị NGẪU NHIÊN (chống học vẹt vị trí);
  *  data-i giữ CHỈ SỐ GỐC nên mọi hàm chấm phải so theo dataset.i, không theo vị trí DOM. */

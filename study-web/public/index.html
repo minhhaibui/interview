@@ -322,6 +322,7 @@
         <button class="think-mode" data-mode="api">📡 API/HTTP <span class="think-cov" data-cov="api" hidden></span></button>
         <button class="think-mode" data-mode="sql">🗄️ SQL <span class="think-cov" data-cov="sql" hidden></span></button>
         <button class="think-mode" data-mode="cli">🖥️ CLI <span class="think-cov" data-cov="cli" hidden></span></button>
+        <button class="think-mode" data-mode="java">☕ Java <span class="think-cov" data-cov="java" hidden></span></button>
       </div>
       <div class="think-group">
         <span class="think-glabel">🔁 Ôn &amp; thi</span>
@@ -397,6 +398,15 @@
         <h1>🖥️ CLI Quiz</h1>
         <p class="coding-intro">Trắc nghiệm câu lệnh hay dùng &amp; hay bị hỏi khi làm Backend: <b>git</b> (reset/revert/rebase/stash), <b>docker</b> (run/exec/logs/ps), <b>kubectl</b> (describe/rollout/apply), <b>redis-cli</b> (SCAN vs KEYS, SET EX, INCR), <b>psql</b> (\dt, EXPLAIN ANALYZE), <b>bash</b> (grep -r, tail -f, kill -9, chmod). Chọn đáp án để biết đúng/sai kèm <b>giải thích</b>.</p>
         <div id="cli-body"></div>
+      </div>
+    </div>
+
+    <!-- Chế độ ☕ JAVA (phỏng vấn Java backend chuyên sâu) -->
+    <div id="think-java" hidden>
+      <div class="oq-wrap">
+        <h1>☕ Java phỏng vấn</h1>
+        <p class="coding-intro">Trắc nghiệm Java <b>chuyên sâu để đi làm</b>: JVM &amp; bộ nhớ (heap/stack/metaspace), Garbage Collection, String &amp; String pool, <b>equals/hashCode</b>, Collections &amp; <b>HashMap nội bộ</b>, Concurrency (volatile/synchronized/ThreadLocal/ConcurrentHashMap), Generics &amp; type erasure, Exception, <b>Java 8+</b> (stream/Optional/lambda), OOP, và <b>Spring/JPA</b> (DI, bean scope, @Transactional, N+1). Chọn đáp án để biết đúng/sai kèm <b>giải thích</b>.</p>
+        <div id="java-body"></div>
       </div>
     </div>
 
@@ -502,6 +512,7 @@
   <script src="api-quiz.js"></script>
   <script src="sql-drill.js"></script>
   <script src="cli-quiz.js"></script>
+  <script src="java-quiz.js"></script>
   <script src="star-questions.js"></script>
   <script src="reverse-questions.js"></script>
   <script src="english-phrases.js"></script>
