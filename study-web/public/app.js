@@ -632,6 +632,7 @@ const STUDY_TIPS = [
   'Mỗi tuần làm một bài 🎓 Thi thử có tính giờ — áp lực đồng hồ khi luyện giúp bạn bình tĩnh hơn ở bài test thật.',
   'Tab 🃏 Flashcards có bộ chọn 🌏 ngôn ngữ: học thêm tiếng Hàn/Trung (chữ + phiên âm + phát âm) song song với tiếng Anh, chung một cơ chế ôn SRS.',
   'Điểm thi thử thấp ở mảng nào? Đề 🔥 nước rút (trong 🎓 Thi thử) sẽ tự dồn câu vào đúng mảng yếu đó cho bạn.',
+  'Chưa biết nhiều Java? Bắt đầu ở 📚 Học → ☕ Java nền tảng (từ số 0): 9 bài từ Hello World → biến → điều khiển → method → OOP → SOLID → Collections → Exception → Maven, mỗi bài có 🧪 Tự thử. Học chắc nền tảng RỒI mới sang track ☕ Java Backend (trình phỏng vấn).',
   'Track ☕ Java Backend: đọc 9 bài docs (📚 Học → ☕ Java Backend) rồi luyện quiz tương ứng ở 🧠 Tư duy (☕ Java · 🗄️ SQL · ☁️ Redis · 📡 API · 🏗️ Phân tán). Đọc để hiểu → quiz để nhớ.',
   'Học chuyên sâu để đi làm: mỗi mảng Java (JVM, concurrency, collections, Spring, MySQL, Redis, mạng, hệ phân tán) đều có DOC đọc + QUIZ luyện + vào 🎓 Thi thử đo phong độ.',
 ];
