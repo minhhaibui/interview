@@ -627,4 +627,75 @@ window.JAVA_QUIZ = [
     ], answer: 1,
     explain: 'BeanFactory: container gốc, tạo bean LAZY (khi getBean). ApplicationContext (thường dùng): kế thừa BeanFactory + tự đăng ký BeanPostProcessor/BeanFactoryPostProcessor, hỗ trợ quốc tế hoá (MessageSource), publish/nghe sự kiện (ApplicationEvent), truy cập resource, và khởi tạo EAGER các singleton lúc container start → lỗi cấu hình lộ ra sớm. Thực tế gần như luôn dùng ApplicationContext.',
   },
+  // ---------- Java 8+ / Tính năng mới ----------
+  {
+    id: 'java-new-record', topic: 'Java 新特性 / record',
+    q: '`record` (Java 16) khác class thường ra sao?',
+    code: 'public record Point(int x, int y) {}',
+    options: [
+      'record là một loại interface',
+      'record là lớp mang dữ liệu BẤT BIẾN: tự sinh constructor, getter (x(), y()), equals/hashCode/toString; các field là final — hợp làm DTO/value object',
+      'record cho phép kế thừa nhiều class',
+      'record giống hệt class, chỉ đổi từ khoá',
+    ], answer: 1,
+    explain: 'record là "data carrier" bất biến: compiler tự sinh canonical constructor, accessor (x() thay vì getX()), equals/hashCode/toString dựa trên các component. Field final, không setter. Không kế thừa class khác (đã ngầm final), nhưng implements được interface. Hợp làm DTO, value object, key của Map. Thay cho lớp POJO dài dòng hoặc Lombok @Value.',
+  },
+  {
+    id: 'java-new-sealed', topic: 'Java 新特性 / sealed',
+    q: '`sealed` class/interface (Java 17) dùng để làm gì?',
+    code: 'public sealed interface Shape permits Circle, Square {}',
+    options: [
+      'Khoá object không cho sửa',
+      'GIỚI HẠN danh sách class được phép kế thừa/implements (permits) → kiểm soát hệ phân cấp, giúp compiler kiểm exhaustive khi switch pattern matching',
+      'Làm class chạy nhanh hơn',
+      'Mã hoá class',
+    ], answer: 1,
+    explain: 'sealed cho phép tác giả khai báo CHÍNH XÁC những class con được phép (permits). Lớp con phải là sealed / final / non-sealed. Lợi ích: mô hình hoá "tổng kiểu" (sum type) đóng, và compiler biết đủ mọi nhánh → switch pattern matching kiểm được exhaustive (không cần default). Hợp cho mô hình domain có tập biến thể cố định.',
+  },
+  {
+    id: 'java-new-switch', topic: 'Java 新特性 / switch',
+    q: 'Switch expression (Java 14) khác switch statement cũ thế nào?',
+    code: 'int n = switch (day) {\n  case MON, TUE -> 1;\n  default -> 0;\n};',
+    options: [
+      'Không khác gì',
+      'Trả về GIÁ TRỊ (là biểu thức), dùng "->" không bị fall-through (khỏi break), gộp nhiều nhãn bằng dấu phẩy, buộc phủ hết nhánh (exhaustive) với enum/sealed',
+      'Chỉ đổi cú pháp, vẫn fall-through',
+      'Không hỗ trợ enum',
+    ], answer: 1,
+    explain: 'Switch expression: là biểu thức TRẢ VỀ giá trị (gán được), dùng "->" nên KHÔNG fall-through (không cần break — nguồn bug kinh điển của switch cũ), gộp nhãn "case A, B ->", dùng yield cho block. Với enum/sealed phải phủ hết nhánh. An toàn & gọn hơn switch statement truyền thống nhiều.',
+  },
+  {
+    id: 'java-new-var', topic: 'Java 新特性 / var',
+    q: '`var` (Java 10) — suy luận kiểu — hoạt động thế nào?',
+    code: 'var list = new ArrayList<String>();  // list là ArrayList<String>',
+    options: [
+      'var làm Java thành ngôn ngữ động (dynamic typing)',
+      'var chỉ là suy luận kiểu lúc BIÊN DỊCH (vẫn tĩnh & an toàn kiểu); dùng cho biến cục bộ có khởi tạo rõ ràng; KHÔNG dùng cho field, tham số method, hay khởi tạo null',
+      'var giống Object, chứa mọi kiểu lúc runtime',
+      'var làm chậm chương trình',
+    ], answer: 1,
+    explain: 'var KHÔNG biến Java thành dynamic typing — compiler suy ra kiểu tĩnh từ vế phải, sau đó kiểu cố định như khai báo tường minh (an toàn kiểu, không phí runtime). Chỉ dùng cho biến CỤC BỘ có khởi tạo. Không dùng: field, tham số, kiểu trả về, hay `var x = null` (không suy được). Lạm dụng làm code khó đọc → chỉ dùng khi kiểu đã hiển nhiên ở vế phải.',
+  },
+  {
+    id: 'java-new-vthread', topic: 'Java 新特性 / Virtual Thread',
+    q: 'Virtual thread (Java 21, Project Loom) giải quyết vấn đề gì?',
+    options: [
+      'Làm thread chạy nhanh hơn về tính toán',
+      'Thread "ảo" siêu nhẹ do JVM quản lý (không map 1-1 với thread OS): tạo được HÀNG TRIỆU, khi block I/O thì JVM tự tháo khỏi thread nền → xử lý cực nhiều tác vụ I/O-bound mà không cần lập trình bất đồng bộ phức tạp',
+      'Thay thế toàn bộ thread thường',
+      'Chỉ dùng cho GPU',
+    ], answer: 1,
+    explain: 'Virtual thread (JEP 444): thread nhẹ do JVM lập lịch trên một số ít "carrier thread" OS. Khi virtual thread block (I/O, sleep), JVM "unmount" nó khỏi carrier để carrier chạy việc khác → có thể có hàng triệu virtual thread. Giải bài toán "một thread OS mỗi request" tốn kém: viết code kiểu blocking/tuần tự đơn giản nhưng đạt thông lượng của mô hình async. Hợp I/O-bound; CPU-bound thì không lợi. Tránh giữ khoá/synchronized dài (gây "pinning").',
+  },
+  {
+    id: 'java-new-optional', topic: 'Java 8+ / Optional dùng đúng',
+    q: 'Cách dùng Optional nào là SAI/không nên?',
+    options: [
+      'orElseThrow() khi bắt buộc phải có giá trị',
+      'Dùng Optional làm KIỂU CỦA FIELD entity và làm THAM SỐ method (Optional sinh ra để làm KIỂU TRẢ VỀ, biểu thị "có thể vắng")',
+      'map().orElse() để xử lý trường hợp rỗng',
+      'ifPresent() để chạy hành động khi có giá trị',
+    ], answer: 1,
+    explain: 'Optional thiết kế để làm KIỂU TRẢ VỀ, buộc caller xử lý trường hợp vắng. KHÔNG nên: (1) làm field entity (tốn bộ nhớ, không Serializable, JPA không hỗ trợ); (2) làm tham số method (gọi rườm rà — cứ overload hoặc cho null); (3) gọi get() không kiểm (ném NoSuchElement). Nên dùng map/filter/orElse/orElseThrow/ifPresent. get() mù là anti-pattern.',
+  },
 ];
