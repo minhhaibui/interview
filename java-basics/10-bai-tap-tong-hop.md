@@ -81,6 +81,8 @@ static double diemTrungBinh(List<SinhVien> ds) {
 ## Bước 4 — Menu + nhập liệu + bắt lỗi (áp dụng bài 02 & 08)
 
 ```java
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class QuanLySinhVien {
