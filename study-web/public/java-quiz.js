@@ -160,7 +160,7 @@ window.JAVA_QUIZ = [
       'synchronizedMap nhanh hơn khi ghi nhiều',
       'ConcurrentHashMap không cho phép nhiều thread',
     ], answer: 1,
-    explain: 'synchronizedMap bọc mọi method bằng 1 khoá chung → nghẽn cổ chai khi nhiều thread. ConcurrentHashMap (Java 8) dùng CAS + khoá theo bucket/node → thông lượng ghi song song cao hơn nhiều. Cả hai không cho phép key/value null (khác HashMap).',
+    explain: 'synchronizedMap bọc mọi method bằng 1 khoá chung → nghẽn cổ chai khi nhiều thread. ConcurrentHashMap (Java 8) dùng CAS + khoá theo bucket/node → thông lượng ghi song song cao hơn nhiều. Bẫy hay hỏi: ConcurrentHashMap CẤM null key/value (để không nhập nhằng “không có key” vs “value null” khi đa luồng); còn synchronizedMap(HashMap) VẪN cho null vì chỉ bọc khoá quanh HashMap.',
   },
   {
     id: 'java-con-4', topic: 'Concurrency',
