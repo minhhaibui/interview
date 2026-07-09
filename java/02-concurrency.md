@@ -63,6 +63,8 @@ synchronized (lock) { ... }                    // khoá trên object `lock`
 - Ở tầng dưới: dựa trên **monitor** của object (`monitorenter`/`monitorexit`), trạng thái khoá lưu ở **Mark Word** trong object header.
 - JVM tối ưu bằng **lock escalation** (nâng cấp khoá): không khoá → biased lock → lightweight lock (CAS) → heavyweight lock (mutex OS). Nên từ Java 6+ `synchronized` KHÔNG còn chậm như lời đồn.
 
+> *Lưu ý cập nhật:* **biased locking** đã bị **tắt mặc định từ Java 15** (JEP 374) và **gỡ bỏ ở Java 18** — trên JVM mới chuỗi thực tế là lightweight (CAS) → heavyweight. Câu trả lời "biased → lightweight → heavyweight" vẫn là kinh điển cho Java 8/11, nhưng nói thêm ý này sẽ ghi điểm với interviewer khó tính.
+
 ### `ReentrantLock` — khoá linh hoạt hơn
 
 | | synchronized | ReentrantLock |

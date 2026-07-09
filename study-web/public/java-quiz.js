@@ -366,7 +366,7 @@ window.JAVA_QUIZ = [
       'Gọi thẳng OS mutex mỗi lần',
       'Chỉ là gợi ý cho compiler',
     ], answer: 1,
-    explain: 'synchronized biên dịch thành monitorenter/monitorexit (hoặc cờ ACC_SYNCHRONIZED cho method). Mỗi object có monitor; trạng thái khoá lưu ở Mark Word (object header). JVM tối ưu bằng lock escalation: biased lock (1 thread) → lightweight (CAS, ít tranh chấp) → heavyweight (OS mutex, tranh chấp cao). Từ Java 6+ nên synchronized không còn “chậm” như xưa.',
+    explain: 'synchronized biên dịch thành monitorenter/monitorexit (hoặc cờ ACC_SYNCHRONIZED cho method). Mỗi object có monitor; trạng thái khoá lưu ở Mark Word (object header). JVM tối ưu bằng lock escalation: biased lock (1 thread) → lightweight (CAS, ít tranh chấp) → heavyweight (OS mutex, tranh chấp cao). Từ Java 6+ nên synchronized không còn “chậm” như xưa. (Lưu ý cập nhật: biased locking đã bị TẮT mặc định từ Java 15 và GỠ BỎ ở Java 18 — trên JVM mới chuỗi thực tế là lightweight → heavyweight.)',
   },
   {
     id: 'java-con-7', topic: 'Concurrency / Lock',
