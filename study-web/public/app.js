@@ -632,6 +632,8 @@ const STUDY_TIPS = [
   'Mỗi tuần làm một bài 🎓 Thi thử có tính giờ — áp lực đồng hồ khi luyện giúp bạn bình tĩnh hơn ở bài test thật.',
   'Tab 🃏 Flashcards có bộ chọn 🌏 ngôn ngữ: học thêm tiếng Hàn/Trung (chữ + phiên âm + phát âm) song song với tiếng Anh, chung một cơ chế ôn SRS.',
   'Điểm thi thử thấp ở mảng nào? Đề 🔥 nước rút (trong 🎓 Thi thử) sẽ tự dồn câu vào đúng mảng yếu đó cho bạn.',
+  'Track ☕ Java Backend: đọc 9 bài docs (📚 Học → ☕ Java Backend) rồi luyện quiz tương ứng ở 🧠 Tư duy (☕ Java · 🗄️ SQL · ☁️ Redis · 📡 API · 🏗️ Phân tán). Đọc để hiểu → quiz để nhớ.',
+  'Học chuyên sâu để đi làm: mỗi mảng Java (JVM, concurrency, collections, Spring, MySQL, Redis, mạng, hệ phân tán) đều có DOC đọc + QUIZ luyện + vào 🎓 Thi thử đo phong độ.',
 ];
 /** Chọn mẹo theo số thứ tự ngày (tách riêng để test thuần). */
 function pickTip(dayNum) { return STUDY_TIPS[((dayNum % STUDY_TIPS.length) + STUDY_TIPS.length) % STUDY_TIPS.length]; }
@@ -6501,7 +6503,7 @@ const ONBOARD_SLIDES = [
     body: `<ul class="onb-list">
       <li><b>🔥 Hôm nay</b> — việc cần ôn mỗi ngày + mục tiêu &amp; chuỗi streak</li>
       <li><b>📚 Học</b> — tài liệu, flashcards (🇬🇧 Anh · 🇰🇷 Hàn · 🇨🇳 Trung), luyện viết, gõ code</li>
-      <li><b>🧠 Luyện tập</b> — tư duy (code · IQ · quiz · 🎓 thi thử) &amp; thiết kế hệ thống</li>
+      <li><b>🧠 Luyện tập</b> — tư duy (code · IQ · quiz ☕Java/🗄️SQL/☁️Redis/🏗️Phân tán · 🎓 thi thử) &amp; thiết kế hệ thống</li>
       <li><b>🎯 Phỏng vấn</b> — mock, Q&amp;A tổng hợp, STAR kể chuyện</li>
       <li><b>📊 Theo dõi</b> — kế hoạch 12 tuần &amp; điểm sẵn sàng</li>
     </ul>`,
