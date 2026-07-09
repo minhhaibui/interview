@@ -548,4 +548,83 @@ window.JAVA_QUIZ = [
     ], answer: 1,
     explain: 'Observer: subject giữ danh sách observer; khi state đổi thì gọi update() lên từng observer — loose coupling giữa nơi phát sự kiện và nơi xử lý. Ví dụ: Spring ApplicationEvent/@EventListener, listener UI, message/event bus. Là nền của kiến trúc hướng sự kiện. Lưu ý gỡ đăng ký (unregister) để tránh memory leak.',
   },
+  // ---------- Spring chuyên sâu ----------
+  {
+    id: 'java-spring-4', topic: 'Spring / Bean lifecycle',
+    q: 'Vòng đời một Spring bean (singleton) đi qua các giai đoạn chính nào?',
+    options: [
+      'Chỉ có new rồi dùng',
+      'Instantiation (tạo) → Populate properties (tiêm dependency) → Aware callbacks → BeanPostProcessor before → Init (@PostConstruct / InitializingBean.afterPropertiesSet / init-method) → BeanPostProcessor after → Sử dụng → Destroy (@PreDestroy)',
+      'Init trước khi tiêm dependency',
+      'Bean tự huỷ ngay sau khi tạo',
+    ], answer: 1,
+    explain: 'Vòng đời: instantiate → điền thuộc tính/tiêm dependency → *Aware (BeanNameAware, ApplicationContextAware…) → BeanPostProcessor.postProcessBeforeInitialization → khởi tạo (@PostConstruct → InitializingBean.afterPropertiesSet → init-method) → postProcessAfterInitialization (AOP proxy tạo ở đây) → dùng → khi container tắt: @PreDestroy → DisposableBean.destroy → destroy-method. Hiểu vòng này để biết vì sao AOP proxy hình thành và mở rộng qua BeanPostProcessor.',
+  },
+  {
+    id: 'java-spring-5', topic: 'Spring / Circular dependency',
+    q: 'Spring giải quyết circular dependency (A cần B, B cần A) bằng cơ chế nào?',
+    options: [
+      'Không giải quyết được, luôn lỗi',
+      'Tam cấp cache (three-level cache): singletonObjects (bean hoàn chỉnh), earlySingletonObjects (bean nửa vời), singletonFactories (factory tạo early reference) — cho phép field/setter injection vòng tròn, nhưng CONSTRUCTOR injection vòng tròn thì KHÔNG cứu được',
+      'Tạo 2 instance riêng',
+      'Dùng volatile',
+    ], answer: 1,
+    explain: 'Spring dùng 3 cấp cache: bean A đang tạo được đưa early reference vào singletonFactories → khi B cần A lấy được reference chưa hoàn chỉnh → B hoàn tất → A hoàn tất. Nhờ vậy field/setter injection vòng tròn OK. Nhưng CONSTRUCTOR injection vòng tròn không cứu được (chưa có instance để expose early) → ném BeanCurrentlyInCreationException. Vì thế constructor injection (khuyến nghị) phát hiện sớm thiết kế vòng tròn xấu.',
+  },
+  {
+    id: 'java-spring-6', topic: 'Spring / @Transactional',
+    q: '@Transactional KHÔNG có hiệu lực (thất bại) trong trường hợp nào?',
+    code: 'public void outer(){ this.inner(); } @Transactional public void inner(){...}',
+    options: [
+      'Luôn luôn có hiệu lực',
+      'Method không public; GỌI NỘI BỘ this.method() (self-invocation không qua proxy); nuốt exception (catch không ném lại); mặc định chỉ rollback với RuntimeException/Error (checked exception KHÔNG rollback nếu không khai rollbackFor)',
+      'Chỉ thất bại khi thiếu database',
+      'Thất bại khi dùng interface',
+    ], answer: 1,
+    explain: 'Các bẫy @Transactional thất bại: (1) method không public (proxy CGLIB/JDK không chặn được); (2) SELF-INVOCATION — gọi this.inner() không đi qua proxy nên annotation vô hiệu (giải: tách bean khác, hoặc AopContext.currentProxy()); (3) bắt exception mà không ném lại → không rollback; (4) mặc định chỉ rollback RuntimeException & Error — checked exception phải khai rollbackFor=Exception.class; (5) bean không do Spring quản lý (tự new). Đây là chùm câu hỏi Spring cực hay gặp.',
+  },
+  {
+    id: 'java-spring-7', topic: 'Spring / Injection',
+    q: '@Autowired và @Resource khác nhau thế nào?',
+    options: [
+      'Giống hệt nhau',
+      '@Autowired (Spring) khớp theo KIỂU (byType) trước, dùng @Qualifier để chỉ tên; @Resource (JSR-250) khớp theo TÊN (byName) trước rồi mới byType',
+      '@Resource nhanh hơn',
+      '@Autowired chỉ dùng cho field',
+    ], answer: 1,
+    explain: '@Autowired: mặc định byType; nếu có nhiều bean cùng kiểu → dùng @Qualifier("tên") hoặc @Primary để phân giải, required=false cho phép null. @Resource (chuẩn Java JSR-250): mặc định byName (theo tên field/tham số) rồi mới fallback byType. Khuyến nghị dùng CONSTRUCTOR injection (bất biến, dễ test, phát hiện vòng tròn sớm) thay vì field injection.',
+  },
+  {
+    id: 'java-spring-8', topic: 'Spring MVC',
+    q: 'Luồng xử lý một request trong Spring MVC (DispatcherServlet) đi qua đâu?',
+    options: [
+      'Request → Controller thẳng',
+      'DispatcherServlet → HandlerMapping (tìm controller) → HandlerAdapter gọi Controller → trả ModelAndView → ViewResolver phân giải view → render (hoặc @ResponseBody ghi thẳng JSON qua HttpMessageConverter)',
+      'Controller → DispatcherServlet → View',
+      'View → Controller → Model',
+    ], answer: 1,
+    explain: 'DispatcherServlet là front controller: nhận request → HandlerMapping tìm handler (controller + method theo URL) → HandlerAdapter thực thi → Controller trả về ModelAndView → ViewResolver ánh xạ tên view → render trả HTML; với REST @ResponseBody/@RestController thì bỏ qua ViewResolver, dùng HttpMessageConverter (Jackson) ghi JSON thẳng vào response. Interceptor chạy trước/sau handler.',
+  },
+  {
+    id: 'java-spring-9', topic: 'Spring Boot',
+    q: 'Auto-configuration của Spring Boot hoạt động thế nào?',
+    options: [
+      'Tự đoán ngẫu nhiên',
+      '@SpringBootApplication bật @EnableAutoConfiguration → nạp danh sách cấu hình (spring.factories / AutoConfiguration.imports) → mỗi cái dùng @Conditional (OnClass/OnMissingBean/OnProperty) để CHỈ cấu hình khi điều kiện thoả (có thư viện, chưa có bean tự định nghĩa…)',
+      'Phải khai báo XML thủ công',
+      'Chỉ hoạt động với database',
+    ], answer: 1,
+    explain: 'Spring Boot tự cấu hình dựa trên “convention over configuration”: @EnableAutoConfiguration nạp các lớp auto-config (đăng ký trong META-INF/spring/…AutoConfiguration.imports, trước 2.7 là spring.factories). Mỗi lớp gắn @Conditional: @ConditionalOnClass (có thư viện trong classpath), @ConditionalOnMissingBean (bạn chưa tự định nghĩa), @ConditionalOnProperty… → chỉ kích hoạt khi hợp lý. Vì vậy thêm dependency là “chạy được ngay”, và bạn override bằng cách tự khai bean.',
+  },
+  {
+    id: 'java-spring-10', topic: 'Spring / Context',
+    q: 'BeanFactory và ApplicationContext khác nhau ra sao?',
+    options: [
+      'Giống nhau',
+      'ApplicationContext là bản mở rộng của BeanFactory: thêm i18n, event publishing, nạp resource, BeanPostProcessor tự động, và KHỞI TẠO EAGER singleton lúc start (BeanFactory là lazy)',
+      'BeanFactory mạnh hơn',
+      'ApplicationContext không tạo bean',
+    ], answer: 1,
+    explain: 'BeanFactory: container gốc, tạo bean LAZY (khi getBean). ApplicationContext (thường dùng): kế thừa BeanFactory + tự đăng ký BeanPostProcessor/BeanFactoryPostProcessor, hỗ trợ quốc tế hoá (MessageSource), publish/nghe sự kiện (ApplicationEvent), truy cập resource, và khởi tạo EAGER các singleton lúc container start → lỗi cấu hình lộ ra sớm. Thực tế gần như luôn dùng ApplicationContext.',
+  },
 ];
