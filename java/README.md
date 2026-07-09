@@ -25,6 +25,7 @@
 | 06 | **Redis** | Kiểu dữ liệu, RDB/AOF, cache穿透/击穿/雪崩, khoá phân tán, HA |
 | 07 | **Mạng** | TCP handshake, TCP vs UDP, HTTPS/TLS, HTTP 1.1/2/3 |
 | 08 | **Hệ phân tán & MQ** | Kafka, delivery semantics, CAP, transaction phân tán, Snowflake |
+| 09 | **HĐH & I/O models** | Process/thread, 5 mô hình I/O, select/poll/epoll, zero-copy (Netty/Kafka) |
 
 > Mỗi bài kết bằng phần **"Câu hỏi phỏng vấn hay gặp"** để bạn tự trả lời trước khi xem đáp án trong quiz. **Đủ 7 bài** — đọc theo thứ tự để nắm chắc nền tảng.
 
