@@ -303,4 +303,71 @@ window.API_QUIZ = [
     ], answer: 0,
     explain: 'gRPC (HTTP/2 + protobuf nhị phân): nhanh, contract sinh code từ .proto, streaming 2 chiều — hợp service-to-service nội bộ. REST/JSON thắng ở public API: người dùng đọc được, curl/browser gọi thẳng, hệ sinh thái rộng.',
   },
+  // ---------- Mạng máy tính (theo JavaGuide) ----------
+  {
+    id: 'net-tcp-3', topic: 'Mạng / TCP',
+    q: 'Vì sao TCP cần bắt tay BA bước (3-way handshake), hai bước không đủ?',
+    options: [
+      'Để tăng tốc độ',
+      'Để cả hai bên xác nhận khả năng gửi VÀ nhận của nhau; 2 bước không xác nhận được client nhận được ACK của server → tránh kết nối cũ/trễ (SYN lạc) mở nhầm kết nối',
+      'Vì TCP chậm nên cần nhiều bước',
+      'Để mã hoá dữ liệu',
+    ], answer: 1,
+    explain: '3 bước: client SYN → server SYN+ACK → client ACK. Cần bước 3 để SERVER chắc chắn client còn sống & nhận được phản hồi (đồng bộ seq cả 2 chiều). Nếu chỉ 2 bước: một gói SYN cũ bị trễ tới server sẽ khiến server mở kết nối vô ích mà client không hề muốn. 3 bước ngăn kết nối “ma” do gói lạc/lặp.',
+  },
+  {
+    id: 'net-tcp-4', topic: 'Mạng / TCP',
+    q: 'Đóng kết nối TCP cần BỐN bước (4-way) và trạng thái TIME_WAIT để làm gì?',
+    options: [
+      'Chỉ cần 2 bước như mở',
+      'Vì kết nối song công: mỗi chiều đóng riêng (FIN + ACK × 2). TIME_WAIT (2×MSL) ở bên chủ động đóng đảm bảo ACK cuối tới nơi & gói cũ tan hết trước khi tái dùng cổng',
+      'Bốn bước để nhanh hơn',
+      'TIME_WAIT là lỗi cần tắt',
+    ], answer: 1,
+    explain: 'TCP song công nên đóng từng chiều: A gửi FIN → B ACK → (B gửi nốt data) → B gửi FIN → A ACK. Bốn bước vì ACK và FIN của bên B tách ra (B có thể còn dữ liệu gửi). Bên chủ động đóng vào TIME_WAIT ~2×MSL để: (1) đảm bảo ACK cuối đến B (nếu mất, B resend FIN); (2) để mọi gói cũ của kết nối tan hết, tránh lẫn vào kết nối mới cùng cổng. Nhiều TIME_WAIT ở server thường do server chủ động đóng — cân nhắc keep-alive.',
+  },
+  {
+    id: 'net-tcp-udp', topic: 'Mạng / TCP vs UDP',
+    q: 'Khác biệt cốt lõi giữa TCP và UDP?',
+    options: [
+      'Không khác gì',
+      'TCP: hướng kết nối, đảm bảo THỨ TỰ + tin cậy (ACK, retransmit, kiểm soát tắc nghẽn/luồng) — chậm hơn. UDP: không kết nối, không đảm bảo, nhẹ & nhanh — hợp video/game/DNS',
+      'UDP đáng tin hơn TCP',
+      'TCP không có kiểm soát lỗi',
+    ], answer: 1,
+    explain: 'TCP: bắt tay, đánh số thứ tự, ACK + truyền lại gói mất, kiểm soát luồng (flow) & tắc nghẽn (congestion) → tin cậy, đúng thứ tự nhưng nặng. UDP: bắn gói không cần kết nối, không đảm bảo tới/thứ tự, header nhỏ, độ trễ thấp → dùng cho streaming, game realtime, DNS, VoIP (chấp nhận mất vài gói đổi lấy tốc độ). HTTP/3 dựng trên QUIC (UDP) để bỏ head-of-line blocking của TCP.',
+  },
+  {
+    id: 'net-https', topic: 'Mạng / HTTPS',
+    q: 'HTTPS (TLS) bảo mật bằng cách nào — đối xứng hay bất đối xứng?',
+    options: [
+      'Chỉ dùng mã hoá đối xứng',
+      'KẾT HỢP: bất đối xứng (RSA/ECDHE) lúc bắt tay để trao đổi/thoả thuận khoá phiên an toàn + xác thực certificate; sau đó dùng khoá ĐỐI XỨNG (AES) mã hoá dữ liệu vì nhanh hơn',
+      'Chỉ dùng bất đối xứng cho mọi byte',
+      'HTTPS không mã hoá, chỉ ký số',
+    ], answer: 1,
+    explain: 'TLS handshake: server gửi certificate (CA ký) để client xác thực danh tính + chống man-in-the-middle; hai bên dùng bất đối xứng (RSA trao khoá, hoặc ECDHE để có forward secrecy) thoả thuận ra KHOÁ PHIÊN đối xứng; sau đó mọi dữ liệu mã hoá bằng AES (đối xứng, nhanh hơn nhiều). Vậy HTTPS = xác thực + toàn vẹn + bảo mật, kết hợp ưu điểm cả hai loại mã hoá.',
+  },
+  {
+    id: 'net-http-ver', topic: 'Mạng / HTTP versions',
+    q: 'HTTP/1.1, HTTP/2 và HTTP/3 khác nhau điểm mấu chốt nào?',
+    options: [
+      'Chỉ khác số phiên bản',
+      'HTTP/1.1: text, mỗi kết nối 1 request/lúc (head-of-line). HTTP/2: nhị phân, multiplexing nhiều stream trên 1 kết nối TCP + header compression. HTTP/3: chạy trên QUIC (UDP) bỏ HOL blocking ở tầng TCP',
+      'HTTP/3 chậm hơn HTTP/1.1',
+      'HTTP/2 không hỗ trợ HTTPS',
+    ], answer: 1,
+    explain: 'HTTP/1.1: dạng text, keep-alive nhưng vẫn head-of-line blocking (phải chờ response trước); trình duyệt mở nhiều kết nối để bù. HTTP/2: khung nhị phân, MULTIPLEXING nhiều stream song song trên 1 kết nối TCP, nén header (HPACK), server push — nhưng vẫn dính HOL blocking Ở TẦNG TCP khi mất gói. HTTP/3: dùng QUIC trên UDP, mỗi stream độc lập nên mất gói của stream này không chặn stream khác, bắt tay nhanh hơn (0-RTT).',
+  },
+  {
+    id: 'net-get-post', topic: 'Mạng / HTTP method',
+    q: 'Khác biệt THỰC CHẤT giữa GET và POST (ngoài “GET lấy, POST gửi”)?',
+    options: [
+      'POST luôn an toàn hơn GET tuyệt đối',
+      'GET: idempotent + safe, tham số trên URL (bị cache/log/bookmark, giới hạn độ dài), nên chỉ để ĐỌC. POST: không idempotent, dữ liệu trong body (không bị cache mặc định), dùng để thay đổi trạng thái',
+      'GET không gửi được tham số',
+      'POST không có body',
+    ], answer: 1,
+    explain: 'GET: safe (không đổi trạng thái) + idempotent, tham số ở query string → bị cache, lưu lịch sử/log, bookmark được, giới hạn độ dài URL. Dùng để đọc. POST: không idempotent (gửi 2 lần tạo 2 bản ghi), dữ liệu ở body, không cache mặc định → dùng để tạo/đổi trạng thái. Lưu ý “POST an toàn hơn” là hiểu lầm — cả hai đều lộ nếu không có HTTPS; khác biệt nằm ở ngữ nghĩa idempotent/safe, không phải bảo mật.',
+  },
 ];
