@@ -39,6 +39,7 @@ Project Java thật gần như luôn dùng **Maven** (hoặc Gradle) để: tả
 
 ```xml
 <project>
+    <modelVersion>4.0.0</modelVersion>  <!-- bắt buộc, luôn là 4.0.0 -->
     <groupId>com.myshop</groupId>       <!-- tổ chức -->
     <artifactId>shop-api</artifactId>   <!-- tên project -->
     <version>1.0.0</version>

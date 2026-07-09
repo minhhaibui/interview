@@ -2,6 +2,8 @@
 
 > Ba khái niệm này giúp code **dùng lại** và **linh hoạt**. Hiểu chắc là qua được 3/4 câu OOP khi phỏng vấn.
 
+> 📌 **Lưu ý khi gõ lại:** các ví dụ dưới đặt vài `public class` cạnh nhau cho gọn, nhưng Java quy định **mỗi `public class` phải nằm ở MỘT file riêng** trùng tên class (như đã nói ở bài 00). Khi thực hành, tách mỗi class ra một file `.java` (IntelliJ tạo nhanh), hoặc bỏ `public` để đặt chung một file khi thử nhanh.
+
 ---
 
 ## 1. Kế thừa (Inheritance) — dùng lại code của class cha

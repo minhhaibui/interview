@@ -1,6 +1,6 @@
 # 00 · Bắt đầu với Java — dành cho người MỚI
 
-> Track này dạy Java **từ số 0**: chưa biết gì cũng học được. Đọc theo thứ tự 00 → 08, gõ lại từng ví dụ. Học xong track này, bạn mới nên qua track **☕ Java Backend (để đi làm)** — vì track đó giả định bạn đã biết cú pháp.
+> Track này dạy Java **từ số 0**: chưa biết gì cũng học được. Đọc theo thứ tự 00 → 09, gõ lại từng ví dụ. Học xong track này, bạn mới nên qua track **☕ Java Backend (để đi làm)** — vì track đó giả định bạn đã biết cú pháp.
 
 ---
 
@@ -78,9 +78,10 @@ java Hello           # in: Xin chào Java!
 | 03 | Method (hàm) — chia nhỏ chương trình |
 | 04 | OOP phần 1: class & object |
 | 05 | OOP phần 2: kế thừa, đa hình, interface |
-| 06 | String, mảng & Collections (List/Map) hay dùng |
-| 07 | Xử lý lỗi (Exception) |
-| 08 | Tổ chức project (package, Maven) + cầu nối sang phỏng vấn |
+| 06 | SOLID — 5 nguyên lý viết OOP tốt |
+| 07 | String, mảng & Collections (List/Map) hay dùng |
+| 08 | Xử lý lỗi (Exception) |
+| 09 | Tổ chức project (package, Maven) + cầu nối sang phỏng vấn |
 
 ## 6. Cách học hiệu quả nhất
 

@@ -44,13 +44,13 @@ int a = 25;            // a chứa thẳng số 25
 String s = "Nam";      // s chứa "địa chỉ" trỏ tới chuỗi "Nam"
 ```
 
-> Điều này giải thích vì sao so sánh String phải dùng `.equals()` chứ không phải `==` (xem bài 06). Nhớ điểm này — phỏng vấn hay hỏi.
+> Điều này giải thích vì sao so sánh String phải dùng `.equals()` chứ không phải `==` (xem bài 07). Nhớ điểm này — phỏng vấn hay hỏi.
 
 ## 4. `String` — chuỗi ký tự (dùng cực nhiều)
 
 ```java
 String hoTen = "Nguyễn Văn Nam";
-System.out.println(hoTen.length());        // độ dài: 15
+System.out.println(hoTen.length());        // độ dài: 14
 System.out.println(hoTen.toUpperCase());   // IN HOA
 System.out.println(hoTen.substring(0, 6)); // "Nguyễn"
 String chao = "Xin chào " + hoTen;         // nối chuỗi bằng dấu +
