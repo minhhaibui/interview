@@ -813,4 +813,65 @@ window.JAVA_QUIZ = [
     ], answer: 1,
     explain: 'Dependency Inversion: cả module cấp cao lẫn cấp thấp đều phụ thuộc INTERFACE, không dính chặt class cụ thể. Thay vì UserService tự new MySQLDatabase(), nó nhận Database (interface) qua constructor → đổi sang Postgres hay bản giả (mock) để test mà không sửa UserService. Đây chính là nền tảng của Dependency Injection (@Autowired) trong Spring.',
   },
+
+  // ---------- Java cơ bản (nhập môn — on-ramp cho người vừa học track nền tảng) ----------
+  {
+    id: 'java-basic-intdiv', topic: 'Java cơ bản / chia số nguyên',
+    q: 'Trong Java, `int r = 7 / 2;` thì r bằng bao nhiêu?',
+    options: [
+      '3.5',
+      '3 — vì hai số int chia nhau là CHIA NGUYÊN, bỏ phần thập phân',
+      '4 — được làm tròn lên',
+      'Báo lỗi biên dịch',
+    ], answer: 1,
+    explain: '7 và 2 đều là int → phép chia là CHIA NGUYÊN, bỏ phần thập phân (KHÔNG làm tròn) → r = 3. Muốn ra 3.5 phải có ít nhất một số thực: `7.0 / 2` hoặc `(double) 7 / 2`. Đây là bẫy kinh điển của người mới.',
+    code: 'int r = 7 / 2;       // 3\ndouble d = 7.0 / 2;  // 3.5',
+  },
+  {
+    id: 'java-basic-new', topic: 'Java cơ bản / tạo object',
+    q: 'Từ khoá nào dùng để tạo một object mới từ class?',
+    options: ['create', 'new', 'object', 'make'],
+    answer: 1,
+    explain: '`new` cấp phát object trên heap, gọi constructor và trả về tham chiếu: `SinhVien sv = new SinhVien("Nam", 20);`. Java không có từ khoá create/make/object cho việc này.',
+  },
+  {
+    id: 'java-basic-boolean', topic: 'Java cơ bản / kiểu dữ liệu',
+    q: 'Kiểu dữ liệu nào trong Java lưu giá trị true/false?',
+    options: ['bool', 'boolean', 'bit', 'int (dùng 0/1)'],
+    answer: 1,
+    explain: 'Java dùng `boolean` (KHÔNG phải `bool` như C++). Nó chỉ nhận `true`/`false`, và KHÔNG dùng số 0/1 thay cho true/false như C. Ví dụ: `boolean ok = (tuoi >= 18);`',
+  },
+  {
+    id: 'java-basic-constructor', topic: 'Java cơ bản / constructor',
+    q: 'Đặc điểm nào ĐÚNG về constructor trong Java?',
+    options: [
+      'Có thể khai báo trả về kiểu bất kỳ như method thường',
+      'Trùng TÊN với class và KHÔNG có kiểu trả về (kể cả void)',
+      'Bắt buộc phải khai báo static',
+      'Phải được gọi thủ công như một method bình thường',
+    ], answer: 1,
+    explain: 'Constructor có TÊN TRÙNG class và KHÔNG khai báo kiểu trả về (kể cả void) — điểm khác method thường. Nó chạy TỰ ĐỘNG khi dùng `new`. Nếu bạn không viết constructor nào, Java cấp sẵn một constructor rỗng mặc định.',
+  },
+  {
+    id: 'java-basic-break', topic: 'Java cơ bản / vòng lặp',
+    q: 'Trong vòng lặp, lệnh `break` làm gì?',
+    options: [
+      'Bỏ qua phần còn lại của vòng hiện tại rồi nhảy sang vòng kế',
+      'THOÁT hẳn ra khỏi vòng lặp',
+      'Tạm dừng toàn bộ chương trình',
+      'Quay lại chạy từ đầu vòng lặp',
+    ], answer: 1,
+    explain: '`break` thoát HẲN khỏi vòng lặp gần nhất. Còn `continue` mới là bỏ qua phần còn lại của vòng hiện tại để nhảy sang vòng kế. Đừng nhầm hai lệnh này.',
+  },
+  {
+    id: 'java-basic-main', topic: 'Java cơ bản / điểm bắt đầu',
+    q: 'Chương trình Java bắt đầu chạy từ đâu?',
+    options: [
+      'Từ dòng code đầu tiên trong file',
+      'Từ method `public static void main(String[] args)`',
+      'Từ constructor của class đầu tiên trong file',
+      'Từ bất kỳ method nào có tên "start"',
+    ], answer: 1,
+    explain: 'JVM luôn tìm và chạy method `public static void main(String[] args)` đầu tiên — đó là điểm vào (entry point). Java KHÔNG chạy tuần tự từ dòng đầu file như script; mọi code phải nằm trong method, và main là nơi bắt đầu.',
+  },
 ];
