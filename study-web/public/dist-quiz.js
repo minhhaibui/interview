@@ -137,4 +137,60 @@ window.DIST_QUIZ = [
     ], answer: 1,
     explain: 'Kafka: thiết kế cho THÔNG LƯỢNG lớn & lưu trữ log bền (message giữ lại theo retention, consumer replay từ offset bất kỳ) → event streaming, thu thập log, pipeline dữ liệu. RabbitMQ: broker truyền thống với routing mạnh (exchange: direct/topic/fanout), độ trễ thấp, hỗ trợ priority/TTL/dead-letter → hàng đợi tác vụ, giao tiếp microservice cần định tuyến linh hoạt. Chọn theo nhu cầu, không có cái "tốt hơn" tuyệt đối.',
   },
+  // ---------- Microservices / Spring Cloud ----------
+  {
+    id: 'dist-ms-discovery', topic: 'Microservices / Service Discovery',
+    q: 'Service discovery (Eureka/Nacos/Consul) giải quyết vấn đề gì?',
+    options: [
+      'Tăng tốc độ mạng',
+      'Service instance lên/xuống & đổi IP liên tục (scale, deploy) → không thể hardcode địa chỉ. Registry để service ĐĂNG KÝ mình + client TRA CỨU danh sách instance đang sống (health check), rồi load balance tới',
+      'Lưu trữ dữ liệu người dùng',
+      'Mã hoá giao tiếp giữa service',
+    ], answer: 1,
+    explain: 'Trong microservice, số instance & IP thay đổi liên tục. Service registry (Eureka, Nacos, Consul): mỗi service ĐĂNG KÝ (register) địa chỉ khi khởi động + gửi heartbeat; service gọi thì TRA CỨU (discover) registry để lấy danh sách instance còn sống rồi chọn một để gọi. Nhờ đó không cần cấu hình IP tĩnh, tự thích ứng khi scale/deploy. Registry thường AP (Eureka) để ưu tiên sẵn sàng.',
+  },
+  {
+    id: 'dist-ms-gateway', topic: 'Microservices / API Gateway',
+    q: 'API Gateway (Spring Cloud Gateway) trong kiến trúc microservice để làm gì?',
+    options: [
+      'Chỉ để chuyển tiếp request',
+      'MỘT cửa vào duy nhất cho client: định tuyến tới service phía sau + xử lý tập trung các concern chung (xác thực/uỷ quyền, rate limit, CORS, logging, ghép/che service nội bộ) → client không gọi thẳng từng service',
+      'Thay thế database',
+      'Tăng số instance service',
+    ], answer: 1,
+    explain: 'API Gateway là điểm vào duy nhất (single entry point): client chỉ gọi gateway, gateway ĐỊNH TUYẾN tới microservice tương ứng và xử lý TẬP TRUNG cross-cutting concern: auth/JWT, rate limit, CORS, logging, tổng hợp response, che giấu topology nội bộ. Tránh mỗi service tự làm lại + client không phải biết địa chỉ từng service. Ví dụ: Spring Cloud Gateway, Nginx, Kong.',
+  },
+  {
+    id: 'dist-ms-circuit', topic: 'Microservices / Resilience',
+    q: 'Circuit breaker (Resilience4j/Sentinel/Hystrix) hoạt động thế nào?',
+    options: [
+      'Ngắt điện máy chủ',
+      'Khi service phụ thuộc lỗi/chậm vượt ngưỡng → "mở mạch" (OPEN): fail nhanh + trả fallback thay vì chờ timeout, tránh LAN TRUYỀN lỗi (cascading failure); sau thời gian thử lại (HALF-OPEN) rồi đóng nếu ổn',
+      'Tăng số retry vô hạn',
+      'Khoá toàn bộ hệ thống',
+    ], answer: 1,
+    explain: 'Circuit breaker chống CASCADING FAILURE: khi gọi service B liên tục lỗi/timeout vượt ngưỡng → chuyển trạng thái OPEN → các lời gọi tiếp theo FAIL NHANH (trả fallback/default) thay vì chờ timeout kéo thread pool cạn kiệt và sập luôn service A. Sau khoảng nghỉ → HALF-OPEN thử vài request; ổn thì CLOSED (bình thường), lỗi thì OPEN lại. Kết hợp retry + timeout + bulkhead. Ví dụ: Resilience4j (khuyên dùng), Sentinel, Hystrix (đã ngừng phát triển).',
+  },
+  {
+    id: 'dist-ms-config', topic: 'Microservices / Config',
+    q: 'Config center (Spring Cloud Config / Nacos Config) để làm gì?',
+    options: [
+      'Chạy service',
+      'Quản lý cấu hình TẬP TRUNG cho nhiều service/môi trường ở một nơi (thường có version qua Git); service nạp config lúc chạy và có thể REFRESH nóng khi đổi mà không cần deploy lại',
+      'Cân bằng tải',
+      'Lưu session người dùng',
+    ], answer: 1,
+    explain: 'Hàng chục microservice × nhiều môi trường → config rải rác khó quản. Config center tập trung cấu hình ở một nơi (Spring Cloud Config backed by Git, hoặc Nacos/Apollo): service kéo config lúc khởi động; đổi config có thể đẩy REFRESH nóng (@RefreshScope) mà không cần build/deploy lại. Kết hợp với secret management cho dữ liệu nhạy cảm.',
+  },
+  {
+    id: 'dist-ms-trace', topic: 'Microservices / Observability',
+    q: 'Distributed tracing (Sleuth/Zipkin, OpenTelemetry) giải quyết vấn đề gì?',
+    options: [
+      'Tăng tốc request',
+      'Một request đi qua NHIỀU service → khó biết chậm/lỗi ở đâu. Tracing gắn traceId/spanId xuyên suốt các service → dựng lại toàn bộ hành trình request + đo thời gian từng chặng để tìm nút thắt',
+      'Lưu log vào database',
+      'Mã hoá request',
+    ], answer: 1,
+    explain: 'Trong microservice, một request người dùng có thể đi qua gateway → service A → B → DB/MQ. Khi chậm/lỗi rất khó lần theo. Distributed tracing gắn một traceId chung + spanId cho từng chặng (propagate qua header), gửi về hệ thu thập (Zipkin/Jaeger) → dựng lại cây gọi + thời gian mỗi span → tìm đúng service/bước gây chậm. Cùng với log tập trung (ELK) và metrics (Prometheus/Grafana) tạo thành 3 trụ observability.',
+  },
 ];
