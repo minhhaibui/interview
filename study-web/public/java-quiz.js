@@ -687,18 +687,6 @@ window.JAVA_QUIZ = [
     ], answer: 1,
     explain: 'Virtual thread (JEP 444): thread nhẹ do JVM lập lịch trên một số ít "carrier thread" OS. Khi virtual thread block (I/O, sleep), JVM "unmount" nó khỏi carrier để carrier chạy việc khác → có thể có hàng triệu virtual thread. Giải bài toán "một thread OS mỗi request" tốn kém: viết code kiểu blocking/tuần tự đơn giản nhưng đạt thông lượng của mô hình async. Hợp I/O-bound; CPU-bound thì không lợi. Tránh giữ khoá/synchronized dài (gây "pinning").',
   },
-  {
-    id: 'java-new-optional', topic: 'Java 8+ / Optional dùng đúng',
-    q: 'Cách dùng Optional nào là SAI/không nên?',
-    options: [
-      'orElseThrow() khi bắt buộc phải có giá trị',
-      'Dùng Optional làm KIỂU CỦA FIELD entity và làm THAM SỐ method (Optional sinh ra để làm KIỂU TRẢ VỀ, biểu thị "có thể vắng")',
-      'map().orElse() để xử lý trường hợp rỗng',
-      'ifPresent() để chạy hành động khi có giá trị',
-    ], answer: 1,
-    explain: 'Optional thiết kế để làm KIỂU TRẢ VỀ, buộc caller xử lý trường hợp vắng. KHÔNG nên: (1) làm field entity (tốn bộ nhớ, không Serializable, JPA không hỗ trợ); (2) làm tham số method (gọi rườm rà — cứ overload hoặc cho null); (3) gọi get() không kiểm (ném NoSuchElement). Nên dùng map/filter/orElse/orElseThrow/ifPresent. get() mù là anti-pattern.',
-  },
-
   // ---------- MyBatis (SQL mapper, hay hỏi ở backend VN/Á) ----------
   {
     id: 'java-mybatis-hash-dollar', topic: 'MyBatis / #{} vs ${}',
