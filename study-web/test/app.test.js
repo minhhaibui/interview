@@ -415,6 +415,37 @@ test('wiring: chế độ 🏗️ Phân tán có đủ id + mode button + script
   assert.ok(sw.includes("'dist-quiz.js'"), 'sw.js PRECACHE thiếu dist-quiz.js');
 });
 
+test('devops-quiz: id duy nhất, answer hợp lệ, options ≥ 2, đủ field', () => {
+  const qs = loadWindow('devops-quiz.js').DEVOPS_QUIZ;
+  assert.ok(Array.isArray(qs) && qs.length >= 10, 'DEVOPS_QUIZ phải ≥10 câu');
+  const ids = qs.map(q => q.id);
+  assert.strictEqual(new Set(ids).size, ids.length, 'id devops-quiz trùng');
+  for (const q of qs) {
+    assert.ok(q.q && q.explain && q.topic, `DEVOPS ${q.id} thiếu field`);
+    assert.ok(q.id.startsWith('devops-'), `DEVOPS ${q.id} thiếu prefix devops-`);
+    assert.ok(Array.isArray(q.options) && q.options.length >= 2, `DEVOPS ${q.id}: <2 lựa chọn`);
+    assert.ok(Number.isInteger(q.answer) && q.answer >= 0 && q.answer < q.options.length, `DEVOPS ${q.id}: answer ngoài range`);
+    assert.strictEqual(new Set(q.options).size, q.options.length, `DEVOPS ${q.id}: options trùng nhau`);
+  }
+});
+
+test('wiring: chế độ 🐳 DevOps có đủ id + mode button + script + engine + QUIZ_MODES', () => {
+  assert.ok(HTML.includes('id="think-devops"'), 'thiếu #think-devops');
+  assert.ok(HTML.includes('id="devops-body"'), 'thiếu #devops-body');
+  assert.ok(HTML.includes('data-mode="devops"'), 'thiếu nút mode devops');
+  assert.ok(HTML.includes('data-cov="devops"'), 'thiếu badge độ phủ devops');
+  assert.ok(HTML.includes('src="devops-quiz.js"'), 'index.html thiếu script devops-quiz.js');
+  assert.ok(HTML.indexOf('src="devops-quiz.js"') < HTML.indexOf('src="app.js"'), 'devops-quiz.js phải nạp trước app.js');
+  assert.ok(/renderDevopsQuiz\(\)/.test(APP), 'initThink chưa gọi renderDevopsQuiz');
+  assert.ok(/document\.getElementById\('think-devops'\)\.hidden = m !== 'devops'/.test(APP), 'setThinkMode chưa toggle think-devops');
+  assert.ok(/window\.DEVOPS_QUIZ/.test(APP), 'devopsQuiz chưa trỏ tới window.DEVOPS_QUIZ');
+  assert.ok(/devops: \{[\s\S]*?doneKey: 'prep-devops-done'/.test(APP), 'QUIZ_MODES thiếu entry devops');
+  const keys = APP.slice(APP.indexOf('const PREP_KEYS'), APP.indexOf('const PREP_KEYS') + 2400);
+  assert.ok(/'prep-devops-done'/.test(keys) && /'prep-devops-best'/.test(keys), 'PREP_KEYS thiếu prep-devops-done/best');
+  const sw = read('sw.js');
+  assert.ok(sw.includes("'devops-quiz.js'"), 'sw.js PRECACHE thiếu devops-quiz.js');
+});
+
 test('wiring: chế độ 🔁 Ôn câu sai đủ HTML + toggle + badge + render', () => {
   assert.ok(HTML.includes('id="think-review"'), 'thiếu #think-review');
   assert.ok(HTML.includes('id="review-body"'), 'thiếu #review-body');
