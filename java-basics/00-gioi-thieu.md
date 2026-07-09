@@ -1,6 +1,6 @@
 # 00 · Bắt đầu với Java — dành cho người MỚI
 
-> Track này dạy Java **từ số 0**: chưa biết gì cũng học được. Đọc theo thứ tự 00 → 10, gõ lại từng ví dụ. Học xong track này, bạn mới nên qua track **☕ Java Backend (để đi làm)** — vì track đó giả định bạn đã biết cú pháp.
+> Track này dạy Java **từ số 0**: chưa biết gì cũng học được. Đọc theo thứ tự 00 → 10, gõ lại từng ví dụ. (Bài 11 là **sổ tra lỗi** — mở khi bạn kẹt.) Học xong track này, bạn mới nên qua track **☕ Java Backend (để đi làm)** — vì track đó giả định bạn đã biết cú pháp.
 
 ---
 
@@ -83,6 +83,7 @@ java Hello           # in: Xin chào Java!
 | 08 | Xử lý lỗi (Exception) |
 | 09 | Tổ chức project (package, Maven) + cầu nối sang phỏng vấn |
 | 10 | Bài tập tổng hợp — tự viết app Quản lý sinh viên (gộp tất cả) |
+| 11 | 🔧 Sổ tra lỗi Java hay gặp & cách sửa (mở khi kẹt) |
 
 ## 6. Cách học hiệu quả nhất
 
