@@ -468,4 +468,84 @@ window.JAVA_QUIZ = [
     ], answer: 1,
     explain: 'Memory leak: vẫn còn tham chiếu tới object không dùng nữa (static collection phình mãi, ThreadLocal không remove, listener không gỡ…) → GC không thu được, bộ nhớ tăng dần. OOM: JVM không cấp nổi bộ nhớ nữa (java.lang.OutOfMemoryError: Java heap space). Leak tích tụ lâu ngày thường là NGUYÊN NHÂN gây OOM; điều tra bằng heap dump + phân tích (MAT, jmap).',
   },
+  // ---------- Design Pattern ----------
+  {
+    id: 'java-dp-singleton', topic: 'Design Pattern / Singleton',
+    q: 'Cách hiện thực Singleton an toàn thread mà đơn giản & chống reflection/serialization tốt nhất?',
+    code: 'public enum Config { INSTANCE; ... }',
+    options: [
+      'Tạo mới mỗi lần getInstance()',
+      'Dùng ENUM (Effective Java): JVM đảm bảo 1 instance, an toàn thread sẵn, miễn nhiễm reflection & serialization phá singleton',
+      'Biến static không cần đồng bộ',
+      'Chỉ có double-check locking là đúng',
+    ], answer: 1,
+    explain: 'Các cách: (1) eager static (đơn giản, tạo sớm dù chưa dùng); (2) double-check locking cần biến volatile để tránh half-initialized object do reorder; (3) static inner holder (lazy + thread-safe nhờ class loading); (4) ENUM — Josh Bloch khuyên: ngắn gọn, an toàn thread, chống cả reflection lẫn deserialization tạo instance thứ hai. Double-check thiếu volatile là bug kinh điển.',
+  },
+  {
+    id: 'java-dp-factory', topic: 'Design Pattern / Factory',
+    q: 'Factory Method pattern giải quyết vấn đề gì?',
+    options: [
+      'Tạo nhiều thread',
+      'Đóng gói việc KHỞI TẠO object sau một method/interface → client không cần biết class cụ thể, dễ mở rộng loại mới mà không sửa code gọi (tuân Open/Closed)',
+      'Xoá object tự động',
+      'Sắp xếp collection',
+    ], answer: 1,
+    explain: 'Factory Method tách logic tạo object khỏi nơi sử dụng: client gọi factory.create(type) thay vì new cụ thể. Thêm loại sản phẩm mới chỉ cần thêm class + nhánh factory, không sửa client (Open/Closed). Ví dụ thực tế: Calendar.getInstance(), LoggerFactory.getLogger(), BeanFactory của Spring. Abstract Factory là bản mở rộng tạo “họ” object liên quan.',
+  },
+  {
+    id: 'java-dp-proxy', topic: 'Design Pattern / Proxy',
+    q: 'Dynamic proxy trong Java (nền tảng của Spring AOP) hoạt động thế nào?',
+    options: [
+      'Sửa trực tiếp bytecode lúc biên dịch',
+      'JDK dynamic proxy tạo proxy lúc RUNTIME cho object implements INTERFACE (java.lang.reflect.Proxy + InvocationHandler); nếu không có interface, Spring dùng CGLIB (kế thừa class)',
+      'Chỉ hoạt động với class final',
+      'Proxy phải viết tay từng method',
+    ], answer: 1,
+    explain: 'Proxy bọc object thật để chèn hành vi (log, transaction, security) trước/sau khi gọi. JDK dynamic proxy: Proxy.newProxyInstance() tạo lớp proxy runtime cho các INTERFACE, mọi lời gọi đi qua InvocationHandler.invoke(). Nếu bean không có interface → Spring dùng CGLIB (sinh lớp con, override method) — vì thế method final/private/ hoặc gọi nội bộ this.method() KHÔNG được AOP proxy chặn. Đây là gốc của @Transactional/@Async self-invocation không hiệu lực.',
+  },
+  {
+    id: 'java-dp-strategy', topic: 'Design Pattern / Strategy',
+    q: 'Strategy pattern dùng khi nào?',
+    options: [
+      'Khi cần đúng một thuật toán cố định',
+      'Khi có NHIỀU thuật toán/hành vi thay thế nhau: đóng mỗi cái vào một class cùng interface, chọn lúc runtime — thay if/else-switch dài bằng đa hình',
+      'Khi cần tạo singleton',
+      'Khi cần sao chép object',
+    ], answer: 1,
+    explain: 'Strategy: định nghĩa họ thuật toán cùng interface (vd PaymentStrategy: Momo/VNPay/Card), context giữ 1 strategy và uỷ quyền. Lợi ích: thêm thuật toán mới không sửa context (Open/Closed), loại bỏ chuỗi if/else-switch khổng lồ, dễ test từng chiến lược. Trong Spring hay tiêm Map<String, Strategy> để chọn theo key.',
+  },
+  {
+    id: 'java-dp-template', topic: 'Design Pattern / Template Method',
+    q: 'Template Method pattern là gì?',
+    options: [
+      'Một loại generic',
+      'Lớp cha định nghĩa KHUNG (thứ tự các bước) trong một method final; các bước cụ thể để lớp con override — “khung cố định, chi tiết tuỳ biến”',
+      'Tạo object từ template string',
+      'Sao chép method giữa class',
+    ], answer: 1,
+    explain: 'Template Method: method khung (thường final) trong lớp cha gọi các bước theo thứ tự cố định; bước thay đổi được khai abstract/hook cho lớp con hiện thực. Ví dụ: JdbcTemplate, HttpServlet.service() gọi doGet/doPost, khung xử lý request của Spring. Đảo control: “đừng gọi chúng tôi, chúng tôi sẽ gọi bạn” (Hollywood principle).',
+  },
+  {
+    id: 'java-dp-builder', topic: 'Design Pattern / Builder',
+    q: 'Builder pattern giải quyết vấn đề gì?',
+    code: 'User u = User.builder().name("Hai").age(28).build();',
+    options: [
+      'Tạo nhiều instance cùng lúc',
+      'Xây object có NHIỀU tham số (nhất là optional) một cách dễ đọc & bất biến — tránh “telescoping constructor” và setter làm object mutable',
+      'Tự động sinh getter',
+      'Khoá object khi tạo',
+    ], answer: 1,
+    explain: 'Builder: chuỗi method .field(value)...build() để dựng object nhiều tham số, đặc biệt khi nhiều tham số tuỳ chọn. Thay cho constructor lồng nhau khó đọc (telescoping) hoặc setter khiến object mutable/không nhất quán. Kết quả thường immutable. Lombok @Builder, StringBuilder, Stream.Builder, HttpRequest.newBuilder() là ví dụ.',
+  },
+  {
+    id: 'java-dp-observer', topic: 'Design Pattern / Observer',
+    q: 'Observer pattern (publish-subscribe) dùng để làm gì?',
+    options: [
+      'Giám sát bộ nhớ JVM',
+      'Khi một object (subject) đổi trạng thái thì TỰ ĐỘNG thông báo mọi observer đã đăng ký — tách rời bên phát và bên nhận (event-driven)',
+      'Đồng bộ hoá thread',
+      'Nén dữ liệu',
+    ], answer: 1,
+    explain: 'Observer: subject giữ danh sách observer; khi state đổi thì gọi update() lên từng observer — loose coupling giữa nơi phát sự kiện và nơi xử lý. Ví dụ: Spring ApplicationEvent/@EventListener, listener UI, message/event bus. Là nền của kiến trúc hướng sự kiện. Lưu ý gỡ đăng ký (unregister) để tránh memory leak.',
+  },
 ];
