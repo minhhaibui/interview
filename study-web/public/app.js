@@ -3343,7 +3343,7 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-daily-goal', 'prep-badges-seen', 'prep-design-history', 'prep-design-draft',
   'prep-oq-done', 'prep-oq-best', 'prep-debug-solved', 'prep-debug-code',
   'prep-api-done', 'prep-api-best', 'prep-sql-done', 'prep-sql-best', 'prep-cli-done', 'prep-cli-best',
-  'prep-java-done', 'prep-java-best', 'prep-redis-done', 'prep-redis-best',
+  'prep-java-done', 'prep-java-best', 'prep-redis-done', 'prep-redis-best', 'prep-dist-done', 'prep-dist-best',
   'prep-en-done', 'prep-sit-done', 'prep-readiness-log',
   'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date',
   'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned', 'prep-exam-history', 'prep-fc-lang'];
@@ -4193,7 +4193,7 @@ let thinkInit = false, thinkMode = 'code';
 function initThink() {
   document.querySelectorAll('.think-mode').forEach(b => { b.onclick = () => setThinkMode(b.dataset.mode); });
   setThinkMode(thinkMode);
-  if (!thinkInit) { renderCodingFilters(); renderCodingList(); renderIQ(); renderOutputQuiz(); renderDebugList(); renderApiQuiz(); renderSqlQuiz(); renderCliQuiz(); renderJavaQuiz(); renderRedisQuiz(); thinkInit = true; }
+  if (!thinkInit) { renderCodingFilters(); renderCodingList(); renderIQ(); renderOutputQuiz(); renderDebugList(); renderApiQuiz(); renderSqlQuiz(); renderCliQuiz(); renderJavaQuiz(); renderRedisQuiz(); renderDistQuiz(); thinkInit = true; }
   refreshThinkBadges();
 }
 
@@ -4210,6 +4210,7 @@ function setThinkMode(m) {
   document.getElementById('think-cli').hidden = m !== 'cli';
   document.getElementById('think-java').hidden = m !== 'java';
   document.getElementById('think-redis').hidden = m !== 'redis';
+  document.getElementById('think-dist').hidden = m !== 'dist';
   document.getElementById('think-review').hidden = m !== 'review';
   document.getElementById('think-exam').hidden = m !== 'exam';
   if (m === 'review') renderReview();
@@ -4440,6 +4441,13 @@ const QUIZ_MODES = {
       (q.cmd ? `<pre><code class="language-bash">${escHtml(q.cmd)}</code></pre>` : ''),
     highlight: true,
   },
+  dist: {
+    label: '🏗️ Phân tán', doneKey: 'prep-dist-done', data: () => window.DIST_QUIZ || [],
+    ask: 'Chọn đáp án đúng:',
+    optionHtml: o => `<span class="oq-otext">${escHtml(o)}</span>`,
+    questionHtml: q => `<p class="oq-question">${escHtml(q.q)}</p>`,
+    highlight: false,
+  },
   // 2 vòng trắc nghiệm của Phỏng vấn tổng hợp cũng đổ câu sai về đây (ghi ở answerMcq).
   english: {
     label: '🇬🇧 Tiếng Anh', doneKey: 'prep-en-done', data: () => window.ENGLISH_QUESTIONS || [],
@@ -4506,6 +4514,16 @@ const redisQuiz = makeQuiz({
   resultMsg: pct => pct >= 80 ? 'Rất chắc Redis — tự tin vòng phỏng vấn cache/hệ phân tán!' : pct >= 50 ? 'Khá ổn — ôn thêm persistence, 3 vấn đề cache (穿透/击穿/雪崩) và khoá phân tán.' : 'Redis hay bị hỏi khi phỏng vấn Backend — đọc kỹ giải thích từng câu nhé.',
 });
 function renderRedisQuiz() { redisQuiz.render(); }
+
+// ----- Chế độ 🏗️ Phân tán (dùng engine makeQuiz) -----
+const distQuiz = makeQuiz({
+  ...QUIZ_MODES.dist,
+  mode: 'dist',
+  bodyId: 'dist-body',
+  bestKey: 'prep-dist-best',
+  resultMsg: pct => pct >= 80 ? 'Rất chắc hệ phân tán — sẵn sàng vòng phỏng vấn senior!' : pct >= 50 ? 'Khá ổn — ôn thêm delivery semantics, CAP và transaction phân tán.' : 'Hệ phân tán hay hỏi ở vị trí senior — đọc kỹ giải thích từng câu nhé.',
+});
+function renderDistQuiz() { distQuiz.render(); }
 
 /** Render nút đáp án theo thứ tự hiển thị NGẪU NHIÊN (chống học vẹt vị trí);
  *  data-i giữ CHỈ SỐ GỐC nên mọi hàm chấm phải so theo dataset.i, không theo vị trí DOM. */

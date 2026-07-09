@@ -384,6 +384,37 @@ test('wiring: chế độ ☁️ Redis có đủ id + mode button + script + eng
   assert.ok(sw.includes("'redis-quiz.js'"), 'sw.js PRECACHE thiếu redis-quiz.js');
 });
 
+test('dist-quiz: id duy nhất, answer hợp lệ, options ≥ 2, đủ field', () => {
+  const qs = loadWindow('dist-quiz.js').DIST_QUIZ;
+  assert.ok(Array.isArray(qs) && qs.length >= 10, 'DIST_QUIZ phải ≥10 câu');
+  const ids = qs.map(q => q.id);
+  assert.strictEqual(new Set(ids).size, ids.length, 'id dist-quiz trùng');
+  for (const q of qs) {
+    assert.ok(q.q && q.explain && q.topic, `DIST ${q.id} thiếu field`);
+    assert.ok(q.id.startsWith('dist-'), `DIST ${q.id} thiếu prefix dist-`);
+    assert.ok(Array.isArray(q.options) && q.options.length >= 2, `DIST ${q.id}: <2 lựa chọn`);
+    assert.ok(Number.isInteger(q.answer) && q.answer >= 0 && q.answer < q.options.length, `DIST ${q.id}: answer ngoài range`);
+    assert.strictEqual(new Set(q.options).size, q.options.length, `DIST ${q.id}: options trùng nhau`);
+  }
+});
+
+test('wiring: chế độ 🏗️ Phân tán có đủ id + mode button + script + engine + QUIZ_MODES', () => {
+  assert.ok(HTML.includes('id="think-dist"'), 'thiếu #think-dist');
+  assert.ok(HTML.includes('id="dist-body"'), 'thiếu #dist-body');
+  assert.ok(HTML.includes('data-mode="dist"'), 'thiếu nút mode dist');
+  assert.ok(HTML.includes('data-cov="dist"'), 'thiếu badge độ phủ dist');
+  assert.ok(HTML.includes('src="dist-quiz.js"'), 'index.html thiếu script dist-quiz.js');
+  assert.ok(HTML.indexOf('src="dist-quiz.js"') < HTML.indexOf('src="app.js"'), 'dist-quiz.js phải nạp trước app.js');
+  assert.ok(/renderDistQuiz\(\)/.test(APP), 'initThink chưa gọi renderDistQuiz');
+  assert.ok(/document\.getElementById\('think-dist'\)\.hidden = m !== 'dist'/.test(APP), 'setThinkMode chưa toggle think-dist');
+  assert.ok(/window\.DIST_QUIZ/.test(APP), 'distQuiz chưa trỏ tới window.DIST_QUIZ');
+  assert.ok(/dist: \{[\s\S]*?doneKey: 'prep-dist-done'/.test(APP), 'QUIZ_MODES thiếu entry dist');
+  const keys = APP.slice(APP.indexOf('const PREP_KEYS'), APP.indexOf('const PREP_KEYS') + 2300);
+  assert.ok(/'prep-dist-done'/.test(keys) && /'prep-dist-best'/.test(keys), 'PREP_KEYS thiếu prep-dist-done/best');
+  const sw = read('sw.js');
+  assert.ok(sw.includes("'dist-quiz.js'"), 'sw.js PRECACHE thiếu dist-quiz.js');
+});
+
 test('wiring: chế độ 🔁 Ôn câu sai đủ HTML + toggle + badge + render', () => {
   assert.ok(HTML.includes('id="think-review"'), 'thiếu #think-review');
   assert.ok(HTML.includes('id="review-body"'), 'thiếu #review-body');

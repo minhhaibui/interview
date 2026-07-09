@@ -324,6 +324,7 @@
         <button class="think-mode" data-mode="cli">🖥️ CLI <span class="think-cov" data-cov="cli" hidden></span></button>
         <button class="think-mode" data-mode="java">☕ Java <span class="think-cov" data-cov="java" hidden></span></button>
         <button class="think-mode" data-mode="redis">☁️ Redis <span class="think-cov" data-cov="redis" hidden></span></button>
+        <button class="think-mode" data-mode="dist">🏗️ Phân tán <span class="think-cov" data-cov="dist" hidden></span></button>
       </div>
       <div class="think-group">
         <span class="think-glabel">🔁 Ôn &amp; thi</span>
@@ -417,6 +418,15 @@
         <h1>☁️ Redis phỏng vấn</h1>
         <p class="coding-intro">Trắc nghiệm Redis <b>chuyên sâu để đi làm</b>: vì sao nhanh &amp; đơn luồng, <b>5 kiểu dữ liệu</b> &amp; use case, persistence (<b>RDB/AOF</b>), chiến lược hết hạn &amp; thu hồi bộ nhớ (LRU/LFU), ba vấn đề cache kinh điển (<b>穿透/击穿/雪崩</b> — penetration/breakdown/avalanche), <b>khoá phân tán</b> (SET NX EX + Lua), nhất quán cache-DB (cache-aside), và HA (replication/sentinel/cluster). Chọn đáp án để biết đúng/sai kèm <b>giải thích</b>.</p>
         <div id="redis-body"></div>
+      </div>
+    </div>
+
+    <!-- Chế độ 🏗️ PHÂN TÁN (hệ phân tán & message queue) -->
+    <div id="think-dist" hidden>
+      <div class="oq-wrap">
+        <h1>🏗️ Hệ phân tán &amp; Message Queue</h1>
+        <p class="coding-intro">Trắc nghiệm cho phỏng vấn <b>Java backend senior</b>: <b>message queue</b> (vì sao dùng, Kafka partition/consumer group/thứ tự, delivery semantics, chống mất/trùng message, backlog, Kafka vs RabbitMQ), <b>CAP</b>, <b>transaction phân tán</b> (2PC/TCC/Saga/Outbox), <b>distributed ID</b> (Snowflake), <b>idempotency</b>, nhất quán (strong vs eventual). Chọn đáp án để biết đúng/sai kèm <b>giải thích</b>.</p>
+        <div id="dist-body"></div>
       </div>
     </div>
 
@@ -524,6 +534,7 @@
   <script src="cli-quiz.js"></script>
   <script src="java-quiz.js"></script>
   <script src="redis-quiz.js"></script>
+  <script src="dist-quiz.js"></script>
   <script src="star-questions.js"></script>
   <script src="reverse-questions.js"></script>
   <script src="english-phrases.js"></script>
