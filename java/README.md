@@ -24,6 +24,7 @@
 | 05 | **MySQL** | Index B+Tree, clustered/回表, isolation, MVCC, khoá, EXPLAIN |
 | 06 | **Redis** | Kiểu dữ liệu, RDB/AOF, cache穿透/击穿/雪崩, khoá phân tán, HA |
 | 07 | **Mạng** | TCP handshake, TCP vs UDP, HTTPS/TLS, HTTP 1.1/2/3 |
+| 08 | **Hệ phân tán & MQ** | Kafka, delivery semantics, CAP, transaction phân tán, Snowflake |
 
 > Mỗi bài kết bằng phần **"Câu hỏi phỏng vấn hay gặp"** để bạn tự trả lời trước khi xem đáp án trong quiz. **Đủ 7 bài** — đọc theo thứ tự để nắm chắc nền tảng.
 
