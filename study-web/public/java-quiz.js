@@ -756,4 +756,61 @@ window.JAVA_QUIZ = [
     ], answer: 1,
     explain: 'Khi ghép nhiều <if> để build điều kiện động, tự nối tay dễ sinh SQL sai kiểu "WHERE AND age=..." hoặc thiếu hẳn WHERE. Thẻ <where>: chỉ chèn WHERE khi bên trong có nội dung và tự bỏ "AND"/"OR" dư ở đầu → SQL luôn đúng cú pháp, khỏi cần thủ thuật "WHERE 1=1". Tương tự có <set> cho UPDATE (bỏ dấu phẩy thừa) và <trim> tuỳ biến. Lưu ý: <where> KHÔNG liên quan bảo mật — chống injection vẫn là #{}.',
   },
+
+  // ---------- SOLID (5 nguyên lý thiết kế OOP — khớp bài 06 track nền tảng) ----------
+  {
+    id: 'java-solid-s', topic: 'SOLID / Single Responsibility',
+    q: 'Nguyên lý Single Responsibility (S trong SOLID) nói gì?',
+    options: [
+      'Một method chỉ được phép có đúng một tham số',
+      'Một class chỉ nên có MỘT lý do để thay đổi — tức đảm nhận một trách nhiệm/nhiệm vụ duy nhất',
+      'Một class chỉ được chứa đúng một method',
+      'Cả chương trình chỉ nên có một class chính',
+    ], answer: 1,
+    explain: 'Single Responsibility: mỗi class (hay module) chỉ nên có MỘT lý do để thay đổi = một trách nhiệm. Ví dụ tách User (dữ liệu), UserRepository (lưu trữ), EmailService (gửi mail) thay vì nhồi hết vào một class. Lợi ích: sửa phần này không làm hỏng phần kia, dễ test. Đây là lý do Spring tách Controller/Service/Repository. KHÔNG phải "một method" hay "một class" theo nghĩa đen.',
+  },
+  {
+    id: 'java-solid-o', topic: 'SOLID / Open-Closed',
+    q: 'Nguyên lý Open/Closed (O) nghĩa là gì?',
+    options: [
+      'Class phải luôn để field public để dễ mở rộng',
+      'Một module nên MỞ để mở rộng (thêm hành vi mới) nhưng ĐÓNG với sửa đổi (không phải sửa code cũ đã chạy ổn) — thường đạt bằng đa hình/interface',
+      'Phải đóng mọi file ngay sau khi mở',
+      'Chỉ được thêm tính năng mới vào cuối mỗi sprint',
+    ], answer: 1,
+    explain: 'Open/Closed: thêm tính năng mới bằng cách VIẾT THÊM code (class mới implement interface), KHÔNG sửa code cũ đang chạy đúng → tránh gây lỗi hồi quy. Ví dụ: thay vì if/else instanceof để tính diện tích từng hình, cho mỗi hình implement Hinh.dienTich(); thêm hình mới chỉ cần viết class mới. Đa hình là công cụ chính để đạt được O.',
+  },
+  {
+    id: 'java-solid-l', topic: 'SOLID / Liskov Substitution',
+    q: 'Nguyên lý Liskov Substitution (L) yêu cầu điều gì?',
+    options: [
+      'Class con phải luôn có nhiều method hơn class cha',
+      'Object của class con phải THAY THẾ được class cha mà chương trình vẫn chạy đúng — con không phá vỡ hành vi/hợp đồng mà cha cam kết',
+      'Không bao giờ được dùng kế thừa',
+      'Class cha bắt buộc phải là abstract',
+    ], answer: 1,
+    explain: 'Liskov: ở đâu dùng được kiểu cha thì thay bằng object con vẫn phải đúng. Vi phạm kinh điển: HinhVuong extends HinhChuNhat rồi ép dài=rộng → code kỳ vọng setDai(5)+setRong(4) cho diện tích 20 nhưng nhận 16 → sai âm thầm. Bài học: chỉ kế thừa khi con THẬT SỰ giữ đúng hành vi cha mong đợi; nếu không, tách riêng hoặc dùng composition.',
+  },
+  {
+    id: 'java-solid-i', topic: 'SOLID / Interface Segregation',
+    q: 'Nguyên lý Interface Segregation (I) khuyên điều gì?',
+    options: [
+      'Gộp mọi method vào một interface thật lớn cho tiện quản lý',
+      'Đừng ép một class phải cài (implement) những method nó KHÔNG dùng — nên tách interface to thành nhiều interface nhỏ, chuyên biệt',
+      'Mỗi interface không được có quá 10 method',
+      'Chỉ dùng abstract class, tuyệt đối không dùng interface',
+    ], answer: 1,
+    explain: 'Interface Segregation: nhiều interface nhỏ, chuyên biệt tốt hơn một interface "béo". Ví dụ interface May{in();scan();fax()} ép MayInGiaRe phải cài scan()/fax() dù không hỗ trợ (đành ném UnsupportedOperationException) → xấu. Tách thành MayIn, MayScan riêng; class chỉ implement đúng cái nó làm được. Client cũng chỉ phụ thuộc method nó cần.',
+  },
+  {
+    id: 'java-solid-d', topic: 'SOLID / Dependency Inversion',
+    q: 'Nguyên lý Dependency Inversion (D) nói gì? (nền tảng của DI trong Spring)',
+    options: [
+      'Module cấp cao phải trực tiếp new class cấp thấp để chạy nhanh hơn',
+      'Phụ thuộc vào TRỪU TƯỢNG (interface), KHÔNG phụ thuộc lớp cụ thể; nhờ đó tiêm (inject) cài đặt từ ngoài vào, dễ đổi và dễ test',
+      'Luôn đảo ngược thứ tự khai báo các biến trong class',
+      'Class con phải phụ thuộc ngược lại vào class cha',
+    ], answer: 1,
+    explain: 'Dependency Inversion: cả module cấp cao lẫn cấp thấp đều phụ thuộc INTERFACE, không dính chặt class cụ thể. Thay vì UserService tự new MySQLDatabase(), nó nhận Database (interface) qua constructor → đổi sang Postgres hay bản giả (mock) để test mà không sửa UserService. Đây chính là nền tảng của Dependency Injection (@Autowired) trong Spring.',
+  },
 ];
