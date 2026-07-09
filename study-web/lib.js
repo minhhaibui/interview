@@ -60,11 +60,12 @@ function buildTree(ROOT) {
     };
   };
 
+  const gJavaBasics = dirGroup('☕ Java nền tảng (từ số 0)', 'java-basics');
   const gJava = dirGroup('☕ Java Backend (để đi làm)', 'java');
   const g1 = dirGroup('🧩 System Design Scenarios', 'system-design-scenarios');
   const g2 = dirGroup('🏗️ Design Patterns', 'design-patterns');
   const g3 = dirGroup('🇬🇧 English Track', 'english');
-  [gJava, g1, g2, g3].forEach(g => g && groups.push(g));
+  [gJavaBasics, gJava, g1, g2, g3].forEach(g => g && groups.push(g));
 
   return groups;
 }

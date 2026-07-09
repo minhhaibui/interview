@@ -2,6 +2,8 @@
 
 > Bộ tài liệu **đọc để HIỂU** (không chỉ luyện quiz). Bám khung [JavaGuide](https://javaguide.cn) — cẩm nang phỏng vấn Java được dùng nhiều nhất. Đọc doc ở đây, rồi vào tab **🧠 Tư duy → ☕ Java / ☁️ Redis** để tự kiểm tra.
 
+> ⚠️ **CHƯA BIẾT NHIỀU JAVA?** Track này **giả định bạn đã biết cú pháp** (nó ở trình độ phỏng vấn). Người mới hãy học track **☕ Java nền tảng (từ số 0)** TRƯỚC — dạy từ Hello World → OOP → SOLID → tổ chức project — rồi mới quay lại đây.
+
 ## Cách học hiệu quả
 
 1. **Đọc doc theo thứ tự** dưới đây — mỗi bài đi từ "vì sao" đến "cụ thể" đến "câu phỏng vấn hay hỏi".
