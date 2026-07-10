@@ -1014,6 +1014,23 @@ test('today: gợi ý 🎯 mảng yếu nhất dùng weakestTechMode + nhảy đ
   assert.ok(/WEAK_MODE_MIN_REMAINING/.test(sw), 'suggestedWeakMode phải áp ngưỡng còn tối thiểu N câu');
 });
 
+test('readiness: iqPct được CLAMP [0,100] (IQ thấp không kéo âm điểm Tư duy)', () => {
+  const block = APP.slice(APP.indexOf('function computeReadiness'), APP.indexOf('function readinessHtml'));
+  // iqBest bị chặn [55,160] → (iqBest-80)/50*100 có thể âm/quá 100; phải clamp trước khi vào thinkVals.
+  assert.ok(/const iqPct = iqBest \? Math\.min\(100, Math\.max\(0,/.test(block),
+    'iqPct chưa clamp [0,100] → 1 lần IQ thấp làm TỤT điểm sẵn sàng');
+});
+
+test('ai-grade: regex /10 KHÔNG khớp nhầm "N/100" + score chốt trần 10', () => {
+  const block = APP.slice(APP.indexOf('function saveAiEvaluation'), APP.indexOf('function saveAiEvaluation') + 900);
+  assert.ok(block.includes('10(?!\\d)'), 'regex điểm /10 phải có (?!\\d) để loại "N/100"');
+  assert.ok(block.includes('Math.min(parseFloat(m[1].replace(\',\', \'.\')), 10)'), 'score phải chốt trần 10');
+  // Kiểm tra thực regex trên chuỗi bẫy "75/100" (không khớp) và "8/10" (khớp =8)
+  const re = /(\d+(?:[.,]\d+)?)\s*\/\s*10(?!\d)/;
+  assert.strictEqual('bạn đạt 75/100 điểm'.match(re), null, '"75/100" KHÔNG được khớp thành /10');
+  assert.strictEqual('điểm 8/10'.match(re)[1], '8', '"8/10" phải khớp đúng =8');
+});
+
 test('readiness: tổng trọng số 7 phần = 1.0 (điểm không lệch thang)', () => {
   // trích các weight trong computeReadiness (đứng liền trong mảng parts)
   const block = APP.slice(APP.indexOf('function computeReadiness'), APP.indexOf('function readinessHtml'));

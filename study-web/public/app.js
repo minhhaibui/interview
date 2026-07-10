@@ -2956,14 +2956,15 @@ function setAiInputDisabled(d) {
 
 /** Lưu lịch sử đánh giá AI (parse điểm /10 nếu có) */
 function saveAiEvaluation(text) {
-  const m = text.match(/(\d+(?:[.,]\d+)?)\s*\/\s*10/);
+  // (?!\d) để "75/100" KHÔNG khớp nhầm thành "75/10" (điểm /100 bị lưu như /10 → thổi phồng readiness)
+  const m = text.match(/(\d+(?:[.,]\d+)?)\s*\/\s*10(?!\d)/);
   // Bắt "tỷ lệ đỗ ... Y%" (ưu tiên dòng có chữ "đỗ/đậu/pass"), nếu không có thì lấy % đầu tiên
   const passM = text.match(/(?:đỗ|đậu|pass)[^%\d]*?(\d{1,3})\s*%/i) || text.match(/(\d{1,3})\s*%/);
   const hist = store.get('prep-ai-history', []);
   hist.push({
     date: new Date().toISOString().slice(0, 10),
     topic: aiCfg.topic || 'Tổng hợp', level: aiCfg.level, model: aiCfg.model,
-    score: m ? parseFloat(m[1].replace(',', '.')) : null,
+    score: m ? Math.min(parseFloat(m[1].replace(',', '.')), 10) : null, // chốt trần 10 (phòng "12/10")
     pass: passM ? Math.min(+passM[1], 100) : null,
   });
   store.set('prep-ai-history', hist.slice(-50));
@@ -3955,7 +3956,9 @@ function computeReadiness() {
   const solvedN = Object.keys(store.get('prep-coding-solved', {})).length;
   const codingPct = codingTotal ? solvedN / codingTotal * 100 : null;
   const iqBest = (store.get('prep-iq-best', {}) || {}).iq || 0;
-  const iqPct = iqBest ? (iqBest - 80) / (130 - 80) * 100 : null; // 80→0, 130→100
+  // CLAMP [0,100]: iqBest bị chặn [55,160] nên (iqBest-80)/50*100 có thể ÂM (IQ<80) hoặc >100 (IQ>130).
+  // Không clamp thì 1 lần IQ thấp kéo TỤT trung bình thinkVals → điểm sẵn sàng GIẢM dù vừa làm bài (như renderThinkStats đã clamp).
+  const iqPct = iqBest ? Math.min(100, Math.max(0, (iqBest - 80) / (130 - 80) * 100)) : null; // 80→0, 130→100
   const ivHist = store.get('prep-interview-history', []);
   const ivBest = ivHist.length ? Math.max(...ivHist.map(r => r.overall || 0)) : null;
   const oqPct = covPct(coverageOf('output'));
