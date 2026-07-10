@@ -1393,6 +1393,9 @@ body.light .plan-config input[type=date] { color-scheme: light; }
   padding: 5px 6px; margin: 1px -6px; border-radius: 7px; cursor: pointer; }
 .tk-row:hover, .tk-row:focus-visible { background: var(--bg3); outline: none; }
 .tk-row:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.tk-weak { box-shadow: inset 3px 0 0 var(--accent); }
+.tk-weak:focus-visible { box-shadow: inset 3px 0 0 var(--accent), 0 0 0 2px var(--accent); }
+.tk-weak .tk-label { font-weight: 600; }
 .tk-label { color: var(--text); white-space: nowrap; }
 .tk-track { height: 9px; background: var(--bg3); border-radius: 5px; overflow: hidden; }
 .tk-fill { height: 100%; background: var(--accent); border-radius: 5px; transition: width .3s; }

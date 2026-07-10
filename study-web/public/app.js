@@ -3859,21 +3859,24 @@ function renderThinkStats() {
   const dbg = bankCoverage(window.DEBUG_CHALLENGES, 'prep-debug-solved');
   const iqBest = (store.get('prep-iq-best', {}) || {}).iq || 0;
   // Mỗi hàng là 1 nút bấm → nhảy thẳng vào luyện mode đó (click điểm yếu để luyện ngay).
-  const bar = (label, done, total, extra = '', mode = '') => {
+  const bar = (label, done, total, extra = '', mode = '', isWeak = false) => {
     const pct = total ? Math.round(done / total * 100) : 0;
-    return `<button type="button" class="tk-row" data-tk-mode="${mode}" title="Vào luyện ${label} →">
+    return `<button type="button" class="tk-row${isWeak ? ' tk-weak' : ''}" data-tk-mode="${mode}"
+      title="Vào luyện ${label} →${isWeak ? ' (mảng yếu nhất — nên ưu tiên)' : ''}">
       <span class="tk-label">${label}</span>
       <div class="tk-track"><div class="tk-fill" style="width:${pct}%"></div></div>
-      <span class="tk-val">${done}/${total}${extra}</span></button>`;
+      <span class="tk-val">${done}/${total}${extra}${isWeak ? ' 🎯' : ''}</span></button>`;
   };
   // Các mode trắc nghiệm kỹ thuật của tab Tư duy — dùng danh sách chung TECH_QUIZ_MODES,
   // lấy nhãn + độ phủ từ QUIZ_MODES nên KHÔNG sót mode mới (java/redis/dist/devops...).
+  // Đánh dấu 🎯 mảng yếu nhất (khớp gợi ý ở tab Hôm nay) để mắt user đổ vào chỗ cần ưu tiên.
+  const weak = weakestTechMode();
   const quizBars = TECH_QUIZ_MODES.map(mode => {
     const { done, total } = coverageOf(mode);
     if (!total) return ''; // bank rỗng (chưa nạp dữ liệu) → bỏ qua, không hiện hàng 0/0
     const best = store.get(bestKeyOf(mode), null);
     const extra = best && best.total ? ` · KL ${best.score}/${best.total}` : '';
-    return bar(QUIZ_MODES[mode].label, done, total, extra, mode);
+    return bar(QUIZ_MODES[mode].label, done, total, extra, mode, weak && weak.mode === mode);
   }).join('');
   const iqPctBar = iqBest ? Math.min(100, Math.max(0, (iqBest - 80) / (130 - 80) * 100)) : 0;
   el.innerHTML =
