@@ -7,7 +7,7 @@
  *   - /api/* và các request cross-origin khác (Firebase, Anthropic): không can thiệp.
  * Đổi VERSION mỗi khi muốn ép xoá cache cũ.
  */
-const VERSION = 'v160';
+const VERSION = 'v161';
 const CACHE = `prep-${VERSION}`;
 const CDN_HOSTS = ['cdn.jsdelivr.net', 'www.gstatic.com'];
 
@@ -22,11 +22,24 @@ const PRECACHE = [
   'data/tree.json', 'data/snippets.json', 'data/docs.json',
 ];
 
+// Thư viện CDN nạp sẵn để OFFLINE có ngay (không chờ tới lần tải thứ 2).
+// Fetch no-cors → response OPAQUE; phải cache.put thủ công (cache.add từ chối opaque).
+// Gồm CẢ 2 theme hljs vì app đổi href sáng/tối khi bật nút theme.
+const CDN_PRECACHE = [
+  'https://cdn.jsdelivr.net/npm/marked@12/marked.min.js',
+  'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js',
+  'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css',
+  'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github.min.css',
+];
+
 self.addEventListener('install', (e) => {
   e.waitUntil((async () => {
     const cache = await caches.open(CACHE);
     // Nạp từng cái, lỗi cái nào bỏ qua cái đó (vd firebase-config.js có thể chưa có).
     await Promise.allSettled(PRECACHE.map((u) => cache.add(new Request(u, { cache: 'reload' }))));
+    // CDN: cache.add từ chối opaque → tự fetch no-cors rồi put (bỏ qua nếu offline lúc cài).
+    await Promise.allSettled(CDN_PRECACHE.map((u) =>
+      fetch(u, { mode: 'no-cors' }).then((res) => cache.put(u, res)).catch(() => {})));
     self.skipWaiting();
   })());
 });
@@ -91,7 +104,9 @@ async function cacheFirst(req) {
   if (hit) return hit;
   try {
     const res = await fetch(req);
-    if (res && res.ok) cache.put(req, res.clone());
+    // Cache CẢ opaque (CDN no-cors, status 0) — vẫn dùng lại được cho <script>/<link> khi offline.
+    // (Trước đây chỉ cache khi res.ok → thư viện CDN KHÔNG BAO GIỜ được cache → offline hỏng.)
+    if (res && (res.ok || res.type === 'opaque')) cache.put(req, res.clone());
     return res;
   } catch {
     return hit || Response.error();

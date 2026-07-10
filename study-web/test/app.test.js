@@ -25,6 +25,7 @@ function loadWindow(file) {
 
 const APP = read('app.js');
 const HTML = read('index.html');
+const SW = read('sw.js');
 
 // ---------------------------------------------------------------------------
 // A. TOÀN VẸN DỮ LIỆU
@@ -947,6 +948,22 @@ test('dashboard: panel Tư duy phủ ĐỦ mode trắc nghiệm kỹ thuật (k�
   assert.ok(/suggestedWeakMode\(\)/.test(statsBlock), 'panel Tư duy nên đánh dấu mảng yếu nhất qua suggestedWeakMode');
   assert.ok(/tk-weak/.test(APP) && /\.tk-weak/.test(read('styles.css')),
     'thiếu class tk-weak (đánh dấu) trong app.js hoặc CSS');
+});
+
+test('sw: offline cache được response OPAQUE của thư viện CDN (không hỏng khi offline)', () => {
+  // Bug cũ: chỉ cache khi res.ok → response opaque (CDN no-cors, status 0) KHÔNG BAO GIỜ được
+  // cache → offline mất hljs/marked/CSS. Phải cache cả opaque.
+  assert.ok(/res\.ok\s*\|\|\s*res\.type === 'opaque'/.test(SW),
+    'cacheFirst phải cache cả res.type opaque, không chỉ res.ok');
+  // Precache CDN: fetch no-cors + cache.put thủ công (cache.add từ chối opaque).
+  assert.ok(/CDN_PRECACHE/.test(SW), 'sw thiếu danh sách CDN_PRECACHE nạp sẵn thư viện');
+  assert.ok(/mode: 'no-cors'[\s\S]*cache\.put/.test(SW), 'CDN_PRECACHE phải fetch no-cors rồi cache.put');
+  // Nạp sẵn CẢ 2 theme hljs (app đổi href sáng/tối) — thiếu 1 cái thì theme kia mất màu offline.
+  for (const asset of ['highlight.min.js', 'marked@12', 'github-dark.min.css', 'styles/github.min.css']) {
+    assert.ok(SW.includes(asset), `CDN_PRECACHE thiếu ${asset}`);
+  }
+  // Cả HTML dùng đúng theme hljs đang precache (khớp URL để cache hit khi offline).
+  assert.ok(HTML.includes('github-dark.min.css'), 'index.html không dùng đúng URL hljs theme đã precache');
 });
 
 test('today: gợi ý 🎯 mảng yếu nhất dùng weakestTechMode + nhảy đúng mode', () => {
