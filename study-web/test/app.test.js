@@ -917,11 +917,25 @@ test('regression: đếm độ phủ bank lọc theo id còn tồn tại, cùng 
   assert.ok(/coverageOf\('output'\)/.test(badgeBlock) && /bankCoverage\(window\.DEBUG_CHALLENGES/.test(badgeBlock),
     'computeBadges phải dùng coverageOf/bankCoverage');
   const statsBlock = APP.slice(APP.indexOf('function renderThinkStats'), APP.indexOf('function computeReadiness'));
-  assert.ok(/coverageOf\('output'\)/.test(statsBlock), 'renderThinkStats phải dùng coverageOf');
+  assert.ok(/coverageOf\(mode\)/.test(statsBlock), 'renderThinkStats phải dùng coverageOf (dạng tham số hoá theo mode)');
   const readyBlock = APP.slice(APP.indexOf('function computeReadiness'), APP.indexOf('function readinessHtml'));
   assert.ok(/covPct\(coverageOf\('output'\)\)/.test(readyBlock), 'computeReadiness phải dùng coverageOf');
   const covOf = APP.slice(APP.indexOf('function coverageOf'), APP.indexOf('function coverageOf') + 300);
   assert.ok(/bankCoverage\(m\.data\(\), m\.doneKey\)/.test(covOf), 'coverageOf phải uỷ quyền bankCoverage');
+});
+
+test('dashboard: panel Tư duy phủ ĐỦ mode trắc nghiệm kỹ thuật (kể cả java/redis/dist/devops)', () => {
+  const statsBlock = APP.slice(APP.indexOf('function renderThinkStats'), APP.indexOf('function computeReadiness'));
+  // Hàng bar sinh từ TECH_QUIZ_ROWS — mọi mode kỹ thuật phải có mặt để user thấy tiến độ.
+  const rowsM = statsBlock.match(/TECH_QUIZ_ROWS\s*=\s*\[([\s\S]*?)\];/);
+  assert.ok(rowsM, 'renderThinkStats thiếu mảng TECH_QUIZ_ROWS');
+  const modesBlock = APP.slice(APP.indexOf('const QUIZ_MODES = {'), APP.indexOf('const QUIZ_MODES = {') + 3000);
+  for (const mode of ['output', 'api', 'sql', 'cli', 'java', 'redis', 'dist', 'devops']) {
+    assert.ok(new RegExp(`'${mode}'`).test(rowsM[1]), `panel Tư duy chưa liệt kê mode '${mode}'`);
+    assert.ok(new RegExp(`\\n  ${mode}: \\{`).test(modesBlock), `mode '${mode}' không tồn tại trong QUIZ_MODES`);
+  }
+  // Nhãn hiển thị lấy trực tiếp từ QUIZ_MODES (không hardcode) → không lệch với nút mode.
+  assert.ok(/QUIZ_MODES\[mode\]\.label/.test(statsBlock), 'panel Tư duy nên lấy nhãn từ QUIZ_MODES[mode].label');
 });
 
 test('readiness: tổng trọng số 7 phần = 1.0 (điểm không lệch thang)', () => {

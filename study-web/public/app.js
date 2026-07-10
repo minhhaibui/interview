@@ -3849,30 +3849,33 @@ function renderThinkStats() {
   const el = document.getElementById('dash-think');
   if (!el) return;
   const coding = bankCoverage(window.CODING_PROBLEMS, 'prep-coding-solved');
-  const oq = coverageOf('output');
   const dbg = bankCoverage(window.DEBUG_CHALLENGES, 'prep-debug-solved');
-  const api = coverageOf('api');
-  const sql = coverageOf('sql');
-  const cli = coverageOf('cli');
   const iqBest = (store.get('prep-iq-best', {}) || {}).iq || 0;
-  const oqBest = store.get('prep-oq-best', null);
-  const apiBest = store.get('prep-api-best', null);
-  const sqlBest = store.get('prep-sql-best', null);
-  const cliBest = store.get('prep-cli-best', null);
   const bar = (label, done, total, extra = '') => {
     const pct = total ? Math.round(done / total * 100) : 0;
     return `<div class="tk-row"><span class="tk-label">${label}</span>
       <div class="tk-track"><div class="tk-fill" style="width:${pct}%"></div></div>
       <span class="tk-val">${done}/${total}${extra}</span></div>`;
   };
+  // Các mode trắc nghiệm kỹ thuật của tab Tư duy — lấy nhãn + độ phủ từ QUIZ_MODES
+  // để KHÔNG sót mode mới (java/redis/dist/devops... trước đây bị bỏ quên ở panel này).
+  const TECH_QUIZ_ROWS = [
+    ['output', 'prep-oq-best'], ['api', 'prep-api-best'], ['sql', 'prep-sql-best'],
+    ['cli', 'prep-cli-best'], ['java', 'prep-java-best'], ['redis', 'prep-redis-best'],
+    ['dist', 'prep-dist-best'], ['devops', 'prep-devops-best'],
+  ];
+  const quizBars = TECH_QUIZ_ROWS.map(([mode, bestKey]) => {
+    const { done, total } = coverageOf(mode);
+    if (!total) return ''; // bank rỗng (chưa nạp dữ liệu) → bỏ qua, không hiện hàng 0/0
+    const best = store.get(bestKey, null);
+    const extra = best && best.total ? ` · KL ${best.score}/${best.total}` : '';
+    return bar(QUIZ_MODES[mode].label, done, total, extra);
+  }).join('');
   const iqPctBar = iqBest ? Math.min(100, Math.max(0, (iqBest - 80) / (130 - 80) * 100)) : 0;
   el.innerHTML =
     bar('💻 Lập trình', coding.done, coding.total) +
-    bar('🔍 Đoán output', oq.done, oq.total, oqBest ? ` · KL ${oqBest.score}/${oqBest.total}` : '') +
     bar('🐛 Sửa bug', dbg.done, dbg.total) +
-    bar('📡 API/HTTP', api.done, api.total, apiBest ? ` · KL ${apiBest.score}/${apiBest.total}` : '') +
-    bar('🗄️ SQL Drill', sql.done, sql.total, sqlBest ? ` · KL ${sqlBest.score}/${sqlBest.total}` : '') +
-    bar('🖥️ CLI Quiz', cli.done, cli.total, cliBest ? ` · KL ${cliBest.score}/${cliBest.total}` : '') +
+    quizBars +
     `<div class="tk-row"><span class="tk-label">🧩 IQ ước lượng</span>
       <div class="tk-track"><div class="tk-fill" style="width:${iqPctBar}%"></div></div>
       <span class="tk-val">${iqBest || '—'}</span></div>`;
