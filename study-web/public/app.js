@@ -2629,7 +2629,7 @@ function finishMock() {
       total: done,
       week: document.getElementById('mk-week').value || 'all',
     });
-    store.set('prep-mock-history', history);
+    store.set('prep-mock-history', history.slice(-50)); // chặn phình vô hạn (đồng bộ Firestore) như các history khác
     // Lưu câu trả lời sai vào kho để ôn lại sau (khử trùng theo nội dung câu)
     if (mkWrong.length) addMockWrong(mkWrong);
     const pct = Math.round((mkRight / done) * 100);
@@ -5033,7 +5033,7 @@ function finishExam(timedOut) {
   examEndMs = 0;
   clearExamState(); // bài đã nộp — không còn gì để khôi phục sau reload
   // Chấm cả bài: đúng → tính độ phủ + rời hàng đợi sai; sai/bỏ qua/chưa tới → vào hàng đợi 🔁
-  let right = 0, skipped = 0;
+  let right = 0, skipped = 0, queuedWrong = 0;
   const wrongItems = [];
   const byMode = {};
   examQueue.forEach((item, idx) => {
@@ -5046,10 +5046,10 @@ function finishExam(timedOut) {
       clearWrong(item.mode, item.q.id);
       const d = store.get(QUIZ_MODES[item.mode].doneKey, {}); d[item.q.id] = true; store.set(QUIZ_MODES[item.mode].doneKey, d);
     } else {
-      if (picked == null) skipped++;
+      if (picked === null) skipped++; // ĐÃ hiển thị mà bỏ qua (null); câu CHƯA làm tới là undefined → không tính "bỏ qua"
       // Bài bỏ dở quá hạn: câu CHƯA TỪNG HIỂN THỊ (idx > examIdx) chỉ trượt điểm,
       // không đổ vào hàng đợi 🔁 — "sai" một câu chưa nhìn thấy là dữ liệu ôn tập giả.
-      if (idx <= examIdx) recordWrong(item.mode, item.q.id);
+      if (idx <= examIdx) { recordWrong(item.mode, item.q.id); queuedWrong++; }
       wrongItems.push({ item, picked });
     }
   });
@@ -5088,11 +5088,11 @@ function finishExam(timedOut) {
   el.innerHTML = `
     <div class="oq-result">
       <h2>${pct >= 80 ? '🌟' : pct >= 50 ? '👍' : '📚'} ${timedOut ? '⏰ Hết giờ! ' : ''}${examSprint ? '🔥 Nước rút — ' : ''}Kết quả: đúng ${right}/${total} (${pct}%)</h2>
-      <p>Thời gian: <b>${fmtClock(secs)}</b>/${fmtClock(examDurSec)}${skipped ? ` · bỏ qua <b>${skipped}</b> câu` : ''}${wrongItems.length ? ` · <b>${wrongItems.length}</b> câu chưa đúng đã vào hàng đợi 🔁 Ôn câu sai.` : ' · Không sai câu nào — quá đỉnh! 🎉'}</p>
+      <p>Thời gian: <b>${fmtClock(secs)}</b>/${fmtClock(examDurSec)}${skipped ? ` · bỏ qua <b>${skipped}</b> câu` : ''}${queuedWrong ? ` · <b>${queuedWrong}</b> câu sai đã vào hàng đợi 🔁 Ôn câu sai.` : ''}${wrongItems.length - queuedWrong > 0 ? ` · <b>${wrongItems.length - queuedWrong}</b> câu chưa làm tới (hết giờ)` : ''}${!wrongItems.length ? ' · Không sai câu nào — quá đỉnh! 🎉' : ''}</p>
       <div class="review-chips">${chips}</div>
       <div class="review-actions">
         <button id="exam-again" class="dg-go">↻ Thi đề khác</button>
-        ${wrongItems.length ? '<button id="exam-review" class="dg-go dg-link">🔁 Ôn ngay câu sai</button>' : ''}
+        ${queuedWrong ? '<button id="exam-review" class="dg-go dg-link">🔁 Ôn ngay câu sai</button>' : ''}
         <button id="exam-copy" class="dg-go dg-link" title="Copy tóm tắt điểm + phân bố theo mảng để chia sẻ">📋 Copy kết quả</button>
       </div>
       ${wrongItems.length ? `<h3 class="exam-wrong-h">Xem lại ${wrongItems.length} câu chưa đúng</h3>${wrongHtml}` : ''}
