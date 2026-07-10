@@ -2928,9 +2928,15 @@ function aiListen() {
   const ta = document.getElementById('ai-answer');
   let baseline = ta.value;
   aiRecog.onresult = e => {
-    let txt = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) txt += e.results[i][0].transcript;
-    ta.value = (baseline + ' ' + txt).trim();
+    // Đoạn ĐÃ CHỐT (isFinal) phải cộng dồn vào baseline — vì resultIndex nhảy qua chúng ở lần sau,
+    // nếu chỉ ghi đè từ baseline cố định thì câu trả lời nhiều câu sẽ mất, chỉ còn đoạn cuối.
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const r = e.results[i];
+      if (r.isFinal) baseline = (baseline + ' ' + r[0].transcript).trim();
+      else interim += r[0].transcript;
+    }
+    ta.value = (baseline + (interim ? ' ' + interim : '')).trim();
   };
   aiRecog.onerror = () => { mic.classList.remove('listening'); aiRecog = null; };
   aiRecog.onend = () => { mic.classList.remove('listening'); aiRecog = null; };

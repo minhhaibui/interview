@@ -1014,6 +1014,28 @@ test('today: gợi ý 🎯 mảng yếu nhất dùng weakestTechMode + nhảy đ
   assert.ok(/WEAK_MODE_MIN_REMAINING/.test(sw), 'suggestedWeakMode phải áp ngưỡng còn tối thiểu N câu');
 });
 
+test('ai-mic: đoạn isFinal cộng dồn vào baseline (không mất câu khi nói nhiều câu)', () => {
+  const block = APP.slice(APP.indexOf('aiRecog.onresult'), APP.indexOf('aiRecog.onresult') + 500);
+  // Bug cũ: ghi đè ta.value từ baseline cố định + chỉ dùng resultIndex → đoạn đã chốt bị mất.
+  assert.ok(/r\.isFinal/.test(block), 'onresult phải phân biệt đoạn isFinal để cộng dồn');
+  assert.ok(/baseline = \(baseline \+ ' ' \+ r\[0\]\.transcript\)/.test(block),
+    'đoạn đã chốt phải CỘNG DỒN vào baseline, không ghi đè');
+  // Mô phỏng thuật toán: 2 event, event1 chốt "one", event2 chốt "two" (resultIndex nhảy) → phải còn cả 2.
+  let baseline = '';
+  const apply = (e) => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const r = e.results[i];
+      if (r.isFinal) baseline = (baseline + ' ' + r[0].transcript).trim(); else interim += r[0].transcript;
+    }
+    return (baseline + (interim ? ' ' + interim : '')).trim();
+  };
+  const mk = (arr, idx) => ({ resultIndex: idx, results: arr.map(([t, f]) => ({ 0: { transcript: t }, isFinal: f })) });
+  apply(mk([['one', true]], 0));                          // chốt "one"
+  const out = apply(mk([['one', true], ['two', true]], 1)); // resultIndex=1 → chỉ thấy "two", nhưng "one" đã ở baseline
+  assert.strictEqual(out, 'one two', 'câu nhiều đoạn phải giữ đủ, không chỉ còn đoạn cuối');
+});
+
 test('readiness: iqPct được CLAMP [0,100] (IQ thấp không kéo âm điểm Tư duy)', () => {
   const block = APP.slice(APP.indexOf('function computeReadiness'), APP.indexOf('function readinessHtml'));
   // iqBest bị chặn [55,160] → (iqBest-80)/50*100 có thể âm/quá 100; phải clamp trước khi vào thinkVals.
