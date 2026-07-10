@@ -755,6 +755,13 @@ async function renderToday() {
     return ups.find(u => u.week <= wk && u.items.some((_, i) => !(cap[u.id] || {})[i])) || null;
   })();
   if (capUp) tasks.push({ id: 'td-capstone', ic: '🧪', t: `Capstone: ${capUp.label}`, s: 'Làm tận tay rồi tick nghiệm thu ở tab Kế hoạch', go: () => switchView('plan') });
+  // 🎯 Gợi ý mảng kỹ thuật YẾU NHẤT (độ phủ thấp) → bấm là vào luyện ngay, đỡ phải tự chọn.
+  const weak = weakestTechMode();
+  if (weak && (weak.total - weak.done) >= 3) {
+    tasks.push({ id: 'td-weak', ic: '🎯', t: `Luyện mảng yếu nhất: ${QUIZ_MODES[weak.mode].label}`,
+      s: `Mới ${weak.done}/${weak.total} câu — bấm để vào luyện ngay`,
+      go: () => { switchView('coding'); setThinkMode(weak.mode); } });
+  }
   tasks.push({ id: 'td-think', ic: '🧠', t: 'Giải 1 bài luyện tư duy', s: 'Coding hoặc IQ', go: () => switchView('coding') });
   tasks.push({ id: 'td-mock', ic: '🎯', t: 'Mock interview nhanh', s: '5–10 câu ngẫu nhiên', go: () => switchView('mock') });
   tasks.push({ id: 'td-design', ic: '🏛️', t: 'Luyện 1 đề System Design', s: 'Tự chấm rubric hoặc nhờ AI chấm', go: () => switchView('design') });
@@ -3859,17 +3866,12 @@ function renderThinkStats() {
       <div class="tk-track"><div class="tk-fill" style="width:${pct}%"></div></div>
       <span class="tk-val">${done}/${total}${extra}</span></button>`;
   };
-  // Các mode trắc nghiệm kỹ thuật của tab Tư duy — lấy nhãn + độ phủ từ QUIZ_MODES
-  // để KHÔNG sót mode mới (java/redis/dist/devops... trước đây bị bỏ quên ở panel này).
-  const TECH_QUIZ_ROWS = [
-    ['output', 'prep-oq-best'], ['api', 'prep-api-best'], ['sql', 'prep-sql-best'],
-    ['cli', 'prep-cli-best'], ['java', 'prep-java-best'], ['redis', 'prep-redis-best'],
-    ['dist', 'prep-dist-best'], ['devops', 'prep-devops-best'],
-  ];
-  const quizBars = TECH_QUIZ_ROWS.map(([mode, bestKey]) => {
+  // Các mode trắc nghiệm kỹ thuật của tab Tư duy — dùng danh sách chung TECH_QUIZ_MODES,
+  // lấy nhãn + độ phủ từ QUIZ_MODES nên KHÔNG sót mode mới (java/redis/dist/devops...).
+  const quizBars = TECH_QUIZ_MODES.map(mode => {
     const { done, total } = coverageOf(mode);
     if (!total) return ''; // bank rỗng (chưa nạp dữ liệu) → bỏ qua, không hiện hàng 0/0
-    const best = store.get(bestKey, null);
+    const best = store.get(bestKeyOf(mode), null);
     const extra = best && best.total ? ` · KL ${best.score}/${best.total}` : '';
     return bar(QUIZ_MODES[mode].label, done, total, extra, mode);
   }).join('');
@@ -4486,6 +4488,12 @@ const QUIZ_MODES = {
   },
 };
 
+/** Các mode trắc nghiệm KỸ THUẬT (loại english/situational — thuộc trục ngôn ngữ/hành vi).
+ *  Nguồn DUY NHẤT dùng chung cho panel Dashboard 🧠 Tư duy + gợi ý "luyện mảng yếu nhất" ở Hôm nay. */
+const TECH_QUIZ_MODES = ['output', 'api', 'sql', 'cli', 'java', 'redis', 'dist', 'devops'];
+/** Key lưu điểm cao nhất của mode (output dùng tiền tố 'oq' lịch sử, còn lại theo tên mode). */
+const bestKeyOf = mode => mode === 'output' ? 'prep-oq-best' : `prep-${mode}-best`;
+
 // ----- Chế độ 📡 API & HTTP (dùng engine makeQuiz) -----
 const apiQuiz = makeQuiz({
   ...QUIZ_MODES.api, // data/doneKey/ask/optionHtml/questionHtml/highlight
@@ -4616,6 +4624,21 @@ function refreshReviewBadge() {
 function coverageOf(mode) {
   const m = QUIZ_MODES[mode];
   return m ? bankCoverage(m.data(), m.doneKey) : { done: 0, total: 0 };
+}
+
+/** Mode kỹ thuật YẾU NHẤT còn dư địa: tỉ lệ độ phủ thấp nhất & chưa đạt 100%;
+ *  hoà nhau thì ưu tiên mode đang nhiều câu sai hơn. null nếu mọi mode đã phủ hết / chưa có bank. */
+function weakestTechMode() {
+  let best = null;
+  for (const mode of TECH_QUIZ_MODES) {
+    const { done, total } = coverageOf(mode);
+    if (!total || done >= total) continue; // bỏ mode chưa có bank hoặc đã phủ 100%
+    const ratio = done / total;
+    const wrong = wrongIds(mode).length;
+    if (!best || ratio < best.ratio || (ratio === best.ratio && wrong > best.wrong))
+      best = { mode, ratio, wrong, done, total };
+  }
+  return best;
 }
 
 /** Hiện "đã đúng/tổng" trên nút mỗi mode trắc nghiệm; đầy đủ thì thêm ✓. */

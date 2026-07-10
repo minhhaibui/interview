@@ -926,20 +926,35 @@ test('regression: đếm độ phủ bank lọc theo id còn tồn tại, cùng 
 
 test('dashboard: panel Tư duy phủ ĐỦ mode trắc nghiệm kỹ thuật (kể cả java/redis/dist/devops)', () => {
   const statsBlock = APP.slice(APP.indexOf('function renderThinkStats'), APP.indexOf('function computeReadiness'));
-  // Hàng bar sinh từ TECH_QUIZ_ROWS — mọi mode kỹ thuật phải có mặt để user thấy tiến độ.
-  const rowsM = statsBlock.match(/TECH_QUIZ_ROWS\s*=\s*\[([\s\S]*?)\];/);
-  assert.ok(rowsM, 'renderThinkStats thiếu mảng TECH_QUIZ_ROWS');
+  // Panel + các gợi ý dùng CHUNG danh sách TECH_QUIZ_MODES — mọi mode kỹ thuật phải có mặt.
+  const listM = APP.match(/TECH_QUIZ_MODES\s*=\s*\[([\s\S]*?)\];/);
+  assert.ok(listM, 'thiếu hằng TECH_QUIZ_MODES (nguồn dùng chung');
   const modesBlock = APP.slice(APP.indexOf('const QUIZ_MODES = {'), APP.indexOf('const QUIZ_MODES = {') + 3000);
   for (const mode of ['output', 'api', 'sql', 'cli', 'java', 'redis', 'dist', 'devops']) {
-    assert.ok(new RegExp(`'${mode}'`).test(rowsM[1]), `panel Tư duy chưa liệt kê mode '${mode}'`);
+    assert.ok(new RegExp(`'${mode}'`).test(listM[1]), `TECH_QUIZ_MODES chưa liệt kê mode '${mode}'`);
     assert.ok(new RegExp(`\\n  ${mode}: \\{`).test(modesBlock), `mode '${mode}' không tồn tại trong QUIZ_MODES`);
   }
-  // Nhãn hiển thị lấy trực tiếp từ QUIZ_MODES (không hardcode) → không lệch với nút mode.
+  // english/situational KHÔNG thuộc panel kỹ thuật (thuộc trục ngôn ngữ/hành vi).
+  assert.ok(!/'english'|'situational'/.test(listM[1]), 'TECH_QUIZ_MODES không nên gồm english/situational');
+  // Panel sinh hàng từ TECH_QUIZ_MODES, nhãn lấy trực tiếp từ QUIZ_MODES (không hardcode).
+  assert.ok(/TECH_QUIZ_MODES\.map/.test(statsBlock), 'panel Tư duy phải sinh hàng từ TECH_QUIZ_MODES');
   assert.ok(/QUIZ_MODES\[mode\]\.label/.test(statsBlock), 'panel Tư duy nên lấy nhãn từ QUIZ_MODES[mode].label');
   // Mỗi hàng là nút bấm → nhảy vào luyện mode đó (click điểm yếu để luyện ngay).
   assert.ok(/data-tk-mode=/.test(statsBlock), 'hàng panel Tư duy phải mang data-tk-mode để bấm vào luyện');
   assert.ok(/switchView\('coding'\); setThinkMode\(b\.dataset\.tkMode\)/.test(statsBlock),
     'panel Tư duy chưa wiring click → switchView(coding)+setThinkMode');
+});
+
+test('today: gợi ý 🎯 mảng yếu nhất dùng weakestTechMode + nhảy đúng mode', () => {
+  const wk = APP.slice(APP.indexOf('function weakestTechMode'), APP.indexOf('function weakestTechMode') + 700);
+  assert.ok(wk, 'thiếu weakestTechMode');
+  assert.ok(/for \(const mode of TECH_QUIZ_MODES\)/.test(wk), 'weakestTechMode phải duyệt TECH_QUIZ_MODES');
+  assert.ok(/done >= total/.test(wk), 'weakestTechMode phải bỏ mode đã phủ 100%');
+  assert.ok(/ratio < best\.ratio/.test(wk), 'weakestTechMode phải so tỉ lệ độ phủ để chọn yếu nhất');
+  // Task Hôm nay bấm vào là vào đúng mode yếu (setThinkMode theo weak.mode)
+  const today = APP.slice(APP.indexOf('async function renderToday'), APP.indexOf('async function renderToday') + 6000);
+  assert.ok(/id: 'td-weak'/.test(today), 'renderToday thiếu task td-weak');
+  assert.ok(/setThinkMode\(weak\.mode\)/.test(today), 'task td-weak chưa nhảy vào đúng mode yếu');
 });
 
 test('readiness: tổng trọng số 7 phần = 1.0 (điểm không lệch thang)', () => {
