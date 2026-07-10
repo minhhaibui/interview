@@ -1388,7 +1388,11 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 
 /* 🧠 Panel Luyện tư duy trong Dashboard */
 #dash-think { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 8px; }
-.tk-row { display: grid; grid-template-columns: 130px 1fr auto; gap: 10px; align-items: center; font-size: 13px; }
+.tk-row { display: grid; grid-template-columns: 130px 1fr auto; gap: 10px; align-items: center; font-size: 13px;
+  width: 100%; border: 0; background: transparent; color: inherit; font-family: inherit; text-align: left;
+  padding: 5px 6px; margin: 1px -6px; border-radius: 7px; cursor: pointer; }
+.tk-row:hover, .tk-row:focus-visible { background: var(--bg3); outline: none; }
+.tk-row:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
 .tk-label { color: var(--text); white-space: nowrap; }
 .tk-track { height: 9px; background: var(--bg3); border-radius: 5px; overflow: hidden; }
 .tk-fill { height: 100%; background: var(--accent); border-radius: 5px; transition: width .3s; }

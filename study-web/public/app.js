@@ -3851,11 +3851,13 @@ function renderThinkStats() {
   const coding = bankCoverage(window.CODING_PROBLEMS, 'prep-coding-solved');
   const dbg = bankCoverage(window.DEBUG_CHALLENGES, 'prep-debug-solved');
   const iqBest = (store.get('prep-iq-best', {}) || {}).iq || 0;
-  const bar = (label, done, total, extra = '') => {
+  // Mỗi hàng là 1 nút bấm → nhảy thẳng vào luyện mode đó (click điểm yếu để luyện ngay).
+  const bar = (label, done, total, extra = '', mode = '') => {
     const pct = total ? Math.round(done / total * 100) : 0;
-    return `<div class="tk-row"><span class="tk-label">${label}</span>
+    return `<button type="button" class="tk-row" data-tk-mode="${mode}" title="Vào luyện ${label} →">
+      <span class="tk-label">${label}</span>
       <div class="tk-track"><div class="tk-fill" style="width:${pct}%"></div></div>
-      <span class="tk-val">${done}/${total}${extra}</span></div>`;
+      <span class="tk-val">${done}/${total}${extra}</span></button>`;
   };
   // Các mode trắc nghiệm kỹ thuật của tab Tư duy — lấy nhãn + độ phủ từ QUIZ_MODES
   // để KHÔNG sót mode mới (java/redis/dist/devops... trước đây bị bỏ quên ở panel này).
@@ -3869,16 +3871,21 @@ function renderThinkStats() {
     if (!total) return ''; // bank rỗng (chưa nạp dữ liệu) → bỏ qua, không hiện hàng 0/0
     const best = store.get(bestKey, null);
     const extra = best && best.total ? ` · KL ${best.score}/${best.total}` : '';
-    return bar(QUIZ_MODES[mode].label, done, total, extra);
+    return bar(QUIZ_MODES[mode].label, done, total, extra, mode);
   }).join('');
   const iqPctBar = iqBest ? Math.min(100, Math.max(0, (iqBest - 80) / (130 - 80) * 100)) : 0;
   el.innerHTML =
-    bar('💻 Lập trình', coding.done, coding.total) +
-    bar('🐛 Sửa bug', dbg.done, dbg.total) +
+    bar('💻 Lập trình', coding.done, coding.total, '', 'code') +
+    bar('🐛 Sửa bug', dbg.done, dbg.total, '', 'debug') +
     quizBars +
-    `<div class="tk-row"><span class="tk-label">🧩 IQ ước lượng</span>
+    `<button type="button" class="tk-row" data-tk-mode="iq" title="Vào luyện 🧩 IQ →">
+      <span class="tk-label">🧩 IQ ước lượng</span>
       <div class="tk-track"><div class="tk-fill" style="width:${iqPctBar}%"></div></div>
-      <span class="tk-val">${iqBest || '—'}</span></div>`;
+      <span class="tk-val">${iqBest || '—'}</span></button>`;
+  // Bấm 1 hàng → mở tab Tư duy đúng mode đó (luyện điểm yếu ngay)
+  el.querySelectorAll('.tk-row[data-tk-mode]').forEach(b => {
+    b.onclick = () => { switchView('coding'); setThinkMode(b.dataset.tkMode); };
+  });
   // Câu trắc nghiệm đã chọn sai (gom từ output/API/SQL/CLI) → CTA ôn lại
   const wrongN = wrongTotal();
   const cta = document.createElement('div');
