@@ -505,8 +505,13 @@ test('wiring: chế độ 🎓 Thi thử đủ HTML + toggle + engine + dọn ti
   assert.ok(/clearExamState\(\)/.test(resetBlock), 'reset dữ liệu chưa xoá kèm bài thi dở');
   const finBlock = APP.slice(APP.indexOf('function finishExam'), APP.indexOf('function finishExam') + 800);
   assert.ok(/clearExamState\(\)/.test(finBlock), 'finishExam chưa xoá bài dở đã lưu');
-  assert.ok(/key !== EXAM_STATE_KEY\) schedulePush/.test(APP),
+  assert.ok(/key !== EXAM_STATE_KEY[^)]*\) schedulePush/.test(APP),
     'onStoreWrite chưa loại prep-exam-state — mỗi câu trả lời sẽ đẩy blob không đổi lên Firestore');
+  // Ping-pong fix: prep-last-view (sở thích tab cục bộ) KHÔNG được kích push, và KHÔNG nằm trong PREP_KEYS.
+  assert.ok(/key !== 'prep-last-view'\) schedulePush/.test(APP),
+    'onStoreWrite chưa loại prep-last-view — 2 thiết bị idle sẽ ping-pong Firestore vô hạn');
+  assert.ok(!new RegExp("PREP_KEYS[\\s\\S]*?'prep-last-view'[\\s\\S]*?\\];").test(APP.slice(APP.indexOf('const PREP_KEYS'), APP.indexOf('const PREP_KEYS') + 1500)),
+    'prep-last-view KHÔNG nên nằm trong PREP_KEYS (sở thích cục bộ, đồng bộ sẽ nhảy tab + góp ping-pong)');
   // 📋 copy kết quả + phân bố theo mảng trong lịch sử
   assert.ok(/modes: byMode/.test(APP), 'lịch sử thi chưa lưu phân bố modes (nguồn trend chart)');
   assert.ok(/function copyText\b/.test(APP) && /function examResultText\b/.test(APP), 'thiếu copyText/examResultText');

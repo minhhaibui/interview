@@ -3348,7 +3348,9 @@ async function mkAiGrade() {
 const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-doc',
   'prep-typing-best', 'prep-fails', 'prep-activity', 'prep-mock-history',
   'prep-pomo', 'prep-code-best', 'prep-fc-dir', 'prep-fc-auto', 'prep-code-history', 'prep-theme',
-  'prep-last-view', 'prep-doc-checks', 'prep-mock-wrong', 'prep-ai-history', 'prep-ai-settings', 'prep-plan',
+  // prep-last-view CỐ Ý KHÔNG sync: sở thích tab cục bộ mỗi thiết bị (đồng bộ sẽ khiến máy này nhảy
+  // sang tab máy kia + góp phần ping-pong). Vẫn bỏ qua nó trong onStoreWrite ở initSync.
+  'prep-doc-checks', 'prep-mock-wrong', 'prep-ai-history', 'prep-ai-settings', 'prep-plan',
   'prep-coding-solved', 'prep-coding-code', 'prep-iq-best', 'prep-iq-test-history', 'prep-interview-history',
   'prep-daily-goal', 'prep-badges-seen', 'prep-design-history', 'prep-design-draft',
   'prep-oq-done', 'prep-oq-best', 'prep-debug-solved', 'prep-debug-code',
@@ -6334,7 +6336,10 @@ function initSync() {
   // kèm theo mọi lần push khác (push là whole-blob theo PREP_KEYS).
   // prep-exam-state ghi SAU MỖI CÂU thi thử nhưng nằm ngoài PREP_KEYS (không sync) —
   // để nó trigger là mỗi câu trả lời đẩy nguyên blob không đổi lên Firestore, noise thuần.
-  onStoreWrite = key => { if (key !== 'prep-sync-meta' && key !== 'prep-readiness-log' && key !== EXAM_STATE_KEY) schedulePush(); };
+  // prep-last-view (tab đang mở) là SỞ THÍCH CỤC BỘ mỗi thiết bị, ghi mỗi lần switchView. Nếu để nó
+  // kích push → 2 thiết bị online idle sẽ PING-PONG vô hạn: snapshot → reapplyView → switchView →
+  // ghi prep-last-view → push → thiết bị kia nhận → lặp. Bỏ qua nó (như readiness-log/exam-state).
+  onStoreWrite = key => { if (key !== 'prep-sync-meta' && key !== 'prep-readiness-log' && key !== EXAM_STATE_KEY && key !== 'prep-last-view') schedulePush(); };
 
   fbAuth.onAuthStateChanged(async user => {
     fbUser = user;
