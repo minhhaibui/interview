@@ -964,6 +964,14 @@ test('sw: offline cache được response OPAQUE của thư viện CDN (không h
   }
   // Cả HTML dùng đúng theme hljs đang precache (khớp URL để cache hit khi offline).
   assert.ok(HTML.includes('github-dark.min.css'), 'index.html không dùng đúng URL hljs theme đã precache');
+  // Mọi <script src> cùng origin trong index.html phải nằm trong PRECACHE (offline không lỗi tải).
+  const preBlock = SW.slice(SW.indexOf('const PRECACHE'), SW.indexOf('];', SW.indexOf('const PRECACHE')));
+  const localScripts = [...HTML.matchAll(/<script src="(?!https?:)([^"]+)"/g)].map(m => m[1]);
+  for (const s of localScripts) {
+    assert.ok(preBlock.includes(`'${s}'`), `PRECACHE thiếu script cùng origin '${s}' (offline sẽ lỗi tải)`);
+  }
+  // Firebase (index.html luôn nạp) cũng precache để app shell mở trọn vẹn offline.
+  assert.ok(/firebasejs\/[\d.]+\/firebase-app-compat\.js/.test(SW), 'CDN_PRECACHE thiếu firebase-app');
 });
 
 test('today: gợi ý 🎯 mảng yếu nhất dùng weakestTechMode + nhảy đúng mode', () => {

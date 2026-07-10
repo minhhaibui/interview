@@ -7,7 +7,7 @@
  *   - /api/* và các request cross-origin khác (Firebase, Anthropic): không can thiệp.
  * Đổi VERSION mỗi khi muốn ép xoá cache cũ.
  */
-const VERSION = 'v161';
+const VERSION = 'v162';
 const CACHE = `prep-${VERSION}`;
 const CDN_HOSTS = ['cdn.jsdelivr.net', 'www.gstatic.com'];
 
@@ -18,6 +18,7 @@ const PRECACHE = [
   'design-drills.js', 'output-quiz.js', 'debug-challenges.js', 'api-quiz.js', 'sql-drill.js', 'cli-quiz.js',
   'star-questions.js', 'reverse-questions.js', 'english-phrases.js', 'capstone-tracker.js',
   'ko-vocab.js', 'zh-vocab.js', 'java-quiz.js', 'redis-quiz.js', 'dist-quiz.js', 'devops-quiz.js',
+  'firebase-config.js', // script cùng origin trong index.html — nạp sẵn để offline không lỗi tải
   'icon.svg', 'manifest.webmanifest',
   'data/tree.json', 'data/snippets.json', 'data/docs.json',
 ];
@@ -30,6 +31,10 @@ const CDN_PRECACHE = [
   'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/highlight.min.js',
   'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github-dark.min.css',
   'https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11/build/styles/github.min.css',
+  // Firebase (index.html luôn nạp) — precache để app shell mở trọn vẹn offline, không lỗi <script>.
+  'https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js',
+  'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js',
+  'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js',
 ];
 
 self.addEventListener('install', (e) => {
