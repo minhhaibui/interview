@@ -3826,6 +3826,11 @@ function renderDashboard() {
     if (confirm('Xoá toàn bộ tiến độ, điểm quiz, SRS, heatmap và lịch sử mock? (Nên 📤 Xuất backup trước!)')) {
       PREP_KEYS.forEach(k => localStorage.removeItem(k));
       clearExamState(); // bài thi dở nằm ngoài PREP_KEYS (không sync) nhưng reset thì phải sạch
+      // Đẩy trạng thái RỖNG lên cloud (nếu đang đăng nhập) → xoá luôn bản cloud, khỏi bị kéo lại khi
+      // reload/đăng nhập thiết bị khác. (removeItem không kích onStoreWrite nên phải gọi tay.)
+      // Lưu ý: thiết bị THỨ 2 đang online CÓ dữ liệu vẫn có thể đẩy lại (applyPrepData chỉ ghi-đè) —
+      // sửa trọn cần full-replace, hoãn vì cần test đa thiết bị thật.
+      if (syncReady && fbUser) pushRemote();
       renderDashboard();
     }
   };

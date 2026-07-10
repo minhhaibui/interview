@@ -501,8 +501,11 @@ test('wiring: chế độ 🎓 Thi thử đủ HTML + toggle + engine + dọn ti
   assert.ok(/function saveExamState\b/.test(APP) && /function restoreExamState\b/.test(APP), 'thiếu save/restoreExamState');
   const keys2 = APP.slice(APP.indexOf('const PREP_KEYS'), APP.indexOf('const PREP_KEYS') + 2000);
   assert.ok(!/'prep-exam-state'/.test(keys2), 'prep-exam-state KHÔNG được vào PREP_KEYS (bài dở là của riêng thiết bị)');
-  const resetBlock = APP.slice(APP.indexOf("dash-reset"), APP.indexOf("dash-reset") + 500);
+  const resetBlock = APP.slice(APP.indexOf("dash-reset"), APP.indexOf("dash-reset") + 900);
   assert.ok(/clearExamState\(\)/.test(resetBlock), 'reset dữ liệu chưa xoá kèm bài thi dở');
+  // Reset khi đang đăng nhập phải đẩy trạng thái rỗng lên cloud (khỏi bị kéo lại lúc reload/đăng nhập máy khác).
+  assert.ok(/if \(syncReady && fbUser\) pushRemote\(\)/.test(resetBlock),
+    'reset chưa đẩy trạng thái rỗng lên cloud → bản cloud bị kẹt, reload sẽ kéo dữ liệu về');
   const finBlock = APP.slice(APP.indexOf('function finishExam'), APP.indexOf('function finishExam') + 800);
   assert.ok(/clearExamState\(\)/.test(finBlock), 'finishExam chưa xoá bài dở đã lưu');
   assert.ok(/key !== EXAM_STATE_KEY[^)]*\) schedulePush/.test(APP),
