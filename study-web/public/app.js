@@ -756,8 +756,8 @@ async function renderToday() {
   })();
   if (capUp) tasks.push({ id: 'td-capstone', ic: '🧪', t: `Capstone: ${capUp.label}`, s: 'Làm tận tay rồi tick nghiệm thu ở tab Kế hoạch', go: () => switchView('plan') });
   // 🎯 Gợi ý mảng kỹ thuật YẾU NHẤT (độ phủ thấp) → bấm là vào luyện ngay, đỡ phải tự chọn.
-  const weak = weakestTechMode();
-  if (weak && (weak.total - weak.done) >= 3) {
+  const weak = suggestedWeakMode();
+  if (weak) {
     tasks.push({ id: 'td-weak', ic: '🎯', t: `Luyện mảng yếu nhất: ${QUIZ_MODES[weak.mode].label}`,
       s: `Mới ${weak.done}/${weak.total} câu — bấm để vào luyện ngay`,
       go: () => { switchView('coding'); setThinkMode(weak.mode); } });
@@ -3869,8 +3869,8 @@ function renderThinkStats() {
   };
   // Các mode trắc nghiệm kỹ thuật của tab Tư duy — dùng danh sách chung TECH_QUIZ_MODES,
   // lấy nhãn + độ phủ từ QUIZ_MODES nên KHÔNG sót mode mới (java/redis/dist/devops...).
-  // Đánh dấu 🎯 mảng yếu nhất (khớp gợi ý ở tab Hôm nay) để mắt user đổ vào chỗ cần ưu tiên.
-  const weak = weakestTechMode();
+  // Đánh dấu 🎯 mảng yếu nhất (CÙNG suggestedWeakMode với tab Hôm nay → luôn khớp nhau).
+  const weak = suggestedWeakMode();
   const quizBars = TECH_QUIZ_MODES.map(mode => {
     const { done, total } = coverageOf(mode);
     if (!total) return ''; // bank rỗng (chưa nạp dữ liệu) → bỏ qua, không hiện hàng 0/0
@@ -4642,6 +4642,14 @@ function weakestTechMode() {
       best = { mode, ratio, wrong, done, total };
   }
   return best;
+}
+
+/** Ngưỡng câu còn lại tối thiểu để đáng gợi ý luyện một mảng (mảng gần xong thì thôi nhắc). */
+const WEAK_MODE_MIN_REMAINING = 3;
+/** Mảng yếu nhất ĐÁNG gợi ý — nguồn DUY NHẤT để Dashboard 🎯 và task Hôm nay luôn khớp nhau. */
+function suggestedWeakMode() {
+  const w = weakestTechMode();
+  return w && (w.total - w.done) >= WEAK_MODE_MIN_REMAINING ? w : null;
 }
 
 /** Hiện "đã đúng/tổng" trên nút mỗi mode trắc nghiệm; đầy đủ thì thêm ✓. */
