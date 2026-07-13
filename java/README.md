@@ -30,7 +30,12 @@
 | 09 | **HĐH & I/O models** | Process/thread, 5 mô hình I/O, select/poll/epoll, zero-copy (Netty/Kafka) |
 | 10 | **Docker & Kubernetes** | Container vs VM, image layer, Pod/Deployment/Service, probe, HPA, stateless |
 
-> Mỗi bài kết bằng phần **"Câu hỏi phỏng vấn hay gặp"** để bạn tự trả lời trước khi xem đáp án trong quiz. **Đủ 7 bài** — đọc theo thứ tự để nắm chắc nền tảng.
+**Kỹ năng đi làm**
+| # | Bài | Nội dung cốt lõi |
+|---|-----|------------------|
+| 11 | **Testing** | JUnit 5 (lifecycle, assertThrows), Mockito (mock/spy, stub vs verify, @InjectMocks), Spring test (@WebMvcTest/@SpringBootTest/@DataJpaTest) |
+
+> Mỗi bài kết bằng phần **"Câu hỏi phỏng vấn hay gặp"** để bạn tự trả lời trước khi xem đáp án trong quiz. **Đủ 11 bài** — đọc theo thứ tự để nắm chắc nền tảng.
 
 ## Lộ trình gợi ý (nếu ít thời gian)
 
