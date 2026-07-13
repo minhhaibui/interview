@@ -333,6 +333,8 @@ test('java-quiz: id duy nhất, answer hợp lệ, options ≥ 2, đủ field', 
   }
   // đáp án đúng không trùng với lựa chọn khác trong cùng câu (tránh 2 đáp án)
   for (const q of qs) assert.strictEqual(new Set(q.options).size, q.options.length, `JAVA ${q.id}: options trùng nhau`);
+  // chủ đề Testing (JUnit/Mockito) — chốt để không bị xoá nhầm
+  assert.ok(qs.some(q => /Testing/.test(q.topic)), 'java-quiz thiếu nhóm Testing (JUnit/Mockito)');
 });
 
 test('wiring: chế độ ☕ Java có đủ id + mode button + script + engine + QUIZ_MODES', () => {

@@ -862,4 +862,75 @@ window.JAVA_QUIZ = [
     ], answer: 1,
     explain: 'JVM luôn tìm và chạy method `public static void main(String[] args)` đầu tiên — đó là điểm vào (entry point). Java KHÔNG chạy tuần tự từ dòng đầu file như script; mọi code phải nằm trong method, và main là nơi bắt đầu.',
   },
+
+  // ---------- Testing (JUnit 5 / Mockito) — hay bị hỏi khi đi làm ----------
+  {
+    id: 'java-test-lifecycle', topic: 'Testing / JUnit 5',
+    q: 'Khác nhau giữa @BeforeAll và @BeforeEach trong JUnit 5 là gì?',
+    options: [
+      'Cả hai đều chạy trước mỗi test, chỉ khác tên',
+      '@BeforeAll chạy MỘT LẦN trước tất cả test (mặc định phải static); @BeforeEach chạy trước MỖI test',
+      '@BeforeAll chạy trước mỗi test; @BeforeEach chạy một lần duy nhất',
+      '@BeforeAll chỉ chạy khi có @Disabled',
+    ], answer: 1,
+    explain: '@BeforeAll chạy đúng một lần trước toàn bộ test của class — vì đời sống ở mức class nên method phải static (trừ khi đặt @TestInstance(Lifecycle.PER_CLASS)). @BeforeEach chạy lại trước MỖI @Test để dựng lại trạng thái sạch. Cặp dọn dẹp tương ứng là @AfterEach / @AfterAll.',
+    code: '@BeforeAll static void initDb() { /* chạy 1 lần */ }\n@BeforeEach void reset() { /* chạy trước mỗi test */ }',
+  },
+  {
+    id: 'java-test-assertthrows', topic: 'Testing / JUnit 5',
+    q: 'Cách đúng để kiểm tra một method NÉM đúng exception mong đợi trong JUnit 5?',
+    options: [
+      'Bọc try/catch rồi gọi fail() nếu không có exception',
+      'Dùng assertThrows(Exception.class, () -> ...) — trả về exception đã ném để assert tiếp message',
+      'Đặt @Test(expected = Exception.class) trên method',
+      'Dùng assertEquals(exception, method())',
+    ], answer: 1,
+    explain: 'JUnit 5 dùng assertThrows(LoạiException.class, executable) và TRẢ VỀ chính exception đã bắt để bạn assert thêm message/nguyên nhân. Thuộc tính `expected` của @Test là cú pháp JUnit 4 (đã bỏ ở JUnit 5). Cách try/catch + fail() cồng kềnh và dễ quên fail().',
+    code: 'var ex = assertThrows(IllegalArgumentException.class,\n    () -> service.withdraw(-1));\nassertEquals("số tiền phải > 0", ex.getMessage());',
+  },
+  {
+    id: 'java-test-mock-vs-spy', topic: 'Testing / Mockito',
+    q: 'Khác biệt cốt lõi giữa mock() và spy() trong Mockito?',
+    options: [
+      'mock() và spy() giống hệt nhau',
+      'mock() tạo đối tượng GIẢ hoàn toàn (method chưa stub trả về default: null/0/false/rỗng); spy() BỌC object thật — gọi method thật trừ khi stub',
+      'spy() không stub được method nào',
+      'mock() gọi method thật, spy() không gọi',
+    ], answer: 1,
+    explain: 'mock() sinh đối tượng giả toàn phần: mọi method chưa stub trả giá trị mặc định (null cho object, 0/false cho nguyên thuỷ, collection rỗng). spy() bọc quanh instance THẬT nên method chưa stub vẫn chạy code thật. Khi stub spy nên dùng doReturn(x).when(spy).foo() để tránh gọi thật đúng lúc stub.',
+  },
+  {
+    id: 'java-test-stub-vs-verify', topic: 'Testing / Mockito',
+    q: 'when(...).thenReturn(...) và verify(...) khác vai trò thế nào?',
+    options: [
+      'Cả hai đều kiểm tra method đã được gọi',
+      'when/thenReturn STUB giá trị trả về (chuẩn bị đầu vào); verify KIỂM TRA tương tác đã xảy ra (kiểm đầu ra hành vi)',
+      'when/thenReturn kiểm tra số lần gọi; verify đặt giá trị trả về',
+      'verify chỉ dùng cho void method, when cho method có return',
+    ], answer: 1,
+    explain: 'when(dep.find(id)).thenReturn(user) là STUBBING — dàn dựng để dependency trả kết quả cần cho kịch bản. verify(dep).save(user) là VERIFICATION — khẳng định tương tác đã diễn ra (đúng số lần, đúng tham số). Stub = chuẩn bị trạng thái; verify = kiểm hành vi. Với void method dùng verify (và doThrow/doNothing để stub).',
+  },
+  {
+    id: 'java-test-injectmocks', topic: 'Testing / Mockito',
+    q: '@Mock và @InjectMocks phối hợp để làm gì?',
+    options: [
+      'Cả hai đều tạo mock rỗng, không liên quan nhau',
+      'Mockito tạo mock cho các @Mock rồi TIÊM chúng vào instance thật đánh dấu @InjectMocks (qua constructor/setter/field) để test lớp đó cô lập với dependency',
+      '@InjectMocks biến class thật thành mock',
+      '@Mock chỉ dùng được trong @SpringBootTest',
+    ], answer: 1,
+    explain: '@InjectMocks tạo đối tượng THẬT cần test và tiêm các @Mock dependency vào (ưu tiên constructor injection). Nhờ đó bạn test logic của lớp đó mà cô lập khỏi DB/HTTP thật. Ở JUnit 5 cần @ExtendWith(MockitoExtension.class) (hoặc MockitoAnnotations.openMocks(this) trong @BeforeEach) để annotation có hiệu lực.',
+    code: '@ExtendWith(MockitoExtension.class)\nclass OrderServiceTest {\n  @Mock PaymentGateway gateway;\n  @InjectMocks OrderService service; // gateway được tiêm vào\n}',
+  },
+  {
+    id: 'java-test-slice', topic: 'Testing / Spring',
+    q: 'Khác nhau giữa @WebMvcTest và @SpringBootTest khi test ứng dụng Spring Boot?',
+    options: [
+      'Giống nhau, đều nạp toàn bộ context',
+      '@WebMvcTest là SLICE test — chỉ nạp tầng web (controller + MockMvc), nhanh, mock service; @SpringBootTest nạp TOÀN BỘ context (chậm hơn, hợp integration test)',
+      '@SpringBootTest chỉ test controller',
+      '@WebMvcTest khởi động server thật trên cổng ngẫu nhiên',
+    ], answer: 1,
+    explain: '@WebMvcTest chỉ dựng tầng MVC (controller, filter, @ControllerAdvice) + cấp sẵn MockMvc, còn service/repository thì bạn @MockBean — nên rất nhanh và tập trung. @SpringBootTest nạp full ApplicationContext (dùng cho integration test đầu-cuối, có thể kèm webEnvironment=RANDOM_PORT + TestRestTemplate). Ưu tiên slice test cho phản hồi nhanh, để integration test cho luồng quan trọng.',
+  },
 ];
