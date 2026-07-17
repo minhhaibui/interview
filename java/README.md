@@ -19,12 +19,13 @@
 | 02 | **Concurrency** | Thread, JMM, volatile/synchronized, khoá, thread pool, CAS |
 | 03 | **Collections** | HashMap nội bộ, ConcurrentHashMap, List/Set/Map chọn cái nào |
 | 04 | **Spring & JPA** | IoC/DI, bean lifecycle, AOP, @Transactional, N+1 |
+| 12 | **Java hiện đại** | Lambda/Stream/Optional (Java 8), record, sealed + switch expression, var, virtual thread (Loom) |
 
 **Hệ sinh thái backend** (bám JavaGuide)
 | # | Bài | Nội dung cốt lõi |
 |---|-----|------------------|
-| 05 | **MySQL** | Index B+Tree, clustered/回表, isolation, MVCC, khoá, EXPLAIN |
-| 06 | **Redis** | Kiểu dữ liệu, RDB/AOF, cache穿透/击穿/雪崩, khoá phân tán, HA |
+| 05 | **MySQL** | Index B+Tree, clustered index, table lookback, isolation, MVCC, khoá, EXPLAIN |
+| 06 | **Redis** | Kiểu dữ liệu, RDB/AOF, cache penetration/breakdown/avalanche, khoá phân tán, HA |
 | 07 | **Mạng** | TCP handshake, TCP vs UDP, HTTPS/TLS, HTTP 1.1/2/3 |
 | 08 | **Hệ phân tán & MQ** | Kafka, delivery semantics, CAP, transaction phân tán, Snowflake |
 | 09 | **HĐH & I/O models** | Process/thread, 5 mô hình I/O, select/poll/epoll, zero-copy (Netty/Kafka) |
@@ -35,7 +36,7 @@
 |---|-----|------------------|
 | 11 | **Testing** | JUnit 5 (lifecycle, assertThrows), Mockito (mock/spy, stub vs verify, @InjectMocks), Spring test (@WebMvcTest/@SpringBootTest/@DataJpaTest) |
 
-> Mỗi bài kết bằng phần **"Câu hỏi phỏng vấn hay gặp"** để bạn tự trả lời trước khi xem đáp án trong quiz. **Đủ 11 bài** — đọc theo thứ tự để nắm chắc nền tảng.
+> Mỗi bài kết bằng phần **"Câu hỏi phỏng vấn hay gặp"** để bạn tự trả lời trước khi xem đáp án trong quiz. **Đủ 12 bài** — đọc theo thứ tự để nắm chắc nền tảng.
 
 ## Lộ trình gợi ý (nếu ít thời gian)
 

@@ -21,11 +21,11 @@ Index giúp tìm dữ liệu nhanh mà không phải quét cả bảng. InnoDB d
 
 ---
 
-## 2. Clustered index & "回表" (table lookback)
+## 2. Clustered index & "table lookback" (tra ngược bảng)
 
 - Bảng InnoDB **chính là** clustered index theo **khoá chính**: node lá chứa **toàn bộ hàng**.
-- **Secondary index** (index phụ): node lá chỉ chứa `(giá trị index → khoá chính)`. Muốn lấy cột khác → phải dùng khoá chính **tra clustered index lần nữa** = **回表** (tốn thêm I/O).
-- **Covering index** (index chứa đủ cột cần) → tránh được 回表.
+- **Secondary index** (index phụ): node lá chỉ chứa `(giá trị index → khoá chính)`. Muốn lấy cột khác → phải dùng khoá chính **tra clustered index lần nữa** = **table lookback** (tốn thêm I/O).
+- **Covering index** (index chứa đủ cột cần) → tránh được lookback.
 
 > Vì thế khoá chính nên **nhỏ và tăng dần** (`AUTO_INCREMENT`), tránh UUID ngẫu nhiên gây **tách trang** (page split) và index phụ phình to.
 
@@ -108,7 +108,7 @@ Cột **Extra** cần chú ý: `Using filesort` (sắp xếp tốn kém), `Using
 ## 8. Câu hỏi phỏng vấn hay gặp
 
 1. Vì sao InnoDB dùng B+Tree cho index, không dùng B-Tree/hash?
-2. Clustered index là gì? "回表" là gì và tránh bằng cách nào?
+2. Clustered index là gì? "table lookback" là gì và tránh bằng cách nào?
 3. Leftmost prefix của composite index — cho ví dụ truy vấn KHÔNG dùng được index.
 4. Kể 4 isolation level và lỗi mỗi mức. Mặc định của MySQL là gì?
 5. MVCC hoạt động thế nào? Vì sao đọc không khoá?

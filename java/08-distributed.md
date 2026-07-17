@@ -6,11 +6,11 @@
 
 ## 1. Message Queue — vì sao dùng?
 
-Ba lợi ích cốt lõi (nhớ: **giải耦 · 削峰 · 异步**):
+Ba lợi ích cốt lõi (nhớ: **decouple · peak shaving · async**):
 
-- **Decouple (giải耦):** producer chỉ đẩy message, không cần biết consumer là ai/còn sống không.
-- **Peak shaving (削峰):** hàng đợi hấp thụ đỉnh tải, consumer xử lý theo nhịp của mình → bảo vệ hệ phía sau.
-- **Async (异步):** tác vụ chậm (gửi mail, xử lý ảnh) đẩy vào queue → API trả về ngay.
+- **Decouple (tách phụ thuộc):** producer chỉ đẩy message, không cần biết consumer là ai/còn sống không.
+- **Peak shaving (hấp thụ đỉnh tải):** hàng đợi hấp thụ đỉnh tải, consumer xử lý theo nhịp của mình → bảo vệ hệ phía sau.
+- **Async (bất đồng bộ):** tác vụ chậm (gửi mail, xử lý ảnh) đẩy vào queue → API trả về ngay.
 
 > Đánh đổi: thêm độ phức tạp, độ trễ, và phải xử lý **mất / trùng / sai thứ tự** message.
 

@@ -44,27 +44,27 @@ Ngoài ra: Bitmap, HyperLogLog (đếm UV xấp xỉ), Geo, Stream.
 
 ---
 
-## 4. Ba vấn đề cache kinh điển (穿透 / 击穿 / 雪崩)
+## 4. Ba vấn đề cache kinh điển (penetration / breakdown / avalanche)
 
-### a) Cache穿透 (penetration) — hỏi key KHÔNG tồn tại
+### a) Cache penetration — hỏi key KHÔNG tồn tại
 
 Liên tục hỏi id không có (id âm, id bịa) → cache luôn miss → DB gánh hết (thường do tấn công).
 
 **Chống:** cache lại giá trị **rỗng (null)** với TTL ngắn; hoặc **Bloom filter** chặn trước (không có id hợp lệ thì trả luôn).
 
-### b) Cache击穿 (breakdown) — một HOT KEY hết hạn
+### b) Cache breakdown — một HOT KEY hết hạn
 
 Một key nóng hết hạn đúng lúc tải cao → nghìn request cùng miss và cùng query DB.
 
 **Chống:** **mutex / distributed lock** (chỉ 1 request rebuild cache, số còn lại chờ); hoặc **logical expiration** (không set TTL thật, làm mới nền); hoặc key nóng "không hết hạn".
 
-### c) Cache雪崩 (avalanche) — NHIỀU key hết hạn cùng lúc
+### c) Cache avalanche — NHIỀU key hết hạn cùng lúc
 
 Loạt key cùng TTL hết hạn đồng thời (hoặc Redis sập) → DB dồn tải đột ngột.
 
 **Chống:** TTL + **ngẫu nhiên (jitter)** để rải thời điểm; Redis cluster/sentinel (không sập cả hệ); circuit breaker / hạn dòng bảo vệ DB.
 
-> **Nhớ nhanh:** 穿透 = key không có thật; 击穿 = 1 key nóng chết; 雪崩 = nhiều key chết cùng lúc.
+> **Nhớ nhanh:** penetration = key không có thật; breakdown = 1 key nóng chết; avalanche = nhiều key chết cùng lúc.
 
 ---
 
@@ -119,7 +119,7 @@ Vì sao **xoá** chứ không update: tránh ghi đè bằng giá trị cũ do r
 1. Vì sao Redis nhanh dù đơn luồng? Redis 6 đa luồng ở đâu?
 2. Kể 5 kiểu dữ liệu và use case tương ứng.
 3. RDB vs AOF khác nhau thế nào? Nên dùng cái nào?
-4. Phân biệt cache穿透 / 击穿 / 雪崩 và cách chống mỗi loại.
+4. Phân biệt cache penetration / breakdown / avalanche và cách chống mỗi loại.
 5. Redis xoá key hết hạn bằng chiến lược nào? Khi đầy RAM chọn policy gì cho cache?
 6. Làm khoá phân tán bằng Redis đúng cách? Vì sao cần Lua khi nhả khoá?
 7. Cập nhật DB và cache thế nào để giảm bất nhất?
