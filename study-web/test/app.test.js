@@ -335,6 +335,24 @@ test('java-quiz: id duy nhất, answer hợp lệ, options ≥ 2, đủ field', 
   for (const q of qs) assert.strictEqual(new Set(q.options).size, q.options.length, `JAVA ${q.id}: options trùng nhau`);
   // chủ đề Testing (JUnit/Mockito) — chốt để không bị xoá nhầm
   assert.ok(qs.some(q => /Testing/.test(q.topic)), 'java-quiz thiếu nhóm Testing (JUnit/Mockito)');
+  // nhóm Java 8+ và Java mới (record/sealed/var/virtual thread) — có bài java/12 dạy, chốt không xoá nhầm
+  assert.ok(qs.some(q => /^Java 8\+/.test(q.topic)), 'java-quiz thiếu nhóm Java 8+ (Stream/Optional)');
+  assert.ok(qs.some(q => /^Java mới/.test(q.topic)), 'java-quiz thiếu nhóm Java mới (record/sealed/vthread)');
+});
+
+test('quality: không sót ký tự Trung trong bank/app (trừ zh-vocab.js — bank tiếng Trung hợp lệ)', () => {
+  // Đề nhập từ nguồn Trung (JavaGuide...) từng lọt 穿透/回表/新特性... ra UI — đã dọn 17/07, chốt không tái phạm.
+  const files = fs.readdirSync(PUB).filter(f => f.endsWith('.js') && f !== 'zh-vocab.js');
+  for (const f of files) {
+    const m = read(f).match(/[一-鿿]+/);
+    assert.strictEqual(m, null, `${f} còn ký tự Trung sót: "${m && m[0]}"`);
+  }
+  // track java/ (nguồn nhập chính) cũng phải sạch
+  const JAVA = path.resolve(PUB, '..', '..', 'java');
+  for (const f of fs.readdirSync(JAVA).filter(f => f.endsWith('.md'))) {
+    const m = fs.readFileSync(path.join(JAVA, f), 'utf8').match(/[一-鿿]+/);
+    assert.strictEqual(m, null, `java/${f} còn ký tự Trung sót: "${m && m[0]}"`);
+  }
 });
 
 test('wiring: chế độ ☕ Java có đủ id + mode button + script + engine + QUIZ_MODES', () => {
