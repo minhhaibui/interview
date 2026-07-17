@@ -417,6 +417,16 @@ test('wiring: 📗 đánh dấu bài đã đọc — cuộn ≥90% hoặc bài n
     'renderDashboard thiếu thanh 📗 Tài liệu đã đọc');
 });
 
+test('wiring: ◀▶ điều hướng bài trước/tiếp cuối mỗi bài docs theo thứ tự TREE', () => {
+  const seg = APP.slice(APP.indexOf("nav.className = 'doc-nav'") - 400, APP.indexOf("nav.className = 'doc-nav'") + 800);
+  assert.ok(seg.includes('flat.findIndex(i => i.path === relPath)') && seg.includes('flat[at - 1]') && seg.includes('flat[at + 1]'),
+    'doc-nav phải tra prev/next từ TREE phẳng theo path');
+  assert.ok(seg.includes('escHtml(prev.label.trim())') && seg.includes('openDoc(item.path)'),
+    'nút doc-nav phải escape label và mở đúng path');
+  const CSS = read('styles.css');
+  assert.ok(CSS.includes('.doc-nav') && CSS.includes('.doc-nav-btn'), 'styles.css thiếu .doc-nav');
+});
+
 test('wiring: 🎓 thi thử theo 1 mảng — select exam-mode + buildExamQueue(onlyMode); nước rút giữ mọi mảng', () => {
   assert.ok(/id="exam-mode"/.test(APP), 'renderExam thiếu select #exam-mode');
   assert.ok(/function buildExamQueue\(n, onlyMode\)[\s\S]{0,220}!onlyMode \|\| mode === onlyMode/.test(APP),

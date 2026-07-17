@@ -190,6 +190,16 @@ button { font-family: inherit; cursor: pointer; }
   padding: 14px 16px; overflow-x: auto; line-height: 1.5;
   position: relative;
 }
+.doc-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 34px; padding-top: 16px; border-top: 1px solid var(--border); }
+.doc-nav-btn {
+  background: var(--bg3); color: var(--text); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 14px; font-size: 14px; cursor: pointer; max-width: 46%;
+  display: flex; align-items: center; gap: 8px; text-align: left;
+}
+.doc-nav-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.doc-nav-btn.next { margin-left: auto; text-align: right; }
+.doc-nav-btn:hover { border-color: var(--accent, #4f8cff); }
+
 .sb-count { margin-left: 6px; font-size: 11px; font-weight: 400; color: var(--muted, #8b93a7); }
 .sb-count.sb-count-full { color: #4caf7d; font-weight: 700; }
 .sb-item.read { opacity: .72; }

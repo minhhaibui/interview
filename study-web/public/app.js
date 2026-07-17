@@ -1165,6 +1165,24 @@ async function openDoc(relPath, pushHash = true) {
   const detailsCount = content.querySelectorAll('details').length;
   if (detailsCount > 0) attachQuizMode(content.querySelector('.md'), relPath, detailsCount);
 
+  // ◀▶ Điều hướng bài trước / bài tiếp theo thứ tự sidebar — học tuần tự khỏi quay lại menu
+  const flat = (Array.isArray(TREE) ? TREE : []).flatMap(g => g.items || []);
+  const at = flat.findIndex(i => i.path === relPath);
+  if (at !== -1) {
+    const prev = flat[at - 1], next = flat[at + 1];
+    const nav = document.createElement('div');
+    nav.className = 'doc-nav';
+    const mk = (item, cls, html) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = `doc-nav-btn ${cls}`; b.innerHTML = html;
+      b.onclick = () => openDoc(item.path);
+      return b;
+    };
+    if (prev) nav.appendChild(mk(prev, 'prev', `◀ <span>${escHtml(prev.label.trim())}</span>`));
+    if (next) nav.appendChild(mk(next, 'next', `<span>${escHtml(next.label.trim())}</span> ▶`));
+    if (nav.children.length) content.querySelector('.md').appendChild(nav);
+  }
+
   // Đánh dấu item active trong sidebar
   document.querySelectorAll('.sb-item').forEach(b =>
     b.classList.toggle('active', b.dataset.path === relPath));
