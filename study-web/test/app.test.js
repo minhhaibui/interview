@@ -403,6 +403,10 @@ test('wiring: 📗 đánh dấu bài đã đọc — cuộn ≥90% hoặc bài n
   assert.ok(seg.includes("g.id === 'sb-recent'") && seg.includes("'sb-count'") && seg.includes('sb-count-full'),
     'refreshReadMarks thiếu badge x/y theo nhóm sidebar');
   assert.ok(CSS.includes('.sb-count'), 'styles.css thiếu .sb-count');
+  // thanh tiến độ đọc ở Dashboard
+  assert.ok(HTML.includes('id="dash-docs-read"'), 'index.html thiếu #dash-docs-read');
+  assert.ok(/dash-docs-read[\s\S]{0,600}prep-docs-read[\s\S]{0,400}dash-read-open/.test(APP),
+    'renderDashboard thiếu thanh 📗 Tài liệu đã đọc');
 });
 
 test('quality: không sót ký tự Trung trong bank/app (trừ zh-vocab.js — bank tiếng Trung hợp lệ)', () => {

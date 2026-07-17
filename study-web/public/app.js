@@ -3923,6 +3923,19 @@ function renderDashboard() {
     document.getElementById('dash-cap-open')?.addEventListener('click', () => switchView('plan'));
   }
 
+  // 📗 Tiến độ đọc tài liệu (đánh dấu tự động khi cuộn hết bài)
+  const readEl = document.getElementById('dash-docs-read');
+  if (readEl) {
+    const total = (Array.isArray(TREE) ? TREE : []).reduce((s, g) => s + (g.items || []).length, 0);
+    const readN = Math.min(Object.keys(store.get('prep-docs-read', {})).length, total);
+    readEl.innerHTML = total ? `
+      <span class="dc-label">📗 Tài liệu đã đọc</span>
+      <div class="bar"><div class="bar-fill" style="width:${Math.round(readN / total * 100)}%"></div></div>
+      <span>${readN}/${total}</span>
+      <button type="button" id="dash-read-open">📚 Học</button>` : '';
+    document.getElementById('dash-read-open')?.addEventListener('click', () => switchView('docs'));
+  }
+
   // Điểm quiz đã lưu
   const scores = store.get('prep-quiz-scores', {});
   const scoreWrap = document.getElementById('dash-scores');
