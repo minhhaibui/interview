@@ -340,6 +340,13 @@ test('java-quiz: id duy nhất, answer hợp lệ, options ≥ 2, đủ field', 
   assert.ok(qs.some(q => /^Java mới/.test(q.topic)), 'java-quiz thiếu nhóm Java mới (record/sealed/vthread)');
 });
 
+test('wiring: 📋 nút copy trên code block tài liệu (renderDoc gắn .pre-copy + copyText, CSS hover)', () => {
+  const seg = APP.slice(APP.indexOf("querySelectorAll('.md pre')"), APP.indexOf("querySelectorAll('.md pre')") + 600);
+  assert.ok(seg.includes("className = 'pre-copy'") && seg.includes('copyText('), 'renderDoc chưa gắn nút .pre-copy gọi copyText');
+  const CSS = read('styles.css');
+  assert.ok(CSS.includes('.md pre .pre-copy') && CSS.includes('.md pre:hover .pre-copy'), 'styles.css thiếu style .pre-copy');
+});
+
 test('quality: không sót ký tự Trung trong bank/app (trừ zh-vocab.js — bank tiếng Trung hợp lệ)', () => {
   // Đề nhập từ nguồn Trung (JavaGuide...) từng lọt 穿透/回表/新特性... ra UI — đã dọn 17/07, chốt không tái phạm.
   const files = fs.readdirSync(PUB).filter(f => f.endsWith('.js') && f !== 'zh-vocab.js');

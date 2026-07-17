@@ -1006,6 +1006,20 @@ async function openDoc(relPath, pushHash = true) {
   // Syntax highlight
   if (window.hljs) content.querySelectorAll('pre code').forEach(el => { try { hljs.highlightElement(el); } catch {} });
 
+  // Nút 📋 copy trên từng code block — copy nhanh lệnh lab (docker/kubectl/SQL...)
+  content.querySelectorAll('.md pre').forEach(pre => {
+    const btn = document.createElement('button');
+    btn.className = 'pre-copy';
+    btn.type = 'button';
+    btn.textContent = '📋';
+    btn.title = 'Copy code';
+    btn.onclick = () => copyText(pre.querySelector('code')?.innerText ?? pre.innerText).then(ok => {
+      btn.textContent = ok ? '✅' : '❌';
+      setTimeout(() => { btn.textContent = '📋'; }, 1500);
+    });
+    pre.appendChild(btn);
+  });
+
   // Link nội bộ .md → mở trong app thay vì điều hướng trang
   content.querySelectorAll('a[href]').forEach(a => {
     const href = a.getAttribute('href');
