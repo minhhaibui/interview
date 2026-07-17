@@ -428,6 +428,13 @@ test('wiring: 📗 đánh dấu bài đã đọc — cuộn ≥90% hoặc bài n
     'thanh docs-read phải dùng chung layout flex 1 dòng với capstone (từng vỡ 3 dòng)');
 });
 
+test('wiring: 🔖 nhớ vị trí đọc dở từng bài — lưu idle 400ms localStorage thẳng (không sync), mở lại nhảy đúng chỗ', () => {
+  assert.ok(/openDoc\._posT = setTimeout[\s\S]{0,320}pos\[currentDoc\] = content\.scrollTop[\s\S]{0,120}localStorage\.setItem\('prep-doc-scroll'/.test(APP),
+    'thiếu lưu vị trí cuộn debounce vào prep-doc-scroll (localStorage thẳng, không qua store.set)');
+  assert.ok(/savedPos > 0 && content\.clientHeight > 0\) content\.scrollTop = Math\.min\(savedPos, content\.scrollHeight\)/.test(APP),
+    'mở bài phải khôi phục vị trí đã lưu (clamp scrollHeight)');
+});
+
 test('wiring: ↑ nút nổi lên đầu bài — hiện khi cuộn >600px, nằm trong view-docs, reset khi mở bài mới', () => {
   const seg = APP.slice(APP.indexOf("tb.id = 'doc-top'") - 200, APP.indexOf("tb.id = 'doc-top'") + 900);
   assert.ok(seg.includes("appendChild(tb)") && seg.includes('content.scrollTop < 600') &&

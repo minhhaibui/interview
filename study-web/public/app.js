@@ -1154,9 +1154,21 @@ async function openDoc(relPath, pushHash = true) {
     content.addEventListener('scroll', () => {
       if (currentDoc && content.clientHeight > 0 &&
           content.scrollTop + content.clientHeight >= content.scrollHeight - 40) markDocRead(currentDoc);
+      // 🔖 nhớ vị trí đọc dở (idle 400ms; localStorage THẲNG — state phù du, không sync/không kích push cloud)
+      clearTimeout(openDoc._posT);
+      openDoc._posT = setTimeout(() => {
+        if (!currentDoc) return;
+        const pos = JSON.parse(localStorage.getItem('prep-doc-scroll') || '{}');
+        pos[currentDoc] = content.scrollTop;
+        localStorage.setItem('prep-doc-scroll', JSON.stringify(pos));
+      }, 400);
     }, { passive: true });
   }
   checkShortDocRead();
+
+  // 🔖 mở lại bài → nhảy đúng chỗ đang đọc dở lần trước (0/không có → giữ đầu bài)
+  const savedPos = JSON.parse(localStorage.getItem('prep-doc-scroll') || '{}')[relPath];
+  if (savedPos > 0 && content.clientHeight > 0) content.scrollTop = Math.min(savedPos, content.scrollHeight);
 
   // Syntax highlight
   if (window.hljs) content.querySelectorAll('pre code').forEach(el => { try { hljs.highlightElement(el); } catch {} });
