@@ -398,6 +398,11 @@ test('wiring: 📗 đánh dấu bài đã đọc — cuộn ≥90% hoặc bài n
   assert.ok(/function applyPrepData[\s\S]{0,400}refreshReadMarks\(\)/.test(APP), 'applyPrepData phải refresh ✓ đã đọc');
   const CSS = read('styles.css');
   assert.ok(CSS.includes('.sb-item.read'), 'styles.css thiếu .sb-item.read');
+  // đếm x/y đã đọc theo nhóm (bỏ nhóm ảo Gần đây), đủ 100% đổi màu
+  const seg = APP.slice(APP.indexOf('function refreshReadMarks'), APP.indexOf('function refreshReadMarks') + 1200);
+  assert.ok(seg.includes("g.id === 'sb-recent'") && seg.includes("'sb-count'") && seg.includes('sb-count-full'),
+    'refreshReadMarks thiếu badge x/y theo nhóm sidebar');
+  assert.ok(CSS.includes('.sb-count'), 'styles.css thiếu .sb-count');
 });
 
 test('quality: không sót ký tự Trung trong bank/app (trừ zh-vocab.js — bank tiếng Trung hợp lệ)', () => {

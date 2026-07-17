@@ -970,6 +970,21 @@ function refreshReadMarks() {
   const read = store.get('prep-docs-read', {});
   document.querySelectorAll('.sb-item[data-path]').forEach(b =>
     b.classList.toggle('read', !!read[b.dataset.path]));
+  // đếm x/y đã đọc trên tiêu đề từng nhóm (trừ 📖 Gần đây — nhóm ảo)
+  document.querySelectorAll('.sb-group').forEach(g => {
+    if (g.id === 'sb-recent') return;
+    const items = g.querySelectorAll('.sb-item[data-path]');
+    if (!items.length) return;
+    const done = [...items].filter(b => b.classList.contains('read')).length;
+    let c = g.querySelector('.sb-count');
+    if (!c) {
+      c = document.createElement('span');
+      c.className = 'sb-count';
+      g.querySelector('.sb-title')?.appendChild(c);
+    }
+    c.textContent = done ? `${done}/${items.length}` : '';
+    c.classList.toggle('sb-count-full', done === items.length);
+  });
 }
 
 /** Label hiển thị của 1 path tài liệu — tra TREE; bài đã rời tree thì lấy tên file. */
