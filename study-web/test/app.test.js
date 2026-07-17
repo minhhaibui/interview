@@ -426,7 +426,7 @@ test('wiring: 📗 đánh dấu bài đã đọc — cuộn ≥90% hoặc bài n
 test('wiring: ↑ nút nổi lên đầu bài — hiện khi cuộn >600px, nằm trong view-docs, reset khi mở bài mới', () => {
   const seg = APP.slice(APP.indexOf("tb.id = 'doc-top'") - 200, APP.indexOf("tb.id = 'doc-top'") + 900);
   assert.ok(seg.includes("appendChild(tb)") && seg.includes('content.scrollTop < 600') &&
-    seg.includes("scrollTo({ top: 0, behavior: 'smooth' })"), 'doc-top thiếu wiring scroll/click');
+    seg.includes('content.scrollTop = 0; tb.hidden = true'), 'doc-top thiếu wiring scroll/click');
   assert.ok(/openDoc\._topBtn\.hidden = true/.test(APP), 'mở bài mới phải ẩn lại nút doc-top');
   assert.ok(read('styles.css').includes('#doc-top'), 'styles.css thiếu #doc-top');
 });

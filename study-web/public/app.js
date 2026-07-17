@@ -1125,7 +1125,7 @@ async function openDoc(relPath, pushHash = true) {
     tb.title = 'Lên đầu bài';
     tb.textContent = '↑';
     tb.hidden = true;
-    tb.onclick = () => content.scrollTo({ top: 0, behavior: 'smooth' });
+    tb.onclick = () => { content.scrollTop = 0; tb.hidden = true; }; // tức thời — smooth bị throttle ở tab nền, không đáng tin
     document.getElementById('view-docs').appendChild(tb); // trong view-docs → tự ẩn theo view
     content.addEventListener('scroll', () => { tb.hidden = content.scrollTop < 600; }, { passive: true });
     openDoc._topBtn = tb;
