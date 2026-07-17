@@ -381,7 +381,7 @@ test('wiring: 📖 Gần đây trong sidebar — openDoc ghi prep-recent-docs (d
   assert.ok(/if \(md === null\) \{[\s\S]{0,800}rec\.filter\(p => p !== relPath\)[\s\S]{0,120}renderRecentDocs\(\)/.test(APP),
     'openDoc fail phải gỡ entry chết khỏi prep-recent-docs');
   // token chống race: nhiều lượt mở song song → chỉ lượt mới nhất render
-  assert.ok(/const seq = openDoc\._seq = \(openDoc\._seq \|\| 0\) \+ 1;[\s\S]{0,120}await apiFile\(relPath\);[\s\S]{0,120}if \(seq !== openDoc\._seq\) return;/.test(APP),
+  assert.ok(/const seq = openDoc\._seq = \(openDoc\._seq \|\| 0\) \+ 1;[\s\S]{0,700}await apiFile\(relPath\);[\s\S]{0,120}if \(seq !== openDoc\._seq\) return;/.test(APP),
     'openDoc thiếu sequence token chống race');
   assert.ok(/function applyPrepData[\s\S]{0,300}renderRecentDocs\(\)/.test(APP),
     'applyPrepData phải vẽ lại 📖 Gần đây (sidebar ngoài view, reapplyView không đụng)');
@@ -403,8 +403,8 @@ test('wiring: 📗 đánh dấu bài đã đọc — cuộn ≥90% hoặc bài n
     'listener cuộn phải guard clientHeight>0 và đo chạm đáy (chừa 40px)');
   assert.ok(/function checkShortDocRead[\s\S]{0,320}clientHeight > 0[\s\S]{0,120}scrollHeight <= content\.clientHeight \+ 40/.test(APP),
     'checkShortDocRead phải guard clientHeight>0');
-  assert.ok(/if \(name === 'docs'\) checkShortDocRead\(\)/.test(APP),
-    'switchView(docs) phải re-check bài ngắn (mở lúc view ẩn đo không được — QA vòng 3)');
+  assert.ok(/if \(name === 'docs'\) \{ restoreDocScroll\(\); checkShortDocRead\(\); \}/.test(APP),
+    'switchView(docs) phải re-check bài ngắn + restore (QA vòng 3+4)');
   // fail path phải vô hiệu currentDoc + dọn prep-last-doc chết (chặn mark oan bài dở + task Đọc tiếp lỗi mãi)
   assert.ok(/if \(md === null\) \{[\s\S]{0,320}currentDoc = null;[\s\S]{0,320}store\.set\('prep-last-doc', null\)/.test(APP),
     'openDoc fail phải set currentDoc=null và dọn prep-last-doc chết');
@@ -439,8 +439,18 @@ test('wiring: 📑 mục lục bài — ≥3 h2 gắn details.doc-toc, click scr
 test('wiring: 🔖 nhớ vị trí đọc dở từng bài — lưu idle 400ms localStorage thẳng (không sync), mở lại nhảy đúng chỗ', () => {
   assert.ok(/openDoc\._posT = setTimeout[\s\S]{0,320}pos\[currentDoc\] = content\.scrollTop[\s\S]{0,120}localStorage\.setItem\('prep-doc-scroll'/.test(APP),
     'thiếu lưu vị trí cuộn debounce vào prep-doc-scroll (localStorage thẳng, không qua store.set)');
-  assert.ok(/savedPos > 0 && content\.clientHeight > 0\) content\.scrollTop = Math\.min\(savedPos, content\.scrollHeight\)/.test(APP),
-    'mở bài phải khôi phục vị trí đã lưu (clamp scrollHeight)');
+  assert.ok(/function restoreDocScroll[\s\S]{0,420}content\.scrollTop = Math\.min\(saved, content\.scrollHeight\)/.test(APP),
+    'restoreDocScroll phải clamp scrollHeight');
+  assert.ok(/if \(name === 'docs'\) \{ restoreDocScroll\(\); checkShortDocRead\(\); \}/.test(APP),
+    'switchView(docs) phải restore bookmark (bài mở nền lúc init không đo được — QA4)');
+  assert.ok(/function docScrollMap[\s\S]{0,180}catch \{ return \{\}; \}/.test(APP),
+    'docScrollMap phải parse an toàn (key hỏng → rỗng)');
+  assert.ok(/Chốt bookmark bài ĐANG mở[\s\S]{0,420}localStorage\.setItem\('prep-doc-scroll'/.test(APP),
+    'openDoc phải flush bookmark bài cũ trước khi chuyển (debounce chưa nổ)');
+  // 📑 doc-toc cũng là <details> — chế độ quiz phải loại nó khỏi đếm & gắn judge (từng bị chấm như 1 câu)
+  assert.ok(/querySelectorAll\('details:not\(\.doc-toc\)'\)\.length/.test(APP) &&
+    /mdEl\.querySelectorAll\('details:not\(\.doc-toc\)'\)/.test(APP),
+    'attachQuizMode/detailsCount phải dùng details:not(.doc-toc)');
 });
 
 test('wiring: ↑ nút nổi lên đầu bài — hiện khi cuộn >600px, nằm trong view-docs, reset khi mở bài mới', () => {

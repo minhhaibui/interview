@@ -281,7 +281,7 @@ function switchView(name) {
     return; // không init/vẽ nội dung tab khi đang khóa
   }
   hideLoginGate();
-  if (name === 'docs') checkShortDocRead(); // bài ngắn mở lúc view còn ẩn (init nền) → giờ mới đo được chiều cao thật
+  if (name === 'docs') { restoreDocScroll(); checkShortDocRead(); } // bài mở lúc view còn ẩn (init nền) → giờ mới đo/khôi phục được
   if (name === 'today') renderToday();
   if (name === 'flashcards') initFlashcards().then(() => fcLoaded && fillFcWeekSelect());
   if (name === 'writing') initWriting().then(() => wrInit && WR_SENTENCES && fillWrWeekSelect());
@@ -967,6 +967,20 @@ async function loadTree() {
   refreshReadMarks();
 }
 
+/** Map vị trí đọc dở {path: scrollTop} — đọc an toàn (key hỏng → coi như rỗng, tự hồi). */
+function docScrollMap() {
+  try { return JSON.parse(localStorage.getItem('prep-doc-scroll') || '{}') || {}; } catch { return {}; }
+}
+
+/** 🔖 Khôi phục vị trí đọc dở của bài đang mở. Gọi ở openDoc VÀ khi switchView('docs') activate
+ *  (bài mở nền lúc init có clientHeight=0 không restore được; chỉ nhảy khi user chưa tự cuộn). */
+function restoreDocScroll() {
+  const content = document.getElementById('content');
+  if (!currentDoc || !content || content.clientHeight <= 0 || content.scrollTop > 0) return;
+  const saved = docScrollMap()[currentDoc];
+  if (saved > 0) content.scrollTop = Math.min(saved, content.scrollHeight);
+}
+
 /** Bài NGẮN hiện trọn màn hình (không có gì để cuộn) → tính đã đọc ngay. Gọi ở openDoc VÀ khi
  *  switchView('docs') activate — vì openDoc lúc init có thể chạy khi view ẩn (clientHeight=0, đo không được). */
 function checkShortDocRead() {
@@ -1098,6 +1112,16 @@ async function openDoc(relPath, pushHash = true) {
   // Token chống race: bấm liên tiếp (←/→ nhanh, click sidebar dồn dập) tạo nhiều lượt mở song song —
   // fetch nào về SAU thắng bất kể thứ tự bấm. Chỉ lượt MỚI NHẤT được render.
   const seq = openDoc._seq = (openDoc._seq || 0) + 1;
+  // Chốt bookmark bài ĐANG mở ngay lập tức — timer debounce 400ms có thể chưa nổ khi user bấm chuyển bài
+  if (currentDoc) {
+    clearTimeout(openDoc._posT);
+    const c0 = document.getElementById('content');
+    if (c0 && c0.clientHeight > 0) {
+      const pos = docScrollMap();
+      pos[currentDoc] = c0.scrollTop;
+      localStorage.setItem('prep-doc-scroll', JSON.stringify(pos));
+    }
+  }
   const md = await apiFile(relPath);
   if (seq !== openDoc._seq) return; // đã có lượt mở mới hơn trong lúc chờ — bỏ kết quả cũ
 
@@ -1158,7 +1182,7 @@ async function openDoc(relPath, pushHash = true) {
       clearTimeout(openDoc._posT);
       openDoc._posT = setTimeout(() => {
         if (!currentDoc) return;
-        const pos = JSON.parse(localStorage.getItem('prep-doc-scroll') || '{}');
+        const pos = docScrollMap();
         pos[currentDoc] = content.scrollTop;
         localStorage.setItem('prep-doc-scroll', JSON.stringify(pos));
       }, 400);
@@ -1167,8 +1191,7 @@ async function openDoc(relPath, pushHash = true) {
   checkShortDocRead();
 
   // 🔖 mở lại bài → nhảy đúng chỗ đang đọc dở lần trước (0/không có → giữ đầu bài)
-  const savedPos = JSON.parse(localStorage.getItem('prep-doc-scroll') || '{}')[relPath];
-  if (savedPos > 0 && content.clientHeight > 0) content.scrollTop = Math.min(savedPos, content.scrollHeight);
+  restoreDocScroll();
 
   // Syntax highlight
   if (window.hljs) content.querySelectorAll('pre code').forEach(el => { try { hljs.highlightElement(el); } catch {} });
@@ -1210,8 +1233,8 @@ async function openDoc(relPath, pushHash = true) {
   // Task list "- [ ]" trong markdown → checkbox tick được, lưu tiến độ theo từng file
   attachTaskLists(content, relPath);
 
-  // Nếu trang có <details> (đáp án quiz) → gắn chế độ quiz tự chấm
-  const detailsCount = content.querySelectorAll('details').length;
+  // Nếu trang có <details> (đáp án quiz) → gắn chế độ quiz tự chấm (loại 📑 doc-toc — cũng là details)
+  const detailsCount = content.querySelectorAll('details:not(.doc-toc)').length;
   if (detailsCount > 0) attachQuizMode(content.querySelector('.md'), relPath, detailsCount);
 
   // 📑 Mục lục bài — bài có ≥3 mục h2 thì gắn accordion nhảy nhanh giữa các phần
@@ -1327,7 +1350,7 @@ function attachQuizMode(mdEl, docPath, total) {
     toggleBtn.textContent = active ? '✋ Thoát chế độ quiz' : '🧪 Chế độ quiz tự chấm';
     scoreEl.style.display = saveBtn.style.display = active ? '' : 'none';
 
-    mdEl.querySelectorAll('details').forEach(d => {
+    mdEl.querySelectorAll('details:not(.doc-toc)').forEach(d => {
       d.open = false;
       let judge = d.nextElementSibling?.classList?.contains('quiz-judge') ? d.nextElementSibling : null;
       if (active && !judge) {
