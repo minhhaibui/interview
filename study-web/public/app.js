@@ -947,6 +947,40 @@ async function loadTree() {
     g.appendChild(items);
     sb.appendChild(g);
   });
+  renderRecentDocs();
+}
+
+/** Nhóm 📖 Gần đây đầu sidebar — mở lại nhanh các bài vừa đọc (ẩn bài đang mở cho đỡ thừa). */
+function renderRecentDocs() {
+  const sb = document.getElementById('sb-tree');
+  if (!sb || !Array.isArray(TREE) || !TREE.length) return;
+  document.getElementById('sb-recent')?.remove();
+  const recent = store.get('prep-recent-docs', []).filter(p => p !== currentDoc).slice(0, 5);
+  if (!recent.length) return;
+  const labelOf = p => {
+    for (const g of TREE) { const it = (g.items || []).find(i => i.path === p); if (it) return it.label.trim(); }
+    return p.split('/').pop(); // bài đã xoá khỏi tree sau deploy — vẫn mở được nếu còn trong docs
+  };
+  const g = document.createElement('div');
+  g.className = 'sb-group';
+  g.id = 'sb-recent';
+  const title = document.createElement('button');
+  title.className = 'sb-title';
+  title.textContent = '📖 Gần đây';
+  title.addEventListener('click', () => g.classList.toggle('collapsed'));
+  g.appendChild(title);
+  const items = document.createElement('div');
+  items.className = 'sb-items';
+  recent.forEach(p => {
+    const b = document.createElement('button');
+    b.className = 'sb-item';
+    b.textContent = labelOf(p);
+    b.dataset.path = p;
+    b.addEventListener('click', () => openDoc(p));
+    items.appendChild(b);
+  });
+  g.appendChild(items);
+  sb.prepend(g);
 }
 
 // ---------- Tìm kiếm toàn văn ----------
@@ -1011,6 +1045,11 @@ async function openDoc(relPath, pushHash = true) {
   currentDoc = relPath;
   if (pushHash) location.hash = `doc=${encodeURIComponent(relPath)}`;
   store.set('prep-last-doc', relPath);
+  // 📖 Gần đây: mới nhất lên đầu, không trùng, giữ 8
+  const recent = store.get('prep-recent-docs', []).filter(p => p !== relPath);
+  recent.unshift(relPath);
+  store.set('prep-recent-docs', recent.slice(0, 8));
+  renderRecentDocs();
 
   const html = window.marked ? marked.parse(md) : `<pre>${md.replace(/</g, '&lt;')}</pre>`;
   content.innerHTML = `<div class="md">${html}</div>`;
@@ -3379,7 +3418,7 @@ async function mkAiGrade() {
   }
 }
 
-const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-doc',
+const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-doc', 'prep-recent-docs',
   'prep-typing-best', 'prep-fails', 'prep-activity', 'prep-mock-history',
   'prep-pomo', 'prep-code-best', 'prep-fc-dir', 'prep-fc-auto', 'prep-code-history', 'prep-theme',
   // prep-last-view CỐ Ý KHÔNG sync: sở thích tab cục bộ mỗi thiết bị (đồng bộ sẽ khiến máy này nhảy

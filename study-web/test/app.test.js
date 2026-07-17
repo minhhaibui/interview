@@ -368,6 +368,17 @@ test('wiring: apiFile tự nạp lại docs.json khi thiếu bài (deploy mới)
     'sw.js phải bỏ qua request no-store — không thì retry vẫn dính stale-while-revalidate');
 });
 
+test('wiring: 📖 Gần đây trong sidebar — openDoc ghi prep-recent-docs (dedupe, cap 8) + render nhóm đầu tree', () => {
+  assert.ok(/prep-recent-docs'\)?, \[\]\)\.filter\(p => p !== relPath\)/.test(APP) || APP.includes("store.get('prep-recent-docs', []).filter(p => p !== relPath)"),
+    'openDoc phải dedupe rồi unshift vào prep-recent-docs');
+  assert.ok(APP.includes('recent.slice(0, 8)'), 'prep-recent-docs phải cap 8');
+  const seg = APP.slice(APP.indexOf('function renderRecentDocs'), APP.indexOf('function renderRecentDocs') + 1400);
+  assert.ok(seg.includes("'sb-recent'") && seg.includes('sb.prepend(g)') && seg.includes('p !== currentDoc'),
+    'renderRecentDocs phải prepend nhóm sb-recent và ẩn bài đang mở');
+  assert.ok(/function loadTree[\s\S]{0,1600}renderRecentDocs\(\);/.test(APP), 'loadTree phải gọi renderRecentDocs sau khi dựng tree');
+  assert.ok(/PREP_KEYS = \[[^\]]*'prep-recent-docs'/.test(APP), 'PREP_KEYS thiếu prep-recent-docs (export/sync/reset)');
+});
+
 test('quality: không sót ký tự Trung trong bank/app (trừ zh-vocab.js — bank tiếng Trung hợp lệ)', () => {
   // Đề nhập từ nguồn Trung (JavaGuide...) từng lọt 穿透/回表/新特性... ra UI — đã dọn 17/07, chốt không tái phạm.
   const files = fs.readdirSync(PUB).filter(f => f.endsWith('.js') && f !== 'zh-vocab.js');
