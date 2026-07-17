@@ -377,6 +377,11 @@ test('wiring: 📖 Gần đây trong sidebar — openDoc ghi prep-recent-docs (d
     'renderRecentDocs phải prepend nhóm sb-recent và ẩn bài đang mở');
   assert.ok(/function loadTree[\s\S]{0,1600}renderRecentDocs\(\);/.test(APP), 'loadTree phải gọi renderRecentDocs sau khi dựng tree');
   assert.ok(/PREP_KEYS = \[[^\]]*'prep-recent-docs'/.test(APP), 'PREP_KEYS thiếu prep-recent-docs (export/sync/reset)');
+  // entry chết tự gỡ khi mở fail + sync/import từ máy khác phải vẽ lại nhóm
+  assert.ok(/if \(md === null\) \{[\s\S]{0,420}rec\.filter\(p => p !== relPath\)[\s\S]{0,120}renderRecentDocs\(\)/.test(APP),
+    'openDoc fail phải gỡ entry chết khỏi prep-recent-docs');
+  assert.ok(/function applyPrepData[\s\S]{0,300}renderRecentDocs\(\)/.test(APP),
+    'applyPrepData phải vẽ lại 📖 Gần đây (sidebar ngoài view, reapplyView không đụng)');
 });
 
 test('quality: không sót ký tự Trung trong bank/app (trừ zh-vocab.js — bank tiếng Trung hợp lệ)', () => {

@@ -1039,6 +1039,12 @@ async function openDoc(relPath, pushHash = true) {
 
   const content = document.getElementById('content');
   if (md === null) {
+    // Bài không còn tồn tại (đã xoá/đổi tên sau deploy) → gỡ khỏi 📖 Gần đây kẻo entry chết bấm mãi lỗi
+    const rec = store.get('prep-recent-docs', []);
+    if (rec.includes(relPath)) {
+      store.set('prep-recent-docs', rec.filter(p => p !== relPath));
+      renderRecentDocs();
+    }
     content.innerHTML = '<div class="welcome"><h1>😕 Không tải được tài liệu</h1></div>';
     return;
   }
@@ -6394,6 +6400,7 @@ function gatherPrepData() {
 function applyPrepData(data) {
   if (!data) return;
   PREP_KEYS.forEach(k => { if (k in data) localStorage.setItem(k, JSON.stringify(data[k])); });
+  renderRecentDocs(); // 📖 Gần đây nằm ở sidebar (ngoài view) — reapplyView không vẽ lại nó
 }
 function localUpdatedAt() { return store.get('prep-sync-meta', { updatedAt: 0 }).updatedAt || 0; }
 function setLocalUpdatedAt(at) {
