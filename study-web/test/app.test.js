@@ -398,8 +398,10 @@ test('wiring: 📗 đánh dấu bài đã đọc — cuộn ≥90% hoặc bài n
   // thì scrollHeight=clientHeight=0 → không guard là bài dài bị mark oan mỗi lần reload (bug HIGH QA 17/07)
   assert.ok(/currentDoc && content\.clientHeight > 0 &&[\s\S]{0,90}content\.scrollTop \+ content\.clientHeight >= content\.scrollHeight - 40/.test(APP),
     'listener cuộn phải guard clientHeight>0 và đo chạm đáy (chừa 40px)');
-  assert.ok(/content\.clientHeight > 0 && content\.scrollHeight <= content\.clientHeight \+ 40\) markDocRead\(relPath\)/.test(APP),
-    'check bài ngắn phải guard clientHeight>0');
+  assert.ok(/function checkShortDocRead[\s\S]{0,320}clientHeight > 0[\s\S]{0,120}scrollHeight <= content\.clientHeight \+ 40/.test(APP),
+    'checkShortDocRead phải guard clientHeight>0');
+  assert.ok(/if \(name === 'docs'\) checkShortDocRead\(\)/.test(APP),
+    'switchView(docs) phải re-check bài ngắn (mở lúc view ẩn đo không được — QA vòng 3)');
   // fail path phải vô hiệu currentDoc + dọn prep-last-doc chết (chặn mark oan bài dở + task Đọc tiếp lỗi mãi)
   assert.ok(/if \(md === null\) \{[\s\S]{0,320}currentDoc = null;[\s\S]{0,320}store\.set\('prep-last-doc', null\)/.test(APP),
     'openDoc fail phải set currentDoc=null và dọn prep-last-doc chết');
@@ -440,8 +442,8 @@ test('wiring: ◀▶ điều hướng bài trước/tiếp cuối mỗi bài doc
   const CSS = read('styles.css');
   assert.ok(CSS.includes('.doc-nav') && CSS.includes('.doc-nav-btn'), 'styles.css thiếu .doc-nav');
   // phím ←/→ chỉ hoạt động khi view Học active (tránh bấm nhầm nút doc-nav đang ẩn từ view khác)
-  assert.ok(/ArrowLeft' \|\| e\.key === 'ArrowRight'[\s\S]{0,260}view-docs'\)\?\.classList\.contains\('active'\)[\s\S]{0,220}doc-nav-btn/.test(APP),
-    'initShortcuts thiếu ←/→ chuyển bài (guard view-docs active)');
+  assert.ok(/ArrowLeft' \|\| e\.key === 'ArrowRight'[\s\S]{0,320}if \(e\.shiftKey\) return;[\s\S]{0,260}view-docs'\)\?\.classList\.contains\('active'\)[\s\S]{0,220}doc-nav-btn/.test(APP),
+    'initShortcuts thiếu ←/→ (guard shiftKey + view-docs active)');
   assert.ok(/desc: 'Bài trước \/ bài tiếp/.test(APP), 'bảng phím tắt thiếu dòng ←/→ doc-nav');
 });
 
@@ -457,7 +459,8 @@ test('wiring: 🎓 thi thử theo 1 mảng — select exam-mode + buildExamQueue
   assert.ok(/sprint: examSprint, scope: examScope, modes: byMode/.test(APP), 'history entry thiếu scope');
   assert.ok(/scope: examScope, idx: examIdx/.test(APP) && /examScope = s\.scope \|\| ''/.test(APP),
     'saveExamState/restore thiếu scope');
-  assert.ok(/sel\.value = examScope/.test(APP), 'renderExam phải khôi phục scope đã chọn');
+  assert.ok(/sel\.value = examScopeSel/.test(APP) && /if \(!sprint\) examScopeSel = examScope/.test(APP),
+    'renderExam khôi phục lựa chọn qua examScopeSel (sprint không xoá)');
   const CSS = read('styles.css');
   assert.ok(CSS.includes('.exam-scope'), 'styles.css thiếu .exam-scope');
 });

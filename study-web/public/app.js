@@ -281,6 +281,7 @@ function switchView(name) {
     return; // không init/vẽ nội dung tab khi đang khóa
   }
   hideLoginGate();
+  if (name === 'docs') checkShortDocRead(); // bài ngắn mở lúc view còn ẩn (init nền) → giờ mới đo được chiều cao thật
   if (name === 'today') renderToday();
   if (name === 'flashcards') initFlashcards().then(() => fcLoaded && fillFcWeekSelect());
   if (name === 'writing') initWriting().then(() => wrInit && WR_SENTENCES && fillWrWeekSelect());
@@ -786,6 +787,7 @@ async function renderToday() {
       const at = flat.findIndex(i => i.path === lastDoc);
       const nxt = flat.slice(at + 1).find(i => !readMap[i.path]) || flat.find(i => !readMap[i.path]);
       if (nxt) { target = nxt.path; tt = `Bài tiếp theo: ${docLabelOf(nxt.path)}`; sub = 'Bài gần nhất đã đọc xong — học tuần tự bài kế'; }
+      else { tt = `Ôn lại: ${docLabelOf(lastDoc)}`; sub = '🎉 Đã đọc hết mọi bài — mở lại bài gần nhất'; }
     }
     tasks.push({ id: 'td-read', ic: '📖', t: tt, s: sub, go: () => { switchView('docs'); openDoc(target); } });
   }
@@ -965,6 +967,14 @@ async function loadTree() {
   refreshReadMarks();
 }
 
+/** Bài NGẮN hiện trọn màn hình (không có gì để cuộn) → tính đã đọc ngay. Gọi ở openDoc VÀ khi
+ *  switchView('docs') activate — vì openDoc lúc init có thể chạy khi view ẩn (clientHeight=0, đo không được). */
+function checkShortDocRead() {
+  const content = document.getElementById('content');
+  if (currentDoc && content && content.clientHeight > 0 &&
+      content.scrollHeight <= content.clientHeight + 40) markDocRead(currentDoc);
+}
+
 // 📗 Đánh dấu bài ĐÃ ĐỌC khi cuộn tới ≥90% (bài ngắn không cần cuộn tính luôn) — ✓ mờ ở sidebar.
 function markDocRead(p) {
   const read = store.get('prep-docs-read', {});
@@ -1142,7 +1152,7 @@ async function openDoc(relPath, pushHash = true) {
           content.scrollTop + content.clientHeight >= content.scrollHeight - 40) markDocRead(currentDoc);
     }, { passive: true });
   }
-  if (content.clientHeight > 0 && content.scrollHeight <= content.clientHeight + 40) markDocRead(relPath);
+  checkShortDocRead();
 
   // Syntax highlight
   if (window.hljs) content.querySelectorAll('pre code').forEach(el => { try { hljs.highlightElement(el); } catch {} });
@@ -5189,7 +5199,7 @@ function renderExam() {
       </div>
     </div>`;
   const sel = document.getElementById('exam-mode');
-  if (sel && examScope && [...sel.options].some(o => o.value === examScope)) sel.value = examScope; // giữ lựa chọn giữa các lượt
+  if (sel && examScopeSel && [...sel.options].some(o => o.value === examScopeSel)) sel.value = examScopeSel; // giữ lựa chọn giữa các lượt (sprint không xoá)
   const scopeOf = () => document.getElementById('exam-mode')?.value || '';
   document.getElementById('exam-go-20').onclick = () => startExam(20, 15, false, scopeOf());
   document.getElementById('exam-go-10').onclick = () => startExam(10, 7, false, scopeOf());
@@ -5198,9 +5208,11 @@ function renderExam() {
 
 let examSprint = false; // đề đang thi có phải nước rút không (ghi vào lịch sử lúc nộp)
 let examScope = '';     // mảng của đề đang thi ('' = mọi mảng) — ghi vào lịch sử để phân biệt đề chuyên đề
+let examScopeSel = ''; // lựa chọn select được NHỚ giữa các lượt — sprint không đụng tới
 function startExam(n, mins, sprint, onlyMode) {
   examSprint = !!sprint;
   examScope = sprint ? '' : (onlyMode || '');
+  if (!sprint) examScopeSel = examScope;
   examQueue = sprint ? buildSprintExamQueue(n) : buildExamQueue(n, onlyMode);
   if (!examQueue.length) { renderExam(); return; }
   examIdx = 0; examAnswers = [];
@@ -6350,6 +6362,7 @@ function initShortcuts() {
       if (next) { e.preventDefault(); next.click(); }
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       // ◀▶ chuyển bài trước/tiếp khi đang ĐỌC tài liệu (chỉ khi view Học active — nút doc-nav ẩn ở view khác)
+      if (e.shiftKey) return; // Shift+mũi tên = bôi đen văn bản, đừng cướp
       if (!document.getElementById('view-docs')?.classList.contains('active')) return;
       const btn = document.querySelector(`.doc-nav-btn.${e.key === 'ArrowLeft' ? 'prev' : 'next'}`);
       if (btn) { e.preventDefault(); btn.click(); }
