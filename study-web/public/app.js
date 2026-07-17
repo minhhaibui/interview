@@ -1095,7 +1095,11 @@ function renderSearchResults(res, q) {
 
 // ---------- Doc rendering ----------
 async function openDoc(relPath, pushHash = true) {
+  // Token chống race: bấm liên tiếp (←/→ nhanh, click sidebar dồn dập) tạo nhiều lượt mở song song —
+  // fetch nào về SAU thắng bất kể thứ tự bấm. Chỉ lượt MỚI NHẤT được render.
+  const seq = openDoc._seq = (openDoc._seq || 0) + 1;
   const md = await apiFile(relPath);
+  if (seq !== openDoc._seq) return; // đã có lượt mở mới hơn trong lúc chờ — bỏ kết quả cũ
 
   const content = document.getElementById('content');
   if (md === null) {

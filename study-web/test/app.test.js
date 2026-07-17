@@ -380,6 +380,9 @@ test('wiring: 📖 Gần đây trong sidebar — openDoc ghi prep-recent-docs (d
   // entry chết tự gỡ khi mở fail + sync/import từ máy khác phải vẽ lại nhóm
   assert.ok(/if \(md === null\) \{[\s\S]{0,800}rec\.filter\(p => p !== relPath\)[\s\S]{0,120}renderRecentDocs\(\)/.test(APP),
     'openDoc fail phải gỡ entry chết khỏi prep-recent-docs');
+  // token chống race: nhiều lượt mở song song → chỉ lượt mới nhất render
+  assert.ok(/const seq = openDoc\._seq = \(openDoc\._seq \|\| 0\) \+ 1;[\s\S]{0,120}await apiFile\(relPath\);[\s\S]{0,120}if \(seq !== openDoc\._seq\) return;/.test(APP),
+    'openDoc thiếu sequence token chống race');
   assert.ok(/function applyPrepData[\s\S]{0,300}renderRecentDocs\(\)/.test(APP),
     'applyPrepData phải vẽ lại 📖 Gần đây (sidebar ngoài view, reapplyView không đụng)');
   // task 📖 Đọc tiếp ở tab Hôm nay: bài dở → mở lại; đã đọc xong → gợi ý bài KẾ TIẾP chưa đọc
