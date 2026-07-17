@@ -388,6 +388,18 @@ test('wiring: 📖 Gần đây trong sidebar — openDoc ghi prep-recent-docs (d
   assert.ok(/function docLabelOf/.test(APP), 'thiếu helper docLabelOf dùng chung');
 });
 
+test('wiring: 📗 đánh dấu bài đã đọc — cuộn ≥90% hoặc bài ngắn, ✓ sidebar, sync đủ', () => {
+  assert.ok(/function markDocRead/.test(APP) && /function refreshReadMarks/.test(APP), 'thiếu markDocRead/refreshReadMarks');
+  assert.ok(/content\.scrollTop \+ content\.clientHeight >= content\.scrollHeight \* 0\.9/.test(APP),
+    'thiếu điều kiện cuộn ≥90% đánh dấu đã đọc');
+  assert.ok(/content\.scrollHeight <= content\.clientHeight \+ 40\) markDocRead\(relPath\)/.test(APP),
+    'bài ngắn hiện trọn phải được tính đã đọc luôn');
+  assert.ok(/PREP_KEYS = \[[^\]]*'prep-docs-read'/.test(APP), 'PREP_KEYS thiếu prep-docs-read');
+  assert.ok(/function applyPrepData[\s\S]{0,400}refreshReadMarks\(\)/.test(APP), 'applyPrepData phải refresh ✓ đã đọc');
+  const CSS = read('styles.css');
+  assert.ok(CSS.includes('.sb-item.read'), 'styles.css thiếu .sb-item.read');
+});
+
 test('quality: không sót ký tự Trung trong bank/app (trừ zh-vocab.js — bank tiếng Trung hợp lệ)', () => {
   // Đề nhập từ nguồn Trung (JavaGuide...) từng lọt 穿透/回表/新特性... ra UI — đã dọn 17/07, chốt không tái phạm.
   const files = fs.readdirSync(PUB).filter(f => f.endsWith('.js') && f !== 'zh-vocab.js');

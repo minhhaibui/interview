@@ -955,6 +955,21 @@ async function loadTree() {
     sb.appendChild(g);
   });
   renderRecentDocs();
+  refreshReadMarks();
+}
+
+// 📗 Đánh dấu bài ĐÃ ĐỌC khi cuộn tới ≥90% (bài ngắn không cần cuộn tính luôn) — ✓ mờ ở sidebar.
+function markDocRead(p) {
+  const read = store.get('prep-docs-read', {});
+  if (read[p]) return;
+  read[p] = Date.now();
+  store.set('prep-docs-read', read);
+  refreshReadMarks();
+}
+function refreshReadMarks() {
+  const read = store.get('prep-docs-read', {});
+  document.querySelectorAll('.sb-item[data-path]').forEach(b =>
+    b.classList.toggle('read', !!read[b.dataset.path]));
 }
 
 /** Label hiển thị của 1 path tài liệu — tra TREE; bài đã rời tree thì lấy tên file. */
@@ -993,6 +1008,7 @@ function renderRecentDocs() {
   });
   g.appendChild(items);
   sb.prepend(g);
+  refreshReadMarks(); // item vừa tạo mới cần ✓ nếu đã đọc
 }
 
 // ---------- Tìm kiếm toàn văn ----------
@@ -1072,6 +1088,15 @@ async function openDoc(relPath, pushHash = true) {
   const html = window.marked ? marked.parse(md) : `<pre>${md.replace(/</g, '&lt;')}</pre>`;
   content.innerHTML = `<div class="md">${html}</div>`;
   content.scrollTop = 0;
+
+  // 📗 đã đọc: bài ngắn hiện trọn không cần cuộn → tính luôn; bài dài chờ cuộn ≥90% (listener gắn 1 lần)
+  if (!openDoc._readBound) {
+    openDoc._readBound = true;
+    content.addEventListener('scroll', () => {
+      if (currentDoc && content.scrollTop + content.clientHeight >= content.scrollHeight * 0.9) markDocRead(currentDoc);
+    }, { passive: true });
+  }
+  if (content.scrollHeight <= content.clientHeight + 40) markDocRead(relPath);
 
   // Syntax highlight
   if (window.hljs) content.querySelectorAll('pre code').forEach(el => { try { hljs.highlightElement(el); } catch {} });
@@ -3443,7 +3468,7 @@ async function mkAiGrade() {
   }
 }
 
-const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-doc', 'prep-recent-docs',
+const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-doc', 'prep-recent-docs', 'prep-docs-read',
   'prep-typing-best', 'prep-fails', 'prep-activity', 'prep-mock-history',
   'prep-pomo', 'prep-code-best', 'prep-fc-dir', 'prep-fc-auto', 'prep-code-history', 'prep-theme',
   // prep-last-view CỐ Ý KHÔNG sync: sở thích tab cục bộ mỗi thiết bị (đồng bộ sẽ khiến máy này nhảy
@@ -6412,6 +6437,7 @@ function applyPrepData(data) {
   if (!data) return;
   PREP_KEYS.forEach(k => { if (k in data) localStorage.setItem(k, JSON.stringify(data[k])); });
   renderRecentDocs(); // 📖 Gần đây nằm ở sidebar (ngoài view) — reapplyView không vẽ lại nó
+  refreshReadMarks(); // 📗 ✓ đã đọc cũng vậy
 }
 function localUpdatedAt() { return store.get('prep-sync-meta', { updatedAt: 0 }).updatedAt || 0; }
 function setLocalUpdatedAt(at) {
