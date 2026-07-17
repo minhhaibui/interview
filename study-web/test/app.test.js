@@ -390,6 +390,8 @@ test('wiring: 📖 Gần đây trong sidebar — openDoc ghi prep-recent-docs (d
 
 test('wiring: 📗 đánh dấu bài đã đọc — cuộn ≥90% hoặc bài ngắn, ✓ sidebar, sync đủ', () => {
   assert.ok(/function markDocRead/.test(APP) && /function refreshReadMarks/.test(APP), 'thiếu markDocRead/refreshReadMarks');
+  assert.ok(/if \(read\[p\]\) return;[\s\S]{0,220}logActivity\(\)/.test(APP),
+    'đọc trọn bài lần đầu phải logActivity (streak/heatmap) — sau guard chống đếm trùng');
   // clientHeight > 0 BẮT BUỘC ở cả 2 nhánh: openDoc chạy lúc #content display:none (init đậu tab khác)
   // thì scrollHeight=clientHeight=0 → không guard là bài dài bị mark oan mỗi lần reload (bug HIGH QA 17/07)
   assert.ok(/currentDoc && content\.clientHeight > 0 &&[\s\S]{0,90}content\.scrollTop \+ content\.clientHeight >= content\.scrollHeight - 40/.test(APP),

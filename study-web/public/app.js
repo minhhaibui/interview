@@ -964,6 +964,7 @@ function markDocRead(p) {
   if (read[p]) return;
   read[p] = Date.now();
   store.set('prep-docs-read', read);
+  logActivity(); // đọc trọn 1 bài = 1 lượt học — giữ chuỗi 🔥 & heatmap như làm quiz
   refreshReadMarks();
 }
 function refreshReadMarks() {
