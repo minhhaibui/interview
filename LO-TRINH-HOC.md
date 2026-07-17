@@ -53,6 +53,24 @@ XUYÊN SUỐT (song song mỗi ngày):  🇬🇧 English  ·  🏗️ Design Pat
 
 ---
 
+## ☕ Nhánh Java — nếu bạn nhắm vị trí Java Backend
+
+Repo có **track Java song song** đầy đủ, thay thế Giai đoạn 1 (Tuần 1-2 Node.js) bằng:
+
+1. **`java-basics/` — 12 bài từ số 0** (chưa biết Java vẫn học được): Hello World → biến/kiểu →
+   điều khiển → method → OOP → SOLID → Collections → Exception → Maven → capstone nhỏ → sổ tra lỗi.
+2. **`java/` — 12 bài trình phỏng vấn**: JVM & bộ nhớ, Concurrency, Collections nội bộ, Spring & JPA,
+   MySQL, Redis, Mạng, Hệ phân tán & MQ, HĐH/IO, Docker & K8s, Testing (JUnit/Mockito),
+   Java hiện đại (Stream/Optional/record/sealed/virtual thread).
+3. **Luyện trong app**: quiz **☕ Java** (tab Tư duy) + 🎓 **Thi thử chọn phạm vi "Java"** để đo riêng;
+   câu sai tự gom vào 🔁 Ôn câu sai.
+
+Các giai đoạn 2→5 (SQL, Redis/Kafka, Docker/K8s, System Design, Capstone, Mock) **dùng chung** —
+kiến thức hạ tầng không phụ thuộc ngôn ngữ; bài `java/05-mysql` `06-redis` `08-distributed`
+chính là góc nhìn Java của cùng chủ đề, đọc kèm tuần tương ứng.
+
+---
+
 ## 📚 Trong MỖI tuần — học theo đúng thứ tự này
 
 ### ✅ LƯỢT 1 (lần đầu gặp chủ đề — mục tiêu: HIỂU và làm được)
