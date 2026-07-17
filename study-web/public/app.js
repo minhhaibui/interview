@@ -1117,6 +1117,21 @@ async function openDoc(relPath, pushHash = true) {
   content.innerHTML = `<div class="md">${html}</div>`;
   content.scrollTop = 0;
 
+  // ↑ Nút nổi "lên đầu bài" — hiện khi cuộn sâu >600px (bài dài / mobile), gắn 1 lần
+  if (!openDoc._topBtn) {
+    const tb = document.createElement('button');
+    tb.id = 'doc-top';
+    tb.type = 'button';
+    tb.title = 'Lên đầu bài';
+    tb.textContent = '↑';
+    tb.hidden = true;
+    tb.onclick = () => content.scrollTo({ top: 0, behavior: 'smooth' });
+    document.getElementById('view-docs').appendChild(tb); // trong view-docs → tự ẩn theo view
+    content.addEventListener('scroll', () => { tb.hidden = content.scrollTop < 600; }, { passive: true });
+    openDoc._topBtn = tb;
+  }
+  openDoc._topBtn.hidden = true; // bài mới mở luôn từ đầu
+
   // 📗 đã đọc: bài ngắn hiện trọn không cần cuộn → tính luôn; bài dài chờ cuộn TỚI ĐÁY (chừa 40px).
   // clientHeight > 0 bắt buộc: lúc init openDoc chạy khi tab khác đang active → #content display:none
   // → scrollHeight = clientHeight = 0 mà không check thì bài dài nào cũng bị mark oan mỗi lần reload.

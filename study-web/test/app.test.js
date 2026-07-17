@@ -423,6 +423,14 @@ test('wiring: 📗 đánh dấu bài đã đọc — cuộn ≥90% hoặc bài n
     'thanh docs-read phải dùng chung layout flex 1 dòng với capstone (từng vỡ 3 dòng)');
 });
 
+test('wiring: ↑ nút nổi lên đầu bài — hiện khi cuộn >600px, nằm trong view-docs, reset khi mở bài mới', () => {
+  const seg = APP.slice(APP.indexOf("tb.id = 'doc-top'") - 200, APP.indexOf("tb.id = 'doc-top'") + 900);
+  assert.ok(seg.includes("appendChild(tb)") && seg.includes('content.scrollTop < 600') &&
+    seg.includes("scrollTo({ top: 0, behavior: 'smooth' })"), 'doc-top thiếu wiring scroll/click');
+  assert.ok(/openDoc\._topBtn\.hidden = true/.test(APP), 'mở bài mới phải ẩn lại nút doc-top');
+  assert.ok(read('styles.css').includes('#doc-top'), 'styles.css thiếu #doc-top');
+});
+
 test('wiring: ◀▶ điều hướng bài trước/tiếp cuối mỗi bài docs theo thứ tự TREE', () => {
   const seg = APP.slice(APP.indexOf("nav.className = 'doc-nav'") - 400, APP.indexOf("nav.className = 'doc-nav'") + 800);
   assert.ok(seg.includes('flat.findIndex(i => i.path === relPath)') && seg.includes('flat[at - 1]') && seg.includes('flat[at + 1]'),
