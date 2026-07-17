@@ -425,6 +425,10 @@ test('wiring: ◀▶ điều hướng bài trước/tiếp cuối mỗi bài doc
     'nút doc-nav phải escape label và mở đúng path');
   const CSS = read('styles.css');
   assert.ok(CSS.includes('.doc-nav') && CSS.includes('.doc-nav-btn'), 'styles.css thiếu .doc-nav');
+  // phím ←/→ chỉ hoạt động khi view Học active (tránh bấm nhầm nút doc-nav đang ẩn từ view khác)
+  assert.ok(/ArrowLeft' \|\| e\.key === 'ArrowRight'[\s\S]{0,260}view-docs'\)\?\.classList\.contains\('active'\)[\s\S]{0,220}doc-nav-btn/.test(APP),
+    'initShortcuts thiếu ←/→ chuyển bài (guard view-docs active)');
+  assert.ok(/desc: 'Bài trước \/ bài tiếp/.test(APP), 'bảng phím tắt thiếu dòng ←/→ doc-nav');
 });
 
 test('wiring: 🎓 thi thử theo 1 mảng — select exam-mode + buildExamQueue(onlyMode); nước rút giữ mọi mảng', () => {

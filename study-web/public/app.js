@@ -6325,6 +6325,11 @@ function initShortcuts() {
       // Sau khi đã chấm một câu quiz → Enter sang câu tiếp (điều khiển quiz hoàn toàn bằng phím)
       const next = quizNextButton();
       if (next) { e.preventDefault(); next.click(); }
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      // ◀▶ chuyển bài trước/tiếp khi đang ĐỌC tài liệu (chỉ khi view Học active — nút doc-nav ẩn ở view khác)
+      if (!document.getElementById('view-docs')?.classList.contains('active')) return;
+      const btn = document.querySelector(`.doc-nav-btn.${e.key === 'ArrowLeft' ? 'prev' : 'next'}`);
+      if (btn) { e.preventDefault(); btn.click(); }
     } else if (e.key === '?') { e.preventDefault(); toggleShortcuts(); } // bảng phím tắt
   });
 }
@@ -6891,6 +6896,7 @@ const SHORTCUTS = [
     { keys: ['/'], desc: 'Tìm kiếm câu hỏi toàn cục (mọi bank + tài liệu)' },
     { keys: ['?'], desc: 'Mở bảng phím tắt này' },
     { keys: ['Esc'], desc: 'Đóng hộp thoại / menu đang mở' },
+    { keys: ['←', '→'], desc: 'Bài trước / bài tiếp khi đang đọc tài liệu (tab Học)' },
   ] },
   { group: '🃏 Flashcards', items: [
     { keys: ['Space'], desc: 'Lật thẻ' },
