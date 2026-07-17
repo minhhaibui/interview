@@ -776,6 +776,12 @@ async function renderToday() {
       s: `Mới ${weak.done}/${weak.total} câu — bấm để vào luyện ngay`,
       go: () => { switchView('coding'); setThinkMode(weak.mode); } });
   }
+  // 📖 Đọc tiếp bài đang dở — vào thẳng, khỏi lục sidebar
+  const lastDoc = store.get('prep-last-doc', null);
+  if (lastDoc) {
+    tasks.push({ id: 'td-read', ic: '📖', t: `Đọc tiếp: ${docLabelOf(lastDoc)}`,
+      s: 'Bài tài liệu bạn mở gần nhất', go: () => { switchView('docs'); openDoc(lastDoc); } });
+  }
   tasks.push({ id: 'td-think', ic: '🧠', t: 'Giải 1 bài luyện tư duy', s: 'Coding hoặc IQ', go: () => switchView('coding') });
   tasks.push({ id: 'td-mock', ic: '🎯', t: 'Mock interview nhanh', s: '5–10 câu ngẫu nhiên', go: () => switchView('mock') });
   tasks.push({ id: 'td-design', ic: '🏛️', t: 'Luyện 1 đề System Design', s: 'Tự chấm rubric hoặc nhờ AI chấm', go: () => switchView('design') });
@@ -951,6 +957,15 @@ async function loadTree() {
   renderRecentDocs();
 }
 
+/** Label hiển thị của 1 path tài liệu — tra TREE; bài đã rời tree thì lấy tên file. */
+function docLabelOf(p) {
+  for (const g of (Array.isArray(TREE) ? TREE : [])) {
+    const it = (g.items || []).find(i => i.path === p);
+    if (it) return it.label.trim();
+  }
+  return p.split('/').pop();
+}
+
 /** Nhóm 📖 Gần đây đầu sidebar — mở lại nhanh các bài vừa đọc (ẩn bài đang mở cho đỡ thừa). */
 function renderRecentDocs() {
   const sb = document.getElementById('sb-tree');
@@ -958,10 +973,6 @@ function renderRecentDocs() {
   document.getElementById('sb-recent')?.remove();
   const recent = store.get('prep-recent-docs', []).filter(p => p !== currentDoc).slice(0, 5);
   if (!recent.length) return;
-  const labelOf = p => {
-    for (const g of TREE) { const it = (g.items || []).find(i => i.path === p); if (it) return it.label.trim(); }
-    return p.split('/').pop(); // bài đã xoá khỏi tree sau deploy — vẫn mở được nếu còn trong docs
-  };
   const g = document.createElement('div');
   g.className = 'sb-group';
   g.id = 'sb-recent';
@@ -975,7 +986,7 @@ function renderRecentDocs() {
   recent.forEach(p => {
     const b = document.createElement('button');
     b.className = 'sb-item';
-    b.textContent = labelOf(p);
+    b.textContent = docLabelOf(p);
     b.dataset.path = p;
     b.addEventListener('click', () => openDoc(p));
     items.appendChild(b);

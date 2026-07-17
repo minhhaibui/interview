@@ -382,6 +382,10 @@ test('wiring: 📖 Gần đây trong sidebar — openDoc ghi prep-recent-docs (d
     'openDoc fail phải gỡ entry chết khỏi prep-recent-docs');
   assert.ok(/function applyPrepData[\s\S]{0,300}renderRecentDocs\(\)/.test(APP),
     'applyPrepData phải vẽ lại 📖 Gần đây (sidebar ngoài view, reapplyView không đụng)');
+  // task 📖 Đọc tiếp ở tab Hôm nay dùng chung docLabelOf
+  assert.ok(/id: 'td-read'[\s\S]{0,220}docLabelOf\(lastDoc\)[\s\S]{0,220}openDoc\(lastDoc\)/.test(APP),
+    'tab Hôm nay thiếu task td-read Đọc tiếp (docLabelOf + openDoc)');
+  assert.ok(/function docLabelOf/.test(APP), 'thiếu helper docLabelOf dùng chung');
 });
 
 test('quality: không sót ký tự Trung trong bank/app (trừ zh-vocab.js — bank tiếng Trung hợp lệ)', () => {
