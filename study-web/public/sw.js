@@ -7,7 +7,7 @@
  *   - /api/* và các request cross-origin khác (Firebase, Anthropic): không can thiệp.
  * Đổi VERSION mỗi khi muốn ép xoá cache cũ.
  */
-const VERSION = 'v173';
+const VERSION = 'v174';
 const CACHE = `prep-${VERSION}`;
 const CDN_HOSTS = ['cdn.jsdelivr.net', 'www.gstatic.com'];
 
@@ -64,6 +64,7 @@ self.addEventListener('message', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;                       // chỉ xử lý GET
+  if (req.cache === 'no-store') return;                   // caller CỐ TÌNH cần bản mạng (vd nạp lại docs.json sau deploy) — không chen cache
   const url = new URL(req.url);
 
   // Không động vào API động (chỉ có khi chạy server.js) — luôn lấy bản mới.

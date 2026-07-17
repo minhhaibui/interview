@@ -360,6 +360,14 @@ test('wiring: 🔄 banner "có bản mới" khi SW mới activate giữa phiên'
   assert.ok(CSS.includes('#update-banner'), 'styles.css thiếu #update-banner');
 });
 
+test('wiring: apiFile tự nạp lại docs.json khi thiếu bài (deploy mới) + SW nhả request no-store', () => {
+  const seg = APP.slice(APP.indexOf('async function apiFile'), APP.indexOf('async function apiFile') + 900);
+  assert.ok(seg.includes('_docsRefreshed') && seg.includes("cache: 'no-store'"),
+    'apiFile thiếu retry nạp lại docs.json no-store (1 lần/phiên)');
+  assert.ok(SW.includes("req.cache === 'no-store'"),
+    'sw.js phải bỏ qua request no-store — không thì retry vẫn dính stale-while-revalidate');
+});
+
 test('quality: không sót ký tự Trung trong bank/app (trừ zh-vocab.js — bank tiếng Trung hợp lệ)', () => {
   // Đề nhập từ nguồn Trung (JavaGuide...) từng lọt 穿透/回表/新特性... ra UI — đã dọn 17/07, chốt không tái phạm.
   const files = fs.readdirSync(PUB).filter(f => f.endsWith('.js') && f !== 'zh-vocab.js');

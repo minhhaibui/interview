@@ -32,8 +32,21 @@ function loadDocsStatic() {
 }
 
 /** Đọc 1 file md (raw text) — null nếu không có */
+let _docsRefreshed = false;
 async function apiFile(relPath) {
-  if (STATIC_MODE) { const docs = await loadDocsStatic(); return docs[relPath] ?? null; }
+  if (STATIC_MODE) {
+    let docs = await loadDocsStatic();
+    if (!(relPath in docs) && !_docsRefreshed) {
+      // Bản trong RAM có thể là docs.json CŨ (mở trang đúng lúc vừa deploy bài mới) —
+      // nạp lại thẳng từ mạng 1 lần/phiên trước khi chịu thua "Không tải được tài liệu".
+      _docsRefreshed = true;
+      _docsPromise = fetch('data/docs.json', { cache: 'no-store' })
+        .then(r => { if (!r.ok) throw new Error('docs.json ' + r.status); return r.json(); })
+        .catch(() => { _docsPromise = null; return docs; }); // offline → giữ bản cũ
+      docs = await _docsPromise;
+    }
+    return docs[relPath] ?? null;
+  }
   const r = await fetch('/api/file?path=' + encodeURIComponent(relPath)).catch(() => null);
   return r && r.ok ? r.text() : null;
 }
