@@ -454,6 +454,13 @@ test('wiring: 🎓 thi thử theo 1 mảng — select exam-mode + buildExamQueue
   assert.ok(CSS.includes('.exam-scope'), 'styles.css thiếu .exam-scope');
 });
 
+test('quality: không view nào tự set display ở selector ID — sẽ đè .view{display:none} và chồng dưới view khác', () => {
+  const CSS = read('styles.css');
+  for (const m of CSS.matchAll(/#view-[a-z-]+(?:\s*,\s*#view-[a-z-]+)*\s*\{([^}]*)\}/g)) {
+    assert.ok(!/display\s*:/.test(m[1]), `rule "${m[0].slice(0, 60)}…" set display — dùng .view.active thay vì ID`);
+  }
+});
+
 test('quality: không sót ký tự Trung trong bank/app (trừ zh-vocab.js — bank tiếng Trung hợp lệ)', () => {
   // Đề nhập từ nguồn Trung (JavaGuide...) từng lọt 穿透/回表/新特性... ra UI — đã dọn 17/07, chốt không tái phạm.
   const files = fs.readdirSync(PUB).filter(f => f.endsWith('.js') && f !== 'zh-vocab.js');
