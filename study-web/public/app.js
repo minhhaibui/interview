@@ -6550,13 +6550,31 @@ function toast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
+/** Banner 🔄 "có bản mới" — hiện 1 lần khi SW mới activate giữa phiên, bấm Tải lại là xong. */
+function showUpdateBanner() {
+  if (document.getElementById('update-banner')) return;
+  const b = document.createElement('div');
+  b.id = 'update-banner';
+  b.innerHTML = '🔄 Có bản cập nhật mới <button id="update-reload" type="button">Tải lại</button>';
+  document.body.appendChild(b);
+  document.getElementById('update-reload').onclick = () => location.reload();
+}
+
 // ---------- Khởi động ----------
 // ---------- PWA: service worker + nút "Cài app" ----------
 function initPwa() {
   // Đăng ký service worker để chạy offline (bỏ qua khi mở bằng file:// — SW cần http/https).
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+    // 🔄 Deploy mới + skipWaiting → SW mới chiếm quyền GIỮA phiên, nhưng code/dữ liệu đã nạp
+    // trong RAM vẫn là bản cũ (vd docs.json memoize) → mời tải lại thay vì bắt user biết mẹo hard-refresh.
+    // Chỉ nghe khi trang ĐÃ có SW từ trước — lần cài đầu tiên cũng bắn controllerchange nhưng không phải update.
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.addEventListener('controllerchange', showUpdateBanner);
+    }
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js').catch(() => {/* không sao, vẫn chạy online */});
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => { setInterval(() => reg.update().catch(() => {}), 60 * 60e3); }) // tab treo lâu vẫn biết có bản mới
+        .catch(() => {/* không sao, vẫn chạy online */});
     });
   }
   // Bắt sự kiện cài đặt: hiện nút 📲 trên thanh công cụ khi trình duyệt cho phép cài.

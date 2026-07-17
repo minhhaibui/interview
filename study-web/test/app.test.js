@@ -347,6 +347,19 @@ test('wiring: 📋 nút copy trên code block tài liệu (renderDoc gắn .pre-
   assert.ok(CSS.includes('.md pre .pre-copy') && CSS.includes('.md pre:hover .pre-copy'), 'styles.css thiếu style .pre-copy');
 });
 
+test('wiring: 🔄 banner "có bản mới" khi SW mới activate giữa phiên', () => {
+  // chỉ nghe controllerchange khi ĐÃ có controller (lần cài đầu không phải update)
+  const seg = APP.slice(APP.indexOf('function initPwa'), APP.indexOf('function initPwa') + 1600);
+  assert.ok(seg.includes('navigator.serviceWorker.controller') &&
+    seg.includes("addEventListener('controllerchange', showUpdateBanner)"),
+    'initPwa thiếu guard controller + listener controllerchange');
+  assert.ok(seg.includes('reg.update()'), 'thiếu check update định kỳ cho tab mở lâu');
+  assert.ok(/function showUpdateBanner[\s\S]{0,400}update-reload[\s\S]{0,200}location\.reload\(\)/.test(APP),
+    'showUpdateBanner phải có nút Tải lại gọi location.reload');
+  const CSS = read('styles.css');
+  assert.ok(CSS.includes('#update-banner'), 'styles.css thiếu #update-banner');
+});
+
 test('quality: không sót ký tự Trung trong bank/app (trừ zh-vocab.js — bank tiếng Trung hợp lệ)', () => {
   // Đề nhập từ nguồn Trung (JavaGuide...) từng lọt 穿透/回表/新特性... ra UI — đã dọn 17/07, chốt không tái phạm.
   const files = fs.readdirSync(PUB).filter(f => f.endsWith('.js') && f !== 'zh-vocab.js');
