@@ -24,7 +24,7 @@
 **Hệ sinh thái backend** (bám JavaGuide)
 | # | Bài | Nội dung cốt lõi |
 |---|-----|------------------|
-| 05 | **MySQL** | Index B+Tree, clustered index, table lookback, isolation, MVCC, khoá, EXPLAIN |
+| 05 | **MySQL** | Index B+Tree, clustered index, back-to-table lookup, isolation, MVCC, khoá, EXPLAIN |
 | 06 | **Redis** | Kiểu dữ liệu, RDB/AOF, cache penetration/breakdown/avalanche, khoá phân tán, HA |
 | 07 | **Mạng** | TCP handshake, TCP vs UDP, HTTPS/TLS, HTTP 1.1/2/3 |
 | 08 | **Hệ phân tán & MQ** | Kafka, delivery semantics, CAP, transaction phân tán, Snowflake |

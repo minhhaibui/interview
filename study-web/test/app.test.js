@@ -348,11 +348,11 @@ test('wiring: 📋 nút copy trên code block tài liệu (renderDoc gắn .pre-
 });
 
 test('wiring: 🔄 banner "có bản mới" khi SW mới activate giữa phiên', () => {
-  // chỉ nghe controllerchange khi ĐÃ có controller (lần cài đầu không phải update)
-  const seg = APP.slice(APP.indexOf('function initPwa'), APP.indexOf('function initPwa') + 1600);
-  assert.ok(seg.includes('navigator.serviceWorker.controller') &&
-    seg.includes("addEventListener('controllerchange', showUpdateBanner)"),
-    'initPwa thiếu guard controller + listener controllerchange');
+  // LUÔN nghe controllerchange; lần bắn đầu của phiên khởi đầu uncontrolled (cài đầu/hard-refresh)
+  // chỉ là "SW nhận trang" — phải bỏ qua rồi mới coi các lần sau là update thật
+  const seg = APP.slice(APP.indexOf('function initPwa'), APP.indexOf('function initPwa') + 1900);
+  assert.ok(/let swWasControlled = !!navigator\.serviceWorker\.controller;[\s\S]{0,220}controllerchange[\s\S]{0,220}if \(!swWasControlled\) \{ swWasControlled = true; return; \}[\s\S]{0,80}showUpdateBanner\(\)/.test(seg),
+    'initPwa phải luôn gắn listener controllerchange và chỉ bỏ qua lần bắn đầu của phiên uncontrolled');
   assert.ok(seg.includes('reg.update()'), 'thiếu check update định kỳ cho tab mở lâu');
   assert.ok(/function showUpdateBanner[\s\S]{0,400}update-reload[\s\S]{0,200}location\.reload\(\)/.test(APP),
     'showUpdateBanner phải có nút Tải lại gọi location.reload');
@@ -383,13 +383,13 @@ test('quality: không sót ký tự Trung trong bank/app (trừ zh-vocab.js — 
   // Đề nhập từ nguồn Trung (JavaGuide...) từng lọt 穿透/回表/新特性... ra UI — đã dọn 17/07, chốt không tái phạm.
   const files = fs.readdirSync(PUB).filter(f => f.endsWith('.js') && f !== 'zh-vocab.js');
   for (const f of files) {
-    const m = read(f).match(/[一-鿿]+/);
+    const m = read(f).match(/[\u3000-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff01-\uff60]+/);
     assert.strictEqual(m, null, `${f} còn ký tự Trung sót: "${m && m[0]}"`);
   }
   // track java/ (nguồn nhập chính) cũng phải sạch
   const JAVA = path.resolve(PUB, '..', '..', 'java');
   for (const f of fs.readdirSync(JAVA).filter(f => f.endsWith('.md'))) {
-    const m = fs.readFileSync(path.join(JAVA, f), 'utf8').match(/[一-鿿]+/);
+    const m = fs.readFileSync(path.join(JAVA, f), 'utf8').match(/[\u3000-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\uff01-\uff60]+/);
     assert.strictEqual(m, null, `java/${f} còn ký tự Trung sót: "${m && m[0]}"`);
   }
 });

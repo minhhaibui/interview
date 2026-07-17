@@ -192,6 +192,7 @@ button { font-family: inherit; cursor: pointer; }
 }
 .md pre .pre-copy {
   position: absolute; top: 6px; right: 6px;
+  user-select: none; -webkit-user-select: none; /* bôi đen code không dính chữ nút */
   background: var(--bg3); border: 1px solid var(--border); border-radius: 6px;
   padding: 2px 7px; font-size: 12px; cursor: pointer; opacity: 0;
   transition: opacity .15s;

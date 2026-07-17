@@ -62,7 +62,7 @@ User user  = u.orElseThrow(() -> new NotFoundException(email)); // hoặc ném l
 ```
 
 - `orElse(x)` — x **luôn được tính** kể cả khi có giá trị; `orElseGet(supplier)` — chỉ tính khi rỗng → dùng `orElseGet` nếu tạo mặc định tốn kém.
-- **Anti-pattern:** `opt.get()` không kiểm tra (NPE kiểu mới); dùng Optional làm **field/tham số** (chỉ nên làm **kiểu trả về**); `Optional.of(null)` (ném NPE — muốn bọc giá trị có thể null phải dùng `ofNullable`).
+- **Anti-pattern:** `opt.get()` không kiểm tra — rỗng thì ném `NoSuchElementException` ("NPE kiểu mới"); dùng Optional làm **field/tham số** (chỉ nên làm **kiểu trả về**); `Optional.of(null)` (ném NPE — muốn bọc giá trị có thể null phải dùng `ofNullable`).
 
 ---
 
@@ -95,7 +95,7 @@ sealed interface Shape permits Circle, Square { }
 record Circle(double r) implements Shape { }
 record Square(double a) implements Shape { }
 ```
-Chỉ các class được `permits` mới implement được → compiler BIẾT đủ mọi nhánh con, kết hợp pattern matching khỏi cần `default`:
+Chỉ các class được `permits` mới implement được → compiler BIẾT đủ mọi nhánh con, kết hợp pattern matching trong switch (chuẩn từ Java 21 — JEP 441) khỏi cần `default`:
 
 ```java
 double area(Shape s) {

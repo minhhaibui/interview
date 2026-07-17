@@ -42,7 +42,8 @@ async function apiFile(relPath) {
       _docsRefreshed = true;
       _docsPromise = fetch('data/docs.json', { cache: 'no-store' })
         .then(r => { if (!r.ok) throw new Error('docs.json ' + r.status); return r.json(); })
-        .catch(() => { _docsPromise = null; return docs; }); // offline → giữ bản cũ
+        // offline/lỗi → giữ bản cũ và NHẢ lượt retry (kẻo 1 lần fail đốt luôn cả phiên)
+        .catch(() => { _docsPromise = null; _docsRefreshed = false; return docs; });
       docs = await _docsPromise;
     }
     return docs[relPath] ?? null;
@@ -1065,7 +1066,14 @@ async function openDoc(relPath, pushHash = true) {
     btn.type = 'button';
     btn.textContent = '📋';
     btn.title = 'Copy code';
-    btn.onclick = () => copyText(pre.querySelector('code')?.innerText ?? pre.innerText).then(ok => {
+    const codeText = () => {
+      const c = pre.querySelector('code');
+      if (c) return c.innerText;
+      const clone = pre.cloneNode(true); // pre không có <code> (fallback marked hỏng) — loại chữ của chính nút
+      clone.querySelectorAll('.pre-copy').forEach(x => x.remove());
+      return clone.textContent;
+    };
+    btn.onclick = () => copyText(codeText()).then(ok => {
       btn.textContent = ok ? '✅' : '❌';
       setTimeout(() => { btn.textContent = '📋'; }, 1500);
     });
@@ -6619,10 +6627,13 @@ function initPwa() {
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
     // 🔄 Deploy mới + skipWaiting → SW mới chiếm quyền GIỮA phiên, nhưng code/dữ liệu đã nạp
     // trong RAM vẫn là bản cũ (vd docs.json memoize) → mời tải lại thay vì bắt user biết mẹo hard-refresh.
-    // Chỉ nghe khi trang ĐÃ có SW từ trước — lần cài đầu tiên cũng bắn controllerchange nhưng không phải update.
-    if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.addEventListener('controllerchange', showUpdateBanner);
-    }
+    // Luôn nghe; nếu phiên bắt đầu KHÔNG có controller (lần cài đầu / hard-refresh) thì lần bắn
+    // đầu tiên chỉ là "SW nhận trang" — bỏ qua, từ lần sau mới là update thật giữa phiên.
+    let swWasControlled = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!swWasControlled) { swWasControlled = true; return; }
+      showUpdateBanner();
+    });
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('sw.js')
         .then(reg => { setInterval(() => reg.update().catch(() => {}), 60 * 60e3); }) // tab treo lâu vẫn biết có bản mới
