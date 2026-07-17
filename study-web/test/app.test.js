@@ -419,6 +419,8 @@ test('wiring: 📗 đánh dấu bài đã đọc — cuộn ≥90% hoặc bài n
   assert.ok(HTML.includes('id="dash-docs-read"'), 'index.html thiếu #dash-docs-read');
   assert.ok(/dash-docs-read[\s\S]{0,600}prep-docs-read[\s\S]{0,400}dash-read-open/.test(APP),
     'renderDashboard thiếu thanh 📗 Tài liệu đã đọc');
+  assert.ok(/#dash-capstone, #dash-docs-read \{ display: flex/.test(read('styles.css')),
+    'thanh docs-read phải dùng chung layout flex 1 dòng với capstone (từng vỡ 3 dòng)');
 });
 
 test('wiring: ◀▶ điều hướng bài trước/tiếp cuối mỗi bài docs theo thứ tự TREE', () => {
