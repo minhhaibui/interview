@@ -5058,9 +5058,11 @@ function restoreExamState() {
   return true; // quá hạn thì showExamQ → tickExam tự nộp ngay như bài bỏ dở thường
 }
 
-/** Bốc n câu XEN KẼ ĐỀU mọi mode trong QUIZ_MODES (mỗi bank đã trộn) → đề phủ rộng, không dồn một mảng. */
-function buildExamQueue(n) {
+/** Bốc n câu XEN KẼ ĐỀU mọi mode trong QUIZ_MODES (mỗi bank đã trộn) → đề phủ rộng, không dồn một mảng.
+ *  onlyMode (tuỳ chọn): giới hạn đề trong 1 mảng — luyện tập trung trước vòng phỏng vấn chuyên đề. */
+function buildExamQueue(n, onlyMode) {
   const banks = shuffleArr(Object.keys(QUIZ_MODES))
+    .filter(mode => !onlyMode || mode === onlyMode)
     .map(mode => ({ mode, qs: shuffleArr(QUIZ_MODES[mode].data() || []) }))
     .filter(b => b.qs.length);
   const out = [];
@@ -5119,21 +5121,31 @@ function renderExam() {
   el.innerHTML = `
     <div class="oq-start">
       ${hist.length ? `<p>Đã thi <b>${hist.length}</b> lần · điểm cao nhất <b>${best}%</b>.</p><ul class="exam-hist">${rows}</ul>` : '<p>Chưa thi lần nào — làm một đề để biết mình đang ở đâu nhé.</p>'}
+      <label class="exam-scope">Phạm vi đề:
+        <select id="exam-mode" title="Chọn 1 mảng để luyện tập trung — Nước rút luôn trộn mọi mảng theo độ yếu">
+          <option value="">🌐 Tất cả mảng (trộn đều)</option>
+          ${Object.keys(QUIZ_MODES).map(m => {
+            const bank = QUIZ_MODES[m].data() || [];
+            return bank.length >= 10 ? `<option value="${m}">${QUIZ_MODES[m].label} — ${bank.length} câu</option>` : '';
+          }).join('')}
+        </select>
+      </label>
       <div class="review-actions">
         <button id="exam-go-20" class="dg-go">🎓 Thi 20 câu · 15 phút</button>
         <button id="exam-go-10" class="dg-go dg-link">⚡ Thi nhanh 10 câu · 7 phút</button>
         <button id="exam-go-sprint" class="dg-go dg-link" title="Chia câu theo độ yếu từng mảng: độ phủ thấp + đang sai nhiều được hỏi nhiều hơn; ưu tiên câu đang sai và câu chưa từng làm đúng">🔥 Nước rút 15 câu · 10 phút — dồn vào mảng yếu</button>
       </div>
     </div>`;
-  document.getElementById('exam-go-20').onclick = () => startExam(20, 15);
-  document.getElementById('exam-go-10').onclick = () => startExam(10, 7);
-  document.getElementById('exam-go-sprint').onclick = () => startExam(15, 10, true);
+  const scopeOf = () => document.getElementById('exam-mode')?.value || '';
+  document.getElementById('exam-go-20').onclick = () => startExam(20, 15, false, scopeOf());
+  document.getElementById('exam-go-10').onclick = () => startExam(10, 7, false, scopeOf());
+  document.getElementById('exam-go-sprint').onclick = () => startExam(15, 10, true); // nước rút: luôn mọi mảng theo độ yếu
 }
 
 let examSprint = false; // đề đang thi có phải nước rút không (ghi vào lịch sử lúc nộp)
-function startExam(n, mins, sprint) {
+function startExam(n, mins, sprint, onlyMode) {
   examSprint = !!sprint;
-  examQueue = sprint ? buildSprintExamQueue(n) : buildExamQueue(n);
+  examQueue = sprint ? buildSprintExamQueue(n) : buildExamQueue(n, onlyMode);
   if (!examQueue.length) { renderExam(); return; }
   examIdx = 0; examAnswers = [];
   examDurSec = mins * 60;

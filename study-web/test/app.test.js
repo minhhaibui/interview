@@ -409,6 +409,18 @@ test('wiring: 📗 đánh dấu bài đã đọc — cuộn ≥90% hoặc bài n
     'renderDashboard thiếu thanh 📗 Tài liệu đã đọc');
 });
 
+test('wiring: 🎓 thi thử theo 1 mảng — select exam-mode + buildExamQueue(onlyMode); nước rút giữ mọi mảng', () => {
+  assert.ok(/id="exam-mode"/.test(APP), 'renderExam thiếu select #exam-mode');
+  assert.ok(/function buildExamQueue\(n, onlyMode\)[\s\S]{0,220}!onlyMode \|\| mode === onlyMode/.test(APP),
+    'buildExamQueue phải lọc theo onlyMode');
+  assert.ok(/exam-go-20'\)\.onclick = \(\) => startExam\(20, 15, false, scopeOf\(\)\)/.test(APP),
+    'nút thi 20 câu phải truyền scope');
+  assert.ok(/exam-go-sprint'\)\.onclick = \(\) => startExam\(15, 10, true\)/.test(APP),
+    'nước rút KHÔNG nhận scope (luôn trộn theo độ yếu)');
+  const CSS = read('styles.css');
+  assert.ok(CSS.includes('.exam-scope'), 'styles.css thiếu .exam-scope');
+});
+
 test('quality: không sót ký tự Trung trong bank/app (trừ zh-vocab.js — bank tiếng Trung hợp lệ)', () => {
   // Đề nhập từ nguồn Trung (JavaGuide...) từng lọt 穿透/回表/新特性... ra UI — đã dọn 17/07, chốt không tái phạm.
   const files = fs.readdirSync(PUB).filter(f => f.endsWith('.js') && f !== 'zh-vocab.js');

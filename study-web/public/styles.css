@@ -882,6 +882,11 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 .review-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 6px; }
 
 /* 🎓 Thi thử — tái dùng .oq-* / .review-*; chỉ thêm phần đặc thù bài thi */
+.exam-scope { display: flex; align-items: center; gap: 8px; margin: 4px 0 12px; font-size: 14px; color: var(--muted); }
+.exam-scope select {
+  background: var(--bg3); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 10px; font-size: 14px; max-width: 320px;
+}
 .exam-hist { margin: 6px 0 14px; padding-left: 20px; color: var(--muted); font-size: 14px; line-height: 1.9; }
 .exam-hist b { color: var(--text); }
 .exam-note { color: var(--muted); font-size: 13.5px; margin-top: 14px; }
