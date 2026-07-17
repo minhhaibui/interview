@@ -10,11 +10,11 @@ window.DIST_QUIZ = [
     q: 'Ba lợi ích cốt lõi của message queue (Kafka/RabbitMQ) là gì?',
     options: [
       'Chỉ để lưu trữ dữ liệu',
-      'Giải耦 (decouple: bên gửi & nhận không phụ thuộc trực tiếp), 削峰 (buffer lúc tải đỉnh), 异步 (xử lý bất đồng bộ → phản hồi nhanh)',
+      'Decouple (bên gửi & nhận không phụ thuộc trực tiếp), Peak shaving (buffer lúc tải đỉnh), Async (xử lý bất đồng bộ → phản hồi nhanh)',
       'Tăng tốc CPU',
       'Thay thế database',
     ], answer: 1,
-    explain: 'MQ giúp: (1) DECOUPLE — producer chỉ đẩy message, không cần biết consumer là ai/còn sống không; (2) PEAK SHAVING (削峰) — hàng đợi hấp thụ đỉnh tải, consumer xử lý theo nhịp của mình, bảo vệ hệ sau; (3) ASYNC — tác vụ chậm (gửi mail, xử lý ảnh) đẩy vào queue, API trả về ngay. Đánh đổi: thêm độ phức tạp, độ trễ, và phải xử lý message trùng/mất/thứ tự.',
+    explain: 'MQ giúp: (1) DECOUPLE — producer chỉ đẩy message, không cần biết consumer là ai/còn sống không; (2) PEAK SHAVING (hấp thụ đỉnh tải) — hàng đợi hấp thụ đỉnh tải, consumer xử lý theo nhịp của mình, bảo vệ hệ sau; (3) ASYNC — tác vụ chậm (gửi mail, xử lý ảnh) đẩy vào queue, API trả về ngay. Đánh đổi: thêm độ phức tạp, độ trễ, và phải xử lý message trùng/mất/thứ tự.',
   },
   {
     id: 'dist-kafka-part', topic: 'Kafka',
@@ -131,7 +131,7 @@ window.DIST_QUIZ = [
     q: 'Kafka và RabbitMQ — chọn cái nào cho tình huống nào?',
     options: [
       'Luôn dùng Kafka',
-      'Kafka: thông lượng CỰC CAO, lưu log/stream, giữ message theo thời gian, replay được — hợp big data/event streaming. RabbitMQ: định tuyến linh hoạt (exchange/routing), độ trễ thấp, hợp hàng đợi tác vụ/微服务 truyền thống',
+      'Kafka: thông lượng CỰC CAO, lưu log/stream, giữ message theo thời gian, replay được — hợp big data/event streaming. RabbitMQ: định tuyến linh hoạt (exchange/routing), độ trễ thấp, hợp hàng đợi tác vụ/microservice truyền thống',
       'RabbitMQ nhanh hơn Kafka mọi mặt',
       'Không có khác biệt',
     ], answer: 1,

@@ -4559,7 +4559,7 @@ const redisQuiz = makeQuiz({
   mode: 'redis',
   bodyId: 'redis-body',
   bestKey: 'prep-redis-best',
-  resultMsg: pct => pct >= 80 ? 'Rất chắc Redis — tự tin vòng phỏng vấn cache/hệ phân tán!' : pct >= 50 ? 'Khá ổn — ôn thêm persistence, 3 vấn đề cache (穿透/击穿/雪崩) và khoá phân tán.' : 'Redis hay bị hỏi khi phỏng vấn Backend — đọc kỹ giải thích từng câu nhé.',
+  resultMsg: pct => pct >= 80 ? 'Rất chắc Redis — tự tin vòng phỏng vấn cache/hệ phân tán!' : pct >= 50 ? 'Khá ổn — ôn thêm persistence, 3 vấn đề cache (penetration/breakdown/avalanche) và khoá phân tán.' : 'Redis hay bị hỏi khi phỏng vấn Backend — đọc kỹ giải thích từng câu nhé.',
 });
 function renderRedisQuiz() { redisQuiz.render(); }
 

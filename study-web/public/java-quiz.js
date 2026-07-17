@@ -629,7 +629,7 @@ window.JAVA_QUIZ = [
   },
   // ---------- Java 8+ / Tính năng mới ----------
   {
-    id: 'java-new-record', topic: 'Java 新特性 / record',
+    id: 'java-new-record', topic: 'Java mới / record',
     q: '`record` (Java 16) khác class thường ra sao?',
     code: 'public record Point(int x, int y) {}',
     options: [
@@ -641,7 +641,7 @@ window.JAVA_QUIZ = [
     explain: 'record là "data carrier" bất biến: compiler tự sinh canonical constructor, accessor (x() thay vì getX()), equals/hashCode/toString dựa trên các component. Field final, không setter. Không kế thừa class khác (đã ngầm final), nhưng implements được interface. Hợp làm DTO, value object, key của Map. Thay cho lớp POJO dài dòng hoặc Lombok @Value.',
   },
   {
-    id: 'java-new-sealed', topic: 'Java 新特性 / sealed',
+    id: 'java-new-sealed', topic: 'Java mới / sealed',
     q: '`sealed` class/interface (Java 17) dùng để làm gì?',
     code: 'public sealed interface Shape permits Circle, Square {}',
     options: [
@@ -653,7 +653,7 @@ window.JAVA_QUIZ = [
     explain: 'sealed cho phép tác giả khai báo CHÍNH XÁC những class con được phép (permits). Lớp con phải là sealed / final / non-sealed. Lợi ích: mô hình hoá "tổng kiểu" (sum type) đóng, và compiler biết đủ mọi nhánh → switch pattern matching kiểm được exhaustive (không cần default). Hợp cho mô hình domain có tập biến thể cố định.',
   },
   {
-    id: 'java-new-switch', topic: 'Java 新特性 / switch',
+    id: 'java-new-switch', topic: 'Java mới / switch',
     q: 'Switch expression (Java 14) khác switch statement cũ thế nào?',
     code: 'int n = switch (day) {\n  case MON, TUE -> 1;\n  default -> 0;\n};',
     options: [
@@ -665,7 +665,7 @@ window.JAVA_QUIZ = [
     explain: 'Switch expression: là biểu thức TRẢ VỀ giá trị (gán được), dùng "->" nên KHÔNG fall-through (không cần break — nguồn bug kinh điển của switch cũ), gộp nhãn "case A, B ->", dùng yield cho block. Với enum/sealed phải phủ hết nhánh. An toàn & gọn hơn switch statement truyền thống nhiều.',
   },
   {
-    id: 'java-new-var', topic: 'Java 新特性 / var',
+    id: 'java-new-var', topic: 'Java mới / var',
     q: '`var` (Java 10) — suy luận kiểu — hoạt động thế nào?',
     code: 'var list = new ArrayList<String>();  // list là ArrayList<String>',
     options: [
@@ -677,7 +677,7 @@ window.JAVA_QUIZ = [
     explain: 'var KHÔNG biến Java thành dynamic typing — compiler suy ra kiểu tĩnh từ vế phải, sau đó kiểu cố định như khai báo tường minh (an toàn kiểu, không phí runtime). Chỉ dùng cho biến CỤC BỘ có khởi tạo. Không dùng: field, tham số, kiểu trả về, hay `var x = null` (không suy được). Lạm dụng làm code khó đọc → chỉ dùng khi kiểu đã hiển nhiên ở vế phải.',
   },
   {
-    id: 'java-new-vthread', topic: 'Java 新特性 / Virtual Thread',
+    id: 'java-new-vthread', topic: 'Java mới / Virtual Thread',
     q: 'Virtual thread (Java 21, Project Loom) giải quyết vấn đề gì?',
     options: [
       'Làm thread chạy nhanh hơn về tính toán',

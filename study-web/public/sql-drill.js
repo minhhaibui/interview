@@ -404,14 +404,14 @@ ON CONFLICT (key) DO UPDATE SET n = counters.n + 1;`,
   },
   {
     id: 'sql-idx-cluster', topic: 'MySQL / Index',
-    q: 'Clustered index (index gom cụm) của InnoDB là gì và “回表” (table lookback) nghĩa là?',
+    q: 'Clustered index (index gom cụm) của InnoDB là gì và “table lookback” (tra ngược bảng) nghĩa là?',
     options: [
       'Không có khái niệm này trong MySQL',
-      'Clustered = dữ liệu hàng được lưu NGAY tại lá của index khoá chính; index phụ (secondary) lá chỉ chứa khoá chính → phải tra khoá chính lần nữa để lấy đủ cột = “回表” (table lookback)',
+      'Clustered = dữ liệu hàng được lưu NGAY tại lá của index khoá chính; index phụ (secondary) lá chỉ chứa khoá chính → phải tra khoá chính lần nữa để lấy đủ cột = “table lookback” (tra ngược bảng)',
       'Clustered index là index trên nhiều bảng',
-      '回表 là thao tác xoá bảng',
+      'Table lookback là thao tác xoá bảng',
     ], answer: 1,
-    explain: 'InnoDB: bảng CHÍNH là clustered index theo khoá chính — lá chứa toàn bộ hàng. Secondary index lá chỉ lưu (giá trị index → khoá chính); muốn lấy cột khác phải dùng khoá chính tra clustered index lần nữa = 回表 (table lookback, tốn thêm I/O). Covering index (index chứa đủ cột cần) tránh được 回表. Đó là lý do khoá chính nên nhỏ & tăng dần (AUTO_INCREMENT), tránh UUID ngẫu nhiên gây tách trang.',
+    explain: 'InnoDB: bảng CHÍNH là clustered index theo khoá chính — lá chứa toàn bộ hàng. Secondary index lá chỉ lưu (giá trị index → khoá chính); muốn lấy cột khác phải dùng khoá chính tra clustered index lần nữa = table lookback (tốn thêm I/O). Covering index (index chứa đủ cột cần) tránh được lookback. Đó là lý do khoá chính nên nhỏ & tăng dần (AUTO_INCREMENT), tránh UUID ngẫu nhiên gây tách trang.',
   },
   {
     id: 'sql-idx-leftmost', topic: 'MySQL / Index',

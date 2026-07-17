@@ -1,7 +1,7 @@
 /**
  * Ngân hàng "☁️ Redis" — trắc nghiệm Redis CHUYÊN SÂU cho phỏng vấn Backend (theo khung JavaGuide).
  * Vì sao nhanh, kiểu dữ liệu, persistence (RDB/AOF), hết hạn & thu hồi bộ nhớ,
- * cache穿透/击穿/雪崩, khoá phân tán, đơn luồng, replication/sentinel/cluster, nhất quán cache-DB.
+ * cache penetration/breakdown/avalanche, khoá phân tán, đơn luồng, replication/sentinel/cluster, nhất quán cache-DB.
  *
  * Mỗi câu: { id, topic, q, options:[...], answer:idx, explain, cmd?:'...' (snippet lệnh Redis) }
  */
@@ -40,37 +40,37 @@ window.REDIS_QUIZ = [
     explain: 'RDB: chụp toàn bộ dataset thành file dump.rdb theo chu kỳ (fork process) — file nhỏ, khôi phục nhanh, hợp backup; nhược điểm mất dữ liệu từ snapshot cuối tới khi crash. AOF: append mỗi lệnh ghi vào log; appendfsync everysec (mặc định) mất tối đa ~1 giây; an toàn hơn nhưng file to & khôi phục chậm. Thực tế thường BẬT CẢ HAI: RDB để backup + AOF để an toàn (Redis 4+ có mixed persistence).',
   },
   {
-    id: 'redis-penetration', topic: 'Redis / Cache穿透',
-    q: 'Cache penetration (穿透) là gì và chống thế nào?',
+    id: 'redis-penetration', topic: 'Redis / Cache penetration',
+    q: 'Cache penetration là gì và chống thế nào?',
     options: [
       'Cache đầy bộ nhớ',
       'Truy vấn key KHÔNG TỒN TẠI cả ở cache lẫn DB (thường do tấn công) → mọi request đều xuống DB; chống bằng cache giá trị rỗng (null) có TTL ngắn hoặc Bloom filter chặn trước',
       'Nhiều key hết hạn cùng lúc',
       'Một hot key hết hạn',
     ], answer: 1,
-    explain: 'Cache穿透: liên tục hỏi key không tồn tại (id âm, id bịa) → cache luôn miss, DB gánh hết. Chống: (1) cache lại kết quả RỖNG (null) với TTL ngắn để lần sau chặn ở cache; (2) Bloom filter chứa tập id hợp lệ, hỏi trước — không có thì trả luôn, khỏi chạm DB. Kết hợp validate tham số đầu vào.',
+    explain: 'Cache penetration: liên tục hỏi key không tồn tại (id âm, id bịa) → cache luôn miss, DB gánh hết. Chống: (1) cache lại kết quả RỖNG (null) với TTL ngắn để lần sau chặn ở cache; (2) Bloom filter chứa tập id hợp lệ, hỏi trước — không có thì trả luôn, khỏi chạm DB. Kết hợp validate tham số đầu vào.',
   },
   {
-    id: 'redis-breakdown', topic: 'Redis / Cache击穿',
-    q: 'Cache breakdown (击穿) — một HOT KEY hết hạn khiến hàng loạt request đổ xuống DB. Cách xử lý?',
+    id: 'redis-breakdown', topic: 'Redis / Cache breakdown',
+    q: 'Cache breakdown — một HOT KEY hết hạn khiến hàng loạt request đổ xuống DB. Cách xử lý?',
     options: [
       'Xoá toàn bộ cache',
       'Dùng mutex (khoá phân tán): chỉ 1 request được build lại cache, số còn lại chờ; hoặc “logical expire” (không đặt TTL thật, làm mới nền)',
       'Không làm gì được',
       'Tăng RAM',
     ], answer: 1,
-    explain: 'Cache击穿: 1 key NÓNG hết hạn đúng lúc lượng truy cập cao → nghìn request cùng miss và cùng query DB (đè DB). Xử lý: (1) mutex/distributed lock — chỉ 1 thread rebuild cache, thread khác chờ hoặc trả giá trị cũ; (2) logical expiration — lưu kèm thời điểm hết hạn logic, không set TTL Redis, một luồng nền làm mới; (3) key nóng đặt “không bao giờ hết hạn”.',
+    explain: 'Cache breakdown: 1 key NÓNG hết hạn đúng lúc lượng truy cập cao → nghìn request cùng miss và cùng query DB (đè DB). Xử lý: (1) mutex/distributed lock — chỉ 1 thread rebuild cache, thread khác chờ hoặc trả giá trị cũ; (2) logical expiration — lưu kèm thời điểm hết hạn logic, không set TTL Redis, một luồng nền làm mới; (3) key nóng đặt “không bao giờ hết hạn”.',
   },
   {
-    id: 'redis-avalanche', topic: 'Redis / Cache雪崩',
-    q: 'Cache avalanche (雪崩) là gì và phòng ra sao?',
+    id: 'redis-avalanche', topic: 'Redis / Cache avalanche',
+    q: 'Cache avalanche là gì và phòng ra sao?',
     options: [
       'Một key hết hạn',
       'RẤT NHIỀU key hết hạn cùng thời điểm (hoặc Redis sập) → DB bị dồn tải đột ngột; phòng bằng TTL + ngẫu nhiên (jitter), Redis cụm/độ sẵn sàng cao, và lớp giảm tải (circuit breaker, hàng đợi)',
       'Cache bị tấn công bằng key giả',
       'Một hot key bị đọc nhiều',
     ], answer: 1,
-    explain: 'Cache雪崩: một loạt key hết hạn CÙNG LÚC (vd đặt cùng TTL) hoặc cả Redis sập → toàn bộ tải dồn xuống DB gây sập dây chuyền. Phòng: (1) TTL cộng thêm ngẫu nhiên (jitter) để rải thời điểm hết hạn; (2) Redis cluster/sentinel để không sập cả hệ; (3) circuit breaker / hạn dòng bảo vệ DB; (4) cache nhiều tầng.',
+    explain: 'Cache avalanche: một loạt key hết hạn CÙNG LÚC (vd đặt cùng TTL) hoặc cả Redis sập → toàn bộ tải dồn xuống DB gây sập dây chuyền. Phòng: (1) TTL cộng thêm ngẫu nhiên (jitter) để rải thời điểm hết hạn; (2) Redis cluster/sentinel để không sập cả hệ; (3) circuit breaker / hạn dòng bảo vệ DB; (4) cache nhiều tầng.',
   },
   {
     id: 'redis-expire', topic: 'Redis / Hết hạn',
