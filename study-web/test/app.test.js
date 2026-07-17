@@ -382,9 +382,11 @@ test('wiring: 📖 Gần đây trong sidebar — openDoc ghi prep-recent-docs (d
     'openDoc fail phải gỡ entry chết khỏi prep-recent-docs');
   assert.ok(/function applyPrepData[\s\S]{0,300}renderRecentDocs\(\)/.test(APP),
     'applyPrepData phải vẽ lại 📖 Gần đây (sidebar ngoài view, reapplyView không đụng)');
-  // task 📖 Đọc tiếp ở tab Hôm nay dùng chung docLabelOf
-  assert.ok(/id: 'td-read'[\s\S]{0,220}docLabelOf\(lastDoc\)[\s\S]{0,220}openDoc\(lastDoc\)/.test(APP),
-    'tab Hôm nay thiếu task td-read Đọc tiếp (docLabelOf + openDoc)');
+  // task 📖 Đọc tiếp ở tab Hôm nay: bài dở → mở lại; đã đọc xong → gợi ý bài KẾ TIẾP chưa đọc
+  assert.ok(/Đọc tiếp: \$\{docLabelOf\(lastDoc\)\}/.test(APP), 'td-read thiếu nhánh đọc tiếp bài dở');
+  assert.ok(/if \(readMap\[lastDoc\]\)[\s\S]{0,420}flat\.slice\(at \+ 1\)\.find\(i => !readMap\[i\.path\]\)[\s\S]{0,120}Bài tiếp theo/.test(APP),
+    'td-read thiếu nhánh học tuần tự bài kế chưa đọc');
+  assert.ok(/id: 'td-read'[\s\S]{0,120}openDoc\(target\)/.test(APP), 'td-read phải mở target');
   assert.ok(/function docLabelOf/.test(APP), 'thiếu helper docLabelOf dùng chung');
 });
 

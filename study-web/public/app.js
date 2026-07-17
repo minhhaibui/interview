@@ -776,11 +776,18 @@ async function renderToday() {
       s: `Mới ${weak.done}/${weak.total} câu — bấm để vào luyện ngay`,
       go: () => { switchView('coding'); setThinkMode(weak.mode); } });
   }
-  // 📖 Đọc tiếp bài đang dở — vào thẳng, khỏi lục sidebar
+  // 📖 Đọc tiếp bài đang dở — hoặc nếu bài đó ĐÃ đọc xong thì gợi ý bài KẾ TIẾP chưa đọc (học tuần tự)
   const lastDoc = store.get('prep-last-doc', null);
   if (lastDoc) {
-    tasks.push({ id: 'td-read', ic: '📖', t: `Đọc tiếp: ${docLabelOf(lastDoc)}`,
-      s: 'Bài tài liệu bạn mở gần nhất', go: () => { switchView('docs'); openDoc(lastDoc); } });
+    const readMap = store.get('prep-docs-read', {});
+    let target = lastDoc, tt = `Đọc tiếp: ${docLabelOf(lastDoc)}`, sub = 'Bài tài liệu bạn mở gần nhất';
+    if (readMap[lastDoc]) {
+      const flat = (Array.isArray(TREE) ? TREE : []).flatMap(g => g.items || []);
+      const at = flat.findIndex(i => i.path === lastDoc);
+      const nxt = flat.slice(at + 1).find(i => !readMap[i.path]) || flat.find(i => !readMap[i.path]);
+      if (nxt) { target = nxt.path; tt = `Bài tiếp theo: ${docLabelOf(nxt.path)}`; sub = 'Bài gần nhất đã đọc xong — học tuần tự bài kế'; }
+    }
+    tasks.push({ id: 'td-read', ic: '📖', t: tt, s: sub, go: () => { switchView('docs'); openDoc(target); } });
   }
   tasks.push({ id: 'td-think', ic: '🧠', t: 'Giải 1 bài luyện tư duy', s: 'Coding hoặc IQ', go: () => switchView('coding') });
   tasks.push({ id: 'td-mock', ic: '🎯', t: 'Mock interview nhanh', s: '5–10 câu ngẫu nhiên', go: () => switchView('mock') });
