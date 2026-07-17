@@ -1081,6 +1081,11 @@ async function openDoc(relPath, pushHash = true) {
 
   const content = document.getElementById('content');
   if (md === null) {
+    // currentDoc = null TRƯỚC khi thay nội dung: trang lỗi ngắn làm browser clamp scrollTop → bắn
+    // scroll event, không chặn thì listener mark oan bài đang đọc dở bằng chiều cao trang lỗi.
+    currentDoc = null;
+    // Dọn cả prep-last-doc nếu trỏ bài chết — kẻo task 📖 Đọc tiếp ở Hôm nay hiện mãi bài lỗi
+    if (store.get('prep-last-doc', null) === relPath) store.set('prep-last-doc', null);
     // Bài không còn tồn tại (đã xoá/đổi tên sau deploy) → gỡ khỏi 📖 Gần đây kẻo entry chết bấm mãi lỗi
     const rec = store.get('prep-recent-docs', []);
     if (rec.includes(relPath)) {
@@ -1104,14 +1109,17 @@ async function openDoc(relPath, pushHash = true) {
   content.innerHTML = `<div class="md">${html}</div>`;
   content.scrollTop = 0;
 
-  // 📗 đã đọc: bài ngắn hiện trọn không cần cuộn → tính luôn; bài dài chờ cuộn ≥90% (listener gắn 1 lần)
+  // 📗 đã đọc: bài ngắn hiện trọn không cần cuộn → tính luôn; bài dài chờ cuộn TỚI ĐÁY (chừa 40px).
+  // clientHeight > 0 bắt buộc: lúc init openDoc chạy khi tab khác đang active → #content display:none
+  // → scrollHeight = clientHeight = 0 mà không check thì bài dài nào cũng bị mark oan mỗi lần reload.
   if (!openDoc._readBound) {
     openDoc._readBound = true;
     content.addEventListener('scroll', () => {
-      if (currentDoc && content.scrollTop + content.clientHeight >= content.scrollHeight * 0.9) markDocRead(currentDoc);
+      if (currentDoc && content.clientHeight > 0 &&
+          content.scrollTop + content.clientHeight >= content.scrollHeight - 40) markDocRead(currentDoc);
     }, { passive: true });
   }
-  if (content.scrollHeight <= content.clientHeight + 40) markDocRead(relPath);
+  if (content.clientHeight > 0 && content.scrollHeight <= content.clientHeight + 40) markDocRead(relPath);
 
   // Syntax highlight
   if (window.hljs) content.querySelectorAll('pre code').forEach(el => { try { hljs.highlightElement(el); } catch {} });
@@ -3926,8 +3934,10 @@ function renderDashboard() {
   // 📗 Tiến độ đọc tài liệu (đánh dấu tự động khi cuộn hết bài)
   const readEl = document.getElementById('dash-docs-read');
   if (readEl) {
-    const total = (Array.isArray(TREE) ? TREE : []).reduce((s, g) => s + (g.items || []).length, 0);
-    const readN = Math.min(Object.keys(store.get('prep-docs-read', {})).length, total);
+    // chỉ đếm bài CÒN trong tree — path chết (bài đã xoá) không được cộng, khớp với badge x/y ở sidebar
+    const livePaths = new Set((Array.isArray(TREE) ? TREE : []).flatMap(g => (g.items || []).map(i => i.path)));
+    const total = livePaths.size;
+    const readN = Object.keys(store.get('prep-docs-read', {})).filter(p => livePaths.has(p)).length;
     readEl.innerHTML = total ? `
       <span class="dc-label">📗 Tài liệu đã đọc</span>
       <div class="bar"><div class="bar-fill" style="width:${Math.round(readN / total * 100)}%"></div></div>
@@ -5000,7 +5010,7 @@ const EXAM_STATE_KEY = 'prep-exam-state';
 function saveExamState() {
   if (!examEndMs) return;
   store.set(EXAM_STATE_KEY, {
-    endMs: examEndMs, durSec: examDurSec, sprint: examSprint, idx: examIdx,
+    endMs: examEndMs, durSec: examDurSec, sprint: examSprint, scope: examScope, idx: examIdx,
     answers: examAnswers, // chỉ chứa các câu đã qua (đáp án hoặc null-bỏ-qua) → JSON không phá undefined
     items: examQueue.map(it => ({ m: it.mode, id: it.q.id })),
     uid: (syncReady && fbUser) ? fbUser.uid : null, // bài của ai — chống rò bài dở giữa 2 tài khoản cùng máy
@@ -5055,6 +5065,7 @@ function restoreExamState() {
   examDurSec = s.durSec || 0;
   examEndMs = s.endMs;
   examSprint = !!s.sprint;
+  examScope = s.scope || '';
   return true; // quá hạn thì showExamQ → tickExam tự nộp ngay như bài bỏ dở thường
 }
 
@@ -5117,7 +5128,7 @@ function renderExam() {
   const hist = examHistory();
   const best = hist.length ? Math.max(...hist.map(h => h.pct)) : 0;
   const rows = hist.slice(-5).reverse().map(h =>
-    `<li>${h.pct >= 80 ? '🌟' : h.pct >= 50 ? '👍' : '📚'} ${h.sprint ? '🔥 ' : ''}<b>${h.right}/${h.n}</b> (${h.pct}%) · ${fmtClock(h.secs)}${h.timeout ? ' · ⏰ hết giờ' : ''}</li>`).join('');
+    `<li>${h.pct >= 80 ? '🌟' : h.pct >= 50 ? '👍' : '📚'} ${h.sprint ? '🔥 ' : ''}${h.scope && QUIZ_MODES[h.scope] ? QUIZ_MODES[h.scope].label + ' · ' : ''}<b>${h.right}/${h.n}</b> (${h.pct}%) · ${fmtClock(h.secs)}${h.timeout ? ' · ⏰ hết giờ' : ''}</li>`).join('');
   el.innerHTML = `
     <div class="oq-start">
       ${hist.length ? `<p>Đã thi <b>${hist.length}</b> lần · điểm cao nhất <b>${best}%</b>.</p><ul class="exam-hist">${rows}</ul>` : '<p>Chưa thi lần nào — làm một đề để biết mình đang ở đâu nhé.</p>'}
@@ -5136,6 +5147,8 @@ function renderExam() {
         <button id="exam-go-sprint" class="dg-go dg-link" title="Chia câu theo độ yếu từng mảng: độ phủ thấp + đang sai nhiều được hỏi nhiều hơn; ưu tiên câu đang sai và câu chưa từng làm đúng">🔥 Nước rút 15 câu · 10 phút — dồn vào mảng yếu</button>
       </div>
     </div>`;
+  const sel = document.getElementById('exam-mode');
+  if (sel && examScope && [...sel.options].some(o => o.value === examScope)) sel.value = examScope; // giữ lựa chọn giữa các lượt
   const scopeOf = () => document.getElementById('exam-mode')?.value || '';
   document.getElementById('exam-go-20').onclick = () => startExam(20, 15, false, scopeOf());
   document.getElementById('exam-go-10').onclick = () => startExam(10, 7, false, scopeOf());
@@ -5143,8 +5156,10 @@ function renderExam() {
 }
 
 let examSprint = false; // đề đang thi có phải nước rút không (ghi vào lịch sử lúc nộp)
+let examScope = '';     // mảng của đề đang thi ('' = mọi mảng) — ghi vào lịch sử để phân biệt đề chuyên đề
 function startExam(n, mins, sprint, onlyMode) {
   examSprint = !!sprint;
+  examScope = sprint ? '' : (onlyMode || '');
   examQueue = sprint ? buildSprintExamQueue(n) : buildExamQueue(n, onlyMode);
   if (!examQueue.length) { renderExam(); return; }
   examIdx = 0; examAnswers = [];
@@ -5228,7 +5243,7 @@ function finishExam(timedOut) {
   const pct = Math.round(right / total * 100);
   const hist = examHistory();
   // modes: phân bố đúng/tổng theo mảng — nguồn cho đồ thị trend từng mảng & nút copy chia sẻ
-  const entry = { d: Date.now(), n: total, right, pct, secs, timeout: !!timedOut, sprint: examSprint, modes: byMode };
+  const entry = { d: Date.now(), n: total, right, pct, secs, timeout: !!timedOut, sprint: examSprint, scope: examScope, modes: byMode };
   hist.push(entry);
   store.set('prep-exam-history', hist.slice(-30));
   logActivity();

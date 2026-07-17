@@ -378,7 +378,7 @@ test('wiring: 📖 Gần đây trong sidebar — openDoc ghi prep-recent-docs (d
   assert.ok(/function loadTree[\s\S]{0,1600}renderRecentDocs\(\);/.test(APP), 'loadTree phải gọi renderRecentDocs sau khi dựng tree');
   assert.ok(/PREP_KEYS = \[[^\]]*'prep-recent-docs'/.test(APP), 'PREP_KEYS thiếu prep-recent-docs (export/sync/reset)');
   // entry chết tự gỡ khi mở fail + sync/import từ máy khác phải vẽ lại nhóm
-  assert.ok(/if \(md === null\) \{[\s\S]{0,420}rec\.filter\(p => p !== relPath\)[\s\S]{0,120}renderRecentDocs\(\)/.test(APP),
+  assert.ok(/if \(md === null\) \{[\s\S]{0,800}rec\.filter\(p => p !== relPath\)[\s\S]{0,120}renderRecentDocs\(\)/.test(APP),
     'openDoc fail phải gỡ entry chết khỏi prep-recent-docs');
   assert.ok(/function applyPrepData[\s\S]{0,300}renderRecentDocs\(\)/.test(APP),
     'applyPrepData phải vẽ lại 📖 Gần đây (sidebar ngoài view, reapplyView không đụng)');
@@ -390,10 +390,18 @@ test('wiring: 📖 Gần đây trong sidebar — openDoc ghi prep-recent-docs (d
 
 test('wiring: 📗 đánh dấu bài đã đọc — cuộn ≥90% hoặc bài ngắn, ✓ sidebar, sync đủ', () => {
   assert.ok(/function markDocRead/.test(APP) && /function refreshReadMarks/.test(APP), 'thiếu markDocRead/refreshReadMarks');
-  assert.ok(/content\.scrollTop \+ content\.clientHeight >= content\.scrollHeight \* 0\.9/.test(APP),
-    'thiếu điều kiện cuộn ≥90% đánh dấu đã đọc');
-  assert.ok(/content\.scrollHeight <= content\.clientHeight \+ 40\) markDocRead\(relPath\)/.test(APP),
-    'bài ngắn hiện trọn phải được tính đã đọc luôn');
+  // clientHeight > 0 BẮT BUỘC ở cả 2 nhánh: openDoc chạy lúc #content display:none (init đậu tab khác)
+  // thì scrollHeight=clientHeight=0 → không guard là bài dài bị mark oan mỗi lần reload (bug HIGH QA 17/07)
+  assert.ok(/currentDoc && content\.clientHeight > 0 &&[\s\S]{0,90}content\.scrollTop \+ content\.clientHeight >= content\.scrollHeight - 40/.test(APP),
+    'listener cuộn phải guard clientHeight>0 và đo chạm đáy (chừa 40px)');
+  assert.ok(/content\.clientHeight > 0 && content\.scrollHeight <= content\.clientHeight \+ 40\) markDocRead\(relPath\)/.test(APP),
+    'check bài ngắn phải guard clientHeight>0');
+  // fail path phải vô hiệu currentDoc + dọn prep-last-doc chết (chặn mark oan bài dở + task Đọc tiếp lỗi mãi)
+  assert.ok(/if \(md === null\) \{[\s\S]{0,320}currentDoc = null;[\s\S]{0,320}store\.set\('prep-last-doc', null\)/.test(APP),
+    'openDoc fail phải set currentDoc=null và dọn prep-last-doc chết');
+  // Dashboard chỉ đếm bài còn sống trong tree (khớp badge sidebar)
+  assert.ok(/livePaths[\s\S]{0,220}filter\(p => livePaths\.has\(p\)\)/.test(APP),
+    'dash-docs-read phải lọc path chết bằng livePaths');
   assert.ok(/PREP_KEYS = \[[^\]]*'prep-docs-read'/.test(APP), 'PREP_KEYS thiếu prep-docs-read');
   assert.ok(/function applyPrepData[\s\S]{0,400}refreshReadMarks\(\)/.test(APP), 'applyPrepData phải refresh ✓ đã đọc');
   const CSS = read('styles.css');
@@ -417,6 +425,11 @@ test('wiring: 🎓 thi thử theo 1 mảng — select exam-mode + buildExamQueue
     'nút thi 20 câu phải truyền scope');
   assert.ok(/exam-go-sprint'\)\.onclick = \(\) => startExam\(15, 10, true\)/.test(APP),
     'nước rút KHÔNG nhận scope (luôn trộn theo độ yếu)');
+  // scope ghi vào lịch sử + state bài dở + giữ lựa chọn giữa các lượt renderExam
+  assert.ok(/sprint: examSprint, scope: examScope, modes: byMode/.test(APP), 'history entry thiếu scope');
+  assert.ok(/scope: examScope, idx: examIdx/.test(APP) && /examScope = s\.scope \|\| ''/.test(APP),
+    'saveExamState/restore thiếu scope');
+  assert.ok(/sel\.value = examScope/.test(APP), 'renderExam phải khôi phục scope đã chọn');
   const CSS = read('styles.css');
   assert.ok(CSS.includes('.exam-scope'), 'styles.css thiếu .exam-scope');
 });
