@@ -428,6 +428,14 @@ test('wiring: 📗 đánh dấu bài đã đọc — cuộn ≥90% hoặc bài n
     'thanh docs-read phải dùng chung layout flex 1 dòng với capstone (từng vỡ 3 dòng)');
 });
 
+test('wiring: 📑 mục lục bài — ≥3 h2 gắn details.doc-toc, click scrollIntoView + tự đóng', () => {
+  const seg = APP.slice(APP.indexOf("toc.className = 'doc-toc'") - 300, APP.indexOf("toc.className = 'doc-toc'") + 800);
+  assert.ok(seg.includes('heads.length >= 3') && seg.includes("h.scrollIntoView({ block: 'start' })") &&
+    seg.includes('toc.open = false') && seg.includes('b.textContent = h.textContent'),
+    'doc-toc thiếu wiring (ngưỡng 3 h2 / scroll / tự đóng / textContent chống XSS)');
+  assert.ok(read('styles.css').includes('.doc-toc'), 'styles.css thiếu .doc-toc');
+});
+
 test('wiring: 🔖 nhớ vị trí đọc dở từng bài — lưu idle 400ms localStorage thẳng (không sync), mở lại nhảy đúng chỗ', () => {
   assert.ok(/openDoc\._posT = setTimeout[\s\S]{0,320}pos\[currentDoc\] = content\.scrollTop[\s\S]{0,120}localStorage\.setItem\('prep-doc-scroll'/.test(APP),
     'thiếu lưu vị trí cuộn debounce vào prep-doc-scroll (localStorage thẳng, không qua store.set)');

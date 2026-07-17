@@ -1214,6 +1214,23 @@ async function openDoc(relPath, pushHash = true) {
   const detailsCount = content.querySelectorAll('details').length;
   if (detailsCount > 0) attachQuizMode(content.querySelector('.md'), relPath, detailsCount);
 
+  // 📑 Mục lục bài — bài có ≥3 mục h2 thì gắn accordion nhảy nhanh giữa các phần
+  const heads = [...content.querySelectorAll('.md h2')];
+  if (heads.length >= 3) {
+    const toc = document.createElement('details');
+    toc.className = 'doc-toc';
+    toc.innerHTML = `<summary>📑 Mục lục (${heads.length} phần)</summary>`;
+    heads.forEach(h => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'doc-toc-item';
+      b.textContent = h.textContent;
+      b.onclick = () => { h.scrollIntoView({ block: 'start' }); toc.open = false; };
+      toc.appendChild(b);
+    });
+    content.querySelector('.md').prepend(toc);
+  }
+
   // ◀▶ Điều hướng bài trước / bài tiếp theo thứ tự sidebar — học tuần tự khỏi quay lại menu
   const flat = (Array.isArray(TREE) ? TREE : []).flatMap(g => g.items || []);
   const at = flat.findIndex(i => i.path === relPath);
