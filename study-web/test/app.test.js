@@ -462,6 +462,13 @@ test('wiring: 📝 ghi chú cá nhân theo bài — textarea tự lưu prep-doc-
   assert.ok(/openDoc\._noteFlush = \(\) => \{ if \(ta\._t\) saveNote\(\); \}/.test(APP) &&
     /openDoc\._noteFlush\?\.\(\);/.test(APP),
     'openDoc phải flush note đang gõ dở của bài cũ trước khi chuyển bài');
+  // Các fix QA 22/07: sync cloud không đè note đang gõ, pagehide flush, chống kiểu dữ liệu hỏng
+  assert.ok(/openDoc\._noteSync = \(\) => \{[\s\S]{0,220}document\.activeElement === ta/.test(APP) &&
+    /openDoc\._noteSync\?\.\(\);/.test(APP.slice(APP.indexOf('function applyPrepData'))),
+    'applyPrepData phải gọi openDoc._noteSync (guard đang gõ) — kẻo save đè bản mới máy khác (QA H1)');
+  assert.ok(/pagehide.*openDoc\._noteFlush/.test(APP), 'phải flush note khi pagehide (QA M2)');
+  assert.ok(seg.includes("String(store.get('prep-doc-notes', {})[relPath] ?? '')"),
+    'giá trị note phải qua String() — blob hỏng kiểu không được làm .trim() throw (QA L1)');
   assert.ok(/'prep-doc-notes'\]/.test(APP) || /'prep-doc-notes'/.test(APP.slice(APP.indexOf('PREP_KEYS'))),
     'prep-doc-notes phải nằm trong PREP_KEYS để export/sync cloud');
   assert.ok(read('styles.css').includes('.doc-note-ta'), 'styles.css thiếu .doc-note-ta');
@@ -535,6 +542,8 @@ test('wiring: 🔔 nhắc giờ học hằng ngày — input time tab Hôm nay, 
     seg.includes("localStorage.getItem('prep-remind-last') === k") &&
     seg.includes('pomoNotify('),
     'initStudyReminder thiếu đọc giờ / guard đã-nhắc-hôm-nay / Notification');
+  assert.ok(seg.includes('if (cur < t) return;') && !seg.includes('cur !== t'),
+    'reminder phải so "đã qua giờ" (cur < t) — máy ngủ nhảy qua phút hẹn vẫn nhắc bù (QA M1)');
   assert.ok(/initStudyReminder\(\);/.test(APP), 'init phải gọi initStudyReminder');
   assert.ok(APP.includes('id="td-remind"') && APP.includes("getElementById('td-remind')"),
     'tab Hôm nay thiếu input 🔔 td-remind');

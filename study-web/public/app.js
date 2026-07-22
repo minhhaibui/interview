@@ -140,6 +140,9 @@ function initStudyTimer() {
   setInterval(() => {
     if (document.visibilityState !== 'visible') return; // tab nền không tính
     if (Date.now() - lastActive > 120000) return;       // AFK >2 phút không tính
+    // 2 cửa sổ cùng visible → chỉ cửa sổ tick trước cộng, khỏi đếm đôi cùng 1 phút
+    if (Date.now() - (+localStorage.getItem('prep-study-tick') || 0) < 55000) return;
+    localStorage.setItem('prep-study-tick', String(Date.now()));
     const t = studyTimeMap();
     const k = dayKey(new Date());
     t[k] = (t[k] || 0) + 1;
@@ -157,7 +160,8 @@ function initStudyReminder() {
     if (!t) return;
     const now = new Date();
     const cur = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    if (cur !== t) return;
+    // So "đã qua giờ hẹn" thay vì khớp đúng phút — máy ngủ/tab bị throttle nhảy qua phút đó vẫn nhắc bù
+    if (cur < t) return;
     const k = dayKey(now);
     if (localStorage.getItem('prep-remind-last') === k) return; // hôm nay nhắc rồi
     localStorage.setItem('prep-remind-last', k);
@@ -1333,12 +1337,13 @@ async function openDoc(relPath, pushHash = true) {
     noteBox.className = 'doc-note';
     const sum = document.createElement('summary');
     const updSum = has => { sum.textContent = has ? '📝 Ghi chú của tôi ●' : '📝 Ghi chú của tôi'; };
-    updSum(!!(store.get('prep-doc-notes', {})[relPath] || '').trim());
+    const noteOf = () => String(store.get('prep-doc-notes', {})[relPath] ?? ''); // String(): blob cloud/import hỏng kiểu không làm .trim() throw
+    updSum(!!noteOf().trim());
     noteBox.appendChild(sum);
     const ta = document.createElement('textarea');
     ta.className = 'doc-note-ta';
     ta.placeholder = 'Ghi lại điều cần nhớ về bài này… (tự lưu)';
-    ta.value = store.get('prep-doc-notes', {})[relPath] || '';
+    ta.value = noteOf();
     const saveNote = () => {
       clearTimeout(ta._t);
       ta._t = null;
@@ -1351,6 +1356,13 @@ async function openDoc(relPath, pushHash = true) {
     };
     ta.addEventListener('input', () => { clearTimeout(ta._t); ta._t = setTimeout(saveNote, 600); });
     openDoc._noteFlush = () => { if (ta._t) saveNote(); }; // chỉ flush khi đang có thay đổi chờ lưu
+    // Cloud pull đổi prep-doc-notes trong lúc bài đang mở → làm tươi textarea, TRỪ khi đang gõ dở
+    // (không refresh thì user gõ thêm 1 ký tự là save đè bản cũ lên bản mới của máy kia — mất dữ liệu)
+    openDoc._noteSync = () => {
+      if (ta._t || document.activeElement === ta || !document.body.contains(ta)) return;
+      const v = noteOf();
+      if (ta.value !== v) { ta.value = v; updSum(!!v.trim()); }
+    };
     noteBox.appendChild(ta);
     content.querySelector('.md').appendChild(noteBox);
   }
@@ -4119,7 +4131,7 @@ function renderNotes() {
   const wrap = document.getElementById('dash-notes');
   if (!wrap) return;
   const notes = store.get('prep-doc-notes', {});
-  const entries = Object.entries(notes).filter(([, v]) => (v || '').trim());
+  const entries = Object.entries(notes).map(([p, v]) => [p, String(v ?? '')]).filter(([, v]) => v.trim());
   if (!entries.length) {
     wrap.innerHTML = '<p style="color:var(--muted)">Chưa có ghi chú — mở một bài đọc rồi viết vào ô 📝 cuối bài nhé.</p>';
     return;
@@ -4150,6 +4162,7 @@ function renderNotes() {
     openDoc(b.dataset.path);
   }));
   wrap.querySelectorAll('.note-del').forEach(b => b.addEventListener('click', () => {
+    if (!confirm('Xoá ghi chú này? (xoá là mất luôn, không hoàn tác được)')) return;
     const all = store.get('prep-doc-notes', {});
     delete all[b.dataset.path];
     store.set('prep-doc-notes', all);
@@ -6647,7 +6660,7 @@ function renderGsResults() {
   gsHits = gsSearch(qstr);
   // 📝 khớp trong ghi chú cá nhân — tính LIVE mỗi lần gõ (không nhét vào gsIndex cache vì note đổi liên tục)
   const nTerms = gsNorm(qstr).split(/\s+/).filter(Boolean);
-  const noteHits = Object.entries(store.get('prep-doc-notes', {})).filter(([p, v]) =>
+  const noteHits = Object.entries(store.get('prep-doc-notes', {})).map(([p, v]) => [p, String(v ?? '')]).filter(([p, v]) =>
     nTerms.length && nTerms.every(t => gsNorm(v + ' ' + docLabelOf(p)).includes(t))).slice(0, 5)
     .map(([p, v]) => ({ badge: '📝 Ghi chú', title: docLabelOf(p),
       sub: v.trim().replace(/\s+/g, ' ').slice(0, 90),
@@ -6756,6 +6769,7 @@ function applyPrepData(data) {
   PREP_KEYS.forEach(k => { if (k in data) localStorage.setItem(k, JSON.stringify(data[k])); });
   renderRecentDocs(); // 📖 Gần đây nằm ở sidebar (ngoài view) — reapplyView không vẽ lại nó
   refreshReadMarks(); // 📗 ✓ đã đọc cũng vậy
+  openDoc._noteSync?.(); // 📝 textarea note của bài đang mở cũng ngoài tầm reapplyView
 }
 function localUpdatedAt() { return store.get('prep-sync-meta', { updatedAt: 0 }).updatedAt || 0; }
 function setLocalUpdatedAt(at) {
@@ -7190,6 +7204,8 @@ function toggleShortcuts() { shortcutsOpen() ? closeShortcuts() : openShortcuts(
   initPomodoro();
   initStudyTimer();
   initStudyReminder();
+  // Đóng tab/F5 khi debounce note 600ms chưa nổ → chốt ngay kẻo mất đoạn vừa gõ
+  window.addEventListener('pagehide', () => openDoc._noteFlush?.());
   initSidebarToggle();
   initShortcuts();
   initGSearch();
