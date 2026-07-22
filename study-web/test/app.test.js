@@ -469,7 +469,7 @@ test('wiring: 📝 ghi chú cá nhân theo bài — textarea tự lưu prep-doc-
 
 test('wiring: 📝 panel ghi chú Dashboard + chấm noted trên sidebar', () => {
   assert.ok(read('index.html').includes('id="dash-notes"'), 'index.html thiếu #dash-notes');
-  const seg = APP.slice(APP.indexOf('function renderNotes'), APP.indexOf('function renderNotes') + 1600);
+  const seg = APP.slice(APP.indexOf('function renderNotes'), APP.indexOf('function renderDashboard'));
   assert.ok(seg.includes("getElementById('dash-notes')") &&
     seg.includes('escHtml(docLabelOf(p))') && seg.includes('escHtml(snip.slice(0, 140))'),
     'renderNotes phải escape label + snippet (chống XSS từ nội dung note)');
@@ -493,6 +493,17 @@ test('wiring: 📝 ghi chú vào tìm kiếm toàn cục — tính live, không 
   const bgi = APP.slice(APP.indexOf('function buildGsIndex'), APP.indexOf('function gsSearch'));
   assert.ok(bgi.length > 0 && !bgi.includes('prep-doc-notes'),
     'KHÔNG được đưa note vào gsIndex cache (note đổi liên tục, index build 1 lần)');
+});
+
+test('wiring: 📤 xuất ghi chú ra markdown từ panel Dashboard', () => {
+  const seg = APP.slice(APP.indexOf('function renderNotes'), APP.indexOf('function renderDashboard'));
+  assert.ok(seg.includes('id="notes-export"') && seg.includes("getElementById('notes-export')"),
+    'panel notes thiếu nút 📤 Xuất .md');
+  assert.ok(seg.includes("type: 'text/markdown'") &&
+    seg.includes('`## ${docLabelOf(p)}') &&
+    seg.includes('ghi-chu-${dayKey(new Date())}.md'),
+    'export phải sinh markdown theo H2 từng bài + tên file có ngày');
+  assert.ok(seg.includes('URL.revokeObjectURL(a.href)'), 'export phải revoke blob URL');
 });
 
 test('wiring: ↑ nút nổi lên đầu bài — hiện khi cuộn >600px, nằm trong view-docs, reset khi mở bài mới', () => {

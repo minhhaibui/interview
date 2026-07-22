@@ -4064,7 +4064,10 @@ function renderNotes() {
     wrap.innerHTML = '<p style="color:var(--muted)">Chưa có ghi chú — mở một bài đọc rồi viết vào ô 📝 cuối bài nhé.</p>';
     return;
   }
-  wrap.innerHTML = entries.map(([p, v]) => {
+  wrap.innerHTML = `<div class="mw-head">
+      <span>Có <b>${entries.length}</b> ghi chú</span>
+      <button type="button" id="notes-export" class="mw-review" title="Tải toàn bộ ghi chú về file markdown">📤 Xuất .md</button>
+    </div>` + entries.map(([p, v]) => {
     const snip = v.trim().replace(/\s+/g, ' ');
     return `
     <div class="note-row">
@@ -4073,6 +4076,15 @@ function renderNotes() {
       <button type="button" class="note-del" data-path="${escHtml(p)}" title="Xoá ghi chú này">🗑</button>
     </div>`;
   }).join('');
+  document.getElementById('notes-export')?.addEventListener('click', () => {
+    const md = '# 📝 Ghi chú của tôi — Backend Interview Prep\n\n' +
+      entries.map(([p, v]) => `## ${docLabelOf(p)}\n\n> ${p}\n\n${v.trim()}\n`).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
+    a.download = `ghi-chu-${dayKey(new Date())}.md`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
   wrap.querySelectorAll('.note-open').forEach(b => b.addEventListener('click', () => {
     switchView('docs');
     openDoc(b.dataset.path);
