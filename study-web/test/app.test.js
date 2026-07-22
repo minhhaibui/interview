@@ -529,6 +529,21 @@ test('wiring: ⏱ đồ thị phút học 14 ngày ở Dashboard', () => {
     'renderCharts phải vẽ chart phút học từ prep-study-time cùng khung 14 ngày với chart lượt học');
 });
 
+test('wiring: 🔔 nhắc giờ học hằng ngày — input time tab Hôm nay, chống nhắc trùng trong ngày', () => {
+  const seg = APP.slice(APP.indexOf('function initStudyReminder'), APP.indexOf('/** Ghi nhận một lượt học'));
+  assert.ok(seg.includes("store.get('prep-remind-time', '')") &&
+    seg.includes("localStorage.getItem('prep-remind-last') === k") &&
+    seg.includes('pomoNotify('),
+    'initStudyReminder thiếu đọc giờ / guard đã-nhắc-hôm-nay / Notification');
+  assert.ok(/initStudyReminder\(\);/.test(APP), 'init phải gọi initStudyReminder');
+  assert.ok(APP.includes('id="td-remind"') && APP.includes("getElementById('td-remind')"),
+    'tab Hôm nay thiếu input 🔔 td-remind');
+  assert.ok(APP.includes("Notification.permission === 'default')\n      Notification.requestPermission()"),
+    'đặt giờ nhắc phải xin quyền Notification nếu chưa hỏi');
+  assert.ok(APP.slice(APP.indexOf('const PREP_KEYS')).slice(0, 2200).includes('prep-remind-time'),
+    'prep-remind-time phải trong PREP_KEYS (sync cloud, đổi hiếm)');
+});
+
 test('wiring: ↑ nút nổi lên đầu bài — hiện khi cuộn >600px, nằm trong view-docs, reset khi mở bài mới', () => {
   const seg = APP.slice(APP.indexOf("tb.id = 'doc-top'") - 200, APP.indexOf("tb.id = 'doc-top'") + 900);
   assert.ok(seg.includes("appendChild(tb)") && seg.includes('content.scrollTop < 600') &&

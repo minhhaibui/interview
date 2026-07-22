@@ -149,6 +149,23 @@ function initStudyTimer() {
   }, 60000);
 }
 
+/** 🔔 Nhắc giờ học hằng ngày — chỉ báo được khi app đang mở (web thuần không có push server).
+ *  Giờ đặt ở tab Hôm nay (prep-remind-time, sync cloud); ngày đã nhắc lưu localStorage thẳng. */
+function initStudyReminder() {
+  setInterval(() => {
+    const t = store.get('prep-remind-time', '');
+    if (!t) return;
+    const now = new Date();
+    const cur = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    if (cur !== t) return;
+    const k = dayKey(now);
+    if (localStorage.getItem('prep-remind-last') === k) return; // hôm nay nhắc rồi
+    localStorage.setItem('prep-remind-last', k);
+    pomoNotify('🔔 Đến giờ học rồi!', 'Vào ôn một chút giữ chuỗi 🔥 nhé.');
+    toast('🔔 Đến giờ học rồi — làm vài lượt giữ chuỗi 🔥 nhé!');
+  }, 30000);
+}
+
 /** Ghi nhận một lượt học vào heatmap hoạt động */
 function logActivity(n = 1) {
   const acts = store.get('prep-activity', {});
@@ -844,6 +861,8 @@ async function renderToday() {
           <select id="td-goal-sel">
             ${[10, 20, 30, 50, 80].map(g => `<option value="${g}" ${g === goal ? 'selected' : ''}>${g} lượt</option>`).join('')}
           </select>
+          <span title="Báo Notification khi tới giờ (lúc app đang mở)">🔔 Nhắc học</span>
+          <input type="time" id="td-remind" value="${escHtml(store.get('prep-remind-time', ''))}">
         </div>
       </div>
     </div>
@@ -879,6 +898,12 @@ async function renderToday() {
     const newPct = newGoal ? Math.min(100, Math.round(todayN / newGoal * 100)) : 0;
     document.querySelector('.td-ring-wrap').innerHTML =
       `${goalRing(newPct)}<span class="td-ring-label"><b>${todayN}</b><small>/ ${newGoal}</small></span>`;
+  };
+  document.getElementById('td-remind').onchange = (e) => {
+    store.set('prep-remind-time', e.target.value);
+    if (e.target.value && 'Notification' in window && Notification.permission === 'default')
+      Notification.requestPermission();
+    toast(e.target.value ? `🔔 Sẽ nhắc học lúc ${e.target.value} mỗi ngày (khi app đang mở)` : 'Đã tắt nhắc học');
   };
   tasks.forEach(t => document.getElementById(t.id)?.addEventListener('click', t.go));
   body.querySelectorAll('.td-sprint-row').forEach(b =>
@@ -3670,7 +3695,7 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-en-done', 'prep-sit-done', 'prep-readiness-log',
   'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date',
   'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned', 'prep-exam-history', 'prep-fc-lang',
-  'prep-doc-notes'];
+  'prep-doc-notes', 'prep-remind-time'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */
@@ -7164,6 +7189,7 @@ function toggleShortcuts() { shortcutsOpen() ? closeShortcuts() : openShortcuts(
   initTheme();
   initPomodoro();
   initStudyTimer();
+  initStudyReminder();
   initSidebarToggle();
   initShortcuts();
   initGSearch();
