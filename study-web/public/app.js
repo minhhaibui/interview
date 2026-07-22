@@ -125,6 +125,30 @@ function filterDeck(week, deck = DECK) {
   return week ? deck.filter(c => c.week === week) : [...deck];
 }
 
+// ---------- ⏱️ Thời gian học thực tế (phút active mỗi ngày) ----------
+// localStorage THẲNG như prep-doc-scroll — cộng dồn mỗi phút, đưa vào PREP_KEYS sẽ spam push cloud 1 lần/phút
+function studyTimeMap() {
+  try { return JSON.parse(localStorage.getItem('prep-study-time') || '{}'); } catch { return {}; }
+}
+const studyMinutesToday = () => studyTimeMap()[dayKey(new Date())] || 0;
+const fmtStudyTime = min => min >= 60 ? `${Math.floor(min / 60)}h${String(min % 60).padStart(2, '0')}` : `${min}p`;
+function initStudyTimer() {
+  let lastActive = Date.now();
+  const bump = () => { lastActive = Date.now(); };
+  ['pointerdown', 'keydown', 'wheel', 'touchstart', 'scroll'].forEach(ev =>
+    document.addEventListener(ev, bump, { passive: true, capture: true })); // capture: scroll trong #content không bubble
+  setInterval(() => {
+    if (document.visibilityState !== 'visible') return; // tab nền không tính
+    if (Date.now() - lastActive > 120000) return;       // AFK >2 phút không tính
+    const t = studyTimeMap();
+    const k = dayKey(new Date());
+    t[k] = (t[k] || 0) + 1;
+    const keys = Object.keys(t).sort();
+    while (keys.length > 60) delete t[keys.shift()]; // giữ 60 ngày
+    localStorage.setItem('prep-study-time', JSON.stringify(t));
+  }, 60000);
+}
+
 /** Ghi nhận một lượt học vào heatmap hoạt động */
 function logActivity(n = 1) {
   const acts = store.get('prep-activity', {});
@@ -811,7 +835,7 @@ async function renderToday() {
         <p class="td-streak">${streak
           ? `Đang giữ chuỗi <b>${streak} ngày</b> liên tiếp${todayN ? '' : ' — hôm nay chưa học, đừng để đứt!'}`
           : 'Chưa có chuỗi — học một chút hôm nay để bắt đầu!'}</p>
-        <p class="td-sub">Hôm nay: <b>${todayN}</b> lượt · 🏅 <b>${earnedN}/${badges.length}</b> huy hiệu${pomoTodayCount() ? ` · 🍅 <b>${pomoTodayCount()}</b>` : ''}</p>
+        <p class="td-sub">Hôm nay: <b>${todayN}</b> lượt · 🏅 <b>${earnedN}/${badges.length}</b> huy hiệu${pomoTodayCount() ? ` · 🍅 <b>${pomoTodayCount()}</b>` : ''}${studyMinutesToday() ? ` · ⏱ <b>${fmtStudyTime(studyMinutesToday())}</b>` : ''}</p>
       </div>
       <div class="td-goal">
         <div class="td-ring-wrap">${goalRing(pct)}<span class="td-ring-label"><b>${todayN}</b><small>/ ${goal}</small></span></div>
@@ -3719,6 +3743,7 @@ function renderHeatmap() {
   const pomoToday = pomoTodayCount();
   const codeBest = store.get('prep-code-best', null);
   document.getElementById('dash-streak').innerHTML = streakMsg +
+    (studyMinutesToday() ? ` · ⏱ <b>${fmtStudyTime(studyMinutesToday())}</b> học hôm nay` : '') +
     (pomoToday ? ` · 🍅 <b>${pomoToday} pomodoro</b> hôm nay` : '') +
     (codeBest ? ` · ⌨️ kỷ lục gõ code <b>${codeBest.wpm} WPM</b>` : '');
 }
@@ -7128,6 +7153,7 @@ function toggleShortcuts() { shortcutsOpen() ? closeShortcuts() : openShortcuts(
   initSearch();
   initTheme();
   initPomodoro();
+  initStudyTimer();
   initSidebarToggle();
   initShortcuts();
   initGSearch();

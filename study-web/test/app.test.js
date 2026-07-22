@@ -506,6 +506,20 @@ test('wiring: 📤 xuất ghi chú ra markdown từ panel Dashboard', () => {
   assert.ok(seg.includes('URL.revokeObjectURL(a.href)'), 'export phải revoke blob URL');
 });
 
+test('wiring: ⏱️ đo thời gian học thực tế — visible + không AFK mới tính, localStorage thẳng', () => {
+  const seg = APP.slice(APP.indexOf('function initStudyTimer'), APP.indexOf('/** Ghi nhận một lượt học'));
+  assert.ok(seg.includes("document.visibilityState !== 'visible'") &&
+    seg.includes('Date.now() - lastActive > 120000'),
+    'timer phải bỏ qua tab nền và AFK >2 phút');
+  assert.ok(seg.includes("localStorage.setItem('prep-study-time'") && !seg.includes('store.set'),
+    'prep-study-time phải ghi localStorage THẲNG (không store.set — kẻo push cloud mỗi phút)');
+  assert.ok(seg.includes('while (keys.length > 60)'), 'phải cắt còn 60 ngày');
+  assert.ok(!APP.includes("'prep-study-time',") || !APP.slice(APP.indexOf('const PREP_KEYS')).slice(0, 2000).includes('prep-study-time'),
+    'prep-study-time KHÔNG được nằm trong PREP_KEYS');
+  assert.ok(/initStudyTimer\(\);/.test(APP), 'init phải gọi initStudyTimer');
+  assert.ok(APP.includes('fmtStudyTime(studyMinutesToday())'), 'Today/Dashboard phải hiển thị ⏱ thời gian hôm nay');
+});
+
 test('wiring: ↑ nút nổi lên đầu bài — hiện khi cuộn >600px, nằm trong view-docs, reset khi mở bài mới', () => {
   const seg = APP.slice(APP.indexOf("tb.id = 'doc-top'") - 200, APP.indexOf("tb.id = 'doc-top'") + 900);
   assert.ok(seg.includes("appendChild(tb)") && seg.includes('content.scrollTop < 600') &&
