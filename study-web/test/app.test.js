@@ -567,6 +567,19 @@ test('wiring: ❓ câu hỏi hôm nay — deterministic theo ngày, không chặ
   assert.ok(read('styles.css').includes('.td-qotd'), 'styles.css thiếu .td-qotd');
 });
 
+test('wiring: 📊 tổng kết 7 ngày qua vs 7 ngày trước ở Dashboard', () => {
+  assert.ok(read('index.html').includes('id="dash-week"'), 'index.html thiếu #dash-week');
+  const seg = APP.slice(APP.indexOf('function renderWeekSummary'), APP.indexOf('function logReadiness'));
+  assert.ok(seg.includes('sumRange(acts, 0, 7)') && seg.includes('sumRange(acts, 7, 14)') &&
+    seg.includes('readIn(0, 7)') && seg.includes('readIn(7, 14)'),
+    'phải so đủ 3 chỉ số cùng khung [0,7) vs [7,14) ngày');
+  assert.ok(seg.includes("el.innerHTML = ''; return;"), 'chưa có dữ liệu thì ẩn hẳn dòng tổng kết');
+  assert.ok(seg.includes("p === 0 ? (n ? '<span class=\"wk-up\">mới ↑</span>' : '')"),
+    'tuần trước 0 không được chia cho 0 — hiện "mới ↑"');
+  assert.ok(/renderHeatmap\(\);\s*\n\s*renderWeekSummary\(\);/.test(APP), 'renderDashboard phải gọi renderWeekSummary');
+  assert.ok(read('styles.css').includes('.dash-week'), 'styles.css thiếu .dash-week');
+});
+
 test('wiring: ↑ nút nổi lên đầu bài — hiện khi cuộn >600px, nằm trong view-docs, reset khi mở bài mới', () => {
   const seg = APP.slice(APP.indexOf("tb.id = 'doc-top'") - 200, APP.indexOf("tb.id = 'doc-top'") + 900);
   assert.ok(seg.includes("appendChild(tb)") && seg.includes('content.scrollTop < 600') &&

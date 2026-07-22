@@ -3811,6 +3811,38 @@ function renderHeatmap() {
     (codeBest ? ` · ⌨️ kỷ lục gõ code <b>${codeBest.wpm} WPM</b>` : '');
 }
 
+/** 📊 So 7 ngày qua với 7 ngày trước đó — lượt học, phút học thật, bài đọc mới */
+function renderWeekSummary() {
+  const el = document.getElementById('dash-week');
+  if (!el) return;
+  const sumRange = (map, from, to) => { // cộng các ngày cách hôm nay [from, to) hôm
+    let s = 0;
+    for (let i = from; i < to; i++) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      s += +map[dayKey(d)] || 0;
+    }
+    return s;
+  };
+  const DAY = 86400000;
+  const readTs = Object.values(store.get('prep-docs-read', {}));
+  const readIn = (from, to) => readTs.filter(ts => ts > Date.now() - to * DAY && ts <= Date.now() - from * DAY).length;
+  const acts = store.get('prep-activity', {});
+  const time = studyTimeMap();
+  const rows = [
+    { ic: '⚡', label: 'lượt học', now: sumRange(acts, 0, 7), prev: sumRange(acts, 7, 14) },
+    { ic: '⏱', label: 'học thật', now: sumRange(time, 0, 7), prev: sumRange(time, 7, 14), fmt: fmtStudyTime },
+    { ic: '📗', label: 'bài đọc mới', now: readIn(0, 7), prev: readIn(7, 14) },
+  ];
+  if (!rows.some(r => r.now || r.prev)) { el.innerHTML = ''; return; } // chưa có gì thì khỏi chiếm chỗ
+  const trend = (n, p) => p === 0 ? (n ? '<span class="wk-up">mới ↑</span>' : '') :
+    n === p ? '<span class="wk-eq">=</span>' :
+    n > p ? `<span class="wk-up">↑ ${Math.round((n - p) / p * 100)}%</span>` :
+    `<span class="wk-down">↓ ${Math.round((p - n) / p * 100)}%</span>`;
+  el.innerHTML = '<b>📊 7 ngày qua:</b> ' + rows.map(r =>
+    `${r.ic} <b>${r.fmt ? r.fmt(r.now) : r.now}</b> ${r.label} ${trend(r.now, r.prev)}`).join(' · ') +
+    ' <span class="wk-note">(so với 7 ngày trước)</span>';
+}
+
 /** Ghi điểm sẵn sàng hôm nay vào nhật ký (mỗi ngày một giá trị, theo lần tính mới nhất). */
 function logReadiness(score) {
   const rdLog = store.get('prep-readiness-log', {});
@@ -4248,6 +4280,7 @@ function renderDashboard() {
   renderDueBanner();
   renderSrsDist();
   renderHeatmap();
+  renderWeekSummary();
   renderThinkStats();
   renderCharts();
   renderMockHistory();
