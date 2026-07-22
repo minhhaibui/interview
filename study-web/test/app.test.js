@@ -663,6 +663,12 @@ test('wiring: 🔊 đọc to bài bằng TTS — đọc theo khối, bỏ code/t
   assert.ok(APP.includes("rate.id = 'doc-rate-btn'") &&
     APP.includes('TTS_RATES[(TTS_RATES.indexOf(ttsRate()) + 1) % TTS_RATES.length]'),
     'nút tốc độ phải xoay vòng TTS_RATES');
+  // phím S đọc bài — CHỈ khi view-docs active (S của flashcards là handler riêng theo view)
+  assert.ok(/e\.key === 's' \|\| e\.key === 'S'[\s\S]{0,260}view-docs[\s\S]{0,160}toggleDocSpeak\(\)/.test(APP),
+    'phím S phải guard view-docs active rồi mới toggleDocSpeak');
+  assert.ok(/keys: \['S'\], desc: '🔊 Đọc to/.test(APP), 'bảng phím tắt phải có dòng S');
+  assert.ok(/cell\.title = `\$\{dayKey\(day\)\}: \$\{n\} lượt học\$\{mins \?/.test(APP),
+    'heatmap tooltip phải kèm ⏱ phút học khi có');
 });
 
 test('wiring: 🔮 dự báo ngày đọc xong theo pace 14 ngày', () => {

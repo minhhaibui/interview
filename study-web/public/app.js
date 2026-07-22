@@ -3925,7 +3925,8 @@ function renderHeatmap() {
       const n = acts[dayKey(day)] || 0;
       const cell = document.createElement('div');
       cell.className = 'hm-cell ' + (n === 0 ? 'l0' : n < 10 ? 'l1' : n < 30 ? 'l2' : 'l3');
-      cell.title = `${dayKey(day)}: ${n} lượt học`;
+      const mins = studyTimeMap()[dayKey(day)] || 0;
+      cell.title = `${dayKey(day)}: ${n} lượt học${mins ? ` · ⏱ ${fmtStudyTime(mins)}` : ''}`;
       col.appendChild(cell);
     }
     wrap.appendChild(col);
@@ -6790,6 +6791,12 @@ function initShortcuts() {
       if (!document.getElementById('view-docs')?.classList.contains('active')) return;
       const btn = document.querySelector(`.doc-nav-btn.${e.key === 'ArrowLeft' ? 'prev' : 'next'}`);
       if (btn) { e.preventDefault(); btn.click(); }
+    } else if (e.key === 's' || e.key === 'S') {
+      // 🔊 đọc/dừng đọc bài — chỉ khi đang ở tab Học (flashcards có phím S riêng theo view, không đụng)
+      if (!document.getElementById('view-docs')?.classList.contains('active')) return;
+      if (!('speechSynthesis' in window)) return;
+      e.preventDefault();
+      toggleDocSpeak();
     } else if (e.key === '?') { e.preventDefault(); toggleShortcuts(); } // bảng phím tắt
   });
 }
@@ -7366,6 +7373,7 @@ const SHORTCUTS = [
     { keys: ['?'], desc: 'Mở bảng phím tắt này' },
     { keys: ['Esc'], desc: 'Đóng hộp thoại / menu đang mở' },
     { keys: ['←', '→'], desc: 'Bài trước / bài tiếp khi đang đọc tài liệu (tab Học)' },
+    { keys: ['S'], desc: '🔊 Đọc to / dừng đọc bài đang mở (tab Học)' },
   ] },
   { group: '🃏 Flashcards', items: [
     { keys: ['Space'], desc: 'Lật thẻ' },
