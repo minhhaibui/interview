@@ -579,7 +579,22 @@ test('wiring: 📊 tổng kết 7 ngày qua vs 7 ngày trước ở Dashboard', 
   assert.ok(seg.includes("p === 0 ? (n ? '<span class=\"wk-up\">mới ↑</span>' : '')"),
     'tuần trước 0 không được chia cho 0 — hiện "mới ↑"');
   assert.ok(/renderHeatmap\(\);\s*\n\s*renderWeekSummary\(\);/.test(APP), 'renderDashboard phải gọi renderWeekSummary');
-  assert.ok(read('styles.css').includes('.dash-week'), 'styles.css thiếu .dash-week');
+  // QA2 H1: .dash-week đã là hàng checklist kế hoạch tuần (flex+border) — tổng kết tuần phải dùng class RIÊNG
+  assert.ok(read('index.html').includes('class="dash-wk7"') && read('styles.css').includes('.dash-wk7'),
+    'tổng kết tuần phải dùng class .dash-wk7, không trùng .dash-week cũ');
+  assert.ok(seg.includes('readByDay') && seg.includes('sumRange(readByDay, from, to)'),
+    'bài đọc phải quy về dayKey dùng chung định nghĩa 7 ngày lịch (QA2 L2)');
+  assert.ok(seg.includes('Math.min(999,'), 'trend ↑ phải cap 999% (QA2 N1)');
+});
+
+test('wiring: các fix QA vòng 2 — nhắc trễ khi đặt giờ quá khứ, note không sống lại, pool rỗng không cache', () => {
+  assert.ok(/if \(e\.target\.value && e\.target\.value <= cur\) localStorage\.setItem\('prep-remind-last'/.test(APP),
+    'đặt giờ đã qua hôm nay phải đánh dấu đã-nhắc kẻo bị nhắc liền sau 30s (QA2 M1)');
+  const del = APP.slice(APP.indexOf(".note-del')"), APP.indexOf('function renderDashboard'));
+  assert.ok(del.includes('openDoc._noteSync?.();'),
+    'xoá note từ Dashboard phải _noteSync làm trống textarea bài đang mở (QA2 M2)');
+  assert.ok(/if \(!pool\.length\) \{ mockPoolPromise = null; return \[\]; \}/.test(APP),
+    'doLoadMockPool không được cache mảng rỗng cả phiên khi offline (QA2 L1)');
 });
 
 test('wiring: ↑ nút nổi lên đầu bài — hiện khi cuộn >600px, nằm trong view-docs, reset khi mở bài mới', () => {

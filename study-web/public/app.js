@@ -932,6 +932,10 @@ async function renderToday() {
   renderQotd(); // ❓ card tự điền khi pool mock tải xong — không chặn render tab
   document.getElementById('td-remind').onchange = (e) => {
     store.set('prep-remind-time', e.target.value);
+    // Đặt giờ ĐÃ QUA của hôm nay (định cho ngày mai) → đánh dấu hôm nay "đã nhắc" kẻo 30s sau bị nhắc liền (QA2 M1)
+    const now = new Date();
+    const cur = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    if (e.target.value && e.target.value <= cur) localStorage.setItem('prep-remind-last', dayKey(now));
     if (e.target.value && 'Notification' in window && Notification.permission === 'default')
       Notification.requestPermission();
     toast(e.target.value ? `🔔 Sẽ nhắc học lúc ${e.target.value} mỗi ngày (khi app đang mở)` : 'Đã tắt nhắc học');
@@ -2868,7 +2872,10 @@ async function doLoadMockPool() {
   // Bộ ⚡ rapid-fire 40 câu trả lời nhanh — phạm vi riêng trong dropdown
   const rapid = await fetchMd('week-12-mock-interview/RAPID-FIRE.md');
   if (rapid) all.push(parseQA(rapid, '__rapid__', '⚡ Rapid-fire — trả lời nhanh 30s/câu'));
-  MK_POOL = all.flat();
+  const pool = all.flat();
+  // Offline/mạng chập lúc tải → đừng cache mảng rỗng cả phiên (QA2 L1), lần gọi sau thử tải lại
+  if (!pool.length) { mockPoolPromise = null; return []; }
+  MK_POOL = pool;
   return MK_POOL;
 }
 
@@ -3824,9 +3831,13 @@ function renderWeekSummary() {
     }
     return s;
   };
-  const DAY = 86400000;
-  const readTs = Object.values(store.get('prep-docs-read', {}));
-  const readIn = (from, to) => readTs.filter(ts => ts > Date.now() - to * DAY && ts <= Date.now() - from * DAY).length;
+  // Quy ts bài-đọc về dayKey để 3 chỉ số dùng CHUNG định nghĩa "7 ngày lịch" (QA2 L2)
+  const readByDay = {};
+  Object.values(store.get('prep-docs-read', {})).forEach(ts => {
+    const k = dayKey(new Date(+ts || 0));
+    readByDay[k] = (readByDay[k] || 0) + 1;
+  });
+  const readIn = (from, to) => sumRange(readByDay, from, to);
   const acts = store.get('prep-activity', {});
   const time = studyTimeMap();
   const rows = [
@@ -3837,7 +3848,7 @@ function renderWeekSummary() {
   if (!rows.some(r => r.now || r.prev)) { el.innerHTML = ''; return; } // chưa có gì thì khỏi chiếm chỗ
   const trend = (n, p) => p === 0 ? (n ? '<span class="wk-up">mới ↑</span>' : '') :
     n === p ? '<span class="wk-eq">=</span>' :
-    n > p ? `<span class="wk-up">↑ ${Math.round((n - p) / p * 100)}%</span>` :
+    n > p ? `<span class="wk-up">↑ ${Math.min(999, Math.round((n - p) / p * 100))}%</span>` :
     `<span class="wk-down">↓ ${Math.round((p - n) / p * 100)}%</span>`;
   el.innerHTML = '<b>📊 7 ngày qua:</b> ' + rows.map(r =>
     `${r.ic} <b>${r.fmt ? r.fmt(r.now) : r.now}</b> ${r.label} ${trend(r.now, r.prev)}`).join(' · ') +
@@ -4229,6 +4240,7 @@ function renderNotes() {
     store.set('prep-doc-notes', all);
     renderNotes();
     refreshReadMarks();
+    openDoc._noteSync?.(); // bài đang mở ở view docs → làm trống textarea kẻo gõ 1 phím là note "sống lại" (QA2 M2)
   }));
 }
 
