@@ -633,6 +633,12 @@ test('wiring: 📏 thanh tiến độ đọc theo % cuộn', () => {
     'styles.css thiếu #doc-progress (phải pointer-events none)');
 });
 
+test('wiring: SW networkFirst phải né HTTP cache của trình duyệt (GH Pages max-age=600)', () => {
+  const sw = read('sw.js');
+  assert.ok(sw.includes("fetch(new Request(req.url, { cache: 'no-cache' }))"),
+    "networkFirst phải fetch cache:'no-cache' — fetch(req) mặc định trả bản edge cũ tới 10 phút sau deploy");
+});
+
 test('wiring: ↑ nút nổi lên đầu bài — hiện khi cuộn >600px, nằm trong view-docs, reset khi mở bài mới', () => {
   const seg = APP.slice(APP.indexOf("tb.id = 'doc-top'") - 200, APP.indexOf("tb.id = 'doc-top'") + 900);
   assert.ok(seg.includes("appendChild(tb)") && seg.includes('content.scrollTop < 600') &&
@@ -1219,7 +1225,7 @@ test('sw: app shell (HTML/.js/.css) dùng network-first để không phục vụ
   assert.ok(SW.indexOf('networkFirst(req)') < SW.indexOf('staleWhileRevalidate(req)'),
     'shell phải kiểm networkFirst TRƯỚC khi rơi về staleWhileRevalidate');
   // offline vẫn fallback: networkFirst phải match cache khi fetch lỗi
-  const nf = SW.slice(SW.indexOf('async function networkFirst'), SW.indexOf('async function networkFirst') + 400);
+  const nf = SW.slice(SW.indexOf('async function networkFirst'), SW.indexOf('async function cacheFirst'));
   assert.ok(/cache\.match\(req\)/.test(nf) && /navigate/.test(nf), 'networkFirst chưa fallback cache/offline');
 });
 

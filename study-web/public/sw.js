@@ -7,7 +7,7 @@
  *   - /api/* và các request cross-origin khác (Firebase, Anthropic): không can thiệp.
  * Đổi VERSION mỗi khi muốn ép xoá cache cũ.
  */
-const VERSION = 'v211';
+const VERSION = 'v212';
 const CACHE = `prep-${VERSION}`;
 const CDN_HOSTS = ['cdn.jsdelivr.net', 'www.gstatic.com'];
 
@@ -93,7 +93,11 @@ self.addEventListener('fetch', (e) => {
 async function networkFirst(req) {
   const cache = await caches.open(CACHE);
   try {
-    const res = await fetch(req);
+    // cache:'no-cache' = conditional GET (ETag) — KHÔNG lấy bản HTTP-cache cũ của trình duyệt.
+    // GH Pages đặt max-age=600 nên fetch(req) thường trả bản edge cũ tới 10' sau deploy,
+    // biến "network-first" thành "stale-first" (phải reload nhiều lần mới thấy code mới).
+    // Request mới từ url vì fetch(req, init) với request navigate không đổi được cache mode.
+    const res = await fetch(new Request(req.url, { cache: 'no-cache' }));
     if (res && res.ok) cache.put(req, res.clone());
     return res;
   } catch {
