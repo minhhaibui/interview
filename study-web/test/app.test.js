@@ -623,6 +623,8 @@ test('wiring: 🔠 A−/A+ cỡ chữ bài đọc — clamp 13..22, lưu localSt
   assert.ok(/initDocFont\(\);/.test(APP), 'init phải gọi initDocFont');
   assert.ok(read('styles.css').includes('font-size: var(--doc-fs, 16px)') && read('styles.css').includes('#doc-font'),
     'styles.css: .md phải ăn --doc-fs và có cụm nút #doc-font');
+  assert.ok(/QA3 N1[\s\S]{0,240}#doc-font \{ right: 12px; bottom: 56px/.test(read('styles.css')),
+    'media query mobile phải thu nhỏ cụm nút nổi (QA3 N1)');
 });
 
 test('wiring: 📏 thanh tiến độ đọc theo % cuộn', () => {
