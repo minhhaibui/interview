@@ -633,6 +633,19 @@ test('wiring: 📏 thanh tiến độ đọc theo % cuộn', () => {
     'styles.css thiếu #doc-progress (phải pointer-events none)');
 });
 
+test('wiring: 🔊 đọc to bài bằng TTS — đọc theo khối, bỏ code/toc/note, dừng khi chuyển bài', () => {
+  const seg = APP.slice(APP.indexOf('let docSpeaking'), APP.indexOf('// ---------- 🔠'));
+  assert.ok(seg.includes("!el.closest('pre') && !el.closest('.doc-toc') && !el.closest('.doc-note')"),
+    'phải bỏ code block + doc-toc + doc-note khỏi nội dung đọc');
+  assert.ok(seg.includes("u.lang = 'vi-VN'") && seg.includes('u.onend = next') && seg.includes('u.onerror = () => next()'),
+    'đọc tuần tự từng khối, lỗi 1 khối phải đọc tiếp');
+  assert.ok(seg.includes('speechSynthesis.cancel()'), 'stopDocSpeak phải cancel TTS');
+  assert.ok(/openDoc\._noteFlush\?\.\(\);\s*\n\s*stopDocSpeak\(\);/.test(APP),
+    'openDoc phải dừng đọc bài cũ khi chuyển bài');
+  assert.ok(APP.includes("speak.id = 'doc-speak-btn'") && APP.includes('speak.onclick = toggleDocSpeak'),
+    'nút 🔊 phải nằm trong cụm #doc-font');
+});
+
 test('wiring: SW networkFirst phải né HTTP cache của trình duyệt (GH Pages max-age=600)', () => {
   const sw = read('sw.js');
   assert.ok(sw.includes("fetch(new Request(req.url, { cache: 'no-cache' }))"),

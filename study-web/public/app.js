@@ -1149,6 +1149,40 @@ function renderRecentDocs() {
   refreshReadMarks(); // item vừa tạo mới cần ✓ nếu đã đọc
 }
 
+// ---------- 🔊 Đọc to bài đang mở (TTS) — học khi mỏi mắt / vừa làm việc khác vừa nghe ----------
+let docSpeaking = false;
+function stopDocSpeak() {
+  docSpeaking = false;
+  try { speechSynthesis.cancel(); } catch {}
+  const b = document.getElementById('doc-speak-btn');
+  if (b) { b.textContent = '🔊'; b.title = 'Đọc to bài này'; }
+}
+function toggleDocSpeak() {
+  if (docSpeaking) { stopDocSpeak(); return; }
+  const mdEl = document.querySelector('#content .md');
+  if (!mdEl || !('speechSynthesis' in window)) return;
+  // Đọc theo TỪNG khối (đoạn/heading/li) — utterance quá dài bị engine cắt ngang; bỏ code block.
+  const parts = [...mdEl.querySelectorAll('p, h1, h2, h3, li')]
+    .filter(el => !el.closest('pre') && !el.closest('.doc-toc') && !el.closest('.doc-note'))
+    .map(el => el.textContent.trim()).filter(t => t.length > 1);
+  if (!parts.length) return;
+  docSpeaking = true;
+  const b = document.getElementById('doc-speak-btn');
+  if (b) { b.textContent = '⏹'; b.title = 'Dừng đọc'; }
+  let i = 0;
+  const next = () => {
+    if (!docSpeaking) return;
+    if (i >= parts.length) { stopDocSpeak(); return; }
+    const u = new SpeechSynthesisUtterance(parts[i++]);
+    u.lang = 'vi-VN'; // tài liệu tiếng Việt, thuật ngữ Anh đọc lơ lớ chấp nhận được
+    u.rate = 1.05;
+    u.onend = next;
+    u.onerror = () => next(); // 1 khối lỗi thì bỏ qua, đọc tiếp
+    speechSynthesis.speak(u);
+  };
+  next();
+}
+
 // ---------- 🔠 A−/A+ cỡ chữ bài đọc (localStorage thẳng — UI state theo thiết bị, không sync) ----------
 const DOC_FONT_MIN = 13, DOC_FONT_MAX = 22;
 function docFontPx() {
@@ -1170,7 +1204,11 @@ function initDocFont() {
   };
   const wrap = document.createElement('div');
   wrap.id = 'doc-font';
-  wrap.append(mk('A+', 1, 'Chữ to hơn'), mk('A−', -1, 'Chữ nhỏ hơn'));
+  const speak = document.createElement('button');
+  speak.type = 'button'; speak.id = 'doc-speak-btn'; speak.className = 'doc-font-btn';
+  speak.textContent = '🔊'; speak.title = 'Đọc to bài này';
+  speak.onclick = toggleDocSpeak;
+  wrap.append(speak, mk('A+', 1, 'Chữ to hơn'), mk('A−', -1, 'Chữ nhỏ hơn'));
   document.getElementById('view-docs').appendChild(wrap); // trong view-docs → tự ẩn theo view như #doc-top
 }
 
@@ -1265,6 +1303,7 @@ async function openDoc(relPath, pushHash = true) {
   }
   // Chốt luôn 📝 ghi chú đang gõ dở của bài cũ — debounce 600ms chưa nổ thì mất chữ khi chuyển bài
   openDoc._noteFlush?.();
+  stopDocSpeak(); // 🔊 đang đọc bài cũ thì dừng — không đọc tiếp nội dung đã rời
   const md = await apiFile(relPath);
   if (seq !== openDoc._seq) return; // đã có lượt mở mới hơn trong lúc chờ — bỏ kết quả cũ
 
