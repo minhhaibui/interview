@@ -268,7 +268,12 @@ button { font-family: inherit; cursor: pointer; }
 
 /* ❓ Câu hỏi hôm nay (tab Hôm nay) */
 .td-qotd { margin: 10px 0 4px; padding: 10px 14px; background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; }
-.td-qotd-head { color: var(--muted); margin-bottom: 6px; }
+.td-qotd-head { color: var(--muted); margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.qotd-next {
+  margin-left: auto; background: var(--bg3); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 3px 8px; font-size: 12px; cursor: pointer;
+}
+.qotd-next:hover { border-color: var(--accent, #4f8cff); }
 .td-qotd-q p { margin: 0 0 6px; }
 
 /* 📊 tổng kết tuần ở Dashboard — .dash-wk7 vì .dash-week đã là hàng checklist kế hoạch tuần (QA2 H1) */

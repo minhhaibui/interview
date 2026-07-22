@@ -774,22 +774,26 @@ async function renderQotd(elId = 'td-qotd') {
     const k = dayKey(new Date());
     let h = 0;
     for (const c of k) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-    const it = pool[h % pool.length];
-    el.innerHTML = `
+    const draw = (it, extra) => { // extra = true khi user bấm 🎲 lấy câu ngẫu nhiên thêm
+      el.innerHTML = `
       <div class="td-qotd">
-        <div class="td-qotd-head">❓ <b>Câu hỏi hôm nay</b> <span class="mw-week">${escHtml(it.weekLabel || '')}</span></div>
+        <div class="td-qotd-head">❓ <b>${extra ? 'Câu ngẫu nhiên' : 'Câu hỏi hôm nay'}</b> <span class="mw-week">${escHtml(it.weekLabel || '')}</span>
+          <button type="button" class="qotd-next" title="Lấy câu khác ngẫu nhiên">🎲 Câu khác</button></div>
         <div class="td-qotd-q">${window.marked ? marked.parse('**' + it.q + '**') : escHtml(it.q)}</div>
         <details class="mk-wrong-a"><summary>Xem đáp án — tự trả lời to trước đã nhé</summary>${window.marked ? marked.parse(it.a) : escHtml(it.a)}</details>
       </div>`;
-    el.querySelector('details').addEventListener('toggle', function onOpen(e) {
-      if (!e.target.open) return;
-      e.target.removeEventListener('toggle', onOpen);
-      // 1 câu/ngày chỉ tính 1 lượt dù mở đáp án ở cả Home lẫn tab Hôm nay (QA4 L)
-      if (localStorage.getItem('prep-qotd-seen') !== dayKey(new Date())) {
-        localStorage.setItem('prep-qotd-seen', dayKey(new Date()));
-        logActivity();
-      }
-    });
+      el.querySelector('.qotd-next').onclick = () => draw(pool[Math.floor(Math.random() * pool.length)], true);
+      el.querySelector('details').addEventListener('toggle', function onOpen(e) {
+        if (!e.target.open) return;
+        e.target.removeEventListener('toggle', onOpen);
+        // 1 câu/ngày chỉ tính 1 lượt dù mở đáp án ở cả Home lẫn tab Hôm nay (QA4 L)
+        if (localStorage.getItem('prep-qotd-seen') !== dayKey(new Date())) {
+          localStorage.setItem('prep-qotd-seen', dayKey(new Date()));
+          logActivity();
+        }
+      });
+    };
+    draw(pool[h % pool.length], false);
   } catch { /* mạng lỗi — card im lặng, không phá tab Hôm nay */ }
 }
 

@@ -566,6 +566,10 @@ test('wiring: ❓ câu hỏi hôm nay — deterministic theo ngày, không chặ
     'mở đáp án = 1 lượt học, chỉ đếm 1 lần');
   assert.ok(seg.includes("localStorage.getItem('prep-qotd-seen') !== dayKey(new Date())"),
     '1 câu/ngày chỉ 1 lượt dù mở cả Home lẫn Hôm nay (QA4 L)');
+  assert.ok(seg.includes("el.querySelector('.qotd-next').onclick = () => draw(pool[Math.floor(Math.random() * pool.length)], true)") &&
+    seg.includes('draw(pool[h % pool.length], false)'),
+    'nút 🎲 Câu khác phải re-draw ngẫu nhiên, câu mặc định vẫn deterministic');
+  assert.ok(read('styles.css').includes('.qotd-next'), 'styles.css thiếu .qotd-next');
   assert.ok(APP.includes('<div id="td-qotd"></div>') && /renderQotd\(\);/.test(APP),
     'renderToday phải chứa placeholder + gọi renderQotd không await');
   assert.ok(APP.includes('<div id="home-qotd"></div>') && APP.includes("renderQotd('home-qotd')") &&
