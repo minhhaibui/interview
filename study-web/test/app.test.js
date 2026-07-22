@@ -597,6 +597,18 @@ test('wiring: các fix QA vòng 2 — nhắc trễ khi đặt giờ quá khứ, 
     'doLoadMockPool không được cache mảng rỗng cả phiên khi offline (QA2 L1)');
 });
 
+test('wiring: 📁 nhớ nhóm sidebar thu gọn qua reload', () => {
+  assert.ok(APP.includes('g.dataset.gtitle = group.title') && APP.includes("g.dataset.gtitle = '📖 Gần đây'"),
+    'mọi sb-group phải gắn data-gtitle để nhận diện');
+  assert.ok((APP.match(/g\.classList\.toggle\('collapsed'\); saveSbCollapsed\(\);/g) || []).length === 2,
+    'cả 2 chỗ toggle collapse phải save trạng thái');
+  assert.ok(APP.includes("localStorage.setItem('prep-sb-collapsed'") &&
+    /function restoreSbCollapsed[\s\S]{0,320}catch \{ closed = new Set\(\); \}/.test(APP),
+    'save/restore prep-sb-collapsed phải là localStorage thẳng + parse an toàn');
+  assert.ok(/restoreSbCollapsed\(\); \/\/ nhớ nhóm/.test(APP) && /sb\.prepend\(g\);\s*\n\s*restoreSbCollapsed/.test(APP),
+    'restore phải chạy sau buildTree VÀ sau khi dựng lại nhóm Gần đây');
+});
+
 test('wiring: ↑ nút nổi lên đầu bài — hiện khi cuộn >600px, nằm trong view-docs, reset khi mở bài mới', () => {
   const seg = APP.slice(APP.indexOf("tb.id = 'doc-top'") - 200, APP.indexOf("tb.id = 'doc-top'") + 900);
   assert.ok(seg.includes("appendChild(tb)") && seg.includes('content.scrollTop < 600') &&

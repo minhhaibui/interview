@@ -1029,10 +1029,11 @@ async function loadTree() {
   TREE.forEach(group => {
     const g = document.createElement('div');
     g.className = 'sb-group';
+    g.dataset.gtitle = group.title;
     const title = document.createElement('button');
     title.className = 'sb-title';
     title.textContent = group.title;
-    title.addEventListener('click', () => g.classList.toggle('collapsed'));
+    title.addEventListener('click', () => { g.classList.toggle('collapsed'); saveSbCollapsed(); });
     g.appendChild(title);
     const items = document.createElement('div');
     items.className = 'sb-items';
@@ -1047,6 +1048,7 @@ async function loadTree() {
     g.appendChild(items);
     sb.appendChild(g);
   });
+  restoreSbCollapsed(); // nhớ nhóm đang thu gọn từ lần trước
   renderRecentDocs();
   refreshReadMarks();
 }
@@ -1125,10 +1127,11 @@ function renderRecentDocs() {
   const g = document.createElement('div');
   g.className = 'sb-group';
   g.id = 'sb-recent';
+  g.dataset.gtitle = '📖 Gần đây';
   const title = document.createElement('button');
   title.className = 'sb-title';
   title.textContent = '📖 Gần đây';
-  title.addEventListener('click', () => g.classList.toggle('collapsed'));
+  title.addEventListener('click', () => { g.classList.toggle('collapsed'); saveSbCollapsed(); });
   g.appendChild(title);
   const items = document.createElement('div');
   items.className = 'sb-items';
@@ -1142,7 +1145,20 @@ function renderRecentDocs() {
   });
   g.appendChild(items);
   sb.prepend(g);
+  restoreSbCollapsed(); // nhóm Gần đây dựng lại mỗi lần mở bài — áp lại trạng thái thu gọn
   refreshReadMarks(); // item vừa tạo mới cần ✓ nếu đã đọc
+}
+
+// ---------- Nhớ nhóm sidebar thu gọn qua reload (localStorage thẳng — UI state, không sync) ----------
+function saveSbCollapsed() {
+  const closed = [...document.querySelectorAll('.sb-group.collapsed')].map(g => g.dataset.gtitle).filter(Boolean);
+  localStorage.setItem('prep-sb-collapsed', JSON.stringify(closed));
+}
+function restoreSbCollapsed() {
+  let closed;
+  try { closed = new Set(JSON.parse(localStorage.getItem('prep-sb-collapsed') || '[]')); } catch { closed = new Set(); }
+  if (closed.size) document.querySelectorAll('.sb-group[data-gtitle]').forEach(g =>
+    g.classList.toggle('collapsed', closed.has(g.dataset.gtitle)));
 }
 
 // ---------- Tìm kiếm toàn văn ----------
