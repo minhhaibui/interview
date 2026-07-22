@@ -311,6 +311,7 @@ function switchView(name) {
   if (typeof dgTimerId !== 'undefined' && dgTimerId) { clearInterval(dgTimerId); dgTimerId = null; } // dừng đồng hồ drill thiết kế
   if (typeof mkTimerId !== 'undefined') clearInterval(mkTimerId); // dừng đồng hồ Mock đang chạy ngầm
   if (typeof examTimerId !== 'undefined' && examTimerId) { clearInterval(examTimerId); examTimerId = null; } // dừng ticker Thi thử (bài dở vẫn giữ, quay lại chạy tiếp theo deadline)
+  stopDocSpeak(); // PHẢI reset docSpeaking TRƯỚC cancel() — cancel thô làm utterance bắn onerror→next() đọc tiếp trong view mới (QA3 H1)
   try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch { /* trình duyệt không hỗ trợ */ } // tắt TTS đang đọc
   try { if (wrRecog) { wrRecog.abort(); wrRecog = null; } } catch { /* noop */ } // tắt mic Luyện viết khi rời tab
   stopDictation(); // tắt micro 🎙️ nói-để-điền (Mock/STAR) khi rời tab
@@ -1164,7 +1165,12 @@ function toggleDocSpeak() {
   // Đọc theo TỪNG khối (đoạn/heading/li) — utterance quá dài bị engine cắt ngang; bỏ code block.
   const parts = [...mdEl.querySelectorAll('p, h1, h2, h3, li')]
     .filter(el => !el.closest('pre') && !el.closest('.doc-toc') && !el.closest('.doc-note'))
-    .map(el => el.textContent.trim()).filter(t => t.length > 1);
+    // Chống đọc TRÙNG (QA3 M1): <li><p> của marked → bỏ p trong li; li lồng li → chỉ lấy text RIÊNG (bỏ ul/ol con)
+    .filter(el => !(el.tagName === 'P' && el.closest('li')))
+    .map(el => el.tagName === 'LI'
+      ? [...el.childNodes].filter(n => !(n.nodeType === 1 && /^(UL|OL)$/.test(n.tagName))).map(n => n.textContent).join(' ').trim()
+      : el.textContent.trim())
+    .filter(t => t.length > 1);
   if (!parts.length) return;
   docSpeaking = true;
   const b = document.getElementById('doc-speak-btn');
@@ -1221,7 +1227,10 @@ function initReadProgress() {
   content.parentElement.insertBefore(bar, content); // ngoài #content — innerHTML đổi bài không vứt bar
   content.addEventListener('scroll', () => {
     const max = content.scrollHeight - content.clientHeight;
-    bar.style.width = max > 0 ? Math.min(100, content.scrollTop / max * 100) + '%' : '0%';
+    const pct = max > 0 ? Math.min(1, content.scrollTop / max) : 0;
+    // Neo theo CỘT ĐỌC chứ không phải cả #view-docs — kẻo vạch đè đỉnh sidebar & % lệch (QA3 L2)
+    bar.style.left = content.offsetLeft + 'px';
+    bar.style.width = (pct * content.clientWidth) + 'px';
   }, { passive: true });
 }
 

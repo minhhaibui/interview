@@ -642,14 +642,21 @@ test('wiring: 🔊 đọc to bài bằng TTS — đọc theo khối, bỏ code/t
   assert.ok(seg.includes('speechSynthesis.cancel()'), 'stopDocSpeak phải cancel TTS');
   assert.ok(/openDoc\._noteFlush\?\.\(\);\s*\n\s*stopDocSpeak\(\);/.test(APP),
     'openDoc phải dừng đọc bài cũ khi chuyển bài');
+  // QA3: H1 switchView phải stopDocSpeak TRƯỚC cancel() thô; M1 chống đọc trùng li lồng / <li><p>
+  assert.ok(/stopDocSpeak\(\); \/\/ PHẢI reset docSpeaking TRƯỚC cancel/.test(APP),
+    'switchView phải stopDocSpeak — cancel() thô làm chuỗi đọc hồi sinh trong view mới (QA3 H1)');
+  assert.ok(APP.includes("!(el.tagName === 'P' && el.closest('li'))") &&
+    APP.includes("/^(UL|OL)$/.test(n.tagName)"),
+    'TTS phải bỏ p-trong-li và text list con của li (QA3 M1 — chống đọc trùng)');
   assert.ok(APP.includes("speak.id = 'doc-speak-btn'") && APP.includes('speak.onclick = toggleDocSpeak'),
     'nút 🔊 phải nằm trong cụm #doc-font');
 });
 
 test('wiring: SW networkFirst phải né HTTP cache của trình duyệt (GH Pages max-age=600)', () => {
   const sw = read('sw.js');
-  assert.ok(sw.includes("fetch(new Request(req.url, { cache: 'no-cache' }))"),
-    "networkFirst phải fetch cache:'no-cache' — fetch(req) mặc định trả bản edge cũ tới 10 phút sau deploy");
+  assert.ok(sw.includes("fetch(fresh ? new Request(req.url, { cache: 'no-cache' }) : req)") &&
+    sw.includes("req.mode === 'navigate' || /\\/(app\\.js|styles\\.css)$/"),
+    "networkFirst: no-cache CHỈ cho navigate + app.js/styles.css — bank .js bất biến giữ fetch thường (QA3 M2)");
 });
 
 test('wiring: ↑ nút nổi lên đầu bài — hiện khi cuộn >600px, nằm trong view-docs, reset khi mở bài mới', () => {

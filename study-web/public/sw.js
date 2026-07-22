@@ -7,7 +7,7 @@
  *   - /api/* và các request cross-origin khác (Firebase, Anthropic): không can thiệp.
  * Đổi VERSION mỗi khi muốn ép xoá cache cũ.
  */
-const VERSION = 'v213';
+const VERSION = 'v214';
 const CACHE = `prep-${VERSION}`;
 const CDN_HOSTS = ['cdn.jsdelivr.net', 'www.gstatic.com'];
 
@@ -93,11 +93,13 @@ self.addEventListener('fetch', (e) => {
 async function networkFirst(req) {
   const cache = await caches.open(CACHE);
   try {
-    // cache:'no-cache' = conditional GET (ETag) — KHÔNG lấy bản HTTP-cache cũ của trình duyệt.
-    // GH Pages đặt max-age=600 nên fetch(req) thường trả bản edge cũ tới 10' sau deploy,
-    // biến "network-first" thành "stale-first" (phải reload nhiều lần mới thấy code mới).
+    // cache:'no-cache' = conditional GET (ETag) — KHÔNG lấy bản HTTP-cache cũ của trình duyệt
+    // (GH Pages max-age=600 làm fetch(req) thường trả bản edge cũ tới 10' sau deploy).
+    // CHỈ áp cho HTML + app.js/styles.css (đổi mỗi deploy); ~20 file bank .js gần như bất biến
+    // giữ fetch(req) thường — khỏi tốn 1 round-trip 304/file mỗi lần mở app (QA3 M2).
     // Request mới từ url vì fetch(req, init) với request navigate không đổi được cache mode.
-    const res = await fetch(new Request(req.url, { cache: 'no-cache' }));
+    const fresh = req.mode === 'navigate' || /\/(app\.js|styles\.css)$/.test(new URL(req.url).pathname);
+    const res = await fetch(fresh ? new Request(req.url, { cache: 'no-cache' }) : req);
     if (res && res.ok) cache.put(req, res.clone());
     return res;
   } catch {
