@@ -422,7 +422,7 @@ test('wiring: 📗 đánh dấu bài đã đọc — cuộn ≥90% hoặc bài n
   assert.ok(CSS.includes('.sb-count'), 'styles.css thiếu .sb-count');
   // thanh tiến độ đọc ở Dashboard
   assert.ok(HTML.includes('id="dash-docs-read"'), 'index.html thiếu #dash-docs-read');
-  assert.ok(/dash-docs-read[\s\S]{0,600}prep-docs-read[\s\S]{0,400}dash-read-open/.test(APP),
+  assert.ok(/dash-docs-read[\s\S]{0,600}prep-docs-read[\s\S]{0,1400}dash-read-open/.test(APP),
     'renderDashboard thiếu thanh 📗 Tài liệu đã đọc');
   assert.ok(/#dash-capstone, #dash-docs-read \{ display: flex/.test(read('styles.css')),
     'thanh docs-read phải dùng chung layout flex 1 dòng với capstone (từng vỡ 3 dòng)');
@@ -650,6 +650,16 @@ test('wiring: 🔊 đọc to bài bằng TTS — đọc theo khối, bỏ code/t
     'TTS phải bỏ p-trong-li và text list con của li (QA3 M1 — chống đọc trùng)');
   assert.ok(APP.includes("speak.id = 'doc-speak-btn'") && APP.includes('speak.onclick = toggleDocSpeak'),
     'nút 🔊 phải nằm trong cụm #doc-font');
+});
+
+test('wiring: 🔮 dự báo ngày đọc xong theo pace 14 ngày', () => {
+  const seg = APP.slice(APP.indexOf('const recent14'), APP.indexOf('id="dash-read-open"'));
+  assert.ok(seg.includes('+ts > Date.now() - 14 * DAY') && seg.includes('livePaths.has(p)'),
+    'pace phải tính từ bài CÒN SỐNG đọc trong 14 ngày');
+  assert.ok(seg.includes('left > 0 && recent14 > 0') && seg.includes('Math.ceil(left / (recent14 / 14))'),
+    'chỉ dự báo khi còn bài + có pace (không chia 0), công thức days đúng');
+  assert.ok(seg.includes('🎉 đã đọc hết'), 'đọc hết phải hiện 🎉 thay vì dự báo');
+  assert.ok(read('styles.css').includes('.dc-fc'), 'styles.css thiếu .dc-fc');
 });
 
 test('wiring: SW networkFirst phải né HTTP cache của trình duyệt (GH Pages max-age=600)', () => {

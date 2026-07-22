@@ -4371,11 +4371,23 @@ function renderDashboard() {
     // chỉ đếm bài CÒN trong tree — path chết (bài đã xoá) không được cộng, khớp với badge x/y ở sidebar
     const livePaths = new Set((Array.isArray(TREE) ? TREE : []).flatMap(g => (g.items || []).map(i => i.path)));
     const total = livePaths.size;
-    const readN = Object.keys(store.get('prep-docs-read', {})).filter(p => livePaths.has(p)).length;
+    const readMap = store.get('prep-docs-read', {});
+    const readN = Object.keys(readMap).filter(p => livePaths.has(p)).length;
+    // 📈 dự báo ngày đọc xong theo pace 14 ngày gần nhất (chỉ tính bài còn sống trong tree)
+    const DAY = 86400000;
+    const recent14 = Object.entries(readMap).filter(([p, ts]) => livePaths.has(p) && +ts > Date.now() - 14 * DAY).length;
+    const left = total - readN;
+    let fc = '';
+    if (left === 0 && total) fc = ' <span class="dc-fc">🎉 đã đọc hết!</span>';
+    else if (left > 0 && recent14 > 0) {
+      const days = Math.ceil(left / (recent14 / 14));
+      const d = new Date(Date.now() + days * DAY);
+      fc = ` <span class="dc-fc" title="Pace ${(recent14 / 14).toFixed(1)} bài/ngày (14 ngày qua) — còn ${left} bài">🔮 xong ~${d.getDate()}/${d.getMonth() + 1}</span>`;
+    }
     readEl.innerHTML = total ? `
       <span class="dc-label">📗 Tài liệu đã đọc</span>
       <div class="bar"><div class="bar-fill" style="width:${Math.round(readN / total * 100)}%"></div></div>
-      <span>${readN}/${total}</span>
+      <span>${readN}/${total}</span>${fc}
       <button type="button" id="dash-read-open">📚 Học</button>` : '';
     document.getElementById('dash-read-open')?.addEventListener('click', () => switchView('docs'));
   }
