@@ -1174,6 +1174,19 @@ function initDocFont() {
   document.getElementById('view-docs').appendChild(wrap); // trong view-docs → tự ẩn theo view như #doc-top
 }
 
+// 📏 Thanh tiến độ đọc — kẻ mảnh chạy theo % cuộn, gắn đầu #content (main có position để bar bám)
+function initReadProgress() {
+  const content = document.getElementById('content');
+  if (!content) return;
+  const bar = document.createElement('div');
+  bar.id = 'doc-progress';
+  content.parentElement.insertBefore(bar, content); // ngoài #content — innerHTML đổi bài không vứt bar
+  content.addEventListener('scroll', () => {
+    const max = content.scrollHeight - content.clientHeight;
+    bar.style.width = max > 0 ? Math.min(100, content.scrollTop / max * 100) + '%' : '0%';
+  }, { passive: true });
+}
+
 // ---------- Nhớ nhóm sidebar thu gọn qua reload (localStorage thẳng — UI state, không sync) ----------
 function saveSbCollapsed() {
   const closed = [...document.querySelectorAll('.sb-group.collapsed')].map(g => g.dataset.gtitle).filter(Boolean);
@@ -7320,6 +7333,7 @@ function toggleShortcuts() { shortcutsOpen() ? closeShortcuts() : openShortcuts(
   initStudyTimer();
   initStudyReminder();
   initDocFont();
+  initReadProgress();
   // Đóng tab/F5 khi debounce note 600ms chưa nổ → chốt ngay kẻo mất đoạn vừa gõ
   window.addEventListener('pagehide', () => openDoc._noteFlush?.());
   initSidebarToggle();

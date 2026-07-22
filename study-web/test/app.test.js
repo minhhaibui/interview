@@ -622,6 +622,17 @@ test('wiring: 🔠 A−/A+ cỡ chữ bài đọc — clamp 13..22, lưu localSt
     'styles.css: .md phải ăn --doc-fs và có cụm nút #doc-font');
 });
 
+test('wiring: 📏 thanh tiến độ đọc theo % cuộn', () => {
+  const seg = APP.slice(APP.indexOf('function initReadProgress'), APP.indexOf('// ---------- Nhớ nhóm sidebar'));
+  assert.ok(seg.includes("bar.id = 'doc-progress'") &&
+    seg.includes('content.parentElement.insertBefore(bar, content)') &&
+    seg.includes('content.scrollHeight - content.clientHeight'),
+    'bar phải nằm NGOÀI #content (innerHTML đổi bài không vứt) và tính theo scroll max');
+  assert.ok(/initReadProgress\(\);/.test(APP), 'init phải gọi initReadProgress');
+  assert.ok(read('styles.css').includes('#doc-progress') && read('styles.css').includes('pointer-events: none'),
+    'styles.css thiếu #doc-progress (phải pointer-events none)');
+});
+
 test('wiring: ↑ nút nổi lên đầu bài — hiện khi cuộn >600px, nằm trong view-docs, reset khi mở bài mới', () => {
   const seg = APP.slice(APP.indexOf("tb.id = 'doc-top'") - 200, APP.indexOf("tb.id = 'doc-top'") + 900);
   assert.ok(seg.includes("appendChild(tb)") && seg.includes('content.scrollTop < 600') &&
