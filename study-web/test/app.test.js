@@ -609,6 +609,19 @@ test('wiring: 📁 nhớ nhóm sidebar thu gọn qua reload', () => {
     'restore phải chạy sau buildTree VÀ sau khi dựng lại nhóm Gần đây');
 });
 
+test('wiring: 🔠 A−/A+ cỡ chữ bài đọc — clamp 13..22, lưu localStorage, áp qua CSS var', () => {
+  const seg = APP.slice(APP.indexOf('const DOC_FONT_MIN'), APP.indexOf('// ---------- Nhớ nhóm sidebar'));
+  assert.ok(seg.includes('DOC_FONT_MIN = 13, DOC_FONT_MAX = 22') &&
+    seg.includes("localStorage.getItem('prep-doc-font')") &&
+    seg.includes("setProperty('--doc-fs', docFontPx() + 'px')"),
+    'docFontPx/applyDocFont thiếu clamp hoặc CSS var');
+  assert.ok(seg.includes('Math.min(DOC_FONT_MAX, Math.max(DOC_FONT_MIN, docFontPx() + delta))'),
+    'giá trị lưu phải clamp ngay khi bấm, không chỉ khi đọc');
+  assert.ok(/initDocFont\(\);/.test(APP), 'init phải gọi initDocFont');
+  assert.ok(read('styles.css').includes('font-size: var(--doc-fs, 16px)') && read('styles.css').includes('#doc-font'),
+    'styles.css: .md phải ăn --doc-fs và có cụm nút #doc-font');
+});
+
 test('wiring: ↑ nút nổi lên đầu bài — hiện khi cuộn >600px, nằm trong view-docs, reset khi mở bài mới', () => {
   const seg = APP.slice(APP.indexOf("tb.id = 'doc-top'") - 200, APP.indexOf("tb.id = 'doc-top'") + 900);
   assert.ok(seg.includes("appendChild(tb)") && seg.includes('content.scrollTop < 600') &&

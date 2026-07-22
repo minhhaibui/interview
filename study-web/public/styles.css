@@ -174,7 +174,7 @@ button { font-family: inherit; cursor: pointer; }
 .welcome { max-width: 640px; margin: 60px auto; text-align: center; color: var(--muted); }
 .welcome h1 { color: var(--text); }
 
-.md { max-width: 880px; margin: 0 auto; }
+.md { max-width: 880px; margin: 0 auto; font-size: var(--doc-fs, 16px); }
 .md h1 { font-size: 1.9em; border-bottom: 1px solid var(--border); padding-bottom: .3em; }
 .md h2 { font-size: 1.45em; border-bottom: 1px solid var(--border); padding-bottom: .25em; margin-top: 1.6em; }
 .md h3 { font-size: 1.18em; margin-top: 1.4em; }
@@ -209,6 +209,18 @@ button { font-family: inherit; cursor: pointer; }
   box-shadow: 0 4px 16px rgba(0,0,0,.3);
 }
 #doc-top:hover { border-color: var(--accent, #4f8cff); }
+
+/* 🔠 A−/A+ cỡ chữ bài đọc — cụm nút nổi xếp trên #doc-top */
+#doc-font {
+  position: fixed; right: 26px; bottom: 80px; z-index: 50;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.doc-font-btn {
+  width: 42px; height: 34px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer;
+  background: var(--bg3); color: var(--text); border: 1px solid var(--border);
+  box-shadow: 0 4px 16px rgba(0,0,0,.3);
+}
+.doc-font-btn:hover { border-color: var(--accent, #4f8cff); }
 
 .doc-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 34px; padding-top: 16px; border-top: 1px solid var(--border); }
 .doc-nav-btn {

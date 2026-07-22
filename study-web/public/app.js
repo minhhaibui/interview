@@ -1149,6 +1149,31 @@ function renderRecentDocs() {
   refreshReadMarks(); // item vừa tạo mới cần ✓ nếu đã đọc
 }
 
+// ---------- 🔠 A−/A+ cỡ chữ bài đọc (localStorage thẳng — UI state theo thiết bị, không sync) ----------
+const DOC_FONT_MIN = 13, DOC_FONT_MAX = 22;
+function docFontPx() {
+  return Math.min(DOC_FONT_MAX, Math.max(DOC_FONT_MIN, +localStorage.getItem('prep-doc-font') || 16));
+}
+function applyDocFont() {
+  document.getElementById('content')?.style.setProperty('--doc-fs', docFontPx() + 'px');
+}
+function initDocFont() {
+  applyDocFont();
+  const mk = (label, delta, title) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = label; b.title = title; b.className = 'doc-font-btn';
+    b.onclick = () => {
+      localStorage.setItem('prep-doc-font', String(Math.min(DOC_FONT_MAX, Math.max(DOC_FONT_MIN, docFontPx() + delta))));
+      applyDocFont();
+    };
+    return b;
+  };
+  const wrap = document.createElement('div');
+  wrap.id = 'doc-font';
+  wrap.append(mk('A+', 1, 'Chữ to hơn'), mk('A−', -1, 'Chữ nhỏ hơn'));
+  document.getElementById('view-docs').appendChild(wrap); // trong view-docs → tự ẩn theo view như #doc-top
+}
+
 // ---------- Nhớ nhóm sidebar thu gọn qua reload (localStorage thẳng — UI state, không sync) ----------
 function saveSbCollapsed() {
   const closed = [...document.querySelectorAll('.sb-group.collapsed')].map(g => g.dataset.gtitle).filter(Boolean);
@@ -7294,6 +7319,7 @@ function toggleShortcuts() { shortcutsOpen() ? closeShortcuts() : openShortcuts(
   initPomodoro();
   initStudyTimer();
   initStudyReminder();
+  initDocFont();
   // Đóng tab/F5 khi debounce note 600ms chưa nổ → chốt ngay kẻo mất đoạn vừa gõ
   window.addEventListener('pagehide', () => openDoc._noteFlush?.());
   initSidebarToggle();
