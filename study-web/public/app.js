@@ -782,7 +782,13 @@ async function renderQotd(elId = 'td-qotd') {
         <details class="mk-wrong-a"><summary>Xem đáp án — tự trả lời to trước đã nhé</summary>${window.marked ? marked.parse(it.a) : escHtml(it.a)}</details>
       </div>`;
     el.querySelector('details').addEventListener('toggle', function onOpen(e) {
-      if (e.target.open) { logActivity(); e.target.removeEventListener('toggle', onOpen); } // xem đáp án = 1 lượt học, đếm 1 lần
+      if (!e.target.open) return;
+      e.target.removeEventListener('toggle', onOpen);
+      // 1 câu/ngày chỉ tính 1 lượt dù mở đáp án ở cả Home lẫn tab Hôm nay (QA4 L)
+      if (localStorage.getItem('prep-qotd-seen') !== dayKey(new Date())) {
+        localStorage.setItem('prep-qotd-seen', dayKey(new Date()));
+        logActivity();
+      }
     });
   } catch { /* mạng lỗi — card im lặng, không phá tab Hôm nay */ }
 }
@@ -1217,20 +1223,23 @@ function initDocFont() {
   };
   const wrap = document.createElement('div');
   wrap.id = 'doc-font';
-  const speak = document.createElement('button');
-  speak.type = 'button'; speak.id = 'doc-speak-btn'; speak.className = 'doc-font-btn';
-  speak.textContent = '🔊'; speak.title = 'Đọc to bài này';
-  speak.onclick = toggleDocSpeak;
-  const rate = document.createElement('button');
-  rate.type = 'button'; rate.id = 'doc-rate-btn'; rate.className = 'doc-font-btn';
-  rate.title = 'Tốc độ đọc 🔊';
-  rate.textContent = ttsRate() + 'x';
-  rate.onclick = () => {
-    const nxt = TTS_RATES[(TTS_RATES.indexOf(ttsRate()) + 1) % TTS_RATES.length];
-    localStorage.setItem('prep-tts-rate', String(nxt));
-    rate.textContent = nxt + 'x';
-  };
-  wrap.append(speak, rate, mk('A+', 1, 'Chữ to hơn'), mk('A−', -1, 'Chữ nhỏ hơn'));
+  if ('speechSynthesis' in window) { // browser không có TTS thì khỏi bày nút 🔊/tốc độ vô dụng
+    const speak = document.createElement('button');
+    speak.type = 'button'; speak.id = 'doc-speak-btn'; speak.className = 'doc-font-btn';
+    speak.textContent = '🔊'; speak.title = 'Đọc to bài này';
+    speak.onclick = toggleDocSpeak;
+    const rate = document.createElement('button');
+    rate.type = 'button'; rate.id = 'doc-rate-btn'; rate.className = 'doc-font-btn';
+    rate.title = 'Tốc độ đọc 🔊';
+    rate.textContent = ttsRate() + 'x';
+    rate.onclick = () => {
+      const nxt = TTS_RATES[(TTS_RATES.indexOf(ttsRate()) + 1) % TTS_RATES.length];
+      localStorage.setItem('prep-tts-rate', String(nxt));
+      rate.textContent = nxt + 'x';
+    };
+    wrap.append(speak, rate);
+  }
+  wrap.append(mk('A+', 1, 'Chữ to hơn'), mk('A−', -1, 'Chữ nhỏ hơn'));
   document.getElementById('view-docs').appendChild(wrap); // trong view-docs → tự ẩn theo view như #doc-top
 }
 
@@ -4398,7 +4407,9 @@ function renderDashboard() {
     else if (left > 0 && recent14 > 0) {
       const days = Math.ceil(left / (recent14 / 14));
       const d = new Date(Date.now() + days * DAY);
-      fc = ` <span class="dc-fc" title="Pace ${(recent14 / 14).toFixed(1)} bài/ngày (14 ngày qua) — còn ${left} bài">🔮 xong ~${d.getDate()}/${d.getMonth() + 1}</span>`;
+      // Rơi sang năm khác phải hiện năm — pace chậm cho ra 2030 mà badge ghi "8/5" thì hiểu nhầm năm nay (QA4 M)
+      const yy = d.getFullYear() !== new Date().getFullYear() ? `/${d.getFullYear()}` : '';
+      fc = ` <span class="dc-fc" title="Pace ${(recent14 / 14).toFixed(1)} bài/ngày (14 ngày qua) — còn ${left} bài">🔮 xong ~${d.getDate()}/${d.getMonth() + 1}${yy}</span>`;
     }
     readEl.innerHTML = total ? `
       <span class="dc-label">📗 Tài liệu đã đọc</span>

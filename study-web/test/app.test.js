@@ -564,6 +564,8 @@ test('wiring: ❓ câu hỏi hôm nay — deterministic theo ngày, không chặ
     'phải query lại element SAU await — user rời tab thì bỏ');
   assert.ok(seg.includes('removeEventListener') && seg.includes('logActivity()'),
     'mở đáp án = 1 lượt học, chỉ đếm 1 lần');
+  assert.ok(seg.includes("localStorage.getItem('prep-qotd-seen') !== dayKey(new Date())"),
+    '1 câu/ngày chỉ 1 lượt dù mở cả Home lẫn Hôm nay (QA4 L)');
   assert.ok(APP.includes('<div id="td-qotd"></div>') && /renderQotd\(\);/.test(APP),
     'renderToday phải chứa placeholder + gọi renderQotd không await');
   assert.ok(APP.includes('<div id="home-qotd"></div>') && APP.includes("renderQotd('home-qotd')") &&
@@ -670,6 +672,8 @@ test('wiring: 🔮 dự báo ngày đọc xong theo pace 14 ngày', () => {
   assert.ok(seg.includes('left > 0 && recent14 > 0') && seg.includes('Math.ceil(left / (recent14 / 14))'),
     'chỉ dự báo khi còn bài + có pace (không chia 0), công thức days đúng');
   assert.ok(seg.includes('🎉 đã đọc hết'), 'đọc hết phải hiện 🎉 thay vì dự báo');
+  assert.ok(seg.includes("d.getFullYear() !== new Date().getFullYear() ? `/${d.getFullYear()}` : ''"),
+    'dự báo rơi sang năm khác phải hiện năm (QA4 M)');
   assert.ok(read('styles.css').includes('.dc-fc'), 'styles.css thiếu .dc-fc');
 });
 
