@@ -536,6 +536,7 @@ async function renderHome(pushHash = true) {
           <span class="hc-sub">${escHtml(c.sub)}</span>
         </button>`).join('')}
       </div>
+      <div id="home-qotd"></div>
       <p class="home-tip">Mẹo: phím <kbd>1</kbd>–<kbd>9</kbd> chuyển tab nhanh, <kbd>/</kbd> để tìm kiếm tài liệu. Bấm <kbd>2</kbd> để mở 🔥 <b>Hôm nay</b>.</p>
     </div>`;
 
@@ -561,6 +562,7 @@ async function renderHome(pushHash = true) {
   document.getElementById('hc-leech')?.addEventListener('click', () => goFlash('__leech__'));
   document.getElementById('hc-code')?.addEventListener('click', () => switchView('code'));
   document.getElementById('hc-mock')?.addEventListener('click', () => switchView('mock'));
+  renderQotd('home-qotd'); // ❓ card câu hỏi hôm nay — Home công khai, không bị login-gate như tab Hôm nay
   document.getElementById('hc-wrong')?.addEventListener('click', () => {
     switchView('mock');
     loadMockPool().then(() => {
@@ -763,11 +765,11 @@ function sprintPanelHtml() {
 
 /** ❓ Câu hỏi phỏng vấn mỗi ngày — chọn deterministic theo dayKey từ pool mock (đổi câu mỗi ngày,
  *  cả ngày giữ nguyên 1 câu). Điền vào #td-qotd sau khi pool tải xong; user rời tab thì thôi. */
-async function renderQotd() {
-  if (!document.getElementById('td-qotd')) return;
+async function renderQotd(elId = 'td-qotd') {
+  if (!document.getElementById(elId)) return;
   try {
     const pool = await loadMockPool();
-    const el = document.getElementById('td-qotd'); // query lại sau await — tab có thể đã đổi
+    const el = document.getElementById(elId); // query lại sau await — tab có thể đã đổi
     if (!pool.length || !el) return;
     const k = dayKey(new Date());
     let h = 0;

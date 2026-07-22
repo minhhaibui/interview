@@ -560,12 +560,15 @@ test('wiring: ❓ câu hỏi hôm nay — deterministic theo ngày, không chặ
   assert.ok(seg.includes('await loadMockPool()') && seg.includes('h % pool.length') &&
     seg.includes("(h * 31 + c.charCodeAt(0)) >>> 0"),
     'renderQotd phải hash dayKey → index ổn định trong ngày');
-  assert.ok(/const el = document\.getElementById\('td-qotd'\)/.test(seg) && seg.includes('!el) return'),
-    'phải query lại #td-qotd SAU await — user rời tab thì bỏ');
+  assert.ok(/const el = document\.getElementById\(elId\)/.test(seg) && seg.includes('!el) return'),
+    'phải query lại element SAU await — user rời tab thì bỏ');
   assert.ok(seg.includes('removeEventListener') && seg.includes('logActivity()'),
     'mở đáp án = 1 lượt học, chỉ đếm 1 lần');
   assert.ok(APP.includes('<div id="td-qotd"></div>') && /renderQotd\(\);/.test(APP),
     'renderToday phải chứa placeholder + gọi renderQotd không await');
+  assert.ok(APP.includes('<div id="home-qotd"></div>') && APP.includes("renderQotd('home-qotd')") &&
+    APP.includes("async function renderQotd(elId = 'td-qotd')"),
+    'Home (công khai) cũng phải có card QOTD — renderQotd nhận elId, không trùng id giữa 2 view');
   assert.ok(read('styles.css').includes('.td-qotd'), 'styles.css thiếu .td-qotd');
 });
 
