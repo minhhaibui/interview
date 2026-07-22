@@ -233,6 +233,18 @@ button { font-family: inherit; cursor: pointer; }
 }
 .doc-note-ta:focus { outline: none; border-color: var(--accent, #4f8cff); }
 
+/* 📝 chấm ghi chú trên sidebar + panel ghi chú ở Dashboard */
+.sb-item.noted::before { content: '📝 '; font-size: 10px; }
+.note-row { display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.note-open {
+  background: none; border: none; color: var(--accent, #4f8cff); cursor: pointer;
+  font: inherit; font-size: 14px; padding: 0; white-space: nowrap; text-align: left;
+}
+.note-open:hover { text-decoration: underline; }
+.note-snip { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.note-del { background: none; border: none; cursor: pointer; opacity: .55; font-size: 14px; }
+.note-del:hover { opacity: 1; }
+
 .sb-count { margin-left: 6px; font-size: 11px; font-weight: 400; color: var(--muted, #8b93a7); }
 .sb-count.sb-count-full { color: #4caf7d; font-weight: 700; }
 .sb-item.read { opacity: .72; }

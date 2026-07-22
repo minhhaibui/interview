@@ -1000,8 +1000,11 @@ function markDocRead(p) {
 }
 function refreshReadMarks() {
   const read = store.get('prep-docs-read', {});
-  document.querySelectorAll('.sb-item[data-path]').forEach(b =>
-    b.classList.toggle('read', !!read[b.dataset.path]));
+  const notes = store.get('prep-doc-notes', {});
+  document.querySelectorAll('.sb-item[data-path]').forEach(b => {
+    b.classList.toggle('read', !!read[b.dataset.path]);
+    b.classList.toggle('noted', !!(notes[b.dataset.path] || '').trim()); // 📝 bài có ghi chú
+  });
   // đếm x/y đã đọc trên tiêu đề từng nhóm (trừ 📖 Gần đây — nhóm ảo)
   document.querySelectorAll('.sb-group').forEach(g => {
     if (g.id === 'sb-recent') return;
@@ -1295,6 +1298,7 @@ async function openDoc(relPath, pushHash = true) {
       if (v) all[relPath] = ta.value; else delete all[relPath];
       store.set('prep-doc-notes', all);
       updSum(!!v);
+      refreshReadMarks(); // cập nhật chấm 📝 trên sidebar ngay
     };
     ta.addEventListener('input', () => { clearTimeout(ta._t); ta._t = setTimeout(saveNote, 600); });
     openDoc._noteFlush = () => { if (ta._t) saveNote(); }; // chỉ flush khi đang có thay đổi chờ lưu
@@ -4050,6 +4054,38 @@ function renderWeekChecklist() {
   }
 }
 
+/** 📝 Panel tổng hợp ghi chú cá nhân ở Dashboard — bấm tên bài mở bài, 🗑 xoá note */
+function renderNotes() {
+  const wrap = document.getElementById('dash-notes');
+  if (!wrap) return;
+  const notes = store.get('prep-doc-notes', {});
+  const entries = Object.entries(notes).filter(([, v]) => (v || '').trim());
+  if (!entries.length) {
+    wrap.innerHTML = '<p style="color:var(--muted)">Chưa có ghi chú — mở một bài đọc rồi viết vào ô 📝 cuối bài nhé.</p>';
+    return;
+  }
+  wrap.innerHTML = entries.map(([p, v]) => {
+    const snip = v.trim().replace(/\s+/g, ' ');
+    return `
+    <div class="note-row">
+      <button type="button" class="note-open" data-path="${escHtml(p)}">📝 ${escHtml(docLabelOf(p))}</button>
+      <span class="note-snip">${escHtml(snip.slice(0, 140))}${snip.length > 140 ? '…' : ''}</span>
+      <button type="button" class="note-del" data-path="${escHtml(p)}" title="Xoá ghi chú này">🗑</button>
+    </div>`;
+  }).join('');
+  wrap.querySelectorAll('.note-open').forEach(b => b.addEventListener('click', () => {
+    switchView('docs');
+    openDoc(b.dataset.path);
+  }));
+  wrap.querySelectorAll('.note-del').forEach(b => b.addEventListener('click', () => {
+    const all = store.get('prep-doc-notes', {});
+    delete all[b.dataset.path];
+    store.set('prep-doc-notes', all);
+    renderNotes();
+    refreshReadMarks();
+  }));
+}
+
 function renderDashboard() {
   renderWeekChecklist();
   renderLangProgress();
@@ -4105,6 +4141,7 @@ function renderDashboard() {
   renderCharts();
   renderMockHistory();
   renderMockWrong();
+  renderNotes();
 
   document.getElementById('dash-export').onclick = exportData;
   document.getElementById('dash-print').onclick = printSheet;

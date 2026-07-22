@@ -467,6 +467,21 @@ test('wiring: 📝 ghi chú cá nhân theo bài — textarea tự lưu prep-doc-
   assert.ok(read('styles.css').includes('.doc-note-ta'), 'styles.css thiếu .doc-note-ta');
 });
 
+test('wiring: 📝 panel ghi chú Dashboard + chấm noted trên sidebar', () => {
+  assert.ok(read('index.html').includes('id="dash-notes"'), 'index.html thiếu #dash-notes');
+  const seg = APP.slice(APP.indexOf('function renderNotes'), APP.indexOf('function renderNotes') + 1600);
+  assert.ok(seg.includes("getElementById('dash-notes')") &&
+    seg.includes('escHtml(docLabelOf(p))') && seg.includes('escHtml(snip.slice(0, 140))'),
+    'renderNotes phải escape label + snippet (chống XSS từ nội dung note)');
+  assert.ok(seg.includes('delete all[b.dataset.path]') && seg.includes('refreshReadMarks()'),
+    'renderNotes thiếu xoá note / cập nhật chấm sidebar');
+  assert.ok(/renderMockWrong\(\);\s*\n\s*renderNotes\(\);/.test(APP), 'renderDashboard phải gọi renderNotes');
+  assert.ok(/b\.classList\.toggle\('noted', !!\(notes\[b\.dataset\.path\] \|\| ''\)\.trim\(\)\)/.test(APP),
+    'refreshReadMarks phải toggle class noted theo prep-doc-notes');
+  assert.ok(read('styles.css').includes('.sb-item.noted::before') && read('styles.css').includes('.note-row'),
+    'styles.css thiếu .sb-item.noted / .note-row');
+});
+
 test('wiring: ↑ nút nổi lên đầu bài — hiện khi cuộn >600px, nằm trong view-docs, reset khi mở bài mới', () => {
   const seg = APP.slice(APP.indexOf("tb.id = 'doc-top'") - 200, APP.indexOf("tb.id = 'doc-top'") + 900);
   assert.ok(seg.includes("appendChild(tb)") && seg.includes('content.scrollTop < 600') &&
