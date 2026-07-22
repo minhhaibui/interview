@@ -1122,6 +1122,8 @@ async function openDoc(relPath, pushHash = true) {
       localStorage.setItem('prep-doc-scroll', JSON.stringify(pos));
     }
   }
+  // Chốt luôn 📝 ghi chú đang gõ dở của bài cũ — debounce 600ms chưa nổ thì mất chữ khi chuyển bài
+  openDoc._noteFlush?.();
   const md = await apiFile(relPath);
   if (seq !== openDoc._seq) return; // đã có lượt mở mới hơn trong lúc chờ — bỏ kết quả cũ
 
@@ -1233,8 +1235,8 @@ async function openDoc(relPath, pushHash = true) {
   // Task list "- [ ]" trong markdown → checkbox tick được, lưu tiến độ theo từng file
   attachTaskLists(content, relPath);
 
-  // Nếu trang có <details> (đáp án quiz) → gắn chế độ quiz tự chấm (loại 📑 doc-toc — cũng là details)
-  const detailsCount = content.querySelectorAll('details:not(.doc-toc)').length;
+  // Nếu trang có <details> (đáp án quiz) → gắn chế độ quiz tự chấm (loại 📑 doc-toc + 📝 doc-note — cũng là details)
+  const detailsCount = content.querySelectorAll('details:not(.doc-toc):not(.doc-note)').length;
   if (detailsCount > 0) attachQuizMode(content.querySelector('.md'), relPath, detailsCount);
 
   // 📑 Mục lục bài — bài có ≥3 mục h2 thì gắn accordion nhảy nhanh giữa các phần
@@ -1270,6 +1272,34 @@ async function openDoc(relPath, pushHash = true) {
     if (prev) nav.appendChild(mk(prev, 'prev', `◀ <span>${escHtml(prev.label.trim())}</span>`));
     if (next) nav.appendChild(mk(next, 'next', `<span>${escHtml(next.label.trim())}</span> ▶`));
     if (nav.children.length) content.querySelector('.md').appendChild(nav);
+  }
+
+  // 📝 Ghi chú cá nhân theo bài — textarea cuối bài, tự lưu prep-doc-notes (sync cloud qua PREP_KEYS).
+  // Là <details> nên PHẢI loại khỏi attachQuizMode như doc-toc, kẻo bị đếm thành câu quiz.
+  {
+    const noteBox = document.createElement('details');
+    noteBox.className = 'doc-note';
+    const sum = document.createElement('summary');
+    const updSum = has => { sum.textContent = has ? '📝 Ghi chú của tôi ●' : '📝 Ghi chú của tôi'; };
+    updSum(!!(store.get('prep-doc-notes', {})[relPath] || '').trim());
+    noteBox.appendChild(sum);
+    const ta = document.createElement('textarea');
+    ta.className = 'doc-note-ta';
+    ta.placeholder = 'Ghi lại điều cần nhớ về bài này… (tự lưu)';
+    ta.value = store.get('prep-doc-notes', {})[relPath] || '';
+    const saveNote = () => {
+      clearTimeout(ta._t);
+      ta._t = null;
+      const all = store.get('prep-doc-notes', {});
+      const v = ta.value.trim();
+      if (v) all[relPath] = ta.value; else delete all[relPath];
+      store.set('prep-doc-notes', all);
+      updSum(!!v);
+    };
+    ta.addEventListener('input', () => { clearTimeout(ta._t); ta._t = setTimeout(saveNote, 600); });
+    openDoc._noteFlush = () => { if (ta._t) saveNote(); }; // chỉ flush khi đang có thay đổi chờ lưu
+    noteBox.appendChild(ta);
+    content.querySelector('.md').appendChild(noteBox);
   }
 
   // Đánh dấu item active trong sidebar
@@ -1350,7 +1380,7 @@ function attachQuizMode(mdEl, docPath, total) {
     toggleBtn.textContent = active ? '✋ Thoát chế độ quiz' : '🧪 Chế độ quiz tự chấm';
     scoreEl.style.display = saveBtn.style.display = active ? '' : 'none';
 
-    mdEl.querySelectorAll('details:not(.doc-toc)').forEach(d => {
+    mdEl.querySelectorAll('details:not(.doc-toc):not(.doc-note)').forEach(d => {
       d.open = false;
       let judge = d.nextElementSibling?.classList?.contains('quiz-judge') ? d.nextElementSibling : null;
       if (active && !judge) {
@@ -3611,7 +3641,8 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-java-done', 'prep-java-best', 'prep-redis-done', 'prep-redis-best', 'prep-dist-done', 'prep-dist-best', 'prep-devops-done', 'prep-devops-best',
   'prep-en-done', 'prep-sit-done', 'prep-readiness-log',
   'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date',
-  'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned', 'prep-exam-history', 'prep-fc-lang'];
+  'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned', 'prep-exam-history', 'prep-fc-lang',
+  'prep-doc-notes'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */

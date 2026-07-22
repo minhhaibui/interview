@@ -447,10 +447,24 @@ test('wiring: 🔖 nhớ vị trí đọc dở từng bài — lưu idle 400ms l
     'docScrollMap phải parse an toàn (key hỏng → rỗng)');
   assert.ok(/Chốt bookmark bài ĐANG mở[\s\S]{0,420}localStorage\.setItem\('prep-doc-scroll'/.test(APP),
     'openDoc phải flush bookmark bài cũ trước khi chuyển (debounce chưa nổ)');
-  // 📑 doc-toc cũng là <details> — chế độ quiz phải loại nó khỏi đếm & gắn judge (từng bị chấm như 1 câu)
-  assert.ok(/querySelectorAll\('details:not\(\.doc-toc\)'\)\.length/.test(APP) &&
-    /mdEl\.querySelectorAll\('details:not\(\.doc-toc\)'\)/.test(APP),
-    'attachQuizMode/detailsCount phải dùng details:not(.doc-toc)');
+  // 📑 doc-toc + 📝 doc-note cũng là <details> — chế độ quiz phải loại cả hai khỏi đếm & gắn judge
+  assert.ok(/querySelectorAll\('details:not\(\.doc-toc\):not\(\.doc-note\)'\)\.length/.test(APP) &&
+    /mdEl\.querySelectorAll\('details:not\(\.doc-toc\):not\(\.doc-note\)'\)/.test(APP),
+    'attachQuizMode/detailsCount phải dùng details:not(.doc-toc):not(.doc-note)');
+});
+
+test('wiring: 📝 ghi chú cá nhân theo bài — textarea tự lưu prep-doc-notes, flush khi chuyển bài, sync cloud', () => {
+  const seg = APP.slice(APP.indexOf("noteBox.className = 'doc-note'") - 300, APP.indexOf("noteBox.className = 'doc-note'") + 1400);
+  assert.ok(seg.includes("store.get('prep-doc-notes', {})[relPath]") &&
+    seg.includes("store.set('prep-doc-notes', all)") &&
+    seg.includes('delete all[relPath]'), 'doc-note thiếu wiring lưu/xoá note theo path');
+  assert.ok(seg.includes('setTimeout(saveNote, 600)'), 'note phải autosave debounce');
+  assert.ok(/openDoc\._noteFlush = \(\) => \{ if \(ta\._t\) saveNote\(\); \}/.test(APP) &&
+    /openDoc\._noteFlush\?\.\(\);/.test(APP),
+    'openDoc phải flush note đang gõ dở của bài cũ trước khi chuyển bài');
+  assert.ok(/'prep-doc-notes'\]/.test(APP) || /'prep-doc-notes'/.test(APP.slice(APP.indexOf('PREP_KEYS'))),
+    'prep-doc-notes phải nằm trong PREP_KEYS để export/sync cloud');
+  assert.ok(read('styles.css').includes('.doc-note-ta'), 'styles.css thiếu .doc-note-ta');
 });
 
 test('wiring: ↑ nút nổi lên đầu bài — hiện khi cuộn >600px, nằm trong view-docs, reset khi mở bài mới', () => {
