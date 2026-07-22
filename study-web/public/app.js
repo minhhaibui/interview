@@ -6569,10 +6569,18 @@ function renderGsResults() {
   const qstr = document.getElementById('gs-input').value.trim();
   if (qstr.length < 2) {
     gsHits = [];
-    box.innerHTML = '<div class="gs-empty">Gõ ≥ 2 ký tự — tìm khắp quiz trắc nghiệm · 💻 lập trình · 🐛 sửa bug · 🏛️ thiết kế · 🌟 STAR · 💬 hỏi ngược · 🇬🇧 mẫu câu. Không cần gõ dấu.</div>';
+    box.innerHTML = '<div class="gs-empty">Gõ ≥ 2 ký tự — tìm khắp quiz trắc nghiệm · 💻 lập trình · 🐛 sửa bug · 🏛️ thiết kế · 🌟 STAR · 💬 hỏi ngược · 🇬🇧 mẫu câu · 📝 ghi chú của bạn. Không cần gõ dấu.</div>';
     return;
   }
   gsHits = gsSearch(qstr);
+  // 📝 khớp trong ghi chú cá nhân — tính LIVE mỗi lần gõ (không nhét vào gsIndex cache vì note đổi liên tục)
+  const nTerms = gsNorm(qstr).split(/\s+/).filter(Boolean);
+  const noteHits = Object.entries(store.get('prep-doc-notes', {})).filter(([p, v]) =>
+    nTerms.length && nTerms.every(t => gsNorm(v + ' ' + docLabelOf(p)).includes(t))).slice(0, 5)
+    .map(([p, v]) => ({ badge: '📝 Ghi chú', title: docLabelOf(p),
+      sub: v.trim().replace(/\s+/g, ' ').slice(0, 90),
+      go: () => { switchView('docs'); openDoc(p); } }));
+  gsHits = noteHits.concat(gsHits).slice(0, 30);
   const rows = gsHits.map((it, i) => `<button class="gs-row" data-n="${i}">
       <span class="gs-badge">${it.badge}</span>
       <span class="gs-title">${escHtml(it.title)}</span>

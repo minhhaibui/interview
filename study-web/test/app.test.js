@@ -482,6 +482,19 @@ test('wiring: 📝 panel ghi chú Dashboard + chấm noted trên sidebar', () =>
     'styles.css thiếu .sb-item.noted / .note-row');
 });
 
+test('wiring: 📝 ghi chú vào tìm kiếm toàn cục — tính live, không cache vào gsIndex', () => {
+  const seg = APP.slice(APP.indexOf('gsHits = gsSearch(qstr)'), APP.indexOf('gsHits = gsSearch(qstr)') + 900);
+  assert.ok(seg.includes("store.get('prep-doc-notes', {})") &&
+    seg.includes("badge: '📝 Ghi chú'") &&
+    seg.includes('nTerms.every(t => gsNorm(v + \' \' + docLabelOf(p)).includes(t))'),
+    'renderGsResults phải khớp note theo AND mọi từ khoá đã bỏ dấu');
+  assert.ok(seg.includes('gsHits = noteHits.concat(gsHits).slice(0, 30)'),
+    'note hits phải xếp trước và tôn trọng trần 30 kết quả');
+  const bgi = APP.slice(APP.indexOf('function buildGsIndex'), APP.indexOf('function gsSearch'));
+  assert.ok(bgi.length > 0 && !bgi.includes('prep-doc-notes'),
+    'KHÔNG được đưa note vào gsIndex cache (note đổi liên tục, index build 1 lần)');
+});
+
 test('wiring: ↑ nút nổi lên đầu bài — hiện khi cuộn >600px, nằm trong view-docs, reset khi mở bài mới', () => {
   const seg = APP.slice(APP.indexOf("tb.id = 'doc-top'") - 200, APP.indexOf("tb.id = 'doc-top'") + 900);
   assert.ok(seg.includes("appendChild(tb)") && seg.includes('content.scrollTop < 600') &&
