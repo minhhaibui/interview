@@ -14,7 +14,10 @@ không cần biết mẹo hard-refresh.
 - **🔥 Hôm nay** — buổi ôn trong ngày (từ đến hạn SRS, câu đã sai, ôn nhanh…),
   vòng tròn mục tiêu/ngày, chuỗi ngày học, huy hiệu, mẹo phỏng vấn xoay vòng;
   **🎯 đếm ngược ngày phỏng vấn** + **🏁 Ưu tiên nước rút** (3 mảng yếu nhất khi còn ≤14 ngày);
-  task **📖 Đọc tiếp** — mở lại bài đang đọc dở, bài đó xong rồi thì tự gợi ý bài kế tiếp chưa đọc.
+  task **📖 Đọc tiếp** — mở lại bài đang đọc dở, bài đó xong rồi thì tự gợi ý bài kế tiếp chưa đọc;
+  **❓ Câu hỏi hôm nay** — mỗi ngày một câu phỏng vấn từ kho mock (cả ngày giữ 1 câu, xem đáp án
+  tính 1 lượt học); **🔔 nhắc giờ học** — đặt giờ cạnh mục tiêu/ngày, tới giờ app báo
+  Notification (khi đang mở, mỗi ngày 1 lần — máy ngủ trượt phút hẹn vẫn nhắc bù).
 - **📚 Học** — đọc bộ tài liệu lộ trình 12 tuần + tìm kiếm toàn văn. Ngoài ra có các
   track chuyên đề trong sidebar:
   - **☕ Java nền tảng (từ số 0)** — 12 bài cho người **chưa biết Java**: Hello World →
@@ -27,7 +30,9 @@ không cần biết mẹo hard-refresh.
   - Trải nghiệm đọc: **📋 copy** trên từng code block (hover), **📖 Gần đây** đầu sidebar,
     **📗 tự đánh dấu đã đọc** khi cuộn hết bài (✓ từng bài + badge *x/y* mỗi nhóm +
     thanh tiến độ ở Dashboard; đọc trọn 1 bài tính 1 lượt học giữ chuỗi 🔥),
-    nút **◀ Bài trước / Bài tiếp ▶** cuối bài (hoặc phím `←`/`→`) để học tuần tự.
+    nút **◀ Bài trước / Bài tiếp ▶** cuối bài (hoặc phím `←`/`→`) để học tuần tự,
+    **📝 ghi chú cá nhân** cuối mỗi bài (tự lưu + sync cloud; chấm 📝 ở sidebar,
+    panel tổng hợp + **📤 xuất .md** ở Tiến độ, tìm được qua 🔎 toàn cục).
 - **🃏 Flashcards** — học từ vựng theo SRS (Leitner box), lọc theo tuần / đến hạn /
   từ hay sai; kèm 2 chế độ luyện: **📝 test gõ** (tiếng Anh gõ từ, Hàn/Trung **gõ
   phiên âm** — hiện chữ gốc → gõ romanization/pinyin, chấm bỏ dấu thanh điệu) và
@@ -81,12 +86,14 @@ không cần biết mẹo hard-refresh.
   (Postgres → Redis → Kafka → Docker/K8s → AWS), tick từng mục đã tận tay làm —
   tab Hôm nay tự nhắc upgrade đến hạn theo tuần.
 - **📊 Tiến độ** — heatmap hoạt động, phân bố SRS, biểu đồ (kể cả **📬 dự báo từ
-  đến hạn 7 ngày tới** — quá hạn dồn vào cột "Nay"), **Điểm sẵn sàng phỏng vấn**,
+  đến hạn 7 ngày tới** — quá hạn dồn vào cột "Nay", và **⏱ phút học thực tế** — app tự đếm
+  mỗi phút có thao tác khi tab mở, AFK/tab nền không tính), **📊 tổng kết 7 ngày qua vs 7 ngày
+  trước** (lượt · phút · bài đọc mới, mũi tên xu hướng), **Điểm sẵn sàng phỏng vấn**,
   và **🖨️ Bản in ôn nhanh** (cheat sheet cá nhân hoá: từ hay quên, câu đang sai + câu
   đã ghim kèm đáp án, ý chính các đề design yếu — in ra đọc trước giờ phỏng vấn).
 - **🔎 Tìm kiếm toàn cục** — nút 🔎 topbar hoặc phím `/`: tìm khắp mọi ngân hàng
   (quiz trắc nghiệm · lập trình · sửa bug · thiết kế · STAR · 💬 câu hỏi ngược ·
-  🇬🇧 mẫu câu tiếng Anh), **gõ không dấu vẫn khớp**; chọn câu trắc nghiệm → luyện
+  🇬🇧 mẫu câu tiếng Anh · **📝 ghi chú của bạn**), **gõ không dấu vẫn khớp**; chọn câu trắc nghiệm → luyện
   ngay 1 câu, loại khác → mở đúng bài/nhóm; kèm lối tắt tìm tiếp trong tài liệu.
 - **☁️ Đồng bộ** đa thiết bị (Firebase Auth + Firestore, realtime).
 - Sáng/tối, **bảng phím tắt** (bấm `?`), onboarding lần đầu.

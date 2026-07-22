@@ -510,6 +510,8 @@ test('wiring: 📤 xuất ghi chú ra markdown từ panel Dashboard', () => {
     seg.includes('`## ${docLabelOf(p)}') &&
     seg.includes('ghi-chu-${dayKey(new Date())}.md'),
     'export phải sinh markdown theo H2 từng bài + tên file có ngày');
+  assert.ok(seg.includes("replace(/^(#+)/gm, '\\\\$1')"),
+    'nội dung note phải escape dòng bắt đầu # khi export (QA N2)');
   assert.ok(seg.includes('URL.revokeObjectURL(a.href)'), 'export phải revoke blob URL');
 });
 

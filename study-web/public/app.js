@@ -527,6 +527,7 @@ async function renderHome(pushHash = true) {
         ${todayN ? `Hôm nay đã học <b>${todayN} lượt</b>` : 'Hôm nay chưa học lượt nào'}
         ${streak ? ` · 🔥 chuỗi <b>${streak} ngày</b>` : ''}
         ${pomoTodayCount() ? ` · 🍅 <b>${pomoTodayCount()} pomodoro</b>` : ''}
+        ${studyMinutesToday() ? ` · ⏱ <b>${fmtStudyTime(studyMinutesToday())}</b>` : ''}
       </p>
       <div class="home-cards">
         ${cards.map(c => `<button class="home-card" id="${c.id}">
@@ -4208,7 +4209,9 @@ function renderNotes() {
   }).join('');
   document.getElementById('notes-export')?.addEventListener('click', () => {
     const md = '# 📝 Ghi chú của tôi — Backend Interview Prep\n\n' +
-      entries.map(([p, v]) => `## ${docLabelOf(p)}\n\n> ${p}\n\n${v.trim()}\n`).join('\n');
+      entries.map(([p, v]) =>
+        // escape dòng bắt đầu bằng # trong nội dung note — kẻo phá cấu trúc heading của file xuất
+        `## ${docLabelOf(p)}\n\n> ${p}\n\n${v.trim().replace(/^(#+)/gm, '\\$1')}\n`).join('\n');
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
     a.download = `ghi-chu-${dayKey(new Date())}.md`;
