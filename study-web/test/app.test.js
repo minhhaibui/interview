@@ -570,6 +570,10 @@ test('wiring: ❓ câu hỏi hôm nay — deterministic theo ngày, không chặ
     seg.includes('draw(pool[h % pool.length], false)'),
     'nút 🎲 Câu khác phải re-draw ngẫu nhiên, câu mặc định vẫn deterministic');
   assert.ok(read('styles.css').includes('.qotd-next'), 'styles.css thiếu .qotd-next');
+  // Home không có bài đọc — cụm nút 🔊/A± phải ẩn, mở bài hiện lại
+  assert.ok(/doc-font'\)\?\.style\.setProperty\('display', 'none'\)/.test(APP) &&
+    /doc-font'\)\?\.style\.removeProperty\('display'\)/.test(APP),
+    'renderHome ẩn #doc-font, openDoc hiện lại');
   assert.ok(APP.includes('<div id="td-qotd"></div>') && /renderQotd\(\);/.test(APP),
     'renderToday phải chứa placeholder + gọi renderQotd không await');
   assert.ok(APP.includes('<div id="home-qotd"></div>') && APP.includes("renderQotd('home-qotd')") &&

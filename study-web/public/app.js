@@ -521,6 +521,7 @@ async function renderHome(pushHash = true) {
   const wrongN = getMockWrong().length;
   if (wrongN) cards.push({ id: 'hc-wrong', title: `🚩 ${wrongN} câu mock đã sai`, sub: 'Ôn lại riêng những câu từng trả lời chưa tốt' });
 
+  document.getElementById('doc-font')?.style.setProperty('display', 'none'); // Home không có bài — ẩn cụm 🔊/A±
   document.getElementById('content').innerHTML = `
     <div class="home">
       <h1>${greet}! 👋</h1>
@@ -1385,6 +1386,7 @@ async function openDoc(relPath, pushHash = true) {
   const html = window.marked ? marked.parse(md) : `<pre>${md.replace(/</g, '&lt;')}</pre>`;
   content.innerHTML = `<div class="md">${html}</div>`;
   content.scrollTop = 0;
+  document.getElementById('doc-font')?.style.removeProperty('display'); // mở bài → hiện lại cụm 🔊/A± (Home ẩn đi)
 
   // ↑ Nút nổi "lên đầu bài" — hiện khi cuộn sâu >600px (bài dài / mobile), gắn 1 lần
   if (!openDoc._topBtn) {
