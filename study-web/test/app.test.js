@@ -553,6 +553,20 @@ test('wiring: 🔔 nhắc giờ học hằng ngày — input time tab Hôm nay, 
     'prep-remind-time phải trong PREP_KEYS (sync cloud, đổi hiếm)');
 });
 
+test('wiring: ❓ câu hỏi hôm nay — deterministic theo ngày, không chặn render, đếm 1 lượt học', () => {
+  const seg = APP.slice(APP.indexOf('async function renderQotd'), APP.indexOf('async function renderToday'));
+  assert.ok(seg.includes('await loadMockPool()') && seg.includes('h % pool.length') &&
+    seg.includes("(h * 31 + c.charCodeAt(0)) >>> 0"),
+    'renderQotd phải hash dayKey → index ổn định trong ngày');
+  assert.ok(/const el = document\.getElementById\('td-qotd'\)/.test(seg) && seg.includes('!el) return'),
+    'phải query lại #td-qotd SAU await — user rời tab thì bỏ');
+  assert.ok(seg.includes('removeEventListener') && seg.includes('logActivity()'),
+    'mở đáp án = 1 lượt học, chỉ đếm 1 lần');
+  assert.ok(APP.includes('<div id="td-qotd"></div>') && /renderQotd\(\);/.test(APP),
+    'renderToday phải chứa placeholder + gọi renderQotd không await');
+  assert.ok(read('styles.css').includes('.td-qotd'), 'styles.css thiếu .td-qotd');
+});
+
 test('wiring: ↑ nút nổi lên đầu bài — hiện khi cuộn >600px, nằm trong view-docs, reset khi mở bài mới', () => {
   const seg = APP.slice(APP.indexOf("tb.id = 'doc-top'") - 200, APP.indexOf("tb.id = 'doc-top'") + 900);
   assert.ok(seg.includes("appendChild(tb)") && seg.includes('content.scrollTop < 600') &&

@@ -759,6 +759,30 @@ function sprintPanelHtml() {
   </div>`;
 }
 
+/** ❓ Câu hỏi phỏng vấn mỗi ngày — chọn deterministic theo dayKey từ pool mock (đổi câu mỗi ngày,
+ *  cả ngày giữ nguyên 1 câu). Điền vào #td-qotd sau khi pool tải xong; user rời tab thì thôi. */
+async function renderQotd() {
+  if (!document.getElementById('td-qotd')) return;
+  try {
+    const pool = await loadMockPool();
+    const el = document.getElementById('td-qotd'); // query lại sau await — tab có thể đã đổi
+    if (!pool.length || !el) return;
+    const k = dayKey(new Date());
+    let h = 0;
+    for (const c of k) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    const it = pool[h % pool.length];
+    el.innerHTML = `
+      <div class="td-qotd">
+        <div class="td-qotd-head">❓ <b>Câu hỏi hôm nay</b> <span class="mw-week">${escHtml(it.weekLabel || '')}</span></div>
+        <div class="td-qotd-q">${window.marked ? marked.parse('**' + it.q + '**') : escHtml(it.q)}</div>
+        <details class="mk-wrong-a"><summary>Xem đáp án — tự trả lời to trước đã nhé</summary>${window.marked ? marked.parse(it.a) : escHtml(it.a)}</details>
+      </div>`;
+    el.querySelector('details').addEventListener('toggle', function onOpen(e) {
+      if (e.target.open) { logActivity(); e.target.removeEventListener('toggle', onOpen); } // xem đáp án = 1 lượt học, đếm 1 lần
+    });
+  } catch { /* mạng lỗi — card im lặng, không phá tab Hôm nay */ }
+}
+
 async function renderToday() {
   const body = document.getElementById('today-body');
   body.innerHTML = '<p style="color:var(--muted)">Đang tải buổi ôn hôm nay…</p>';
@@ -875,6 +899,7 @@ async function renderToday() {
     ${sprintPanelHtml()}
 
     <div class="td-tip"><span class="td-tip-ic">💡</span><span class="td-tip-msg"><b>Mẹo hôm nay:</b> <span id="td-tip-text">${escHtml(tipOfDay())}</span></span><button id="td-tip-next" class="td-tip-next" title="Xem mẹo khác">🔄</button></div>
+    <div id="td-qotd"></div>
 
     <h2 class="td-h2">📋 Buổi ôn hôm nay</h2>
     <div class="td-tasks">
@@ -903,6 +928,7 @@ async function renderToday() {
     document.querySelector('.td-ring-wrap').innerHTML =
       `${goalRing(newPct)}<span class="td-ring-label"><b>${todayN}</b><small>/ ${newGoal}</small></span>`;
   };
+  renderQotd(); // ❓ card tự điền khi pool mock tải xong — không chặn render tab
   document.getElementById('td-remind').onchange = (e) => {
     store.set('prep-remind-time', e.target.value);
     if (e.target.value && 'Notification' in window && Notification.permission === 'default')

@@ -245,6 +245,11 @@ button { font-family: inherit; cursor: pointer; }
 .note-del { background: none; border: none; cursor: pointer; opacity: .55; font-size: 14px; }
 .note-del:hover { opacity: 1; }
 
+/* ❓ Câu hỏi hôm nay (tab Hôm nay) */
+.td-qotd { margin: 10px 0 4px; padding: 10px 14px; background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; }
+.td-qotd-head { color: var(--muted); margin-bottom: 6px; }
+.td-qotd-q p { margin: 0 0 6px; }
+
 .sb-count { margin-left: 6px; font-size: 11px; font-weight: 400; color: var(--muted, #8b93a7); }
 .sb-count.sb-count-full { color: #4caf7d; font-weight: 700; }
 .sb-item.read { opacity: .72; }
