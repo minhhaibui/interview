@@ -3787,6 +3787,16 @@ function renderCharts() {
     label: +d.key.slice(8),
   })), 'Chưa có hoạt động nào.');
 
+  // ⏱ Phút học thực tế 14 ngày (nguồn prep-study-time — localStorage thẳng, xem initStudyTimer)
+  const tmap = studyTimeMap();
+  const tdays = days.map(d => ({ key: d.key, m: tmap[d.key] || 0 }));
+  const maxT = Math.max(...tdays.map(d => d.m), 1);
+  barChart('dash-chart-time', tdays.map(d => ({
+    title: `${d.key}: ${fmtStudyTime(d.m)} học thật`,
+    hPct: Math.max(Math.round(d.m / maxT * 100), d.m ? 4 : 0),
+    label: +d.key.slice(8),
+  })), 'Chưa đo được phút học nào — cứ học bình thường, app tự đếm mỗi phút bạn thao tác.');
+
   // % đúng các buổi mock gần nhất
   const hist = store.get('prep-mock-history', []).slice(-15);
   barChart('dash-chart-mock', hist.map(h => {

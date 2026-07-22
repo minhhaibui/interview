@@ -520,6 +520,15 @@ test('wiring: ⏱️ đo thời gian học thực tế — visible + không AFK 
   assert.ok(APP.includes('fmtStudyTime(studyMinutesToday())'), 'Today/Dashboard phải hiển thị ⏱ thời gian hôm nay');
 });
 
+test('wiring: ⏱ đồ thị phút học 14 ngày ở Dashboard', () => {
+  assert.ok(read('index.html').includes('id="dash-chart-time"'), 'index.html thiếu #dash-chart-time');
+  const seg = APP.slice(APP.indexOf('function renderCharts'), APP.indexOf('function renderCharts') + 2400);
+  assert.ok(seg.includes("barChart('dash-chart-time'") &&
+    seg.includes('const tmap = studyTimeMap()') &&
+    seg.includes('fmtStudyTime(d.m)'),
+    'renderCharts phải vẽ chart phút học từ prep-study-time cùng khung 14 ngày với chart lượt học');
+});
+
 test('wiring: ↑ nút nổi lên đầu bài — hiện khi cuộn >600px, nằm trong view-docs, reset khi mở bài mới', () => {
   const seg = APP.slice(APP.indexOf("tb.id = 'doc-top'") - 200, APP.indexOf("tb.id = 'doc-top'") + 900);
   assert.ok(seg.includes("appendChild(tb)") && seg.includes('content.scrollTop < 600') &&
