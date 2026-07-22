@@ -655,6 +655,12 @@ test('wiring: 🔊 đọc to bài bằng TTS — đọc theo khối, bỏ code/t
     'TTS phải bỏ p-trong-li và text list con của li (QA3 M1 — chống đọc trùng)');
   assert.ok(APP.includes("speak.id = 'doc-speak-btn'") && APP.includes('speak.onclick = toggleDocSpeak'),
     'nút 🔊 phải nằm trong cụm #doc-font');
+  // ⏩ tốc độ đọc: chỉ nhận giá trị trong TTS_RATES (chống localStorage rác), áp mỗi utterance
+  assert.ok(APP.includes('TTS_RATES.includes(v) ? v : 1') && APP.includes('u.rate = ttsRate()'),
+    'ttsRate phải validate whitelist + áp vào từng utterance');
+  assert.ok(APP.includes("rate.id = 'doc-rate-btn'") &&
+    APP.includes('TTS_RATES[(TTS_RATES.indexOf(ttsRate()) + 1) % TTS_RATES.length]'),
+    'nút tốc độ phải xoay vòng TTS_RATES');
 });
 
 test('wiring: 🔮 dự báo ngày đọc xong theo pace 14 ngày', () => {

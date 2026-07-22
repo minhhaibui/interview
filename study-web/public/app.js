@@ -1153,6 +1153,11 @@ function renderRecentDocs() {
 }
 
 // ---------- 🔊 Đọc to bài đang mở (TTS) — học khi mỏi mắt / vừa làm việc khác vừa nghe ----------
+const TTS_RATES = [1, 1.25, 1.5, 0.85];
+const ttsRate = () => {
+  const v = +localStorage.getItem('prep-tts-rate');
+  return TTS_RATES.includes(v) ? v : 1;
+};
 let docSpeaking = false;
 function stopDocSpeak() {
   docSpeaking = false;
@@ -1183,7 +1188,7 @@ function toggleDocSpeak() {
     if (i >= parts.length) { stopDocSpeak(); return; }
     const u = new SpeechSynthesisUtterance(parts[i++]);
     u.lang = 'vi-VN'; // tài liệu tiếng Việt, thuật ngữ Anh đọc lơ lớ chấp nhận được
-    u.rate = 1.05;
+    u.rate = ttsRate(); // đọc mỗi utterance mới — đổi tốc độ ăn ngay từ khối kế tiếp
     u.onend = next;
     u.onerror = () => next(); // 1 khối lỗi thì bỏ qua, đọc tiếp
     speechSynthesis.speak(u);
@@ -1216,7 +1221,16 @@ function initDocFont() {
   speak.type = 'button'; speak.id = 'doc-speak-btn'; speak.className = 'doc-font-btn';
   speak.textContent = '🔊'; speak.title = 'Đọc to bài này';
   speak.onclick = toggleDocSpeak;
-  wrap.append(speak, mk('A+', 1, 'Chữ to hơn'), mk('A−', -1, 'Chữ nhỏ hơn'));
+  const rate = document.createElement('button');
+  rate.type = 'button'; rate.id = 'doc-rate-btn'; rate.className = 'doc-font-btn';
+  rate.title = 'Tốc độ đọc 🔊';
+  rate.textContent = ttsRate() + 'x';
+  rate.onclick = () => {
+    const nxt = TTS_RATES[(TTS_RATES.indexOf(ttsRate()) + 1) % TTS_RATES.length];
+    localStorage.setItem('prep-tts-rate', String(nxt));
+    rate.textContent = nxt + 'x';
+  };
+  wrap.append(speak, rate, mk('A+', 1, 'Chữ to hơn'), mk('A−', -1, 'Chữ nhỏ hơn'));
   document.getElementById('view-docs').appendChild(wrap); // trong view-docs → tự ẩn theo view như #doc-top
 }
 
