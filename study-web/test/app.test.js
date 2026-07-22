@@ -644,6 +644,13 @@ test('wiring: 🔊 đọc to bài bằng TTS — đọc theo khối, bỏ code/t
   const seg = APP.slice(APP.indexOf('let docSpeaking'), APP.indexOf('// ---------- 🔠'));
   assert.ok(seg.includes("!el.closest('pre') && !el.closest('.doc-toc') && !el.closest('.doc-note')"),
     'phải bỏ code block + doc-toc + doc-note khỏi nội dung đọc');
+  // đọc từ vị trí đang cuộn + highlight khối đang đọc
+  assert.ok(seg.includes('x.el.getBoundingClientRect().bottom > cTop') && seg.includes('if (i < 0) i = 0'),
+    'phải bắt đầu từ khối đầu tiên trong viewport (getBoundingClientRect, fallback 0)');
+  assert.ok(seg.includes("cur.el.classList.add('tts-now')") &&
+    /function stopDocSpeak[\s\S]{0,260}tts-now/.test(APP) &&
+    read('styles.css').includes('.md .tts-now'),
+    'khối đang đọc phải highlight .tts-now và gỡ khi dừng');
   assert.ok(seg.includes("u.lang = 'vi-VN'") && seg.includes('u.onend = next') && seg.includes('u.onerror = () => next()'),
     'đọc tuần tự từng khối, lỗi 1 khối phải đọc tiếp');
   assert.ok(seg.includes('speechSynthesis.cancel()'), 'stopDocSpeak phải cancel TTS');

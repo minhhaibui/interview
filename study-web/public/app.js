@@ -1168,6 +1168,7 @@ let docSpeaking = false;
 function stopDocSpeak() {
   docSpeaking = false;
   try { speechSynthesis.cancel(); } catch {}
+  document.querySelector('.tts-now')?.classList.remove('tts-now'); // gỡ highlight khối đang đọc
   const b = document.getElementById('doc-speak-btn');
   if (b) { b.textContent = '🔊'; b.title = 'Đọc to bài này'; }
 }
@@ -1176,23 +1177,33 @@ function toggleDocSpeak() {
   const mdEl = document.querySelector('#content .md');
   if (!mdEl || !('speechSynthesis' in window)) return;
   // Đọc theo TỪNG khối (đoạn/heading/li) — utterance quá dài bị engine cắt ngang; bỏ code block.
-  const parts = [...mdEl.querySelectorAll('p, h1, h2, h3, li')]
+  const items = [...mdEl.querySelectorAll('p, h1, h2, h3, li')]
     .filter(el => !el.closest('pre') && !el.closest('.doc-toc') && !el.closest('.doc-note'))
     // Chống đọc TRÙNG (QA3 M1): <li><p> của marked → bỏ p trong li; li lồng li → chỉ lấy text RIÊNG (bỏ ul/ol con)
     .filter(el => !(el.tagName === 'P' && el.closest('li')))
-    .map(el => el.tagName === 'LI'
-      ? [...el.childNodes].filter(n => !(n.nodeType === 1 && /^(UL|OL)$/.test(n.tagName))).map(n => n.textContent).join(' ').trim()
-      : el.textContent.trim())
-    .filter(t => t.length > 1);
-  if (!parts.length) return;
+    .map(el => ({
+      el,
+      t: el.tagName === 'LI'
+        ? [...el.childNodes].filter(n => !(n.nodeType === 1 && /^(UL|OL)$/.test(n.tagName))).map(n => n.textContent).join(' ').trim()
+        : el.textContent.trim(),
+    }))
+    .filter(x => x.t.length > 1);
+  if (!items.length) return;
   docSpeaking = true;
   const b = document.getElementById('doc-speak-btn');
   if (b) { b.textContent = '⏹'; b.title = 'Dừng đọc'; }
-  let i = 0;
+  // 🔖 Bắt đầu từ khối đầu tiên còn thấy trong/dưới viewport — bài dài đọc dở không phải nghe lại từ đầu.
+  // getBoundingClientRect thay vì offsetTop: offsetParent của khối là #view-docs (ngoài scroller) nên offsetTop không tin được.
+  const cTop = document.getElementById('content').getBoundingClientRect().top;
+  let i = items.findIndex(x => x.el.getBoundingClientRect().bottom > cTop);
+  if (i < 0) i = 0;
   const next = () => {
+    document.querySelector('.tts-now')?.classList.remove('tts-now');
     if (!docSpeaking) return;
-    if (i >= parts.length) { stopDocSpeak(); return; }
-    const u = new SpeechSynthesisUtterance(parts[i++]);
+    if (i >= items.length) { stopDocSpeak(); return; }
+    const cur = items[i++];
+    cur.el.classList.add('tts-now'); // tô khối đang đọc — mắt theo được tai
+    const u = new SpeechSynthesisUtterance(cur.t);
     u.lang = 'vi-VN'; // tài liệu tiếng Việt, thuật ngữ Anh đọc lơ lớ chấp nhận được
     u.rate = ttsRate(); // đọc mỗi utterance mới — đổi tốc độ ăn ngay từ khối kế tiếp
     u.onend = next;

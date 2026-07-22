@@ -221,6 +221,7 @@ button { font-family: inherit; cursor: pointer; }
   box-shadow: 0 4px 16px rgba(0,0,0,.3);
 }
 .doc-font-btn:hover { border-color: var(--accent, #4f8cff); }
+.md .tts-now { background: rgba(79, 140, 255, .14); border-radius: 4px; }
 
 /* 📏 thanh tiến độ đọc — bám đầu vùng đọc, ăn theo % cuộn của #content */
 #doc-progress {
