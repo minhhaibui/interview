@@ -307,6 +307,11 @@ let authResolved = false; // true sau lần onAuthStateChanged đầu tiên
 const viewGated = name => syncReady && GATED_VIEWS.has(name);
 
 function switchView(name) {
+  // Tên tab CŨ còn sót trong localStorage sau khi đổi cấu trúc tab (prep-last-view ghi mỗi lần switchView):
+  // tab "company" đã gộp vào 🎯 Phỏng vấn từ v227. Không quy đổi thì reload ra TRANG TRẮNG
+  // (không .view nào khớp id, cũng không nhánh init nào chạy).
+  if (name === 'company') name = 'mock';
+  if (!document.getElementById(`view-${name}`)) name = 'docs';
   if (typeof iqTimerId !== 'undefined') clearInterval(iqTimerId); // rời tab → dừng bài test IQ đang chạy
   if (typeof dgTimerId !== 'undefined' && dgTimerId) { clearInterval(dgTimerId); dgTimerId = null; } // dừng đồng hồ drill thiết kế
   if (typeof mkTimerId !== 'undefined') clearInterval(mkTimerId); // dừng đồng hồ Mock đang chạy ngầm
@@ -333,7 +338,8 @@ function switchView(name) {
   if (name === 'writing') initWriting().then(() => wrInit && WR_SENTENCES && fillWrWeekSelect());
   if (name === 'code') initCodeTyping();
   if (name === 'coding') initThink();
-  if (name === 'mock') initMock().then(() => { if (mkInit) fillMockWeekSelect(); setMkMode(mkMode); });
+  // setMkMode TRƯỚC khi await pool: initMock chờ mạng, để sau thì tab trống vài giây (hoặc mãi nếu fetch lỗi)
+  if (name === 'mock') { setMkMode(mkMode); initMock().then(() => { if (mkInit) fillMockWeekSelect(); }); }
   if (name === 'star') renderStar();
   if (name === 'design') renderDesign();
   if (name === 'plan') renderPlan();
@@ -3283,7 +3289,7 @@ function setMkMode(m) {
   document.getElementById('mk-full').hidden = mkMode !== 'full';
   document.getElementById('mk-ai').hidden = mkMode !== 'ai';
   document.getElementById('mk-self').hidden = mkMode !== 'self';
-  if (mkMode === 'ai') fillAiTopics();
+  if (mkMode === 'ai' && aiInit) fillAiTopics(); // chưa initAiInterview thì nó tự fill ở cuối init
   // Vào lại 🏅 buổi đầy đủ mà KHÔNG đang dở buổi nào → vẽ màn chọn kiểu bài
   if (mkMode === 'full' && !document.getElementById('iv-body').innerHTML.trim()) renderCompany();
 }
@@ -4654,7 +4660,7 @@ function computeReadiness() {
     { key: 'mock', label: '🎯 Phỏng vấn thử', pct: clamp(mock), weight: 0.22, view: 'mock',
       tip: 'Làm thêm Mock (tự chấm hoặc AI) — đây là phần nặng ký nhất.' },
     { key: 'think', label: '🧠 Tư duy (code + IQ)', pct: clamp(think), weight: 0.13, view: 'coding',
-      tip: 'Giải bài Lập trình, làm Test IQ và Phỏng vấn tổng hợp để tăng phần này.' },
+      tip: 'Giải bài Lập trình, làm Test IQ và 🎯 Phỏng vấn để tăng phần này.' },
     { key: 'design', label: '🏛️ Thiết kế hệ thống', pct: clamp(design), weight: 0.10, view: 'design',
       tip: 'Luyện đề System Design ở tab 🏛️ Thiết kế HT — tự chấm rubric hoặc nhờ AI chấm.' },
     { key: 'code', label: '⌨️ Phản xạ gõ code', pct: clamp(code), weight: 0.10, view: 'code',
@@ -5376,7 +5382,7 @@ function renderReview() {
   const q = buildReviewQueue();
   if (!q.length) {
     el.innerHTML = `<div class="oq-start review-empty">
-      <p>🎉 Chưa có câu trắc nghiệm nào đang sai. Làm các quiz <b>Đoán output · API · SQL · CLI</b> hoặc vòng <b>Tiếng Anh · Tình huống</b> trong Phỏng vấn tổng hợp — câu nào chọn sai sẽ được gom về đây để ôn lại cho nhớ. Thấy câu nào đáng xem lại thì bấm <b>📌 Ghim</b> ở phần giải thích.</p>
+      <p>🎉 Chưa có câu trắc nghiệm nào đang sai. Làm các quiz <b>Đoán output · API · SQL · CLI</b> hoặc vòng <b>Tiếng Anh · Tình huống</b> trong 🎯 Phỏng vấn — câu nào chọn sai sẽ được gom về đây để ôn lại cho nhớ. Thấy câu nào đáng xem lại thì bấm <b>📌 Ghim</b> ở phần giải thích.</p>
       <div class="review-actions">${pinBtn}${mixBtn}</div>
     </div>`;
     bindExtra();
@@ -6647,7 +6653,7 @@ function renderCompany() {
     : '<p class="iq-note">Chưa có buổi phỏng vấn nào — hãy thử buổi đầu tiên!</p>';
   body.innerHTML = `
     <div class="iv-intro">
-      <h1>🏢 Phỏng vấn tổng hợp</h1>
+      <h1>🏅 Buổi phỏng vấn</h1>
       <p class="coding-intro">Mô phỏng quy trình tuyển dụng thực tế: chọn <b>kiểu bài</b>, làm lần lượt từng vòng, cuối buổi có điểm từng vòng, kết luận <b>Đậu / Cân nhắc / Chưa đạt</b> và <b>báo cáo chi tiết từng câu</b> (sai ở đâu, yếu mảng nào).</p>
       <div class="iv-plans">${IV_PLAN_KEYS.map(k => {
         const p = IV_PLANS[k];
@@ -7200,7 +7206,7 @@ function showIvHistory(idx) {
 
 // ---------- Phím tắt ----------
 /** Các nút đáp án quiz đang HIỂN THỊ & bấm được (tab Tư duy active, không ở mode ẩn). */
-/** View đang chấm quiz bằng bàn phím: tab 🧠 Tư duy hoặc 🏢 Phỏng vấn tổng hợp. */
+/** View đang chấm quiz bằng bàn phím: tab 🧠 Tư duy hoặc 🎯 Phỏng vấn. */
 function quizActiveView() {
   return [...document.querySelectorAll('#view-coding, #view-mock')].find(v => v.classList.contains('active')) || null;
 }
@@ -7208,7 +7214,7 @@ function quizActiveView() {
 function quizVisibleOptions() {
   const view = quizActiveView();
   if (!view) return [];
-  // .oq-opt = các mode trắc nghiệm; .iq-opt = IQ và mọi vòng của Phỏng vấn tổng hợp
+  // .oq-opt = các mode trắc nghiệm; .iq-opt = IQ và mọi vòng của buổi phỏng vấn
   return [...view.querySelectorAll('.oq-opt:not(:disabled), .iq-opt:not(:disabled)')].filter(b => !b.closest('[hidden]'));
 }
 
@@ -7740,7 +7746,7 @@ const ONBOARD_SLIDES = [
       <li><b>🔥 Hôm nay</b> — việc cần ôn mỗi ngày + mục tiêu &amp; chuỗi streak</li>
       <li><b>📚 Học</b> — tài liệu, flashcards (🇬🇧 Anh · 🇰🇷 Hàn · 🇨🇳 Trung), luyện viết, gõ code</li>
       <li><b>🧠 Luyện tập</b> — tư duy (code · IQ · quiz ☕Java/🗄️SQL/☁️Redis/🏗️Phân tán · 🎓 thi thử) &amp; thiết kế hệ thống</li>
-      <li><b>🎯 Phỏng vấn</b> — mock, Q&amp;A tổng hợp, STAR kể chuyện</li>
+      <li><b>🎯 Phỏng vấn</b> — buổi đầy đủ · luyện hỏi đáp · phỏng vấn AI, và STAR kể chuyện</li>
       <li><b>📊 Theo dõi</b> — kế hoạch 12 tuần &amp; điểm sẵn sàng</li>
     </ul>`,
   },

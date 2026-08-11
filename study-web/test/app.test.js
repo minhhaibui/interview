@@ -970,7 +970,12 @@ test('wiring: 🎯 phỏng vấn — 4 kiểu bài, vòng đọc code, IQ/code n
 test('wiring: 🎯 tab Phỏng vấn gộp Mock + Tổng hợp — 3 chế độ trong một tab', () => {
   assert.ok(!/data-view="company"/.test(HTML), 'vẫn còn tab "company" sau khi gộp');
   assert.ok(!/id="view-company"/.test(HTML), 'vẫn còn <div id="view-company">');
-  assert.ok(!/'company'/.test(APP), 'app.js vẫn tham chiếu view company (GATED_VIEWS / order / switchView)');
+  // Chỉ được còn ĐÚNG 1 chỗ nhắc 'company': dòng quy đổi tab cũ. Còn trong GATED_VIEWS/order là sót.
+  assert.strictEqual((APP.match(/'company'/g) || []).length, 1, 'app.js còn tham chiếu view company ngoài dòng quy đổi');
+  assert.ok(/if \(name === 'company'\) name = 'mock';/.test(APP),
+    'thiếu quy đổi prep-last-view cũ (company → mock): người dùng đang ở tab đó reload sẽ ra TRANG TRẮNG');
+  assert.ok(/if \(!document\.getElementById\(`view-\$\{name\}`\)\) name = 'docs';/.test(APP),
+    'switchView thiếu fallback khi tên view không tồn tại');
   assert.ok(HTML.includes('data-view="mock"'), 'thiếu tab 🎯 Phỏng vấn');
   for (const m of ['full', 'self', 'ai']) {
     assert.ok(HTML.includes(`data-mkmode="${m}"`), `thiếu nút chế độ ${m}`);
@@ -1414,7 +1419,7 @@ test('wiring: tính năng AI chấm Mock có đủ id + helper + wiring', () => 
 });
 
 test('regression: switchView tắt mic (wrRecog/aiRecog) + TTS khi rời tab', () => {
-  const block = APP.slice(APP.indexOf('function switchView'), APP.indexOf('function switchView') + 1400);
+  const block = APP.slice(APP.indexOf('function switchView'), APP.indexOf('function switchView') + 1800);
   assert.ok(/speechSynthesis\.cancel\(\)/.test(block), 'switchView chưa cancel TTS');
   assert.ok(/wrRecog\.abort\(\)/.test(block), 'switchView chưa abort mic Luyện viết');
   assert.ok(/aiRecog\.abort\(\)/.test(block), 'switchView chưa abort mic Phỏng vấn AI');
