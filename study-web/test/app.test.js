@@ -981,6 +981,10 @@ test('wiring: 🏢 báo cáo cuối buổi + lịch sử xem lại từng câu',
   // Lịch sử bấm được để mở lại báo cáo
   assert.ok(/data-hidx="\$\{i\}"/.test(APP) && /showIvHistory\(\+b\.dataset\.hidx\)/.test(APP),
     'dòng lịch sử chưa mở lại được báo cáo chi tiết');
+  // Nhãn vòng bắt đầu bằng emoji: PHẢI tách bằng split(' ') — slice(0,2) cắt đôi cờ 🇬🇧 (4 code unit)
+  assert.ok(!/IV_ROUND_LABEL\[k\] \|\| k\)\.slice\(0, 2\)/.test(APP) && !/r\.label\.slice\(0, 2\)/.test(APP),
+    'đang slice(0,2) nhãn vòng → cờ 🇬🇧 vỡ thành nửa ký tự');
+  assert.strictEqual('🇬🇧 Tiếng Anh'.slice(0, 2).length, 2); // bằng chứng: cờ dài 4 code unit
   const css = read('styles.css');
   for (const cls of ['.iv-plan', '.iv-weak-chip', '.iv-rev-group', '.iv-rev-bad', '.iv-rev-good']) {
     assert.ok(css.includes(cls), `styles.css thiếu ${cls}`);

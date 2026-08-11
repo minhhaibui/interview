@@ -6599,7 +6599,8 @@ function renderCompany() {
        <p class="iq-note">Bấm một dòng để MỞ LẠI báo cáo chi tiết của buổi đó (sai câu nào, yếu mảng nào).</p>
        <div class="iv-hist">${hist.slice().reverse().slice(0, 10).map(h => {
          const sc = h.scores || {};
-         const parts = Object.keys(sc).map(k => `${(IV_ROUND_LABEL[k] || k).slice(0, 2)}${sc[k]}`).join(' ');
+         // Lấy emoji đầu nhãn bằng split(' ') — KHÔNG slice(0,2): cờ 🇬🇧 dài 4 code unit nên bị cắt đôi
+         const parts = Object.keys(sc).map(k => `${(IV_ROUND_LABEL[k] || k).split(' ')[0]}${sc[k]}`).join(' ');
          const i = hist.indexOf(h);
          return `
          <button class="iv-hrow${h.log ? ' has-log' : ''}" data-hidx="${i}"${h.log ? '' : ' disabled title="Buổi cũ — chưa lưu chi tiết từng câu"'}>
@@ -6620,7 +6621,7 @@ function renderCompany() {
         const p = IV_PLANS[k];
         return `<button class="iv-plan${k === pick ? ' active' : ''}" data-plan="${k}">
           <b>${p.label}</b><small>${escHtml(p.hint)}</small>
-          <span class="iv-plan-rounds">${p.rounds.map(r => `${r.label.slice(0, 2)} ${r.n}`).join(' · ')}</span>
+          <span class="iv-plan-rounds">${p.rounds.map(r => `${r.label.split(' ')[0]} ${r.n}`).join(' · ')}</span>
         </button>`;
       }).join('')}</div>
       <div class="iv-rounds" id="iv-round-cards"></div>
