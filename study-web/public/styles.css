@@ -1317,6 +1317,42 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 #iv-submit { margin-left: auto; }
 @media (max-width: 560px) { .iv-hrow { grid-template-columns: 1fr auto; } .iv-hbk { grid-column: 1/3; text-align: left; } }
 
+/* --- Chọn KIỂU BÀI phỏng vấn (trắc nghiệm / viết code / kết hợp) --- */
+.iv-plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin: 16px 0 6px; }
+.iv-plan { text-align: left; background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; cursor: pointer; color: inherit; }
+.iv-plan:hover { border-color: var(--accent); }
+.iv-plan.active { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.iv-plan b { display: block; font-size: 14.5px; margin-bottom: 3px; }
+.iv-plan small { display: block; color: var(--muted); font-size: 12px; line-height: 1.45; }
+.iv-plan-rounds { display: block; margin-top: 6px; color: var(--muted); font-size: 11.5px; }
+.iv-rn { color: var(--muted); font-weight: 500; font-size: 12px; }
+/* Lịch sử bấm được để mở lại báo cáo chi tiết */
+.iv-hrow { grid-template-columns: 90px 92px 64px 1fr auto; text-align: left; color: inherit; cursor: pointer; font-family: inherit; }
+.iv-hrow.has-log:hover { border-color: var(--accent); }
+.iv-hrow:disabled { cursor: default; opacity: .72; }
+.iv-hplan { color: var(--muted); font-size: 12px; white-space: nowrap; }
+@media (max-width: 560px) { .iv-hrow { grid-template-columns: 1fr auto; } .iv-hplan { display: none; } }
+
+/* --- Báo cáo cuối buổi: chủ đề yếu + xem lại từng câu --- */
+.iv-weak { text-align: left; max-width: 620px; margin: 18px auto 0; }
+.iv-weak h3, .iv-review h3 { margin: 0 0 4px; font-size: 15px; }
+.iv-weak-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.iv-weak-chip { background: var(--bg); border: 1px solid var(--border); border-radius: 999px; padding: 4px 11px; font-size: 12.5px; }
+.iv-weak-chip b { color: var(--red); font-weight: 600; }
+.iv-review { text-align: left; max-width: 720px; margin: 22px auto 0; }
+.iv-review h3 small { color: var(--muted); font-weight: 400; font-size: 12.5px; }
+.iv-rev-group { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; margin-top: 8px; padding: 4px 12px; }
+.iv-rev-group > summary { cursor: pointer; padding: 8px 2px; font-size: 13.5px; }
+.iv-rev { border-left: 3px solid var(--border); padding: 6px 0 8px 10px; margin: 8px 0; font-size: 13px; }
+.iv-rev.ok { border-left-color: var(--green); }
+.iv-rev.no { border-left-color: var(--red); }
+.iv-rev-h { font-weight: 600; line-height: 1.45; }
+.iv-rev-b { display: flex; flex-direction: column; gap: 2px; margin-top: 5px; }
+.iv-rev-bad { color: var(--red); }
+.iv-rev-good { color: var(--green); }
+.iv-rev-x { color: var(--muted); margin-top: 5px; line-height: 1.5; }
+.iv-rev pre { max-width: 100%; overflow-x: auto; }
+
 /* ====================== Tab "Hôm nay" (ôn tập + gamification) ====================== */
 .today-wrap { max-width: 920px; margin: 0 auto; padding: 24px 20px 60px; }
 #install-btn { background: var(--green); color: #fff; border: none; }
@@ -1515,6 +1551,8 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 /* 📡 API/HTTP quiz — câu hỏi & lựa chọn dạng text (tái dùng .oq-* của Đoán output) */
 .oq-question { font-size: 15.5px; line-height: 1.6; font-weight: 600; margin: 6px 0 12px; }
 .oq-otext { display: block; padding: 8px 0; line-height: 1.55; white-space: normal; }
+/* ⏱️ Độ phức tạp: option là ký hiệu Big-O ngắn → cho mono + to hơn cho dễ đọc */
+.oq-otext.bigo-o { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 1.08rem; font-weight: 600; letter-spacing: .3px; }
 
 /* 🧠 Panel Luyện tư duy trong Dashboard */
 #dash-think { display: flex; flex-direction: column; gap: 8px; margin: 6px 0 8px; }

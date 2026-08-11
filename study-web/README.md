@@ -49,7 +49,10 @@ không cần biết mẹo hard-refresh.
 - **⌨️ Luyện gõ code** — rèn phản xạ gõ, đo WPM.
 - **🧠 Tư duy** — 9 chế độ:
   - 💻 **Lập trình** & 🐛 **Sửa bug** — viết/sửa code rồi **chạy test THẬT** trong trình duyệt.
-  - 🧩 **IQ**, 🔍 **Đoán output**, 📡 **API/HTTP**, 🗄️ **SQL**, 🖥️ **CLI**, ☕ **Java**, ☁️ **Redis**, 🏗️ **Phân tán**, 🐳 **DevOps** — trắc nghiệm có giải thích.
+  - 🧩 **IQ**, 🔍 **Đoán output**, ⏱️ **Độ phức tạp**, 📡 **API/HTTP**, 🗄️ **SQL**, 🖥️ **CLI**, ☕ **Java**, ☁️ **Redis**, 🏗️ **Phân tán**, 🐳 **DevOps** — trắc nghiệm có giải thích.
+    ⏱️ **Độ phức tạp (Big-O)**: nhìn một đoạn code rồi chọn Big-O — câu hỏi tủ ngay sau khi
+    bạn giải xong bài. Gồm vòng lặp lồng, chia đôi (log n), bẫy kinh điển (`includes`/`shift`/
+    `unshift` trong vòng lặp), đệ quy & memo hoá, sinh tổ hợp 2ⁿ/n!, và cả **bộ nhớ phụ**.
     🏗️ **Hệ phân tán & MQ**: message queue (Kafka partition/ordering/delivery), CAP, transaction phân tán (2PC/TCC/Saga/Outbox), distributed ID (Snowflake), idempotency.
     ☁️ **Redis phỏng vấn**: kiểu dữ liệu, RDB/AOF, cache penetration/breakdown/avalanche, khoá phân tán, HA.
     ☕ **Java phỏng vấn** chuyên sâu (theo khung [JavaGuide](https://javaguide.cn)): JVM &amp; bộ nhớ,
@@ -75,9 +78,21 @@ không cần biết mẹo hard-refresh.
     (đồ thị 🎓 ở Dashboard, tab Hôm nay nhắc thi lại khi quá 7 ngày chưa đo phong độ).
   - Mỗi nút mode có **badge độ phủ** (đã đúng/tổng). Bấm **1–4** chọn đáp án, **Enter** sang câu tiếp.
 - **🏛️ Thiết kế hệ thống** — đề kinh điển + rubric 5 bước, tự chấm hoặc nhờ **AI chấm**.
-- **🎯 Mock interview** & **🏢 Phỏng vấn tổng hợp** — mô phỏng 4 vòng liên tiếp, kèm bộ
-  **💬 câu hỏi nên hỏi lại nhà tuyển dụng**; ô trả lời có **🎙️ nói-để-điền**
-  (đọc chính tả VI/EN thay vì gõ — cũng có ở 4 ô STAR và dàn ý Thiết kế HT).
+- **🎯 Mock interview** & **🏢 Phỏng vấn tổng hợp** — mô phỏng buổi phỏng vấn nhiều vòng
+  liên tiếp; ô trả lời có **🎙️ nói-để-điền** (đọc chính tả VI/EN thay vì gõ — cũng có ở
+  4 ô STAR và dàn ý Thiết kế HT), kèm bộ **💬 câu hỏi nên hỏi lại nhà tuyển dụng**.
+  Phỏng vấn tổng hợp cho **chọn kiểu bài**:
+  - 🎲 **Kết hợp** — 🇬🇧 giao tiếp 6 → 🧩 IQ 12 → 🔍 đọc code 8 → ⌨️ viết code 2 → 🎭 tình huống 6.
+  - 📝 **Trắc nghiệm** (không gõ code, như screening test) — 🇬🇧 8 → 🧩 IQ 14 → 🔍 đọc code 12 → 🎭 8.
+  - ⌨️ **Viết code** — 🧩 IQ 8 → 🔍 đọc code 8 → ⌨️ viết code 3 bài (chạy test thật).
+
+  Vòng **🔍 đọc code** trộn *đoán output* và *tính Big-O*; vòng **🇬🇧 tiếng Anh** thiên
+  **giao tiếp**: sát nghĩa, sắc thái & ngữ điệu (chọn cách nói phù hợp, hiểu hàm ý của
+  “not quite right”, trọng âm câu đổi nghĩa…) chứ không nặng ngữ pháp.
+  Cuối buổi có **báo cáo chi tiết**: điểm từng vòng, kết luận Đậu/Cân nhắc/Chưa đạt,
+  **📉 chủ đề sai nhiều nhất**, và **🔍 xem lại từng câu** (bạn chọn gì · đáp án đúng · giải thích).
+  Mỗi buổi được **lưu vào lịch sử** — bấm một dòng để mở lại đúng báo cáo đó (10 buổi
+  gần nhất giữ chi tiết từng câu).
 - **🌟 STAR Builder** — 19 câu behavioral (kể cả sự cố production, technical debt,
   bất đồng với sếp…): soạn theo khung STAR, tự chấm checklist + AI góp ý; kèm
   **🇬🇧 mẫu câu tiếng Anh khi phỏng vấn** (9 nhóm, có **nút 🔊 nghe & ▶️ shadowing**).
@@ -102,7 +117,10 @@ không cần biết mẹo hard-refresh.
 
 Bộ test zero-dependency (chạy bằng `node:test`) kiểm toàn vẹn dữ liệu (id duy nhất,
 **chạy thật lời giải coding/bug/đoán-output**, rubric design tổng trọng số = 100…) và
-wiring tĩnh (tab ↔ view ↔ switchView, id `getElementById`, PREP_KEYS…):
+wiring tĩnh (tab ↔ view ↔ switchView, id `getElementById`, PREP_KEYS…).
+Có cả **luật chống “lộ đáp án”**: đáp án đúng không được vừa dài nhất vừa dài hơn trung
+bình các lựa chọn còn lại ≥40% — tật kinh điển khiến nhìn phát là chọn được mà không cần
+hiểu. Câu mới soạn phải viết distractor cụ thể & hợp lý ngang đáp án đúng:
 
 ```bash
 node --test study-web/test/

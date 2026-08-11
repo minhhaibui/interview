@@ -319,6 +319,7 @@
         <span class="think-glabel">📝 Trắc nghiệm</span>
         <button class="think-mode" data-mode="iq">🧩 IQ / Logic</button>
         <button class="think-mode" data-mode="output">🔍 Đoán output <span class="think-cov" data-cov="output" hidden></span></button>
+        <button class="think-mode" data-mode="bigo">⏱️ Độ phức tạp <span class="think-cov" data-cov="bigo" hidden></span></button>
         <button class="think-mode" data-mode="api">📡 API/HTTP <span class="think-cov" data-cov="api" hidden></span></button>
         <button class="think-mode" data-mode="sql">🗄️ SQL <span class="think-cov" data-cov="sql" hidden></span></button>
         <button class="think-mode" data-mode="cli">🖥️ CLI <span class="think-cov" data-cov="cli" hidden></span></button>
@@ -440,6 +441,15 @@
       </div>
     </div>
 
+    <!-- Chế độ ⏱️ ĐỘ PHỨC TẠP (nhìn code → chọn Big-O) -->
+    <div id="think-bigo" hidden>
+      <div class="oq-wrap">
+        <h1>⏱️ Độ phức tạp (Big-O)</h1>
+        <p class="coding-intro">Giải xong bài code, interviewer luôn hỏi tiếp: <b>“độ phức tạp thời gian/bộ nhớ là bao nhiêu?”</b>. Ở đây bạn nhìn một đoạn code rồi chọn Big-O đúng: vòng lặp lồng, chia đôi (log n), <b>bẫy kinh điển</b> (<code>includes</code>/<code>shift</code>/<code>unshift</code> trong vòng lặp), đệ quy &amp; memo hoá, sinh tổ hợp 2ⁿ/n!, và cả <b>bộ nhớ phụ</b> (auxiliary space). Chọn đáp án để biết đúng/sai kèm <b>giải thích</b>.</p>
+        <div id="bigo-body"></div>
+      </div>
+    </div>
+
     <!-- Chế độ ÔN CÂU SAI (gom câu trắc nghiệm đã chọn sai qua mọi mode) -->
     <div id="think-review" hidden>
       <div class="oq-wrap">
@@ -544,6 +554,7 @@
   <script src="situational-questions.js"></script>
   <script src="design-drills.js"></script>
   <script src="output-quiz.js"></script>
+  <script src="complexity-quiz.js"></script>
   <script src="debug-challenges.js"></script>
   <script src="api-quiz.js"></script>
   <script src="sql-drill.js"></script>

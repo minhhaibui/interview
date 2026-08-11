@@ -3881,10 +3881,11 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-daily-goal', 'prep-badges-seen', 'prep-design-history', 'prep-design-draft',
   'prep-oq-done', 'prep-oq-best', 'prep-debug-solved', 'prep-debug-code',
   'prep-api-done', 'prep-api-best', 'prep-sql-done', 'prep-sql-best', 'prep-cli-done', 'prep-cli-best',
+  'prep-bigo-done', 'prep-bigo-best',
   'prep-java-done', 'prep-java-best', 'prep-redis-done', 'prep-redis-best', 'prep-dist-done', 'prep-dist-best', 'prep-devops-done', 'prep-devops-best',
   'prep-en-done', 'prep-sit-done', 'prep-readiness-log',
   'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date',
-  'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned', 'prep-exam-history', 'prep-fc-lang',
+  'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned', 'prep-exam-history', 'prep-fc-lang', 'prep-iv-plan',
   'prep-doc-notes', 'prep-remind-time'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
@@ -4874,7 +4875,7 @@ let thinkInit = false, thinkMode = 'code';
 function initThink() {
   document.querySelectorAll('.think-mode').forEach(b => { b.onclick = () => setThinkMode(b.dataset.mode); });
   setThinkMode(thinkMode);
-  if (!thinkInit) { renderCodingFilters(); renderCodingList(); renderIQ(); renderOutputQuiz(); renderDebugList(); renderApiQuiz(); renderSqlQuiz(); renderCliQuiz(); renderJavaQuiz(); renderRedisQuiz(); renderDistQuiz(); renderDevopsQuiz(); thinkInit = true; }
+  if (!thinkInit) { renderCodingFilters(); renderCodingList(); renderIQ(); renderOutputQuiz(); renderBigoQuiz(); renderDebugList(); renderApiQuiz(); renderSqlQuiz(); renderCliQuiz(); renderJavaQuiz(); renderRedisQuiz(); renderDistQuiz(); renderDevopsQuiz(); thinkInit = true; }
   refreshThinkBadges();
 }
 
@@ -4885,6 +4886,7 @@ function setThinkMode(m) {
   document.getElementById('think-code').hidden = m !== 'code';
   document.getElementById('think-iq').hidden = m !== 'iq';
   document.getElementById('think-output').hidden = m !== 'output';
+  document.getElementById('think-bigo').hidden = m !== 'bigo';
   document.getElementById('think-debug').hidden = m !== 'debug';
   document.getElementById('think-api').hidden = m !== 'api';
   document.getElementById('think-sql').hidden = m !== 'sql';
@@ -5084,6 +5086,14 @@ const QUIZ_MODES = {
     questionHtml: q => `<pre class="oq-code"><code class="language-js">${escHtml(q.code)}</code></pre>`,
     highlight: true,
   },
+  bigo: {
+    label: '⏱️ Độ phức tạp', doneKey: 'prep-bigo-done', data: () => window.COMPLEXITY_QUIZ || [],
+    ask: 'Chọn Big-O đúng:',
+    optionHtml: o => `<span class="oq-otext bigo-o">${escHtml(o)}</span>`,
+    questionHtml: q => `<pre class="oq-code"><code class="language-js">${escHtml(q.code)}</code></pre>` +
+      `<p class="oq-question">${escHtml(q.q)}</p>`,
+    highlight: true,
+  },
   api: {
     label: '📡 API & HTTP', doneKey: 'prep-api-done', data: () => window.API_QUIZ || [],
     ask: 'Chọn đáp án đúng:',
@@ -5156,7 +5166,7 @@ const QUIZ_MODES = {
 
 /** Các mode trắc nghiệm KỸ THUẬT (loại english/situational — thuộc trục ngôn ngữ/hành vi).
  *  Nguồn DUY NHẤT dùng chung cho panel Dashboard 🧠 Tư duy + gợi ý "luyện mảng yếu nhất" ở Hôm nay. */
-const TECH_QUIZ_MODES = ['output', 'api', 'sql', 'cli', 'java', 'redis', 'dist', 'devops'];
+const TECH_QUIZ_MODES = ['output', 'bigo', 'api', 'sql', 'cli', 'java', 'redis', 'dist', 'devops'];
 /** Key lưu điểm cao nhất của mode (output dùng tiền tố 'oq' lịch sử, còn lại theo tên mode). */
 const bestKeyOf = mode => mode === 'output' ? 'prep-oq-best' : `prep-${mode}-best`;
 
@@ -5179,6 +5189,16 @@ const sqlQuiz = makeQuiz({
   resultMsg: pct => pct >= 80 ? 'Rất chắc SQL — sẵn sàng cho vòng database!' : pct >= 50 ? 'Khá ổn — ôn thêm NULL, JOIN và isolation level.' : 'SQL là phần lõi khi phỏng vấn Backend — đọc kỹ giải thích từng câu nhé.',
 });
 function renderSqlQuiz() { sqlQuiz.render(); }
+
+// ----- Chế độ ⏱️ Độ phức tạp (dùng engine makeQuiz) -----
+const bigoQuiz = makeQuiz({
+  ...QUIZ_MODES.bigo, // code block + câu hỏi, option là ký hiệu Big-O
+  mode: 'bigo',
+  bodyId: 'bigo-body',
+  bestKey: 'prep-bigo-best',
+  resultMsg: pct => pct >= 80 ? 'Phân tích Big-O rất chắc — trả lời được câu hỏi tủ sau mỗi bài code!' : pct >= 50 ? 'Khá ổn — ôn thêm bẫy includes/shift trong vòng lặp và bộ nhớ đệ quy.' : 'Big-O luôn bị hỏi ngay sau khi bạn giải xong bài — đọc kỹ giải thích từng câu nhé.',
+});
+function renderBigoQuiz() { bigoQuiz.render(); }
 
 // ----- Chế độ 🖥️ CLI Quiz (dùng engine makeQuiz) -----
 const cliQuiz = makeQuiz({
@@ -6523,16 +6543,49 @@ function finishIQ() {
   document.getElementById('iq-again').onclick = () => renderIQ();
 }
 
-// ========== PHỎNG VẤN TỔNG HỢP (Tiếng Anh + IQ + Code + Tình huống) ==========
+// ========== PHỎNG VẤN TỔNG HỢP (chọn kiểu bài: trắc nghiệm · viết code · kết hợp) ==========
 let ivState = null;
-const IV_ROUNDS = [
-  { key: 'english', label: '🇬🇧 Tiếng Anh', n: 8, desc: 'Ngữ pháp, từ vựng, giao tiếp công sở.' },
-  { key: 'iq', label: '🧩 IQ / Tư duy', n: 10, desc: 'Dãy số, logic, toán nhanh — có tính giờ.' },
-  { key: 'code', label: '⌨️ Lập trình', n: 1, desc: 'Giải 1 bài, chạy test thật trong trình duyệt.' },
-  { key: 'situational', label: '🎭 Xử lý tình huống', n: 8, desc: 'Tình huống công việc & case sự cố production.' },
-];
+
+/** Ba KIỂU BÀI phỏng vấn; mỗi kiểu là một danh sách vòng chạy nối tiếp.
+ *  type: 'mcq' (trắc nghiệm từ bank) · 'iq' (tính giờ) · 'readcode' (nhìn code → đoán output/Big-O)
+ *        · 'code' (tự viết code, chạy test thật).
+ *  IQ và phần code (đọc + viết) được cho TRỌNG SỐ CAO — sát vòng phỏng vấn thật. */
+const IV_PLANS = {
+  mix: {
+    label: '🎲 Kết hợp', hint: 'Như buổi phỏng vấn thật: nói chuyện → tư duy → code.',
+    rounds: [
+      { key: 'english', type: 'mcq', label: '🇬🇧 Tiếng Anh giao tiếp', n: 6, desc: 'Sát nghĩa, sắc thái & cách phản hồi khi phỏng vấn.' },
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 12, desc: 'Dãy số, logic, toán nhanh — có tính giờ.' },
+      { key: 'readcode', type: 'readcode', label: '🔍 Đọc code', n: 8, desc: 'Đoán output của đoạn code & tính độ phức tạp Big-O.' },
+      { key: 'code', type: 'code', label: '⌨️ Viết code', n: 2, desc: 'Giải 2 bài, chạy test thật trong trình duyệt.' },
+      { key: 'situational', type: 'mcq', label: '🎭 Xử lý tình huống', n: 6, desc: 'Tình huống công việc & case sự cố production.' },
+    ],
+  },
+  mcq: {
+    label: '📝 Trắc nghiệm', hint: 'Không phải gõ code — như vòng screening test online.',
+    rounds: [
+      { key: 'english', type: 'mcq', label: '🇬🇧 Tiếng Anh giao tiếp', n: 8, desc: 'Sát nghĩa, sắc thái & cách phản hồi khi phỏng vấn.' },
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 14, desc: 'Dãy số, logic, toán nhanh — có tính giờ.' },
+      { key: 'readcode', type: 'readcode', label: '🔍 Đọc code', n: 12, desc: 'Đoán output của đoạn code & tính độ phức tạp Big-O.' },
+      { key: 'situational', type: 'mcq', label: '🎭 Xử lý tình huống', n: 8, desc: 'Tình huống công việc & case sự cố production.' },
+    ],
+  },
+  code: {
+    label: '⌨️ Viết code', hint: 'Vòng kỹ thuật thuần: tư duy, đọc code rồi tự giải bài.',
+    rounds: [
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 8, desc: 'Khởi động tư duy logic — có tính giờ.' },
+      { key: 'readcode', type: 'readcode', label: '🔍 Đọc code', n: 8, desc: 'Đoán output của đoạn code & tính độ phức tạp Big-O.' },
+      { key: 'code', type: 'code', label: '⌨️ Viết code', n: 3, desc: 'Giải 3 bài, chạy test thật trong trình duyệt.' },
+    ],
+  },
+};
+const IV_PLAN_KEYS = ['mix', 'mcq', 'code'];
+const ivPlanOf = k => IV_PLANS[k] || IV_PLANS.mix;
+const ivRounds = () => ivPlanOf(ivState.plan).rounds;
 const verdClass = o => o >= 80 ? 'ok' : o >= 65 ? 'good' : o >= 50 ? 'mid' : 'low';
 const verdictText = o => o >= 80 ? 'Đậu xuất sắc 🌟' : o >= 65 ? 'Đậu ✅' : o >= 50 ? 'Cân nhắc — có thể vào vòng sau 🤔' : 'Chưa đạt 💪';
+/** Nhãn ngắn của vòng để hiện trong lịch sử/báo cáo (kể cả bản ghi cũ chưa có plan). */
+const IV_ROUND_LABEL = { english: '🇬🇧 Tiếng Anh', iq: '🧩 IQ', readcode: '🔍 Đọc code', code: '⌨️ Viết code', situational: '🎭 Tình huống' };
 
 function renderCompany() {
   const body = document.getElementById('iv-body');
@@ -6540,31 +6593,54 @@ function renderCompany() {
   clearInterval(iqTimerId);
   const hist = store.get('prep-interview-history', []);
   const best = hist.length ? Math.max(...hist.map(h => h.overall || 0)) : null;
+  const pick = store.get('prep-iv-plan', 'mix');
   const histHtml = hist.length
     ? `<h3>🗂️ Lịch sử phỏng vấn (${hist.length})</h3>
-       <div class="iv-hist">${hist.slice().reverse().slice(0, 8).map(h => {
+       <p class="iq-note">Bấm một dòng để MỞ LẠI báo cáo chi tiết của buổi đó (sai câu nào, yếu mảng nào).</p>
+       <div class="iv-hist">${hist.slice().reverse().slice(0, 10).map(h => {
          const sc = h.scores || {};
+         const parts = Object.keys(sc).map(k => `${(IV_ROUND_LABEL[k] || k).slice(0, 2)}${sc[k]}`).join(' ');
+         const i = hist.indexOf(h);
          return `
-         <div class="iv-hrow">
+         <button class="iv-hrow${h.log ? ' has-log' : ''}" data-hidx="${i}"${h.log ? '' : ' disabled title="Buổi cũ — chưa lưu chi tiết từng câu"'}>
            <span class="iv-hdate">${escHtml(h.date)}</span>
+           <span class="iv-hplan">${escHtml(ivPlanOf(h.plan).label)}</span>
            <span class="iv-hov">${h.overall ?? '—'}/100</span>
            <span class="iv-hverd ${verdClass(h.overall || 0)}">${escHtml(h.verdict || '')}</span>
-           <span class="iv-hbk">🇬🇧${sc.english ?? '—'} 🧩${sc.iq ?? '—'} ⌨️${sc.code ?? '—'} 🎭${sc.situational ?? '—'}</span>
-         </div>`;
+           <span class="iv-hbk">${escHtml(parts)}</span>
+         </button>`;
        }).join('')}</div>
        <p class="iq-note">☁️ Lịch sử được lưu & đồng bộ lên cloud theo tài khoản của bạn.</p>`
     : '<p class="iq-note">Chưa có buổi phỏng vấn nào — hãy thử buổi đầu tiên!</p>';
   body.innerHTML = `
     <div class="iv-intro">
       <h1>🏢 Phỏng vấn tổng hợp</h1>
-      <p class="coding-intro">Mô phỏng quy trình tuyển dụng thực tế gồm <b>4 vòng liên tiếp</b>. Cuối buổi có điểm từng vòng + kết luận <b>Đậu / Cân nhắc / Chưa đạt</b>.</p>
-      <div class="iv-rounds">${IV_ROUNDS.map((r, i) => `<div class="iv-rcard"><span class="iv-rnum">${i + 1}</span><div><b>${r.label}</b><small>${escHtml(r.desc)}</small></div></div>`).join('')}</div>
+      <p class="coding-intro">Mô phỏng quy trình tuyển dụng thực tế: chọn <b>kiểu bài</b>, làm lần lượt từng vòng, cuối buổi có điểm từng vòng, kết luận <b>Đậu / Cân nhắc / Chưa đạt</b> và <b>báo cáo chi tiết từng câu</b> (sai ở đâu, yếu mảng nào).</p>
+      <div class="iv-plans">${IV_PLAN_KEYS.map(k => {
+        const p = IV_PLANS[k];
+        return `<button class="iv-plan${k === pick ? ' active' : ''}" data-plan="${k}">
+          <b>${p.label}</b><small>${escHtml(p.hint)}</small>
+          <span class="iv-plan-rounds">${p.rounds.map(r => `${r.label.slice(0, 2)} ${r.n}`).join(' · ')}</span>
+        </button>`;
+      }).join('')}</div>
+      <div class="iv-rounds" id="iv-round-cards"></div>
       <div class="iq-stat">${best != null ? `<div><b>${best}</b><small>điểm cao nhất</small></div>` : ''}<div><b>${hist.length}</b><small>lần phỏng vấn</small></div></div>
       <button id="iv-start" class="iq-start-btn">🚀 Bắt đầu phỏng vấn</button>
     </div>
     ${reverseQuestionsHtml()}
     ${histHtml}`;
-  document.getElementById('iv-start').onclick = () => startInterview();
+  const drawRounds = plan => {
+    document.getElementById('iv-round-cards').innerHTML = ivPlanOf(plan).rounds
+      .map((r, i) => `<div class="iv-rcard"><span class="iv-rnum">${i + 1}</span><div><b>${r.label} <span class="iv-rn">${r.n} ${r.type === 'code' ? 'bài' : 'câu'}</span></b><small>${escHtml(r.desc)}</small></div></div>`).join('');
+  };
+  drawRounds(pick);
+  body.querySelectorAll('.iv-plan').forEach(b => b.onclick = () => {
+    store.set('prep-iv-plan', b.dataset.plan);
+    body.querySelectorAll('.iv-plan').forEach(x => x.classList.toggle('active', x === b));
+    drawRounds(b.dataset.plan);
+  });
+  body.querySelectorAll('.iv-hrow.has-log').forEach(b => b.onclick = () => showIvHistory(+b.dataset.hidx));
+  document.getElementById('iv-start').onclick = () => startInterview(store.get('prep-iv-plan', 'mix'));
 }
 
 /** Accordion "Câu hỏi nên hỏi nhà tuyển dụng" — nội dung tham khảo cuối buổi phỏng vấn. */
@@ -6587,27 +6663,59 @@ function reverseQuestionsHtml() {
   </div>`;
 }
 
-function startInterview() { ivState = { idx: 0, scores: {}, startMs: Date.now() }; runRound(); }
+function startInterview(plan) {
+  ivState = { plan: IV_PLANS[plan] ? plan : 'mix', idx: 0, scores: {}, log: [], startMs: Date.now() };
+  runRound();
+}
+
+/** Ghi lại DIỄN BIẾN từng câu để cuối buổi dựng báo cáo & lưu vào lịch sử.
+ *  Chỉ lưu id + lựa chọn (không lưu nguyên văn) — nội dung tra lại từ bank khi xem. */
+function ivLog(entry) { if (ivState) ivState.log.push(entry); }
 
 function runRound() {
-  const r = IV_ROUNDS[ivState.idx];
+  const r = ivRounds()[ivState.idx];
   if (!r) return finishInterview();
-  if (r.key === 'english') startMcqRound(window.ENGLISH_QUESTIONS || [], r);
-  else if (r.key === 'situational') startMcqRound(window.SITUATIONAL_QUESTIONS || [], r);
-  else if (r.key === 'iq') startIvIq(r);
-  else if (r.key === 'code') startIvCode(r);
+  if (r.type === 'iq') startIvIq(r);
+  else if (r.type === 'code') startIvCode(r);
+  else if (r.type === 'readcode') startMcqRound(pickReadCodeQs(r.n), r);
+  else if (r.key === 'english') startMcqRound(pickEnglishQs(r.n), r);
+  else startMcqRound(shuffleArr(window.SITUATIONAL_QUESTIONS || []).slice(0, r.n).map(q => ({ mode: 'situational', q })), r);
+}
+
+/** Vòng 🇬🇧 thiên GIAO TIẾP: ưu tiên câu kind='comm' (sát nghĩa, sắc thái, cách đáp),
+ *  chỉ bù ngữ pháp/từ vựng khi kho câu giao tiếp không đủ. */
+function pickEnglishQs(n) {
+  const bank = window.ENGLISH_QUESTIONS || [];
+  const comm = shuffleArr(bank.filter(q => q.kind === 'comm'));
+  const rest = shuffleArr(bank.filter(q => q.kind !== 'comm'));
+  const picked = comm.slice(0, n);
+  if (picked.length < n) picked.push(...rest.slice(0, n - picked.length));
+  return shuffleArr(picked).map(q => ({ mode: 'english', q }));
+}
+
+/** Vòng 🔍 Đọc code: xen kẽ "đoán output" và "tính Big-O" — hai câu hỏi tủ sau mỗi bài code. */
+function pickReadCodeQs(n) {
+  const a = shuffleArr(window.OUTPUT_QUIZ || []).map(q => ({ mode: 'output', q }));
+  const b = shuffleArr(window.COMPLEXITY_QUIZ || []).map(q => ({ mode: 'bigo', q }));
+  const out = [];
+  for (let i = 0; out.length < n && (i < a.length || i < b.length); i++) {
+    if (i < a.length && out.length < n) out.push(a[i]);
+    if (i < b.length && out.length < n) out.push(b[i]);
+  }
+  return out;
 }
 
 function roundDone(scorePct) {
-  const r = IV_ROUNDS[ivState.idx];
+  const r = ivRounds()[ivState.idx];
   ivState.scores[r.key] = Math.round(scorePct);
   logActivity();
   ivState.idx++;
-  const next = IV_ROUNDS[ivState.idx];
+  const next = ivRounds()[ivState.idx];
+  const total = ivRounds().length;
   document.getElementById('iv-body').innerHTML = `
     <div class="iv-inter">
       <div class="iv-check">✅</div>
-      <h2>Xong vòng ${ivState.idx}/${IV_ROUNDS.length}: ${escHtml(r.label)}</h2>
+      <h2>Xong vòng ${ivState.idx}/${total}: ${escHtml(r.label)}</h2>
       <p>Điểm vòng này: <b>${ivState.scores[r.key]}/100</b></p>
       ${next
         ? `<p class="iq-note">Tiếp theo: <b>${escHtml(next.label)}</b> — ${escHtml(next.desc)}</p><button id="iv-next" class="iq-start-btn">Vào vòng ${ivState.idx + 1} →</button>`
@@ -6616,54 +6724,59 @@ function roundDone(scorePct) {
   document.getElementById('iv-next').onclick = () => (next ? runRound() : finishInterview());
 }
 
-// --- Vòng trắc nghiệm (Tiếng Anh / Tình huống), có giải thích sau mỗi câu ---
-function startMcqRound(bank, r) {
-  ivState.mcq = { qs: shuffleArr(bank).slice(0, Math.min(r.n, bank.length)), idx: 0, correct: 0, answered: false, label: r.label, modeKey: r.key };
+// --- Vòng trắc nghiệm (Tiếng Anh / Tình huống / Đọc code), có giải thích sau mỗi câu ---
+/** items: [{ mode, q }] — mode là key trong QUIZ_MODES để mượn cách render + đổ câu sai về 🔁. */
+function startMcqRound(items, r) {
+  ivState.mcq = { items, idx: 0, correct: 0, answered: false, label: r.label, roundKey: r.key };
   showMcq();
 }
 function showMcq() {
   const m = ivState.mcq, body = document.getElementById('iv-body');
-  if (m.idx >= m.qs.length) return roundDone(m.qs.length ? m.correct / m.qs.length * 100 : 0);
-  const q = m.qs[m.idx];
+  if (m.idx >= m.items.length) return roundDone(m.items.length ? m.correct / m.items.length * 100 : 0);
+  const { mode, q } = m.items[m.idx];
+  const cfg = QUIZ_MODES[mode] || {};
+  const optHtml = cfg.optionHtml || (o => `<span class="oq-otext">${escHtml(o)}</span>`);
   body.innerHTML = `
-    <div class="iv-roundhead">${escHtml(m.label)} · Câu ${m.idx + 1}/${m.qs.length}</div>
-    <div class="iq-track"><div class="iq-fill" style="width:${m.idx / m.qs.length * 100}%"></div></div>
-    <div class="iq-q">${escHtml(q.q)}</div>
-    <div class="iq-opts">${shuffledOptsHtml(q, escHtml, 'iq-opt')}</div>
+    <div class="iv-roundhead">${escHtml(m.label)} · Câu ${m.idx + 1}/${m.items.length}</div>
+    <div class="iq-track"><div class="iq-fill" style="width:${m.idx / m.items.length * 100}%"></div></div>
+    ${cfg.questionHtml ? cfg.questionHtml(q) : `<div class="iq-q">${escHtml(q.q)}</div>`}
+    <div class="iq-opts">${shuffledOptsHtml(q, optHtml, 'iq-opt')}</div>
     <div id="iv-fb" class="iq-fb"></div>
     <button id="iv-mnext" class="iq-next" hidden></button>`;
+  if (cfg.highlight && window.hljs) body.querySelectorAll('pre code').forEach(c => { try { hljs.highlightElement(c); } catch { /* bỏ qua */ } });
   body.querySelectorAll('.iq-opt').forEach(b => b.onclick = () => answerMcq(+b.dataset.i));
 }
 function answerMcq(i) {
   const m = ivState.mcq;
   if (m.answered) return;
   m.answered = true;
-  const q = m.qs[m.idx];
+  const { mode, q } = m.items[m.idx];
   document.getElementById('iv-body').querySelectorAll('.iq-opt').forEach(b => { b.disabled = true; const oi = +b.dataset.i; if (oi === q.answer) b.classList.add('correct'); else if (oi === i) b.classList.add('wrong'); });
   const ok = i === q.answer;
   if (ok) m.correct++;
-  // Đổ câu sai về hệ 🔁 Ôn câu sai (mode english/situational trong QUIZ_MODES)
-  const cfg = QUIZ_MODES[m.modeKey];
+  ivLog({ r: m.roundKey, m: mode, id: q.id, ch: i, ok: ok ? 1 : 0 });
+  // Đổ câu sai về hệ 🔁 Ôn câu sai (mode tương ứng trong QUIZ_MODES)
+  const cfg = QUIZ_MODES[mode];
   if (cfg) {
     if (ok) {
-      clearWrong(m.modeKey, q.id);
+      clearWrong(mode, q.id);
       const d = store.get(cfg.doneKey, {}); d[q.id] = true; store.set(cfg.doneKey, d);
-    } else recordWrong(m.modeKey, q.id);
+    } else recordWrong(mode, q.id);
   }
   const ivFb = document.getElementById('iv-fb');
-  const pin = pinBtnHtml(m.modeKey, q.id);
+  const pin = pinBtnHtml(mode, q.id);
   ivFb.innerHTML = `<div class="${ok ? 'iq-ok' : 'iq-no'}">${ok ? '✅ Đúng! ' : '❌ Chưa đúng. '}${escHtml(q.explain)}</div>${pin ? `<div class="oq-fb-actions">${pin}</div>` : ''}`;
   bindPinBtns(ivFb);
   const nx = document.getElementById('iv-mnext');
   nx.hidden = false;
-  nx.textContent = m.idx + 1 >= m.qs.length ? 'Hoàn tất vòng →' : 'Câu tiếp →';
+  nx.textContent = m.idx + 1 >= m.items.length ? 'Hoàn tất vòng →' : 'Câu tiếp →';
   nx.onclick = () => { m.idx++; m.answered = false; showMcq(); };
 }
 
 // --- Vòng IQ (tính giờ, không hiện đáp án, chấm theo trọng số độ khó) ---
 function startIvIq(r) {
   const qs = pickIQTest(window.IQ_QUESTIONS || [], Math.min(r.n, (window.IQ_QUESTIONS || []).length));
-  ivState.iq = { qs, idx: 0, wGot: 0, wMax: qs.reduce((a, q) => a + qDiff(q), 0), startMs: Date.now(), sec: r.n * 30 };
+  ivState.iq = { qs, idx: 0, wGot: 0, wMax: qs.reduce((a, q) => a + qDiff(q), 0), startMs: Date.now(), sec: r.n * 30, roundKey: r.key };
   clearInterval(iqTimerId);
   iqTimerId = setInterval(tickIvIq, 1000);
   showIvIq();
@@ -6687,7 +6800,12 @@ function showIvIq() {
     <div class="iq-cat" style="margin-bottom:6px">${escHtml(q.category)}</div>
     <div class="iq-q">${escHtml(q.q)}</div>
     <div class="iq-opts">${shuffledOptsHtml(q, escHtml, 'iq-opt')}</div>`;
-  body.querySelectorAll('.iq-opt').forEach(b => b.onclick = () => { if (+b.dataset.i === q.answer) s.wGot += qDiff(q); s.idx++; showIvIq(); });
+  body.querySelectorAll('.iq-opt').forEach(b => b.onclick = () => {
+    const i = +b.dataset.i, ok = i === q.answer;
+    if (ok) s.wGot += qDiff(q);
+    ivLog({ r: s.roundKey, m: 'iq', id: q.id, ch: i, ok: ok ? 1 : 0 });
+    s.idx++; showIvIq();
+  });
 }
 function finishIvIq() {
   clearInterval(iqTimerId);
@@ -6695,21 +6813,29 @@ function finishIvIq() {
   roundDone(s.wMax ? s.wGot / s.wMax * 100 : 0);
 }
 
-// --- Vòng Lập trình (1 bài, chạy test thật) ---
+// --- Vòng Lập trình (n bài, chạy test thật) ---
 function startIvCode(r) {
   const easy = (window.CODING_PROBLEMS || []).filter(p => p.difficulty !== 'Khó');
-  const p = shuffleArr(easy.length ? easy : (window.CODING_PROBLEMS || []))[0];
-  if (!p) return roundDone(0);
-  ivState.code = { p, passed: 0, total: p.tests.length, ran: false };
+  const pool = shuffleArr(easy.length >= r.n ? easy : (window.CODING_PROBLEMS || []));
+  const ps = pool.slice(0, r.n);
+  if (!ps.length) return roundDone(0);
+  ivState.code = { ps, idx: 0, passed: 0, total: 0, roundKey: r.key };
+  showIvCode();
+}
+function showIvCode() {
+  const s = ivState.code;
+  const p = s.ps[s.idx];
+  if (!p) return roundDone(s.total ? s.passed / s.total * 100 : 0);
+  s.cur = { passed: 0, total: p.tests.length, ran: false };
   document.getElementById('iv-body').innerHTML = `
-    <div class="iv-roundhead">⌨️ Lập trình · giải bài rồi chạy test</div>
+    <div class="iv-roundhead">⌨️ Viết code · Bài ${s.idx + 1}/${s.ps.length} — giải rồi chạy test</div>
     <h2>${escHtml(p.title)}</h2>
     <div class="cd-tags"><span class="ci-topic">${escHtml(p.topic)}</span></div>
     <div class="cd-prompt md">${window.marked ? marked.parse(p.prompt) : escHtml(p.prompt)}</div>
     <textarea id="iv-code" class="cd-code" spellcheck="false"></textarea>
     <div class="cd-actions">
       <button id="iv-run" class="cd-run">▶ Chạy test</button>
-      <button id="iv-submit">Nộp &amp; sang vòng sau →</button>
+      <button id="iv-submit">${s.idx + 1 >= s.ps.length ? 'Nộp &amp; sang vòng sau →' : 'Nộp &amp; sang bài sau →'}</button>
     </div>
     <div id="iv-cres" class="cd-result"></div>`;
   const ta = document.getElementById('iv-code');
@@ -6717,49 +6843,147 @@ function startIvCode(r) {
   ta.addEventListener('keydown', e => { if (e.key === 'Tab') { e.preventDefault(); const a = ta.selectionStart, b = ta.selectionEnd; ta.value = ta.value.slice(0, a) + '  ' + ta.value.slice(b); ta.selectionStart = ta.selectionEnd = a + 2; } });
   document.getElementById('iv-run').onclick = () => ivRunCode(p, ta.value);
   document.getElementById('iv-submit').onclick = () => {
-    if (!ivState.code.ran && !confirm('Bạn chưa chạy test lần nào — nộp với 0 điểm vòng này?')) return;
-    roundDone(ivState.code.total ? ivState.code.passed / ivState.code.total * 100 : 0);
+    if (!s.cur.ran && !confirm('Bạn chưa chạy test lần nào — nộp bài này với 0 điểm?')) return;
+    s.passed += s.cur.passed; s.total += s.cur.total;
+    ivLog({ r: s.roundKey, m: 'code', id: p.id, p: s.cur.passed, t: s.cur.total });
+    s.idx++;
+    showIvCode();
   };
 }
 function ivRunCode(p, code) {
   const res = document.getElementById('iv-cres');
   res.innerHTML = '<div class="cd-running">⏳ Đang chạy test…</div>';
   runInSandbox(code, p.fnName, p.tests, data => {
-    if (data.error) { res.innerHTML = `<div class="cd-err">❌ ${escHtml(data.error)}</div>`; ivState.code.passed = 0; ivState.code.ran = true; return; }
+    const cur = ivState.code.cur;
+    if (data.error) { res.innerHTML = `<div class="cd-err">❌ ${escHtml(data.error)}</div>`; cur.passed = 0; cur.ran = true; return; }
     const passed = data.results.filter(r => r.pass).length;
-    ivState.code.passed = passed; ivState.code.ran = true;
+    cur.passed = passed; cur.ran = true;
     const all = passed === data.results.length;
     res.innerHTML = `<div class="cd-summary ${all ? 'ok' : 'no'}">${all ? '🎉' : '⚠️'} ${passed}/${data.results.length} test đúng</div>`
       + data.results.map((r, i) => `<div class="cd-case ${r.pass ? 'pass' : 'fail'}"><span class="cc-h">${r.pass ? '✅' : '❌'} Test ${i + 1}</span></div>`).join('');
   });
 }
 
+// ---------- Báo cáo cuối buổi & xem lại lịch sử ----------
+/** Tra ngược một câu trong bank theo (mode, id) để dựng lại báo cáo — kể cả buổi cũ.
+ *  null nếu câu đã bị gỡ khỏi ngân hàng sau một lần deploy. */
+function ivFindQ(mode, id) {
+  const bank = mode === 'iq' ? (window.IQ_QUESTIONS || [])
+    : mode === 'code' ? (window.CODING_PROBLEMS || [])
+      : (QUIZ_MODES[mode]?.data() || []);
+  return bank.find(q => String(q.id) === String(id)) || null;
+}
+/** Nhãn chủ đề của một câu — nền để chỉ ra "yếu ở mảng nào". */
+const ivTopicOf = (mode, q) => q?.category || q?.topic || QUIZ_MODES[mode]?.label || mode;
+
+/** Bảng "🔍 Xem lại từng câu": nhóm theo vòng, câu sai mở sẵn, câu đúng thu gọn. */
+function ivReviewHtml(log) {
+  const byRound = {};
+  for (const e of log) (byRound[e.r] = byRound[e.r] || []).push(e);
+  return Object.keys(byRound).map(rk => {
+    const items = byRound[rk];
+    const wrong = items.filter(e => e.m === 'code' ? e.p < e.t : !e.ok).length;
+    const rows = items.map((e, i) => {
+      const q = ivFindQ(e.m, e.id);
+      if (e.m === 'code') {
+        const okAll = e.p >= e.t;
+        return `<div class="iv-rev ${okAll ? 'ok' : 'no'}">
+          <div class="iv-rev-h">${okAll ? '✅' : '❌'} Bài ${i + 1}: ${escHtml(q ? q.title : e.id)}</div>
+          <div class="iv-rev-b">Bạn qua <b>${e.p}/${e.t}</b> test.${okAll ? '' : ' Chưa đạt — hãy giải lại bài này ở tab 🧠 Tư duy → 💻 Lập trình.'}</div>
+        </div>`;
+      }
+      if (!q) return `<div class="iv-rev no"><div class="iv-rev-h">❔ Câu ${i + 1}: (đã gỡ khỏi ngân hàng)</div></div>`;
+      const opt = j => escHtml(String(q.options?.[j] ?? '—')).replace(/\n/g, ' ⏎ ');
+      return `<div class="iv-rev ${e.ok ? 'ok' : 'no'}">
+        <div class="iv-rev-h">${e.ok ? '✅' : '❌'} Câu ${i + 1}: ${escHtml(q.q || (q.code || '').split('\n')[0])}</div>
+        ${e.ok ? '' : `<div class="iv-rev-b"><span class="iv-rev-bad">Bạn chọn: ${opt(e.ch)}</span><span class="iv-rev-good">Đáp án đúng: ${opt(q.answer)}</span></div>`}
+        <div class="iv-rev-x">💡 ${escHtml(q.explain || '')}</div>
+      </div>`;
+    }).join('');
+    return `<details class="iv-rev-group"${wrong ? ' open' : ''}>
+      <summary>${escHtml(IV_ROUND_LABEL[rk] || rk)} — ${items.length} câu, <b>${wrong} chưa đạt</b></summary>
+      ${rows}
+    </details>`;
+  }).join('');
+}
+
+/** "Chưa tốt ở đâu": gom câu sai theo chủ đề, nhiều nhất lên đầu. */
+function ivWeakTopics(log) {
+  const cnt = {};
+  for (const e of log) {
+    const bad = e.m === 'code' ? e.p < e.t : !e.ok;
+    if (!bad) continue;
+    const q = ivFindQ(e.m, e.id);
+    const t = ivTopicOf(e.m, q);
+    cnt[t] = (cnt[t] || 0) + 1;
+  }
+  return Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 6);
+}
+
+/** Khối kết quả dùng chung cho buổi vừa xong & khi mở lại từ lịch sử. */
+function ivResultHtml(rec, opts = {}) {
+  const sc = rec.scores || {};
+  const keys = Object.keys(sc);
+  const bars = keys.map(k => `<div class="rd-part"><span class="rd-plabel">${escHtml(IV_ROUND_LABEL[k] || k)}</span><div class="rd-track"><div class="rd-fill" style="width:${sc[k]}%"></div></div><b class="rd-pval">${sc[k]}</b></div>`).join('');
+  const weakRound = keys.slice().sort((a, b) => sc[a] - sc[b])[0];
+  const log = rec.log || [];
+  const weak = ivWeakTopics(log);
+  const nWrong = log.filter(e => e.m === 'code' ? e.p < e.t : !e.ok).length;
+  return `
+    <div class="iv-result">
+      <div class="iq-score-ring ring-${verdClass(rec.overall)}" style="--p:${rec.overall}"><div class="rd-center"><b>${rec.overall}</b><small>/100</small></div></div>
+      <h2 class="iv-verdict ${verdClass(rec.overall)}">${escHtml(rec.verdict || verdictText(rec.overall))}</h2>
+      <p>${escHtml(ivPlanOf(rec.plan).label)} · ${escHtml(rec.date || '')} · thời gian: <b>${fmtMMSS(rec.timeSec || 0)}</b></p>
+      <div class="rd-parts" style="max-width:460px;margin:14px auto">${bars}</div>
+      ${weakRound ? `<p class="rd-weak">🔧 Vòng yếu nhất: <b>${escHtml(IV_ROUND_LABEL[weakRound] || weakRound)}</b> (${sc[weakRound]}/100).</p>` : ''}
+      ${weak.length ? `<div class="iv-weak">
+        <h3>📉 Chưa tốt ở đâu</h3>
+        <p class="iq-note">Các chủ đề bạn trả lời sai nhiều nhất trong buổi này — luyện lại đúng những mảng này trước.</p>
+        <div class="iv-weak-chips">${weak.map(([t, n]) => `<span class="iv-weak-chip">${escHtml(t)} <b>${n} sai</b></span>`).join('')}</div>
+      </div>` : (log.length ? '<p class="rd-weak">🎯 Không sai câu nào trong buổi này — quá tốt!</p>' : '')}
+      ${log.length ? `<div class="iv-review">
+        <h3>🔍 Xem lại từng câu <small>(${log.length} câu · ${nWrong} chưa đạt)</small></h3>
+        ${ivReviewHtml(log)}
+      </div>` : '<p class="iq-note">Buổi này chưa lưu chi tiết từng câu (bản ghi cũ).</p>'}
+      <p class="iq-note">Điểm tổng = trung bình các vòng. Câu sai đã tự vào hàng đợi 🔁 Ôn câu sai ở tab 🧠 Tư duy.</p>
+      <div class="review-actions">
+        <button id="iv-again" class="iq-start-btn">${opts.fromHistory ? '← Về danh sách' : '🔁 Phỏng vấn lại'}</button>
+      </div>
+    </div>`;
+}
+
 function finishInterview() {
   const sc = ivState.scores;
-  const v = k => sc[k] || 0;
-  const overall = Math.round((v('english') + v('iq') + v('code') + v('situational')) / 4);
-  const verdict = verdictText(overall);
-  const timeSec = Math.round((Date.now() - ivState.startMs) / 1000);
-  const rec = { date: dayKey(new Date()), ts: Date.now(), scores: sc, overall, verdict, timeSec };
+  const keys = Object.keys(sc);
+  const overall = keys.length ? Math.round(keys.reduce((a, k) => a + sc[k], 0) / keys.length) : 0;
+  const rec = {
+    date: dayKey(new Date()), ts: Date.now(), plan: ivState.plan, scores: sc,
+    overall, verdict: verdictText(overall), timeSec: Math.round((Date.now() - ivState.startMs) / 1000),
+    log: ivState.log,
+  };
   const hist = store.get('prep-interview-history', []);
   hist.push(rec);
-  store.set('prep-interview-history', hist.slice(-50)); // → tự lên Firestore
+  // Giữ 50 buổi cho biểu đồ điểm, nhưng CHỈ 10 buổi gần nhất giữ chi tiết từng câu
+  // (log đầy đủ mà nhân 50 thì phình localStorage & bản ghi Firestore).
+  const trimmed = hist.slice(-50).map((h, i, arr) => (i < arr.length - 10 && h.log ? { ...h, log: undefined } : h));
+  store.set('prep-interview-history', trimmed); // → tự lên Firestore
   logActivity();
 
-  const rounds = [['english', '🇬🇧 Tiếng Anh'], ['iq', '🧩 IQ / Tư duy'], ['code', '⌨️ Lập trình'], ['situational', '🎭 Xử lý tình huống']];
-  const weak = rounds.slice().sort((a, b) => sc[a[0]] - sc[b[0]])[0];
-  const bars = rounds.map(([k, lab]) => `<div class="rd-part"><span class="rd-plabel">${lab}</span><div class="rd-track"><div class="rd-fill" style="width:${sc[k]}%"></div></div><b class="rd-pval">${sc[k]}</b></div>`).join('');
-  document.getElementById('iv-body').innerHTML = `
-    <div class="iv-result">
-      <div class="iq-score-ring ring-${verdClass(overall)}" style="--p:${overall}"><div class="rd-center"><b>${overall}</b><small>/100</small></div></div>
-      <h2 class="iv-verdict ${verdClass(overall)}">${verdict}</h2>
-      <p>Tổng thời gian phỏng vấn: <b>${fmtMMSS(timeSec)}</b></p>
-      <div class="rd-parts" style="max-width:460px;margin:14px auto">${bars}</div>
-      <p class="rd-weak">🔧 Cần cải thiện nhất: <b>${escHtml(weak[1])}</b> (${sc[weak[0]]}/100). Luyện thêm ở tab tương ứng nhé!</p>
-      <p class="iq-note">Điểm tổng = trung bình 4 vòng. Đã lưu vào lịch sử và đồng bộ cloud.</p>
-      <button id="iv-again" class="iq-start-btn">🔁 Phỏng vấn lại</button>
-    </div>`;
+  const body = document.getElementById('iv-body');
+  body.innerHTML = ivResultHtml(rec);
+  if (window.hljs) body.querySelectorAll('.iv-review pre code').forEach(c => { try { hljs.highlightElement(c); } catch { /* bỏ qua */ } });
   document.getElementById('iv-again').onclick = () => renderCompany();
+}
+
+/** Mở lại báo cáo chi tiết của một buổi trong lịch sử. */
+function showIvHistory(idx) {
+  const rec = store.get('prep-interview-history', [])[idx];
+  if (!rec) return renderCompany();
+  const body = document.getElementById('iv-body');
+  body.innerHTML = ivResultHtml(rec, { fromHistory: true });
+  if (window.hljs) body.querySelectorAll('.iv-review pre code').forEach(c => { try { hljs.highlightElement(c); } catch { /* bỏ qua */ } });
+  document.getElementById('iv-again').onclick = () => renderCompany();
+  body.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ---------- Phím tắt ----------

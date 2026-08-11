@@ -879,6 +879,114 @@ test('wiring: chế độ 🐳 DevOps có đủ id + mode button + script + engi
   assert.ok(sw.includes("'devops-quiz.js'"), 'sw.js PRECACHE thiếu devops-quiz.js');
 });
 
+/* CHỐNG "LỘ ĐÁP ÁN": tật kinh điển của trắc nghiệm tự soạn là đáp án đúng được viết
+ * dài & chi tiết nhất, còn distractor cụt lủn ⇒ nhìn phát chọn được mà không cần hiểu.
+ * Luật: đáp án đúng KHÔNG được vừa là dài nhất, vừa dài hơn trung bình distractor ≥40%
+ * (và ≥8 ký tự). Sửa bằng cách viết distractor cụ thể & hợp lý ngang đáp án đúng —
+ * đừng nới ngưỡng.
+ * OUTPUT_QUIZ được miễn: options PHẢI bằng đúng output thật, không sửa độ dài được. */
+test('mọi bank trắc nghiệm: đáp án đúng không được "dài nhất là đúng"', () => {
+  const BANKS = [
+    ['ENGLISH_QUESTIONS', 'english-questions.js'], ['SITUATIONAL_QUESTIONS', 'situational-questions.js'],
+    ['IQ_QUESTIONS', 'iq-questions.js'], ['API_QUIZ', 'api-quiz.js'], ['SQL_DRILL', 'sql-drill.js'],
+    ['CLI_QUIZ', 'cli-quiz.js'], ['JAVA_QUIZ', 'java-quiz.js'], ['REDIS_QUIZ', 'redis-quiz.js'],
+    ['DIST_QUIZ', 'dist-quiz.js'], ['DEVOPS_QUIZ', 'devops-quiz.js'], ['COMPLEXITY_QUIZ', 'complexity-quiz.js'],
+  ];
+  const bad = [];
+  for (const [key, file] of BANKS) {
+    for (const q of loadWindow(file)[key] || []) {
+      const opts = (q.options || []).map(String);
+      if (opts.length < 2) continue;
+      const lens = opts.map(o => o.length);
+      const cor = lens[q.answer];
+      const dis = lens.filter((_, i) => i !== q.answer);
+      const mean = dis.reduce((a, b) => a + b, 0) / dis.length;
+      if (cor > Math.max(...dis) && cor >= mean * 1.4 && cor - mean >= 8)
+        bad.push(`${key}/${q.id} (đúng ${cor} ký tự vs trung bình ${Math.round(mean)})`);
+    }
+  }
+  assert.deepStrictEqual(bad, [], `Câu lộ đáp án qua độ dài:\n  ${bad.join('\n  ')}`);
+});
+
+test('complexity-quiz: id duy nhất, answer hợp lệ, options là Big-O, đủ field', () => {
+  const qs = loadWindow('complexity-quiz.js').COMPLEXITY_QUIZ;
+  assert.ok(Array.isArray(qs) && qs.length >= 25, 'COMPLEXITY_QUIZ phải ≥25 câu');
+  const ids = qs.map(q => q.id);
+  assert.strictEqual(new Set(ids).size, ids.length, 'id complexity-quiz trùng');
+  for (const q of qs) {
+    assert.ok(q.q && q.code && q.explain && q.topic, `CX ${q.id} thiếu field`);
+    assert.ok(q.id.startsWith('cx-'), `CX ${q.id} thiếu prefix cx-`);
+    assert.ok(q.kind === 'time' || q.kind === 'space', `CX ${q.id}: kind phải là time|space`);
+    assert.ok(Array.isArray(q.options) && q.options.length >= 3, `CX ${q.id}: <3 lựa chọn`);
+    assert.ok(Number.isInteger(q.answer) && q.answer >= 0 && q.answer < q.options.length, `CX ${q.id}: answer ngoài range`);
+    assert.strictEqual(new Set(q.options).size, q.options.length, `CX ${q.id}: options trùng nhau`);
+    for (const o of q.options) assert.ok(/^O\(/.test(o), `CX ${q.id}: option "${o}" không phải ký hiệu Big-O`);
+  }
+  assert.ok(qs.some(q => q.kind === 'space'), 'thiếu câu hỏi về BỘ NHỚ (space)');
+});
+
+test('wiring: chế độ ⏱️ Độ phức tạp có đủ id + mode button + script + engine + QUIZ_MODES', () => {
+  assert.ok(HTML.includes('id="think-bigo"'), 'thiếu #think-bigo');
+  assert.ok(HTML.includes('id="bigo-body"'), 'thiếu #bigo-body');
+  assert.ok(HTML.includes('data-mode="bigo"'), 'thiếu nút mode bigo');
+  assert.ok(HTML.includes('data-cov="bigo"'), 'thiếu badge độ phủ bigo');
+  assert.ok(HTML.includes('src="complexity-quiz.js"'), 'index.html thiếu script complexity-quiz.js');
+  assert.ok(HTML.indexOf('src="complexity-quiz.js"') < HTML.indexOf('src="app.js"'), 'complexity-quiz.js phải nạp trước app.js');
+  assert.ok(/renderBigoQuiz\(\)/.test(APP), 'initThink chưa gọi renderBigoQuiz');
+  assert.ok(/document\.getElementById\('think-bigo'\)\.hidden = m !== 'bigo'/.test(APP), 'setThinkMode chưa toggle think-bigo');
+  assert.ok(/window\.COMPLEXITY_QUIZ/.test(APP), 'bigoQuiz chưa trỏ tới window.COMPLEXITY_QUIZ');
+  assert.ok(/bigo: \{[\s\S]*?doneKey: 'prep-bigo-done'/.test(APP), 'QUIZ_MODES thiếu entry bigo');
+  assert.ok(/TECH_QUIZ_MODES = \[[^\]]*'bigo'/.test(APP), 'TECH_QUIZ_MODES thiếu bigo (mất badge/thi thử/mảng yếu)');
+  const keys = APP.slice(APP.indexOf('const PREP_KEYS'), APP.indexOf('const PREP_KEYS') + 2400);
+  assert.ok(/'prep-bigo-done'/.test(keys) && /'prep-bigo-best'/.test(keys), 'PREP_KEYS thiếu prep-bigo-done/best');
+  const sw = read('sw.js');
+  assert.ok(sw.includes("'complexity-quiz.js'"), 'sw.js PRECACHE thiếu complexity-quiz.js');
+});
+
+test('wiring: 🏢 phỏng vấn — 3 kiểu bài, vòng đọc code, IQ/code nhiều câu hơn', () => {
+  assert.ok(/const IV_PLANS = \{[\s\S]*?mix:[\s\S]*?mcq:[\s\S]*?code:/.test(APP), 'thiếu 3 kiểu bài IV_PLANS (mix/mcq/code)');
+  assert.ok(/IV_PLAN_KEYS = \['mix', 'mcq', 'code'\]/.test(APP), 'IV_PLAN_KEYS phải liệt kê đủ 3 kiểu');
+  assert.ok(/data-plan="\$\{k\}"/.test(APP), 'màn setup chưa vẽ nút chọn kiểu bài');
+  assert.ok(/store\.set\('prep-iv-plan'/.test(APP) && /store\.get\('prep-iv-plan', 'mix'\)/.test(APP),
+    'kiểu bài chưa được nhớ qua prep-iv-plan');
+  const keys = APP.slice(APP.indexOf('const PREP_KEYS'), APP.indexOf('const PREP_KEYS') + 2400);
+  assert.ok(/'prep-iv-plan'/.test(keys), 'PREP_KEYS thiếu prep-iv-plan');
+  // Vòng "đọc code" trộn đoán output + Big-O
+  assert.ok(/function pickReadCodeQs/.test(APP), 'thiếu vòng đọc code (pickReadCodeQs)');
+  assert.ok(/mode: 'output', q/.test(APP) && /mode: 'bigo', q/.test(APP), 'vòng đọc code chưa trộn output + bigo');
+  // Vòng tiếng Anh ưu tiên câu giao tiếp
+  assert.ok(/q\.kind === 'comm'/.test(APP), 'vòng tiếng Anh chưa ưu tiên câu giao tiếp (kind=comm)');
+  // Trọng số: IQ & code phải nhiều hơn bản cũ (IQ 10, code 1)
+  const plans = APP.slice(APP.indexOf('const IV_PLANS'), APP.indexOf('const IV_PLAN_KEYS'));
+  const iqNs = [...plans.matchAll(/key: 'iq', type: 'iq'[^}]*?n: (\d+)/g)].map(m => +m[1]);
+  const codeNs = [...plans.matchAll(/key: 'code', type: 'code'[^}]*?n: (\d+)/g)].map(m => +m[1]);
+  assert.ok(iqNs.length === 3 && iqNs.every(n => n >= 8), `vòng IQ phải ≥8 câu ở cả 3 kiểu (được ${iqNs})`);
+  assert.ok(codeNs.length >= 2 && codeNs.every(n => n >= 2), `vòng viết code phải ≥2 bài (được ${codeNs})`);
+  // Vòng code chạy nhiều bài, cộng dồn điểm
+  assert.ok(/function showIvCode/.test(APP) && /s\.passed \+= s\.cur\.passed; s\.total \+= s\.cur\.total;/.test(APP),
+    'vòng viết code chưa cộng dồn điểm qua nhiều bài');
+});
+
+test('wiring: 🏢 báo cáo cuối buổi + lịch sử xem lại từng câu', () => {
+  assert.ok(/function ivLog/.test(APP), 'thiếu ivLog (ghi diễn biến từng câu)');
+  for (const fn of ['ivFindQ', 'ivReviewHtml', 'ivWeakTopics', 'ivResultHtml', 'showIvHistory']) {
+    assert.ok(new RegExp(`function ${fn}\\b`).test(APP), `thiếu hàm ${fn}`);
+  }
+  // Mỗi vòng đều ghi log: mcq, iq, code
+  assert.ok((APP.match(/ivLog\(\{/g) || []).length >= 3, 'chưa ghi log đủ 3 loại vòng (mcq/iq/code)');
+  // Lưu vào lịch sử kèm log, nhưng chỉ giữ chi tiết 10 buổi gần nhất
+  assert.ok(/log: ivState\.log/.test(APP), 'bản ghi lịch sử chưa kèm log');
+  assert.ok(/arr\.length - 10 && h\.log \? \{ \.\.\.h, log: undefined \}/.test(APP),
+    'chưa cắt log của buổi cũ (phình localStorage/Firestore)');
+  // Lịch sử bấm được để mở lại báo cáo
+  assert.ok(/data-hidx="\$\{i\}"/.test(APP) && /showIvHistory\(\+b\.dataset\.hidx\)/.test(APP),
+    'dòng lịch sử chưa mở lại được báo cáo chi tiết');
+  const css = read('styles.css');
+  for (const cls of ['.iv-plan', '.iv-weak-chip', '.iv-rev-group', '.iv-rev-bad', '.iv-rev-good']) {
+    assert.ok(css.includes(cls), `styles.css thiếu ${cls}`);
+  }
+});
+
 test('wiring: chế độ 🔁 Ôn câu sai đủ HTML + toggle + badge + render', () => {
   assert.ok(HTML.includes('id="think-review"'), 'thiếu #think-review');
   assert.ok(HTML.includes('id="review-body"'), 'thiếu #review-body');
@@ -1175,10 +1283,10 @@ test('review: hook ghi/xoá câu sai gắn đúng vào engine quiz + PREP_KEYS',
   // Đoán output cũng ghi/xoá
   assert.ok(/clearWrong\('output', q\.id\)/.test(APP) && /recordWrong\('output', q\.id\)/.test(APP),
     'answerOutputQuiz chưa ghi/xoá câu sai');
-  // Vòng MCQ Phỏng vấn tổng hợp (english/situational) ghi/xoá qua modeKey
-  assert.ok(/modeKey: r\.key/.test(APP), 'startMcqRound chưa lưu modeKey');
-  assert.ok(/clearWrong\(m\.modeKey, q\.id\)/.test(APP) && /recordWrong\(m\.modeKey, q\.id\)/.test(APP),
-    'answerMcq chưa ghi/xoá câu sai theo modeKey');
+  // Vòng MCQ Phỏng vấn tổng hợp: mỗi câu mang theo mode riêng (english/situational/output/bigo)
+  assert.ok(/startMcqRound\(items, r\)/.test(APP), 'startMcqRound phải nhận items [{mode, q}]');
+  assert.ok(/clearWrong\(mode, q\.id\)/.test(APP) && /recordWrong\(mode, q\.id\)/.test(APP),
+    'answerMcq chưa ghi/xoá câu sai theo mode của từng câu');
   // PREP_KEYS gồm prep-quiz-wrong để export/sync/reset
   const pk = APP.match(/const PREP_KEYS = \[([\s\S]*?)\]/);
   assert.ok(pk && pk[1].includes('prep-quiz-wrong'), 'PREP_KEYS thiếu prep-quiz-wrong');
@@ -1832,7 +1940,7 @@ test('📌 ghim câu hỏi: helper + nút ở 4 engine chấm + phiên ôn + b�
   assert.ok(/pinBtnHtml\(cfg\.mode, q\.id\)/.test(APP), 'makeQuiz answer() thiếu nút ghim');
   assert.ok(/pinBtnHtml\('output', q\.id\)/.test(APP), 'answerOutputQuiz thiếu nút ghim');
   assert.ok(/pinBtnHtml\(item\.mode, q\.id\)/.test(APP), 'answerReview thiếu nút ghim');
-  assert.ok(/pinBtnHtml\(m\.modeKey, q\.id\)/.test(APP), 'answerMcq (vòng english/tình huống) thiếu nút ghim');
+  assert.ok(/const pin = pinBtnHtml\(mode, q\.id\)/.test(APP), 'answerMcq (vòng trắc nghiệm phỏng vấn) thiếu nút ghim');
   const binds = APP.match(/bindPinBtns\(/g) || [];
   assert.ok(binds.length >= 5, `cần ≥5 lời gọi bindPinBtns (4 engine + khai báo), thấy ${binds.length}`);
   // phiên ôn câu ghim trong view 🔁 + bản in có khối 📌 (loại trùng với khối đang-sai)
