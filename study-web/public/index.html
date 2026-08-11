@@ -44,8 +44,7 @@
       <div class="navgroup" data-group="pv">
         <button class="navgroup-btn" type="button">🎯 Phỏng vấn <span class="ng-caret">▾</span></button>
         <div class="navgroup-menu">
-          <button class="tab" data-view="mock">🎯 Mock phỏng vấn</button>
-          <button class="tab" data-view="company">🏢 Phỏng vấn tổng hợp</button>
+          <button class="tab" data-view="mock">🎯 Phỏng vấn</button>
           <button class="tab" data-view="star">🌟 STAR (kể chuyện)</button>
         </div>
       </div>
@@ -183,11 +182,15 @@
   <!-- ============ VIEW: MOCK INTERVIEW ============ -->
   <div id="view-mock" class="view">
     <div class="mk-wrap">
-      <h1>🎯 Mock Interview</h1>
+      <h1>🎯 Phỏng vấn</h1>
       <div class="mk-mode-switch">
-        <button class="mkm active" data-mkmode="self">📝 Tự chấm (offline)</button>
+        <button class="mkm active" data-mkmode="full">🏅 Buổi đầy đủ</button>
+        <button class="mkm" data-mkmode="self">🧩 Luyện nhanh (hỏi đáp)</button>
         <button class="mkm" data-mkmode="ai">🤖 Phỏng vấn AI (Claude)</button>
       </div>
+
+      <!-- ===== BUỔI ĐẦY ĐỦ / các kiểu bài chấm tự động (trước đây là tab "Phỏng vấn tổng hợp") ===== -->
+      <div id="mk-full"><div class="iv-wrap"><div id="iv-body"></div></div></div>
 
       <!-- ===== AI INTERVIEW (Claude đóng vai người phỏng vấn) ===== -->
       <div id="mk-ai" hidden>
@@ -275,21 +278,27 @@
           <span id="mk-timer" class="mk-timer"></span>
         </div>
         <div id="mk-question" class="mk-question"></div>
+        <!-- Ô trả lời ĐỂ NGOÀI (trước đây nằm trong details AI nên màn hình trông như không có chỗ đáp) -->
+        <div class="mk-ansbox">
+          <div class="mk-uans-head">
+            <span>✍️ Câu trả lời của bạn <small>— đây là câu hỏi MỞ như phỏng vấn thật: nói to hoặc gõ ý chính, rồi mới xem đáp án mẫu</small></span>
+            <span class="dict-row">
+              <button id="mk-dict" class="dict-btn" type="button" hidden>🎙️ Nói để điền</button>
+              <button id="mk-dict-lang" class="dict-lang" type="button" title="Ngôn ngữ nói-để-điền" hidden></button>
+            </span>
+          </div>
+          <textarea id="mk-uans" class="mk-uans" placeholder="Gõ ý chính bạn sẽ trả lời… (không bắt buộc, nhưng viết ra rồi đối chiếu đáp án mẫu sẽ nhớ lâu hơn)"></textarea>
+        </div>
         <div id="mk-answer" class="mk-answer" hidden></div>
         <div class="mk-actions">
-          <button id="mk-reveal">👁 Xem đáp án</button>
+          <button id="mk-reveal">👁 Xem đáp án mẫu &amp; tự chấm</button>
           <button id="mk-right" class="mk-grade-right" hidden>✓ Tôi trả lời tốt</button>
           <button id="mk-wrong" class="mk-grade-wrong" hidden>✗ Chưa tốt</button>
           <button id="mk-quit">⏹ Dừng</button>
         </div>
         <details class="mk-aigrade">
           <summary>🤖 Nhờ AI chấm câu trả lời của bạn (tùy chọn · cần API key)</summary>
-          <p class="mk-tip">Gõ (hoặc bấm 🎙️ nói) câu trả lời của bạn rồi để Claude đối chiếu với đáp án mẫu, cho điểm /10 + chỉ ra chỗ thiếu. Dùng chung API key với “Phỏng vấn AI”.</p>
-          <div class="dict-row">
-            <button id="mk-dict" class="dict-btn" type="button" hidden>🎙️ Nói để điền</button>
-            <button id="mk-dict-lang" class="dict-lang" type="button" title="Ngôn ngữ nói-để-điền" hidden></button>
-          </div>
-          <textarea id="mk-uans" class="mk-uans" placeholder="Gõ câu trả lời của bạn cho câu hỏi trên…"></textarea>
+          <p class="mk-tip">Claude đối chiếu câu trả lời bạn vừa gõ ở trên với đáp án mẫu, cho điểm /10 + chỉ ra chỗ thiếu. Dùng chung API key với “Phỏng vấn AI”.</p>
           <div class="mk-aig-cfg">
             <input id="mk-aikey" type="password" autocomplete="off" placeholder="sk-ant-... (lưu cục bộ)">
             <button id="mk-aigrade" class="dg-go dg-go-ai">Chấm câu này</button>
@@ -300,11 +309,6 @@
       <div id="mk-result" class="mk-result" hidden></div>
       </div><!-- /#mk-self -->
     </div>
-  </div>
-
-  <!-- ============ VIEW: PHỎNG VẤN TỔNG HỢP ============ -->
-  <div id="view-company" class="view">
-    <div class="iv-wrap"><div id="iv-body"></div></div>
   </div>
 
   <!-- ============ VIEW: LUYỆN TƯ DUY (Lập trình + IQ) ============ -->

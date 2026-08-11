@@ -943,12 +943,12 @@ test('wiring: chế độ ⏱️ Độ phức tạp có đủ id + mode button +
   assert.ok(sw.includes("'complexity-quiz.js'"), 'sw.js PRECACHE thiếu complexity-quiz.js');
 });
 
-test('wiring: 🏢 phỏng vấn — 3 kiểu bài, vòng đọc code, IQ/code nhiều câu hơn', () => {
-  assert.ok(/const IV_PLANS = \{[\s\S]*?mix:[\s\S]*?mcq:[\s\S]*?code:/.test(APP), 'thiếu 3 kiểu bài IV_PLANS (mix/mcq/code)');
-  assert.ok(/IV_PLAN_KEYS = \['mix', 'mcq', 'code'\]/.test(APP), 'IV_PLAN_KEYS phải liệt kê đủ 3 kiểu');
+test('wiring: 🎯 phỏng vấn — 4 kiểu bài, vòng đọc code, IQ/code nhiều câu hơn', () => {
+  assert.ok(/const IV_PLANS = \{[\s\S]*?full:[\s\S]*?mix:[\s\S]*?mcq:[\s\S]*?code:/.test(APP), 'thiếu 4 kiểu bài IV_PLANS (full/mix/mcq/code)');
+  assert.ok(/IV_PLAN_KEYS = \['full', 'mix', 'mcq', 'code'\]/.test(APP), 'IV_PLAN_KEYS phải liệt kê đủ 4 kiểu');
   assert.ok(/data-plan="\$\{k\}"/.test(APP), 'màn setup chưa vẽ nút chọn kiểu bài');
-  assert.ok(/store\.set\('prep-iv-plan'/.test(APP) && /store\.get\('prep-iv-plan', 'mix'\)/.test(APP),
-    'kiểu bài chưa được nhớ qua prep-iv-plan');
+  assert.ok(/store\.set\('prep-iv-plan'/.test(APP) && /store\.get\('prep-iv-plan', 'full'\)/.test(APP),
+    'kiểu bài chưa được nhớ qua prep-iv-plan (mặc định = buổi đầy đủ)');
   const keys = APP.slice(APP.indexOf('const PREP_KEYS'), APP.indexOf('const PREP_KEYS') + 2400);
   assert.ok(/'prep-iv-plan'/.test(keys), 'PREP_KEYS thiếu prep-iv-plan');
   // Vòng "đọc code" trộn đoán output + Big-O
@@ -960,11 +960,47 @@ test('wiring: 🏢 phỏng vấn — 3 kiểu bài, vòng đọc code, IQ/code n
   const plans = APP.slice(APP.indexOf('const IV_PLANS'), APP.indexOf('const IV_PLAN_KEYS'));
   const iqNs = [...plans.matchAll(/key: 'iq', type: 'iq'[^}]*?n: (\d+)/g)].map(m => +m[1]);
   const codeNs = [...plans.matchAll(/key: 'code', type: 'code'[^}]*?n: (\d+)/g)].map(m => +m[1]);
-  assert.ok(iqNs.length === 3 && iqNs.every(n => n >= 8), `vòng IQ phải ≥8 câu ở cả 3 kiểu (được ${iqNs})`);
+  assert.ok(iqNs.length === 4 && iqNs.every(n => n >= 8), `vòng IQ phải ≥8 câu ở cả 4 kiểu (được ${iqNs})`);
   assert.ok(codeNs.length >= 2 && codeNs.every(n => n >= 2), `vòng viết code phải ≥2 bài (được ${codeNs})`);
   // Vòng code chạy nhiều bài, cộng dồn điểm
   assert.ok(/function showIvCode/.test(APP) && /s\.passed \+= s\.cur\.passed; s\.total \+= s\.cur\.total;/.test(APP),
     'vòng viết code chưa cộng dồn điểm qua nhiều bài');
+});
+
+test('wiring: 🎯 tab Phỏng vấn gộp Mock + Tổng hợp — 3 chế độ trong một tab', () => {
+  assert.ok(!/data-view="company"/.test(HTML), 'vẫn còn tab "company" sau khi gộp');
+  assert.ok(!/id="view-company"/.test(HTML), 'vẫn còn <div id="view-company">');
+  assert.ok(!/'company'/.test(APP), 'app.js vẫn tham chiếu view company (GATED_VIEWS / order / switchView)');
+  assert.ok(HTML.includes('data-view="mock"'), 'thiếu tab 🎯 Phỏng vấn');
+  for (const m of ['full', 'self', 'ai']) {
+    assert.ok(HTML.includes(`data-mkmode="${m}"`), `thiếu nút chế độ ${m}`);
+  }
+  assert.ok(HTML.includes('id="mk-full"') && HTML.includes('id="iv-body"'), '#iv-body phải nằm trong tab Phỏng vấn');
+  assert.ok(HTML.indexOf('id="iv-body"') > HTML.indexOf('id="view-mock"'), '#iv-body phải nằm TRONG #view-mock');
+  assert.ok(/function setMkMode/.test(APP) && /document\.getElementById\('mk-full'\)\.hidden = mkMode !== 'full'/.test(APP),
+    'setMkMode chưa toggle mk-full');
+  // Lối vào "câu đã sai" / mock nhanh phải nhảy đúng chế độ, không rơi vào buổi đầy đủ
+  assert.ok((APP.match(/setMkMode\('self'\)/g) || []).length >= 3, 'các lối vào kho câu sai/mock nhanh chưa setMkMode(self)');
+});
+
+test('wiring: 💬 vòng hỏi mở (tự chấm, AI tuỳ chọn) + ô trả lời luôn hiện', () => {
+  // Lỗi cũ: ô trả lời nằm TRONG <details> AI nên màn hình trông như không có chỗ để đáp
+  const sess = HTML.slice(HTML.indexOf('id="mk-session"'), HTML.indexOf('id="mk-result"'));
+  assert.ok(sess.includes('id="mk-uans"'), 'mk-session thiếu ô trả lời');
+  assert.ok(sess.indexOf('id="mk-uans"') < sess.indexOf('class="mk-aigrade"'),
+    'ô trả lời phải nằm NGOÀI (và trước) khối details AI');
+  for (const fn of ['startOpenRound', 'showOpenQ', 'revealOpen', 'gradeOpen', 'roundSkipped', 'ivoAiGrade']) {
+    assert.ok(new RegExp(`function ${fn}\\b`).test(APP), `thiếu hàm ${fn}`);
+  }
+  assert.ok(/full: \{[\s\S]*?key: 'intro', type: 'open'[\s\S]*?key: 'qa', type: 'open'/.test(APP),
+    'kiểu bài 🏅 Buổi đầy đủ phải mở màn bằng 2 vòng hỏi mở (giới thiệu + hỏi kiến thức)');
+  assert.ok(/const IV_INTRO_QS = \[/.test(APP) && /Tell me about yourself/.test(APP), 'thiếu câu mở màn tiếng Anh');
+  // 3 mức tự chấm quy về thang 100 để cộng vào điểm tổng
+  assert.ok(/const IV_RATES = \[[\s\S]*?s: 100[\s\S]*?s: 60[\s\S]*?s: 20/.test(APP), 'thiếu 3 mức tự chấm IV_RATES');
+  // Vòng không làm được thì BỎ QUA, không tính 0 điểm
+  assert.ok(/roundSkipped\(r, 'Không tải được kho câu hỏi/.test(APP), 'offline phải bỏ qua vòng thay vì chấm 0');
+  // Báo cáo hiện câu trả lời của bạn
+  assert.ok(/iv-rev-mine/.test(APP) && read('styles.css').includes('.iv-rev-mine'), 'báo cáo chưa hiện câu trả lời của bạn');
 });
 
 test('wiring: 🏢 báo cáo cuối buổi + lịch sử xem lại từng câu', () => {
@@ -1217,8 +1253,8 @@ test('wiring: phím số 1–9 chọn đáp án quiz khi đang làm, ngược l�
   assert.ok(/function quizVisibleOptions\b/.test(APP), 'thiếu helper quizVisibleOptions');
   // helper phải ràng buộc theo view đang active (Tư duy HOẶC Phỏng vấn) + loại option trong mode ẩn
   const av = APP.match(/function quizActiveView[\s\S]*?\n}/);
-  assert.ok(av && /#view-coding, #view-company/.test(av[0]) && /classList\.contains\('active'\)/.test(av[0]),
-    'quizActiveView phải nhận cả view-coding lẫn view-company đang active');
+  assert.ok(av && /#view-coding, #view-mock/.test(av[0]) && /classList\.contains\('active'\)/.test(av[0]),
+    'quizActiveView phải nhận cả view-coding lẫn view-mock (tab Phỏng vấn) đang active');
   const m = APP.match(/function quizVisibleOptions[\s\S]*?\n}/);
   assert.ok(m && /quizActiveView\(\)/.test(m[0]), 'quizVisibleOptions phải dùng quizActiveView');
   // .iq-opt = IQ + mọi vòng phỏng vấn; thiếu nó thì phím số nhảy tab giữa lúc đang phỏng vấn

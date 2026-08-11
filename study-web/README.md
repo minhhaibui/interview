@@ -78,15 +78,25 @@ không cần biết mẹo hard-refresh.
     (đồ thị 🎓 ở Dashboard, tab Hôm nay nhắc thi lại khi quá 7 ngày chưa đo phong độ).
   - Mỗi nút mode có **badge độ phủ** (đã đúng/tổng). Bấm **1–4** chọn đáp án, **Enter** sang câu tiếp.
 - **🏛️ Thiết kế hệ thống** — đề kinh điển + rubric 5 bước, tự chấm hoặc nhờ **AI chấm**.
-- **🎯 Mock interview** & **🏢 Phỏng vấn tổng hợp** — mô phỏng buổi phỏng vấn nhiều vòng
-  liên tiếp; ô trả lời có **🎙️ nói-để-điền** (đọc chính tả VI/EN thay vì gõ — cũng có ở
-  4 ô STAR và dàn ý Thiết kế HT), kèm bộ **💬 câu hỏi nên hỏi lại nhà tuyển dụng**.
-  Phỏng vấn tổng hợp cho **chọn kiểu bài**:
+- **🎯 Phỏng vấn** — một tab gộp cả buổi phỏng vấn, có 3 chế độ:
+  - **🏅 Buổi đầy đủ** (mặc định) — mô phỏng trọn buổi như đi phỏng vấn thật:
+    🏷 giới thiệu bản thân (tiếng Anh) → 💬 hỏi kiến thức (câu hỏi MỞ, trả lời miệng/gõ
+    rồi đối chiếu đáp án mẫu và **tự chấm 3 mức**; có nút 🤖 nhờ AI chấm /10 nếu có API key)
+    → 🧩 IQ → 🔍 đọc code → ⌨️ viết code → 🎭 tình huống, khép lại bằng gợi ý
+    **💬 câu hỏi nên hỏi lại nhà tuyển dụng**.
+  - **🧩 Luyện nhanh (hỏi đáp)** — bốc câu từ kho 180 câu Q&A của 12 tuần, đếm giờ,
+    tự chấm; câu chưa tốt vào kho ôn lại.
+  - **🤖 Phỏng vấn AI** — Claude đóng vai người phỏng vấn (BYOK API key): hỏi → bạn trả lời
+    (gõ hoặc nói) → đào sâu → chấm điểm cuối buổi.
+
+  Ô trả lời có **🎙️ nói-để-điền** (đọc chính tả VI/EN thay vì gõ — cũng có ở 4 ô STAR và
+  dàn ý Thiết kế HT). Ngoài buổi đầy đủ còn **chọn được kiểu bài khác**:
   - 🎲 **Kết hợp** — 🇬🇧 giao tiếp 6 → 🧩 IQ 12 → 🔍 đọc code 8 → ⌨️ viết code 2 → 🎭 tình huống 6.
   - 📝 **Trắc nghiệm** (không gõ code, như screening test) — 🇬🇧 8 → 🧩 IQ 14 → 🔍 đọc code 12 → 🎭 8.
   - ⌨️ **Viết code** — 🧩 IQ 8 → 🔍 đọc code 8 → ⌨️ viết code 3 bài (chạy test thật).
 
-  Vòng **🔍 đọc code** trộn *đoán output* và *tính Big-O*; vòng **🇬🇧 tiếng Anh** thiên
+  Vòng hỏi mở chấm theo **tự đánh giá** (✓ tốt 100 · △ tạm 60 · ✗ chưa 20) nên chạy được cả
+  khi không có API key; vòng **🔍 đọc code** trộn *đoán output* và *tính Big-O*; vòng **🇬🇧 tiếng Anh** thiên
   **giao tiếp**: sát nghĩa, sắc thái & ngữ điệu (chọn cách nói phù hợp, hiểu hàm ý của
   “not quite right”, trọng âm câu đổi nghĩa…) chứ không nặng ngữ pháp.
   Cuối buổi có **báo cáo chi tiết**: điểm từng vòng, kết luận Đậu/Cân nhắc/Chưa đạt,
