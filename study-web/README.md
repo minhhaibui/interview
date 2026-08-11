@@ -95,9 +95,11 @@ không cần biết mẹo hard-refresh.
     rồi **tự chấm 3 mức**; có nút 🤖 nhờ AI chấm /10 nếu có API key.
   - ⌨️ **Thêm viết code** — phần code có thêm 2 bài tự giải, chạy test thật trong trình duyệt.
 
-  Kho câu **🧩 IQ có 313 câu** (10 nhóm: dãy số · chữ cái · logic · toán nhanh · tương tự ·
-  xác suất · mã hoá · hình & không gian · chuyển động & công việc · chọn từ khác loại) —
-  đủ cho **13 buổi liên tiếp không lặp lại câu nào**.
+  Kho câu đủ lớn để ôn dài hơi mà **không lặp lại**: 🧩 IQ **363 câu** (10 nhóm: dãy số ·
+  chữ cái · logic · toán nhanh · tương tự · xác suất · mã hoá · hình & không gian ·
+  chuyển động & công việc · chọn từ khác loại), 🇬🇧 tiếng Anh **125 câu** (82 câu giao tiếp),
+  ⌨️ code **110 câu** (đoán output 52 + Big-O 58) — chạy được **~15 buổi liên tiếp** mà
+  IQ và tiếng Anh không lặp câu nào.
 
   **🚫 Không hỏi lại câu của buổi trước**: mỗi câu được ghi vào `prep-iv-seen` NGAY khi bạn trả lời
   (bỏ dở buổi cũng không bị hỏi lại), buổi sau chỉ bốc từ phần chưa hỏi — quan trọng nhất với câu
