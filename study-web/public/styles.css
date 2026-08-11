@@ -1761,3 +1761,8 @@ select:hover { border-color: var(--accent); }
 .rt-label { color: var(--muted); font-size: 12.5px; }
 button.rt-chip { cursor: pointer; font-family: inherit; transition: border-color .15s, color .15s; }
 button.rt-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+/* 🆕 số câu chưa từng hỏi của mỗi vòng + nút cho hỏi lại từ đầu */
+.iv-fresh { display: block; margin-top: 4px; color: var(--green); font-size: 11.5px; }
+.iv-fresh.low { color: var(--yellow); }
+.iv-linkbtn { background: none; border: none; color: var(--accent); cursor: pointer; font: inherit; font-size: 12px; text-decoration: underline; padding: 0 2px; }

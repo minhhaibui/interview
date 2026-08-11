@@ -3900,7 +3900,7 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-java-done', 'prep-java-best', 'prep-redis-done', 'prep-redis-best', 'prep-dist-done', 'prep-dist-best', 'prep-devops-done', 'prep-devops-best',
   'prep-en-done', 'prep-sit-done', 'prep-readiness-log',
   'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date',
-  'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned', 'prep-exam-history', 'prep-fc-lang', 'prep-iv-plan',
+  'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned', 'prep-exam-history', 'prep-fc-lang', 'prep-iv-plan', 'prep-iv-seen',
   'prep-doc-notes', 'prep-remind-time'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
@@ -6579,51 +6579,57 @@ const IV_INTRO_QS = [
 
 const IV_PLANS = {
   full: {
-    label: '🏅 Buổi đầy đủ', hint: 'Mô phỏng trọn buổi như đi phỏng vấn thật, có cả vòng hỏi miệng.',
+    label: '🏅 Buổi phỏng vấn', hint: 'Đúng 3 phần như phần lớn buổi phỏng vấn thật — IQ chiếm phần lớn.',
+    rounds: [
+      { key: 'english', type: 'mcq', label: '🇬🇧 Tiếng Anh', n: 8, desc: 'Giao tiếp công sở: sát nghĩa, sắc thái & cách phản hồi.' },
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 24, desc: 'Phần NẶNG KÝ nhất: dãy số, logic, suy luận, toán nhanh — có tính giờ.' },
+      { key: 'readcode', type: 'readcode', label: '⌨️ Code', n: 8, desc: 'Đọc code: đoán output & tính độ phức tạp Big-O.' },
+    ],
+  },
+  open: {
+    label: '💬 Thêm hỏi miệng', hint: 'Ba phần như trên, thêm 2 vòng câu hỏi MỞ mở màn (nói/gõ rồi tự chấm).',
     rounds: [
       { key: 'intro', type: 'open', label: '🏷 Giới thiệu bản thân', n: 2, desc: 'Câu mở màn bằng tiếng Anh — trả lời rồi đối chiếu khung mẫu.' },
       { key: 'qa', type: 'open', label: '💬 Hỏi kiến thức', n: 5, desc: 'Câu hỏi MỞ từ kho 180 câu — trả lời như phỏng vấn thật rồi tự chấm.' },
-      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 10, desc: 'Dãy số, logic, toán nhanh — có tính giờ.' },
-      { key: 'readcode', type: 'readcode', label: '🔍 Đọc code', n: 8, desc: 'Đoán output của đoạn code & tính độ phức tạp Big-O.' },
-      { key: 'code', type: 'code', label: '⌨️ Viết code', n: 2, desc: 'Giải 2 bài, chạy test thật trong trình duyệt.' },
-      { key: 'situational', type: 'mcq', label: '🎭 Xử lý tình huống', n: 6, desc: 'Tình huống công việc & case sự cố production.' },
-    ],
-  },
-  mix: {
-    label: '🎲 Kết hợp', hint: 'Như buổi phỏng vấn thật: nói chuyện → tư duy → code.',
-    rounds: [
-      { key: 'english', type: 'mcq', label: '🇬🇧 Tiếng Anh giao tiếp', n: 6, desc: 'Sát nghĩa, sắc thái & cách phản hồi khi phỏng vấn.' },
-      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 12, desc: 'Dãy số, logic, toán nhanh — có tính giờ.' },
-      { key: 'readcode', type: 'readcode', label: '🔍 Đọc code', n: 8, desc: 'Đoán output của đoạn code & tính độ phức tạp Big-O.' },
-      { key: 'code', type: 'code', label: '⌨️ Viết code', n: 2, desc: 'Giải 2 bài, chạy test thật trong trình duyệt.' },
-      { key: 'situational', type: 'mcq', label: '🎭 Xử lý tình huống', n: 6, desc: 'Tình huống công việc & case sự cố production.' },
-    ],
-  },
-  mcq: {
-    label: '📝 Trắc nghiệm', hint: 'Không phải gõ code — như vòng screening test online.',
-    rounds: [
-      { key: 'english', type: 'mcq', label: '🇬🇧 Tiếng Anh giao tiếp', n: 8, desc: 'Sát nghĩa, sắc thái & cách phản hồi khi phỏng vấn.' },
-      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 14, desc: 'Dãy số, logic, toán nhanh — có tính giờ.' },
-      { key: 'readcode', type: 'readcode', label: '🔍 Đọc code', n: 12, desc: 'Đoán output của đoạn code & tính độ phức tạp Big-O.' },
-      { key: 'situational', type: 'mcq', label: '🎭 Xử lý tình huống', n: 8, desc: 'Tình huống công việc & case sự cố production.' },
+      { key: 'english', type: 'mcq', label: '🇬🇧 Tiếng Anh', n: 8, desc: 'Giao tiếp công sở: sát nghĩa, sắc thái & cách phản hồi.' },
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 16, desc: 'Dãy số, logic, suy luận, toán nhanh — có tính giờ.' },
+      { key: 'readcode', type: 'readcode', label: '⌨️ Code', n: 8, desc: 'Đọc code: đoán output & tính độ phức tạp Big-O.' },
     ],
   },
   code: {
-    label: '⌨️ Viết code', hint: 'Vòng kỹ thuật thuần: tư duy, đọc code rồi tự giải bài.',
+    label: '⌨️ Thêm viết code', hint: 'Ba phần như trên, phần code có thêm bài tự giải & chạy test thật.',
     rounds: [
-      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 8, desc: 'Khởi động tư duy logic — có tính giờ.' },
-      { key: 'readcode', type: 'readcode', label: '🔍 Đọc code', n: 8, desc: 'Đoán output của đoạn code & tính độ phức tạp Big-O.' },
-      { key: 'code', type: 'code', label: '⌨️ Viết code', n: 3, desc: 'Giải 3 bài, chạy test thật trong trình duyệt.' },
+      { key: 'english', type: 'mcq', label: '🇬🇧 Tiếng Anh', n: 8, desc: 'Giao tiếp công sở: sát nghĩa, sắc thái & cách phản hồi.' },
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 20, desc: 'Phần NẶNG KÝ nhất: dãy số, logic, suy luận, toán nhanh — có tính giờ.' },
+      { key: 'readcode', type: 'readcode', label: '⌨️ Code — đọc', n: 6, desc: 'Đoán output của đoạn code & tính độ phức tạp Big-O.' },
+      { key: 'code', type: 'code', label: '⌨️ Code — viết', n: 2, desc: 'Giải 2 bài, chạy test thật trong trình duyệt.' },
     ],
   },
 };
-const IV_PLAN_KEYS = ['full', 'mix', 'mcq', 'code'];
+const IV_PLAN_KEYS = ['full', 'open', 'code'];
 const ivPlanOf = k => IV_PLANS[k] || IV_PLANS.full;
 const ivRounds = () => ivPlanOf(ivState.plan).rounds;
 const verdClass = o => o >= 80 ? 'ok' : o >= 65 ? 'good' : o >= 50 ? 'mid' : 'low';
 const verdictText = o => o >= 80 ? 'Đậu xuất sắc 🌟' : o >= 65 ? 'Đậu ✅' : o >= 50 ? 'Cân nhắc — có thể vào vòng sau 🤔' : 'Chưa đạt 💪';
 /** Nhãn ngắn của vòng để hiện trong lịch sử/báo cáo (kể cả bản ghi cũ chưa có plan). */
 const IV_ROUND_LABEL = { intro: '🏷 Giới thiệu', qa: '💬 Hỏi kiến thức', english: '🇬🇧 Tiếng Anh', iq: '🧩 IQ', readcode: '🔍 Đọc code', code: '⌨️ Viết code', situational: '🎭 Tình huống' };
+
+/** Dòng "còn X/Y câu chưa hỏi" dưới mỗi vòng ở màn setup — cho biết bao giờ kho quay vòng. */
+function ivFreshLine(r) {
+  const banks = {
+    english: () => [['english', window.ENGLISH_QUESTIONS]],
+    situational: () => [['situational', window.SITUATIONAL_QUESTIONS]],
+    iq: () => [['iq', window.IQ_QUESTIONS]],
+    readcode: () => [['output', window.OUTPUT_QUIZ], ['bigo', window.COMPLEXITY_QUIZ]],
+    code: () => [['code', window.CODING_PROBLEMS]],
+  }[r.key === 'intro' || r.key === 'qa' ? '' : r.key];
+  if (!banks) return '';
+  let fresh = 0, total = 0;
+  for (const [mode, bank] of banks()) { fresh += ivFreshCount(mode, bank); total += (bank || []).length; }
+  if (!total) return '';
+  const low = fresh < r.n;
+  return `<small class="iv-fresh${low ? ' low' : ''}">${low ? '↻ đã đi hết một vòng — buổi tới bắt đầu vòng mới' : `🆕 còn <b>${fresh}</b>/${total} câu chưa từng hỏi`}</small>`;
+}
 
 function renderCompany() {
   const body = document.getElementById('iv-body');
@@ -6664,13 +6670,15 @@ function renderCompany() {
       }).join('')}</div>
       <div class="iv-rounds" id="iv-round-cards"></div>
       <div class="iq-stat">${best != null ? `<div><b>${best}</b><small>điểm cao nhất</small></div>` : ''}<div><b>${hist.length}</b><small>lần phỏng vấn</small></div></div>
+      <p class="iq-note">🚫 Câu đã hỏi ở buổi trước sẽ <b>không hỏi lại</b> (nhất là câu IQ) — hết kho mới quay vòng.
+        ${Object.keys(ivSeen()).length ? '<button id="iv-reset-seen" class="iv-linkbtn">↻ cho hỏi lại từ đầu</button>' : ''}</p>
       <button id="iv-start" class="iq-start-btn">🚀 Bắt đầu phỏng vấn</button>
     </div>
     ${reverseQuestionsHtml()}
     ${histHtml}`;
   const drawRounds = plan => {
     document.getElementById('iv-round-cards').innerHTML = ivPlanOf(plan).rounds
-      .map((r, i) => `<div class="iv-rcard"><span class="iv-rnum">${i + 1}</span><div><b>${r.label} <span class="iv-rn">${r.n} ${r.type === 'code' ? 'bài' : 'câu'}</span></b><small>${escHtml(r.desc)}</small></div></div>`).join('');
+      .map((r, i) => `<div class="iv-rcard"><span class="iv-rnum">${i + 1}</span><div><b>${r.label} <span class="iv-rn">${r.n} ${r.type === 'code' ? 'bài' : 'câu'}</span></b><small>${escHtml(r.desc)}</small>${ivFreshLine(r)}</div></div>`).join('');
   };
   drawRounds(pick);
   body.querySelectorAll('.iv-plan').forEach(b => b.onclick = () => {
@@ -6679,6 +6687,12 @@ function renderCompany() {
     drawRounds(b.dataset.plan);
   });
   body.querySelectorAll('.iv-hrow.has-log').forEach(b => b.onclick = () => showIvHistory(+b.dataset.hidx));
+  const resetBtn = document.getElementById('iv-reset-seen');
+  if (resetBtn) resetBtn.onclick = () => {
+    if (!confirm('Xoá dấu "đã hỏi" của mọi mảng? Buổi sau sẽ được bốc lại từ toàn bộ kho câu hỏi.')) return;
+    ivResetSeen();
+    renderCompany();
+  };
   document.getElementById('iv-start').onclick = () => startInterview(store.get('prep-iv-plan', 'full'));
 }
 
@@ -6702,6 +6716,45 @@ function reverseQuestionsHtml() {
   </div>`;
 }
 
+// ---------- KHÔNG HỎI LẠI: nhớ câu đã dùng ở các buổi trước ----------
+/** { [mode]: [id đã hỏi, cũ → mới] }. Đánh dấu NGAY khi trả lời (bỏ dở buổi vẫn không hỏi lại). */
+const IV_SEEN_KEY = 'prep-iv-seen';
+const ivSeen = () => store.get(IV_SEEN_KEY, {});
+function ivMarkSeen(mode, id) {
+  if (!mode || id == null) return;
+  const all = ivSeen();
+  const arr = all[mode] || [];
+  const sid = String(id);
+  if (arr.includes(sid)) return;
+  arr.push(sid);
+  all[mode] = arr;
+  store.set(IV_SEEN_KEY, all);
+}
+function ivResetSeen(mode) {
+  const all = ivSeen();
+  if (mode) delete all[mode]; else Object.keys(all).forEach(k => delete all[k]);
+  store.set(IV_SEEN_KEY, all);
+}
+/** Số câu CHƯA từng hỏi còn lại của một mảng — hiện ở màn setup cho biết bao giờ hết vòng. */
+function ivFreshCount(mode, bank) {
+  const seen = new Set((ivSeen()[mode] || []).map(String));
+  return (bank || []).filter(q => !seen.has(String(q.id))).length;
+}
+
+/** Bốc n câu ƯU TIÊN TUYỆT ĐỐI câu chưa từng hỏi. Khi kho gần cạn thì mở vòng mới và
+ *  bù bằng câu hỏi LÂU NHẤT — vẫn không lặp lại câu của buổi liền trước. */
+function ivPickFresh(mode, bank, n) {
+  const seenArr = (ivSeen()[mode] || []).map(String);
+  const seen = new Set(seenArr);
+  const fresh = shuffleArr((bank || []).filter(q => !seen.has(String(q.id))));
+  if (fresh.length >= n) return fresh.slice(0, n);
+  const rank = new Map(seenArr.map((id, i) => [id, i])); // càng nhỏ = hỏi càng lâu rồi
+  const old = (bank || []).filter(q => seen.has(String(q.id)))
+    .sort((a, b) => (rank.get(String(a.id)) ?? 0) - (rank.get(String(b.id)) ?? 0));
+  ivResetSeen(mode); // kho đã đi hết một vòng → bắt đầu vòng mới
+  return [...fresh, ...old.slice(0, Math.max(0, n - fresh.length))];
+}
+
 function startInterview(plan) {
   ivState = { plan: IV_PLANS[plan] ? plan : 'mix', idx: 0, scores: {}, log: [], startMs: Date.now() };
   runRound();
@@ -6719,24 +6772,31 @@ function runRound() {
   else if (r.type === 'code') startIvCode(r);
   else if (r.type === 'readcode') startMcqRound(pickReadCodeQs(r.n), r);
   else if (r.key === 'english') startMcqRound(pickEnglishQs(r.n), r);
-  else startMcqRound(shuffleArr(window.SITUATIONAL_QUESTIONS || []).slice(0, r.n).map(q => ({ mode: 'situational', q })), r);
+  else startMcqRound(ivPickFresh('situational', window.SITUATIONAL_QUESTIONS || [], r.n).map(q => ({ mode: 'situational', q })), r);
 }
 
 /** Vòng 🇬🇧 thiên GIAO TIẾP: ưu tiên câu kind='comm' (sát nghĩa, sắc thái, cách đáp),
  *  chỉ bù ngữ pháp/từ vựng khi kho câu giao tiếp không đủ. */
 function pickEnglishQs(n) {
   const bank = window.ENGLISH_QUESTIONS || [];
-  const comm = shuffleArr(bank.filter(q => q.kind === 'comm'));
-  const rest = shuffleArr(bank.filter(q => q.kind !== 'comm'));
-  const picked = comm.slice(0, n);
-  if (picked.length < n) picked.push(...rest.slice(0, n - picked.length));
+  const seen = new Set((ivSeen().english || []).map(String));
+  const freshOf = kind => shuffleArr(bank.filter(q => (kind === 'comm' ? q.kind === 'comm' : q.kind !== 'comm') && !seen.has(String(q.id))));
+  const picked = freshOf('comm').slice(0, n);
+  // Hết câu GIAO TIẾP mới thì vét sang ngữ pháp/từ vựng CHƯA hỏi — chỉ khi cạn cả kho mới
+  // được quay vòng, nếu không thì ivPickFresh sẽ reset sớm và hỏi lại câu comm vừa dùng.
+  if (picked.length < n) picked.push(...freshOf('rest').slice(0, n - picked.length));
+  if (picked.length < n) {
+    const got = new Set(picked.map(q => String(q.id)));
+    picked.push(...ivPickFresh('english', bank.filter(q => !got.has(String(q.id))), n - picked.length));
+  }
   return shuffleArr(picked).map(q => ({ mode: 'english', q }));
 }
 
 /** Vòng 🔍 Đọc code: xen kẽ "đoán output" và "tính Big-O" — hai câu hỏi tủ sau mỗi bài code. */
 function pickReadCodeQs(n) {
-  const a = shuffleArr(window.OUTPUT_QUIZ || []).map(q => ({ mode: 'output', q }));
-  const b = shuffleArr(window.COMPLEXITY_QUIZ || []).map(q => ({ mode: 'bigo', q }));
+  const half = Math.ceil(n / 2);
+  const a = ivPickFresh('output', window.OUTPUT_QUIZ || [], half).map(q => ({ mode: 'output', q }));
+  const b = ivPickFresh('bigo', window.COMPLEXITY_QUIZ || [], n - half + 1).map(q => ({ mode: 'bigo', q }));
   const out = [];
   for (let i = 0; out.length < n && (i < a.length || i < b.length); i++) {
     if (i < a.length && out.length < n) out.push(a[i]);
@@ -6758,10 +6818,12 @@ async function startOpenRound(r) {
   body.innerHTML = `<div class="iv-roundhead">${escHtml(r.label)}</div><p class="iq-note">⏳ Đang tải kho câu hỏi…</p>`;
   let qs;
   if (r.key === 'intro') {
-    qs = shuffleArr(IV_INTRO_QS).slice(0, r.n);
+    qs = ivPickFresh('intro', IV_INTRO_QS, r.n);
   } else {
-    const pool = await loadMockPool();
-    qs = shuffleArr(pool || []).slice(0, r.n).map((it, i) => ({ id: `qa${i}`, q: it.q, a: it.a, tag: it.weekLabel }));
+    const pool = (await loadMockPool()) || [];
+    // Kho Q&A tải động, không có id → dùng chính nội dung câu hỏi làm khoá "đã hỏi"
+    qs = ivPickFresh('qa', pool.map(it => ({ ...it, id: it.q })), r.n)
+      .map(it => ({ id: it.q, q: it.q, a: it.a, tag: it.weekLabel }));
   }
   // Đang dở vòng mà người dùng bỏ ra tab khác rồi quay lại buổi mới → state đã đổi, đừng vẽ đè
   if (!ivState || ivRounds()[ivState.idx] !== r) return;
@@ -6892,6 +6954,7 @@ function gradeOpen(score) {
     q: q.q.slice(0, 160), t: q.tag || s.label,
     a: (document.getElementById('ivo-ans')?.value || '').trim().slice(0, 300),
   });
+  ivMarkSeen(s.roundKey === 'intro' ? 'intro' : 'qa', q.id || q.q);
   logActivity();
   s.idx++;
   showOpenQ();
@@ -6961,6 +7024,7 @@ function answerMcq(i) {
   const ok = i === q.answer;
   if (ok) m.correct++;
   ivLog({ r: m.roundKey, m: mode, id: q.id, ch: i, ok: ok ? 1 : 0 });
+  ivMarkSeen(mode, q.id); // không hỏi lại ở buổi sau
   // Đổ câu sai về hệ 🔁 Ôn câu sai (mode tương ứng trong QUIZ_MODES)
   const cfg = QUIZ_MODES[mode];
   if (cfg) {
@@ -6981,7 +7045,22 @@ function answerMcq(i) {
 
 // --- Vòng IQ (tính giờ, không hiện đáp án, chấm theo trọng số độ khó) ---
 function startIvIq(r) {
-  const qs = pickIQTest(window.IQ_QUESTIONS || [], Math.min(r.n, (window.IQ_QUESTIONS || []).length));
+  // Lọc câu ĐÃ HỎI trước, rồi mới cân độ khó trên phần còn lại.
+  // Kho cạn: dùng NỐT câu mới còn lại rồi bù bằng câu hỏi LÂU NHẤT — không bỏ phí câu chưa hỏi.
+  const bank = window.IQ_QUESTIONS || [];
+  const seenArr = (ivSeen().iq || []).map(String);
+  const seen = new Set(seenArr);
+  const fresh = bank.filter(q => !seen.has(String(q.id)));
+  let qs;
+  if (fresh.length >= r.n) {
+    qs = pickIQTest(fresh, r.n);
+  } else {
+    const rank = new Map(seenArr.map((id, i) => [id, i])); // càng nhỏ = hỏi càng lâu rồi
+    const old = bank.filter(q => seen.has(String(q.id)))
+      .sort((a, b) => (rank.get(String(a.id)) ?? 0) - (rank.get(String(b.id)) ?? 0));
+    qs = shuffleArr([...fresh, ...old.slice(0, Math.max(0, r.n - fresh.length))]);
+    ivResetSeen('iq'); // bắt đầu vòng mới cho các buổi sau
+  }
   ivState.iq = { qs, idx: 0, wGot: 0, wMax: qs.reduce((a, q) => a + qDiff(q), 0), startMs: Date.now(), sec: r.n * 30, roundKey: r.key };
   clearInterval(iqTimerId);
   iqTimerId = setInterval(tickIvIq, 1000);
@@ -7010,6 +7089,7 @@ function showIvIq() {
     const i = +b.dataset.i, ok = i === q.answer;
     if (ok) s.wGot += qDiff(q);
     ivLog({ r: s.roundKey, m: 'iq', id: q.id, ch: i, ok: ok ? 1 : 0 });
+    ivMarkSeen('iq', q.id); // câu IQ đã hỏi thì buổi sau bốc câu khác
     s.idx++; showIvIq();
   });
 }
@@ -7022,8 +7102,7 @@ function finishIvIq() {
 // --- Vòng Lập trình (n bài, chạy test thật) ---
 function startIvCode(r) {
   const easy = (window.CODING_PROBLEMS || []).filter(p => p.difficulty !== 'Khó');
-  const pool = shuffleArr(easy.length >= r.n ? easy : (window.CODING_PROBLEMS || []));
-  const ps = pool.slice(0, r.n);
+  const ps = ivPickFresh('code', easy.length >= r.n ? easy : (window.CODING_PROBLEMS || []), r.n);
   if (!ps.length) return roundDone(0);
   ivState.code = { ps, idx: 0, passed: 0, total: 0, roundKey: r.key };
   showIvCode();
@@ -7052,6 +7131,7 @@ function showIvCode() {
     if (!s.cur.ran && !confirm('Bạn chưa chạy test lần nào — nộp bài này với 0 điểm?')) return;
     s.passed += s.cur.passed; s.total += s.cur.total;
     ivLog({ r: s.roundKey, m: 'code', id: p.id, p: s.cur.passed, t: s.cur.total });
+    ivMarkSeen('code', p.id);
     s.idx++;
     showIvCode();
   };

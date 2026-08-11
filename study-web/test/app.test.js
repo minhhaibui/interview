@@ -943,9 +943,17 @@ test('wiring: chế độ ⏱️ Độ phức tạp có đủ id + mode button +
   assert.ok(sw.includes("'complexity-quiz.js'"), 'sw.js PRECACHE thiếu complexity-quiz.js');
 });
 
-test('wiring: 🎯 phỏng vấn — 4 kiểu bài, vòng đọc code, IQ/code nhiều câu hơn', () => {
-  assert.ok(/const IV_PLANS = \{[\s\S]*?full:[\s\S]*?mix:[\s\S]*?mcq:[\s\S]*?code:/.test(APP), 'thiếu 4 kiểu bài IV_PLANS (full/mix/mcq/code)');
-  assert.ok(/IV_PLAN_KEYS = \['full', 'mix', 'mcq', 'code'\]/.test(APP), 'IV_PLAN_KEYS phải liệt kê đủ 4 kiểu');
+test('wiring: 🎯 phỏng vấn — 3 phần (Anh · IQ · Code), IQ chiếm phần lớn', () => {
+  assert.ok(/const IV_PLANS = \{[\s\S]*?full:[\s\S]*?open:[\s\S]*?code:/.test(APP), 'thiếu 3 kiểu bài IV_PLANS (full/open/code)');
+  assert.ok(/IV_PLAN_KEYS = \['full', 'open', 'code'\]/.test(APP), 'IV_PLAN_KEYS phải liệt kê đủ 3 kiểu');
+  // Buổi mặc định ĐÚNG 3 vòng: tiếng Anh → IQ → code, và IQ phải NHIỀU HƠN hai vòng kia cộng lại
+  const full = APP.slice(APP.indexOf('  full: {'), APP.indexOf('  open: {'));
+  const rk = [...full.matchAll(/key: '(\w+)'/g)].map(m => m[1]);
+  assert.deepStrictEqual(rk, ['english', 'iq', 'readcode'], `buổi mặc định phải đúng 3 phần Anh·IQ·Code (đang là ${rk})`);
+  const ns = Object.fromEntries([...full.matchAll(/key: '(\w+)'[\s\S]*?n: (\d+)/g)].map(m => [m[1], +m[2]]));
+  assert.strictEqual(ns.english, 8, 'phần tiếng Anh phải 8 câu');
+  assert.strictEqual(ns.readcode, 8, 'phần code phải 8 câu');
+  assert.ok(ns.iq > ns.english + ns.readcode, `IQ phải chiếm phần lớn buổi (IQ ${ns.iq} vs ${ns.english + ns.readcode})`);
   assert.ok(/data-plan="\$\{k\}"/.test(APP), 'màn setup chưa vẽ nút chọn kiểu bài');
   assert.ok(/store\.set\('prep-iv-plan'/.test(APP) && /store\.get\('prep-iv-plan', 'full'\)/.test(APP),
     'kiểu bài chưa được nhớ qua prep-iv-plan (mặc định = buổi đầy đủ)');
@@ -960,8 +968,8 @@ test('wiring: 🎯 phỏng vấn — 4 kiểu bài, vòng đọc code, IQ/code n
   const plans = APP.slice(APP.indexOf('const IV_PLANS'), APP.indexOf('const IV_PLAN_KEYS'));
   const iqNs = [...plans.matchAll(/key: 'iq', type: 'iq'[^}]*?n: (\d+)/g)].map(m => +m[1]);
   const codeNs = [...plans.matchAll(/key: 'code', type: 'code'[^}]*?n: (\d+)/g)].map(m => +m[1]);
-  assert.ok(iqNs.length === 4 && iqNs.every(n => n >= 8), `vòng IQ phải ≥8 câu ở cả 4 kiểu (được ${iqNs})`);
-  assert.ok(codeNs.length >= 2 && codeNs.every(n => n >= 2), `vòng viết code phải ≥2 bài (được ${codeNs})`);
+  assert.ok(iqNs.length === 3 && iqNs.every(n => n >= 16), `vòng IQ phải ≥16 câu ở cả 3 kiểu (được ${iqNs})`);
+  assert.ok(codeNs.length >= 1 && codeNs.every(n => n >= 2), `kiểu bài có viết code phải ≥2 bài (được ${codeNs})`);
   // Vòng code chạy nhiều bài, cộng dồn điểm
   assert.ok(/function showIvCode/.test(APP) && /s\.passed \+= s\.cur\.passed; s\.total \+= s\.cur\.total;/.test(APP),
     'vòng viết code chưa cộng dồn điểm qua nhiều bài');
@@ -997,8 +1005,9 @@ test('wiring: 💬 vòng hỏi mở (tự chấm, AI tuỳ chọn) + ô trả l�
   for (const fn of ['startOpenRound', 'showOpenQ', 'revealOpen', 'gradeOpen', 'roundSkipped', 'ivoAiGrade']) {
     assert.ok(new RegExp(`function ${fn}\\b`).test(APP), `thiếu hàm ${fn}`);
   }
-  assert.ok(/full: \{[\s\S]*?key: 'intro', type: 'open'[\s\S]*?key: 'qa', type: 'open'/.test(APP),
-    'kiểu bài 🏅 Buổi đầy đủ phải mở màn bằng 2 vòng hỏi mở (giới thiệu + hỏi kiến thức)');
+  const openPlan = APP.slice(APP.indexOf('  open: {'), APP.indexOf('  code: {'));
+  assert.ok(/key: 'intro', type: 'open'/.test(openPlan) && /key: 'qa', type: 'open'/.test(openPlan),
+    'kiểu bài 💬 Thêm hỏi miệng phải có 2 vòng hỏi mở (giới thiệu + hỏi kiến thức)');
   assert.ok(/const IV_INTRO_QS = \[/.test(APP) && /Tell me about yourself/.test(APP), 'thiếu câu mở màn tiếng Anh');
   // 3 mức tự chấm quy về thang 100 để cộng vào điểm tổng
   assert.ok(/const IV_RATES = \[[\s\S]*?s: 100[\s\S]*?s: 60[\s\S]*?s: 20/.test(APP), 'thiếu 3 mức tự chấm IV_RATES');
@@ -1006,6 +1015,29 @@ test('wiring: 💬 vòng hỏi mở (tự chấm, AI tuỳ chọn) + ô trả l�
   assert.ok(/roundSkipped\(r, 'Không tải được kho câu hỏi/.test(APP), 'offline phải bỏ qua vòng thay vì chấm 0');
   // Báo cáo hiện câu trả lời của bạn
   assert.ok(/iv-rev-mine/.test(APP) && read('styles.css').includes('.iv-rev-mine'), 'báo cáo chưa hiện câu trả lời của bạn');
+});
+
+test('wiring: 🚫 không hỏi lại câu của buổi trước (nhất là IQ)', () => {
+  for (const fn of ['ivMarkSeen', 'ivResetSeen', 'ivPickFresh', 'ivFreshCount', 'ivFreshLine']) {
+    assert.ok(new RegExp(`function ${fn}\\b`).test(APP), `thiếu hàm ${fn}`);
+  }
+  assert.ok(/const IV_SEEN_KEY = 'prep-iv-seen'/.test(APP), 'thiếu key lưu câu đã hỏi');
+  const pk = APP.slice(APP.indexOf('const PREP_KEYS'), APP.indexOf('const PREP_KEYS') + 2400);
+  assert.ok(/'prep-iv-seen'/.test(pk), 'PREP_KEYS thiếu prep-iv-seen (mất khi export/đồng bộ máy khác)');
+  // Mọi vòng đều bốc từ kho ĐÃ LỌC câu cũ
+  for (const call of ["ivPickFresh('english'", "ivPickFresh('situational'", "ivPickFresh('output'", "ivPickFresh('bigo'", "ivPickFresh('code'", "ivPickFresh('qa'", "ivPickFresh('intro'"]) {
+    assert.ok(APP.includes(call), `${call}…) chưa được dùng — vòng đó vẫn bốc trùng câu cũ`);
+  }
+  // IQ lọc trước rồi mới cân độ khó (pickIQTest chạy trên pool đã lọc, không phải bank gốc)
+  const iqBlock = APP.slice(APP.indexOf('function startIvIq'), APP.indexOf('function tickIvIq'));
+  assert.ok(/ivSeen\(\)\.iq/.test(iqBlock) && /pickIQTest\(fresh, r\.n\)/.test(iqBlock),
+    'vòng IQ chưa lọc câu đã hỏi trước khi cân độ khó');
+  // Kho cạn: phải dùng NỐT câu mới rồi mới bù câu cũ nhất (đừng bỏ phí câu chưa hỏi)
+  assert.ok(/\[\.\.\.fresh, \.\.\.old\.slice\(0, Math\.max\(0, r\.n - fresh\.length\)\)\]/.test(iqBlock)
+    && /ivResetSeen\('iq'\)/.test(iqBlock), 'kho IQ cạn chưa xử lý đúng (fresh trước, rồi câu cũ nhất)');
+  // Đánh dấu NGAY khi trả lời (bỏ dở buổi vẫn không bị hỏi lại)
+  assert.ok((APP.match(/ivMarkSeen\(/g) || []).length >= 5, 'chưa đánh dấu "đã hỏi" ở đủ các loại vòng');
+  assert.ok(/ivMarkSeen\('iq', q\.id\)/.test(APP), 'vòng IQ chưa đánh dấu câu đã hỏi');
 });
 
 test('wiring: 🏢 báo cáo cuối buổi + lịch sử xem lại từng câu', () => {

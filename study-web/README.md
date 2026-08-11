@@ -61,7 +61,7 @@ không cần biết mẹo hard-refresh.
     Spring/JPA (DI, bean scope, @Transactional, N+1), **MyBatis** (#{}/${}, mapper proxy,
     cache 2 tầng), **SOLID** (5 nguyên lý).
   - 🔁 **Ôn câu sai** — gom mọi câu trắc nghiệm từng chọn sai (output/API/SQL/CLI +
-    vòng Tiếng Anh/Tình huống của Phỏng vấn tổng hợp) vào một phiên ôn tập trung
+    vòng Tiếng Anh/Tình huống của buổi phỏng vấn) vào một phiên ôn tập trung
     (đúng → rời hàng đợi); có **📉 chip chủ đề yếu** (câu sai dồn cụm ở đâu —
     bấm chip để ôn riêng chủ đề đó); kèm 🎲 **Ôn trộn nhanh** bốc ngẫu nhiên mọi
     mode và 📌 **Ôn câu đã ghim** — câu nào hay thì bấm ghim ở phần giải thích
@@ -79,10 +79,9 @@ không cần biết mẹo hard-refresh.
   - Mỗi nút mode có **badge độ phủ** (đã đúng/tổng). Bấm **1–4** chọn đáp án, **Enter** sang câu tiếp.
 - **🏛️ Thiết kế hệ thống** — đề kinh điển + rubric 5 bước, tự chấm hoặc nhờ **AI chấm**.
 - **🎯 Phỏng vấn** — một tab gộp cả buổi phỏng vấn, có 3 chế độ:
-  - **🏅 Buổi đầy đủ** (mặc định) — mô phỏng trọn buổi như đi phỏng vấn thật:
-    🏷 giới thiệu bản thân (tiếng Anh) → 💬 hỏi kiến thức (câu hỏi MỞ, trả lời miệng/gõ
-    rồi đối chiếu đáp án mẫu và **tự chấm 3 mức**; có nút 🤖 nhờ AI chấm /10 nếu có API key)
-    → 🧩 IQ → 🔍 đọc code → ⌨️ viết code → 🎭 tình huống, khép lại bằng gợi ý
+  - **🏅 Buổi phỏng vấn** (mặc định) — đúng **3 phần** như phần lớn buổi thật:
+    🇬🇧 Tiếng Anh **8 câu** → 🧩 **IQ 24 câu** (phần nặng ký nhất, có tính giờ) →
+    ⌨️ Code **8 câu** (đọc code: đoán output & tính Big-O), khép lại bằng gợi ý
     **💬 câu hỏi nên hỏi lại nhà tuyển dụng**.
   - **🧩 Luyện nhanh (hỏi đáp)** — bốc câu từ kho 180 câu Q&A của 12 tuần, đếm giờ,
     tự chấm; câu chưa tốt vào kho ôn lại.
@@ -91,9 +90,15 @@ không cần biết mẹo hard-refresh.
 
   Ô trả lời có **🎙️ nói-để-điền** (đọc chính tả VI/EN thay vì gõ — cũng có ở 4 ô STAR và
   dàn ý Thiết kế HT). Ngoài buổi đầy đủ còn **chọn được kiểu bài khác**:
-  - 🎲 **Kết hợp** — 🇬🇧 giao tiếp 6 → 🧩 IQ 12 → 🔍 đọc code 8 → ⌨️ viết code 2 → 🎭 tình huống 6.
-  - 📝 **Trắc nghiệm** (không gõ code, như screening test) — 🇬🇧 8 → 🧩 IQ 14 → 🔍 đọc code 12 → 🎭 8.
-  - ⌨️ **Viết code** — 🧩 IQ 8 → 🔍 đọc code 8 → ⌨️ viết code 3 bài (chạy test thật).
+  - 💬 **Thêm hỏi miệng** — ba phần như trên, thêm 2 vòng câu hỏi MỞ mở màn: 🏷 giới thiệu bản
+    thân (tiếng Anh) và 💬 hỏi kiến thức từ kho 180 câu — trả lời miệng/gõ, đối chiếu đáp án mẫu
+    rồi **tự chấm 3 mức**; có nút 🤖 nhờ AI chấm /10 nếu có API key.
+  - ⌨️ **Thêm viết code** — phần code có thêm 2 bài tự giải, chạy test thật trong trình duyệt.
+
+  **🚫 Không hỏi lại câu của buổi trước**: mỗi câu được ghi vào `prep-iv-seen` NGAY khi bạn trả lời
+  (bỏ dở buổi cũng không bị hỏi lại), buổi sau chỉ bốc từ phần chưa hỏi — quan trọng nhất với câu
+  **IQ**. Màn chọn kiểu bài hiện *🆕 còn X/Y câu chưa từng hỏi* cho từng phần; kho cạn thì dùng nốt
+  câu mới rồi mới quay vòng từ câu hỏi lâu nhất, và có nút **↻ cho hỏi lại từ đầu**.
 
   Vòng hỏi mở chấm theo **tự đánh giá** (✓ tốt 100 · △ tạm 60 · ✗ chưa 20) nên chạy được cả
   khi không có API key; vòng **🔍 đọc code** trộn *đoán output* và *tính Big-O*; vòng **🇬🇧 tiếng Anh** thiên
