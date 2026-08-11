@@ -59,6 +59,9 @@ test('coding-problems: id duy nhất, đủ field, LỜI GIẢI chạy đúng te
 test('iq-questions: id duy nhất, answer hợp lệ, options ≥ 2, d ∈ 1..3', () => {
   const qs = loadWindow('iq-questions.js').IQ_QUESTIONS;
   assert.ok(Array.isArray(qs) && qs.length);
+  // Buổi phỏng vấn bốc 24 câu IQ và KHÔNG hỏi lại câu cũ ⇒ kho phải đủ cho ≥10 buổi
+  assert.ok(qs.length >= 240, `kho IQ chỉ ${qs.length} câu — cần ≥240 để 10 buổi liên tiếp không lặp`);
+  assert.ok(qs.filter(q => q.d === 3).length >= 30, 'quá ít câu khó (d=3) — bài thi sẽ nhạt dần');
   const ids = qs.map(q => q.id);
   assert.strictEqual(new Set(ids).size, ids.length, 'id IQ trùng: ' +
     ids.filter((x, i) => ids.indexOf(x) !== i));

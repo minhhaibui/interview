@@ -95,6 +95,10 @@ không cần biết mẹo hard-refresh.
     rồi **tự chấm 3 mức**; có nút 🤖 nhờ AI chấm /10 nếu có API key.
   - ⌨️ **Thêm viết code** — phần code có thêm 2 bài tự giải, chạy test thật trong trình duyệt.
 
+  Kho câu **🧩 IQ có 313 câu** (10 nhóm: dãy số · chữ cái · logic · toán nhanh · tương tự ·
+  xác suất · mã hoá · hình & không gian · chuyển động & công việc · chọn từ khác loại) —
+  đủ cho **13 buổi liên tiếp không lặp lại câu nào**.
+
   **🚫 Không hỏi lại câu của buổi trước**: mỗi câu được ghi vào `prep-iv-seen` NGAY khi bạn trả lời
   (bỏ dở buổi cũng không bị hỏi lại), buổi sau chỉ bốc từ phần chưa hỏi — quan trọng nhất với câu
   **IQ**. Màn chọn kiểu bài hiện *🆕 còn X/Y câu chưa từng hỏi* cho từng phần; kho cạn thì dùng nốt
