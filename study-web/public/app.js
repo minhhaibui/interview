@@ -6989,17 +6989,23 @@ function showIvHistory(idx) {
 
 // ---------- Phím tắt ----------
 /** Các nút đáp án quiz đang HIỂN THỊ & bấm được (tab Tư duy active, không ở mode ẩn). */
+/** View đang chấm quiz bằng bàn phím: tab 🧠 Tư duy hoặc 🏢 Phỏng vấn tổng hợp. */
+function quizActiveView() {
+  return [...document.querySelectorAll('#view-coding, #view-company')].find(v => v.classList.contains('active')) || null;
+}
+
 function quizVisibleOptions() {
-  const coding = document.getElementById('view-coding');
-  if (!coding || !coding.classList.contains('active')) return [];
-  return [...coding.querySelectorAll('.oq-opt:not(:disabled)')].filter(b => !b.closest('[hidden]'));
+  const view = quizActiveView();
+  if (!view) return [];
+  // .oq-opt = các mode trắc nghiệm; .iq-opt = IQ và mọi vòng của Phỏng vấn tổng hợp
+  return [...view.querySelectorAll('.oq-opt:not(:disabled), .iq-opt:not(:disabled)')].filter(b => !b.closest('[hidden]'));
 }
 
 /** Nút "Câu tiếp / Xem kết quả" đang hiện của quiz (để bấm Enter sang câu). */
 function quizNextButton() {
-  const coding = document.getElementById('view-coding');
-  if (!coding || !coding.classList.contains('active')) return null;
-  return [...coding.querySelectorAll('#oq-next, .oq-next-btn, #review-next')]
+  const view = quizActiveView();
+  if (!view) return null;
+  return [...view.querySelectorAll('#oq-next, .oq-next-btn, #review-next, #iv-mnext')]
     .find(b => !b.closest('[hidden]')) || null;
 }
 
@@ -7623,7 +7629,7 @@ const SHORTCUTS = [
     { keys: ['←'], desc: 'Chưa nhớ' },
     { keys: ['S'], desc: 'Nghe phát âm' },
   ] },
-  { group: '📝 Trắc nghiệm (Tư duy)', items: [
+  { group: '📝 Trắc nghiệm (Tư duy · Phỏng vấn)', items: [
     { keys: ['1', '…', '4'], desc: 'Chọn đáp án A–D khi đang có câu hỏi (thay cho chuyển tab)' },
     { keys: ['Enter'], desc: 'Sang câu tiếp sau khi đã chấm' },
   ] },

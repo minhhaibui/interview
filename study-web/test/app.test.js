@@ -1215,11 +1215,19 @@ test('đếm ngược PV: daysUntil tính đúng + card render + PREP_KEYS', () 
 
 test('wiring: phím số 1–9 chọn đáp án quiz khi đang làm, ngược lại chuyển tab', () => {
   assert.ok(/function quizVisibleOptions\b/.test(APP), 'thiếu helper quizVisibleOptions');
-  // helper phải ràng buộc theo view-coding active + loại option trong mode ẩn
+  // helper phải ràng buộc theo view đang active (Tư duy HOẶC Phỏng vấn) + loại option trong mode ẩn
+  const av = APP.match(/function quizActiveView[\s\S]*?\n}/);
+  assert.ok(av && /#view-coding, #view-company/.test(av[0]) && /classList\.contains\('active'\)/.test(av[0]),
+    'quizActiveView phải nhận cả view-coding lẫn view-company đang active');
   const m = APP.match(/function quizVisibleOptions[\s\S]*?\n}/);
-  assert.ok(m && /view-coding/.test(m[0]) && /classList\.contains\('active'\)/.test(m[0]),
-    'quizVisibleOptions phải kiểm view-coding active');
+  assert.ok(m && /quizActiveView\(\)/.test(m[0]), 'quizVisibleOptions phải dùng quizActiveView');
+  // .iq-opt = IQ + mọi vòng phỏng vấn; thiếu nó thì phím số nhảy tab giữa lúc đang phỏng vấn
+  assert.ok(/\.oq-opt:not\(:disabled\), \.iq-opt:not\(:disabled\)/.test(m[0]),
+    'quizVisibleOptions phải gồm cả .iq-opt (vòng phỏng vấn & IQ)');
   assert.ok(/\[hidden\]/.test(m[0]), 'quizVisibleOptions phải loại option trong mode ẩn ([hidden])');
+  // Enter sang câu tiếp cũng phải chạy trong vòng trắc nghiệm của phỏng vấn (#iv-mnext)
+  const nb = APP.match(/function quizNextButton[\s\S]*?\n}/);
+  assert.ok(nb && /#iv-mnext/.test(nb[0]), 'quizNextButton thiếu #iv-mnext (nút Câu tiếp của phỏng vấn)');
   // handler global: nếu có option hiện thì click, else switchView
   assert.ok(/const opts = quizVisibleOptions\(\);[\s\S]*?opts\[n - 1\]\.click\(\);[\s\S]*?switchView\(order\[n - 1\]\)/.test(APP),
     'handler phím số chưa ưu tiên chọn đáp án trước khi chuyển tab');
