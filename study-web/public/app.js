@@ -6605,8 +6605,23 @@ const IV_PLANS = {
       { key: 'code', type: 'code', label: '⌨️ Code — viết', n: 2, desc: 'Giải 2 bài, chạy test thật trong trình duyệt.' },
     ],
   },
+  // Hai kiểu BỎ TIẾNG ANH dưới đây đặt SAU 'code' trong object (test soi lát cắt full→open),
+  // nhưng hiện ngay sau 'full' ở IV_PLAN_KEYS vì hay dùng.
+  iqonly: {
+    label: '🧩 Chỉ test IQ', hint: 'Bỏ tiếng Anh & code — chỉ một vòng IQ 30 câu tính giờ (15 phút).',
+    rounds: [
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 30, desc: 'Dãy số, logic, suy luận, toán nhanh — có tính giờ, không hiện đáp án giữa chừng.' },
+    ],
+  },
+  iqcode: {
+    label: '🧩 IQ + hỏi code', hint: 'Bỏ tiếng Anh — IQ 24 câu rồi 10 câu hỏi code (đoán output & Big-O).',
+    rounds: [
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 24, desc: 'Dãy số, logic, suy luận, toán nhanh — có tính giờ.' },
+      { key: 'readcode', type: 'readcode', label: '⌨️ Hỏi code', n: 10, desc: 'Đọc code: đoán output & tính độ phức tạp Big-O.' },
+    ],
+  },
 };
-const IV_PLAN_KEYS = ['full', 'open', 'code'];
+const IV_PLAN_KEYS = ['full', 'iqonly', 'iqcode', 'open', 'code'];
 const ivPlanOf = k => IV_PLANS[k] || IV_PLANS.full;
 const ivRounds = () => ivPlanOf(ivState.plan).rounds;
 const verdClass = o => o >= 80 ? 'ok' : o >= 65 ? 'good' : o >= 50 ? 'mid' : 'low';

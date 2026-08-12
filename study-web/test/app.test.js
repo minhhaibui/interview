@@ -948,7 +948,8 @@ test('wiring: chế độ ⏱️ Độ phức tạp có đủ id + mode button +
 
 test('wiring: 🎯 phỏng vấn — 3 phần (Anh · IQ · Code), IQ chiếm phần lớn', () => {
   assert.ok(/const IV_PLANS = \{[\s\S]*?full:[\s\S]*?open:[\s\S]*?code:/.test(APP), 'thiếu 3 kiểu bài IV_PLANS (full/open/code)');
-  assert.ok(/IV_PLAN_KEYS = \['full', 'open', 'code'\]/.test(APP), 'IV_PLAN_KEYS phải liệt kê đủ 3 kiểu');
+  assert.ok(/IV_PLAN_KEYS = \['full', 'iqonly', 'iqcode', 'open', 'code'\]/.test(APP),
+    'IV_PLAN_KEYS phải liệt kê đủ 5 kiểu (có "chỉ IQ" và "IQ + hỏi code")');
   // Buổi mặc định ĐÚNG 3 vòng: tiếng Anh → IQ → code, và IQ phải NHIỀU HƠN hai vòng kia cộng lại
   const full = APP.slice(APP.indexOf('  full: {'), APP.indexOf('  open: {'));
   const rk = [...full.matchAll(/key: '(\w+)'/g)].map(m => m[1]);
@@ -971,7 +972,17 @@ test('wiring: 🎯 phỏng vấn — 3 phần (Anh · IQ · Code), IQ chiếm ph
   const plans = APP.slice(APP.indexOf('const IV_PLANS'), APP.indexOf('const IV_PLAN_KEYS'));
   const iqNs = [...plans.matchAll(/key: 'iq', type: 'iq'[^}]*?n: (\d+)/g)].map(m => +m[1]);
   const codeNs = [...plans.matchAll(/key: 'code', type: 'code'[^}]*?n: (\d+)/g)].map(m => +m[1]);
-  assert.ok(iqNs.length === 3 && iqNs.every(n => n >= 16), `vòng IQ phải ≥16 câu ở cả 3 kiểu (được ${iqNs})`);
+  assert.ok(iqNs.length === 5 && iqNs.every(n => n >= 16), `vòng IQ phải ≥16 câu ở cả 5 kiểu (được ${iqNs})`);
+  // Lấy đúng khối của MỘT kiểu bài (cắt tới kiểu kế tiếp) — không thì kiểu sau bị tính lẫn vào
+  const planRounds = k => {
+    const rest = plans.slice(plans.indexOf(`  ${k}: {`) + 1);
+    const end = rest.search(/\n {2}\w+: \{/);
+    return [...(end < 0 ? rest : rest.slice(0, end)).matchAll(/key: '(\w+)'/g)].map(m => m[1]);
+  };
+  // Hai kiểu BỎ TIẾNG ANH: chỉ IQ, và IQ + hỏi code
+  assert.deepStrictEqual(planRounds('iqonly'), ['iq'], `kiểu "chỉ IQ" phải đúng 1 vòng IQ (đang là ${planRounds('iqonly')})`);
+  assert.deepStrictEqual(planRounds('iqcode'), ['iq', 'readcode'],
+    `kiểu "IQ + hỏi code" phải đúng IQ rồi đọc code (đang là ${planRounds('iqcode')})`);
   assert.ok(codeNs.length >= 1 && codeNs.every(n => n >= 2), `kiểu bài có viết code phải ≥2 bài (được ${codeNs})`);
   // Vòng code chạy nhiều bài, cộng dồn điểm
   assert.ok(/function showIvCode/.test(APP) && /s\.passed \+= s\.cur\.passed; s\.total \+= s\.cur\.total;/.test(APP),
