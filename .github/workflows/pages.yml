@@ -28,6 +28,9 @@ jobs:
       - name: Build static data + firebase-config.js
         run: node study-web/build.js
         env:
+          # Cách gọn: MỘT secret FIREBASE_CONFIG chứa nguyên khối JSON. Các biến rời bên dưới
+          # là cách cũ, chỉ dùng khi FIREBASE_CONFIG trống.
+          FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
           FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
           FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}

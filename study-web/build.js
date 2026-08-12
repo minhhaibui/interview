@@ -27,24 +27,38 @@ const write = (name, data) => {
   console.log(`  ✓ ${name.padEnd(14)} ${kb} KB`);
 };
 
-// Sinh public/firebase-config.js từ biến môi trường FIREBASE_* (không commit config vào repo).
+// Sinh public/firebase-config.js từ biến môi trường (không commit config vào repo).
+// Hai cách khai báo, ưu tiên cách 1 vì trên GitHub chỉ phải tạo MỘT secret:
+//   1. FIREBASE_CONFIG = nguyên khối JSON copy từ Firebase Console
+//   2. FIREBASE_API_KEY, FIREBASE_AUTH_DOMAIN, … (7 biến rời)
 // Lưu ý: đây KHÔNG phải secret — config web Firebase vốn công khai; bảo mật nằm ở Firestore Rules.
 function buildFirebaseConfig() {
   const e = process.env;
-  const cfg = {
-    apiKey: e.FIREBASE_API_KEY,
-    authDomain: e.FIREBASE_AUTH_DOMAIN,
-    projectId: e.FIREBASE_PROJECT_ID,
-    storageBucket: e.FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: e.FIREBASE_MESSAGING_SENDER_ID,
-    appId: e.FIREBASE_APP_ID,
-    measurementId: e.FIREBASE_MEASUREMENT_ID,
-  };
+  let cfg = null;
+  if (e.FIREBASE_CONFIG && e.FIREBASE_CONFIG.trim()) {
+    try {
+      cfg = JSON.parse(e.FIREBASE_CONFIG);
+    } catch (err) {
+      // Sai JSON mà im lặng thì site deploy xong mới lòi ra "Chưa cấu hình Firebase" → chặn build luôn.
+      console.error(`  ✗ FIREBASE_CONFIG không phải JSON hợp lệ: ${err.message}`);
+      process.exit(1);
+    }
+  } else {
+    cfg = {
+      apiKey: e.FIREBASE_API_KEY,
+      authDomain: e.FIREBASE_AUTH_DOMAIN,
+      projectId: e.FIREBASE_PROJECT_ID,
+      storageBucket: e.FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: e.FIREBASE_MESSAGING_SENDER_ID,
+      appId: e.FIREBASE_APP_ID,
+      measurementId: e.FIREBASE_MEASUREMENT_ID,
+    };
+  }
   const file = path.join(PUBLIC, 'firebase-config.js');
   if (!cfg.apiKey) {
     // Không có env: giữ nguyên file sẵn có (nếu có) để dev local không bị mất config.
     const note = fs.existsSync(file) ? '(giữ file local sẵn có)' : '(THIẾU — đăng nhập sẽ không chạy)';
-    console.log(`  ⚠ firebase-config.js: chưa có biến FIREBASE_* ${note}`);
+    console.log(`  ⚠ firebase-config.js: chưa có FIREBASE_CONFIG hay biến FIREBASE_* ${note}`);
     return;
   }
   const banner = '/* TỰ ĐỘNG SINH từ env bởi build.js — KHÔNG sửa tay, KHÔNG commit. */\n';
