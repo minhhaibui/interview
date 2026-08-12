@@ -1218,6 +1218,66 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 .iqt-quit { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 7px; padding: 5px 12px; cursor: pointer; font-size: 13px; }
 .iqt-quit:hover { border-color: var(--red); color: var(--red); }
 
+/* ====== Câu IQ dạng NHÌN HÌNH (SVG trong ngân hàng câu hỏi) ====== */
+/* Hình vẽ bằng currentColor ⇒ tự đổi theo theme sáng/tối và theo màu nút đang chọn. */
+/* Mặc định chặn 60px: SVG width:100% mà thả rông trong ô xem lại sẽ phình to cả màn hình */
+.iqfig { display: block; width: 100%; max-width: 60px; height: auto; overflow: visible; }
+.iq-mcell .iqfig { max-width: none; } /* trong ô lưới thì kích thước do ô quyết định */
+.iqfig .gl { fill: none; stroke: var(--border); stroke-width: 1; }              /* khung ô lưới */
+.iqfig .gf { fill: currentColor; }                                              /* ô lưới được tô */
+.iqfig .so { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.iqfig .sf { fill: currentColor; stroke: none; }
+.iqfig .stx { fill: currentColor; font-size: 21px; font-weight: 700; }
+
+.iq-frow, .iq-mtx { display: grid; gap: 8px; justify-content: center; margin: 0 0 18px; }
+.iq-frow { grid-auto-flow: column; }
+.iq-mtx { grid-template-columns: repeat(var(--c, 3), auto); }
+.iq-mcell {
+  width: 62px; height: 62px; padding: 4px; box-sizing: border-box;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 8px;
+}
+.iq-frow.lg .iq-mcell { width: 132px; height: 132px; padding: 8px; }
+.iq-frow.lg .iqfig .so { stroke-width: 1.6; }
+.iq-mcell.qm {
+  display: grid; place-items: center; font-size: 26px; font-weight: 700; color: var(--accent);
+  border-style: dashed; border-color: var(--accent);
+}
+/* Lựa chọn là HÌNH: xếp ngang 4 ô, đánh số nhỏ ở góc để bấm phím 1–4 cho nhanh */
+.iq-opts.figs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; counter-reset: figopt; }
+.iq-opts.figs .iq-opt { position: relative; display: grid; place-items: center; padding: 12px 8px; counter-increment: figopt; }
+.iq-opts.figs .iq-opt::before { content: counter(figopt); position: absolute; top: 3px; left: 7px; font-size: 11px; color: var(--muted); }
+.iq-opts.figs .iqfig { max-width: 64px; }
+.iq-opt.picked { border-color: var(--accent); background: rgba(88, 166, 255, .12); font-weight: 600; }
+
+/* Bảng số câu — nhảy tới câu bất kỳ, không bắt buộc làm tuần tự */
+.iq-pal { display: flex; flex-wrap: wrap; gap: 5px; margin: 0 0 16px; }
+.iq-palb {
+  width: 30px; height: 30px; border-radius: 7px; cursor: pointer; font-size: 12.5px;
+  background: var(--bg2); color: var(--muted); border: 1px solid var(--border);
+}
+.iq-palb:hover { border-color: var(--accent); }
+.iq-palb.done { background: rgba(63, 185, 80, .16); border-color: var(--green); color: var(--text); }
+.iq-palb.cur { outline: 2px solid var(--accent); outline-offset: 1px; color: var(--text); font-weight: 700; }
+.iq-nav { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 14px; }
+.iq-navb { background: var(--bg3); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer; }
+.iq-navb:hover:not(:disabled) { border-color: var(--accent); }
+.iq-navb:disabled { opacity: .4; cursor: default; }
+.iq-nav .iq-start-btn { margin-left: auto; padding: 9px 20px; font-size: 14px; }
+.iq-rvbad, .iq-rvgood { display: inline-flex; align-items: center; gap: 6px; margin-right: 14px; }
+.iq-rvbad { color: var(--red); }
+.iq-rvgood { color: var(--green); }
+.iq-rvbad .iqfig, .iq-rvgood .iqfig,
+.iv-rev-bad .iqfig, .iv-rev-good .iqfig { width: 46px; display: inline-block; vertical-align: middle; }
+.iv-rev-bad, .iv-rev-good { display: flex; align-items: center; gap: 6px; }
+/* Xem lại: thu nhỏ hình cho gọn — TRỪ hình cần soi kỹ (.lg: đếm tam giác/hình vuông) */
+.iv-rev .iq-frow:not(.lg) .iq-mcell, .iv-rev .iq-mtx .iq-mcell,
+.iq-rv .iq-frow:not(.lg) .iq-mcell, .iq-rv .iq-mtx .iq-mcell { width: 50px; height: 50px; }
+@media (max-width: 560px) {
+  .iq-opts.figs { grid-template-columns: repeat(2, 1fr); }
+  .iq-mcell { width: 50px; height: 50px; }
+  .iq-nav .iq-start-btn { margin-left: 0; width: 100%; }
+}
+
 /* Lịch sử test IQ */
 .iq-hist { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
 .iq-hrow {

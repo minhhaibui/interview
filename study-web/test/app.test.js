@@ -73,6 +73,31 @@ test('iq-questions: id duy nhất, answer hợp lệ, options ≥ 2, d ∈ 1..3'
   }
 });
 
+test('iq-questions: KHÔNG còn câu "tương tự chữ" kiểu Ngày:Đêm = Trắng:? (quá dễ)', () => {
+  const qs = loadWindow('iq-questions.js').IQ_QUESTIONS;
+  const analog = qs.filter(q => /Tương tự/.test(q.category || '') || / : .* = .* : \?/.test(q.q || ''));
+  assert.deepStrictEqual(analog.map(q => q.id), [],
+    'dạng analogy chữ đã bị loại khỏi kho — không thêm lại: ' + analog.map(q => q.q).join(' | '));
+});
+
+test('iq-questions: nhóm 🖼️ nhìn hình — đủ số lượng, mỗi lựa chọn một hình KHÁC NHAU', () => {
+  const qs = loadWindow('iq-questions.js').IQ_QUESTIONS;
+  const figs = qs.filter(q => q.fig || q.optFig);
+  assert.ok(figs.length >= 40, `mới có ${figs.length} câu nhìn hình — cần ≥40 để bài test nào cũng gặp vài câu`);
+  for (const q of figs) {
+    if (q.fig) assert.ok(/^<div class="iq-(frow|mtx)\b/.test(q.fig), `IQ ${q.id}: fig phải là hàng/lưới hình`);
+    if (!q.optFig) continue; // câu nhìn hình chọn SỐ (đếm hình) — lựa chọn vẫn là chữ
+    assert.strictEqual(q.optFig.length, q.options.length, `IQ ${q.id}: optFig lệch số lựa chọn`);
+    assert.strictEqual(new Set(q.optFig).size, q.optFig.length,
+      `IQ ${q.id}: có 2 lựa chọn vẽ RA HÌNH GIỐNG HỆT nhau ⇒ câu hỏi vô nghiệm/hai đáp án`);
+    for (const s of q.optFig) assert.ok(/^<svg class="iqfig/.test(s), `IQ ${q.id}: optFig không phải SVG`);
+  }
+  // Đáp án không được dồn hết vào một vị trí (figQ xoay vòng vị trí theo id)
+  const pos = {};
+  figs.filter(q => q.optFig).forEach(q => { pos[q.answer] = (pos[q.answer] || 0) + 1; });
+  assert.ok(Object.keys(pos).length >= 3, `đáp án câu hình dồn vào ít vị trí quá: ${JSON.stringify(pos)}`);
+});
+
 test('english-questions: id duy nhất, answer hợp lệ', () => {
   const qs = loadWindow('english-questions.js').ENGLISH_QUESTIONS;
   assert.ok(Array.isArray(qs) && qs.length);
@@ -1676,6 +1701,68 @@ test('ai-mic: đoạn isFinal cộng dồn vào baseline (không mất câu khi 
   apply(mk([['one', true]], 0));                          // chốt "one"
   const out = apply(mk([['one', true], ['two', true]], 1)); // resultIndex=1 → chỉ thấy "two", nhưng "one" đã ở baseline
   assert.strictEqual(out, 'one two', 'câu nhiều đoạn phải giữ đủ, không chỉ còn đoạn cuối');
+});
+
+test('wiring: 🧩 bài test IQ — nhảy câu tự do, đổi đáp án, chốt điểm lúc nộp', () => {
+  const start = APP.slice(APP.indexOf('function startIQTest'), APP.indexOf('function finishIQTest'));
+  // Trộn lựa chọn MỘT LẦN lúc bắt đầu — quay lại câu cũ mà đảo chỗ đáp án thì rối
+  assert.ok(/ord: qs\.map\(q => shuffleIdx\(q\.options\.length\)\)/.test(start),
+    'startIQTest phải trộn thứ tự lựa chọn 1 lần vào state.ord');
+  assert.ok(/ans: qs\.map\(\(\) => null\)/.test(start), 'startIQTest thiếu mảng đáp án ans[]');
+  assert.ok(/function iqPalHtml\b/.test(APP) && /iqPalHtml\(s\.qs\.length, s\.ans, s\.idx\)/.test(start),
+    'màn làm bài chưa có bảng số câu để nhảy tới câu bất kỳ');
+  for (const id of ['iqt-prev', 'iqt-next', 'iqt-clear', 'iqt-submit']) {
+    assert.ok(start.includes(`id="${id}"`) && start.includes(`getElementById('${id}')`), `thiếu nút ${id}`);
+  }
+  assert.ok(/optsHtml\(q, s\.ord\[s\.idx\], iqOptInner\(q\), 'iq-opt', s\.ans\[s\.idx\]\)/.test(start),
+    'phải render theo ord đã lưu + đánh dấu đáp án đang chọn');
+  // Điểm chỉ chốt lúc nộp (không cộng dồn khi bấm) — nếu không, sửa đáp án sẽ cộng điểm 2 lần
+  const fin = APP.slice(APP.indexOf('function finishIQTest'), APP.indexOf('function startIQ('));
+  assert.ok(/s\.correct = s\.log\.filter\(l => l\.ok\)\.length/.test(fin),
+    'finishIQTest phải chấm lại từ mảng ans, không dùng biến đếm cộng dồn');
+  // Vòng IQ của buổi phỏng vấn cũng phải cho nhảy câu
+  const iv = APP.slice(APP.indexOf('function showIvIq'), APP.indexOf('// --- Vòng Lập trình'));
+  assert.ok(/iqPalHtml\(s\.qs\.length, s\.ans, s\.idx\)/.test(iv) && iv.includes('id="ivq-done"'),
+    'vòng IQ phỏng vấn chưa có bảng số câu + nút kết thúc vòng');
+  assert.ok(/if \(s\.chotDiem\) return;/.test(iv), 'finishIvIq phải chống chấm 2 lần (hết giờ + bấm nút)');
+});
+
+test('pickIQTest: mỗi đề dành sẵn ~30% câu NHÌN HÌNH, không lặp câu', () => {
+  const qs = loadWindow('iq-questions.js').IQ_QUESTIONS;
+  // Dựng lại pickIQTest/pickByDiff từ app.js (không có DOM) để chạy thật, không chỉ khớp regex
+  const grab = name => {
+    const i = APP.indexOf(`function ${name}`);
+    let depth = 0;
+    for (let k = APP.indexOf('{', i); k < APP.length; k++) {
+      if (APP[k] === '{') depth++;
+      else if (APP[k] === '}' && !--depth) return APP.slice(i, k + 1);
+    }
+    throw new Error(`không tìm thấy ${name}`);
+  };
+  const scope = { shuffleArr: a => [...a].sort(() => Math.random() - 0.5), qDiff: q => q.d || 2, IQ_FIG_SHARE: 0.3, isFigQ: q => !!(q.fig || q.optFig) };
+  const pick = new Function(...Object.keys(scope), `${grab('pickByDiff')}\n${grab('pickIQTest')}\nreturn pickIQTest;`)(...Object.values(scope));
+  for (let t = 0; t < 30; t++) {
+    const got = pick(qs, 30);
+    assert.strictEqual(got.length, 30, 'đề thiếu câu');
+    assert.strictEqual(new Set(got.map(q => q.id)).size, 30, 'đề bị lặp câu');
+    const nf = got.filter(scope.isFigQ).length;
+    assert.ok(nf >= 8, `đề chỉ có ${nf} câu nhìn hình — quota 30% không được tôn trọng`);
+  }
+  // Kho KHÔNG có câu hình (bank cũ / đã lọc hết) vẫn phải bốc đủ đề
+  assert.strictEqual(pick(qs.filter(q => !scope.isFigQ(q)), 30).length, 30, 'kho không có hình thì đề bị hụt câu');
+});
+
+test('wiring: câu IQ nhìn hình — SVG chèn thẳng (không escape), review cũng hiện hình', () => {
+  assert.ok(/const iqStemHtml = q => .*\$\{q\.fig \|\| ''\}/.test(APP),
+    'iqStemHtml phải chèn q.fig nguyên bản (escape thì hiện ra chữ <svg…>)');
+  assert.ok(/const iqOptInner = q => \(o, i\) => \(q\.optFig \? q\.optFig\[i\] : escHtml\(o\)\)/.test(APP),
+    'nút đáp án phải vẽ optFig cho câu nhìn hình, escape chữ cho câu thường');
+  // optsHtml truyền chỉ số gốc sang inner → optFig[i] mới lấy đúng hình của lựa chọn đó
+  assert.ok(/inner\(q\.options\[i\], i\)/.test(APP), 'optsHtml phải truyền chỉ số gốc cho hàm inner');
+  assert.ok(/q\.optFig \? q\.optFig\[j\]/.test(APP), 'xem lại buổi phỏng vấn chưa hiện hình đã chọn');
+  for (const cls of ['.iqfig', '.iq-mtx', '.iq-frow', '.iq-pal', '.iq-palb', '.iq-navb', '.iq-opts.figs']) {
+    assert.ok(read('styles.css').includes(cls), `styles.css thiếu ${cls}`);
+  }
 });
 
 test('readiness: iqPct được CLAMP [0,100] (IQ thấp không kéo âm điểm Tư duy)', () => {

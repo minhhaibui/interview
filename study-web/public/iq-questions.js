@@ -1,8 +1,138 @@
 /*
  * Ngân hàng câu hỏi luyện IQ / Logic (trắc nghiệm).
  * { id, category, q, options:[...], answer: <chỉ số đáp án đúng>, explain }
+ * Câu dạng NHÌN HÌNH có thêm { fig: <HTML hình đề bài>, optFig: [<SVG từng lựa chọn>] }
+ * — lúc đó `options` chỉ là nhãn "Hình 1..4" để hiển thị trong phần xem lại.
  * Mang tính rèn tư duy & giải trí — "điểm IQ" chỉ là ước lượng vui, không phải bài test chuẩn.
  */
+
+// ===========================================================================
+// BỘ VẼ HÌNH (SVG) — dùng cho nhóm 🖼️ Suy luận hình
+// Mọi hình dùng currentColor ⇒ tự đổi màu theo theme sáng/tối, không hard-code màu.
+// ===========================================================================
+
+/** Khung SVG vuông 60×60 cho một ô hình. */
+const iqSvg = (inner, cls = '') => `<svg class="iqfig${cls ? ' ' + cls : ''}" viewBox="0 0 60 60" aria-hidden="true">${inner}</svg>`;
+
+/** Hàng hình nằm ngang (chuỗi đề bài). Phần tử '?' thành ô dấu hỏi.
+ *  size='lg': ô to gấp đôi — dành cho hình cần soi kỹ (đếm tam giác/hình vuông). */
+const figRow = (items, size = '') => `<div class="iq-frow${size ? ' ' + size : ''}">${items.map(figCell).join('')}</div>`;
+/** Lưới hình n cột (ma trận 3×3…). */
+const figGrid = (items, cols = 3) => `<div class="iq-mtx" style="--c:${cols}">${items.map(figCell).join('')}</div>`;
+const figCell = it => it === '?' ? '<div class="iq-mcell qm">?</div>' : `<div class="iq-mcell">${it}</div>`;
+
+// ---- Lưới ô vuông 3×3 (chuỗi 9 ký tự '0'/'1', có thể xen '/' cho dễ đọc) ----
+const gCells = p => p.replace(/[^01]/g, '');
+/** Vẽ lưới 3×3: ô '1' tô đặc, ô '0' để trống. */
+function gSvg(p) {
+  const c = gCells(p);
+  let s = '';
+  for (let r = 0; r < 3; r++) {
+    for (let k = 0; k < 3; k++) {
+      const x = 3 + k * 18, y = 3 + r * 18;
+      s += `<rect class="gl" x="${x}" y="${y}" width="18" height="18"/>`;
+      if (c[r * 3 + k] === '1') s += `<rect class="gf" x="${x + 3}" y="${y + 3}" width="12" height="12"/>`;
+    }
+  }
+  return iqSvg(s);
+}
+/** Phép chồng hai lưới: xor (chỉ một bên có), and (cả hai), or (ít nhất một). */
+const gOp = (a, b, op) => [...gCells(a)].map((v, i) => {
+  const x = v === '1', y = gCells(b)[i] === '1';
+  return (op === 'xor' ? x !== y : op === 'and' ? x && y : x || y) ? '1' : '0';
+}).join('');
+const gRot = p => { const c = gCells(p); let o = ''; for (let r = 0; r < 3; r++) for (let k = 0; k < 3; k++) o += c[(2 - k) * 3 + r]; return o; }; // xoay 90° thuận
+const gFlip = p => { const c = gCells(p); let o = ''; for (let r = 0; r < 3; r++) for (let k = 0; k < 3; k++) o += c[r * 3 + (2 - k)]; return o; }; // lật gương trái↔phải
+const gFlipV = p => gFlip(gRot(gRot(p))); // lật trên↔dưới
+const gInv = p => [...gCells(p)].map(v => (v === '1' ? '0' : '1')).join('');
+const gTog = (p, i) => { const c = [...gCells(p)]; c[i] = c[i] === '1' ? '0' : '1'; return c.join(''); };
+
+// ---- Hình cơ bản: k = c(tròn) s(vuông) t(tam giác) d(thoi) h(lục giác) p(ngũ giác) x(chữ thập) r(sao)
+//      f = 0 rỗng · 1 rỗng + chấm giữa · 2 tô đặc ----
+const polyPts = (n, r, rot) => Array.from({ length: n }, (_, i) => {
+  const a = (rot + i * 360 / n) * Math.PI / 180;
+  return `${(30 + r * Math.cos(a)).toFixed(1)},${(30 + r * Math.sin(a)).toFixed(1)}`;
+}).join(' ');
+const starPts = (r1, r2) => Array.from({ length: 10 }, (_, i) => {
+  const a = (-90 + i * 36) * Math.PI / 180, r = i % 2 ? r2 : r1;
+  return `${(30 + r * Math.cos(a)).toFixed(1)},${(30 + r * Math.sin(a)).toFixed(1)}`;
+}).join(' ');
+const SHAPE_PATH = {
+  c: cl => `<circle class="${cl}" cx="30" cy="30" r="19"/>`,
+  s: cl => `<rect class="${cl}" x="11" y="11" width="38" height="38"/>`,
+  t: cl => `<polygon class="${cl}" points="${polyPts(3, 21, -90)}"/>`,
+  d: cl => `<polygon class="${cl}" points="30,8 52,30 30,52 8,30"/>`,
+  h: cl => `<polygon class="${cl}" points="${polyPts(6, 20, 0)}"/>`,
+  p: cl => `<polygon class="${cl}" points="${polyPts(5, 20, -90)}"/>`,
+  x: cl => `<polygon class="${cl}" points="22,8 38,8 38,22 52,22 52,38 38,38 38,52 22,52 22,38 8,38 8,22 22,22"/>`,
+  r: cl => `<polygon class="${cl}" points="${starPts(21, 9)}"/>`,
+};
+/** Một hình cơ bản kèm kiểu tô (0 rỗng · 1 rỗng + chấm giữa · 2 tô đặc). */
+const shape = (k, f = 0) => SHAPE_PATH[k](f === 2 ? 'sf' : 'so') +
+  (f === 1 ? '<circle class="sf" cx="30" cy="30" r="5"/>' : '');
+/** Đa giác đều n cạnh, CÓ CHẤM ở mỗi đỉnh — không chấm thì 7 với 8 cạnh nhìn như nhau,
+ *  câu "đếm số cạnh" sẽ thành đoán mò. Dùng cho mọi ô của các câu đếm cạnh. */
+const polyShape = (n, f = 0) => `<polygon class="${f === 2 ? 'sf' : 'so'}" points="${polyPts(n, 20, -90)}"/>` +
+  polyPts(n, 20, -90).split(' ').map(pt => `<circle class="sf" cx="${pt.split(',')[0]}" cy="${pt.split(',')[1]}" r="3.2"/>`).join('');
+/** Ô hình cơ bản (đã bọc SVG). */
+const sCell = (k, f = 0) => iqSvg(shape(k, f));
+/** Bọc một hình trong phép xoay (độ, thuận chiều kim đồng hồ). */
+const rot = (inner, deg) => `<g transform="rotate(${deg} 30 30)">${inner}</g>`;
+
+// ---- Mũi tên / cờ / chữ L: hình BẤT ĐỐI XỨNG để nhìn ra góc xoay ----
+const ARROW = '<path class="so" d="M30 52 L30 12 M30 12 L21 23 M30 12 L39 23"/><rect class="sf" x="26" y="46" width="8" height="8"/>';
+const FLAG = '<path class="so" d="M16 52 L16 10"/><polygon class="sf" points="16,10 44,17 16,26"/>';
+const ELL = '<path class="so" d="M16 10 L16 48 L46 48"/><circle class="sf" cx="16" cy="10" r="5"/>';
+
+/** n chấm tròn xếp theo lưới 3×3 (thứ tự: giữa → các ô quanh) — dùng cho chuỗi đếm số lượng. */
+function dots(n) {
+  const pos = [[30, 30], [15, 15], [45, 15], [15, 45], [45, 45], [30, 12], [30, 48], [12, 30], [48, 30]];
+  return pos.slice(0, n).map(([x, y]) => `<circle class="sf" cx="${x}" cy="${y}" r="5"/>`).join('');
+}
+/** Lưới 3×3 chỉ có MỘT chấm ở ô thứ i (0..8) — dùng cho chuỗi "chấm di chuyển". */
+function dotAt(i) {
+  let s = '';
+  for (let r2 = 0; r2 < 3; r2++) {
+    for (let k = 0; k < 3; k++) s += `<rect class="gl" x="${3 + k * 18}" y="${3 + r2 * 18}" width="18" height="18"/>`;
+  }
+  return iqSvg(s + `<circle class="sf" cx="${12 + (i % 3) * 18}" cy="${12 + Math.floor(i / 3) * 18}" r="6"/>`);
+}
+/** Ô chứa một con số (ma trận số). */
+const numCell = n => iqSvg(`<text class="stx" x="30" y="30" text-anchor="middle" dominant-baseline="central">${n}</text>`);
+
+/**
+ * Đóng gói một câu NHÌN HÌNH.
+ * opts[0] LUÔN là đáp án đúng khi viết đề; hàm tự xoay vòng vị trí theo id
+ * để đáp án không dồn về nút đầu tiên (mà vẫn ổn định giữa các lần chạy).
+ */
+function figQ(o) {
+  const n = o.opts.length;
+  const k = [...o.id].reduce((a, ch) => a + ch.charCodeAt(0), 0) % n;
+  const shifted = o.opts.slice(n - k).concat(o.opts.slice(0, n - k)); // ⇒ shifted[k] === opts[0]
+  return {
+    id: o.id, category: o.category || '🖼️ Suy luận hình', d: o.d || 2, q: o.q, fig: o.fig,
+    optFig: shifted, options: shifted.map((_, i) => `Hình ${i + 1}`), answer: k, explain: o.explain,
+  };
+}
+
+/**
+ * Câu "chồng hai lưới": A <op> B = ? — đáp án TÍNH RA nên không thể sai;
+ * mồi nhử lấy từ các phép còn lại và biến thể (đảo/xoay/lật/đổi 1 ô) của đáp án, đã lọc trùng.
+ */
+function gOpQ(id, d, a, b, op, explain) {
+  const ans = gOp(a, b, op);
+  const opts = [ans];
+  for (const c of [gOp(a, b, 'and'), gOp(a, b, 'or'), gOp(a, b, 'xor'), gInv(ans), gRot(ans), gFlip(ans), gTog(ans, 4), gTog(ans, 0), gTog(ans, 8), gTog(ans, 2)]) {
+    if (opts.length >= 4) break;
+    if (!opts.includes(c)) opts.push(c);
+  }
+  const sym = op === 'xor' ? '⊕ (chỉ MỘT bên tô)' : op === 'and' ? '∩ (CẢ HAI cùng tô)' : '∪ (ít nhất một bên tô)';
+  return figQ({
+    id, d, q: `Lưới A và B chồng lên nhau theo quy tắc ${sym}. Kết quả là hình nào?`,
+    fig: figRow([gSvg(a), gSvg(b), '?']), opts: opts.map(gSvg), explain,
+  });
+}
+
 window.IQ_QUESTIONS = [
   // ---- Dãy số ----
   { id: 'seq1', category: '🔢 Dãy số', q: 'Số tiếp theo: 2, 4, 8, 16, ?', options: ['24', '30', '32', '64'], answer: 2,
@@ -55,14 +185,6 @@ window.IQ_QUESTIONS = [
     explain: 'Kinh điển: chỉ ở Bắc Cực thì đi Nam rồi Bắc cùng quãng đường mới quay lại đúng chỗ (đoạn Đông chỉ xoay quanh cực).' },
   { id: 'log6', category: '🧠 Logic', q: 'Có 3 quả táo, bạn lấy đi 2 quả. Bạn đang có mấy quả?', options: ['1', '2', '3', '5'], answer: 1,
     explain: 'Bạn LẤY 2 quả, nên bạn ĐANG CÓ 2 quả (không phải số còn lại trên bàn).' },
-
-  // ---- Tương tự (analogy) ----
-  { id: 'ana1', category: '🔗 Tương tự', q: 'Bàn tay : Găng tay = Bàn chân : ?', options: ['Giày', 'Tất (vớ)', 'Dép', 'Ngón chân'], answer: 1,
-    explain: 'Găng tay là lớp bọc ôm sát bàn tay; tương ứng với bàn chân là tất (vớ).' },
-  { id: 'ana2', category: '🔗 Tương tự', q: 'Chó : Sủa = Mèo : ?', options: ['Gáy', 'Kêu meo', 'Hí', 'Rống'], answer: 1,
-    explain: 'Mỗi con vật có tiếng kêu đặc trưng: chó sủa, mèo kêu "meo".' },
-  { id: 'ana3', category: '🔗 Tương tự', q: 'Sách : Đọc = Nhạc : ?', options: ['Viết', 'Nghe', 'Nhìn', 'Ngửi'], answer: 1,
-    explain: 'Quan hệ "đối tượng : giác quan/hành động tiếp nhận". Sách để đọc, nhạc để nghe.' },
 
   // ===== BỔ SUNG ĐỢT 2 (khó hơn + dạng mới) =====
   // ---- Dãy số nâng cao ----
@@ -118,12 +240,6 @@ window.IQ_QUESTIONS = [
     explain: 'Số chẵn là 2, 4, 6 — tức 3 trên 6 khả năng ⇒ 1/2.' },
 
   // ---- Tương tự ----
-  { id: 'ana4', category: '🔗 Tương tự', q: 'Nóng : Lạnh = Cao : ?', options: ['Rộng', 'Thấp', 'Dài', 'Ngắn'], answer: 1,
-    explain: 'Quan hệ trái nghĩa. Trái nghĩa của "cao" là "thấp".' },
-  { id: 'ana5', category: '🔗 Tương tự', q: 'Bác sĩ : Bệnh nhân = Giáo viên : ?', options: ['Sách', 'Học sinh', 'Trường', 'Bảng'], answer: 1,
-    explain: 'Quan hệ "người phục vụ : đối tượng được phục vụ". Bác sĩ chữa bệnh nhân, giáo viên dạy học sinh.' },
-  { id: 'ana6', category: '🔗 Tương tự', q: 'Chim : Tổ = Người : ?', options: ['Hang', 'Nhà', 'Phòng', 'Lều'], answer: 1,
-    explain: 'Quan hệ "loài : nơi ở". Chim ở tổ, người ở nhà.' },
 
   // ===== ĐỢT 3 — mở rộng kho + gắn độ khó d (1 dễ · 2 trung bình · 3 khó) =====
   // ---- Dãy số ----
@@ -169,12 +285,6 @@ window.IQ_QUESTIONS = [
   { id: 'pr9', category: '🎲 Xác suất', d: 1, q: 'Tung 1 xúc xắc, xác suất KHÔNG ra mặt 6?', options: ['1/6', '1/2', '2/3', '5/6'], answer: 3, explain: '5 mặt còn lại trên 6 ⇒ 5/6.' },
 
   // ---- Tương tự ----
-  { id: 'an7', category: '🔗 Tương tự', d: 1, q: 'Cá : Bơi = Chim : ?', options: ['Chạy', 'Bay', 'Nhảy', 'Bò'], answer: 1, explain: 'Cách di chuyển đặc trưng: cá bơi, chim bay.' },
-  { id: 'an8', category: '🔗 Tương tự', d: 1, q: 'Ngày : Đêm = Trắng : ?', options: ['Xám', 'Đen', 'Sáng', 'Xanh'], answer: 1, explain: 'Quan hệ trái nghĩa. Trắng ↔ Đen.' },
-  { id: 'an9', category: '🔗 Tương tự', d: 2, q: 'Kim : Đồng hồ = Trang : ?', options: ['Bút', 'Sách', 'Chữ', 'Giấy'], answer: 1, explain: 'Quan hệ "bộ phận : tổng thể". Kim thuộc đồng hồ, trang thuộc sách.' },
-  { id: 'an10', category: '🔗 Tương tự', d: 2, q: 'Vua : Ngai vàng = Thuyền trưởng : ?', options: ['Biển', 'Tàu', 'Thủy thủ', 'Bến'], answer: 1, explain: 'Quan hệ "người đứng đầu : nơi cai quản". Vua trên ngai (vương quốc), thuyền trưởng trên tàu.' },
-  { id: 'an11', category: '🔗 Tương tự', d: 1, q: 'Lửa : Nóng = Băng : ?', options: ['Ướt', 'Lạnh', 'Cứng', 'Trắng'], answer: 1, explain: 'Quan hệ "vật : tính chất". Lửa nóng, băng lạnh.' },
-  { id: 'an12', category: '🔗 Tương tự', d: 1, q: 'Đói : Ăn = Khát : ?', options: ['Ngủ', 'Uống', 'Nghỉ', 'Chạy'], answer: 1, explain: 'Quan hệ "nhu cầu : hành động giải quyết". Đói thì ăn, khát thì uống.' },
 
   // ---- Chữ cái ----
   { id: 'lt5', category: '🔠 Chữ cái', d: 1, q: 'Chữ tiếp theo: B, D, F, H, ?', options: ['I', 'J', 'K', 'L'], answer: 1, explain: 'Cách 1 chữ một. Sau H là J.' },
@@ -421,28 +531,6 @@ window.IQ_QUESTIONS = [
   { id: 'm2-20', category: '➗ Toán nhanh', d: 3, q: 'Lãi kép 10%/năm, gửi 100 triệu. Sau 3 năm được bao nhiêu (làm tròn)?', options: ['130 triệu', '131 triệu', '133 triệu', '135 triệu'], answer: 2,
     explain: '100 × 1.1³ = 133.1 triệu — hơn lãi đơn (130 triệu) nhờ lãi mẹ đẻ lãi con.' },
 
-  // ---- 🔗 Tương tự ----
-  { id: 'a2-1', category: '🔗 Tương tự', d: 1, q: 'Bác sĩ : Bệnh viện = Giáo viên : ?', options: ['Học sinh', 'Trường học', 'Sách vở', 'Bài giảng'], answer: 1,
-    explain: 'Quan hệ người ↔ NƠI LÀM VIỆC: bác sĩ ở bệnh viện, giáo viên ở trường học.' },
-  { id: 'a2-2', category: '🔗 Tương tự', d: 1, q: 'Bút : Viết = Dao : ?', options: ['Sắc bén', 'Cắt', 'Bếp', 'Kim loại'], answer: 1,
-    explain: 'Quan hệ vật ↔ CÔNG DỤNG: bút để viết, dao để cắt.' },
-  { id: 'a2-3', category: '🔗 Tương tự', d: 2, q: 'Nước : Đá = Hơi nước : ?', options: ['Mây', 'Nước', 'Sương', 'Khí'], answer: 1,
-    explain: 'Quan hệ thể lỏng ↔ thể rắn / thể khí ↔ thể lỏng: làm lạnh hơi nước thì thành nước.' },
-  { id: 'a2-4', category: '🔗 Tương tự', d: 2, q: 'RAM : Tạm thời = Ổ cứng : ?', options: ['Nhanh', 'Bền vững', 'Đắt tiền', 'Nhỏ gọn'], answer: 1,
-    explain: 'RAM mất dữ liệu khi tắt máy (tạm thời), ổ cứng giữ dữ liệu (bền vững/persistent).' },
-  { id: 'a2-5', category: '🔗 Tương tự', d: 1, q: 'Đói : Ăn = Khát : ?', options: ['Nước', 'Uống', 'Nóng', 'Mệt'], answer: 1,
-    explain: 'Quan hệ trạng thái ↔ HÀNH ĐỘNG khắc phục: đói thì ăn, khát thì uống.' },
-  { id: 'a2-6', category: '🔗 Tương tự', d: 2, q: 'Chương : Sách = Màn : ?', options: ['Kịch', 'Diễn viên', 'Rạp hát', 'Khán giả'], answer: 0,
-    explain: 'Quan hệ phần ↔ TOÀN THỂ: chương là một phần của sách, màn là một phần của vở kịch.' },
-  { id: 'a2-7', category: '🔗 Tương tự', d: 2, q: 'Cache : Nhanh = Database : ?', options: ['Chậm', 'Bền vững', 'Lớn', 'Phức tạp'], answer: 1,
-    explain: 'Đặc trưng cốt lõi: cache đổi độ bền lấy tốc độ, database đổi tốc độ lấy độ bền & nhất quán.' },
-  { id: 'a2-8', category: '🔗 Tương tự', d: 1, q: 'Ong : Mật = Bò : ?', options: ['Cỏ', 'Sữa', 'Chuồng', 'Sừng'], answer: 1,
-    explain: 'Quan hệ con vật ↔ SẢN PHẨM cho con người: ong cho mật, bò cho sữa.' },
-  { id: 'a2-9', category: '🔗 Tương tự', d: 2, q: 'Nhiệt kế : Nhiệt độ = Đồng hồ đo áp : ?', options: ['Thời gian', 'Áp suất', 'Tốc độ', 'Khối lượng'], answer: 1,
-    explain: 'Quan hệ dụng cụ ↔ ĐẠI LƯỢNG đo được.' },
-  { id: 'a2-10', category: '🔗 Tương tự', d: 3, q: 'Bug : Test = Lỗ hổng : ?', options: ['Hacker mũ đen', 'Kiểm thử bảo mật', 'Bản vá bảo mật', 'Tường lửa ứng dụng'], answer: 1,
-    explain: 'Quan hệ khiếm khuyết ↔ HOẠT ĐỘNG tìm ra nó: test tìm bug, kiểm thử bảo mật (pentest) tìm lỗ hổng.' },
-
   // ---- 🎲 Xác suất ----
   { id: 'p2-1', category: '🎲 Xác suất', d: 1, q: 'Tung một con xúc xắc 6 mặt, xác suất ra số chẵn là?', options: ['1/6', '1/3', '1/2', '2/3'], answer: 2,
     explain: 'Ba mặt chẵn (2, 4, 6) trên 6 mặt ⇒ 3/6 = 1/2.' },
@@ -608,24 +696,10 @@ window.IQ_QUESTIONS = [
     explain: 'Dãy đã sắp xếp, phần tử đứng giữa (thứ 3 trên 5) là 9. Trung bình cộng thì bằng 11 — đừng nhầm.' },
 
   // ---- ❌ Chọn từ khác loại ----
-  { id: 'o2-1', category: '❌ Khác loại', d: 1, q: 'Chọn từ KHÁC LOẠI: Chó, Mèo, Gà, Trâu', options: ['Chó', 'Mèo', 'Gà', 'Trâu'], answer: 2,
-    explain: 'Gà là gia cầm (đẻ trứng), ba con còn lại là động vật có vú.' },
-  { id: 'o2-2', category: '❌ Khác loại', d: 1, q: 'Chọn cái KHÁC LOẠI: MySQL, PostgreSQL, MongoDB, Oracle', options: ['MySQL', 'PostgreSQL', 'MongoDB', 'Oracle'], answer: 2,
-    explain: 'MongoDB là NoSQL dạng document, ba cái còn lại là cơ sở dữ liệu quan hệ (SQL).' },
-  { id: 'o2-3', category: '❌ Khác loại', d: 2, q: 'Chọn cái KHÁC LOẠI: HTTP, FTP, TCP, SMTP', options: ['HTTP', 'FTP', 'TCP', 'SMTP'], answer: 2,
-    explain: 'TCP là giao thức tầng GIAO VẬN, ba cái còn lại là giao thức tầng ứng dụng.' },
   { id: 'o2-4', category: '❌ Khác loại', d: 1, q: 'Chọn số KHÁC LOẠI: 2, 3, 5, 9, 11', options: ['2', '3', '9', '11'], answer: 2,
     explain: '9 = 3 × 3 nên không phải số nguyên tố, các số còn lại đều là số nguyên tố.' },
   { id: 'o2-5', category: '❌ Khác loại', d: 1, q: 'Chọn số KHÁC LOẠI: 16, 25, 36, 48', options: ['16', '25', '36', '48'], answer: 3,
     explain: '16 = 4², 25 = 5², 36 = 6² là số chính phương; 48 thì không.' },
-  { id: 'o2-6', category: '❌ Khác loại', d: 1, q: 'Chọn cái KHÁC LOẠI: Java, Python, HTML, C++', options: ['Java', 'Python', 'HTML', 'C++'], answer: 2,
-    explain: 'HTML là ngôn ngữ ĐÁNH DẤU (markup), không phải ngôn ngữ lập trình.' },
-  { id: 'o2-7', category: '❌ Khác loại', d: 2, q: 'Chọn cái KHÁC LOẠI: Redis, Memcached, Kafka, Hazelcast', options: ['Redis', 'Memcached', 'Kafka', 'Hazelcast'], answer: 2,
-    explain: 'Kafka là nền tảng message/streaming; ba cái còn lại là kho lưu trữ in-memory dùng làm cache.' },
-  { id: 'o2-8', category: '❌ Khác loại', d: 1, q: 'Chọn cái KHÁC LOẠI: Git, SVN, Mercurial, Docker', options: ['Git', 'SVN', 'Mercurial', 'Docker'], answer: 3,
-    explain: 'Docker là công cụ container hoá; ba cái còn lại là hệ quản lý phiên bản mã nguồn.' },
-  { id: 'o2-9', category: '❌ Khác loại', d: 1, q: 'Chọn đơn vị KHÁC LOẠI: Kilogram, Gram, Tấn, Mét', options: ['Kilogram', 'Gram', 'Tấn', 'Mét'], answer: 3,
-    explain: 'Mét đo ĐỘ DÀI, ba đơn vị còn lại đo khối lượng.' },
   { id: 'o2-10', category: '❌ Khác loại', d: 2, q: 'Chọn số KHÁC LOẠI: 8, 27, 64, 100', options: ['8', '27', '64', '100'], answer: 3,
     explain: '8 = 2³, 27 = 3³, 64 = 4³ là lập phương; 100 chỉ là bình phương của 10.' },
 
@@ -727,17 +801,6 @@ window.IQ_QUESTIONS = [
   { id: 'm3-10', category: '➗ Toán nhanh', d: 2, q: 'Một tủ lạnh giá 12 triệu, giảm 25%. Giá sau giảm là?', options: ['8 triệu', '9 triệu', '9,6 triệu', '10 triệu'], answer: 1,
     explain: '25% của 12 là 3 ⇒ còn 9 triệu.' },
 
-  { id: 'a3-1', category: '🔗 Tương tự', d: 2, q: 'Index : Database = Mục lục : ?', options: ['Thư viện', 'Cuốn sách', 'Tác giả', 'Nhà xuất bản'], answer: 1,
-    explain: 'Index giúp tra nhanh trong database, mục lục giúp tra nhanh trong cuốn sách.' },
-  { id: 'a3-2', category: '🔗 Tương tự', d: 2, q: 'Backup : Mất dữ liệu = Bảo hiểm : ?', options: ['Rủi ro', 'Tiền bạc', 'Hợp đồng', 'Bệnh viện'], answer: 0,
-    explain: 'Quan hệ biện pháp ↔ ĐIỀU CẦN PHÒNG: backup phòng mất dữ liệu, bảo hiểm phòng rủi ro.' },
-  { id: 'a3-3', category: '🔗 Tương tự', d: 1, q: 'Chìa khoá : Ổ khoá = Mật khẩu : ?', options: ['Tài khoản', 'Bàn phím', 'Trình duyệt', 'Email'], answer: 0,
-    explain: 'Quan hệ công cụ mở ↔ THỨ ĐƯỢC MỞ.' },
-  { id: 'a3-4', category: '🔗 Tương tự', d: 2, q: 'Log : Sự cố = Camera : ?', options: ['Ánh sáng', 'Vụ trộm', 'Màn hình', 'Ống kính'], answer: 1,
-    explain: 'Cả hai đều là bản GHI LẠI giúp điều tra sự việc sau khi nó xảy ra.' },
-  { id: 'a3-5', category: '🔗 Tương tự', d: 3, q: 'Load balancer : Server = Người điều phối : ?', options: ['Khách hàng', 'Nhân viên', 'Văn phòng', 'Quản lý'], answer: 1,
-    explain: 'Load balancer chia request cho các server như người điều phối chia việc cho các nhân viên.' },
-
   { id: 'x3-1', category: '🧭 Hình & không gian', d: 2, q: 'Một khối lập phương 4×4×4 sơn ngoài rồi cắt thành 64 khối nhỏ. Bao nhiêu khối KHÔNG dính sơn?', options: ['4 khối', '8 khối', '16 khối', '24 khối'], answer: 1,
     explain: 'Lõi bên trong là khối 2×2×2 ⇒ 8 khối không chạm mặt ngoài.' },
   { id: 'x3-2', category: '🧭 Hình & không gian', d: 2, q: 'Bạn quay mặt hướng Nam, quay TRÁI 90° hai lần. Bạn nhìn hướng nào?', options: ['Đông', 'Tây', 'Nam', 'Bắc'], answer: 3,
@@ -759,4 +822,304 @@ window.IQ_QUESTIONS = [
     explain: '2.000.000 / 3600 ≈ 556 request/giây, vượt ngưỡng 500 ⇒ thiếu khoảng 11% công suất.' },
   { id: 'w3-5', category: '⏱️ Chuyển động & công việc', d: 2, q: 'Job chạy 2 giờ trên 1 máy, song song hoá được 50% khối lượng. Với vô hạn máy, nhanh nhất còn bao lâu?', options: ['30 phút', '1 giờ', '1 giờ 30 phút', '2 giờ'], answer: 1,
     explain: 'Nửa tuần tự không rút ngắn được ⇒ giới hạn là 1 giờ (định luật Amdahl).' },
+
+  // =========================================================================
+  // 🖼️ SUY LUẬN HÌNH — nhìn hình chọn hình (ma trận, xoay, chồng lưới, khác nhóm)
+  // =========================================================================
+
+  // ---- Chồng hai lưới 3×3 (đáp án do máy tính ra ⇒ không thể sai) ----
+  gOpQ('gx1', 2, '110/010/011', '011/010/110', 'xor', 'Giữ ô chỉ MỘT lưới tô; ô cả hai cùng tô thì bỏ trống.'),
+  gOpQ('gx2', 2, '111/000/101', '101/010/101', 'and', 'Chỉ giữ ô mà CẢ HAI lưới cùng tô.'),
+  gOpQ('gx3', 2, '100/010/001', '001/010/100', 'or', 'Tô ô nào có mặt ở ít nhất một trong hai lưới.'),
+  gOpQ('gx4', 3, '110/101/011', '011/110/101', 'xor', 'Phép XOR: ô trùng nhau triệt tiêu, ô lệch nhau thì giữ.'),
+  gOpQ('gx5', 3, '111/101/111', '010/111/010', 'and', 'Giao của hai lưới — chỉ những ô cùng tô ở cả hai hình.'),
+  gOpQ('gx6', 2, '100/110/111', '001/011/111', 'xor', 'Hàng cuối trùng khít nên biến mất; chỉ còn phần lệch của hai hàng trên.'),
+  gOpQ('gx7', 3, '101/010/101', '010/101/010', 'or', 'Hai lưới bù nhau ⇒ hợp lại phủ kín cả 9 ô.'),
+  gOpQ('gx8', 3, '110/011/100', '010/110/001', 'xor', 'Cộng theo modulo 2 từng ô: giống nhau → 0, khác nhau → 1.'),
+
+  // ---- Ma trận 3×3: tìm ô còn thiếu ----
+  figQ({
+    id: 'mx1', d: 2, q: 'Ô dấu ? trong ma trận là hình nào?',
+    fig: figGrid([sCell('c'), sCell('s'), sCell('t'), sCell('s'), sCell('t'), sCell('c'), sCell('t'), sCell('c'), '?']),
+    opts: [sCell('s'), sCell('t'), sCell('c'), sCell('d')],
+    explain: 'Mỗi hàng và mỗi cột đều có đủ 3 hình tròn – vuông – tam giác, không lặp. Hàng cuối đã có tam giác và tròn ⇒ thiếu hình vuông.',
+  }),
+  figQ({
+    id: 'mx2', d: 2, q: 'Ô dấu ? trong ma trận là hình nào?',
+    fig: figGrid([sCell('c', 0), sCell('c', 1), sCell('c', 2), sCell('s', 0), sCell('s', 1), sCell('s', 2), sCell('t', 0), sCell('t', 1), '?']),
+    opts: [sCell('t', 2), sCell('t', 0), sCell('s', 2), sCell('c', 2)],
+    explain: 'Hàng quyết định HÌNH (tròn → vuông → tam giác), cột quyết định CÁCH TÔ (rỗng → có chấm → tô đặc). Ô cuối: tam giác tô đặc.',
+  }),
+  figQ({
+    id: 'mx3', d: 3, q: 'Ô dấu ? trong ma trận là hình nào?',
+    fig: figGrid([
+      iqSvg(rot(ELL, 0)), iqSvg(rot(ELL, 90)), iqSvg(rot(ELL, 180)),
+      iqSvg(rot(ELL, 90)), iqSvg(rot(ELL, 180)), iqSvg(rot(ELL, 270)),
+      iqSvg(rot(ELL, 180)), iqSvg(rot(ELL, 270)), '?']),
+    opts: [iqSvg(rot(ELL, 0)), iqSvg(rot(ELL, 90)), iqSvg(rot(ELL, 180)), iqSvg(rot(ELL, 270))],
+    explain: 'Mỗi bước sang phải hình xoay thêm 90° thuận chiều kim đồng hồ. Từ 270° xoay tiếp 90° là 360° = về vị trí gốc.',
+  }),
+  figQ({
+    id: 'mx4', d: 2, q: 'Ô dấu ? trong ma trận là hình nào?',
+    fig: figGrid([iqSvg(dots(1)), iqSvg(dots(2)), iqSvg(dots(3)), iqSvg(dots(4)), iqSvg(dots(5)), iqSvg(dots(6)), iqSvg(dots(7)), iqSvg(dots(8)), '?']),
+    opts: [iqSvg(dots(9)), iqSvg(dots(7)), iqSvg(dots(6)), iqSvg(dots(4))],
+    explain: 'Số chấm tăng đều 1 → 2 → 3 … theo thứ tự đọc từ trái sang phải, hết hàng xuống hàng dưới. Ô cuối là 9 chấm.',
+  }),
+  figQ({
+    id: 'mx5', d: 3, q: 'Ô dấu ? trong ma trận là hình nào?',
+    fig: figGrid([
+      iqSvg(polyShape(3)), iqSvg(polyShape(4)), iqSvg(polyShape(5)),
+      iqSvg(polyShape(4)), iqSvg(polyShape(5)), iqSvg(polyShape(6)),
+      iqSvg(polyShape(5)), iqSvg(polyShape(6)), '?']),
+    opts: [iqSvg(polyShape(7)), iqSvg(polyShape(6)), iqSvg(polyShape(5)), iqSvg(polyShape(4))],
+    explain: 'Số cạnh tăng 1 mỗi ô sang phải: hàng cuối là 5 – 6 – 7 cạnh ⇒ ô thiếu là đa giác 7 cạnh.',
+  }),
+  figQ({
+    id: 'mx6', d: 3, q: 'Ô dấu ? trong ma trận là hình nào? (cột 3 = cột 1 chồng lên cột 2)',
+    fig: figGrid([
+      sCell('c'), sCell('s'), iqSvg(shape('c') + shape('s')),
+      sCell('t'), sCell('c'), iqSvg(shape('t') + shape('c')),
+      sCell('s'), sCell('t'), '?']),
+    opts: [iqSvg(shape('s') + shape('t')), iqSvg(shape('s') + shape('c')), sCell('t'), iqSvg(shape('c') + shape('t'))],
+    explain: 'Cột 3 là hai hình của cột 1 và cột 2 vẽ chồng lên nhau ⇒ hàng cuối = vuông chồng tam giác.',
+  }),
+  figQ({
+    id: 'mx7', d: 2, q: 'Ô dấu ? trong ma trận là hình nào?',
+    fig: figGrid([
+      gSvg('100/000/000'), gSvg('110/000/000'), gSvg('111/000/000'),
+      gSvg('100/100/000'), gSvg('110/110/000'), gSvg('111/111/000'),
+      gSvg('100/100/100'), gSvg('110/110/110'), '?']),
+    opts: [gSvg('111/111/111'), gSvg('111/111/000'), gSvg('110/110/110'), gSvg('011/011/011')],
+    explain: 'Sang phải thêm 1 cột, xuống dưới thêm 1 hàng ⇒ ô cuối là lưới tô kín 3×3.',
+  }),
+  figQ({
+    id: 'mx8', d: 3, q: 'Ô dấu ? trong ma trận là hình nào? (mỗi hàng: hình 3 = hình 1 ⊕ hình 2)',
+    fig: figGrid([
+      gSvg('110/000/011'), gSvg('010/010/010'), gSvg(gOp('110/000/011', '010/010/010', 'xor')),
+      gSvg('101/000/101'), gSvg('001/010/100'), gSvg(gOp('101/000/101', '001/010/100', 'xor')),
+      gSvg('111/000/000'), gSvg('010/010/010'), '?']),
+    opts: [gSvg(gOp('111/000/000', '010/010/010', 'xor')), gSvg(gOp('111/000/000', '010/010/010', 'or')),
+      gSvg(gOp('111/000/000', '010/010/010', 'and')), gSvg(gInv(gOp('111/000/000', '010/010/010', 'xor')))],
+    explain: 'Quy luật từng hàng là XOR: ô nào chỉ một trong hai lưới tô thì giữ, ô trùng nhau thì bỏ.',
+  }),
+
+  // ---- Chuỗi xoay hình ----
+  figQ({
+    id: 'rt1', d: 1, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([iqSvg(rot(ARROW, 0)), iqSvg(rot(ARROW, 45)), iqSvg(rot(ARROW, 90)), iqSvg(rot(ARROW, 135)), '?']),
+    opts: [iqSvg(rot(ARROW, 180)), iqSvg(rot(ARROW, 225)), iqSvg(rot(ARROW, 90)), iqSvg(rot(ARROW, 270))],
+    explain: 'Mỗi bước mũi tên xoay thêm 45° thuận chiều kim đồng hồ: 135° + 45° = 180° (mũi tên chúc xuống).',
+  }),
+  figQ({
+    id: 'rt2', d: 2, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([iqSvg(rot(FLAG, 0)), iqSvg(rot(FLAG, 90)), iqSvg(rot(FLAG, 180)), '?']),
+    opts: [iqSvg(rot(FLAG, 270)), iqSvg(rot(FLAG, 0)), iqSvg(rot(FLAG, 90)), iqSvg(rot(FLAG, 135))],
+    explain: 'Lá cờ xoay 90° mỗi bước theo chiều kim đồng hồ ⇒ sau 180° là 270°.',
+  }),
+  figQ({
+    id: 'rt3', d: 2, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([iqSvg(rot(ELL, 0)), iqSvg(rot(ELL, 270)), iqSvg(rot(ELL, 180)), '?']),
+    opts: [iqSvg(rot(ELL, 90)), iqSvg(rot(ELL, 0)), iqSvg(rot(ELL, 180)), iqSvg(rot(ELL, 270))],
+    explain: 'Chuỗi xoay NGƯỢC chiều kim đồng hồ 90° mỗi bước: 0° → 270° → 180° → 90°.',
+  }),
+  figQ({
+    id: 'rt4', d: 3, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([gSvg('100/000/000'), gSvg('001/000/000'), gSvg('000/000/001'), '?']),
+    opts: [gSvg('000/000/100'), gSvg('100/000/000'), gSvg('000/010/000'), gSvg('001/000/000')],
+    explain: 'Ô tô đen chạy vòng quanh 4 góc theo chiều kim đồng hồ: trên-trái → trên-phải → dưới-phải → dưới-trái.',
+  }),
+  figQ({
+    id: 'rt5', d: 3, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([dotAt(0), dotAt(1), dotAt(2), dotAt(5), '?']),
+    opts: [dotAt(8), dotAt(4), dotAt(3), dotAt(7)],
+    explain: 'Chấm đi men theo viền lưới theo chiều kim đồng hồ, mỗi bước 1 ô: sau ô giữa-phải là ô dưới-phải.',
+  }),
+  figQ({
+    id: 'rt6', d: 3, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([dotAt(8), dotAt(7), dotAt(6), dotAt(3), '?']),
+    opts: [dotAt(0), dotAt(4), dotAt(1), dotAt(2)],
+    explain: 'Chấm chạy NGƯỢC chiều kim đồng hồ theo viền: dưới-phải → dưới-giữa → dưới-trái → giữa-trái → trên-trái.',
+  }),
+  figQ({
+    id: 'rt7', d: 2, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([dotAt(0), dotAt(2), dotAt(8), '?']),
+    opts: [dotAt(6), dotAt(4), dotAt(5), dotAt(1)],
+    explain: 'Chấm nhảy 2 ô một theo viền, tức lần lượt qua 4 góc: trên-trái → trên-phải → dưới-phải → dưới-trái.',
+  }),
+
+  // ---- Chuỗi số cạnh / số lượng ----
+  figQ({
+    id: 'sq1', d: 1, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([sCell('t'), sCell('s'), sCell('p'), '?']),
+    opts: [sCell('h'), sCell('c'), sCell('p'), sCell('d')],
+    explain: 'Số cạnh tăng dần 3 → 4 → 5 ⇒ hình tiếp theo có 6 cạnh (lục giác).',
+  }),
+  figQ({
+    id: 'sq2', d: 3, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([iqSvg(polyShape(3)), iqSvg(polyShape(5)), iqSvg(polyShape(7)), '?']),
+    opts: [iqSvg(polyShape(9)), iqSvg(polyShape(8)), iqSvg(polyShape(6)), iqSvg(polyShape(4))],
+    explain: 'Số cạnh là dãy số lẻ 3 → 5 → 7 ⇒ tiếp theo là đa giác 9 cạnh.',
+  }),
+  figQ({
+    id: 'sq3', d: 2, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([iqSvg(dots(1)), iqSvg(dots(2)), iqSvg(dots(3)), iqSvg(dots(5)), '?']),
+    opts: [iqSvg(dots(8)), iqSvg(dots(6)), iqSvg(dots(7)), iqSvg(dots(9))],
+    explain: 'Số chấm theo dãy Fibonacci 1, 2, 3, 5 ⇒ tiếp theo là 3 + 5 = 8 chấm.',
+  }),
+  figQ({
+    id: 'sq4', d: 2, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([gSvg('100/000/000'), gSvg('110/000/000'), gSvg('111/000/000'), gSvg('111/100/000'), '?']),
+    opts: [gSvg('111/110/000'), gSvg('111/111/000'), gSvg('111/100/100'), gSvg('110/110/000')],
+    explain: 'Mỗi bước tô thêm đúng 1 ô theo thứ tự đọc (trái → phải, hết hàng thì xuống hàng dưới) ⇒ ô thứ 5 nằm ở hàng giữa, cột giữa.',
+  }),
+
+  // ---- Gương & xoay lưới ----
+  figQ({
+    id: 'mr1', d: 2, q: 'Soi hình bên dưới qua GƯƠNG đặt dọc bên phải, ảnh thu được là hình nào?',
+    fig: figRow([gSvg('110/011/001')]),
+    opts: [gSvg(gFlip('110/011/001')), gSvg('110/011/001'), gSvg(gRot('110/011/001')), gSvg(gInv('110/011/001'))],
+    explain: 'Gương dọc lật trái ↔ phải trong từng hàng (thứ tự hàng giữ nguyên).',
+  }),
+  figQ({
+    id: 'mr2', d: 2, q: 'Xoay hình bên dưới 90° THUẬN chiều kim đồng hồ được hình nào?',
+    fig: figRow([gSvg('111/010/100')]),
+    opts: [gSvg(gRot('111/010/100')), gSvg(gFlip('111/010/100')), gSvg('111/010/100'), gSvg(gRot(gRot('111/010/100')))],
+    explain: 'Xoay 90° thuận: hàng trên cùng chuyển thành cột bên phải.',
+  }),
+  figQ({
+    id: 'mr3', d: 3, q: 'Xoay hình bên dưới 180° được hình nào?',
+    fig: figRow([gSvg('101/110/010')]),
+    opts: [gSvg(gRot(gRot('101/110/010'))), gSvg(gRot('101/110/010')), gSvg(gFlip('101/110/010')), gSvg('101/110/010')],
+    explain: 'Xoay 180° = lật cả trên↔dưới và trái↔phải cùng lúc.',
+  }),
+  figQ({
+    id: 'mr4', d: 3, q: 'Lật hình bên dưới theo trục NGANG (trên ↔ dưới) được hình nào?',
+    fig: figRow([gSvg('110/010/001')]),
+    opts: [gSvg(gFlipV('110/010/001')), gSvg(gFlip('110/010/001')), gSvg(gRot('110/010/001')), gSvg('110/010/001')],
+    explain: 'Lật qua trục ngang: hàng trên đổi chỗ với hàng dưới, hàng giữa đứng yên.',
+  }),
+
+  // ---- Khác nhóm (nhìn hình) ----
+  figQ({
+    id: 'od1', d: 2, q: 'Hình nào KHÁC NHÓM?',
+    opts: [iqSvg(polyShape(3)), iqSvg(polyShape(4)), iqSvg(polyShape(6)), iqSvg(polyShape(8))],
+    explain: 'Ba hình kia có số cạnh CHẴN (4, 6, 8); tam giác 3 cạnh là số lẻ. (Chấm ở đỉnh để đếm cạnh cho nhanh.)',
+  }),
+  figQ({
+    id: 'od2', d: 3, q: 'Hình nào KHÁC NHÓM?',
+    opts: [iqSvg(`<g transform="translate(60,0) scale(-1,1)">${ELL}</g>`), iqSvg(rot(ELL, 0)), iqSvg(rot(ELL, 90)), iqSvg(rot(ELL, 180))],
+    explain: 'Ba hình kia chỉ khác nhau ở góc XOAY; hình còn lại là ảnh trong GƯƠNG — xoay kiểu gì cũng không trùng được.',
+  }),
+  figQ({
+    id: 'od3', d: 2, q: 'Hình nào KHÁC NHÓM?',
+    opts: [gSvg('111/010/010'), gSvg('110/010/010'), gSvg('010/010/011'), gSvg('011/010/010')],
+    explain: 'Ba lưới kia đều tô đúng 4 ô; lưới còn lại tô 5 ô.',
+  }),
+  figQ({
+    id: 'od4', d: 2, q: 'Hình nào KHÁC NHÓM?',
+    opts: [sCell('c', 1), sCell('s', 0), sCell('t', 0), sCell('h', 0)],
+    explain: 'Ba hình kia chỉ có đường viền; hình còn lại có thêm chấm ở giữa.',
+  }),
+  figQ({
+    id: 'od5', d: 3, q: 'Hình nào KHÁC NHÓM?',
+    opts: [gSvg(gFlip('100/100/110')), gSvg('100/100/110'), gSvg(gRot('100/100/110')), gSvg(gRot(gRot('100/100/110')))],
+    explain: 'Ba lưới kia là cùng một hình chữ L xoay đi; lưới còn lại là ảnh GƯƠNG của nó — xoay kiểu gì cũng không trùng.',
+  }),
+  figQ({
+    id: 'od6', d: 2, q: 'Hình nào KHÁC NHÓM?',
+    opts: [sCell('p'), sCell('s', 2), sCell('c', 2), sCell('t', 2)],
+    explain: 'Ba hình kia được tô đặc; hình còn lại chỉ có viền rỗng.',
+  }),
+
+  // ---- Đếm hình trong hình vẽ (nhìn hình, chọn số) ----
+  { id: 'cf1', category: '🖼️ Suy luận hình', d: 2, q: 'Hình vẽ có tất cả bao nhiêu TAM GIÁC?',
+    fig: figRow([iqSvg('<g class="so"><rect x="8" y="8" width="44" height="44"/><path d="M8 8 L52 52 M52 8 L8 52"/></g>')], 'lg'),
+    options: ['4', '6', '8', '10'], answer: 2,
+    explain: 'Hai đường chéo cắt nhau tạo 4 tam giác nhỏ + 4 tam giác lớn (mỗi nửa hình vuông) = 8.' },
+  { id: 'cf2', category: '🖼️ Suy luận hình', d: 3, q: 'Hình vẽ có tất cả bao nhiêu TAM GIÁC?',
+    fig: figRow([iqSvg('<g class="so"><polygon points="30,6 54,52 6,52"/><path d="M30 6 L22 52 M30 6 L38 52"/></g>')], 'lg'),
+    options: ['4', '5', '6', '7'], answer: 2,
+    explain: 'Đáy bị chia thành 3 đoạn ⇒ chọn 2 trong 4 điểm chia làm hai đầu đáy: C(4,2) = 6 tam giác.' },
+  { id: 'cf3', category: '🖼️ Suy luận hình', d: 1, q: 'Hình vẽ có tất cả bao nhiêu HÌNH VUÔNG?',
+    fig: figRow([iqSvg('<g class="so"><rect x="8" y="8" width="44" height="44"/><path d="M30 8 L30 52 M8 30 L52 30"/></g>')], 'lg'),
+    options: ['4', '5', '6', '8'], answer: 1,
+    explain: '4 hình vuông nhỏ + 1 hình vuông lớn bao ngoài = 5.' },
+  { id: 'cf4', category: '🖼️ Suy luận hình', d: 3, q: 'Hình vẽ có tất cả bao nhiêu HÌNH VUÔNG?',
+    fig: figRow([iqSvg('<g class="so"><rect x="6" y="6" width="48" height="48"/><path d="M22 6 L22 54 M38 6 L38 54 M6 22 L54 22 M6 38 L54 38"/></g>')], 'lg'),
+    options: ['9', '12', '14', '16'], answer: 2,
+    explain: 'Lưới 3×3: 9 vuông cạnh 1 + 4 vuông cạnh 2 + 1 vuông cạnh 3 = 14.' },
+  { id: 'cf5', category: '🖼️ Suy luận hình', d: 3, q: 'Hình vẽ có tất cả bao nhiêu HÌNH CHỮ NHẬT (tính cả hình vuông)?',
+    fig: figRow([iqSvg('<g class="so"><rect x="8" y="8" width="44" height="44"/><path d="M30 8 L30 52 M8 30 L52 30"/></g>')], 'lg'),
+    options: ['5', '6', '9', '12'], answer: 2,
+    explain: 'Chọn 2 trong 3 đường dọc và 2 trong 3 đường ngang: C(3,2) × C(3,2) = 3 × 3 = 9.' },
+
+  // ---- Ma trận số (nhìn lưới, tìm số thiếu) ----
+  { id: 'nm1', category: '🖼️ Suy luận hình', d: 2, q: 'Số ở ô dấu ? là bao nhiêu?',
+    fig: figGrid([numCell(2), numCell(3), numCell(5), numCell(4), numCell(5), numCell(9), numCell(6), numCell(7), '?']),
+    options: ['11', '12', '13', '14'], answer: 2,
+    explain: 'Cột 3 = cột 1 + cột 2. Hàng cuối: 6 + 7 = 13.' },
+  { id: 'nm2', category: '🖼️ Suy luận hình', d: 2, q: 'Số ở ô dấu ? là bao nhiêu?',
+    fig: figGrid([numCell(3), numCell(4), numCell(12), numCell(5), numCell(2), numCell(10), numCell(6), numCell(7), '?']),
+    options: ['13', '36', '42', '48'], answer: 2,
+    explain: 'Cột 3 = cột 1 × cột 2. Hàng cuối: 6 × 7 = 42.' },
+  { id: 'nm3', category: '🖼️ Suy luận hình', d: 2, q: 'Số ở ô dấu ? là bao nhiêu?',
+    fig: figGrid([numCell(8), numCell(4), numCell(2), numCell(12), numCell(3), numCell(4), numCell(20), numCell(5), '?']),
+    options: ['3', '4', '5', '15'], answer: 1,
+    explain: 'Cột 3 = cột 1 ÷ cột 2. Hàng cuối: 20 ÷ 5 = 4.' },
+  { id: 'nm4', category: '🖼️ Suy luận hình', d: 3, q: 'Số ở ô dấu ? là bao nhiêu?',
+    fig: figGrid([numCell(2), numCell(3), numCell(13), numCell(3), numCell(4), numCell(25), numCell(4), numCell(5), '?']),
+    options: ['31', '38', '41', '45'], answer: 2,
+    explain: 'Cột 3 = cột 1² + cột 2². Hàng cuối: 4² + 5² = 16 + 25 = 41.' },
+  { id: 'nm5', category: '🖼️ Suy luận hình', d: 2, q: 'Số ở ô dấu ? là bao nhiêu?',
+    fig: figGrid([numCell(1), numCell(4), numCell(9), numCell(16), numCell(25), numCell(36), numCell(49), numCell(64), '?']),
+    options: ['72', '81', '90', '100'], answer: 1,
+    explain: 'Các số chính phương liên tiếp 1², 2², … , 8² ⇒ ô cuối là 9² = 81.' },
+  { id: 'nm6', category: '🖼️ Suy luận hình', d: 3, q: 'Số ở ô dấu ? là bao nhiêu?',
+    fig: figGrid([numCell(7), numCell(2), numCell(5), numCell(9), numCell(6), numCell(3), numCell(11), numCell(4), '?']),
+    options: ['5', '6', '7', '15'], answer: 2,
+    explain: 'Cột 3 = cột 1 − cột 2. Hàng cuối: 11 − 4 = 7.' },
+
+  // =========================================================================
+  // 🧠 LOGIC SUY DIỄN BỔ SUNG — thay cho nhóm "tương tự chữ" đã bỏ
+  // =========================================================================
+  { id: 'dl1', category: '🧠 Logic', d: 3, q: 'A, B, C, D xếp hàng. A đứng trước B nhưng sau C. D đứng cuối. Ai đứng đầu?', options: ['A', 'B', 'C', 'D'], answer: 2,
+    explain: 'C trước A, A trước B, D cuối ⇒ thứ tự C – A – B – D. Đứng đầu là C.' },
+  { id: 'dl2', category: '🧠 Logic', d: 3, q: 'Ba người: một luôn nói thật, một luôn nói dối. X nói "Y nói dối". Y nói "X và tôi cùng loại". Ai nói dối?', options: ['X', 'Y', 'Cả hai', 'Không xác định được'], answer: 1,
+    explain: 'Giả sử Y thật ⇒ X cũng thật ⇒ X nói "Y nói dối" là sai ⇒ mâu thuẫn. Vậy Y nói dối (và X nói thật).' },
+  { id: 'dl3', category: '🧠 Logic', d: 2, q: 'Mọi lập trình viên đều biết Git. Nam biết Git. Kết luận nào ĐÚNG?', options: ['Nam chắc chắn là lập trình viên', 'Nam chắc chắn không là lập trình viên', 'Chưa thể kết luận gì về Nam', 'Ai biết Git cũng là lập trình viên'], answer: 2,
+    explain: 'Đây là lỗi "khẳng định hệ quả": biết Git là điều kiện CẦN chứ không ĐỦ để là lập trình viên.' },
+  { id: 'dl4', category: '🧠 Logic', d: 3, q: 'Nếu trời mưa thì đường ướt. Đường KHÔNG ướt. Kết luận đúng?', options: ['Trời mưa', 'Trời không mưa', 'Không kết luận được', 'Đường sắp ướt'], answer: 1,
+    explain: 'Phản đảo của "mưa ⇒ ướt" là "không ướt ⇒ không mưa" — luôn đúng.' },
+  { id: 'dl5', category: '🧠 Logic', d: 3, q: 'Một số con mèo là vật nuôi. Mọi vật nuôi đều được tiêm phòng. Kết luận nào chắc chắn đúng?', options: ['Mọi con mèo đều được tiêm phòng', 'Một số con mèo được tiêm phòng', 'Không con mèo nào được tiêm phòng', 'Mọi vật được tiêm phòng đều là mèo'], answer: 1,
+    explain: 'Phần mèo nằm trong nhóm vật nuôi chắc chắn được tiêm ⇒ "một số con mèo được tiêm phòng".' },
+  { id: 'dl6', category: '🧠 Logic', d: 3, q: 'Trong 3 hộp dán nhãn "Táo", "Cam", "Táo+Cam", TẤT CẢ nhãn đều sai. Bốc 1 quả từ hộp nào là đủ biết cả 3 hộp?', options: ['Hộp "Táo"', 'Hộp "Cam"', 'Hộp "Táo+Cam"', 'Phải bốc từ 2 hộp'], answer: 2,
+    explain: 'Hộp "Táo+Cam" chắc chắn thuần một loại. Bốc ra táo ⇒ hộp đó là Táo, rồi suy ngược hai hộp còn lại.' },
+  { id: 'dl7', category: '🧠 Logic', d: 3, q: '5 đội đá vòng tròn, mỗi cặp gặp nhau đúng 1 lần. Có bao nhiêu trận?', options: ['8', '10', '15', '20'], answer: 1,
+    explain: 'C(5,2) = 5 × 4 / 2 = 10 trận.' },
+  { id: 'dl8', category: '🧠 Logic', d: 2, q: 'Trong phòng có 4 người, ai cũng bắt tay mỗi người đúng 1 lần. Có bao nhiêu cái bắt tay?', options: ['4', '6', '8', '12'], answer: 1,
+    explain: 'C(4,2) = 6 cái bắt tay.' },
+  { id: 'dl9', category: '🧠 Logic', d: 3, q: 'Có 8 quả bóng giống hệt nhau, 1 quả nặng hơn. Cần ÍT NHẤT bao nhiêu lần cân (cân thăng bằng) để tìm ra nó?', options: ['1', '2', '3', '4'], answer: 1,
+    explain: 'Chia 3-3-2: cân lần 1 hai nhóm 3; lần 2 xử lý nhóm 3 (hoặc nhóm 2) ⇒ 2 lần là đủ.' },
+  { id: 'dl10', category: '🧠 Logic', d: 3, q: 'Hai sợi dây, mỗi sợi cháy hết đúng 60 phút nhưng cháy KHÔNG đều. Đo 45 phút thế nào?', options: ['Đốt một sợi ở một đầu rồi gấp đôi sợi còn lại', 'Đốt A hai đầu và B một đầu; A cháy hết thì đốt nốt đầu kia của B', 'Đốt cả hai sợi ở cả hai đầu cùng lúc rồi cộng thời gian cháy lại với nhau', 'Không thể đo được đúng 45 phút với hai sợi dây này'], answer: 1,
+    explain: 'A cháy 2 đầu hết sau 30 phút; lúc đó B còn 30 phút, đốt thêm đầu kia ⇒ 15 phút nữa. Tổng 45 phút.' },
+  { id: 'dl11', category: '🧠 Logic', d: 2, q: 'Một lớp 30 học sinh: 18 học tiếng Anh, 15 học tiếng Nhật, 5 học cả hai. Bao nhiêu người KHÔNG học thứ tiếng nào?', options: ['0', '2', '3', '5'], answer: 1,
+    explain: 'Học ít nhất một thứ tiếng: 18 + 15 − 5 = 28 ⇒ 30 − 28 = 2 người.' },
+  { id: 'dl12', category: '🧠 Logic', d: 3, q: 'Ngăn kéo có 10 tất đen và 10 tất trắng lẫn lộn (tối om). Lấy ít nhất mấy chiếc để CHẮC CHẮN có 1 đôi cùng màu?', options: ['2', '3', '4', '11'], answer: 1,
+    explain: 'Nguyên lý chuồng bồ câu: 3 chiếc mà chỉ có 2 màu ⇒ chắc chắn có 2 chiếc trùng màu.' },
+  { id: 'dl13', category: '🧠 Logic', d: 3, q: 'Vẫn ngăn kéo đó, cần ít nhất mấy chiếc để CHẮC CHẮN có 1 đôi màu ĐEN?', options: ['3', '11', '12', '20'], answer: 2,
+    explain: 'Xấu nhất bốc trúng cả 10 chiếc trắng trước, rồi 2 chiếc đen ⇒ 12 chiếc.' },
+  { id: 'dl14', category: '🧠 Logic', d: 2, q: 'Một cái ao có bèo, mỗi ngày diện tích bèo tăng gấp đôi và ngày thứ 30 thì phủ kín ao. Ngày nào bèo phủ nửa ao?', options: ['Ngày 15', 'Ngày 20', 'Ngày 29', 'Ngày 28'], answer: 2,
+    explain: 'Đi ngược một bước: trước khi kín một ngày thì mới được nửa ao ⇒ ngày 29.' },
+  { id: 'dl15', category: '🧠 Logic', d: 3, q: '3 cái máy làm 3 sản phẩm mất 3 phút. 100 máy làm 100 sản phẩm mất bao lâu?', options: ['3 phút', '100 phút', '33 phút', '300 phút'], answer: 0,
+    explain: 'Mỗi máy làm 1 sản phẩm trong 3 phút ⇒ 100 máy chạy song song vẫn chỉ mất 3 phút.' },
+  { id: 'dl16', category: '🧠 Logic', d: 2, q: 'Cây bút và nắp bút giá tổng 11.000đ. Bút đắt hơn nắp 10.000đ. Nắp giá bao nhiêu?', options: ['500đ', '1.000đ', '1.500đ', '2.000đ'], answer: 0,
+    explain: 'Nắp = x, bút = x + 10.000 ⇒ 2x + 10.000 = 11.000 ⇒ x = 500đ.' },
+  { id: 'dl17', category: '🧠 Logic', d: 3, q: '5 ngôi nhà xếp liền nhau, đánh số 1→5. Nhà đỏ ở chính giữa. Nhà xanh ở NGAY BÊN TRÁI nhà trắng. Nhà xanh không ở số 1. Nhà xanh ở số mấy?', options: ['Số 2', 'Số 3', 'Số 4', 'Số 5'], answer: 2,
+    explain: 'Xanh ở k thì trắng ở k+1, cả hai đều khác 3 (nhà đỏ) ⇒ k ∉ {2, 3}; k ≠ 1 theo đề; k = 5 thì không còn chỗ cho trắng ⇒ k = 4.' },
+  { id: 'dl18', category: '🧠 Logic', d: 2, q: 'Nếu hôm nay là thứ Sáu thì 100 ngày nữa là thứ mấy?', options: ['Thứ Hai', 'Thứ Ba', 'Thứ Bảy', 'Chủ Nhật'], answer: 3,
+    explain: '100 chia 7 dư 2 ⇒ đếm thêm 2 ngày từ thứ Sáu là Chủ Nhật.' },
+  { id: 'dl19', category: '🧠 Logic', d: 3, q: 'Một cuốn sách đánh số trang từ 1 đến 100. Chữ số 9 xuất hiện bao nhiêu lần?', options: ['10', '11', '19', '20'], answer: 3,
+    explain: 'Hàng đơn vị: 9, 19, …, 99 → 10 lần. Hàng chục: 90–99 → 10 lần. Tổng 20 lần.' },
+  { id: 'dl20', category: '🧠 Logic', d: 3, q: 'Đồng hồ đánh 6 tiếng trong 5 giây (đều nhau). Đánh 12 tiếng mất bao lâu?', options: ['10 giây', '11 giây', '12 giây', '13 giây'], answer: 1,
+    explain: '6 tiếng có 5 khoảng ⇒ mỗi khoảng 1 giây. 12 tiếng có 11 khoảng ⇒ 11 giây.' },
 ];

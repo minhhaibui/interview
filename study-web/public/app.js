@@ -5268,11 +5268,22 @@ function renderDevopsQuiz() { devopsQuiz.render(); }
 
 /** Render nút đáp án theo thứ tự hiển thị NGẪU NHIÊN (chống học vẹt vị trí);
  *  data-i giữ CHỈ SỐ GỐC nên mọi hàm chấm phải so theo dataset.i, không theo vị trí DOM. */
-function shuffledOptsHtml(q, inner, cls = 'oq-opt') {
-  // Fisher–Yates: sort(random-0.5) lệch mạnh ở n≥3 (option hay ở lại vị trí cũ ~39% thay vì 25%)
-  const k = [...q.options.keys()];
+/** Thứ tự hiển thị ngẫu nhiên của n lựa chọn (mảng chỉ số GỐC).
+ *  Fisher–Yates: sort(random-0.5) lệch mạnh ở n≥3 (option hay ở lại vị trí cũ ~39% thay vì 25%) */
+function shuffleIdx(n) {
+  const k = [...Array(n).keys()];
   for (let j = k.length - 1; j > 0; j--) { const r = Math.floor(Math.random() * (j + 1)); [k[j], k[r]] = [k[r], k[j]]; }
-  return k.map(i => `<button class="${cls}" data-i="${i}">${inner(q.options[i])}</button>`).join('');
+  return k;
+}
+
+/** Nút đáp án theo thứ tự CHO SẴN — dùng cho màn có thể quay lại câu cũ (thứ tự phải giữ nguyên
+ *  giữa các lần render, nếu shuffle lại mỗi lần thì người làm bài sẽ hoa mắt). sel = chỉ số gốc đang chọn. */
+function optsHtml(q, ord, inner, cls = 'oq-opt', sel = null) {
+  return ord.map(i => `<button class="${cls}${sel === i ? ' picked' : ''}" data-i="${i}">${inner(q.options[i], i)}</button>`).join('');
+}
+
+function shuffledOptsHtml(q, inner, cls = 'oq-opt') {
+  return optsHtml(q, shuffleIdx(q.options.length), inner, cls);
 }
 
 // ============ 🔁 ÔN CÂU SAI (gom câu trắc nghiệm chọn sai qua mọi mode) ============
@@ -6327,19 +6338,58 @@ function invNorm(p) {
   q = Math.sqrt(-2 * Math.log(1 - p)); return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
 }
 
-/** Chọn N câu cho bài test, phối trộn độ khó ~40% dễ / 45% TB / 15% khó. */
-function pickIQTest(bank, N) {
+/** Bốc N câu từ một pool, phối trộn độ khó ~40% dễ / 45% TB / 15% khó. */
+function pickByDiff(pool, N) {
   const byD = { 1: [], 2: [], 3: [] };
-  bank.forEach(q => byD[qDiff(q)].push(q));
+  pool.forEach(q => byD[qDiff(q)].push(q));
   [1, 2, 3].forEach(d => byD[d] = shuffleArr(byD[d]));
   const want = { 1: Math.round(N * 0.4), 3: Math.round(N * 0.15) };
   want[2] = N - want[1] - want[3];
   let picked = [].concat(byD[1].slice(0, want[1]), byD[2].slice(0, want[2]), byD[3].slice(0, want[3]));
   if (picked.length < N) { // thiếu ở mức nào đó → bù từ phần còn lại
     const used = new Set(picked.map(q => q.id));
-    picked = picked.concat(shuffleArr(bank.filter(q => !used.has(q.id))).slice(0, N - picked.length));
+    picked = picked.concat(shuffleArr(pool.filter(q => !used.has(q.id))).slice(0, N - picked.length));
   }
-  return shuffleArr(picked).slice(0, N);
+  return picked.slice(0, N);
+}
+
+const IQ_FIG_SHARE = 0.3; // tỉ lệ câu NHÌN HÌNH tối thiểu trong một đề
+const isFigQ = q => !!(q.fig || q.optFig);
+
+/** Chọn N câu cho bài test: DÀNH SẴN ~30% cho câu nhìn hình (kho hình chỉ chiếm ~12%,
+ *  bốc ngẫu nhiên thuần thì cả đề may ra được 3 câu), phần còn lại phối trộn độ khó. */
+function pickIQTest(bank, N) {
+  const wantFig = Math.min(Math.round(N * IQ_FIG_SHARE), bank.filter(isFigQ).length);
+  const figs = pickByDiff(bank.filter(isFigQ), wantFig);
+  const used = new Set(figs.map(q => q.id));
+  const rest = pickByDiff(bank.filter(q => !used.has(q.id)), N - figs.length);
+  return shuffleArr([...figs, ...rest]).slice(0, N);
+}
+
+// ---- Câu IQ dạng NHÌN HÌNH ----
+// q.fig / q.optFig là SVG do CHÍNH ngân hàng câu hỏi sinh ra (iq-questions.js), không phải input
+// người dùng ⇒ chèn thẳng, không escape (escape sẽ hiện ra text <svg…>).
+/** Đề bài IQ: câu chữ + hình minh hoạ nếu có. */
+const iqStemHtml = q => `<div class="iq-q">${escHtml(q.q)}</div>${q.fig || ''}`;
+/** Nội dung một nút đáp án IQ: hình nếu là câu nhìn hình, còn lại là chữ. */
+const iqOptInner = q => (o, i) => (q.optFig ? q.optFig[i] : escHtml(o));
+/** Một lựa chọn khi XEM LẠI (hiện hình thay vì "Hình 2" cho câu nhìn hình). */
+const iqOptReview = (q, i) => (i == null ? '<i>(bỏ trống)</i>' : q.optFig ? q.optFig[i] : escHtml(String(q.options[i])));
+
+/** Bảng số câu: bấm để nhảy tới câu bất kỳ, ✓ = đã chọn đáp án, ô sáng = câu đang làm. */
+function iqPalHtml(n, ans, idx) {
+  return `<div class="iq-pal">${Array.from({ length: n }, (_, i) =>
+    `<button type="button" class="iq-palb${ans[i] != null ? ' done' : ''}${i === idx ? ' cur' : ''}" data-j="${i}"
+      title="Câu ${i + 1}${ans[i] != null ? ' — đã trả lời' : ' — chưa trả lời'}">${i + 1}</button>`).join('')}</div>`;
+}
+
+/** Câu chưa trả lời gần nhất sau vị trí from (quay vòng); -1 nếu đã trả lời hết. */
+function nextUnanswered(ans, from) {
+  for (let k = 1; k <= ans.length; k++) {
+    const i = (from + k) % ans.length;
+    if (ans[i] == null) return i;
+  }
+  return -1;
 }
 
 /** Xếp loại IQ (mang tính tham khảo, theo phân bố chuẩn IQ phổ biến). */
@@ -6362,6 +6412,7 @@ function renderIQ() {
   const hist = store.get('prep-iq-test-history', []);
   const bestIq = hist.length ? Math.max(...hist.map(h => h.iq)) : null;
   const testN = Math.min(IQ_TEST_N, qs.length);
+  const nFig = qs.filter(q => q.fig || q.optFig).length;
 
   const histHtml = hist.length
     ? `<h3>🗂️ Lịch sử bài test (${hist.length})</h3>
@@ -6386,6 +6437,8 @@ function renderIQ() {
         <button id="iq-test-btn" class="iq-start-btn">📝 Làm bài Test IQ<small>${testN} câu · ${IQ_TEST_SEC / 60} phút · có chấm điểm</small></button>
         <button id="iq-prac-btn" class="iq-mini">🎮 Luyện tập tự do<small>cả ${qs.length} câu · xem giải thích ngay</small></button>
       </div>
+      <p class="iq-note" style="text-align:center">🖼️ Trong kho có <b>${nFig}</b> câu <b>nhìn hình chọn hình</b> (ma trận, xoay hình, chồng lưới, đếm hình) cùng dãy số – logic – toán nhanh.
+        Khi làm bài được <b>nhảy tới câu bất kỳ</b> và đổi đáp án trước khi nộp.</p>
     </div>
     ${histHtml}`;
   document.getElementById('iq-test-btn').onclick = () => startIQTest();
@@ -6396,7 +6449,13 @@ function renderIQ() {
 function startIQTest() {
   const all = window.IQ_QUESTIONS || [];
   const qs = pickIQTest(all, Math.min(IQ_TEST_N, all.length));
-  iqState = { mode: 'test', qs, idx: 0, correct: 0, log: [], startMs: Date.now(), endSec: IQ_TEST_SEC };
+  // ans[i] = chỉ số đáp án đã chọn (null = chưa làm) · ord[i] = thứ tự hiển thị lựa chọn,
+  // trộn MỘT LẦN lúc bắt đầu để quay lại câu cũ không bị đảo chỗ.
+  iqState = {
+    mode: 'test', qs, idx: 0, correct: 0, log: [],
+    ans: qs.map(() => null), ord: qs.map(q => shuffleIdx(q.options.length)),
+    startMs: Date.now(), endSec: IQ_TEST_SEC,
+  };
   clearInterval(iqTimerId);
   iqTimerId = setInterval(tickIQTest, 1000);
   showIQTest();
@@ -6414,36 +6473,64 @@ function tickIQTest() {
 function showIQTest() {
   const s = iqState, body = document.getElementById('iq-body');
   if (!body) { clearInterval(iqTimerId); return; }
-  if (s.idx >= s.qs.length) return finishIQTest(false);
+  s.idx = Math.max(0, Math.min(s.idx, s.qs.length - 1));
   const q = s.qs[s.idx];
+  const nDone = s.ans.filter(a => a != null).length;
+  const left = Math.max(0, s.endSec - Math.floor((Date.now() - s.startMs) / 1000));
   body.innerHTML = `
     <div class="iqt-bar">
-      <span class="iqt-count">Câu ${s.idx + 1}/${s.qs.length}</span>
-      <span id="iqt-timer" class="iqt-timer">${fmtMMSS(s.endSec)}</span>
+      <span class="iqt-count">Câu ${s.idx + 1}/${s.qs.length} · đã trả lời <b>${nDone}</b></span>
+      <span id="iqt-timer" class="iqt-timer">${fmtMMSS(left)}</span>
       <button id="iqt-quit" class="iqt-quit" title="Dừng bài test">✕ Thoát</button>
     </div>
-    <div class="iq-track"><div class="iq-fill" style="width:${s.idx / s.qs.length * 100}%"></div></div>
+    <div class="iq-track"><div class="iq-fill" style="width:${nDone / s.qs.length * 100}%"></div></div>
+    ${iqPalHtml(s.qs.length, s.ans, s.idx)}
     <div class="iq-cat" style="margin-bottom:6px">${escHtml(q.category)}</div>
-    <div class="iq-q">${escHtml(q.q)}</div>
-    <div class="iq-opts">${shuffledOptsHtml(q, escHtml, 'iq-opt')}</div>
-    <p class="iq-note">Bài test không hiện đáp án ngay — kết quả & giải thích sẽ có ở cuối.</p>`;
+    ${iqStemHtml(q)}
+    <div class="iq-opts${q.optFig ? ' figs' : ''}">${optsHtml(q, s.ord[s.idx], iqOptInner(q), 'iq-opt', s.ans[s.idx])}</div>
+    <div class="iq-nav">
+      <button type="button" id="iqt-prev" class="iq-navb"${s.idx === 0 ? ' disabled' : ''}>← Câu trước</button>
+      <button type="button" id="iqt-clear" class="iq-navb"${s.ans[s.idx] == null ? ' disabled' : ''}>✕ Bỏ chọn</button>
+      <button type="button" id="iqt-next" class="iq-navb"${s.idx >= s.qs.length - 1 ? ' disabled' : ''}>Câu sau →</button>
+      <button type="button" id="iqt-submit" class="iq-start-btn">📤 Nộp bài (${nDone}/${s.qs.length})</button>
+    </div>
+    <p class="iq-note">Không hiện đúng/sai giữa chừng. Bạn được nhảy tới câu bất kỳ ở bảng số phía trên và đổi đáp án thoải mái trước khi nộp.</p>`;
   body.querySelectorAll('.iq-opt').forEach(b => b.onclick = () => answerIQTest(+b.dataset.i));
+  body.querySelectorAll('.iq-palb').forEach(b => b.onclick = () => { s.idx = +b.dataset.j; showIQTest(); });
+  document.getElementById('iqt-prev').onclick = () => { s.idx--; showIQTest(); };
+  document.getElementById('iqt-next').onclick = () => { s.idx++; showIQTest(); };
+  document.getElementById('iqt-clear').onclick = () => { s.ans[s.idx] = null; showIQTest(); };
+  document.getElementById('iqt-submit').onclick = () => {
+    const miss = s.qs.length - s.ans.filter(a => a != null).length;
+    if (miss && !confirm(`Còn ${miss} câu chưa trả lời (tính là sai). Nộp bài luôn?`)) return;
+    finishIQTest(false);
+  };
   document.getElementById('iqt-quit').onclick = () => { if (confirm('Thoát bài test? Kết quả sẽ không được lưu.')) { clearInterval(iqTimerId); renderIQ(); } };
 }
 
 function answerIQTest(i) {
-  const s = iqState, q = s.qs[s.idx];
-  const ok = i === q.answer;
-  if (ok) s.correct++;
-  s.log.push({ q: q.q, chosen: q.options[i], correct: q.options[q.answer], ok, explain: q.explain, d: qDiff(q) });
-  s.idx++;
+  const s = iqState;
+  const first = s.ans[s.idx] == null;
+  s.ans[s.idx] = i;
+  // Lần đầu chọn thì tự chạy tiếp cho nhanh; đang SỬA đáp án cũ thì đứng yên để còn nhìn lại.
+  if (first) {
+    const nx = s.idx < s.qs.length - 1 ? s.idx + 1 : nextUnanswered(s.ans, s.idx);
+    if (nx >= 0) s.idx = nx;
+  }
   showIQTest();
 }
 
 function finishIQTest(timeout) {
   clearInterval(iqTimerId);
   const s = iqState;
-  const answered = s.log.length;
+  if (s.chotDiem) return; // hết giờ + bấm "Nộp bài" cùng lúc → chỉ ghi lịch sử một lần
+  s.chotDiem = true;
+  // Chấm từ mảng ans (người làm được nhảy qua nhảy lại nên chỉ chốt điểm lúc nộp)
+  s.log = s.qs.map((q, i) => ({
+    q, chosen: s.ans[i], ok: s.ans[i] === q.answer, d: qDiff(q),
+  }));
+  s.correct = s.log.filter(l => l.ok).length;
+  const answered = s.ans.filter(a => a != null).length;
   const total = s.qs.length;
   const pctRaw = Math.round(s.correct / total * 100);
 
@@ -6474,8 +6561,11 @@ function finishIQTest(timeout) {
   logActivity();
 
   const review = s.log.filter(l => !l.ok).map(l =>
-    `<div class="iq-rv"><div class="iq-rvq">❌ ${escHtml(l.q)}</div>
-      <div class="iq-rva">Đáp án đúng: <b>${escHtml(l.correct)}</b> — ${escHtml(l.explain)}</div></div>`).join('');
+    `<div class="iq-rv"><div class="iq-rvq">❌ ${escHtml(l.q.q)}</div>
+      ${l.q.fig || ''}
+      <div class="iq-rva"><span class="iq-rvbad">Bạn chọn: ${iqOptReview(l.q, l.chosen)}</span>
+        <span class="iq-rvgood">Đáp án đúng: ${iqOptReview(l.q, l.q.answer)}</span></div>
+      <div class="iq-rva">💡 ${escHtml(l.q.explain || '')}</div></div>`).join('');
   const adjTxt = timeAdj === 0 ? '±0' : timeAdj > 0 ? `+${timeAdj}` : `${timeAdj}`;
 
   document.getElementById('iq-body').innerHTML = `
@@ -6501,7 +6591,7 @@ function finishIQTest(timeout) {
 function startIQ(shuffle) {
   let qs = [...(window.IQ_QUESTIONS || [])];
   if (shuffle) qs = shuffleArr(qs);
-  iqState = { qs, idx: 0, correct: 0, answered: false };
+  iqState = { qs, idx: 0, correct: 0, answered: false, scored: {} };
   showIQ();
 }
 
@@ -6512,11 +6602,18 @@ function showIQ() {
   body.innerHTML = `
     <div class="iq-prog">Câu ${s.idx + 1}/${s.qs.length} · <span class="iq-cat">${escHtml(q.category)}</span> · ✅ ${s.correct} đúng</div>
     <div class="iq-track"><div class="iq-fill" style="width:${s.idx / s.qs.length * 100}%"></div></div>
-    <div class="iq-q">${escHtml(q.q)}</div>
-    <div class="iq-opts">${shuffledOptsHtml(q, escHtml, 'iq-opt')}</div>
+    ${iqStemHtml(q)}
+    <div class="iq-opts${q.optFig ? ' figs' : ''}">${shuffledOptsHtml(q, iqOptInner(q), 'iq-opt')}</div>
+    <div class="iq-nav">
+      <button type="button" id="iq-back" class="iq-navb"${s.idx === 0 ? ' disabled' : ''}>← Câu trước</button>
+      <button type="button" id="iq-skip" class="iq-navb">⏭ Câu khác</button>
+    </div>
     <div id="iq-fb" class="iq-fb"></div>
     <button id="iq-next" class="iq-next" hidden></button>`;
   body.querySelectorAll('.iq-opt').forEach(b => b.onclick = () => answerIQ(+b.dataset.i));
+  // Luyện tự do: được bỏ qua câu đang bí và quay lại câu trước để đọc lại giải thích
+  document.getElementById('iq-skip').onclick = () => { s.idx++; s.answered = false; showIQ(); };
+  document.getElementById('iq-back').onclick = () => { s.idx--; s.answered = false; showIQ(); };
 }
 
 function answerIQ(i) {
@@ -6532,7 +6629,8 @@ function answerIQ(i) {
     else if (oi === i) b.classList.add('wrong');
   });
   const ok = i === q.answer;
-  if (ok) s.correct++;
+  if (ok && !s.scored[s.idx]) s.correct++; // quay lại câu cũ trả lời lại thì KHÔNG cộng điểm lần nữa
+  s.scored[s.idx] = true;
   document.getElementById('iq-fb').innerHTML = `<div class="${ok ? 'iq-ok' : 'iq-no'}">${ok ? '✅ Chính xác! ' : '❌ Chưa đúng. '}${escHtml(q.explain)}</div>`;
   const next = document.getElementById('iq-next');
   next.hidden = false;
@@ -6582,7 +6680,7 @@ const IV_PLANS = {
     label: '🏅 Buổi phỏng vấn', hint: 'Đúng 3 phần như phần lớn buổi phỏng vấn thật — IQ chiếm phần lớn.',
     rounds: [
       { key: 'english', type: 'mcq', label: '🇬🇧 Tiếng Anh', n: 8, desc: 'Giao tiếp công sở: sát nghĩa, sắc thái & cách phản hồi.' },
-      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 24, desc: 'Phần NẶNG KÝ nhất: dãy số, logic, suy luận, toán nhanh — có tính giờ.' },
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 24, desc: 'Phần NẶNG KÝ nhất: nhìn hình, dãy số, logic, toán nhanh — tính giờ, được nhảy câu tự do.' },
       { key: 'readcode', type: 'readcode', label: '⌨️ Code', n: 8, desc: 'Đọc code: đoán output & tính độ phức tạp Big-O.' },
     ],
   },
@@ -6592,7 +6690,7 @@ const IV_PLANS = {
       { key: 'intro', type: 'open', label: '🏷 Giới thiệu bản thân', n: 2, desc: 'Câu mở màn bằng tiếng Anh — trả lời rồi đối chiếu khung mẫu.' },
       { key: 'qa', type: 'open', label: '💬 Hỏi kiến thức', n: 5, desc: 'Câu hỏi MỞ từ kho 180 câu — trả lời như phỏng vấn thật rồi tự chấm.' },
       { key: 'english', type: 'mcq', label: '🇬🇧 Tiếng Anh', n: 8, desc: 'Giao tiếp công sở: sát nghĩa, sắc thái & cách phản hồi.' },
-      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 16, desc: 'Dãy số, logic, suy luận, toán nhanh — có tính giờ.' },
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 16, desc: 'Nhìn hình, dãy số, logic, toán nhanh — tính giờ, được nhảy câu tự do.' },
       { key: 'readcode', type: 'readcode', label: '⌨️ Code', n: 8, desc: 'Đọc code: đoán output & tính độ phức tạp Big-O.' },
     ],
   },
@@ -6600,7 +6698,7 @@ const IV_PLANS = {
     label: '⌨️ Thêm viết code', hint: 'Ba phần như trên, phần code có thêm bài tự giải & chạy test thật.',
     rounds: [
       { key: 'english', type: 'mcq', label: '🇬🇧 Tiếng Anh', n: 8, desc: 'Giao tiếp công sở: sát nghĩa, sắc thái & cách phản hồi.' },
-      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 20, desc: 'Phần NẶNG KÝ nhất: dãy số, logic, suy luận, toán nhanh — có tính giờ.' },
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 20, desc: 'Phần NẶNG KÝ nhất: nhìn hình, dãy số, logic, toán nhanh — tính giờ, được nhảy câu tự do.' },
       { key: 'readcode', type: 'readcode', label: '⌨️ Code — đọc', n: 6, desc: 'Đoán output của đoạn code & tính độ phức tạp Big-O.' },
       { key: 'code', type: 'code', label: '⌨️ Code — viết', n: 2, desc: 'Giải 2 bài, chạy test thật trong trình duyệt.' },
     ],
@@ -6610,13 +6708,13 @@ const IV_PLANS = {
   iqonly: {
     label: '🧩 Chỉ test IQ', hint: 'Bỏ tiếng Anh & code — chỉ một vòng IQ 30 câu tính giờ (15 phút).',
     rounds: [
-      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 30, desc: 'Dãy số, logic, suy luận, toán nhanh — có tính giờ, không hiện đáp án giữa chừng.' },
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 30, desc: 'Nhìn hình, dãy số, logic, toán nhanh — tính giờ, không hiện đáp án giữa chừng.' },
     ],
   },
   iqcode: {
     label: '🧩 IQ + hỏi code', hint: 'Bỏ tiếng Anh — IQ 24 câu rồi 10 câu hỏi code (đoán output & Big-O).',
     rounds: [
-      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 24, desc: 'Dãy số, logic, suy luận, toán nhanh — có tính giờ.' },
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 24, desc: 'Nhìn hình, dãy số, logic, toán nhanh — tính giờ, được nhảy câu tự do.' },
       { key: 'readcode', type: 'readcode', label: '⌨️ Hỏi code', n: 10, desc: 'Đọc code: đoán output & tính độ phức tạp Big-O.' },
     ],
   },
@@ -7076,7 +7174,12 @@ function startIvIq(r) {
     qs = shuffleArr([...fresh, ...old.slice(0, Math.max(0, r.n - fresh.length))]);
     ivResetSeen('iq'); // bắt đầu vòng mới cho các buổi sau
   }
-  ivState.iq = { qs, idx: 0, wGot: 0, wMax: qs.reduce((a, q) => a + qDiff(q), 0), startMs: Date.now(), sec: r.n * 30, roundKey: r.key };
+  // ans/ord như bài Test IQ: được nhảy tới câu bất kỳ, đổi đáp án tới lúc nộp vòng.
+  ivState.iq = {
+    qs, idx: 0, wGot: 0, wMax: qs.reduce((a, q) => a + qDiff(q), 0),
+    ans: qs.map(() => null), ord: qs.map(q => shuffleIdx(q.options.length)),
+    startMs: Date.now(), sec: r.n * 30, roundKey: r.key,
+  };
   clearInterval(iqTimerId);
   iqTimerId = setInterval(tickIvIq, 1000);
   showIvIq();
@@ -7092,25 +7195,55 @@ function tickIvIq() {
 function showIvIq() {
   const s = ivState.iq, body = document.getElementById('iv-body');
   if (!body) { clearInterval(iqTimerId); return; }
-  if (s.idx >= s.qs.length) return finishIvIq();
+  s.idx = Math.max(0, Math.min(s.idx, s.qs.length - 1));
   const q = s.qs[s.idx];
+  const nDone = s.ans.filter(a => a != null).length;
+  const left = Math.max(0, s.sec - Math.floor((Date.now() - s.startMs) / 1000));
   body.innerHTML = `
-    <div class="iqt-bar"><span class="iqt-count">🧩 IQ · Câu ${s.idx + 1}/${s.qs.length}</span><span id="ivq-timer" class="iqt-timer">${fmtMMSS(s.sec)}</span></div>
-    <div class="iq-track"><div class="iq-fill" style="width:${s.idx / s.qs.length * 100}%"></div></div>
+    <div class="iqt-bar"><span class="iqt-count">🧩 IQ · Câu ${s.idx + 1}/${s.qs.length} · đã trả lời <b>${nDone}</b></span><span id="ivq-timer" class="iqt-timer">${fmtMMSS(left)}</span></div>
+    <div class="iq-track"><div class="iq-fill" style="width:${nDone / s.qs.length * 100}%"></div></div>
+    ${iqPalHtml(s.qs.length, s.ans, s.idx)}
     <div class="iq-cat" style="margin-bottom:6px">${escHtml(q.category)}</div>
-    <div class="iq-q">${escHtml(q.q)}</div>
-    <div class="iq-opts">${shuffledOptsHtml(q, escHtml, 'iq-opt')}</div>`;
+    ${iqStemHtml(q)}
+    <div class="iq-opts${q.optFig ? ' figs' : ''}">${optsHtml(q, s.ord[s.idx], iqOptInner(q), 'iq-opt', s.ans[s.idx])}</div>
+    <div class="iq-nav">
+      <button type="button" id="ivq-prev" class="iq-navb"${s.idx === 0 ? ' disabled' : ''}>← Câu trước</button>
+      <button type="button" id="ivq-clear" class="iq-navb"${s.ans[s.idx] == null ? ' disabled' : ''}>✕ Bỏ chọn</button>
+      <button type="button" id="ivq-next" class="iq-navb"${s.idx >= s.qs.length - 1 ? ' disabled' : ''}>Câu sau →</button>
+      <button type="button" id="ivq-done" class="iq-start-btn">✅ Xong vòng IQ (${nDone}/${s.qs.length})</button>
+    </div>
+    <p class="iq-note">Được nhảy tới câu bất kỳ ở bảng số và đổi đáp án — điểm chỉ chốt khi kết thúc vòng.</p>`;
   body.querySelectorAll('.iq-opt').forEach(b => b.onclick = () => {
-    const i = +b.dataset.i, ok = i === q.answer;
-    if (ok) s.wGot += qDiff(q);
-    ivLog({ r: s.roundKey, m: 'iq', id: q.id, ch: i, ok: ok ? 1 : 0 });
-    ivMarkSeen('iq', q.id); // câu IQ đã hỏi thì buổi sau bốc câu khác
-    s.idx++; showIvIq();
+    const first = s.ans[s.idx] == null;
+    s.ans[s.idx] = +b.dataset.i;
+    ivMarkSeen('iq', q.id); // đánh dấu ngay lúc trả lời: bỏ dở buổi thì buổi sau vẫn không hỏi lại
+    if (first) {
+      const nx = s.idx < s.qs.length - 1 ? s.idx + 1 : nextUnanswered(s.ans, s.idx);
+      if (nx >= 0) s.idx = nx;
+    }
+    showIvIq();
   });
+  body.querySelectorAll('.iq-palb').forEach(b => b.onclick = () => { s.idx = +b.dataset.j; showIvIq(); });
+  document.getElementById('ivq-prev').onclick = () => { s.idx--; showIvIq(); };
+  document.getElementById('ivq-next').onclick = () => { s.idx++; showIvIq(); };
+  document.getElementById('ivq-clear').onclick = () => { s.ans[s.idx] = null; showIvIq(); };
+  document.getElementById('ivq-done').onclick = () => {
+    const miss = s.qs.length - s.ans.filter(a => a != null).length;
+    if (miss && !confirm(`Còn ${miss} câu chưa trả lời (tính là sai). Kết thúc vòng IQ?`)) return;
+    finishIvIq();
+  };
 }
 function finishIvIq() {
   clearInterval(iqTimerId);
   const s = ivState.iq;
+  if (s.chotDiem) return; // hết giờ + bấm nút cùng lúc → chỉ chấm một lần
+  s.chotDiem = true;
+  s.qs.forEach((q, i) => {
+    const ch = s.ans[i], ok = ch === q.answer;
+    if (ok) s.wGot += qDiff(q);
+    ivLog({ r: s.roundKey, m: 'iq', id: q.id, ch: ch == null ? -1 : ch, ok: ok ? 1 : 0 });
+    ivMarkSeen('iq', q.id); // câu IQ đã hỏi thì buổi sau bốc câu khác
+  });
   roundDone(s.wMax ? s.wGot / s.wMax * 100 : 0);
 }
 
@@ -7207,9 +7340,13 @@ function ivReviewHtml(log) {
         </div>`;
       }
       if (!q) return `<div class="iv-rev no"><div class="iv-rev-h">❔ Câu ${i + 1}: (đã gỡ khỏi ngân hàng)</div></div>`;
-      const opt = j => escHtml(String(q.options?.[j] ?? '—')).replace(/\n/g, ' ⏎ ');
+      // Câu IQ nhìn hình: hiện thẳng HÌNH đã chọn/đúng thay vì nhãn "Hình 2" (ch = -1 là bỏ trống)
+      const opt = j => (j == null || j < 0) ? '<i>(bỏ trống)</i>'
+        : q.optFig ? q.optFig[j]
+          : escHtml(String(q.options?.[j] ?? '—')).replace(/\n/g, ' ⏎ ');
       return `<div class="iv-rev ${e.ok ? 'ok' : 'no'}">
         <div class="iv-rev-h">${e.ok ? '✅' : '❌'} Câu ${i + 1}: ${escHtml(q.q || (q.code || '').split('\n')[0])}</div>
+        ${q.fig || ''}
         ${e.ok ? '' : `<div class="iv-rev-b"><span class="iv-rev-bad">Bạn chọn: ${opt(e.ch)}</span><span class="iv-rev-good">Đáp án đúng: ${opt(q.answer)}</span></div>`}
         <div class="iv-rev-x">💡 ${escHtml(q.explain || '')}</div>
       </div>`;
