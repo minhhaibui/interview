@@ -167,3 +167,17 @@ sang đọc `data/*.json`. GitHub Actions (`.github/workflows/pages.yml`) tự b
 mỗi khi push lên `main`.
 
 > Tự build thử bản tĩnh: `node study-web/build.js` rồi mở `public/` bằng web server tĩnh bất kỳ.
+
+### Cấu hình Firebase (đồng bộ cloud)
+
+`public/firebase-config.js` **không nằm trong git** — `build.js` sinh nó từ env, nếu thiếu thì
+app báo *"Chưa cấu hình Firebase"* và chỉ lưu `localStorage`. Hai cách khai báo:
+
+| Môi trường | Cách làm |
+|---|---|
+| Local | Tạo `study-web/.env` với 7 biến `FIREBASE_*` (xem mẫu trong `build.js`) |
+| GitHub Pages | Settings → Secrets and variables → Actions → **New repository secret**, tên `FIREBASE_CONFIG`, giá trị là **nguyên khối JSON** copy từ Firebase Console |
+
+Ưu tiên `FIREBASE_CONFIG` (một secret duy nhất); nếu trống mới đọc 7 biến rời. JSON sai cú pháp
+sẽ **fail build ngay** thay vì deploy ra site thiếu config. Đây không phải secret thật — config
+web Firebase vốn công khai, bảo mật nằm ở Firestore Rules.
