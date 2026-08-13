@@ -1142,4 +1142,62 @@ window.OUTPUT_QUIZ = [
     options: ['10', '11', '100', '1.1'], answer: 0,
     explain: 'Tăng 10% rồi làm tròn 2 chữ số: 10 × 1,1 = 11,00. Chọn 11 sẽ ra 12.10.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #9 =====
+  {
+    id: 'oq11-nested-destructure', topic: 'Destructuring',
+    code: `const { a: { b } = {} } = {};\nconsole.log(b);\nconst { x: { y } = { y: 9 } } = { x: undefined };\nconsole.log(y);`,
+    options: ['undefined\n9', 'TypeError', 'undefined\nundefined', 'null\n9'], answer: 0,
+    explain: 'Giá trị mặc định {} cứu khỏi lỗi "đọc thuộc tính của undefined"; câu sau x là undefined nên mặc định { y: 9 } được dùng.',
+  },
+  {
+    id: 'oq11-split-empty', topic: 'Chuỗi',
+    code: `console.log('a,b,,c'.split(',').length, ''.split(',').length, 'abc'.split('').length);`,
+    options: ['3 0 3', '4 1 3', '4 0 3', '3 1 3'], answer: 1,
+    explain: 'split giữ cả phần tử RỖNG giữa hai dấu phẩy ⇒ 4; chuỗi rỗng split ra mảng [""] có length 1 (không phải 0).',
+  },
+  {
+    id: 'oq11-symbol-key', topic: 'Object',
+    code: `const s = Symbol('id');\nconst o = { [s]: 1, a: 2 };\nconsole.log(Object.keys(o).length, JSON.stringify(o), o[s]);`,
+    options: ['2 {"a":2} 1', '1 {"a":2} 1', '1 {"a":2} undefined', '2 {"a":2,"id":1} 1'], answer: 1,
+    explain: 'Khoá Symbol KHÔNG xuất hiện trong Object.keys hay JSON.stringify (dùng để gắn dữ liệu ẩn), nhưng truy cập trực tiếp o[s] vẫn được.',
+  },
+  {
+    id: 'oq11-unary-plus', topic: 'Ép kiểu',
+    code: `console.log(+true, +'', +'12px', +[], +['5']);`,
+    options: ['1 0 NaN 0 5', '1 NaN NaN 0 5', '1 0 12 0 5', 'true 0 NaN 0 5'], answer: 0,
+    explain: 'Dấu + đơn ép về số: chuỗi rỗng và [] thành 0, "12px" không parse được thành NaN, ["5"] về chuỗi "5" rồi thành 5.',
+  },
+  {
+    id: 'oqi-count-upper', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => [...s].filter(c => c !== ' ' && c === c.toUpperCase()).length;\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ['"Node Backend"', '"node backend"', '"NODE"', '"Node Backend Dev"'], answer: 0,
+    explain: 'Đếm ký tự IN HOA (bỏ dấu cách): "Node Backend" có N và B = 2; "NODE" có 4; chữ thường thì 0.',
+  },
+  {
+    id: 'oqi-padstart-4', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => String(n).padStart(4, '0');\nconsole.log(f(INPUT));`,
+    out: '0042',
+    options: ['42', '4200', '420', '4'], answer: 0,
+    explain: 'Chèn số 0 phía trước cho đủ 4 ký tự: 42 → "0042"; 420 → "0420"; 4200 đã đủ 4 nên giữ nguyên.',
+  },
+  {
+    id: 'oqi-min-length', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => Math.min(...a.map(w => w.length));\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ['["redis", "db", "kafka"]', '["redis", "kafka"]', '["a", "db"]', '["api", "sql"]'], answer: 0,
+    explain: 'Lấy độ dài NGẮN NHẤT: "db" = 2. Mảng có "a" thì ra 1, mảng ["api","sql"] ra 3.',
+  },
+  {
+    id: 'oqi-keys-sorted', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => Object.keys(o).sort().join('');\nconsole.log(f(INPUT));`,
+    out: 'abc',
+    options: ['{ c: 1, a: 2, b: 3 }', '{ a: 1, b: 2 }', '{ x: 1, y: 2, z: 3 }', '{ a: 1, b: 2, c: 3, d: 4 }'], answer: 0,
+    explain: 'Lấy danh sách khoá rồi SẮP XẾP nên thứ tự khai báo không quan trọng — quan trọng là đúng bộ khoá a, b, c.',
+  },
 ];
