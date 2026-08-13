@@ -1838,4 +1838,62 @@ window.OUTPUT_QUIZ = [
     options: ['"nodejs"', '"nginx"', '"NO"', '"backend"'], answer: 0,
     explain: 'Lấy 3 ký tự ĐẦU rồi viết hoa: "nodejs" → "NOD"; "nginx" → "NGI"; chuỗi ngắn hơn 3 ký tự thì lấy hết những gì có.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #21 =====
+  {
+    id: 'oq23-non-enumerable', topic: 'Object',
+    code: `const o = { x: 1 };\nObject.defineProperty(o, 'y', { value: 2 });\nconsole.log(Object.keys(o).length, o.y, JSON.stringify(o));`,
+    options: ['2 2 {"x":1,"y":2}', '1 2 {"x":1}', '1 undefined {"x":1}', '2 2 {"x":1}'], answer: 1,
+    explain: 'defineProperty mặc định enumerable = false ⇒ thuộc tính TỒN TẠI và đọc được, nhưng vô hình với Object.keys, for…in và JSON.stringify.',
+  },
+  {
+    id: 'oq23-generator-two-way', topic: 'Generator',
+    code: `function* g() {\n  const x = yield 1;\n  console.log('nhan', x);\n}\nconst it = g();\nconsole.log(it.next().value);\nit.next(5);`,
+    options: ['1\nnhan 5', 'nhan 5\n1', '1\nnhan undefined', '1'], answer: 0,
+    explain: 'Generator truyền dữ liệu HAI CHIỀU: giá trị đưa vào next(5) trở thành kết quả của biểu thức yield đang dừng.',
+  },
+  {
+    id: 'oq23-substring-slice', topic: 'Chuỗi',
+    code: `console.log('abcdef'.substring(4, 1) + '|', 'abcdef'.slice(4, 1) + '|', 'abcdef'.slice(-3, -1) + '|');`,
+    options: ['bcd| | de|', 'bcd| bcd| de|', '| | de|', 'bcd| | ef|'], answer: 0,
+    explain: 'substring TỰ ĐỔI CHỖ hai tham số nếu start > end; slice thì không (trả chuỗi rỗng) nhưng slice hiểu chỉ số ÂM.',
+  },
+  {
+    id: 'oq23-tosorted', topic: 'Array.sort',
+    code: `const a = [3, 1, 2];\nconst b = a.toSorted();\nconsole.log(a.join(), b.join(), a === b);`,
+    options: ['1,2,3 1,2,3 true', '3,1,2 1,2,3 false', '1,2,3 1,2,3 false', '3,1,2 3,1,2 false'], answer: 1,
+    explain: 'toSorted (ES2023) trả về mảng MỚI đã sắp xếp và KHÔNG đụng mảng gốc — khác hẳn sort() sửa tại chỗ.',
+  },
+  {
+    id: 'oqi-regex-swap', topic: 'Đoán input · regex', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.replace(/(\\w+)@(\\w+)/, '$2@$1');\nconsole.log(f(INPUT));`,
+    out: 'gmail@an',
+    options: ['"an@gmail"', '"gmail@an"', '"an@yahoo"', '"an-gmail"'], answer: 0,
+    explain: 'Hai nhóm bắt được bị ĐỔI CHỖ qua $2@$1 ⇒ "an@gmail" thành "gmail@an".',
+  },
+  {
+    id: 'oqi-join-dash-len', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.join('-').length;\nconsole.log(f(INPUT));`,
+    out: '5',
+    options: ['["ab", "cd"]', '["a", "b"]', '["abc", "de"]', '["ab", "cd", "ef"]'], answer: 0,
+    explain: '"ab-cd" dài 5 (2 + 1 dấu nối + 2) — nhớ tính cả dấu nối. Các lựa chọn kia cho 3, 6 và 8 ký tự.',
+  },
+  {
+    id: 'oqi-bit-and', topic: 'Đoán input · bit', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => n & 1;\nconsole.log(f(INPUT));`,
+    out: '1',
+    options: ['7', '8', '10', '0'], answer: 0,
+    explain: 'n & 1 lấy BIT CUỐI: bằng 1 khi n LẺ. 7 lẻ nên ra 1; 8, 10, 0 đều chẵn nên ra 0.',
+  },
+  {
+    id: 'oqi-findindex-b', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.findIndex(x => x === 'b');\nconsole.log(f(INPUT));`,
+    out: '1',
+    options: ['["a", "b", "c"]', '["b", "a"]', '["x", "y"]', '["a", "c", "b"]'], answer: 0,
+    explain: 'Trả về VỊ TRÍ của "b" ⇒ phải nằm ở index 1; không tìm thấy thì trả −1.',
+  },
 ];

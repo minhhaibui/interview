@@ -2169,4 +2169,43 @@ window.IQ_QUESTIONS = [
     explain: 'N+1: 101 × 20ms = 2.020ms. Gộp lại còn 50ms ⇒ tiết kiệm ~1.970ms, tức khoảng 2 giây.' },
   { id: 'n22-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 7, 8, 10, 14, 22, ?', options: ['30', '32', '38', '44'], answer: 2,
     explain: 'Khoảng cách nhân đôi: +1, +2, +4, +8, +16 ⇒ 22 + 16 = 38.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #21 =====
+  // Chuỗi TUẦN HOÀN: suy ra hình ở vị trí xa bằng phép chia lấy dư
+  figQ({
+    id: 'cyc1', d: 3, q: 'Chuỗi dưới đây lặp lại tuần hoàn. Hình thứ 12 sẽ là hình nào?',
+    fig: figRow([iqSvg(rot(ARROW, 0)), iqSvg(rot(ARROW, 90)), iqSvg(rot(ARROW, 180)), iqSvg(rot(ARROW, 0)), iqSvg(rot(ARROW, 90)), iqSvg(rot(ARROW, 180))]),
+    opts: [iqSvg(rot(ARROW, 180)), iqSvg(rot(ARROW, 0)), iqSvg(rot(ARROW, 90)), iqSvg(rot(ARROW, 270))],
+    explain: 'Chu kỳ dài 3 hình. 12 chia 3 dư 0 ⇒ hình thứ 12 trùng hình thứ 3 (mũi tên chúc xuống).',
+  }),
+  figQ({
+    id: 'cyc2', d: 3, q: 'Chuỗi dưới đây lặp lại tuần hoàn. Hình thứ 15 sẽ là hình nào?',
+    fig: figRow([sCell('c', 2), sCell('s', 2), sCell('t', 2), sCell('d', 2), sCell('c', 2), sCell('s', 2)]),
+    opts: [sCell('t', 2), sCell('c', 2), sCell('s', 2), sCell('d', 2)],
+    explain: 'Chu kỳ 4 hình (tròn – vuông – tam giác – thoi). 15 chia 4 dư 3 ⇒ hình thứ 15 là hình thứ 3 trong chu kỳ: tam giác.',
+  }),
+  // Đếm số ô CHUNG của hai lưới (phép giao)
+  { id: 'and1', category: '🖼️ Suy luận hình', d: 2, q: 'Hai lưới bên dưới có bao nhiêu ô CÙNG được tô ở cả hai?',
+    fig: figRow([gSvg('110/011/010'), gSvg('010/111/000')]),
+    options: ['1 ô', '2 ô', '3 ô', '4 ô'], answer: 2,
+    explain: 'Chồng hai lưới và chỉ đếm ô mà CẢ HAI cùng tô (phép giao): 3 ô.' },
+  gOpQ('gx31', 2, '011/100/110', '010/101/010', 'and', 'Giao hai lưới: giữ ô cả hai cùng tô, bỏ phần còn lại.'),
+  figQ({
+    id: 'mid3', d: 3, q: 'Hình nào điền vào chỗ trống (vị trí thứ HAI) của chuỗi?',
+    fig: figRow([gSvg('111/111/111'), '?', gSvg('111/000/111'), gSvg('101/000/101')]),
+    opts: [gSvg('111/101/111'), gSvg('111/010/111'), gSvg('110/000/011'), gSvg('111/111/000')],
+    explain: 'Mỗi bước xoá dần các ô từ giữa ra: 9 ô → 8 ô (mất ô tâm) → 6 ô (mất cả hàng giữa) → 4 ô (mất thêm hai ô giữa trên/dưới).',
+  }),
+  { id: 'nm27', category: '🖼️ Suy luận hình', d: 3, q: 'Số ở ô dấu ? (CỘT GIỮA) là bao nhiêu?',
+    fig: figGrid([numCell(8), numCell(2), numCell(4), numCell(15), '?', numCell(5), numCell(24), numCell(4), numCell(6)]),
+    options: ['3', '5', '6', '10'], answer: 0,
+    explain: 'Cột 1 ÷ cột 2 = cột 3 (8÷2=4, 24÷4=6) ⇒ hàng giữa: 15 ÷ ? = 5 ⇒ ? = 3.' },
+  { id: 'dl83', category: '🧠 Logic', d: 3, q: 'Một chiếc đồng hồ mỗi giờ chạy nhanh 2 phút. Chỉnh đúng lúc 12:00 trưa, thì lúc đồng hồ chỉ 6:00 chiều, giờ thật là mấy giờ?', options: ['5 giờ 48 phút', '5 giờ 49 phút', '6 giờ 12 phút', '5 giờ 50 phút'], answer: 1,
+    explain: 'Đồng hồ chạy 62 phút cho mỗi 60 phút thật. Hiện 360 phút trên mặt đồng hồ ⇒ thật = 360 × 60/62 ≈ 348,4 phút ≈ 5 giờ 48,4 phút, làm tròn 5 giờ 49 phút.' },
+  { id: 'dl84', category: '🧠 Logic', d: 2, q: 'Một quyển lịch có 12 tháng. Bao nhiêu tháng có ít nhất 28 ngày?', options: ['1', '2', '11', '12'], answer: 3,
+    explain: 'Câu bẫy: THÁNG NÀO cũng có ít nhất 28 ngày ⇒ cả 12 tháng.' },
+  { id: 'dl85', category: '➗ Toán nhanh', d: 3, q: 'Một dịch vụ xử lý 500 request/giây, mỗi request giữ kết nối 40ms. Trung bình có bao nhiêu request đang chạy đồng thời?', options: ['12,5', '20', '40', '200'], answer: 1,
+    explain: 'Định luật Little: L = λ × W = 500 × 0,04 = 20 request đồng thời.' },
+  { id: 'n23-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 3, 4, 7, 11, 18, 29, ?', options: ['40', '45', '47', '52'], answer: 2,
+    explain: 'Mỗi số bằng tổng hai số liền trước: 18 + 29 = 47.' },
 ];
