@@ -2694,4 +2694,39 @@ window.IQ_QUESTIONS = [
     explain: 'Có hoàn lại nên hai lần độc lập: (3/8) × (3/8) = 9/64.' },
   { id: 'n35-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 11, 19, 35, 67, ?', options: ['99', '113', '131', '134'], answer: 2,
     explain: 'Quy luật × 2 − 3: 67 × 2 − 3 = 131.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #34 =====
+  // Tìm CẶP hình giống nhau sau khi xoay
+  { id: 'samepair', category: '🖼️ Suy luận hình', d: 3, q: 'Hai hình nào dưới đây thực chất là CÙNG MỘT hình (chỉ khác góc xoay)?',
+    fig: figRow([numCell(1), numCell(2), numCell(3), numCell(4)]) +
+      figRow([gSvg('110/010/000'), gSvg('101/010/000'), gSvg('000/010/011'), gSvg('111/001/000')]),
+    options: ['Hình 1 và 2', 'Hình 1 và 3', 'Hình 2 và 4', 'Hình 3 và 4'], answer: 1,
+    explain: 'Hình 3 chính là hình 1 xoay 180°; hai hình còn lại khác hẳn về hình dạng.' },
+  // Đối xứng QUAY 90°: xoay một phần tư vẫn ra chính nó
+  figQ({
+    id: 'rot4sym', d: 3, q: 'Hình nào GIỮ NGUYÊN khi xoay 90°?',
+    opts: [gSvg('101/000/101'), gSvg('110/010/000'), gSvg('111/000/000'), gSvg('100/110/001')],
+    explain: 'Chỉ hình bốn góc là xoay một phần tư vẫn trùng khít chính nó (đối xứng quay bậc 4); các hình kia đổi hướng.',
+  }),
+  figQ({
+    id: 'gapseq', d: 2, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([gSvg('100/000/000'), gSvg('110/000/000'), gSvg('111/100/000'), '?']),
+    opts: [gSvg('111/111/100'), gSvg('111/110/000'), gSvg('111/111/000'), gSvg('111/111/110')],
+    explain: 'Số ô là 1, 2, 4, 7 — khoảng cách tăng dần 1, 2, 3 ⇒ hình thứ tư có 7 ô.',
+  }),
+  gOpQ('gx44', 2, '100/111/010', '011/010/110', 'or', 'Hợp hai lưới: gộp mọi ô được tô của cả hai hình.'),
+  { id: 'nm40', category: '🖼️ Suy luận hình', d: 2, q: 'Số ở ô dấu ? là bao nhiêu?',
+    fig: figGrid([numCell(2), numCell(6), numCell(18), numCell(3), numCell(12), numCell(48), numCell(5), numCell(10), '?'], 3),
+    options: ['15', '20', '25', '50'], answer: 1,
+    explain: 'Mỗi hàng là cấp số nhân theo tỉ số riêng: 2→6→18 (×3), 3→12→48 (×4), 5→10→? (×2) ⇒ 20.' },
+  { id: 'dl123', category: '🧠 Logic', d: 3, q: 'Bốn đội đá vòng tròn (mỗi cặp gặp nhau 1 lần), thắng 3 điểm, hòa 1, thua 0. Tổng điểm CẢ GIẢI nhiều nhất có thể là bao nhiêu?', options: ['12', '15', '18', '24'], answer: 2,
+    explain: 'Có C(4,2) = 6 trận; mỗi trận sinh 3 điểm nếu có đội thắng (hòa chỉ sinh 2) ⇒ tối đa 6 × 3 = 18 điểm.' },
+  { id: 'dl124', category: '🧠 Logic', d: 2, q: 'Một người có 5 chiếc áo, 4 quần và 2 đôi giày. Có bao nhiêu cách phối đồ khác nhau?', options: ['11', '20', '40', '80'], answer: 2,
+    explain: 'Nhân các lựa chọn độc lập: 5 × 4 × 2 = 40 cách.' },
+  { id: 'dl125', category: '➗ Toán nhanh', d: 3, q: 'Bảng 10 triệu dòng, mỗi ngày thêm 2%. Sau bao lâu thì kích thước tăng GẤP ĐÔI (xấp xỉ)?', options: ['15 ngày', '25 ngày', '35 ngày', '50 ngày'], answer: 2,
+    explain: 'Quy tắc 70: thời gian nhân đôi ≈ 70 / tốc độ tăng (%) = 70 / 2 = 35 ngày.' },
+  { id: 'dl126', category: '🎲 Xác suất', d: 3, q: 'Ba người chơi oẳn tù tì (kéo–búa–bao). Xác suất cả ba ra CÙNG một thứ là bao nhiêu?', options: ['1/27', '1/9', '1/3', '3/27'], answer: 1,
+    explain: 'Người đầu ra gì cũng được; hai người sau phải trùng: (1/3) × (1/3) = 1/9.' },
+  { id: 'n36-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 3, 8, 18, 38, 78, ?', options: ['118', '148', '158', '168'], answer: 2,
+    explain: 'Quy luật × 2 + 2: 78 × 2 + 2 = 158.' },
 ];

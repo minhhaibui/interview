@@ -2592,4 +2592,62 @@ window.OUTPUT_QUIZ = [
     options: ['" 12 "', '" 13 "', '"12a"', '" 1 "'], answer: 0,
     explain: 'trim rồi đổi số: " 12 " → 12 → 13. Chuỗi "12a" không parse được nên ra NaN.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #34 =====
+  {
+    id: 'oq36-tospliced', topic: 'Mảng',
+    code: `const a = [1, 2, 3];\nconst b = a.toSpliced(1, 1);\nconsole.log(b.join(), a.join(), a.length);`,
+    options: ['1,3 1,2,3 3', '1,3 1,3 2', '2 1,3 2', '1,3 1,2,3 2'], answer: 0,
+    explain: 'toSpliced (ES2023) là bản BẤT BIẾN của splice: trả mảng mới đã xoá phần tử, mảng gốc nguyên vẹn.',
+  },
+  {
+    id: 'oq36-hasown', topic: 'Object',
+    code: `const o = { a: 1 };\nconsole.log(Object.hasOwn(o, 'a'), Object.hasOwn(o, 'toString'), 'toString' in o);`,
+    options: ['true true true', 'true false true', 'true false false', 'false false true'], answer: 1,
+    explain: 'Object.hasOwn (thay cho hasOwnProperty) chỉ xét thuộc tính RIÊNG; toán tử in thì tra cả prototype nên thấy toString.',
+  },
+  {
+    id: 'oq36-clone-map', topic: 'Tham chiếu',
+    code: `const m = new Map([[1, { v: 'a' }]]);\nconst c = structuredClone(m);\nm.get(1).v = 'z';\nconsole.log(c.get(1).v, c instanceof Map, c === m);`,
+    options: ["z true false", "a true false", "a false false", "z false true"], answer: 1,
+    explain: 'structuredClone copy SÂU và giữ đúng kiểu Map (khác JSON.stringify vốn biến Map thành {}) nên bản sao không bị ảnh hưởng.',
+  },
+  {
+    id: 'oq36-rest-empty', topic: 'Destructuring',
+    code: `const { a, ...rest } = { a: 1 };\nconsole.log(JSON.stringify(rest), Object.keys(rest).length, rest.a);`,
+    options: ['{} 0 undefined', '{"a":1} 1 1', 'undefined 0 undefined', '{} 0 1'], answer: 0,
+    explain: 'Bóc hết thuộc tính thì rest là object RỖNG (không phải undefined) — an toàn để spread tiếp.',
+  },
+  {
+    id: 'oqi-tospliced-in', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.toSpliced(1, 1).join();\nconsole.log(f(INPUT));`,
+    out: '1,3',
+    options: ['[1, 2, 3]', '[1, 3]', '[1, 2, 3, 4]', '[2, 1, 3]'], answer: 0,
+    explain: 'Xoá 1 phần tử ở index 1 ⇒ mảng gốc [1, 2, 3]. Mảng [1,3] sẽ chỉ còn "1".',
+  },
+  {
+    id: 'oqi-tosorted-max', topic: 'Đoán input · sort', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.toSorted((x, y) => y - x)[0];\nconsole.log(f(INPUT));`,
+    out: '9',
+    options: ['[3, 9, 5]', '[3, 5, 7]', '[10, 2]', '[1, 2]'], answer: 0,
+    explain: 'Sắp GIẢM dần rồi lấy phần tử đầu = giá trị lớn nhất ⇒ mảng phải có max bằng 9.',
+  },
+  {
+    id: 'oqi-at-one', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.at(1);\nconsole.log(f(INPUT));`,
+    out: 'b',
+    options: ['"abc"', '"bac"', '"xyz"', '"b"'], answer: 0,
+    explain: 'at(1) lấy ký tự THỨ HAI (chỉ số 1) ⇒ "abc" cho "b"; "bac" cho "a"; chuỗi "b" chỉ có 1 ký tự nên at(1) là undefined.',
+  },
+  {
+    id: 'oqi-index-of-last', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.indexOf(a.at(-1));\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ['[5, 6, 7]', '[7, 6, 7]', '[5, 6]', '[7, 7, 7]'], answer: 0,
+    explain: 'Lấy phần tử cuối rồi tìm vị trí XUẤT HIỆN ĐẦU TIÊN của nó ⇒ [5,6,7] cho 2, còn [7,6,7] cho 0.',
+  },
 ];
