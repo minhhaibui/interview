@@ -1722,4 +1722,62 @@ window.OUTPUT_QUIZ = [
     options: ['{ a: 1, b: 2 }', '{ a: 2, b: 1 }', '{ b: 1, a: 2 }', '{ a: 1, b: 2, c: 3 }'], answer: 0,
     explain: 'Nối tất cả KHOÁ rồi tới tất cả GIÁ TRỊ, đều theo thứ tự khai báo ⇒ "ab" + "12".',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #19 =====
+  {
+    id: 'oq21-map-block-body', topic: 'Hàm',
+    code: `console.log([1, 2, 3].map(x => { x * 2; }).join('|'));\nconsole.log([1, 2, 3].map(x => x * 2).join('|'));`,
+    options: ['2|4|6\n2|4|6', '||\n2|4|6', 'undefined\n2|4|6', '1|2|3\n2|4|6'], answer: 1,
+    explain: 'Arrow function có DẤU NGOẶC NHỌN là thân hàm — không có return thì trả undefined ⇒ mảng [undefined ×3], join ra "||". Bỏ ngoặc nhọn mới là trả giá trị.',
+  },
+  {
+    id: 'oq21-arrow-object', topic: 'Hàm',
+    code: `const f = a => ({ a });\nconst g = a => { a };\nconsole.log(JSON.stringify(f(1)), g(1));`,
+    options: ['{"a":1} undefined', '{"a":1} {"a":1}', 'undefined undefined', '{} undefined'], answer: 0,
+    explain: 'Muốn arrow trả về object literal phải BỌC TRONG NGOẶC TRÒN, nếu không JS hiểu { } là thân hàm.',
+  },
+  {
+    id: 'oq21-reduce-string-init', topic: 'reduce',
+    code: `console.log([1, 2, 3].reduce((a, b) => a + b, ''), typeof [1, 2, 3].reduce((a, b) => a + b, ''));`,
+    options: ['6 number', '123 string', '6 string', '123 number'], answer: 1,
+    explain: 'Giá trị khởi tạo là CHUỖI rỗng nên mọi phép + thành nối chuỗi ⇒ "123". Chọn sai kiểu khởi tạo là bug kinh điển của reduce.',
+  },
+  {
+    id: 'oq21-bigint', topic: 'Số học',
+    code: `console.log(10n + BigInt(5), 10n == 10, 10n === 10, typeof 10n);`,
+    options: ['15 true true bigint', '15n true false bigint', '15 true false bigint', '15 false false number'], answer: 2,
+    explain: 'BigInt cộng được với BigInt (in ra 15, không kèm chữ n); == so lỏng nên bằng 10, còn === khác KIỂU nên false.',
+  },
+  {
+    id: 'oqi-number-plus', topic: 'Đoán input · ép kiểu', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => Number(s) + 1;\nconsole.log(f(INPUT));`,
+    out: '11',
+    options: ['"10"', '"1"', '"11"', '"abc"'], answer: 0,
+    explain: 'Number("10") = 10 rồi cộng 1 ⇒ 11. Nếu quên Number thì "10" + 1 sẽ ra chuỗi "101".',
+  },
+  {
+    id: 'oqi-filter-truthy-count', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.filter(x => x).length;\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ['[0, 1, 2, null]', '[1, 2, 3]', '[0, 0]', '[1, 2, 3, 4]'], answer: 0,
+    explain: 'Chỉ đếm giá trị truthy ⇒ 0 và null bị loại, còn 1 và 2.',
+  },
+  {
+    id: 'oqi-optional-chain-none', topic: 'Đoán input · optional chaining', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => o?.a?.b ?? 'none';\nconsole.log(f(INPUT));`,
+    out: 'none',
+    options: ['{ a: {} }', '{ a: { b: 1 } }', "{ a: { b: 'x' } }", '{ a: { b: 0 } }'], answer: 0,
+    explain: 'Chỉ khi o.a.b là undefined/null mới rơi vào "none". Chú ý b = 0 KHÔNG rơi vào vì ?? chỉ bắt null/undefined.',
+  },
+  {
+    id: 'oqi-repeat-concat', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => '#'.repeat(n) + n;\nconsole.log(f(INPUT));`,
+    out: '###3',
+    options: ['3', '4', '2', '33'], answer: 0,
+    explain: 'Lặp dấu # đúng n lần rồi nối chính số n vào cuối ⇒ "###" + "3".',
+  },
 ];

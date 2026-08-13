@@ -2085,4 +2085,49 @@ window.IQ_QUESTIONS = [
     explain: 'C(4,2) = 6 cách trên tổng 2⁴ = 16 khả năng ⇒ 6/16 = 3/8.' },
   { id: 'n20-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 4, 6, 10, 18, 34, ?', options: ['50', '58', '66', '68'], answer: 2,
     explain: 'Quy luật × 2 − 2: 34 × 2 − 2 = 66.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #19 =====
+  // GHÉP HAI MẢNH: hai mảnh rời không chồng ô nào, ghép lại ra hình nào?
+  figQ({
+    id: 'merge1', d: 2, q: 'Ghép HAI mảnh bên dưới lại (không xoay, không lật) thì được hình nào?',
+    fig: figRow([gSvg('110/000/000'), numCell('+'), gSvg('000/011/000')]),
+    opts: [gSvg(gOp('110/000/000', '000/011/000', 'or')), gSvg('110/110/000'),
+      gSvg('111/000/000'), gSvg('011/110/000')],
+    explain: 'Chồng hai mảnh lên nhau và giữ mọi ô được tô: hàng đầu 2 ô bên trái, hàng giữa 2 ô bên phải.',
+  }),
+  figQ({
+    id: 'merge2', d: 3, q: 'Ghép HAI mảnh bên dưới lại (không xoay, không lật) thì được hình nào?',
+    fig: figRow([gSvg('100/010/001'), numCell('+'), gSvg('001/100/010')]),
+    opts: [gSvg(gOp('100/010/001', '001/100/010', 'or')), gSvg('101/010/101'),
+      gSvg('100/010/001'), gSvg('111/111/111')],
+    explain: 'Hai đường chéo ghép lại thành hình chữ X thiếu ô giữa: mỗi hàng có 2 ô được tô.',
+  }),
+  // Nhận biết TRỤC ĐỐI XỨNG
+  figQ({
+    id: 'axis1', d: 2, q: 'Hình nào CÓ trục đối xứng (soi gương qua một đường thẳng vẫn ra chính nó)?',
+    opts: [gSvg('010/111/010'), gSvg('110/010/001'), gSvg('100/110/001'), gSvg('011/100/010')],
+    explain: 'Hình dấu cộng đối xứng qua cả trục dọc lẫn trục ngang; ba hình còn lại lật kiểu nào cũng khác đi.',
+  }),
+  gOpQ('gx29', 2, '111/001/100', '010/011/110', 'and', 'Giao hai lưới: chỉ ô nào cả hai cùng tô mới giữ lại.'),
+  // Ma trận có ô "?" ở HÀNG ĐẦU (thường quen thấy ở hàng cuối)
+  figQ({
+    id: 'mxtop', d: 3, q: 'Ô dấu ? ở HÀNG ĐẦU của ma trận là hình nào?',
+    fig: figGrid(['?', iqSvg(rot(FLAG, 90)), iqSvg(rot(FLAG, 180)),
+      iqSvg(rot(FLAG, 90)), iqSvg(rot(FLAG, 180)), iqSvg(rot(FLAG, 270)),
+      iqSvg(rot(FLAG, 180)), iqSvg(rot(FLAG, 270)), iqSvg(rot(FLAG, 0))]),
+    opts: [iqSvg(rot(FLAG, 0)), iqSvg(rot(FLAG, 90)), iqSvg(rot(FLAG, 180)), iqSvg(rot(FLAG, 270))],
+    explain: 'Mỗi bước sang phải (và xuống dưới) xoay thêm 90°; đi ngược từ ô thứ hai của hàng đầu (90°) thì ô đầu là 0°.',
+  }),
+  { id: 'nm25', category: '🖼️ Suy luận hình', d: 3, q: 'Số ở ô dấu ? (HÀNG ĐẦU) là bao nhiêu?',
+    fig: figGrid([numCell(3), numCell(4), '?', numCell(5), numCell(2), numCell(10), numCell(6), numCell(7), numCell(42)]),
+    options: ['7', '12', '14', '34'], answer: 1,
+    explain: 'Cột 3 = cột 1 × cột 2 (5×2 = 10, 6×7 = 42) ⇒ hàng đầu: 3 × 4 = 12.' },
+  { id: 'dl77', category: '🧠 Logic', d: 3, q: 'Ba hộp: một đựng táo, một đựng cam, một đựng cả hai. Bốc 1 quả từ hộp "cả hai" ra quả táo. Hộp đó thực chất đựng gì? (biết mọi nhãn đều SAI)', options: ['Chỉ táo', 'Chỉ cam', 'Cả hai', 'Chưa xác định được'], answer: 0,
+    explain: 'Nhãn "cả hai" chắc chắn sai nên hộp đó thuần một loại; bốc ra táo ⇒ hộp đó chỉ đựng táo.' },
+  { id: 'dl78', category: '⏱️ Chuyển động & công việc', d: 3, q: 'Hai xe xuất phát cùng lúc từ hai đầu quãng đường 300km, chạy ngược chiều với 60 km/h và 40 km/h. Sau bao lâu thì gặp nhau?', options: ['2 giờ', '3 giờ', '4 giờ', '5 giờ'], answer: 1,
+    explain: 'Tốc độ tiếp cận = 60 + 40 = 100 km/h ⇒ 300 / 100 = 3 giờ.' },
+  { id: 'dl79', category: '➗ Toán nhanh', d: 2, q: 'Log ghi 2KB mỗi request, hệ thống nhận 100 request/giây. Một ngày sinh ra khoảng bao nhiêu log? (1GB = 1000MB)', options: ['1,7GB', '8,6GB', '17,3GB', '86GB'], answer: 2,
+    explain: '2KB × 100 = 200KB/giây × 86.400 giây ≈ 17.280.000KB ≈ 17,3GB mỗi ngày.' },
+  { id: 'n21-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 4, 9, 18, 35, ?', options: ['52', '60', '68', '70'], answer: 2,
+    explain: 'Khoảng cách giữa các số là 3, 5, 9, 17, 33 — mỗi khoảng bằng khoảng trước × 2 − 1 ⇒ 35 + 33 = 68.' },
 ];
