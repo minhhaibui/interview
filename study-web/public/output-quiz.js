@@ -2708,4 +2708,62 @@ window.OUTPUT_QUIZ = [
     options: ["[1, 2.5, 3, '4']", '[1, 2, 3]', "['1', '2']", '[1.1, 2.2]'], answer: 0,
     explain: 'Chỉ đếm SỐ NGUYÊN thật: 1 và 3 (2.5 là số thực, "4" là chuỗi).',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #36 =====
+  {
+    id: 'oq38-slice-substring-neg', topic: 'Chuỗi',
+    code: `console.log('abcdef'.slice(-2), 'abcdef'.substring(-2) === 'abcdef', 'abcdef'.slice(2, -1));`,
+    options: ['ef true cde', 'ef false cde', 'ab true cde', 'ef true cdef'], answer: 0,
+    explain: 'slice hiểu chỉ số ÂM (đếm từ cuối); substring coi mọi số âm là 0 nên trả nguyên chuỗi.',
+  },
+  {
+    id: 'oq38-length-extend', topic: 'Mảng',
+    code: `const a = [1, 2];\na.length = 4;\nconsole.log(a.join() + '|', a.length, a[3], Object.keys(a).length);`,
+    options: ['1,2,,| 4 undefined 2', '1,2| 2 undefined 2', '1,2,,| 4 null 4', '1,2,,| 4 undefined 4'], answer: 0,
+    explain: 'Tăng length tạo ô RỖNG (không phải undefined thật) ⇒ join in ra dấu phẩy trống và Object.keys vẫn chỉ đếm 2 phần tử thật.',
+  },
+  {
+    id: 'oq38-entries-array', topic: 'Mảng',
+    code: `console.log(Object.entries([10, 20]).map(([k, v]) => k + ':' + v).join(), typeof Object.entries([1])[0][0]);`,
+    options: ['0:10,1:20 string', '0:10,1:20 number', '10:0,20:1 string', '1:10,2:20 string'], answer: 0,
+    explain: 'Object.entries dùng được cho mảng, nhưng chỉ số bị đưa về dạng CHUỖI (giống Object.keys).',
+  },
+  {
+    id: 'oq38-includes-vs-some', topic: 'So sánh',
+    code: `const a = [1, 2, 3];\nconsole.log(a.includes('2'), a.some(x => x == '2'), a.some(x => x === '2'));`,
+    options: ['false true false', 'true true false', 'false false false', 'true false false'], answer: 0,
+    explain: 'includes so sánh NGHIÊM NGẶT nên chuỗi "2" không khớp số 2; chỉ khi tự viết so sánh lỏng (==) mới khớp.',
+  },
+  {
+    id: 'oqi-substring-mid', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.substring(1, 3);\nconsole.log(f(INPUT));`,
+    out: 'bc',
+    options: ['"abcd"', '"bcd"', '"xyz"', '"ab"'], answer: 0,
+    explain: 'Lấy ký tự từ vị trí 1 đến TRƯỚC vị trí 3 ⇒ "abcd" cho "bc".',
+  },
+  {
+    id: 'oqi-entries-times2', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => Object.entries(o).length * 2;\nconsole.log(f(INPUT));`,
+    out: '4',
+    options: ['{ a: 1, b: 2 }', '{ a: 1 }', '{ a: 1, b: 2, c: 3 }', '{ a: 4 }'], answer: 0,
+    explain: 'Số cặp khoá-giá trị × 2 ⇒ object phải có đúng 2 thuộc tính (giá trị không quan trọng).',
+  },
+  {
+    id: 'oqi-reduce-subtract', topic: 'Đoán input · reduce', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.reduce((x, y) => x - y);\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ['[5, 2, 1]', '[1, 2, 5]', '[2, 1, 5]', '[9, 3]'], answer: 0,
+    explain: 'Không có giá trị khởi tạo nên lấy phần tử đầu rồi trừ dần: 5 − 2 − 1 = 2.',
+  },
+  {
+    id: 'oqi-lastindexof-a', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.lastIndexOf('a');\nconsole.log(f(INPUT));`,
+    out: '3',
+    options: ['"abca"', '"aabb"', '"abc"', '"bbbb"'], answer: 0,
+    explain: 'Vị trí XUẤT HIỆN CUỐI CÙNG của "a" phải là 3; không có "a" thì trả −1.',
+  },
 ];
