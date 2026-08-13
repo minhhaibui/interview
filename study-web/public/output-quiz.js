@@ -2476,4 +2476,62 @@ window.OUTPUT_QUIZ = [
     options: ['5', '4', '6', '10'], answer: 0,
     explain: 'Cộng các chỉ số 0..n−1: với n = 5 là 0+1+2+3+4 = 10; n = 4 ra 6; n = 6 ra 15.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #32 =====
+  {
+    id: 'oq34-with-nonmutate', topic: 'Mảng',
+    code: `const a = [1, 2, 3];\nconst b = a.with(1, 9);\nconsole.log(b.join(), a.join(), a === b);`,
+    options: ['1,9,3 1,2,3 false', '1,9,3 1,9,3 false', '1,9,3 1,2,3 true', '1,2,3 1,9,3 false'], answer: 0,
+    explain: 'with (ES2023) trả về mảng MỚI đã đổi một phần tử, giữ nguyên mảng gốc — bản "bất biến" của a[i] = v.',
+  },
+  {
+    id: 'oq34-charcode-api', topic: 'Chuỗi',
+    code: `console.log('a'.codePointAt(0), String.fromCharCode(98), String.fromCharCode(97, 98, 99));`,
+    options: ['97 b abc', '97 98 abc', '65 b abc', '97 b a,b,c'], answer: 0,
+    explain: 'codePointAt đọc mã ký tự; fromCharCode làm ngược lại và nhận NHIỀU mã cùng lúc để dựng chuỗi.',
+  },
+  {
+    id: 'oq34-create-assign', topic: 'Object',
+    code: `const p = Object.assign(Object.create({ inh: 9 }), { own: 1 });\nconsole.log(p.inh, p.own, Object.keys(p).length, p.hasOwnProperty('inh'));`,
+    options: ['9 1 1 false', 'undefined 1 1 false', '9 1 2 true', '9 1 1 true'], answer: 0,
+    explain: 'Object.create đặt prototype (đọc được inh) còn Object.assign chỉ copy thuộc tính RIÊNG ⇒ keys chỉ thấy own.',
+  },
+  {
+    id: 'oq34-at-fraction', topic: 'Mảng',
+    code: `const a = ['x', 'y', 'z'];\nconsole.log(a.at(-0), a.at(1.7), a.at(-1), a.at(9));`,
+    options: ['x y z undefined', 'x z z undefined', 'z y z undefined', 'x y z x'], answer: 0,
+    explain: 'at() CẮT phần thập phân (1.7 → 1) và −0 coi như 0 ⇒ lần lượt "x", "y", "z"; vượt phạm vi thì undefined.',
+  },
+  {
+    id: 'oqi-with-index', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.with(1, 9).join();\nconsole.log(f(INPUT));`,
+    out: '1,9,3',
+    options: ['[1, 2, 3]', '[2, 2, 3]', '[9, 2, 3]', '[1, 2, 3, 4]'], answer: 0,
+    explain: 'with(1, 9) thay phần tử ở index 1 bằng 9 và giữ nguyên các phần tử khác ⇒ mảng gốc phải là [1, 2, 3] (mảng [1,9,3] cũng cho cùng kết quả nên không thể làm mồi nhử).',
+  },
+  {
+    id: 'oqi-fromcharcode', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => String.fromCharCode(...s.split(',').map(Number));\nconsole.log(f(INPUT));`,
+    out: 'abc',
+    options: ['"97,98,99"', '"65,66,67"', '"97,98"', '"99,98,97"'], answer: 0,
+    explain: '97, 98, 99 là mã của a, b, c (chữ HOA bắt đầu từ 65).',
+  },
+  {
+    id: 'oqi-count-object-values', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => Object.keys(o).filter(k => typeof o[k] === 'object').length;\nconsole.log(f(INPUT));`,
+    out: '1',
+    options: ['{ a: 1, b: {} }', '{ a: 1, b: 2 }', '{ a: {}, b: [] }', '{ a: 1 }'], answer: 0,
+    explain: 'Đếm thuộc tính có giá trị kiểu object ⇒ cần đúng 1 (chú ý MẢNG cũng là object nên { a:{}, b:[] } ra 2).',
+  },
+  {
+    id: 'oqi-mod7', topic: 'Đoán input · số học', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => n % 7;\nconsole.log(f(INPUT));`,
+    out: '3',
+    options: ['10', '14', '20', '7'], answer: 0,
+    explain: '10 chia 7 dư 3; 14 và 7 chia hết (dư 0); 20 dư 6.',
+  },
 ];

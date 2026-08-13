@@ -2618,4 +2618,45 @@ window.IQ_QUESTIONS = [
     explain: 'Khoảng cách là các số lẻ 1, 3, 5, 7, 9 ⇒ 21 + 9 = 30.' },
   { id: 'n33-2', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 128, 64, 32, 16, ?', options: ['4', '8', '12', '14'], answer: 1,
     explain: 'Mỗi số bằng một nửa số trước: 16 / 2 = 8.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #32 =====
+  // Ghép KHÔNG CHỒNG ô: chỉ một lựa chọn rời hoàn toàn với hình mẫu
+  figQ({
+    id: 'nofit1', d: 3, q: 'Đặt chồng lên hình mẫu bên dưới, hình nào KHÔNG đè lên bất kỳ ô nào đã tô?',
+    fig: figRow([gSvg('110/100/000')]),
+    opts: [gSvg('001/011/000'), gSvg('100/000/001'), gSvg('010/100/010'), gSvg('110/000/000')],
+    explain: 'Hình mẫu chiếm ô (0,0), (0,1) và (1,0). Chỉ một lựa chọn nằm hoàn toàn ở các ô còn trống; ba hình kia đều đè lên ít nhất một ô đã tô.',
+  }),
+  { id: 'count3', category: '🖼️ Suy luận hình', d: 2, q: 'Trong 6 hình dưới đây, có bao nhiêu hình được tô ĐÚNG 3 ô?',
+    fig: figRow([gSvg('110/010/000'), gSvg('111/000/000'), gSvg('110/110/000'), gSvg('100/010/001'), gSvg('111/100/000'), gSvg('010/010/000')]),
+    options: ['2 hình', '3 hình', '4 hình', '5 hình'], answer: 1,
+    explain: 'Đếm từng hình: 3, 3, 4, 3, 4, 2 ô ⇒ có 3 hình đúng 3 ô.' },
+  // Lưới "ma phương": tổng số ô mỗi HÀNG và mỗi CỘT đều bằng nhau
+  figQ({
+    id: 'magicfig', d: 3, q: 'Ô dấu ? là hình nào? (tổng số ô của mỗi HÀNG và mỗi CỘT đều bằng nhau)',
+    fig: figGrid([gSvg('100/000/000'), gSvg('110/000/000'), gSvg('111/000/000'),
+      gSvg('111/000/000'), gSvg('100/000/000'), gSvg('110/000/000'),
+      gSvg('110/000/000'), gSvg('111/000/000'), '?']),
+    opts: [gSvg('100/000/000'), gSvg('110/000/000'), gSvg('111/000/000'), gSvg('111/100/000')],
+    explain: 'Mỗi hàng và mỗi cột phải có tổng 6 ô (1+2+3). Hàng cuối đã có 2 + 3 = 5 ⇒ ô thiếu là 1 ô; cột cuối cũng khớp: 3 + 2 + 1 = 6.',
+  }),
+  figQ({
+    id: 'sqdown', d: 2, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([gSvg('111/111/111'), gSvg('110/110/000'), gSvg('100/000/000'), '?']),
+    opts: [gSvg('000/000/000'), gSvg('100/000/000'), gSvg('110/000/000'), gSvg('111/000/000')],
+    explain: 'Số ô là bình phương giảm dần 9, 4, 1 ⇒ tiếp theo là 0 ô (lưới trống).',
+  }),
+  gOpQ('gx42', 2, '101/110/001', '011/100/101', 'and', 'Giao hai lưới: chỉ giữ ô cả hai cùng tô.'),
+  { id: 'nm38', category: '🖼️ Suy luận hình', d: 3, q: 'Số ở ô dấu ? là bao nhiêu? (tổng mỗi hàng và mỗi cột đều bằng 15)',
+    fig: figGrid([numCell(8), numCell(1), numCell(6), numCell(3), numCell(5), numCell(7), numCell(4), '?', numCell(2)], 3),
+    options: ['6', '8', '9', '10'], answer: 2,
+    explain: 'Ma phương 3×3 quen thuộc: hàng cuối 4 + ? + 2 = 15 ⇒ ? = 9 (cột giữa cũng thành 1 + 5 + 9 = 15).' },
+  { id: 'dl116', category: '🧠 Logic', d: 3, q: 'Một tù nhân phải chọn 1 trong 2 cửa: một cửa dẫn tới tự do, một cửa tới cái chết. Hai lính gác, một luôn nói thật, một luôn nói dối, bạn chỉ được hỏi MỘT câu. Hỏi gì?', options: ['Hỏi thẳng "cửa nào dẫn tới tự do?" rồi đi cửa đó', 'Hỏi "người kia sẽ chỉ cửa nào?" rồi đi cửa CÒN LẠI', 'Hỏi "anh có phải người nói thật không?"', 'Hỏi "cửa nào dẫn tới cái chết?" rồi đi cửa đó'], answer: 1,
+    explain: 'Câu hỏi lồng khiến CẢ HAI lính gác đều chỉ vào cửa chết (một người nói dối về câu trả lời thật, người kia nói thật về câu trả lời dối) ⇒ cứ chọn cửa còn lại.' },
+  { id: 'dl117', category: '➗ Toán nhanh', d: 2, q: 'Một hàm chạy 50ms, được gọi 3 lần lồng nhau (tuần tự). Nếu tối ưu còn 30ms mỗi lần thì tiết kiệm bao nhiêu?', options: ['20ms', '40ms', '60ms', '90ms'], answer: 2,
+    explain: '3 × 50 = 150ms xuống còn 3 × 30 = 90ms ⇒ tiết kiệm 60ms.' },
+  { id: 'dl118', category: '🎲 Xác suất', d: 3, q: 'Một túi có 4 bi trắng, 6 bi đen. Lấy lần lượt 2 bi không hoàn lại. Xác suất bi thứ HAI là trắng bằng bao nhiêu?', options: ['1/5', '2/5', '4/9', '1/2'], answer: 1,
+    explain: 'Không cần biết bi đầu là gì — theo tính đối xứng, xác suất bi thứ hai trắng vẫn đúng bằng tỉ lệ ban đầu 4/10 = 2/5.' },
+  { id: 'n34-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 3, 10, 15, 26, ?', options: ['30', '35', '37', '42'], answer: 1,
+    explain: 'Hai dãy đan xen: 2, 10, 26 (khoảng cách 8, 16) và 3, 15, ? (khoảng cách 12, 20) ⇒ 15 + 20 = 35.' },
 ];
