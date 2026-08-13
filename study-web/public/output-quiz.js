@@ -1200,4 +1200,62 @@ window.OUTPUT_QUIZ = [
     options: ['{ c: 1, a: 2, b: 3 }', '{ a: 1, b: 2 }', '{ x: 1, y: 2, z: 3 }', '{ a: 1, b: 2, c: 3, d: 4 }'], answer: 0,
     explain: 'Lấy danh sách khoá rồi SẮP XẾP nên thứ tự khai báo không quan trọng — quan trọng là đúng bộ khoá a, b, c.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #10 =====
+  {
+    id: 'oq12-tostring-coerce', topic: 'Ép kiểu',
+    code: `const o = { toString: () => 'X', valueOf: () => 42 };\nconsole.log(\`\${o}\`, o + 1, String(o));`,
+    options: ['X 43 X', 'X X1 X', '42 43 42', 'X 43 42'], answer: 0,
+    explain: 'Template string và String() ưu tiên toString; còn phép + dùng valueOf trước (42 + 1 = 43) — cùng một object cho hai kết quả khác nhau.',
+  },
+  {
+    id: 'oq12-array-eq-string', topic: 'Ép kiểu',
+    code: `console.log([1, 2] == '1,2', [1, 2] === '1,2', [] + {});`,
+    options: ['true false [object Object]', 'true true [object Object]', 'false false [object Object]', 'true false 0'], answer: 0,
+    explain: '== ép mảng về chuỗi "1,2" nên bằng; === khác kiểu nên false; [] thành "" cộng với object thành "[object Object]".',
+  },
+  {
+    id: 'oq12-max-safe', topic: 'Số học',
+    code: `const M = Number.MAX_SAFE_INTEGER;\nconsole.log(M + 1 === M + 2, Number.isSafeInteger(M + 1));`,
+    options: ['false true', 'true false', 'false false', 'true true'], answer: 1,
+    explain: 'Vượt quá 2⁵³−1 thì số nguyên không còn biểu diễn chính xác ⇒ M+1 và M+2 ra CÙNG một giá trị. Cần số lớn hơn thì dùng BigInt.',
+  },
+  {
+    id: 'oq12-named-fn-expr', topic: 'Hàm',
+    code: `const f = function g() { return typeof g; };\nconsole.log(f(), typeof g);`,
+    options: ['function function', 'function undefined', 'undefined undefined', 'ReferenceError'], answer: 1,
+    explain: 'Tên của function expression chỉ nhìn thấy được BÊN TRONG chính nó, không tạo biến ở scope ngoài.',
+  },
+  {
+    id: 'oqi-camelize', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join('');\nconsole.log(f(INPUT));`,
+    out: 'HelloWorld',
+    options: ['"hello-world"', '"hello world"', '"world-hello"', '"hello-world-now"'], answer: 0,
+    explain: 'Tách theo dấu "-", viết hoa chữ đầu mỗi phần rồi nối liền. Thứ tự các từ được giữ nguyên nên "world-hello" ra "WorldHello".',
+  },
+  {
+    id: 'oqi-multiple-of-3', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.filter(x => x % 3 === 0).length;\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ['[3, 4, 9, 10]', '[3, 6, 9]', '[1, 2, 4]', '[3, 6, 9, 12]'], answer: 0,
+    explain: 'Đếm số chia hết cho 3: mảng đầu có 3 và 9 = 2 số; các mảng kia ra 3, 0 và 4.',
+  },
+  {
+    id: 'oqi-double-values', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => JSON.stringify(Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v * 2])));\nconsole.log(f(INPUT));`,
+    out: '{"a":2,"b":6}',
+    options: ['{ a: 1, b: 3 }', '{ a: 2, b: 6 }', '{ a: 1, b: 6 }', '{ b: 3, a: 1 }'], answer: 0,
+    explain: 'Mọi giá trị được nhân đôi và THỨ TỰ KHOÁ giữ nguyên ⇒ { a: 1, b: 3 }. Object { b: 3, a: 1 } cho ra {"b":6,"a":2}.',
+  },
+  {
+    id: 'oqi-word-count', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.trim().split(/\\s+/).length;\nconsole.log(f(INPUT));`,
+    out: '3',
+    options: ['"  node   backend   dev  "', '"node backend"', '"node-backend-dev"', '"node backend dev ops"'], answer: 0,
+    explain: 'trim rồi tách theo CỤM khoảng trắng ⇒ nhiều dấu cách liên tiếp vẫn chỉ tính một lần: 3 từ.',
+  },
 ];
