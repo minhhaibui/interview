@@ -1258,4 +1258,62 @@ window.OUTPUT_QUIZ = [
     options: ['"  node   backend   dev  "', '"node backend"', '"node-backend-dev"', '"node backend dev ops"'], answer: 0,
     explain: 'trim rồi tách theo CỤM khoảng trắng ⇒ nhiều dấu cách liên tiếp vẫn chỉ tính một lần: 3 từ.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #11 =====
+  {
+    id: 'oq13-unicode-length', topic: 'Chuỗi',
+    code: `const e = '\\u{1F44D}';\nconsole.log(e.length, [...e].length, Array.from(e).length);`,
+    options: ['1 1 1', '2 1 1', '2 2 2', '1 2 2'], answer: 1,
+    explain: 'length đếm theo đơn vị UTF-16 nên emoji tính là 2; spread/Array.from duyệt theo ký tự thật (code point) nên ra 1. Cắt chuỗi bằng slice dễ làm vỡ emoji.',
+  },
+  {
+    id: 'oq13-forin-string', topic: 'Vòng lặp',
+    code: `const a = ['x', 'y'];\nfor (const i in a) console.log(typeof i, i + 1);\nfor (const v of a) console.log(v);`,
+    options: ['string 01\nstring 11\nx\ny', 'number 1\nnumber 2\nx\ny', 'string 1\nstring 2\nx\ny', 'number 01\nnumber 11\nx\ny'], answer: 0,
+    explain: 'for…in duyệt KHOÁ và khoá luôn là chuỗi ⇒ "0" + 1 = "01". Muốn duyệt giá trị thì dùng for…of (hoặc entries() nếu cần cả chỉ số).',
+  },
+  {
+    id: 'oq13-set-string', topic: 'Set',
+    code: `console.log(new Set('hello').size, [...new Set('hello')].join(''));`,
+    options: ['5 hello', '4 helo', '4 hello', '5 helo'], answer: 1,
+    explain: 'Set nhận chuỗi như một iterable ký tự và khử trùng lặp (bỏ chữ "l" thứ hai) ⇒ còn h, e, l, o.',
+  },
+  {
+    id: 'oq13-mixed-arith', topic: 'Ép kiểu',
+    code: `console.log('10' - '4' - '3' - 2 + '5');`,
+    options: ['15', '1', '5', '105'], answer: 0,
+    explain: 'Phép − ép hết về số: 10−4−3−2 = 1. Nhưng phép + cuối gặp chuỗi nên NỐI: "1" + "5" = "15".',
+  },
+  {
+    id: 'oqi-unique-chars', topic: 'Đoán input · Set', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => new Set(s).size;\nconsole.log(f(INPUT));`,
+    out: '4',
+    options: ['"hello"', '"abc"', '"aaaa"', '"nodejs"'], answer: 0,
+    explain: 'Đếm số KÝ TỰ KHÁC NHAU: "hello" có h, e, l, o = 4; "nodejs" có 6; "aaaa" chỉ có 1.',
+  },
+  {
+    id: 'oqi-at-minus-2', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.at(-2);\nconsole.log(f(INPUT));`,
+    out: 'b',
+    options: ['["a", "b", "c"]', '["x", "y", "z"]', '["a", "b"]', '["p", "q", "r", "s"]'], answer: 0,
+    explain: 'at(-2) lấy phần tử ÁP CHÓT (đếm ngược từ cuối) ⇒ ["a","b","c"] cho "b"; ["a","b"] cho "a"; mảng 4 phần tử cho "r".',
+  },
+  {
+    id: 'oqi-hex', topic: 'Đoán input · hệ 16', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => n.toString(16);\nconsole.log(f(INPUT));`,
+    out: 'ff',
+    options: ['255', '15', '16', '160'], answer: 0,
+    explain: 'ff hệ 16 = 15 × 16 + 15 = 255. (15 → "f", 16 → "10", 160 → "a0".)',
+  },
+  {
+    id: 'oqi-capitalize', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s[0].toUpperCase() + s.slice(1).toLowerCase();\nconsole.log(f(INPUT));`,
+    out: 'Nodejs',
+    options: ['"NODEJS"', '"Node js"', '"nodeJS "', '"node-js"'], answer: 0,
+    explain: 'Viết hoa chữ đầu, hạ thường phần còn lại ⇒ "NODEJS" thành "Nodejs"; chuỗi có dấu cách hay gạch nối vẫn giữ nguyên ký tự đó.',
+  },
 ];
