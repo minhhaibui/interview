@@ -673,4 +673,62 @@ window.OUTPUT_QUIZ = [
     ], answer: 0,
     explain: 'Lọc từ 18 tuổi rồi lấy tên theo ĐÚNG thứ tự mảng: An (20) và Binh (18) qua, Bo (15) bị loại.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #1 =====
+  {
+    id: 'oq3-array-ref-arg', topic: 'Tham chiếu',
+    code: `function f(a) { a = [9]; }\nfunction g(a) { a.push(9); }\nconst x = [1], y = [1];\nf(x); g(y);\nconsole.log(x.join(), y.join());`,
+    options: ['9 1,9', '1 1,9', '9 1', '1 1'], answer: 1,
+    explain: 'GÁN LẠI tham số chỉ đổi biến cục bộ (x không đổi); còn push SỬA chính object mà cả hai cùng trỏ tới (y thấy).',
+  },
+  {
+    id: 'oq3-nullish-vs-or', topic: 'Toán tử',
+    code: `const a = 0, b = '';\nconsole.log(a || 10, a ?? 10, b || 'x', b ?? 'x');`,
+    options: ['10 0 x ', '0 0 x x', '10 10 x x', '10 0 x x'], answer: 0,
+    explain: '|| thay MỌI giá trị falsy (0, ""), còn ?? chỉ thay null/undefined ⇒ 0 và "" được giữ nguyên (chuỗi rỗng in ra trống).',
+  },
+  {
+    id: 'oq3-async-parallel', topic: 'async/await',
+    code: `const wait = (ms, v) => new Promise(r => setTimeout(() => r(v), ms));\n(async () => {\n  const [a, b] = await Promise.all([wait(20, 'a'), wait(10, 'b')]);\n  console.log(a + b);\n})();\nconsole.log('go');`,
+    options: ['go\nab', 'go\nba', 'ab\ngo', 'go\na\nb'], answer: 0,
+    explain: 'Promise.all trả kết quả theo ĐÚNG THỨ TỰ mảng đầu vào (không theo thứ tự hoàn thành) ⇒ "a" + "b".',
+  },
+  {
+    id: 'oq3-catch-return', topic: 'Promise',
+    code: `Promise.reject('E')\n  .catch(e => 'fixed:' + e)\n  .then(v => console.log('then', v))\n  .catch(() => console.log('never'));`,
+    options: ['then fixed:E', 'never', 'then E', 'then undefined'], answer: 0,
+    explain: '.catch trả về giá trị bình thường ⇒ chuỗi promise trở lại trạng thái fulfilled và .then nhận giá trị đó.',
+  },
+  {
+    id: 'oqi-slice-neg', topic: 'Đoán input · slice', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.slice(-3);\nconsole.log(f(INPUT));`,
+    out: 'log',
+    options: ['"backlog"', '"logger"', '"login"', '"catalog "'], answer: 0,
+    explain: 'slice(-3) lấy 3 ký tự CUỐI: "backlog" → "log"; "logger" → "ger"; "login" → "gin"; chuỗi có dấu cách cuối thì lấy cả dấu cách.',
+  },
+  {
+    id: 'oqi-obj-keys-len', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => Object.keys(o).length;\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ['{ a: 1, b: 2 }', '{ a: 1 }', '{ a: 1, b: 2, c: 3 }', '{}'], answer: 0,
+    explain: 'Object.keys đếm số KHOÁ (không phải giá trị) ⇒ cần object có đúng 2 thuộc tính.',
+  },
+  {
+    id: 'oqi-join-map', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.map(x => x * 2).join('|');\nconsole.log(f(INPUT));`,
+    out: '2|4|6',
+    options: ['[1, 2, 3]', '[2, 4, 6]', '[1, 2, 3, 4]', '[3, 2, 1]'], answer: 0,
+    explain: 'Nhân đôi từng phần tử rồi nối bằng "|": [1,2,3] → 2|4|6. [2,4,6] sẽ ra 4|8|12.',
+  },
+  {
+    id: 'oqi-trim-length', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.trim().length;\nconsole.log(f(INPUT));`,
+    out: '4',
+    options: ['"  code  "', '"code!"', '"  ab  "', '"c o d e"'], answer: 0,
+    explain: 'trim() bỏ khoảng trắng hai ĐẦU (không bỏ ở giữa) ⇒ "  code  " còn 4 ký tự; "c o d e" vẫn 7 ký tự.',
+  },
 ];
