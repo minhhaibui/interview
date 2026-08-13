@@ -1880,4 +1880,54 @@ window.IQ_QUESTIONS = [
     explain: 'Khoảng cách nhân đôi: +2, +4, +8, +16, +32 ⇒ 35 + 32 = 67.' },
   { id: 'n16-2', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 100, 97, 91, 82, 70, ?', options: ['52', '55', '58', '60'], answer: 1,
     explain: 'Trừ dần 3, 6, 9, 12, 15 ⇒ 70 − 15 = 55.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #15 — ưu tiên DẠNG MỚI =====
+  gOpQ('gx25', 2, '010/101/010', '110/010/011', 'xor', 'XOR: ô trùng nhau triệt tiêu, ô lệch nhau thì giữ.'),
+  // Chỗ trống nằm GIỮA chuỗi (không phải cuối) — phải suy cả hai chiều
+  figQ({
+    id: 'mid1', d: 3, q: 'Hình nào điền vào chỗ trống GIỮA chuỗi?',
+    fig: figRow([gSvg('100/000/000'), gSvg('110/000/000'), '?', gSvg('111/100/000'), gSvg('111/110/000')]),
+    opts: [gSvg('111/000/000'), gSvg('110/100/000'), gSvg('111/111/000'), gSvg('100/100/000')],
+    explain: 'Mỗi bước tô thêm đúng 1 ô theo thứ tự đọc: 1 → 2 → 3 → 4 → 5 ô ⇒ chỗ trống là lưới tô 3 ô hàng đầu.',
+  }),
+  figQ({
+    id: 'mid2', d: 3, q: 'Hình nào điền vào chỗ trống GIỮA chuỗi?',
+    fig: figRow([iqSvg(rot(ARROW, 0)), iqSvg(rot(ARROW, 90)), '?', iqSvg(rot(ARROW, 270))]),
+    opts: [iqSvg(rot(ARROW, 180)), iqSvg(rot(ARROW, 45)), iqSvg(rot(ARROW, 0)), iqSvg(rot(ARROW, 90))],
+    explain: 'Mũi tên xoay đều 90° mỗi bước: 0° → 90° → 180° → 270° ⇒ chỗ trống là mũi tên chúc xuống.',
+  }),
+  // Ô "?" nằm GIỮA ma trận thay vì góc dưới-phải
+  figQ({
+    id: 'mx22', d: 3, q: 'Ô dấu ? ở GIỮA ma trận là hình nào?',
+    fig: figGrid([sCell('c', 0), sCell('c', 1), sCell('c', 2), sCell('s', 0), '?', sCell('s', 2), sCell('t', 0), sCell('t', 1), sCell('t', 2)]),
+    opts: [sCell('s', 1), sCell('s', 0), sCell('c', 1), sCell('t', 1)],
+    explain: 'Hàng quyết định HÌNH (tròn – vuông – tam giác), cột quyết định CÁCH TÔ (rỗng – chấm – đặc) ⇒ ô giữa là hình vuông có chấm.',
+  }),
+  // Xúc xắc: tổng hai mặt đối diện luôn bằng 7
+  figQ({
+    id: 'dice1', d: 2, q: 'Trên con xúc xắc, tổng số chấm hai mặt ĐỐI DIỆN luôn bằng 7. Mặt đối diện với mặt dưới đây là mặt nào?',
+    fig: figRow([iqSvg(dots(2))]),
+    opts: [iqSvg(dots(5)), iqSvg(dots(4)), iqSvg(dots(6)), iqSvg(dots(2))],
+    explain: '7 − 2 = 5 ⇒ mặt đối diện có 5 chấm.',
+  }),
+  { id: 'dice2', category: '🖼️ Suy luận hình', d: 3, q: 'Xúc xắc có tổng hai mặt đối diện bằng 7. Hình bên là mặt TRÊN (2 chấm) và mặt TRƯỚC (3 chấm). Tổng số chấm của mặt DƯỚI và mặt SAU là bao nhiêu?',
+    fig: figRow([iqSvg(dots(2)), iqSvg(dots(3))]),
+    options: ['5', '7', '9', '11'], answer: 2,
+    explain: 'Mặt dưới = 7 − 2 = 5; mặt sau = 7 − 3 = 4 ⇒ tổng 5 + 4 = 9.' },
+  // Cân bằng bằng hình (thay số bằng hình)
+  { id: 'bal1', category: '🖼️ Suy luận hình', d: 3, q: 'Từ hai đẳng thức bên dưới, MỘT hình tròn bằng bao nhiêu hình tam giác?',
+    fig: figRow([sCell('c', 2), sCell('c', 2), numCell('='), sCell('s', 2), sCell('s', 2), sCell('s', 2)]) +
+      figRow([sCell('s', 2), numCell('='), sCell('t', 2), sCell('t', 2)]),
+    options: ['2 tam giác', '3 tam giác', '4 tam giác', '6 tam giác'], answer: 1,
+    explain: '2 tròn = 3 vuông = 3 × 2 tam giác = 6 tam giác ⇒ 1 tròn = 3 tam giác.' },
+  { id: 'nm21', category: '🖼️ Suy luận hình', d: 3, q: 'Số ở ô dấu ? (nằm GIỮA ma trận) là bao nhiêu?',
+    fig: figGrid([numCell(2), numCell(4), numCell(8), numCell(3), '?', numCell(18), numCell(5), numCell(7), numCell(35)]),
+    options: ['5', '6', '9', '15'], answer: 1,
+    explain: 'Cột 3 = cột 1 × cột 2 (2×4=8, 5×7=35) ⇒ hàng giữa: 3 × ? = 18 ⇒ ? = 6.' },
+  { id: 'dl66', category: '🧠 Logic', d: 2, q: 'Có bao nhiêu cách xếp 3 người vào 3 ghế khác nhau?', options: ['3', '6', '9', '27'], answer: 1,
+    explain: 'Hoán vị của 3 phần tử: 3! = 3 × 2 × 1 = 6 cách.' },
+  { id: 'dl67', category: '➗ Toán nhanh', d: 2, q: 'Một job chạy mất 45 phút. Tối ưu giúp giảm 40% thời gian. Job còn chạy bao lâu?', options: ['18 phút', '25 phút', '27 phút', '30 phút'], answer: 2,
+    explain: 'Còn 60% thời gian cũ: 45 × 0,6 = 27 phút.' },
+  { id: 'n17-1', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 2, 5, 9, 14, 20, ?', options: ['25', '26', '27', '28'], answer: 2,
+    explain: 'Khoảng cách tăng đều 3, 4, 5, 6, 7 ⇒ 20 + 7 = 27.' },
 ];

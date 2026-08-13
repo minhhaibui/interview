@@ -1490,4 +1490,62 @@ window.OUTPUT_QUIZ = [
     options: ['[1, 1, 2, 3]', '[1, 2, 3, 4]', '[5, 5]', '[7, 8, 9, 10, 11]'], answer: 0,
     explain: 'Chỉ giữ lần xuất hiện ĐẦU TIÊN của mỗi giá trị rồi đếm ⇒ cần đúng 3 giá trị phân biệt.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #15 =====
+  {
+    id: 'oq17-parsefloat-number', topic: 'Ép kiểu',
+    code: `console.log(parseFloat('3.14.15'), Number('3.14.15'), parseInt('12abc'), Number('12abc'));`,
+    options: ['3.14 NaN 12 NaN', '3.14 3.14 12 12', 'NaN NaN NaN NaN', '3.1415 NaN 12 NaN'], answer: 0,
+    explain: 'parseFloat/parseInt đọc tới khi gặp ký tự không hợp lệ rồi DỪNG; Number() yêu cầu TOÀN BỘ chuỗi hợp lệ, sai một ký tự là NaN.',
+  },
+  {
+    id: 'oq17-replace-fn', topic: 'Chuỗi',
+    code: `console.log('a-b-c'.replace('-', '+'), 'a-b-c'.replaceAll('-', '+'), 'abc'.replace(/b/, m => m.toUpperCase()));`,
+    options: ['a+b+c a+b+c aBc', 'a+b-c a+b+c aBc', 'a+b-c a+b-c abc', 'a+b-c a+b+c abc'], answer: 1,
+    explain: 'replace với chuỗi chỉ đổi lần ĐẦU TIÊN (muốn hết thì replaceAll hoặc regex /g); tham số thứ hai có thể là HÀM nhận đoạn khớp.',
+  },
+  {
+    id: 'oq17-splice-mutates', topic: 'Mảng',
+    code: `const a = [1, 2, 3];\nconst b = [1, 2, 3];\na.splice(1);\nb.slice(1);\nconsole.log(a.join(), a.length, b.join());`,
+    options: ['1 1 1,2,3', '2,3 2 2,3', '1 1 2,3', '1,2,3 3 1,2,3'], answer: 0,
+    explain: 'splice SỬA mảng gốc (cắt từ index 1 tới hết còn [1]); slice chỉ tạo mảng mới nên b không đổi.',
+  },
+  {
+    id: 'oq17-object-assign', topic: 'Object',
+    code: `const t = Object.assign({}, { a: 1, n: { x: 1 } }, { a: 2 });\nt.n.x = 99;\nconsole.log(t.a, JSON.stringify(t.n));`,
+    options: ['1 {"x":1}', '2 {"x":1}', '2 {"x":99}', '1 {"x":99}'], answer: 2,
+    explain: 'Nguồn sau ghi đè nguồn trước (a = 2), nhưng object lồng chỉ được copy THAM CHIẾU nên sửa t.n.x cũng đổi object gốc.',
+  },
+  {
+    id: 'oqi-replace-first', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.replace('a', 'b');\nconsole.log(f(INPUT));`,
+    out: 'bba',
+    options: ['"aba"', '"bbb"', '"aab"', '"abb"'], answer: 0,
+    explain: 'Chỉ đổi chữ "a" ĐẦU TIÊN thành "b": "aba" → "bba"; "aab" → "bab"; "abb" → "bbb".',
+  },
+  {
+    id: 'oqi-slice-last2', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.slice(-2).join('');\nconsole.log(f(INPUT));`,
+    out: 'cd',
+    options: ['["a", "b", "c", "d"]', '["c", "d", "e"]', '["c", "d", "a", "b"]', '["d", "c"]'], answer: 0,
+    explain: 'slice(-2) lấy HAI phần tử cuối ⇒ mảng phải kết thúc bằng c, d đúng thứ tự đó.',
+  },
+  {
+    id: 'oqi-num-length', topic: 'Đoán input · số học', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => String(n).length;\nconsole.log(f(INPUT));`,
+    out: '3',
+    options: ['100', '99', '1000', '7'], answer: 0,
+    explain: 'Đếm số CHỮ SỐ: 100 có 3 chữ số; 99 có 2; 1000 có 4.',
+  },
+  {
+    id: 'oqi-sort-first', topic: 'Đoán input · sort', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => [...a].sort()[0];\nconsole.log(f(INPUT));`,
+    out: 'apple',
+    options: ['["banana", "apple", "cherry"]', '["kiwi", "banana"]', '["cherry", "banana"]', '["apple", "ant"]'], answer: 0,
+    explain: 'sort() xếp theo bảng chữ cái rồi lấy phần tử đầu ⇒ chuỗi nhỏ nhất phải là "apple" ("ant" còn nhỏ hơn).',
+  },
 ];
