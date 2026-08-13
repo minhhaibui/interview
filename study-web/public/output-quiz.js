@@ -2650,4 +2650,62 @@ window.OUTPUT_QUIZ = [
     options: ['[5, 6, 7]', '[7, 6, 7]', '[5, 6]', '[7, 7, 7]'], answer: 0,
     explain: 'Lấy phần tử cuối rồi tìm vị trí XUẤT HIỆN ĐẦU TIÊN của nó ⇒ [5,6,7] cho 2, còn [7,6,7] cho 0.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #35 =====
+  {
+    id: 'oq37-array-of', topic: 'Mảng',
+    code: `console.log(Array.of(3).length, Array(3).length, Array.of(1, 2).join(), Array(1, 2).join());`,
+    options: ['1 3 1,2 1,2', '3 3 1,2 1,2', '1 1 1,2 1,2', '3 1 1,2 1,2'], answer: 0,
+    explain: 'Array(3) tạo mảng RỖNG dài 3, còn Array.of(3) tạo mảng [3] — Array.of sinh ra để tránh đúng cái bẫy này.',
+  },
+  {
+    id: 'oq37-split-limit', topic: 'Chuỗi',
+    code: `console.log('a-b-c'.split('-', 2).join(), 'a-b-c'.split('-').slice(0, 2).join(), 'a-b-c'.split('-', 0).length);`,
+    options: ['a,b a,b 0', 'a,b,c a,b 0', 'a,b a,b 1', 'a a,b 0'], answer: 0,
+    explain: 'Tham số thứ hai của split là GIỚI HẠN số phần tử (không phải vị trí cắt); split(x, 0) trả mảng rỗng.',
+  },
+  {
+    id: 'oq37-circular-json', topic: 'JSON',
+    code: `const o = { a: 1 };\no.self = o;\ntry {\n  JSON.stringify(o);\n} catch (e) {\n  console.log(e.constructor.name, e instanceof TypeError);\n}`,
+    options: ['RangeError false', 'TypeError true', 'SyntaxError false', 'Error true'], answer: 1,
+    explain: 'Cấu trúc VÒNG khiến JSON.stringify ném TypeError — gặp nhiều khi log object có tham chiếu ngược (req/res, node cây).',
+  },
+  {
+    id: 'oq37-every-isinteger', topic: 'Số học',
+    code: `console.log([1, 2].every(Number.isInteger), [1, '2'].every(Number.isInteger), [1, 2.5].every(Number.isInteger));`,
+    options: ['true true false', 'true false false', 'true false true', 'false false false'], answer: 1,
+    explain: 'Number.isInteger KHÔNG ép kiểu: chuỗi "2" trả false; 2.5 cũng false vì không phải số nguyên.',
+  },
+  {
+    id: 'oqi-split-limit-in', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.split('-', 2).join('');\nconsole.log(f(INPUT));`,
+    out: 'ab',
+    options: ['"a-b-c"', '"ab-c"', '"x-b-c-d"', '"a-bc"'], answer: 0,
+    explain: 'Chỉ lấy 2 phần đầu rồi nối: "a-b-c" → "a" + "b" = "ab".',
+  },
+  {
+    id: 'oqi-array-of-len', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => Array.of(n).length + n;\nconsole.log(f(INPUT));`,
+    out: '4',
+    options: ['3', '4', '1', '0'], answer: 0,
+    explain: 'Array.of(n) luôn có length = 1 ⇒ kết quả là 1 + n = 4 khi n = 3.',
+  },
+  {
+    id: 'oqi-keys-sorted-json', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => JSON.stringify(Object.keys(o).sort());\nconsole.log(f(INPUT));`,
+    out: '["a","b"]',
+    options: ['{ b: 1, a: 2 }', '{ a: 1 }', '{ a: 1, c: 2 }', '{ a: 1, b: 2, c: 3 }'], answer: 0,
+    explain: 'Lấy danh sách khoá rồi sắp xếp ⇒ chỉ cần đúng bộ khoá a và b, thứ tự khai báo không quan trọng.',
+  },
+  {
+    id: 'oqi-filter-int', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.filter(Number.isInteger).length;\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ["[1, 2.5, 3, '4']", '[1, 2, 3]', "['1', '2']", '[1.1, 2.2]'], answer: 0,
+    explain: 'Chỉ đếm SỐ NGUYÊN thật: 1 và 3 (2.5 là số thực, "4" là chuỗi).',
+  },
 ];

@@ -2729,4 +2729,41 @@ window.IQ_QUESTIONS = [
     explain: 'Người đầu ra gì cũng được; hai người sau phải trùng: (1/3) × (1/3) = 1/9.' },
   { id: 'n36-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 3, 8, 18, 38, 78, ?', options: ['118', '148', '158', '168'], answer: 2,
     explain: 'Quy luật × 2 + 2: 78 × 2 + 2 = 158.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #35 =====
+  // Hình mẫu sau khi XOÁ ĐÚNG MỘT ô
+  figQ({
+    id: 'del1', d: 2, q: 'Hình nào là hình mẫu bên dưới sau khi XOÁ ĐÚNG MỘT ô?',
+    fig: figRow([gSvg('110/011/010')]),
+    opts: [gSvg('110/011/000'), gSvg('110/011/001'), gSvg('111/011/010'), gSvg('100/001/010')],
+    explain: 'Hình mẫu tô 5 ô; đáp án phải tô đúng 4 ô và các ô đó đều nằm trong hình mẫu (chỉ bớt đi 1 ô, không thêm, không dời).',
+  }),
+  // Chuỗi DAO ĐỘNG hai trạng thái nhưng mỗi lần thêm 1 ô
+  figQ({
+    id: 'osc1', d: 3, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([gSvg('100/000/000'), gSvg('010/010/000'), gSvg('100/000/101'), '?']),
+    opts: [gSvg('010/010/101'), gSvg('100/000/000'), gSvg('111/000/000'), gSvg('010/010/010')],
+    explain: 'Cột được tô đổi qua lại giữa cột TRÁI và cột GIỮA, đồng thời mỗi bước thêm 1 ô: 1 → 2 → 3 → 4 ô.',
+  }),
+  // Xáo trộn thứ tự: hình nào đứng ĐẦU nếu xếp thành chuỗi hợp lý
+  { id: 'orderseq', category: '🖼️ Suy luận hình', d: 3, q: 'Bốn hình dưới đây bị xáo trộn. Nếu xếp lại thành một chuỗi hợp lý thì hình nào đứng ĐẦU?',
+    fig: figRow([numCell(1), numCell(2), numCell(3), numCell(4)]) +
+      figRow([gSvg('111/110/000'), gSvg('100/000/000'), gSvg('111/000/000'), gSvg('110/000/000')]),
+    options: ['Hình 1', 'Hình 2', 'Hình 3', 'Hình 4'], answer: 1,
+    explain: 'Sắp theo số ô tăng dần 1 → 2 → 3 → 5: hình 2 (1 ô) đứng đầu, rồi hình 4, hình 3, cuối là hình 1.' },
+  gOpQ('gx45', 3, '110/101/011', '011/011/101', 'xor', 'XOR: bỏ ô trùng nhau, giữ ô chỉ một bên tô.'),
+  { id: 'nm41', category: '🖼️ Suy luận hình', d: 2, q: 'Số ở ô dấu ? là bao nhiêu?',
+    fig: figGrid([numCell(2), numCell(5), numCell(9), numCell(4), numCell(8), numCell(13), numCell(6), numCell(11), '?'], 3),
+    options: ['15', '16', '17', '18'], answer: 2,
+    explain: 'Mỗi CỘT là cấp số cộng: cột 1 tăng 2, cột 2 tăng 3, cột 3 tăng 4 ⇒ 13 + 4 = 17.' },
+  { id: 'dl127', category: '🧠 Logic', d: 3, q: 'Bốn người A, B, C, D xếp hàng. D đứng cuối. A đứng NGAY TRƯỚC B. Cả A và B đều không đứng đầu. Ai đứng đầu?', options: ['A', 'B', 'C', 'D'], answer: 2,
+    explain: 'D ở vị trí 4. A ngay trước B mà A không được đứng đầu ⇒ A ở 2, B ở 3. Vị trí 1 chỉ còn C.' },
+  { id: 'dl128', category: '🧠 Logic', d: 2, q: 'Nếu 2 người thợ xây 2 bức tường trong 2 ngày thì 6 người thợ xây 6 bức tường trong bao lâu?', options: ['2 ngày', '3 ngày', '6 ngày', '18 ngày'], answer: 0,
+    explain: 'Mỗi thợ xây 1 bức trong 2 ngày ⇒ 6 thợ xây 6 bức vẫn mất đúng 2 ngày.' },
+  { id: 'dl129', category: '➗ Toán nhanh', d: 3, q: 'Một hệ thống nhận 3.000 request/phút, mỗi request ghi 3 dòng log. Log giữ 7 ngày. Tổng số dòng log lưu trữ khoảng bao nhiêu?', options: ['9 triệu', '90 triệu', '900 triệu', '9 tỉ'], answer: 1,
+    explain: '3.000 × 3 = 9.000 dòng/phút × 1.440 phút × 7 ngày ≈ 90,7 triệu dòng.' },
+  { id: 'dl130', category: '🎲 Xác suất', d: 3, q: 'Rút ngẫu nhiên 1 lá từ bộ 52 lá. Xác suất được lá ĐỎ hoặc lá Hình (J, Q, K) là bao nhiêu?', options: ['8/13', '17/26', '32/52', '5/13'], answer: 0,
+    explain: '26 lá đỏ + 12 lá hình − 6 lá vừa đỏ vừa hình = 32 lá ⇒ 32/52 = 8/13.' },
+  { id: 'n37-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 6, 21, 66, ?', options: ['132', '186', '201', '216'], answer: 2,
+    explain: 'Quy luật × 3 + 3: 66 × 3 + 3 = 201.' },
 ];
