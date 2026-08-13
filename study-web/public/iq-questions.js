@@ -2455,4 +2455,44 @@ window.IQ_QUESTIONS = [
     explain: '0,99³ = 0,970299 ≈ 97,03% — càng nhiều mắt xích nối tiếp thì độ tin cậy càng giảm.' },
   { id: 'n29-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 4, 10, 28, 82, ?', options: ['164', '226', '244', '246'], answer: 2,
     explain: 'Quy luật × 3 − 2: 82 × 3 − 2 = 244.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #28 =====
+  // Phép LẬT THEO ĐƯỜNG CHÉO (transpose) — phép biến hình mới, khác xoay và lật gương
+  figQ({
+    id: 'transp1', d: 3, q: 'Lật hình bên dưới qua ĐƯỜNG CHÉO CHÍNH (hàng thành cột) được hình nào?',
+    fig: figRow([gSvg('110/010/100')]),
+    opts: [gSvg(gFlip(gRot('110/010/100'))), gSvg('110/010/100'), gSvg(gRot('110/010/100')), gSvg(gFlip('110/010/100'))],
+    explain: 'Lật qua đường chéo chính: ô ở (hàng r, cột c) đổi sang (hàng c, cột r) — khác hẳn xoay 90° hay lật gương.',
+  }),
+  // Đếm HÌNH CHỮ NHẬT tạo bởi các ô được tô
+  { id: 'rect1', category: '🖼️ Suy luận hình', d: 3, q: 'Các ô được tô bên dưới tạo thành bao nhiêu HÌNH CHỮ NHẬT (mọi kích thước, kể cả hình vuông)?',
+    fig: figRow([gSvg('110/110/000')], 'lg'),
+    options: ['4', '6', '9', '12'], answer: 2,
+    explain: '4 hình 1×1 + 2 hình 1×2 (hai hàng) + 2 hình 2×1 (hai cột) + 1 hình 2×2 = 9.' },
+  // Hai chuỗi song song, mỗi chuỗi một quy luật — chọn CẶP ô cuối
+  figQ({
+    id: 'twoseq', d: 3, q: 'Hai hàng là hai chuỗi ĐỘC LẬP. Cặp hình điền vào hai ô ? (hàng trên trước, hàng dưới sau) là gì?',
+    fig: figRow([gSvg('100/000/000'), gSvg('110/000/000'), gSvg('111/000/000'), '?']) +
+      figRow([iqSvg(rot(ARROW, 0)), iqSvg(rot(ARROW, 90)), iqSvg(rot(ARROW, 180)), '?']),
+    opts: [
+      `<span style="display:flex;gap:6px">${gSvg('111/100/000')}${iqSvg(rot(ARROW, 270))}</span>`,
+      `<span style="display:flex;gap:6px">${iqSvg(rot(ARROW, 270))}${gSvg('111/100/000')}</span>`,
+      `<span style="display:flex;gap:6px">${gSvg('111/110/000')}${iqSvg(rot(ARROW, 270))}</span>`,
+      `<span style="display:flex;gap:6px">${gSvg('111/100/000')}${iqSvg(rot(ARROW, 0))}</span>`,
+    ],
+    explain: 'Hàng trên tô thêm 1 ô mỗi bước (1, 2, 3, 4 ô); hàng dưới xoay 90° mỗi bước (0°, 90°, 180°, 270°). Phải đúng CẢ HAI và đúng thứ tự.',
+  }),
+  gOpQ('gx38', 2, '011/110/010', '110/010/110', 'or', 'Hợp hai lưới: gộp mọi ô được tô.'),
+  { id: 'nm34', category: '🖼️ Suy luận hình', d: 2, q: 'Bảng 3×2: số ở ô dấu ? là bao nhiêu?',
+    fig: figGrid([numCell(4), numCell(7), numCell(9), numCell(9), numCell(7), '?'], 3),
+    options: ['4', '5', '7', '9'], answer: 0,
+    explain: 'Hàng dưới là hàng trên viết ĐẢO NGƯỢC (9, 7, 4) ⇒ ô cuối là 4.' },
+  { id: 'dl104', category: '🧠 Logic', d: 3, q: 'Có 5 mắt xích rời, mỗi mắt 3 vòng. Mở 1 vòng tốn 2k, hàn lại tốn 3k. Nối 5 mắt thành 1 dây kín rẻ nhất hết bao nhiêu?', options: ['15k', '20k', '25k', '30k'], answer: 0,
+    explain: 'Tháo hẳn 1 mắt (3 vòng) ra làm khớp nối 4 mắt còn lại thành vòng kín: 3 × (2k + 3k) = 15k, rẻ hơn mở 5 vòng riêng lẻ.' },
+  { id: 'dl105', category: '🎲 Xác suất', d: 2, q: 'Một hộp có 10 sản phẩm, 2 cái lỗi. Lấy ngẫu nhiên 1 cái, xác suất KHÔNG lỗi là bao nhiêu?', options: ['1/5', '2/5', '3/5', '4/5'], answer: 3,
+    explain: '8 sản phẩm tốt trên tổng 10 ⇒ 8/10 = 4/5.' },
+  { id: 'dl106', category: '➗ Toán nhanh', d: 3, q: 'Một API p99 = 800ms, p50 = 100ms. Gọi song song 10 request và CHỜ TẤT CẢ, thời gian chờ có xu hướng gần với giá trị nào?', options: ['100ms', '200ms', '800ms', '8 giây'], answer: 2,
+    explain: 'Chờ tất cả nghĩa là chờ request CHẬM NHẤT; với 10 request thì khả năng cao có một cái rơi vào đuôi p90–p99 ⇒ gần 800ms.' },
+  { id: 'n30-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 3, 6, 12, 21, 33, ?', options: ['45', '48', '51', '54'], answer: 1,
+    explain: 'Khoảng cách tăng đều 3, 6, 9, 12, 15 ⇒ 33 + 15 = 48.' },
 ];

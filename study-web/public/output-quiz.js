@@ -2244,4 +2244,62 @@ window.OUTPUT_QUIZ = [
     options: ['7', '8', '4', '15'], answer: 0,
     explain: 'Đếm số bit 1: 7 = 111₂ có 3 bit 1; 8 = 1000₂ chỉ có 1; 15 = 1111₂ có 4.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #28 =====
+  {
+    id: 'oq30-flatmap-filter', topic: 'Mảng',
+    code: `console.log([1, 2, 3].flatMap(x => (x === 2 ? [] : [x])).join(), [1, 2].flatMap(x => [x, x * 10]).join());`,
+    options: ['1,3 1,10,2,20', '1,,3 1,10,2,20', '1,3 1,2,10,20', '1,2,3 1,10,2,20'], answer: 0,
+    explain: 'Trả về mảng RỖNG trong flatMap = loại phần tử đó ⇒ flatMap làm được cả filter lẫn map trong một lượt.',
+  },
+  {
+    id: 'oq30-replace-global-fn', topic: 'Chuỗi',
+    code: `console.log('abc'.replace(/./g, c => c + c), 'a1b2'.replace(/\\d/g, d => d * 2));`,
+    options: ['aabbcc a2b4', 'abc a1b2', 'aabbcc a1b2', 'aa a2b4'], answer: 0,
+    explain: 'Cờ /g thay MỌI khớp; hàm thay thế nhận đoạn khớp và trả về chuỗi mới (số bị ép kiểu khi nhân).',
+  },
+  {
+    id: 'oq30-arrayfrom-length', topic: 'Mảng',
+    code: `console.log(Array.from({ length: 3 }).join('-') + '|', Array.from({ length: 3 }, () => 'x').join('-'));`,
+    options: ['--| x-x-x', '| x-x-x', '---| x-x-x', 'undefined-undefined-undefined| x-x-x'], answer: 0,
+    explain: 'Array.from({length:3}) tạo [undefined, undefined, undefined]; join biến undefined thành chuỗi rỗng nên chỉ còn hai dấu "-".',
+  },
+  {
+    id: 'oq30-null-instanceof', topic: 'typeof',
+    code: `console.log(typeof null === 'object', null instanceof Object, ({}) instanceof Object);`,
+    options: ['true true true', 'true false true', 'false false true', 'true false false'], answer: 1,
+    explain: 'typeof null trả "object" (bug lịch sử) nhưng null KHÔNG phải object thật nên instanceof là false — muốn kiểm tra object thật thì dùng `x !== null && typeof x === "object"`.',
+  },
+  {
+    id: 'oqi-flatmap-keep', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.flatMap(x => (x > 1 ? [x] : [])).join();\nconsole.log(f(INPUT));`,
+    out: '2,3',
+    options: ['[1, 2, 3]', '[2, 3, 4]', '[0, 1]', '[3, 2]'], answer: 0,
+    explain: 'flatMap giữ phần tử > 1 theo ĐÚNG thứ tự ⇒ [1,2,3] cho "2,3"; [3,2] lại cho "3,2".',
+  },
+  {
+    id: 'oqi-double-letter', topic: 'Đoán input · regex', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.replace(/(.)\\1/g, '#');\nconsole.log(f(INPUT));`,
+    out: 'a#c',
+    options: ['"abbc"', '"abc"', '"aabc"', '"abcc"'], answer: 0,
+    explain: '(.)\\1 khớp HAI ký tự giống nhau liền nhau ⇒ "bb" trong "abbc" thành "#". "aabc" cho "#bc".',
+  },
+  {
+    id: 'oqi-keys-times-sum', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => Object.keys(o).length * Object.values(o).reduce((a, b) => a + b, 0);\nconsole.log(f(INPUT));`,
+    out: '6',
+    options: ['{ a: 1, b: 2 }', '{ a: 1, b: 1 }', '{ a: 5 }', '{ a: 2, b: 2 }'], answer: 0,
+    explain: 'Số khoá × tổng giá trị: 2 × (1+2) = 6. Các lựa chọn kia ra 4, 5 và 8.',
+  },
+  {
+    id: 'oqi-longest-word2', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => Math.max(...a.map(w => w.length));\nconsole.log(f(INPUT));`,
+    out: '5',
+    options: ['["api", "redis"]', '["api", "sql"]', '["database"]', '["a"]'], answer: 0,
+    explain: 'Lấy độ dài LỚN NHẤT: "redis" = 5. Các lựa chọn kia ra 3, 8 và 1.',
+  },
 ];
