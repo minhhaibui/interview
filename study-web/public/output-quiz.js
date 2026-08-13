@@ -1896,4 +1896,62 @@ window.OUTPUT_QUIZ = [
     options: ['["a", "b", "c"]', '["b", "a"]', '["x", "y"]', '["a", "c", "b"]'], answer: 0,
     explain: 'Trả về VỊ TRÍ của "b" ⇒ phải nằm ở index 1; không tìm thấy thì trả −1.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #22 =====
+  {
+    id: 'oq24-foreach-mutate', topic: 'Mảng',
+    code: `const a = [1, 2, 3];\nlet seen = 0;\na.forEach((x, i, arr) => { seen++; if (i === 0) arr.push(99); });\nconsole.log(seen, a.length);`,
+    options: ['4 4', '3 4', '3 3', 'vòng lặp vô hạn'], answer: 1,
+    explain: 'forEach chốt phạm vi duyệt theo độ dài BAN ĐẦU nên không ghé phần tử mới thêm (chạy 3 lần), nhưng mảng thì đã dài 4.',
+  },
+  {
+    id: 'oq24-binary-literal', topic: 'Ép kiểu',
+    code: `console.log(0b101, Number('0b101'), parseInt('0b101'), parseInt('101', 2));`,
+    options: ['5 5 0 5', '5 NaN 0 5', '5 5 101 5', '101 5 0 5'], answer: 0,
+    explain: 'Number() HIỂU tiền tố 0b, còn parseInt thì đọc "0" rồi dừng ở chữ b ⇒ 0. Muốn đọc nhị phân bằng parseInt phải truyền radix 2.',
+  },
+  {
+    id: 'oq24-map-index', topic: 'Mảng',
+    code: `console.log([...'abcd'].map((c, i) => (i % 2 ? c.toUpperCase() : c)).join(''));`,
+    options: ['ABCD', 'aBcD', 'AbCd', 'abcd'], answer: 1,
+    explain: 'Chỉ ký tự ở chỉ số LẺ (1, 3) được viết hoa ⇒ a-B-c-D.',
+  },
+  {
+    id: 'oq24-every-empty-and', topic: 'Toán tử',
+    code: `console.log([1, 2].every(x => x > 0), [].length && 'co-du-lieu', [1].length && 'co-du-lieu');`,
+    options: ['true 0 co-du-lieu', 'true false co-du-lieu', 'true 0 true', 'true undefined co-du-lieu'], answer: 0,
+    explain: 'Toán tử && trả về CHÍNH TOÁN HẠNG chứ không phải true/false: 0 && … ra 0 (dễ vô tình render số 0 ra giao diện React).',
+  },
+  {
+    id: 'oqi-alt-case', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => [...s].map((c, i) => (i % 2 ? c.toUpperCase() : c)).join('');\nconsole.log(f(INPUT));`,
+    out: 'aBcD',
+    options: ['"abcd"', '"ABCD"', '"abc"', '"dcba"'], answer: 0,
+    explain: 'Ký tự ở chỉ số lẻ được viết hoa ⇒ chuỗi gốc phải là "abcd" viết thường ("ABCD" cho ra "ABCD").',
+  },
+  {
+    id: 'oqi-filter-map-10', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.filter(x => x > 2).map(x => x * 10).join();\nconsole.log(f(INPUT));`,
+    out: '30,40',
+    options: ['[1, 3, 4]', '[3, 4, 5]', '[30, 40]', '[1, 2]'], answer: 0,
+    explain: 'Lọc số > 2 rồi nhân 10 ⇒ cần đúng hai số 3 và 4 (các số ≤ 2 bị loại nên có thêm cũng không sao).',
+  },
+  {
+    id: 'oqi-entries-sort', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => Object.entries(o).map(([k, v]) => k + v).sort().join('|');\nconsole.log(f(INPUT));`,
+    out: 'a1|b2',
+    options: ['{ b: 2, a: 1 }', '{ a: 2, b: 1 }', '{ a: 1, c: 2 }', '{ b: 1, a: 2 }'], answer: 0,
+    explain: 'Có .sort() nên thứ tự khai báo không quan trọng — quan trọng là cặp khoá/giá trị phải đúng a1 và b2.',
+  },
+  {
+    id: 'oqi-mod3-set', topic: 'Đoán input · Set', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => new Set(a.map(x => x % 3)).size;\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ['[3, 4, 6, 7]', '[1, 2, 3]', '[3, 6, 9]', '[1, 2, 3, 4, 5]'], answer: 0,
+    explain: 'Số dư khi chia 3 của [3,4,6,7] là 0,1,0,1 ⇒ chỉ 2 giá trị khác nhau; [1,2,3] cho 3 giá trị; [3,6,9] chỉ 1.',
+  },
 ];

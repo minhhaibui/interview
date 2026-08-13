@@ -2208,4 +2208,53 @@ window.IQ_QUESTIONS = [
     explain: 'Định luật Little: L = λ × W = 500 × 0,04 = 20 request đồng thời.' },
   { id: 'n23-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 3, 4, 7, 11, 18, 29, ?', options: ['40', '45', '47', '52'], answer: 2,
     explain: 'Mỗi số bằng tổng hai số liền trước: 18 + 29 = 47.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #22 =====
+  // SẮP XẾP hình theo số ô — phải so sánh cả 4 hình chứ không chỉ nhìn 1 hình
+  { id: 'ord1', category: '🖼️ Suy luận hình', d: 2, q: 'Sắp xếp 4 hình dưới đây theo SỐ Ô ĐƯỢC TÔ tăng dần. Hình nào đứng thứ BA?',
+    fig: figRow([numCell(1), numCell(2), numCell(3), numCell(4)]) +
+      figRow([gSvg('111/110/000'), gSvg('100/010/000'), gSvg('111/111/010'), gSvg('110/010/001')]),
+    options: ['Hình 1', 'Hình 2', 'Hình 3', 'Hình 4'], answer: 0,
+    explain: 'Số ô lần lượt là 5, 2, 7, 4 ⇒ thứ tự tăng dần: hình 2 (2 ô), hình 4 (4 ô), hình 1 (5 ô), hình 3 (7 ô). Đứng thứ ba là hình 1.' },
+  { id: 'ord2', category: '🖼️ Suy luận hình', d: 3, q: 'Sắp xếp 4 hình dưới đây theo SỐ CẠNH giảm dần. Hình nào đứng thứ HAI?',
+    fig: figRow([numCell(1), numCell(2), numCell(3), numCell(4)]) +
+      figRow([iqSvg(polyShape(5)), iqSvg(polyShape(8)), iqSvg(polyShape(3)), iqSvg(polyShape(6))]),
+    options: ['Hình 1', 'Hình 2', 'Hình 3', 'Hình 4'], answer: 3,
+    explain: 'Số cạnh: 5, 8, 3, 6 ⇒ giảm dần là 8 (hình 2), 6 (hình 4), 5 (hình 1), 3 (hình 3). Đứng thứ hai là hình 4.' },
+  // Quy luật theo ĐƯỜNG CHÉO của ma trận
+  figQ({
+    id: 'diag1', d: 3, q: 'Ô dấu ? là hình nào? (gợi ý: nhìn theo ĐƯỜNG CHÉO)',
+    fig: figGrid([
+      sCell('c', 2), sCell('s', 0), sCell('t', 0),
+      sCell('s', 0), sCell('c', 2), sCell('s', 0),
+      sCell('t', 0), sCell('s', 0), '?']),
+    opts: [sCell('c', 2), sCell('s', 0), sCell('t', 0), sCell('c', 0)],
+    explain: 'Cả đường chéo chính đều là hình TRÒN TÔ ĐẶC (hai ô kia đã là tròn đặc) ⇒ ô góc dưới-phải cũng vậy.',
+  }),
+  // Chuỗi xen kẽ phép ĐẢO NGƯỢC và phép XOAY
+  figQ({
+    id: 'notb1', d: 3, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: (() => {
+      const p = '110/010/000';
+      return figRow([gSvg(p), gSvg(gInv(p)), gSvg(gRot(p)), gSvg(gInv(gRot(p))), '?']);
+    })(),
+    opts: (() => {
+      const p = '110/010/000';
+      return [gSvg(gRot(gRot(p))), gSvg(gInv(gRot(gRot(p)))), gSvg(p), gSvg(gRot(p))];
+    })(),
+    explain: 'Chuỗi đi theo cặp: hình gốc → ảnh đảo ngược → hình gốc XOAY 90° → ảnh đảo ngược của nó → tiếp tục là hình gốc xoay 180°.',
+  }),
+  gOpQ('gx32', 3, '011/011/100', '110/010/011', 'xor', 'XOR: bỏ ô trùng nhau, giữ ô chỉ một bên tô.'),
+  { id: 'nm28', category: '🖼️ Suy luận hình', d: 3, q: 'Số ở ô dấu ? là bao nhiêu? (nhìn theo ĐƯỜNG CHÉO)',
+    fig: figGrid([numCell(2), numCell(9), numCell(4), numCell(7), numCell(4), numCell(3), numCell(6), numCell(1), '?']),
+    options: ['6', '8', '10', '12'], answer: 1,
+    explain: 'Đường chéo chính 2, 4, ? tăng gấp đôi (2 → 4 → 8); các số còn lại chỉ là nhiễu.' },
+  { id: 'dl86', category: '🧠 Logic', d: 3, q: 'Có 3 cái hộp, chỉ MỘT hộp đựng quà. Hộp A ghi "Quà ở đây", hộp B ghi "Quà không ở đây", hộp C ghi "Quà không ở hộp A". Chỉ MỘT dòng chữ đúng. Quà ở hộp nào?', options: ['Hộp A', 'Hộp B', 'Hộp C', 'Không xác định được'], answer: 1,
+    explain: 'Thử hộp B: A sai, B ("không ở đây") sai, C ("không ở A") đúng ⇒ đúng một dòng. Các trường hợp khác đều cho 2 dòng đúng.' },
+  { id: 'dl87', category: '🎲 Xác suất', d: 3, q: 'Một lớp có 4 nam, 6 nữ. Chọn ngẫu nhiên 2 người. Xác suất được 1 nam 1 nữ là bao nhiêu?', options: ['4/15', '8/15', '1/2', '3/5'], answer: 1,
+    explain: 'C(4,1) × C(6,1) / C(10,2) = 24 / 45 = 8/15.' },
+  { id: 'dl88', category: '➗ Toán nhanh', d: 2, q: 'Bảng giá cloud: 0,10 USD/giờ mỗi máy. Chạy 3 máy suốt 30 ngày hết bao nhiêu?', options: ['72 USD', '216 USD', '270 USD', '720 USD'], answer: 1,
+    explain: '30 ngày = 720 giờ ⇒ 720 × 0,10 × 3 máy = 216 USD.' },
+  { id: 'n24-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 12, 30, 56, ?', options: ['72', '84', '90', '110'], answer: 2,
+    explain: 'Tích của hai số tự nhiên liên tiếp theo từng cặp: 1×2, 3×4, 5×6, 7×8, rồi 9×10 = 90.' },
 ];
