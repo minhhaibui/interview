@@ -1374,4 +1374,62 @@ window.OUTPUT_QUIZ = [
     options: ['[1, [2, [3, [4]]]]', '[1, [2, [3]]]', '[[1, 2], [3, 4], 5]', '[1, 2]'], answer: 0,
     explain: 'flat(Infinity) làm phẳng MỌI tầng rồi đếm phần tử ⇒ cần tổng cộng 4 số dù lồng sâu bao nhiêu.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #13 =====
+  {
+    id: 'oq15-string-math', topic: 'Ép kiểu',
+    code: `console.log('5' * '2', '5' / '2', '5' % '2', '5' + '2');`,
+    options: ['10 2.5 1 7', '10 2.5 1 52', '52 2.5 1 52', '10 2 1 52'], answer: 1,
+    explain: 'Các phép *, /, % đều ép chuỗi về số; RIÊNG phép + thì nối chuỗi ⇒ "52". Đây là lý do luôn Number() trước khi tính.',
+  },
+  {
+    id: 'oq15-sparse-length', topic: 'Mảng',
+    code: `console.log([, , ].length, [1, 2, 3, ].length, Object.keys([, , 1]).length);`,
+    options: ['3 4 3', '2 3 1', '2 4 1', '3 3 3'], answer: 1,
+    explain: 'Dấu phẩy CUỐI CÙNG bị bỏ qua nên [,,] chỉ có 2 ô (đều rỗng); Object.keys bỏ qua ô rỗng nên chỉ đếm 1 phần tử thật.',
+  },
+  {
+    id: 'oq15-proto-chain', topic: 'Object',
+    code: `const base = { inherited: 1 };\nconst o = Object.create(base);\no.own = 2;\nconsole.log(Object.keys(o).length, 'inherited' in o, o.hasOwnProperty('inherited'), o.inherited);`,
+    options: ['2 true true 1', '1 true false 1', '1 false false undefined', '2 true false 1'], answer: 1,
+    explain: 'Object.keys và hasOwnProperty chỉ thấy thuộc tính CỦA CHÍNH object; toán tử `in` và phép đọc thì đi ngược lên prototype.',
+  },
+  {
+    id: 'oq15-strict-this', topic: 'this binding',
+    code: `function loose() { return this === undefined; }\nfunction strict() { 'use strict'; return this === undefined; }\nconsole.log(loose(), strict());`,
+    options: ['true true', 'false true', 'true false', 'false false'], answer: 1,
+    explain: 'Gọi hàm trơ (không qua object): chế độ thường thì `this` bị thay bằng globalThis, còn strict mode giữ nguyên undefined.',
+  },
+  {
+    id: 'oqi-map-id', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.map(u => u.id).join(',');\nconsole.log(f(INPUT));`,
+    out: '1,2',
+    options: ['[{ id: 1 }, { id: 2 }]', '[{ id: 2 }, { id: 1 }]', '[{ id: 1 }, { id: 2 }, { id: 3 }]', '[{ uid: 1 }, { uid: 2 }]'], answer: 0,
+    explain: 'Lấy trường id theo ĐÚNG thứ tự mảng; object không có id sẽ cho "undefined,undefined".',
+  },
+  {
+    id: 'oqi-keys-prefix', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => Object.keys(o).filter(k => k.startsWith('a')).length;\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ['{ age: 1, api: 2, bar: 3 }', '{ age: 1, bar: 2 }', '{ a: 1, ab: 2, ac: 3 }', '{ x: 1, y: 2 }'], answer: 0,
+    explain: 'Đếm KHOÁ bắt đầu bằng chữ "a" (không quan tâm giá trị) ⇒ cần đúng 2 khoá như age và api.',
+  },
+  {
+    id: 'oqi-join-length', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.join('').length;\nconsole.log(f(INPUT));`,
+    out: '5',
+    options: ['["ab", "cde"]', '["ab", "cd"]', '["a", "b", "c"]', '["abcdef"]'], answer: 0,
+    explain: 'Nối hết rồi đếm KÝ TỰ (không phải số phần tử): "ab" + "cde" = "abcde" dài 5.',
+  },
+  {
+    id: 'oqi-keep-vowels', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => [...s].filter(c => 'aeiou'.includes(c)).join('');\nconsole.log(f(INPUT));`,
+    out: 'ao',
+    options: ['"nano"', '"node"', '"oa"', '"api"'], answer: 0,
+    explain: 'Giữ lại các nguyên âm theo ĐÚNG thứ tự xuất hiện: "nano" → a, o. Chuỗi "oa" lại cho "oa".',
+  },
 ];
