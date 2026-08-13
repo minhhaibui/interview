@@ -1432,4 +1432,62 @@ window.OUTPUT_QUIZ = [
     options: ['"nano"', '"node"', '"oa"', '"api"'], answer: 0,
     explain: 'Giữ lại các nguyên âm theo ĐÚNG thứ tự xuất hiện: "nano" → a, o. Chuỗi "oa" lại cho "oa".',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #14 =====
+  {
+    id: 'oq16-map-json', topic: 'Map',
+    code: `const m = new Map([['a', 1]]);\nconsole.log(JSON.stringify(m), m.get('a'), JSON.stringify([...m]));`,
+    options: ['{"a":1} 1 [["a",1]]', '{} 1 [["a",1]]', '{} undefined []', '{"a":1} 1 []'], answer: 1,
+    explain: 'JSON.stringify KHÔNG hiểu Map (ra {}), phải trải thành mảng cặp trước. Đây là bug hay gặp khi cache bằng Map rồi đem serialize.',
+  },
+  {
+    id: 'oq16-getter-side-effect', topic: 'Object',
+    code: `let count = 0;\nconst o = { get val() { return ++count; } };\nconsole.log(o.val, o.val, count);`,
+    options: ['1 1 1', '1 2 2', '1 2 1', '2 2 2'], answer: 1,
+    explain: 'Mỗi lần ĐỌC o.val là một lần gọi hàm getter ⇒ giá trị đổi theo. Getter có tác dụng phụ là nguồn bug rất khó tìm.',
+  },
+  {
+    id: 'oq16-array-tostring', topic: 'Ép kiểu',
+    code: `console.log([1, [2, 3]].toString(), String([null, undefined, 4]), [] + '');`,
+    options: ['1,2,3 ,,4 ', '1,[2,3] null,undefined,4 ', '1,2,3 null,undefined,4 ', '1,2,3 ,,4 0'], answer: 0,
+    explain: 'toString của mảng nối đệ quy nên mảng lồng bị "làm phẳng" thành 1,2,3; null/undefined thành CHUỖI RỖNG; [] thành "".',
+  },
+  {
+    id: 'oq16-void', topic: 'Toán tử',
+    code: `console.log(void 0, typeof void 0, void 'abc');`,
+    options: ['0 number undefined', 'undefined undefined undefined', 'undefined string abc', 'null undefined undefined'], answer: 1,
+    explain: 'void tính biểu thức rồi LUÔN trả về undefined — hay gặp trong "javascript:void(0)" của link.',
+  },
+  {
+    id: 'oqi-match-join', topic: 'Đoán input · regex', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.match(/\\d+/g).join('+');\nconsole.log(f(INPUT));`,
+    out: '12+34',
+    options: ['"a12b34"', '"1234"', '"12-3-4"', '"a1b2c34"'], answer: 0,
+    explain: 'Mỗi CỤM chữ số liền nhau là một khớp: "a12b34" cho ["12","34"]; "1234" chỉ cho một cụm duy nhất.',
+  },
+  {
+    id: 'oqi-map-get', topic: 'Đoán input · Map', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = pairs => new Map(pairs).get('b');\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ["[['a', 1], ['b', 2]]", "[['b', 1], ['a', 2]]", "[['a', 2], ['c', 3]]", "[['b', '2x']]"], answer: 0,
+    explain: 'new Map nhận mảng các cặp [khoá, giá trị]; lấy giá trị của khoá "b" ⇒ phải là cặp ["b", 2].',
+  },
+  {
+    id: 'oqi-at-last', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.at(-1);\nconsole.log(f(INPUT));`,
+    out: '!',
+    options: ['"hello!"', '"!hello"', '"hello?"', '"hi"'], answer: 0,
+    explain: 'at(-1) lấy ký tự CUỐI cùng ⇒ dấu "!" phải nằm ở cuối chuỗi, không phải đầu.',
+  },
+  {
+    id: 'oqi-unique-count', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.filter((x, i) => a.indexOf(x) === i).length;\nconsole.log(f(INPUT));`,
+    out: '3',
+    options: ['[1, 1, 2, 3]', '[1, 2, 3, 4]', '[5, 5]', '[7, 8, 9, 10, 11]'], answer: 0,
+    explain: 'Chỉ giữ lần xuất hiện ĐẦU TIÊN của mỗi giá trị rồi đếm ⇒ cần đúng 3 giá trị phân biệt.',
+  },
 ];
