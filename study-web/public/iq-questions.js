@@ -2802,4 +2802,38 @@ window.IQ_QUESTIONS = [
     explain: 'Trong 6 hoán vị của 3 phần tử chỉ có 2 hoán vị "lệch hoàn toàn" ⇒ 2/6 = 1/3.' },
   { id: 'n38-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 4, 5, 9, 18, 34, ?', options: ['52', '57', '59', '68'], answer: 2,
     explain: 'Khoảng cách là 1, 4, 9, 16 (bình phương) ⇒ khoảng tiếp theo 25 ⇒ 34 + 25 = 59.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #37 =====
+  // Quan hệ TẬP CON: hình nào KHÔNG nằm trọn trong hình mẫu
+  figQ({
+    id: 'subset1', d: 3, q: 'Hình nào KHÔNG nằm TRỌN bên trong hình mẫu (có ô nằm ngoài các ô đã tô của mẫu)?',
+    fig: figRow([gSvg('111/011/010')]),
+    opts: [gSvg('100/100/000'), gSvg('111/000/000'), gSvg('001/011/000'), gSvg('010/010/010')],
+    explain: 'Mẫu tô các ô hàng đầu, hai ô phải hàng giữa và ô giữa hàng cuối. Chỉ một lựa chọn có ô nằm NGOÀI vùng đó (ô trái hàng giữa).',
+  }),
+  // Đếm đường đi ngắn nhất khi có ĐIỂM BỊ CHẶN
+  { id: 'pathblock', category: '🖼️ Suy luận hình', d: 3, q: 'Đi từ góc trái–trên xuống góc phải–dưới của lưới 2×2, chỉ được sang phải hoặc xuống dưới và KHÔNG được đi qua điểm chấm ở giữa. Có bao nhiêu đường?',
+    fig: figRow([iqSvg('<g class="so"><rect x="10" y="10" width="40" height="40"/><path d="M30 10 L30 50 M10 30 L50 30"/></g><circle class="sf" cx="30" cy="30" r="5"/><circle class="sf" cx="10" cy="10" r="3.5"/><circle class="sf" cx="50" cy="50" r="3.5"/>')], 'lg'),
+    options: ['1', '2', '4', '6'], answer: 1,
+    explain: 'Tổng cộng có 6 đường; số đường ĐI QUA điểm giữa là 2 × 2 = 4 ⇒ còn lại 6 − 4 = 2 đường.' },
+  { id: 'colmax', category: '🖼️ Suy luận hình', d: 2, q: 'Hình nào có nhiều ô được tô nhất ở CỘT GIỮA?',
+    fig: figRow([numCell(1), numCell(2), numCell(3), numCell(4)]) +
+      figRow([gSvg('110/010/000'), gSvg('010/010/010'), gSvg('111/000/001'), gSvg('100/110/001')]),
+    options: ['Hình 1', 'Hình 2', 'Hình 3', 'Hình 4'], answer: 1,
+    explain: 'Đếm riêng cột giữa: hình 1 có 2, hình 2 có 3, hình 3 có 1, hình 4 có 1 ⇒ hình 2 nhiều nhất.' },
+  gOpQ('gx47', 3, '011/110/101', '110/101/011', 'and', 'Giao hai lưới: chỉ giữ ô cả hai cùng tô.'),
+  { id: 'nm43', category: '🖼️ Suy luận hình', d: 2, q: 'Bảng 3×2: số ở ô dấu ? là bao nhiêu?',
+    fig: figGrid([numCell(2), numCell(4), numCell(6), numCell(5), numCell(9), '?'], 3),
+    options: ['11', '12', '13', '15'], answer: 2,
+    explain: 'Hàng dưới = hàng trên × 2 + 1: 2→5, 4→9, 6→13.' },
+  { id: 'dl135', category: '🧠 Logic', d: 3, q: 'Có 3 cái bình 8 lít (đầy), 5 lít và 3 lít (rỗng). Làm sao chia thành hai phần 4 lít bằng nhau? Bước ĐẦU TIÊN nên làm gì?', options: ['Rót đầy bình 5 lít từ bình 8', 'Rót đầy bình 3 lít từ bình 8', 'Rót một nửa bình 8 sang bình 5', 'Không thể chia được'], answer: 0,
+    explain: 'Chuỗi kinh điển 8-5-3: rót đầy bình 5 trước (8→3,5,0), sau đó 5→3 để có (3,2,3)… dẫn tới 4-4-0 sau vài bước.' },
+  { id: 'dl136', category: '🧠 Logic', d: 2, q: 'Nếu tất cả Blip đều là Blop và một số Blop là Blup, kết luận nào chắc chắn ĐÚNG?', options: ['Chắc chắn một số Blip là Blup', 'Chắc chắn không Blip nào là Blup', 'Chắc chắn mọi Blup đều là Blop', 'Không suy ra được quan hệ Blip–Blup'], answer: 3,
+    explain: 'Phần Blop giao với Blup có thể hoàn toàn nằm ngoài Blip ⇒ không kết luận được quan hệ Blip–Blup.' },
+  { id: 'dl137', category: '➗ Toán nhanh', d: 3, q: 'Một dịch vụ chạy 3 pod, mỗi pod chịu 400 rps. Muốn còn chịu được tải khi MỘT pod chết thì tải tối đa nên đặt bao nhiêu?', options: ['400 rps', '800 rps', '1.200 rps', '1.600 rps'], answer: 1,
+    explain: 'Khi mất 1 pod chỉ còn 2 × 400 = 800 rps ⇒ đặt trần 800 rps để chịu được sự cố (nguyên tắc N+1).' },
+  { id: 'dl138', category: '🎲 Xác suất', d: 2, q: 'Tung 2 xúc xắc. Xác suất được HAI số giống nhau (đôi) là bao nhiêu?', options: ['1/12', '1/6', '1/3', '1/2'], answer: 1,
+    explain: '6 cặp giống nhau trên 36 khả năng ⇒ 6/36 = 1/6.' },
+  { id: 'n39-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 10, 21, 43, 87, ?', options: ['131', '164', '175', '176'], answer: 2,
+    explain: 'Quy luật × 2 + 1: 87 × 2 + 1 = 175.' },
 ];

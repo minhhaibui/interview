@@ -2766,4 +2766,62 @@ window.OUTPUT_QUIZ = [
     options: ['"abca"', '"aabb"', '"abc"', '"bbbb"'], answer: 0,
     explain: 'Vị trí XUẤT HIỆN CUỐI CÙNG của "a" phải là 3; không có "a" thì trả −1.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #37 =====
+  {
+    id: 'oq39-rest-undefined', topic: 'Hàm',
+    code: `const f = (...a) => a.length;\nconsole.log(f(), f(undefined), f(1, 2), f([1, 2]));`,
+    options: ['0 1 2 1', '0 0 2 2', '0 1 2 2', '1 1 2 1'], answer: 0,
+    explain: 'Truyền undefined vẫn tính là MỘT đối số; truyền một mảng cũng chỉ là một đối số (muốn tách phải spread f(...arr)).',
+  },
+  {
+    id: 'oq39-equality-table', topic: 'So sánh',
+    code: `console.log('5' == 5, '5' === 5, [5] == 5, null == false, null == undefined);`,
+    options: ['true false true false true', 'true false false false true', 'true true true false true', 'true false true true true'], answer: 0,
+    explain: '[5] về chuỗi "5" rồi về số 5 nên == 5; riêng null CHỈ lỏng-bằng undefined, không bằng false hay 0.',
+  },
+  {
+    id: 'oq39-inc-order', topic: 'Toán tử',
+    code: `let i = 0;\nconst r = [i++, i++, ++i];\nconsole.log(r.join(), i);`,
+    options: ['0,1,3 3', '1,2,3 3', '0,1,2 3', '0,1,3 2'], answer: 0,
+    explain: 'i++ trả GIÁ TRỊ CŨ rồi mới tăng (0 rồi 1); ++i tăng trước rồi trả giá trị mới (3).',
+  },
+  {
+    id: 'oq39-map-arraylen', topic: 'Mảng',
+    code: `console.log([1, 2, 3].map((x, i, a) => a.length).join(), [1, 2, 3].map((x, i, a) => a.length - i).join());`,
+    options: ['3,3,3 3,2,1', '1,2,3 3,2,1', '3,3,3 1,2,3', '0,1,2 3,2,1'], answer: 0,
+    explain: 'Tham số thứ ba của callback là CHÍNH MẢNG đang duyệt — hữu ích khi cần biết độ dài hoặc phần tử kề.',
+  },
+  {
+    id: 'oqi-charcode-parity', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => [...s].map(c => c.charCodeAt(0) % 2).join('');\nconsole.log(f(INPUT));`,
+    out: '101',
+    options: ['"abc"', '"bcd"', '"aaa"', '"abcd"'], answer: 0,
+    explain: 'a = 97 (lẻ → 1), b = 98 (chẵn → 0), c = 99 (lẻ → 1) ⇒ "101".',
+  },
+  {
+    id: 'oqi-countdown-map', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.map((x, i, arr) => arr.length - i).join();\nconsole.log(f(INPUT));`,
+    out: '3,2,1',
+    options: ['[9, 9, 9]', '[1, 2]', '[1, 2, 3, 4]', '[7]'], answer: 0,
+    explain: 'Kết quả chỉ phụ thuộc ĐỘ DÀI mảng (đếm ngược từ length) ⇒ cần mảng 3 phần tử, giá trị không quan trọng.',
+  },
+  {
+    id: 'oqi-min-value', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => Object.values(o).sort((a, b) => a - b)[0];\nconsole.log(f(INPUT));`,
+    out: '1',
+    options: ['{ a: 5, b: 1 }', '{ a: 5, b: 2 }', '{ a: 0, b: 1 }', '{ a: 9 }'], answer: 0,
+    explain: 'Sắp giá trị tăng dần rồi lấy phần tử đầu = giá trị NHỎ NHẤT ⇒ min phải bằng 1.',
+  },
+  {
+    id: 'oqi-repeat-len2', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.repeat(2).length;\nconsole.log(f(INPUT));`,
+    out: '6',
+    options: ['"abc"', '"ab"', '"abcd"', '"a"'], answer: 0,
+    explain: 'Độ dài sau khi lặp 2 lần = 2 × độ dài gốc ⇒ chuỗi gốc dài 3.',
+  },
 ];
