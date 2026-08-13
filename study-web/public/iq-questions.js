@@ -2415,4 +2415,44 @@ window.IQ_QUESTIONS = [
     explain: 'Gốc: 2.000.000 × 500 byte = 1.000MB. Nén còn 40% (400MB) ⇒ tiết kiệm 600MB.' },
   { id: 'n28-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 2, 6, 15, 31, ?', options: ['48', '52', '56', '62'], answer: 2,
     explain: 'Khoảng cách là 1, 4, 9, 16 (bình phương) và tiếp theo là 25 ⇒ 31 + 25 = 56.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #27 =====
+  // Đếm ô của KẾT QUẢ phép chồng lưới (không vẽ ra, phải tính trong đầu)
+  { id: 'opcount1', category: '🖼️ Suy luận hình', d: 3, q: 'Nếu chồng HAI lưới bên dưới lại (giữ mọi ô được tô) thì hình kết quả có bao nhiêu ô?',
+    fig: figRow([gSvg('110/010/001'), gSvg('011/010/100')]),
+    options: ['4 ô', '5 ô', '6 ô', '7 ô'], answer: 2,
+    explain: 'Hợp từng hàng: 110 ∪ 011 = 111 (3 ô), 010 ∪ 010 = 010 (1 ô), 001 ∪ 100 = 101 (2 ô) ⇒ tổng 6 ô.' },
+  { id: 'opcount2', category: '🖼️ Suy luận hình', d: 3, q: 'Có bao nhiêu ô được tô ở lưới TRÁI mà KHÔNG được tô ở lưới PHẢI?',
+    fig: figRow([gSvg('111/110/010'), gSvg('101/010/011')]),
+    options: ['1 ô', '2 ô', '3 ô', '4 ô'], answer: 1,
+    explain: 'Lấy các ô của lưới trái rồi bỏ đi những ô lưới phải cũng tô (phép trừ): còn 2 ô.' },
+  // Đối chiếu phép xoay với 4 lựa chọn
+  figQ({
+    id: 'match180', d: 2, q: 'Xoay hình mẫu 180° thì trùng khớp với hình nào?',
+    fig: figRow([gSvg('110/100/000')]),
+    opts: [gSvg(gRot(gRot('110/100/000'))), gSvg(gRot('110/100/000')), gSvg('110/100/000'), gSvg(gInv('110/100/000'))],
+    explain: 'Xoay 180° = lật cả trên↔dưới và trái↔phải: khối ở góc trên-trái chuyển hẳn xuống góc dưới-phải.',
+  }),
+  gOpQ('gx37', 2, '010/110/101', '110/011/001', 'and', 'Giao hai lưới: chỉ giữ ô cả hai cùng tô.'),
+  figQ({
+    id: 'colmx', d: 3, q: 'Ô dấu ? là hình nào? (mỗi CỘT xoay NGƯỢC chiều kim đồng hồ khi đi xuống)',
+    fig: figGrid([
+      iqSvg(rot(ELL, 0)), iqSvg(rot(ELL, 90)), iqSvg(rot(ELL, 180)),
+      iqSvg(rot(ELL, 270)), iqSvg(rot(ELL, 0)), iqSvg(rot(ELL, 90)),
+      iqSvg(rot(ELL, 180)), iqSvg(rot(ELL, 270)), '?']),
+    opts: [iqSvg(rot(ELL, 0)), iqSvg(rot(ELL, 90)), iqSvg(rot(ELL, 180)), iqSvg(rot(ELL, 270))],
+    explain: 'Đi xuống mỗi ô xoay ngược 90° (tức trừ 90°): cột cuối là 180° → 90° → 0°.',
+  }),
+  { id: 'nm33', category: '🖼️ Suy luận hình', d: 3, q: 'Số ở ô dấu ? là bao nhiêu?',
+    fig: figGrid([numCell(6), numCell(10), numCell(8), numCell(4), numCell(12), numCell(8), numCell(9), numCell(15), '?'], 3),
+    options: ['10', '11', '12', '13'], answer: 2,
+    explain: 'Cột 3 là TRUNG BÌNH CỘNG của hai cột đầu: (6+10)/2 = 8, (4+12)/2 = 8 ⇒ (9+15)/2 = 12.' },
+  { id: 'dl101', category: '🧠 Logic', d: 3, q: 'Một cái bể có vòi vào đầy sau 4 giờ, vòi xả cạn sau 6 giờ. Mở CẢ HAI khi bể rỗng thì bao lâu đầy?', options: ['5 giờ', '10 giờ', '12 giờ', 'Không bao giờ đầy'], answer: 2,
+    explain: 'Mỗi giờ: 1/4 − 1/6 = 1/12 bể ⇒ cần 12 giờ (vẫn đầy được vì vòi vào mạnh hơn).' },
+  { id: 'dl102', category: '🧠 Logic', d: 2, q: 'Hôm nay là ngày 13, thứ Sáu. Ngày 13 tháng sau (tháng có 30 ngày) là thứ mấy?', options: ['Thứ Bảy', 'Chủ Nhật', 'Thứ Hai', 'Thứ Ba'], answer: 1,
+    explain: '30 ngày = 4 tuần dư 2 ⇒ đếm thêm 2 ngày từ thứ Sáu là Chủ Nhật.' },
+  { id: 'dl103', category: '➗ Toán nhanh', d: 3, q: 'Hệ thống 3 dịch vụ nối tiếp, mỗi dịch vụ uptime 99%. Uptime của cả chuỗi là bao nhiêu?', options: ['97%', '97,03%', '99%', '99,7%'], answer: 1,
+    explain: '0,99³ = 0,970299 ≈ 97,03% — càng nhiều mắt xích nối tiếp thì độ tin cậy càng giảm.' },
+  { id: 'n29-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 4, 10, 28, 82, ?', options: ['164', '226', '244', '246'], answer: 2,
+    explain: 'Quy luật × 3 − 2: 82 × 3 − 2 = 244.' },
 ];

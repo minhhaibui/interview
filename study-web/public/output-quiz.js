@@ -2186,4 +2186,62 @@ window.OUTPUT_QUIZ = [
     options: ['[3, 9, 7]', '[7, 3]', '[1, 2, 3]', '[5, 5]'], answer: 0,
     explain: 'Lấy phần tử CUỐI trừ phần tử ĐẦU (không phải max − min): 7 − 3 = 4.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #27 =====
+  {
+    id: 'oq29-json-array-holes', topic: 'JSON',
+    code: `console.log(JSON.stringify([undefined, function () {}, 1, NaN, Infinity]));`,
+    options: ['[null,null,1,null,null]', '[undefined,null,1,NaN,Infinity]', '[1]', '[null,null,1,NaN,Infinity]'], answer: 0,
+    explain: 'Trong MẢNG, JSON.stringify thay undefined/function bằng null (khác object là bỏ hẳn khoá); NaN và Infinity cũng thành null.',
+  },
+  {
+    id: 'oq29-max-safe-digits', topic: 'Số học',
+    code: `console.log(String(Number.MAX_SAFE_INTEGER).length, Number.MAX_SAFE_INTEGER > 9e15);`,
+    options: ['15 true', '16 true', '16 false', '17 true'], answer: 1,
+    explain: '2⁵³ − 1 = 9007199254740991 — 16 chữ số. ID từ backend (snowflake 19 chữ số) vượt ngưỡng này nên phải truyền dạng CHUỖI.',
+  },
+  {
+    id: 'oq29-alias-mutation', topic: 'Tham chiếu',
+    code: `const a = [1, 2];\nconst b = a;\nb.push(3);\nconst c = [...a];\nc.push(4);\nconsole.log(a.length, a === b, c.length);`,
+    options: ['3 true 4', '2 false 3', '3 true 3', '2 true 4'], answer: 0,
+    explain: 'b chỉ là TÊN KHÁC của cùng mảng nên push qua b làm a dài 3; c là bản sao mới nên push vào c không ảnh hưởng a.',
+  },
+  {
+    id: 'oq29-reduce-count-json', topic: 'reduce',
+    code: `const c = [...'aab'].reduce((m, ch) => { m[ch] = (m[ch] || 0) + 1; return m; }, {});\nconsole.log(JSON.stringify(c), c.a + c.b);`,
+    options: ['{"a":2,"b":1} 3', '{"a":1,"b":1} 2', '{"a":2,"b":1} 21', '{"b":1,"a":2} 3'], answer: 0,
+    explain: 'Đếm tần suất ký tự; khoá giữ thứ tự xuất hiện đầu tiên. c.a + c.b là 2 + 1 = 3 (cộng SỐ chứ không nối chuỗi).',
+  },
+  {
+    id: 'oqi-strip-spaces', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.replace(/\\s/g, '').length;\nconsole.log(f(INPUT));`,
+    out: '6',
+    options: ['"no de js"', '"nodejs pro"', '"abc"', '"a b"'], answer: 0,
+    explain: 'Bỏ HẾT khoảng trắng rồi đếm: "nodejs" = 6 ký tự.',
+  },
+  {
+    id: 'oqi-even-flags', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => JSON.stringify(a.map(x => x % 2 === 0));\nconsole.log(f(INPUT));`,
+    out: '[true,false]',
+    options: ['[2, 3]', '[3, 2]', '[2, 4]', '[1, 3]'], answer: 0,
+    explain: 'Phần tử đầu phải CHẴN, phần tử sau phải LẺ ⇒ [2, 3].',
+  },
+  {
+    id: 'oqi-query-string', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => Object.entries(o).map(([k, v]) => k + '=' + v).join('&');\nconsole.log(f(INPUT));`,
+    out: 'a=1&b=2',
+    options: ['{ a: 1, b: 2 }', '{ b: 2, a: 1 }', '{ a: 2, b: 1 }', '{ a: 1 }'], answer: 0,
+    explain: 'Dựng query string theo THỨ TỰ KHOÁ ⇒ a phải đứng trước b và đúng giá trị.',
+  },
+  {
+    id: 'oqi-count-bits', topic: 'Đoán input · bit', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => n.toString(2).split('1').length - 1;\nconsole.log(f(INPUT));`,
+    out: '3',
+    options: ['7', '8', '4', '15'], answer: 0,
+    explain: 'Đếm số bit 1: 7 = 111₂ có 3 bit 1; 8 = 1000₂ chỉ có 1; 15 = 1111₂ có 4.',
+  },
 ];
