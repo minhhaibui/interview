@@ -2024,4 +2024,65 @@ window.IQ_QUESTIONS = [
     explain: 'Tổng năng lực 4 × 5 = 20 job/giây ⇒ 1.000 / 20 = 50 giây.' },
   { id: 'n19-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 8, 4, 12, 6, 18, 9, ?', options: ['18', '21', '27', '36'], answer: 2,
     explain: 'Luân phiên ÷ 2 rồi × 3: sau bước ÷ 2 (18 → 9) là bước × 3 ⇒ 27.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #18 =====
+  // Chuỗi kiểu "Fibonacci hình": mỗi hình = XOR của HAI hình liền trước
+  figQ({
+    id: 'fibx1', d: 3, q: 'Mỗi hình được tạo từ HAI hình liền trước theo cùng một quy tắc. Hình tiếp theo là gì?',
+    fig: figRow([gSvg('110/000/000'), gSvg('011/000/000'),
+      gSvg(gOp('110/000/000', '011/000/000', 'xor')),
+      gSvg(gOp('011/000/000', gOp('110/000/000', '011/000/000', 'xor'), 'xor')), '?']),
+    opts: (() => {
+      const a = '110/000/000', b = '011/000/000';
+      const c = gOp(a, b, 'xor'), d = gOp(b, c, 'xor'), e = gOp(c, d, 'xor');
+      return [gSvg(e), gSvg(gOp(c, d, 'or')), gSvg(gOp(c, d, 'and')), gSvg(gInv(e))];
+    })(),
+    explain: 'Quy tắc là XOR hai hình liền trước (ô trùng nhau triệt tiêu) — giống dãy Fibonacci nhưng bằng hình.',
+  }),
+  figQ({
+    id: 'fibx2', d: 3, q: 'Mỗi hình được tạo từ HAI hình liền trước theo cùng một quy tắc. Hình tiếp theo là gì?',
+    fig: (() => {
+      const a = '100/010/000', b = '010/001/000';
+      const c = gOp(a, b, 'xor'), d = gOp(b, c, 'xor');
+      return figRow([gSvg(a), gSvg(b), gSvg(c), gSvg(d), '?']);
+    })(),
+    opts: (() => {
+      const a = '100/010/000', b = '010/001/000';
+      const c = gOp(a, b, 'xor'), d = gOp(b, c, 'xor'), e = gOp(c, d, 'xor');
+      return [gSvg(e), gSvg(gOp(c, d, 'or')), gSvg(d), gSvg(gFlip(e))];
+    })(),
+    explain: 'Vẫn là XOR hai hình liền trước: ô nào xuất hiện ở CẢ HAI thì mất, ô chỉ có ở một hình thì giữ.',
+  }),
+  // Điền HAI chỗ trống liên tiếp — phải chọn đúng cả cặp
+  figQ({
+    id: 'pair1', d: 3, q: 'Hai chỗ trống liên tiếp trong chuỗi là cặp hình nào (theo đúng thứ tự)?',
+    fig: figRow([gSvg('100/000/000'), gSvg('110/000/000'), '?', '?', gSvg('111/110/000')]),
+    opts: [
+      `<span style="display:flex;gap:6px">${gSvg('111/000/000')}${gSvg('111/100/000')}</span>`,
+      `<span style="display:flex;gap:6px">${gSvg('111/100/000')}${gSvg('111/000/000')}</span>`,
+      `<span style="display:flex;gap:6px">${gSvg('110/100/000')}${gSvg('111/000/000')}</span>`,
+      `<span style="display:flex;gap:6px">${gSvg('111/000/000')}${gSvg('111/110/000')}</span>`,
+    ],
+    explain: 'Mỗi bước tô thêm đúng 1 ô theo thứ tự đọc: 1 → 2 → 3 → 4 → 5 ô, nên hai ô trống là lưới 3 ô rồi lưới 4 ô.',
+  }),
+  // Chọn hình có CÙNG SỐ Ô với hình mẫu (không cần cùng hình dạng)
+  figQ({
+    id: 'same1', d: 2, q: 'Hình nào có SỐ Ô ĐƯỢC TÔ bằng đúng hình mẫu bên dưới?',
+    fig: figRow([gSvg('110/010/001')]),
+    opts: [gSvg('001/101/010'), gSvg('100/010/000'), gSvg('111/110/010'), gSvg('110/010/000')],
+    explain: 'Hình mẫu tô 4 ô — chỉ cần ĐẾM, không cần giống hình dạng. Ba lựa chọn còn lại tô 2, 6 và 3 ô.',
+  }),
+  gOpQ('gx28', 2, '100/110/001', '001/011/100', 'xor', 'XOR: ô chỉ một bên tô thì giữ, ô cả hai cùng tô thì bỏ.'),
+  { id: 'nm24', category: '🖼️ Suy luận hình', d: 3, q: 'Số ở ô dấu ? là bao nhiêu?',
+    fig: figGrid([numCell(6), numCell(2), numCell(4), numCell(9), numCell(3), numCell(6), numCell(12), numCell(4), '?']),
+    options: ['3', '8', '9', '16'], answer: 1,
+    explain: 'Cột 3 = cột 1 − cột 2: 6 − 2 = 4, 9 − 3 = 6, 12 − 4 = 8.' },
+  { id: 'dl74', category: '🧠 Logic', d: 3, q: 'Có 9 viên bi giống hệt, 1 viên nhẹ hơn. Với cân thăng bằng, cần ÍT NHẤT mấy lần cân để chắc chắn tìm ra?', options: ['2', '3', '4', '8'], answer: 0,
+    explain: 'Chia 3 nhóm 3 viên: cân 2 nhóm (lần 1) tìm ra nhóm chứa viên nhẹ; cân 2 viên trong nhóm đó (lần 2) là ra ⇒ 2 lần.' },
+  { id: 'dl75', category: '➗ Toán nhanh', d: 2, q: 'Một API tính phí 0,002 USD mỗi request. Chạy 5 triệu request/tháng thì hết bao nhiêu?', options: ['1.000 USD', '5.000 USD', '10.000 USD', '100.000 USD'], answer: 2,
+    explain: '5.000.000 × 0,002 = 10.000 USD.' },
+  { id: 'dl76', category: '🎲 Xác suất', d: 2, q: 'Tung đồng xu 4 lần. Xác suất được ĐÚNG 2 mặt ngửa là bao nhiêu?', options: ['1/4', '3/8', '1/2', '5/8'], answer: 1,
+    explain: 'C(4,2) = 6 cách trên tổng 2⁴ = 16 khả năng ⇒ 6/16 = 3/8.' },
+  { id: 'n20-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 4, 6, 10, 18, 34, ?', options: ['50', '58', '66', '68'], answer: 2,
+    explain: 'Quy luật × 2 − 2: 34 × 2 − 2 = 66.' },
 ];

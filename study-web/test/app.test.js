@@ -103,7 +103,9 @@ test('iq-questions: nhóm 🖼️ nhìn hình — đủ số lượng, mỗi l�
     assert.strictEqual(q.optFig.length, q.options.length, `IQ ${q.id}: optFig lệch số lựa chọn`);
     assert.strictEqual(new Set(q.optFig).size, q.optFig.length,
       `IQ ${q.id}: có 2 lựa chọn vẽ RA HÌNH GIỐNG HỆT nhau ⇒ câu hỏi vô nghiệm/hai đáp án`);
-    for (const s of q.optFig) assert.ok(/^<svg class="iqfig/.test(s), `IQ ${q.id}: optFig không phải SVG`);
+    // Lựa chọn thường là 1 SVG; câu "điền hai chỗ trống" bọc 2 SVG trong một span
+    for (const s of q.optFig) assert.ok(/^<(svg|span)\b/.test(s) && s.includes('<svg class="iqfig'),
+      `IQ ${q.id}: optFig phải là SVG (hoặc span bọc các SVG)`);
   }
   // Đáp án không được dồn hết vào một vị trí (figQ xoay vòng vị trí theo id)
   const pos = {};

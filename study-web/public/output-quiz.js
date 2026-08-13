@@ -1664,4 +1664,62 @@ window.OUTPUT_QUIZ = [
     options: ['"abcd"', '"bd"', '"xyzw"', '"dcba"'], answer: 0,
     explain: 'Chỉ giữ ký tự ở chỉ số LẺ (1, 3) ⇒ "abcd" cho "bd"; "bd" cho "d"; "xyzw" cho "yw"; "dcba" cho "ca".',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #18 =====
+  {
+    id: 'oq20-iterator', topic: 'Iterator',
+    code: `const it = [10, 20][Symbol.iterator]();\nconsole.log(it.next().value, it.next().value, it.next().done);`,
+    options: ['10 20 false', '10 20 true', '20 10 true', 'undefined undefined true'], answer: 1,
+    explain: 'for…of chạy chính giao thức này: gọi next() cho tới khi done = true. Hết phần tử thì { value: undefined, done: true }.',
+  },
+  {
+    id: 'oq20-includes-fromindex', topic: 'Mảng',
+    code: `const a = [1, 2, 3, 2];\nconsole.log(a.includes(2), a.includes(2, 2), a.indexOf(2, 2));`,
+    options: ['true true 3', 'true false 3', 'true true 1', 'false true 3'], answer: 0,
+    explain: 'Tham số thứ hai là VỊ TRÍ BẮT ĐẦU tìm: từ index 2 trở đi vẫn còn số 2 ở index 3 ⇒ true và indexOf trả 3.',
+  },
+  {
+    id: 'oq20-sort-vs-default', topic: 'Array.sort',
+    code: `console.log([10, 5, 1].sort((a, b) => b - a).join(), [10, 5, 1].sort().join());`,
+    options: ['10,5,1 1,10,5', '10,5,1 1,5,10', '1,5,10 1,10,5', '10,5,1 10,5,1'], answer: 0,
+    explain: 'Có comparator thì sắp giảm dần đúng ý; không có comparator thì so theo CHUỖI nên "10" đứng trước "5".',
+  },
+  {
+    id: 'oq20-localecompare', topic: 'Chuỗi',
+    code: `console.log('a'.localeCompare('b'), 'b'.localeCompare('a'), 'a'.localeCompare('a'));`,
+    options: ['-1 1 0', '1 -1 0', '0 0 0', 'true false true'], answer: 0,
+    explain: 'localeCompare trả số ÂM / DƯƠNG / 0 — đúng dạng comparator để truyền thẳng vào sort cho mảng chuỗi.',
+  },
+  {
+    id: 'oqi-indexof-from', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.indexOf(3, 2);\nconsole.log(f(INPUT));`,
+    out: '3',
+    options: ['[3, 1, 2, 3]', '[3, 3, 3]', '[1, 2, 3]', '[1, 2, 4]'], answer: 0,
+    explain: 'Bắt đầu tìm số 3 TỪ index 2 ⇒ phải có số 3 nằm ở index 3 (số 3 ở đầu mảng bị bỏ qua).',
+  },
+  {
+    id: 'oqi-sort-desc-chars', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => [...s].sort().reverse().join('');\nconsole.log(f(INPUT));`,
+    out: 'dcba',
+    options: ['"abcd"', '"abc"', '"dcbae"', '"aabb"'], answer: 0,
+    explain: 'Sắp xếp tăng dần rồi đảo ngược = sắp GIẢM DẦN ⇒ chỉ cần đúng bộ ký tự a, b, c, d.',
+  },
+  {
+    id: 'oqi-even-count', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => Array.from({ length: n }, (_, i) => i).filter(i => i % 2 === 0).length;\nconsole.log(f(INPUT));`,
+    out: '3',
+    options: ['5', '4', '8', '2'], answer: 0,
+    explain: 'Với n = 5 thì các chỉ số 0..4 có 3 số chẵn (0, 2, 4). n = 4 chỉ có 2, n = 8 có 4.',
+  },
+  {
+    id: 'oqi-keys-values', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => Object.keys(o).join('') + Object.values(o).join('');\nconsole.log(f(INPUT));`,
+    out: 'ab12',
+    options: ['{ a: 1, b: 2 }', '{ a: 2, b: 1 }', '{ b: 1, a: 2 }', '{ a: 1, b: 2, c: 3 }'], answer: 0,
+    explain: 'Nối tất cả KHOÁ rồi tới tất cả GIÁ TRỊ, đều theo thứ tự khai báo ⇒ "ab" + "12".',
+  },
 ];
