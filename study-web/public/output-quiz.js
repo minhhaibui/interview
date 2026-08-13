@@ -847,4 +847,62 @@ window.OUTPUT_QUIZ = [
     options: ['{ a: 1, b: 3, c: 5 }', '{ a: 3, b: 3, c: 5 }', '{ b: 1, c: 5 }', '{ a: 1, b: 2, c: 3 }'], answer: 0,
     explain: 'Lọc KHOÁ có giá trị > 2 và giữ thứ tự khoá ⇒ a phải ≤ 2, còn b và c phải > 2.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #4 =====
+  {
+    id: 'oq6-typeof-class', topic: 'typeof',
+    code: `class A {}\nconsole.log(typeof function () {}, typeof A, typeof [], typeof (() => {}));`,
+    options: ['function class object function', 'function function object function', 'object function object function', 'function function array function'], answer: 1,
+    explain: 'class chỉ là "đường cú pháp" của function ⇒ typeof vẫn là "function"; mảng là object (muốn chắc thì Array.isArray).',
+  },
+  {
+    id: 'oq6-freeze', topic: 'Object',
+    code: `const o = { a: 1, nested: { b: 2 } };\nObject.freeze(o);\no.a = 99;\no.nested.b = 99;\nconsole.log(o.a, o.nested.b);`,
+    options: ['99 99', '1 2', '1 99', '99 2'], answer: 2,
+    explain: 'Object.freeze chỉ đóng băng tầng NGOÀI: gán o.a bị bỏ qua (im lặng ở non-strict), còn object lồng bên trong vẫn sửa được.',
+  },
+  {
+    id: 'oq6-indexof-strict', topic: 'Mảng',
+    code: `console.log([1, 2, 3].indexOf('2'), [1, 2, 3].includes(2), [NaN].includes(NaN), [NaN].indexOf(NaN));`,
+    options: ['1 true true 0', '-1 true true -1', '-1 true false 0', '1 true false -1'], answer: 1,
+    explain: 'indexOf/includes so sánh NGHIÊM NGẶT nên "2" không khớp 2; riêng NaN thì includes tìm được (SameValueZero) còn indexOf thì không.',
+  },
+  {
+    id: 'oq6-getter', topic: 'Object',
+    code: `const o = {\n  _v: 1,\n  get v() { return this._v * 2; },\n  set v(x) { this._v = x + 1; },\n};\no.v = 4;\nconsole.log(o.v, o._v);`,
+    options: ['8 4', '10 5', '4 4', '8 5'], answer: 1,
+    explain: 'Setter chạy trước: _v = 4 + 1 = 5. Sau đó getter trả 5 × 2 = 10.',
+  },
+  {
+    id: 'oqi-alt-chars', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.filter((_, i) => i % 2 === 0).join('');\nconsole.log(f(INPUT));`,
+    out: 'ace',
+    options: ['["a", "b", "c", "d", "e"]', '["a", "c", "e"]', '["a", "b", "c"]', '["e", "d", "c", "b", "a"]'], answer: 0,
+    explain: 'Chỉ giữ phần tử ở chỉ số CHẴN (0, 2, 4) ⇒ mảng a b c d e cho "ace"; mảng ["a","c","e"] lại ra "ae".',
+  },
+  {
+    id: 'oqi-match-count', topic: 'Đoán input · regex', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => (s.match(/a/g) || []).length;\nconsole.log(f(INPUT));`,
+    out: '3',
+    options: ['"database"', '"java"', '"sql"', '"cache"'], answer: 0,
+    explain: 'Đếm số chữ "a" trong chuỗi: database có 3, java có 2, cache có 1, sql không có (match trả null nên phải || []).',
+  },
+  {
+    id: 'oqi-nested-len', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = res => res.data.items.length;\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ['{ data: { items: [1, 2] } }', '{ data: { items: [1, 2, 3] } }', '{ data: { items: [] } }', '{ data: { items: [[1, 2]] } }'], answer: 0,
+    explain: 'Phải đi đủ 2 tầng data → items rồi mới đếm; mảng lồng [[1,2]] chỉ có 1 phần tử.',
+  },
+  {
+    id: 'oqi-flatmap-len', topic: 'Đoán input · flatMap', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.flatMap(x => [x, x]).length;\nconsole.log(f(INPUT));`,
+    out: '6',
+    options: ['[1, 2, 3]', '[1, 2]', '[1, 2, 3, 4]', '[6]'], answer: 0,
+    explain: 'flatMap nhân đôi từng phần tử rồi làm phẳng ⇒ độ dài = 2n, cần n = 3.',
+  },
 ];
