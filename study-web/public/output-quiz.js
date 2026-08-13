@@ -731,4 +731,62 @@ window.OUTPUT_QUIZ = [
     options: ['"  code  "', '"code!"', '"  ab  "', '"c o d e"'], answer: 0,
     explain: 'trim() bỏ khoảng trắng hai ĐẦU (không bỏ ở giữa) ⇒ "  code  " còn 4 ký tự; "c o d e" vẫn 7 ký tự.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #2 =====
+  {
+    id: 'oq4-foreach-return', topic: 'Mảng',
+    code: `const r = [1, 2, 3].forEach(x => x * 2);\nconsole.log(r, [1, 2, 3].map(x => x * 2).join());`,
+    options: ['2,4,6 2,4,6', 'undefined 2,4,6', '1,2,3 2,4,6', 'undefined 1,2,3'], answer: 1,
+    explain: 'forEach LUÔN trả undefined (chỉ để chạy side-effect); muốn lấy mảng mới phải dùng map.',
+  },
+  {
+    id: 'oq4-string-compare', topic: 'Ép kiểu',
+    code: `console.log('10' > '9', 10 > 9, '10' > 9);`,
+    options: ['true true true', 'false true true', 'false true false', 'true true false'], answer: 1,
+    explain: 'Hai CHUỖI so sánh theo từng ký tự ("1" < "9") ⇒ false. Có một bên là số thì chuỗi được ép về số ⇒ true.',
+  },
+  {
+    id: 'oq4-delete-array', topic: 'Mảng',
+    code: `const a = [1, 2, 3];\ndelete a[1];\nconsole.log(a.length, a[1], a.filter(Boolean).length);`,
+    options: ['2 undefined 2', '3 undefined 2', '3 2 3', '2 2 2'], answer: 1,
+    explain: 'delete để lại "lỗ trống" chứ KHÔNG rút ngắn mảng: length vẫn 3, phần tử thành undefined. Muốn xoá thật thì dùng splice.',
+  },
+  {
+    id: 'oq4-spread-override', topic: 'Object',
+    code: `const base = { a: 1, b: 2 };\nconst over = { ...base, b: 3, ...{ a: 9 } };\nconsole.log(JSON.stringify(over));`,
+    options: ['{"a":1,"b":3}', '{"a":9,"b":3}', '{"a":9,"b":2}', '{"a":1,"b":2}'], answer: 1,
+    explain: 'Spread ghi đè theo thứ tự TRÁI → PHẢI, nhưng thứ tự KHOÁ vẫn theo lần xuất hiện đầu tiên ⇒ a trước b, giá trị a = 9, b = 3.',
+  },
+  {
+    id: 'oqi-initials', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.split(' ').map(w => w[0]).join('');\nconsole.log(f(INPUT));`,
+    out: 'NBI',
+    options: ['"Node Backend Interview"', '"NodeBackendInterview"', '"Nginx Bash"', '"New Big Idea Now"'], answer: 0,
+    explain: 'Cắt theo dấu cách rồi lấy chữ cái đầu mỗi từ: cần đúng 3 từ N…, B…, I…. Chuỗi dính liền chỉ ra "N".',
+  },
+  {
+    id: 'oqi-array-from', topic: 'Đoán input · Array.from', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => Array.from({ length: n }, (_, i) => i).join('');\nconsole.log(f(INPUT));`,
+    out: '0123',
+    options: ['4', '3', '5', '0'], answer: 0,
+    explain: 'Array.from tạo n phần tử từ chỉ số 0 ⇒ muốn "0123" (4 chữ số) thì n = 4.',
+  },
+  {
+    id: 'oqi-findindex', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.findIndex(x => x > 10);\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ['[5, 8, 12, 20]', '[12, 5, 8]', '[1, 2, 3]', '[5, 20, 8]'], answer: 0,
+    explain: 'findIndex trả VỊ TRÍ (từ 0) của phần tử ĐẦU TIÊN thoả điều kiện ⇒ số >10 phải nằm ở index 2. Không có thì trả −1.',
+  },
+  {
+    id: 'oqi-vowels', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.toUpperCase().split('').filter(c => 'AEIOU'.includes(c)).length;\nconsole.log(f(INPUT));`,
+    out: '4',
+    options: ['"database"', '"server"', '"sql"', '"javascript"'], answer: 0,
+    explain: '"database" có a, a, a, e = 4 nguyên âm; "javascript" có 3; "server" có 2; "sql" không có nguyên âm nào.',
+  },
 ];
