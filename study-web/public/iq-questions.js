@@ -1982,4 +1982,46 @@ window.IQ_QUESTIONS = [
     explain: '20% số lần vẫn tốn 150ms DB ⇒ trung bình 50 + 0,2 × 150 = 80ms.' },
   { id: 'n18-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 2, 4, 7, 12, 20, ?', options: ['28', '31', '33', '35'], answer: 2,
     explain: 'Mỗi số = tổng hai số trước + 1: 12 + 20 + 1 = 33.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #17 — TÌM HÌNH PHÁ VỠ QUY LUẬT =====
+  // Chuỗi có đánh số ở hàng trên; người làm phải chỉ ra hình SAI quy luật.
+  { id: 'brk1', category: '🖼️ Suy luận hình', d: 3, q: 'Chuỗi dưới đây lẽ ra tuân theo một quy luật. Hình thứ mấy PHÁ VỠ quy luật đó?',
+    fig: figRow([numCell(1), numCell(2), numCell(3), numCell(4), numCell(5)]) +
+      figRow([iqSvg(rot(ARROW, 0)), iqSvg(rot(ARROW, 90)), iqSvg(rot(ARROW, 180)), iqSvg(rot(ARROW, 90)), iqSvg(rot(ARROW, 0))]),
+    options: ['Hình 2', 'Hình 3', 'Hình 4', 'Hình 5'], answer: 2,
+    explain: 'Quy luật là xoay đều 90° mỗi bước: 0° → 90° → 180° → 270° → 0°. Hình thứ 4 quay ngược về 90° thay vì 270°.' },
+  { id: 'brk2', category: '🖼️ Suy luận hình', d: 2, q: 'Chuỗi dưới đây lẽ ra tuân theo một quy luật. Hình thứ mấy PHÁ VỠ quy luật đó?',
+    fig: figRow([numCell(1), numCell(2), numCell(3), numCell(4), numCell(5)]) +
+      figRow([gSvg('100/000/000'), gSvg('110/000/000'), gSvg('111/000/000'), gSvg('111/110/000'), gSvg('111/110/100')]),
+    options: ['Hình 2', 'Hình 3', 'Hình 4', 'Hình 5'], answer: 2,
+    explain: 'Số ô tô phải tăng đều 1 mỗi bước: 1, 2, 3, 4, 5. Hình thứ 4 tô 5 ô (nhảy 2 ô) nên sai; hình 5 lại chỉ hơn hình 4 đúng 1 ô.' },
+  { id: 'brk3', category: '🖼️ Suy luận hình', d: 3, q: 'Chuỗi dưới đây lẽ ra tuân theo một quy luật. Hình thứ mấy PHÁ VỠ quy luật đó?',
+    fig: figRow([numCell(1), numCell(2), numCell(3), numCell(4), numCell(5)]) +
+      figRow([iqSvg(polyShape(3)), iqSvg(polyShape(4)), iqSvg(polyShape(5)), iqSvg(polyShape(7)), iqSvg(polyShape(7))]),
+    options: ['Hình 2', 'Hình 3', 'Hình 4', 'Hình 5'], answer: 2,
+    explain: 'Số cạnh phải tăng đều 1: 3, 4, 5, 6, 7. Hình thứ 4 có 7 cạnh thay vì 6 (đếm chấm ở đỉnh để kiểm).' },
+  gOpQ('gx27', 3, '101/011/110', '110/101/011', 'or', 'Hợp hai lưới: tô mọi ô xuất hiện ở ít nhất một hình.'),
+  figQ({
+    id: 'afig4', d: 3, q: 'Hình trên biến đổi theo một quy luật. Áp dụng đúng quy luật đó cho hàng dưới, ô ? là hình nào?',
+    fig: figRow([gSvg('110/100/000'), numCell('→'), gSvg(gFlip('110/100/000'))]) +
+      figRow([gSvg('100/110/010'), numCell('→'), '?']),
+    opts: [gSvg(gFlip('100/110/010')), gSvg(gRot('100/110/010')), gSvg(gInv('100/110/010')), gSvg('100/110/010')],
+    explain: 'Quy luật là LẬT GƯƠNG trái ↔ phải (không phải xoay) ⇒ mỗi hàng đảo thứ tự ô của chính nó.',
+  }),
+  { id: 'nm23', category: '🖼️ Suy luận hình', d: 2, q: 'Ma trận 4×4: số ở ô dấu ? là bao nhiêu? (mỗi ô = hàng + cột)',
+    fig: figGrid([
+      numCell(2), numCell(3), numCell(4), numCell(5),
+      numCell(3), numCell(4), numCell(5), numCell(6),
+      numCell(4), numCell(5), '?', numCell(7),
+      numCell(5), numCell(6), numCell(7), numCell(8)], 4),
+    options: ['5', '6', '7', '9'], answer: 1,
+    explain: 'Ô hàng 3 cột 3 = 3 + 3 = 6 (mọi đường chéo phụ đều có giá trị bằng nhau).' },
+  { id: 'dl71', category: '➗ Toán nhanh', d: 3, q: 'Sản lượng tăng 10% mỗi ngày, liên tục 5 ngày. Tổng cộng tăng khoảng bao nhiêu phần trăm?', options: ['50%', '55%', '61%', '65%'], answer: 2,
+    explain: '1,1⁵ ≈ 1,61 ⇒ tăng khoảng 61% (không phải cộng dồn 5 × 10% = 50% vì có LÃI KÉP).' },
+  { id: 'dl72', category: '🎲 Xác suất', d: 3, q: 'Rút 2 lá từ bộ 52 lá (không hoàn lại). Xác suất cả hai đều là Át?', options: ['1/169', '1/221', '1/13', '4/663'], answer: 1,
+    explain: '(4/52) × (3/51) = 12/2652 = 1/221.' },
+  { id: 'dl73', category: '⏱️ Chuyển động & công việc', d: 2, q: 'Hàng đợi còn 1.000 job, mỗi worker xử lý 5 job/giây, có 4 worker. Bao lâu thì hết hàng đợi?', options: ['25 giây', '50 giây', '100 giây', '200 giây'], answer: 1,
+    explain: 'Tổng năng lực 4 × 5 = 20 job/giây ⇒ 1.000 / 20 = 50 giây.' },
+  { id: 'n19-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 8, 4, 12, 6, 18, 9, ?', options: ['18', '21', '27', '36'], answer: 2,
+    explain: 'Luân phiên ÷ 2 rồi × 3: sau bước ÷ 2 (18 → 9) là bước × 3 ⇒ 27.' },
 ];

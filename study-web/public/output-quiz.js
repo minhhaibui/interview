@@ -1606,4 +1606,62 @@ window.OUTPUT_QUIZ = [
     options: ['["api", "sql", "x"]', '["api", "sql"]', '["node", "js"]', '["a", "b"]'], answer: 0,
     explain: 'Cộng ĐỘ DÀI tất cả phần tử: 3 + 3 + 1 = 7 (không phải đếm số phần tử).',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #17 =====
+  {
+    id: 'oq19-isnan', topic: 'Số học',
+    code: `console.log(isNaN('abc'), Number.isNaN('abc'), isNaN('123'), Number.isNaN(NaN));`,
+    options: ['true true false true', 'true false false true', 'false false false true', 'true false true true'], answer: 1,
+    explain: 'isNaN() ép kiểu trước rồi mới kiểm tra (nên "abc" ra true); Number.isNaN chỉ true khi giá trị THỰC SỰ là NaN. Luôn ưu tiên Number.isNaN.',
+  },
+  {
+    id: 'oq19-destructure-length', topic: 'Destructuring',
+    code: `const { length } = 'hello';\nconst [first] = 'hi';\nconsole.log(length, first);`,
+    options: ['undefined undefined', '5 h', '5 hi', 'hello h'], answer: 1,
+    explain: 'Destructuring hoạt động trên mọi object — chuỗi có thuộc tính length và duyệt được từng ký tự nên [first] lấy "h".',
+  },
+  {
+    id: 'oq19-out-of-range', topic: 'Chuỗi & mảng',
+    code: `console.log([1, 2, 3].at(5), 'abc'.charAt(5) + '|', 'abc'[5]);`,
+    options: ['undefined | undefined', 'undefined undefined| undefined', '-1 | undefined', 'undefined || undefined'], answer: 0,
+    explain: 'Vượt phạm vi: mảng .at và chuỗi [i] trả undefined, riêng charAt trả CHUỖI RỖNG (nên "|" dính liền).',
+  },
+  {
+    id: 'oq19-json-parse-error', topic: 'JSON',
+    code: `try {\n  JSON.parse("{a:1}");\n} catch (e) {\n  console.log(e.name, e instanceof SyntaxError);\n}`,
+    options: ['TypeError true', 'SyntaxError true', 'SyntaxError false', 'Error true'], answer: 1,
+    explain: 'JSON bắt buộc khoá phải có dấu nháy kép ⇒ ném SyntaxError. Luôn bọc JSON.parse trong try/catch khi dữ liệu đến từ ngoài.',
+  },
+  {
+    id: 'oqi-json-name', topic: 'Đoán input · JSON', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => JSON.parse(s).name;\nconsole.log(f(INPUT));`,
+    out: 'An',
+    options: ['\'{"name":"An"}\'', '\'{"name":"Binh"}\'', '\'{"ten":"An"}\'', '\'{"name":"an"}\''], answer: 0,
+    explain: 'JSON.parse rồi lấy trường name (phân biệt HOA thường) ⇒ khoá phải đúng tên "name" và giá trị đúng "An".',
+  },
+  {
+    id: 'oqi-tofixed-0', topic: 'Đoán input · số học', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => n.toFixed(0);\nconsole.log(f(INPUT));`,
+    out: '3',
+    options: ['2.6', '2.4', '3.6', '12'], answer: 0,
+    explain: 'toFixed(0) làm tròn về số nguyên gần nhất: 2.6 → "3"; 2.4 → "2"; 3.6 → "4".',
+  },
+  {
+    id: 'oqi-concat-len', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.concat([4, 5]).length;\nconsole.log(f(INPUT));`,
+    out: '5',
+    options: ['[1, 2, 3]', '[1, 2]', '[1, 2, 3, 4]', '[]'], answer: 0,
+    explain: 'concat nối thêm 2 phần tử ⇒ mảng gốc phải có 3 phần tử để tổng là 5.',
+  },
+  {
+    id: 'oqi-odd-index', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => [...s].filter((_, i) => i % 2 === 1).join('');\nconsole.log(f(INPUT));`,
+    out: 'bd',
+    options: ['"abcd"', '"bd"', '"xyzw"', '"dcba"'], answer: 0,
+    explain: 'Chỉ giữ ký tự ở chỉ số LẺ (1, 3) ⇒ "abcd" cho "bd"; "bd" cho "d"; "xyzw" cho "yw"; "dcba" cho "ca".',
+  },
 ];
