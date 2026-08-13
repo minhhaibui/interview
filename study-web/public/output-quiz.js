@@ -1079,4 +1079,67 @@ window.OUTPUT_QUIZ = [
     options: ['47', '39', '55', '104'], answer: 0,
     explain: 'Math.floor cắt XUỐNG bội số 10 gần nhất: 47 → 40; 39 → 30 (không phải 40 như làm tròn thường).',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #8 =====
+  {
+    id: 'oq10-typeof-typeof', topic: 'typeof',
+    code: `console.log(typeof typeof 1, typeof NaN, typeof (1 / 0));`,
+    options: ['number number number', 'string number number', 'string NaN Infinity', 'string number Infinity'], answer: 1,
+    explain: 'typeof luôn trả về một CHUỖI ⇒ typeof typeof 1 = typeof "number" = "string". NaN và Infinity đều thuộc kiểu number.',
+  },
+  {
+    id: 'oq10-length-truncate', topic: 'Mảng',
+    code: `const a = [1, 2, 3, 4];\na.length = 2;\nconsole.log(a.join(), a[3]);`,
+    options: ['1,2,3,4 4', '1,2 undefined', '1,2 4', '1,2,3,4 undefined'], answer: 1,
+    explain: 'Gán length nhỏ hơn sẽ CẮT BỎ phần đuôi của mảng (ghi được, không chỉ đọc) ⇒ phần tử thứ 4 biến mất.',
+  },
+  {
+    id: 'oq10-fill-start', topic: 'Mảng',
+    code: `console.log([1, 2, 3, 4].fill(0, 1, 3).join());`,
+    options: ['0,0,0,0', '1,0,0,4', '1,0,0,0', '0,0,3,4'], answer: 1,
+    explain: 'fill(value, start, end) chỉ ghi đè từ index 1 đến TRƯỚC index 3 ⇒ hai phần tử giữa thành 0.',
+  },
+  {
+    id: 'oq10-async-return', topic: 'async/await',
+    code: `async function f() { return 1; }\nconst r = f();\nconsole.log(r instanceof Promise, typeof r.then, r === 1);`,
+    options: ['false function false', 'true function false', 'true undefined false', 'true function true'], answer: 1,
+    explain: 'Hàm async LUÔN trả về Promise, kể cả khi return giá trị thường ⇒ phải await (hoặc .then) mới lấy được 1.',
+  },
+  {
+    id: 'oqi-reverse-join', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => [...a].reverse().join('');\nconsole.log(f(INPUT));`,
+    out: 'cba',
+    options: ['["a", "b", "c"]', '["c", "b", "a"]', '["a", "b"]', '["b", "c", "a"]'], answer: 0,
+    explain: 'Đảo ngược rồi nối ⇒ mảng gốc phải là a, b, c. Mảng ["c","b","a"] đảo lại thành "abc".',
+  },
+  {
+    id: 'oqi-map-number-sum', topic: 'Đoán input · ép kiểu', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.map(Number).reduce((x, y) => x + y, 0);\nconsole.log(f(INPUT));`,
+    out: '6',
+    options: ['["1", "2", "3"]', '["1", "2"]', '["6", "1"]', '["2", "2"]'], answer: 0,
+    explain: 'map(Number) đổi chuỗi thành số rồi mới cộng: 1 + 2 + 3 = 6 (nếu không có map thì sẽ NỐI chuỗi thành "0123").',
+  },
+  {
+    id: 'oqi-count-done', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => o.list.filter(t => t.done).length;\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: [
+      '{ list: [{ done: true }, { done: false }, { done: true }] }',
+      '{ list: [{ done: true }, { done: false }] }',
+      '{ list: [{ done: false }, { done: false }] }',
+      '{ list: [{ done: true }, { done: true }, { done: true }] }',
+    ], answer: 0,
+    explain: 'Đếm số phần tử có done = true trong mảng lồng trong object ⇒ cần đúng 2 việc đã xong.',
+  },
+  {
+    id: 'oqi-tofixed', topic: 'Đoán input · số học', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => (n * 1.1).toFixed(2);\nconsole.log(f(INPUT));`,
+    out: '11.00',
+    options: ['10', '11', '100', '1.1'], answer: 0,
+    explain: 'Tăng 10% rồi làm tròn 2 chữ số: 10 × 1,1 = 11,00. Chọn 11 sẽ ra 12.10.',
+  },
 ];
