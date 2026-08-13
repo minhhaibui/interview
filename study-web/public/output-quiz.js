@@ -2418,4 +2418,62 @@ window.OUTPUT_QUIZ = [
     options: ['459', '953', '944', '9541'], answer: 0,
     explain: 'Sắp các CHỮ SỐ giảm dần: 459 → "954". Vì phép này không quan tâm thứ tự đầu vào nên các mồi nhử phải dùng BỘ chữ số khác (953 → "953", 944 → "944").',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #31 =====
+  {
+    id: 'oq33-this-loss', topic: 'this binding',
+    code: `const o = { x: 1, get() { return this && this.x; } };\nconst g = o.get;\nconsole.log(o.get(), g(), o.get.call({ x: 9 }));`,
+    options: ['1 undefined 9', '1 1 9', 'undefined undefined 9', '1 undefined 1'], answer: 0,
+    explain: 'Tách method ra biến là MẤT this (gọi trơ nên this không còn là o) — lý do phải bind hoặc dùng arrow khi truyền method làm callback.',
+  },
+  {
+    id: 'oq33-array-default-ref', topic: 'Destructuring',
+    code: `const [a, b = a * 2, c = b + 1] = [3];\nconsole.log(a, b, c);`,
+    options: ['3 6 7', '3 undefined NaN', '3 6 NaN', '3 3 4'], answer: 0,
+    explain: 'Giá trị mặc định được tính LẦN LƯỢT từ trái sang phải nên b dùng được a, và c dùng được b.',
+  },
+  {
+    id: 'oq33-flat-reduce', topic: 'Mảng',
+    code: `console.log([1, [2], [[3]]].flat(Infinity).reduce((a, b) => a + b), Object.entries({ a: 1 }).flat().join('-'));`,
+    options: ['6 a-1', '123 a-1', '6 a,1', '6 a-1-'], answer: 0,
+    explain: 'flat(Infinity) làm phẳng mọi tầng rồi cộng ⇒ 6; entries().flat() biến [[a,1]] thành [a,1] rồi nối bằng "-".',
+  },
+  {
+    id: 'oq33-repeat-zero', topic: 'Chuỗi',
+    code: `console.log('abc'.repeat(0) === '', 'ab'.repeat(2), '-'.repeat(3) + '|');`,
+    options: ['true abab ---|', 'false abab ---|', 'true abab --|', 'true ababab ---|'], answer: 0,
+    explain: 'repeat(0) trả CHUỖI RỖNG (không lỗi); repeat(n) âm mới ném RangeError.',
+  },
+  {
+    id: 'oqi-flat-sum', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.flat(Infinity).reduce((x, y) => x + y, 0);\nconsole.log(f(INPUT));`,
+    out: '6',
+    options: ['[1, [2, [3]]]', '[1, [2]]', '[[6, 1]]', '[2, [2]]'], answer: 0,
+    explain: 'Làm phẳng mọi tầng rồi cộng: 1 + 2 + 3 = 6 (các lựa chọn kia ra 3, 7 và 4).',
+  },
+  {
+    id: 'oqi-trim-regex', topic: 'Đoán input · regex', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.replace(/^\\s+|\\s+$/g, '').length;\nconsole.log(f(INPUT));`,
+    out: '3',
+    options: ['"   abc   "', '"abcd"', '"  ab  "', '"a"'], answer: 0,
+    explain: 'Regex này chính là trim: chỉ bỏ khoảng trắng ở HAI ĐẦU rồi đếm ⇒ "abc" = 3 (dấu cách ở giữa vẫn được tính, nên chuỗi "a b" cũng ra 3 và không dùng làm mồi nhử được).',
+  },
+  {
+    id: 'oqi-entries-flat', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => Object.entries(o).flat().join('-');\nconsole.log(f(INPUT));`,
+    out: 'a-1-b-2',
+    options: ['{ a: 1, b: 2 }', '{ b: 2, a: 1 }', '{ a: 2, b: 1 }', '{ a: 1 }'], answer: 0,
+    explain: 'Trải từng cặp khoá-giá trị rồi nối bằng "-" theo thứ tự khai báo ⇒ a, 1, b, 2.',
+  },
+  {
+    id: 'oqi-sum-range', topic: 'Đoán input · số học', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => [...Array(n)].reduce((s, _, i) => s + i, 0);\nconsole.log(f(INPUT));`,
+    out: '10',
+    options: ['5', '4', '6', '10'], answer: 0,
+    explain: 'Cộng các chỉ số 0..n−1: với n = 5 là 0+1+2+3+4 = 10; n = 4 ra 6; n = 6 ra 15.',
+  },
 ];

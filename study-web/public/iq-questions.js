@@ -2578,4 +2578,44 @@ window.IQ_QUESTIONS = [
     explain: '(1/4)⁴ = 1/256.' },
   { id: 'n32-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 6, 11, 21, 41, 81, ?', options: ['121', '141', '161', '162'], answer: 2,
     explain: 'Quy luật × 2 − 1: 81 × 2 − 1 = 161.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #31 =====
+  // Chuỗi XOR với MẶT NẠ CỐ ĐỊNH: mỗi bước chồng cùng một lưới ẩn
+  figQ({
+    id: 'mask1', d: 3, q: 'Mỗi bước, hình được chồng với CÙNG MỘT lưới ẩn theo quy tắc ⊕. Hình tiếp theo là gì?',
+    fig: (() => {
+      const m = '010/010/000';
+      const a = '110/001/010', b = gOp(a, m, 'xor'), c = gOp(b, m, 'xor'), d = gOp(c, m, 'xor');
+      return figRow([gSvg(a), gSvg(b), gSvg(c), gSvg(d), '?']);
+    })(),
+    opts: (() => {
+      const m = '010/010/000';
+      const a = '110/001/010', b = gOp(a, m, 'xor'), c = gOp(b, m, 'xor'), d = gOp(c, m, 'xor'), e = gOp(d, m, 'xor');
+      return [gSvg(e), gSvg(d), gSvg(gInv(e)), gSvg(gRot(e))];
+    })(),
+    explain: 'Cùng một mặt nạ được XOR mỗi bước nên chuỗi LẶP LẠI sau 2 bước: hình 1 = hình 3 = hình 5.',
+  }),
+  { id: 'addto9', category: '🖼️ Suy luận hình', d: 1, q: 'Cần tô thêm bao nhiêu ô nữa thì lưới bên dưới ĐẦY cả 9 ô?',
+    fig: figRow([gSvg('110/011/010')], 'lg'),
+    options: ['3 ô', '4 ô', '5 ô', '6 ô'], answer: 1,
+    explain: 'Lưới đang tô 5 ô ⇒ còn thiếu 9 − 5 = 4 ô.' },
+  { id: 'countsym', category: '🖼️ Suy luận hình', d: 3, q: 'Trong 4 hình dưới đây, có bao nhiêu hình ĐỐI XỨNG qua trục dọc?',
+    fig: figRow([gSvg('010/111/010'), gSvg('110/010/001'), gSvg('101/010/101'), gSvg('100/110/001')]),
+    options: ['1 hình', '2 hình', '3 hình', '4 hình'], answer: 1,
+    explain: 'Hình dấu cộng và hình bốn góc + tâm đối xứng qua trục dọc; hai hình còn lại thì không ⇒ 2 hình.' },
+  gOpQ('gx41', 2, '011/101/010', '110/011/110', 'or', 'Hợp hai lưới: gộp mọi ô được tô của cả hai hình.'),
+  { id: 'nm37', category: '🖼️ Suy luận hình', d: 3, q: 'Số ở ô dấu ? là bao nhiêu?',
+    fig: figGrid([numCell(2), numCell(7), numCell(5), numCell(9), '?', numCell(4), numCell(6), numCell(11), numCell(5)], 3),
+    options: ['12', '13', '14', '15'], answer: 1,
+    explain: 'Cột 2 − cột 1 = cột 3 (7−2 = 5, 11−6 = 5) ⇒ hàng giữa: ? − 9 = 4 ⇒ ? = 13.' },
+  { id: 'dl113', category: '🧠 Logic', d: 3, q: 'Một người nói: "Câu tôi đang nói là câu nói dối." Câu này thế nào?', options: ['Chắc chắn là câu nói đúng', 'Chắc chắn là câu nói sai', 'Là NGHỊCH LÝ, không gán được', 'Thiếu dữ kiện để kết luận'], answer: 2,
+    explain: 'Nghịch lý người nói dối: nếu đúng thì theo nội dung nó phải sai, nếu sai thì nó lại đúng ⇒ không thể gán đúng/sai.' },
+  { id: 'dl114', category: '🧠 Logic', d: 2, q: 'Ba cái máy in cùng in xong 300 trang trong 10 phút. Hỏi 5 máy in như vậy in 500 trang mất bao lâu?', options: ['6 phút', '10 phút', '12 phút', '15 phút'], answer: 1,
+    explain: 'Mỗi máy in 10 trang/phút. 5 máy in 50 trang/phút ⇒ 500 / 50 = 10 phút.' },
+  { id: 'dl115', category: '➗ Toán nhanh', d: 3, q: 'Chi phí lưu trữ 0,023 USD/GB/tháng. Lưu 5TB trong 1 năm hết khoảng bao nhiêu? (1TB = 1000GB)', options: ['115 USD', '460 USD', '1.380 USD', '13.800 USD'], answer: 2,
+    explain: '5TB = 5.000GB ⇒ mỗi tháng 5.000 × 0,023 = 115 USD ⇒ một năm 115 × 12 = 1.380 USD.' },
+  { id: 'n33-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 5, 6, 9, 14, 21, ?', options: ['28', '29', '30', '31'], answer: 2,
+    explain: 'Khoảng cách là các số lẻ 1, 3, 5, 7, 9 ⇒ 21 + 9 = 30.' },
+  { id: 'n33-2', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 128, 64, 32, 16, ?', options: ['4', '8', '12', '14'], answer: 1,
+    explain: 'Mỗi số bằng một nửa số trước: 16 / 2 = 8.' },
 ];
