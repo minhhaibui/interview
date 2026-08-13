@@ -2130,4 +2130,43 @@ window.IQ_QUESTIONS = [
     explain: '2KB × 100 = 200KB/giây × 86.400 giây ≈ 17.280.000KB ≈ 17,3GB mỗi ngày.' },
   { id: 'n21-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 4, 9, 18, 35, ?', options: ['52', '60', '68', '70'], answer: 2,
     explain: 'Khoảng cách giữa các số là 3, 5, 9, 17, 33 — mỗi khoảng bằng khoảng trước × 2 − 1 ⇒ 35 + 33 = 68.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #20 =====
+  // "Hình nào KHÔNG thể có được bằng cách xoay hình mẫu?" (đáp án là ảnh gương)
+  figQ({
+    id: 'notrot1', d: 3, q: 'Hình nào KHÔNG THỂ tạo ra bằng cách XOAY hình mẫu bên dưới?',
+    fig: figRow([gSvg('100/100/110')]),
+    opts: [gSvg(gFlip('100/100/110')), gSvg(gRot('100/100/110')),
+      gSvg(gRot(gRot('100/100/110'))), gSvg(gRot(gRot(gRot('100/100/110'))))],
+    explain: 'Ba lựa chọn kia là hình mẫu xoay 90°, 180°, 270°; lựa chọn còn lại là ẢNH GƯƠNG — xoay kiểu gì cũng không ra được.',
+  }),
+  // Khoảng cách Hamming: hai lưới khác nhau ở mấy ô
+  { id: 'comp1', category: '🖼️ Suy luận hình', d: 2, q: 'Hai lưới bên dưới KHÁC NHAU ở bao nhiêu ô?',
+    fig: figRow([gSvg('110/010/001'), gSvg('100/011/001')]),
+    options: ['1 ô', '2 ô', '3 ô', '4 ô'], answer: 1,
+    explain: 'So từng ô: lưới trái tô ô giữa hàng đầu còn lưới phải thì không, ngược lại lưới phải tô thêm ô phải hàng giữa ⇒ đúng 2 ô lệch (bằng số ô của phép XOR).' },
+  { id: 'comp2', category: '🖼️ Suy luận hình', d: 3, q: 'Hai lưới bên dưới KHÁC NHAU ở bao nhiêu ô?',
+    fig: figRow([gSvg('111/000/111'), gSvg('101/010/011')]),
+    options: ['2 ô', '3 ô', '4 ô', '5 ô'], answer: 1,
+    explain: 'Đếm số ô mà một bên tô còn bên kia trống (chính là số ô của phép XOR): 3 ô.' },
+  // Chuỗi KÉP: vừa xoay vừa thêm ô
+  figQ({
+    id: 'dual1', d: 3, q: 'Hình tiếp theo của chuỗi là gì? (chuỗi có HAI quy luật cùng lúc)',
+    fig: figRow([gSvg('100/000/000'), gSvg('001/001/000'), gSvg('000/000/111'), '?']),
+    opts: [gSvg('110/100/100'), gSvg('111/000/000'), gSvg('000/111/000'), gSvg('100/100/110')],
+    explain: 'Mỗi bước cả hình XOAY 90° thuận chiều VÀ tô thêm 1 ô: 1 ô → 2 ô → 3 ô → 4 ô.',
+  }),
+  gOpQ('gx30', 3, '110/101/011', '011/110/101', 'or', 'Hợp hai lưới: gộp toàn bộ ô được tô của cả hai hình.'),
+  { id: 'nm26', category: '🖼️ Suy luận hình', d: 3, q: 'Số ở ô dấu ? là bao nhiêu? (tổng mỗi CỘT đều bằng nhau)',
+    fig: figGrid([numCell(4), numCell(9), numCell(2), numCell(3), numCell(5), numCell(7), numCell(8), '?', numCell(6)]),
+    options: ['1', '2', '4', '6'], answer: 0,
+    explain: 'Tổng cột 1 = 4 + 3 + 8 = 15 và cột 3 = 2 + 7 + 6 = 15 ⇒ cột 2 cần 15 − 9 − 5 = 1 (đây chính là ma phương 3×3).' },
+  { id: 'dl80', category: '🧠 Logic', d: 3, q: 'Một người cần chuyển con sói, con dê và bó cỏ qua sông; thuyền chỉ chở được một thứ mỗi lượt. Chuyến ĐẦU TIÊN phải chở gì?', options: ['Con sói', 'Con dê', 'Bó cỏ', 'Chở gì cũng được'], answer: 1,
+    explain: 'Phải tách sói khỏi dê và dê khỏi cỏ ⇒ chở DÊ trước, vì sói không ăn cỏ nên để lại được.' },
+  { id: 'dl81', category: '🎲 Xác suất', d: 3, q: 'Trong hộp có 5 bi đỏ, 3 bi xanh. Rút 1 bi rồi BỎ LẠI, rút tiếp 1 bi. Xác suất được 2 bi cùng màu?', options: ['17/32', '1/2', '15/32', '34/64'], answer: 0,
+    explain: 'Có hoàn lại: (5/8)² + (3/8)² = 25/64 + 9/64 = 34/64 = 17/32.' },
+  { id: 'dl82', category: '➗ Toán nhanh', d: 3, q: 'Query mất 20ms, nhưng gọi N+1 lần cho 100 bản ghi. Nếu gộp thành 1 query 50ms thì tiết kiệm bao nhiêu thời gian?', options: ['Khoảng 1,9 giây', 'Khoảng 950ms', 'Khoảng 2 giây', 'Khoảng 100ms'], answer: 2,
+    explain: 'N+1: 101 × 20ms = 2.020ms. Gộp lại còn 50ms ⇒ tiết kiệm ~1.970ms, tức khoảng 2 giây.' },
+  { id: 'n22-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 7, 8, 10, 14, 22, ?', options: ['30', '32', '38', '44'], answer: 2,
+    explain: 'Khoảng cách nhân đôi: +1, +2, +4, +8, +16 ⇒ 22 + 16 = 38.' },
 ];

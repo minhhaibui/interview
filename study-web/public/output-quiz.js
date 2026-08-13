@@ -1780,4 +1780,62 @@ window.OUTPUT_QUIZ = [
     options: ['3', '4', '2', '33'], answer: 0,
     explain: 'Lặp dấu # đúng n lần rồi nối chính số n vào cuối ⇒ "###" + "3".',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #20 =====
+  {
+    id: 'oq22-object-is', topic: 'So sánh',
+    code: `console.log(Object.is(NaN, NaN), NaN === NaN, Object.is(0, -0), 0 === -0);`,
+    options: ['true false false true', 'false false false true', 'true true false true', 'true false true true'], answer: 0,
+    explain: 'Object.is giống === nhưng khác ở HAI chỗ: NaN bằng chính nó, và 0 KHÁC −0.',
+  },
+  {
+    id: 'oq22-logical-assign', topic: 'Toán tử',
+    code: `let a = 0; a ||= 5;\nlet b = 0; b ??= 7;\nlet c = null; c ??= 9;\nconsole.log(a, b, c);`,
+    options: ['5 7 9', '5 0 9', '0 0 9', '5 0 null'], answer: 1,
+    explain: '||= gán khi giá trị FALSY (0 cũng falsy nên a thành 5); ??= chỉ gán khi null/undefined nên b giữ 0, còn c thành 9.',
+  },
+  {
+    id: 'oq22-array-compare', topic: 'Ép kiểu',
+    code: `console.log([1, 2] < [1, 3], [2] > [10], [] == 0);`,
+    options: ['true false true', 'true true true', 'false false true', 'true false false'], answer: 1,
+    explain: 'Toán tử so sánh ép mảng về CHUỖI: "1,2" < "1,3" đúng; "2" > "10" CŨNG đúng vì so từng ký tự ("2" > "1") chứ không so số. [] về "" rồi về 0.',
+  },
+  {
+    id: 'oq22-double-binding', topic: 'Destructuring',
+    code: `const { a, a: b = 9, c: d = 3 } = { a: 1 };\nconsole.log(a, b, d);`,
+    options: ['1 9 3', '1 1 3', '1 1 undefined', 'undefined 9 3'], answer: 1,
+    explain: 'Có thể lấy CÙNG một thuộc tính hai lần với tên khác (b = a = 1, mặc định 9 không dùng tới); c không tồn tại nên d lấy mặc định 3.',
+  },
+  {
+    id: 'oqi-split-multiply', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.split(',').map(Number).reduce((a, b) => a * b, 1);\nconsole.log(f(INPUT));`,
+    out: '24',
+    options: ['"2,3,4"', '"2,3"', '"5,5"', '"2,2,2"'], answer: 0,
+    explain: 'Tách theo dấu phẩy, đổi sang số rồi NHÂN dồn: 2 × 3 × 4 = 24 (các lựa chọn kia ra 6, 25 và 8).',
+  },
+  {
+    id: 'oqi-lastindexof', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.lastIndexOf(1);\nconsole.log(f(INPUT));`,
+    out: '3',
+    options: ['[1, 2, 3, 1]', '[1, 2, 3]', '[2, 3, 1]', '[1, 1, 1, 1, 1]'], answer: 0,
+    explain: 'lastIndexOf trả vị trí XUẤT HIỆN CUỐI CÙNG ⇒ số 1 phải nằm ở index 3 và không có số 1 nào sau đó.',
+  },
+  {
+    id: 'oqi-count-string-values', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => Object.values(o).filter(v => typeof v === 'string').length;\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ["{ a: 'x', b: 1, c: 'y' }", "{ a: 'x', b: 1 }", '{ a: 1, b: 2 }', "{ a: 'x', b: 'y', c: 'z' }"], answer: 0,
+    explain: 'Chỉ đếm giá trị KIỂU CHUỖI (số bị loại) ⇒ cần đúng 2 giá trị chuỗi.',
+  },
+  {
+    id: 'oqi-slice-upper', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.slice(0, 3).toUpperCase();\nconsole.log(f(INPUT));`,
+    out: 'NOD',
+    options: ['"nodejs"', '"nginx"', '"NO"', '"backend"'], answer: 0,
+    explain: 'Lấy 3 ký tự ĐẦU rồi viết hoa: "nodejs" → "NOD"; "nginx" → "NGI"; chuỗi ngắn hơn 3 ký tự thì lấy hết những gì có.',
+  },
 ];
