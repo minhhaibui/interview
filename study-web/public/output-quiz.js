@@ -2534,4 +2534,62 @@ window.OUTPUT_QUIZ = [
     options: ['10', '14', '20', '7'], answer: 0,
     explain: '10 chia 7 dư 3; 14 và 7 chia hết (dư 0); 20 dư 6.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #33 =====
+  {
+    id: 'oq35-findlast', topic: 'Mảng',
+    code: `const a = [1, 2, 3, 4];\nconsole.log(a.findLast(x => x < 3), a.findLastIndex(x => x < 3), a.findLast(x => x > 9));`,
+    options: ['1 0 undefined', '2 1 undefined', '2 1 -1', '4 3 undefined'], answer: 1,
+    explain: 'findLast/findLastIndex duyệt từ CUỐI về đầu; không tìm thấy thì findLast trả undefined còn findLastIndex trả −1.',
+  },
+  {
+    id: 'oq35-set-delete', topic: 'Set',
+    code: `const s = new Set([1, 2, 3]);\ns.delete(2);\ns.add(1);\nconsole.log(s.size, s.has(2), [...s].join());`,
+    options: ['3 true 1,2,3', '2 false 1,3', '3 false 1,3,1', '2 false 1,3,1'], answer: 1,
+    explain: 'delete bỏ hẳn phần tử; add lại giá trị ĐÃ CÓ thì không thêm gì và cũng không đổi thứ tự.',
+  },
+  {
+    id: 'oq35-number-whitespace', topic: 'Ép kiểu',
+    code: `console.log(Number('  12  '), Number('12a'), parseInt('  12  '), Number('\\n'));`,
+    options: ['12 NaN 12 0', 'NaN NaN 12 NaN', '12 12 12 0', '12 NaN NaN 0'], answer: 0,
+    explain: 'Number() TỰ bỏ khoảng trắng hai đầu (chuỗi toàn khoảng trắng thành 0) nhưng chỉ cần một ký tự lạ là NaN.',
+  },
+  {
+    id: 'oq35-map-order', topic: 'Map',
+    code: `const m = new Map([['b', 1], ['a', 2], ['2', 3]]);\nconst o = { b: 1, a: 2, 2: 3 };\nconsole.log([...m.keys()].join(), Object.keys(o).join());`,
+    options: ['b,a,2 b,a,2', 'b,a,2 2,b,a', '2,a,b 2,b,a', 'a,b,2 2,b,a'], answer: 1,
+    explain: 'Map giữ ĐÚNG thứ tự thêm vào (kể cả khoá dạng số); object thì đẩy khoá số nguyên lên đầu — lý do nên dùng Map khi thứ tự quan trọng.',
+  },
+  {
+    id: 'oqi-findlast-in', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.findLast(x => x < 5);\nconsole.log(f(INPUT));`,
+    out: '3',
+    options: ['[1, 3, 7]', '[3, 1, 7]', '[7, 8]', '[1, 2]'], answer: 0,
+    explain: 'Tìm từ CUỐI về đầu giá trị < 5 ⇒ [1,3,7] cho 3; [3,1,7] lại cho 1.',
+  },
+  {
+    id: 'oqi-set-from-csv', topic: 'Đoán input · Set', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => new Set(s.split(',')).size;\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ['"a,b,a"', '"a,b,c"', '"a,a,a"', '"a,b,c,d"'], answer: 0,
+    explain: 'Tách rồi khử trùng lặp ⇒ cần đúng 2 giá trị khác nhau.',
+  },
+  {
+    id: 'oqi-map-from-object', topic: 'Đoán input · Map', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => new Map(Object.entries(o)).get('x');\nconsole.log(f(INPUT));`,
+    out: '7',
+    options: ['{ x: 7, y: 1 }', '{ y: 7 }', '{ x: 1, y: 7 }', '{ X: 7 }'], answer: 0,
+    explain: 'Chuyển object thành Map rồi lấy khoá "x" (phân biệt HOA thường) ⇒ x phải mang giá trị 7.',
+  },
+  {
+    id: 'oqi-trim-number', topic: 'Đoán input · ép kiểu', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => Number(String(s).trim()) + 1;\nconsole.log(f(INPUT));`,
+    out: '13',
+    options: ['" 12 "', '" 13 "', '"12a"', '" 1 "'], answer: 0,
+    explain: 'trim rồi đổi số: " 12 " → 12 → 13. Chuỗi "12a" không parse được nên ra NaN.',
+  },
 ];

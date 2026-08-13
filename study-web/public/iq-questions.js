@@ -2659,4 +2659,39 @@ window.IQ_QUESTIONS = [
     explain: 'Không cần biết bi đầu là gì — theo tính đối xứng, xác suất bi thứ hai trắng vẫn đúng bằng tỉ lệ ban đầu 4/10 = 2/5.' },
   { id: 'n34-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 3, 10, 15, 26, ?', options: ['30', '35', '37', '42'], answer: 1,
     explain: 'Hai dãy đan xen: 2, 10, 26 (khoảng cách 8, 16) và 3, 15, ? (khoảng cách 12, 20) ⇒ 15 + 20 = 35.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #33 =====
+  // Cho 3 phép xoay, tìm phép xoay THỨ TƯ còn thiếu
+  figQ({
+    id: 'missrot', d: 3, q: 'Ba hình dưới đây là ba phép xoay của cùng một hình. Phép xoay thứ TƯ còn thiếu là hình nào?',
+    fig: figRow([gSvg('110/010/000'), gSvg(gRot('110/010/000')), gSvg(gRot(gRot(gRot('110/010/000'))))]),
+    opts: [gSvg(gRot(gRot('110/010/000'))), gSvg(gFlip('110/010/000')), gSvg(gInv('110/010/000')), gSvg('110/010/000')],
+    explain: 'Bốn phép xoay là 0°, 90°, 180°, 270°. Đề đã cho 0°, 90° và 270° ⇒ thiếu 180°.',
+  }),
+  // Chuỗi có Ô CỐ ĐỊNH ở tâm, phần còn lại xoay quanh
+  figQ({
+    id: 'fix1', d: 3, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([gSvg('110/010/000'), gSvg('001/011/000'), gSvg('000/010/011'), '?']),
+    opts: [gSvg('000/110/100'), gSvg('110/010/000'), gSvg('001/011/000'), gSvg('010/010/010')],
+    explain: 'Ô TÂM luôn được tô; cặp ô còn lại xoay 90° thuận chiều quanh tâm mỗi bước: góc trên-trái → góc trên-phải → góc dưới-phải → góc dưới-trái.',
+  }),
+  gOpQ('gx43', 3, '011/111/100', '110/010/011', 'xor', 'XOR: bỏ ô trùng nhau, giữ ô chỉ một bên tô.'),
+  { id: 'nm39', category: '🖼️ Suy luận hình', d: 3, q: 'Số ở ô dấu ? là bao nhiêu?',
+    fig: figGrid([numCell(7), numCell(8), numCell(5), numCell(6), numCell(9), numCell(5), numCell(8), numCell(4), '?'], 3),
+    options: ['2', '4', '12', '32'], answer: 0,
+    explain: 'Cột 3 = (cột 1 + cột 2) lấy CHỮ SỐ HÀNG ĐƠN VỊ: 7+8 = 15 → 5, 6+9 = 15 → 5 ⇒ 8+4 = 12 → 2.' },
+  { id: 'cf20', category: '🖼️ Suy luận hình', d: 2, q: 'Các ô được tô bên dưới tạo thành bao nhiêu HÌNH CHỮ NHẬT (mọi kích thước)?',
+    fig: figRow([gSvg('111/111/000')], 'lg'),
+    options: ['6', '9', '12', '18'], answer: 3,
+    explain: 'Khối 2 hàng × 3 cột: chọn 2 trong 3 đường ngang × chọn 2 trong 4 đường dọc = 3 × 6 = 18.' },
+  { id: 'dl119', category: '🧠 Logic', d: 3, q: 'Có 3 công tắc A, B, C và 3 bóng đèn nhưng dây bị lẫn. Bật A trong 10 phút rồi tắt, bật B rồi vào phòng. Bóng NGUỘI và TẮT là của công tắc nào?', options: ['A', 'B', 'C', 'Không xác định được'], answer: 2,
+    explain: 'Bóng đang sáng là của B; bóng tắt nhưng còn NÓNG là của A; bóng vừa tắt vừa nguội là của C.' },
+  { id: 'dl120', category: '🧠 Logic', d: 2, q: 'Một con ốc sên leo giếng sâu 10m, ban ngày leo 3m, ban đêm tụt 2m. Mấy ngày thì lên tới miệng giếng?', options: ['5 ngày', '8 ngày', '9 ngày', '10 ngày'], answer: 1,
+    explain: 'Mỗi ngày đêm chỉ lên thực 1m, nhưng NGÀY THỨ 8 ốc đang ở 7m và leo thêm 3m là chạm miệng giếng — không tụt nữa.' },
+  { id: 'dl121', category: '➗ Toán nhanh', d: 3, q: 'Một batch job xử lý 1.000 bản ghi mất 4 phút. Nếu chia thành 4 luồng song song (không có chi phí điều phối) thì mất bao lâu?', options: ['1 phút', '2 phút', '4 phút', '16 phút'], answer: 0,
+    explain: 'Chia đều 250 bản ghi mỗi luồng, chạy song song ⇒ 4 / 4 = 1 phút.' },
+  { id: 'dl122', category: '🎲 Xác suất', d: 2, q: 'Một hộp có 3 bi đỏ và 5 bi xanh. Lấy 1 bi rồi bỏ lại, lấy tiếp 1 bi. Xác suất cả hai lần đều được bi đỏ?', options: ['3/64', '9/64', '3/28', '9/56'], answer: 1,
+    explain: 'Có hoàn lại nên hai lần độc lập: (3/8) × (3/8) = 9/64.' },
+  { id: 'n35-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 11, 19, 35, 67, ?', options: ['99', '113', '131', '134'], answer: 2,
+    explain: 'Quy luật × 2 − 3: 67 × 2 − 3 = 131.' },
 ];
