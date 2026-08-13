@@ -2299,4 +2299,40 @@ window.IQ_QUESTIONS = [
     explain: 'Nhân lần lượt với 2, 3, 4 rồi 5: 120 × 5 = 600.' },
   { id: 'n25-2', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 31, 28, 31, 30, 31, ?', options: ['28', '29', '30', '31'], answer: 2,
     explain: 'Đây là SỐ NGÀY các tháng trong năm thường: tháng 1 đến tháng 5 là 31, 28, 31, 30, 31 ⇒ tháng 6 có 30 ngày.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #24 =====
+  // Chuỗi CÓ NHIỄU: một thuộc tính đổi lung tung, chỉ MỘT thuộc tính theo quy luật
+  figQ({
+    id: 'noise1', d: 3, q: 'Hình tiếp theo của chuỗi là gì? (chú ý: chỉ MỘT thuộc tính tuân theo quy luật)',
+    fig: figRow([iqSvg(polyShape(3, 0)), iqSvg(polyShape(4, 2)), iqSvg(polyShape(5, 2)), iqSvg(polyShape(6, 0)), '?']),
+    opts: [iqSvg(polyShape(7, 0)), iqSvg(polyShape(6, 2)), iqSvg(polyShape(8, 0)), iqSvg(polyShape(5, 0))],
+    explain: 'Kiểu tô thay đổi lung tung (rỗng, đặc, đặc, rỗng) — đó là NHIỄU. Quy luật thật là số cạnh tăng đều 1 ⇒ hình 7 cạnh (chọn hình rỗng vì kiểu tô không quyết định).',
+  }),
+  // Ma trận hai thuộc tính: HÌNH ngoài + SỐ CHẤM bên trong
+  figQ({
+    id: 'inside1', d: 3, q: 'Ô dấu ? là hình nào? (chú ý cả hình bao ngoài lẫn số chấm bên trong)',
+    fig: figGrid([
+      iqSvg(shape('s') + dots(1)), iqSvg(shape('s') + dots(2)), iqSvg(shape('s') + dots(3)),
+      iqSvg(shape('c') + dots(1)), iqSvg(shape('c') + dots(2)), iqSvg(shape('c') + dots(3)),
+      iqSvg(shape('d') + dots(1)), iqSvg(shape('d') + dots(2)), '?']),
+    opts: [iqSvg(shape('d') + dots(3)), iqSvg(shape('d') + dots(2)), iqSvg(shape('c') + dots(3)), iqSvg(shape('s') + dots(3))],
+    explain: 'Hàng quyết định HÌNH BAO (vuông – tròn – thoi), cột quyết định SỐ CHẤM (1 – 2 – 3) ⇒ ô cuối là hình thoi với 3 chấm.',
+  }),
+  gOpQ('gx34', 3, '101/110/011', '011/101/110', 'and', 'Giao hai lưới: chỉ giữ ô mà cả hai cùng tô.'),
+  { id: 'cf19', category: '🖼️ Suy luận hình', d: 3, q: 'Chỉ tính các ô ĐƯỢC TÔ, hình bên dưới chứa bao nhiêu HÌNH VUÔNG (mọi kích thước)?',
+    fig: figRow([gSvg('110/110/010')], 'lg'),
+    options: ['4', '5', '6', '7'], answer: 2,
+    explain: '5 hình vuông nhỏ (5 ô được tô) cộng 1 hình vuông 2×2 ở góc trên-trái = 6.' },
+  { id: 'nm30', category: '🖼️ Suy luận hình', d: 3, q: 'Số ở ô dấu ? là bao nhiêu?',
+    fig: figGrid([numCell(2), numCell(3), numCell(8), numCell(3), numCell(2), numCell(9), numCell(2), numCell(5), '?']),
+    options: ['10', '25', '32', '64'], answer: 2,
+    explain: 'Cột 3 = cột 1 luỹ thừa cột 2: 2³ = 8, 3² = 9 ⇒ 2⁵ = 32.' },
+  { id: 'dl92', category: '🧠 Logic', d: 3, q: 'A nói "B nói dối". B nói "C nói dối". C nói "A và B đều nói dối". Ai nói THẬT?', options: ['Chỉ A', 'Chỉ B', 'Chỉ C', 'Cả ba đều nói dối'], answer: 1,
+    explain: 'Giả sử A thật ⇒ B dối ⇒ C thật ⇒ C bảo A dối, mâu thuẫn. Vậy A dối ⇒ B thật ⇒ C dối; kiểm lại: C dối nghĩa là KHÔNG phải cả A và B đều dối — đúng vì B thật. Chỉ B nói thật.' },
+  { id: 'dl93', category: '➗ Toán nhanh', d: 2, q: 'Một trang web có 20.000 lượt xem/ngày, tỉ lệ chuyển đổi 2,5%. Mỗi đơn lãi 40.000đ. Lãi mỗi ngày là bao nhiêu?', options: ['8 triệu', '20 triệu', '40 triệu', '80 triệu'], answer: 1,
+    explain: '20.000 × 2,5% = 500 đơn ⇒ 500 × 40.000 = 20.000.000đ.' },
+  { id: 'dl94', category: '🎲 Xác suất', d: 2, q: 'Xác suất một request lỗi là 1%. Gửi 2 request độc lập, xác suất CẢ HAI đều thành công là bao nhiêu?', options: ['98%', '98,01%', '99%', '99,99%'], answer: 1,
+    explain: '0,99 × 0,99 = 0,9801 = 98,01% (không phải trừ thẳng 2%).' },
+  { id: 'n26-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 3, 7, 16, 32, ?', options: ['48', '57', '64', '73'], answer: 1,
+    explain: 'Khoảng cách là 1, 4, 9, 16 (bình phương 1², 2², 3², 4²) ⇒ khoảng tiếp theo 5² = 25 ⇒ 32 + 25 = 57.' },
 ];

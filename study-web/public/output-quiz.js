@@ -2012,4 +2012,62 @@ window.OUTPUT_QUIZ = [
     options: ['[[1, 0], [2, 3]]', '[[1, 2], [3, 4]]', '[[0, 0], [0]]', '[[1], [2]]'], answer: 0,
     explain: 'Làm phẳng rồi bỏ giá trị falsy: [1,0,2,3] → còn 1, 2, 3 = 3 phần tử.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #24 =====
+  {
+    id: 'oq26-closure-instance', topic: 'Closure',
+    code: `const make = () => { let x = 1; return () => ++x; };\nconst g = make();\nconsole.log(g(), g(), make()());`,
+    options: ['2 3 2', '2 3 4', '2 2 2', '1 2 1'], answer: 0,
+    explain: 'g giữ MỘT closure nên tăng dần 2, 3; còn make()() tạo closure MỚI nên lại bắt đầu từ 2.',
+  },
+  {
+    id: 'oq26-map-string-boolean', topic: 'Ép kiểu',
+    code: `console.log([0, 1, 2].map(String).join('|'), [0, 1, 2].map(Boolean).join('|'));`,
+    options: ['0|1|2 false|true|true', '0|1|2 true|true|true', '0|1|2 false|false|true', '0,1,2 false|true|true'], answer: 0,
+    explain: 'String(0) là "0" (chuỗi không rỗng) nhưng Boolean(0) là false — số 0 falsy còn chuỗi "0" thì truthy.',
+  },
+  {
+    id: 'oq26-math-negative', topic: 'Số học',
+    code: `console.log(Math.floor(-2.5), Math.ceil(-2.5), Math.round(-2.5), Math.trunc(-2.5));`,
+    options: ['-3 -2 -3 -2', '-3 -2 -2 -2', '-2 -3 -2 -3', '-3 -3 -2 -2'], answer: 1,
+    explain: 'Với số ÂM: floor đi xuống (−3), ceil đi lên (−2), round làm tròn về phía +∞ khi đúng .5 (−2), trunc chỉ cắt phần thập phân (−2).',
+  },
+  {
+    id: 'oq26-some-and', topic: 'Toán tử',
+    code: `const a = [1, 2, 3];\nconsole.log(a.some(x => x > 2) && a.filter(x => x > 2)[0], a.some(x => x > 9) && 'co');`,
+    options: ['3 false', 'true false', '3 undefined', 'true co'], answer: 0,
+    explain: '&& trả về toán hạng CUỐI khi vế trái truthy (nên ra 3), và trả về chính vế trái false khi nó falsy.',
+  },
+  {
+    id: 'oqi-charcode-word', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => [...s].map(c => c.charCodeAt(0) - 96).join('');\nconsole.log(f(INPUT));`,
+    out: '123',
+    options: ['"abc"', '"cba"', '"aaa"', '"abcd"'], answer: 0,
+    explain: 'a = 1, b = 2, c = 3 (trừ 96 khỏi mã ASCII chữ thường) ⇒ chuỗi phải là "abc" theo đúng thứ tự.',
+  },
+  {
+    id: 'oqi-second-smallest', topic: 'Đoán input · sort', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => [...a].sort((x, y) => x - y)[1];\nconsole.log(f(INPUT));`,
+    out: '5',
+    options: ['[9, 5, 1]', '[5, 1, 2]', '[1, 2, 3]', '[8, 8, 3]'], answer: 0,
+    explain: 'Sắp tăng dần rồi lấy phần tử thứ HAI (nhỏ thứ nhì): [1, 5, 9] cho 5; [1, 2, 5] cho 2; [3, 8, 8] cho 8.',
+  },
+  {
+    id: 'oqi-truthy-entries', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => Object.entries(o).filter(([, v]) => v).length;\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ['{ a: 1, b: 0, c: 3 }', '{ a: 1, b: 2, c: 3 }', '{ a: 0, b: 0 }', '{ a: 1 }'], answer: 0,
+    explain: 'Đếm số thuộc tính có GIÁ TRỊ truthy ⇒ b = 0 bị loại, còn a và c.',
+  },
+  {
+    id: 'oqi-odd-list', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => [...Array(n)].map((_, i) => i + 1).filter(x => x % 2).join('');\nconsole.log(f(INPUT));`,
+    out: '135',
+    options: ['5', '3', '7', '2'], answer: 0,
+    explain: 'Sinh 1..n rồi lấy số lẻ: n = 5 cho "135"; n = 3 cho "13"; n = 7 cho "1357".',
+  },
 ];
