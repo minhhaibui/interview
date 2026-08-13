@@ -1021,4 +1021,62 @@ window.OUTPUT_QUIZ = [
     options: ['"an@gmail.com"', '"gmail.com"', '"an@yahoo.com"', '"an.gmail.com"'], answer: 0,
     explain: 'Không có "@" thì trả "invalid"; có thì lấy phần SAU dấu @ ⇒ chuỗi "gmail.com" trơ trọi lại ra "invalid".',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #7 =====
+  {
+    id: 'oq9-empty-every', topic: 'Mảng',
+    code: `console.log([].every(x => false), [].some(x => true), [].reduce((a, b) => a + b, 0));`,
+    options: ['false true 0', 'true false 0', 'true true 0', 'false false undefined'], answer: 1,
+    explain: 'Mảng RỖNG: every luôn true ("chân lý rỗng"), some luôn false. reduce không có giá trị khởi tạo sẽ ném lỗi — ở đây có 0 nên an toàn.',
+  },
+  {
+    id: 'oq9-object-key-coerce', topic: 'Object',
+    code: `const a = {};\na[{ x: 1 }] = 'first';\na['[object Object]'] = 'second';\nconsole.log(Object.keys(a).length, a[{ y: 2 }]);`,
+    options: ['2 first', '1 second', '2 second', '1 undefined'], answer: 1,
+    explain: 'Khoá object bị ép về chuỗi "[object Object]" ⇒ mọi object đều thành CÙNG một khoá, lần gán sau ghi đè lần trước. Cần khoá là object thì dùng Map.',
+  },
+  {
+    id: 'oq9-math-round-neg', topic: 'Số học',
+    code: `console.log(Math.round(2.5), Math.round(-2.5), Math.round(2.4), Math.trunc(-2.7));`,
+    options: ['3 -3 2 -2', '3 -2 2 -2', '2 -2 2 -3', '3 -2 3 -3'], answer: 1,
+    explain: 'Math.round làm tròn về phía +∞ khi đúng 0.5 ⇒ −2.5 thành −2 (không phải −3). Math.trunc chỉ cắt phần thập phân.',
+  },
+  {
+    id: 'oq9-then-not-chained', topic: 'Promise',
+    code: `const p = Promise.resolve(1);\np.then(v => v + 100);\np.then(v => console.log('v =', v));`,
+    options: ['v = 101', 'v = 1', 'v = undefined', 'không in gì'], answer: 1,
+    explain: 'Hai .then cùng gắn vào MỘT promise gốc nên chạy song song, không nối tiếp — muốn cộng dồn phải nối chuỗi p.then(...).then(...).',
+  },
+  {
+    id: 'oqi-charcode', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.charCodeAt(0);\nconsole.log(f(INPUT));`,
+    out: '65',
+    options: ['"Apple"', '"apple"', '"Banana"', '"65"'], answer: 0,
+    explain: 'Mã ASCII: "A" = 65, "a" = 97, "B" = 66, ký tự "6" = 54. Chỉ ký tự ĐẦU TIÊN được tính.',
+  },
+  {
+    id: 'oqi-index-of-max', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.indexOf(Math.max(...a));\nconsole.log(f(INPUT));`,
+    out: '1',
+    options: ['[3, 9, 5]', '[9, 3, 5]', '[3, 5, 9]', '[9, 9, 9]'], answer: 0,
+    explain: 'Trả về VỊ TRÍ của phần tử lớn nhất ⇒ số lớn nhất phải nằm ở index 1. Nếu có nhiều số bằng nhau thì lấy vị trí đầu tiên.',
+  },
+  {
+    id: 'oqi-typeof-count', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.filter(x => typeof x === 'number').length;\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ['[1, "2", 3, true]', '[1, 2, 3]', '["1", "2"]', '[1, 2, 3, 4]'], answer: 0,
+    explain: 'Chỉ đếm giá trị KIỂU number: "2" là chuỗi và true là boolean nên bị loại ⇒ còn 1 và 3.',
+  },
+  {
+    id: 'oqi-round-ten', topic: 'Đoán input · số học', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => Math.floor(n / 10) * 10;\nconsole.log(f(INPUT));`,
+    out: '40',
+    options: ['47', '39', '55', '104'], answer: 0,
+    explain: 'Math.floor cắt XUỐNG bội số 10 gần nhất: 47 → 40; 39 → 30 (không phải 40 như làm tròn thường).',
+  },
 ];
