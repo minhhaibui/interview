@@ -905,4 +905,62 @@ window.OUTPUT_QUIZ = [
     options: ['[1, 2, 3]', '[1, 2]', '[1, 2, 3, 4]', '[6]'], answer: 0,
     explain: 'flatMap nhân đôi từng phần tử rồi làm phẳng ⇒ độ dài = 2n, cần n = 3.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #5 =====
+  {
+    id: 'oq7-asi-return', topic: 'Cú pháp / ASI',
+    code: `function f() {\n  return\n  { ok: true };\n}\nconsole.log(f());`,
+    options: ['[object Object]', 'undefined', 'true', 'SyntaxError'], answer: 1,
+    explain: 'Tự động chèn dấu chấm phẩy (ASI) ngay sau `return` ⇒ hàm trả undefined, object phía dưới không bao giờ được trả về. Luôn để `{` cùng dòng với return.',
+  },
+  {
+    id: 'oq7-at-negative', topic: 'Chuỗi & mảng',
+    code: `console.log('abc'.at(-1), [1, 2, 3].at(-1), 'abc'[-1]);`,
+    options: ['c 3 undefined', 'a 1 a', 'c 3 c', 'undefined undefined undefined'], answer: 0,
+    explain: '.at(-1) lấy phần tử CUỐI (cả chuỗi lẫn mảng), còn cú pháp [-1] chỉ tìm thuộc tính tên "-1" nên ra undefined.',
+  },
+  {
+    id: 'oq7-null-undefined', topic: 'Ép kiểu',
+    code: `console.log(null == undefined, null === undefined, null == 0, null >= 0);`,
+    options: ['true false false true', 'true true false false', 'true false true true', 'false false false true'], answer: 0,
+    explain: 'null chỉ "lỏng lẻo bằng" undefined chứ không bằng 0; nhưng toán tử so sánh >= lại ép null về 0 nên null >= 0 là true — một góc rất lắt léo của JS.',
+  },
+  {
+    id: 'oq7-sort-inplace', topic: 'Array.sort',
+    code: `const a = [3, 1, 2];\nconst b = a.sort();\nb.push(4);\nconsole.log(a === b, a.join(), a.length);`,
+    options: ['false 1,2,3 3', 'true 1,2,3,4 4', 'true 3,1,2,4 4', 'false 1,2,3,4 4'], answer: 1,
+    explain: 'sort() sắp xếp TẠI CHỖ và trả về CHÍNH mảng đó ⇒ a và b là một; muốn giữ mảng gốc phải [...a].sort().',
+  },
+  {
+    id: 'oqi-sort-chars', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.split('').sort().join('');\nconsole.log(f(INPUT));`,
+    out: 'aeht',
+    options: ['"heat"', '"team"', '"date"', '"hate!"'], answer: 0,
+    explain: 'Sắp xếp các ký tự theo thứ tự bảng chữ cái ⇒ chỉ chuỗi gồm đúng 4 chữ a, e, h, t mới ra "aeht".',
+  },
+  {
+    id: 'oqi-set-size', topic: 'Đoán input · Set', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => new Set(a).size;\nconsole.log(f(INPUT));`,
+    out: '3',
+    options: ['[1, 1, 2, 3, 3]', '[1, 2, 3, 4]', '[7, 7, 7]', '[1, 2]'], answer: 0,
+    explain: 'Set đếm số phần tử KHÁC NHAU ⇒ cần đúng 3 giá trị phân biệt, lặp lại bao nhiêu lần cũng được.',
+  },
+  {
+    id: 'oqi-template', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = u => \`\${u.name}:\${u.age}\`;\nconsole.log(f(INPUT));`,
+    out: 'An:20',
+    options: ['{ name: "An", age: 20 }', '{ name: "An", age: "20 " }', '{ name: "An" }', '{ user: "An", age: 20 }'], answer: 0,
+    explain: 'Template string đọc đúng hai thuộc tính name và age; thiếu thuộc tính thì in ra "undefined".',
+  },
+  {
+    id: 'oqi-fill-repeat', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => Array(n).fill('*').join('');\nconsole.log(f(INPUT));`,
+    out: '***',
+    options: ['3', '2', '4', '0'], answer: 0,
+    explain: 'Array(n).fill("*") tạo n dấu sao ⇒ muốn 3 dấu thì n = 3.',
+  },
 ];
