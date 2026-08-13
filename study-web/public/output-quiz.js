@@ -1316,4 +1316,62 @@ window.OUTPUT_QUIZ = [
     options: ['"NODEJS"', '"Node js"', '"nodeJS "', '"node-js"'], answer: 0,
     explain: 'Viết hoa chữ đầu, hạ thường phần còn lại ⇒ "NODEJS" thành "Nodejs"; chuỗi có dấu cách hay gạch nối vẫn giữ nguyên ký tự đó.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #12 =====
+  {
+    id: 'oq14-find-lastindex', topic: 'Mảng',
+    code: `const a = [1, 2, 3, 2];\nconsole.log(a.findIndex(x => x > 2), a.indexOf(2), a.lastIndexOf(2), a.find(x => x > 9));`,
+    options: ['2 1 3 undefined', '3 1 3 undefined', '2 1 1 undefined', '2 3 1 -1'], answer: 0,
+    explain: 'findIndex/indexOf trả vị trí ĐẦU TIÊN, lastIndexOf trả vị trí CUỐI; find không thấy gì thì trả undefined (còn findIndex thì trả −1).',
+  },
+  {
+    id: 'oq14-default-param-ref', topic: 'Hàm',
+    code: `function f(a, b = a * 2) { return [a, b].join(); }\nconsole.log(f(3), f(3, undefined), f(3, null));`,
+    options: ['3,6 3,6 3,null', '3,6 3,6 3,', '3,6 3,undefined 3,null', '3,undefined 3,6 3,'], answer: 1,
+    explain: 'Hai bẫy cùng lúc: (1) mặc định chỉ kích hoạt khi đối số là undefined — truyền null thì b = null; (2) join() biến null/undefined thành CHUỖI RỖNG nên in ra "3," chứ không phải "3,null".',
+  },
+  {
+    id: 'oq14-max-min-empty', topic: 'Số học',
+    code: `console.log(Math.max(), Math.min(), Math.max() > Math.min());`,
+    options: ['0 0 false', '-Infinity Infinity false', 'Infinity -Infinity true', 'NaN NaN false'], answer: 1,
+    explain: 'Không có đối số thì Math.max trả −Infinity và Math.min trả Infinity (phần tử trung hoà) ⇒ so sánh ra false. Cẩn thận khi spread mảng RỖNG vào Math.max.',
+  },
+  {
+    id: 'oq14-boolean-string-zero', topic: 'Truthy / Falsy',
+    code: `console.log([0, 1, '', '0', null].filter(Boolean).length, Boolean('0'), Boolean(0), Boolean([]));`,
+    options: ['2 true false true', '2 false false true', '3 true false false', '2 true false false'], answer: 0,
+    explain: 'Chuỗi "0" KHÁC số 0: chuỗi không rỗng luôn truthy ⇒ chỉ 1 và "0" sống sót. Mảng rỗng cũng truthy.',
+  },
+  {
+    id: 'oqi-reduce-max', topic: 'Đoán input · reduce', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.reduce((m, x) => (x > m ? x : m), -Infinity);\nconsole.log(f(INPUT));`,
+    out: '9',
+    options: ['[4, 9, 2]', '[9, 10]', '[1, 2, 3]', '[-9, -1]'], answer: 0,
+    explain: 'reduce này tìm GIÁ TRỊ LỚN NHẤT ⇒ mảng phải có max đúng bằng 9.',
+  },
+  {
+    id: 'oqi-ceil-3', topic: 'Đoán input · số học', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => Math.ceil(n / 3);\nconsole.log(f(INPUT));`,
+    out: '4',
+    options: ['10', '9', '3', '15'], answer: 0,
+    explain: 'Làm tròn LÊN: 10/3 = 3,33 → 4 (đây chính là cách tính số trang khi phân trang). 9/3 = 3 chẵn nên vẫn là 3.',
+  },
+  {
+    id: 'oqi-find-entry', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => Object.entries(o).find(([, v]) => v > 2)[0];\nconsole.log(f(INPUT));`,
+    out: 'b',
+    options: ['{ a: 1, b: 5, c: 9 }', '{ b: 1, a: 5 }', '{ a: 9, b: 1 }', '{ c: 3, b: 4 }'], answer: 0,
+    explain: 'Lấy KHOÁ của cặp ĐẦU TIÊN có giá trị > 2, duyệt theo thứ tự khoá ⇒ a phải ≤ 2 và b > 2.',
+  },
+  {
+    id: 'oqi-flat-infinity', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.flat(Infinity).length;\nconsole.log(f(INPUT));`,
+    out: '4',
+    options: ['[1, [2, [3, [4]]]]', '[1, [2, [3]]]', '[[1, 2], [3, 4], 5]', '[1, 2]'], answer: 0,
+    explain: 'flat(Infinity) làm phẳng MỌI tầng rồi đếm phần tử ⇒ cần tổng cộng 4 số dù lồng sâu bao nhiêu.',
+  },
 ];
