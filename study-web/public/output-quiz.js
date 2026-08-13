@@ -2302,4 +2302,62 @@ window.OUTPUT_QUIZ = [
     options: ['["api", "redis"]', '["api", "sql"]', '["database"]', '["a"]'], answer: 0,
     explain: 'Lấy độ dài LỚN NHẤT: "redis" = 5. Các lựa chọn kia ra 3, 8 và 1.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #29 =====
+  {
+    id: 'oq31-nan-search', topic: 'Mảng',
+    code: `console.log([1, NaN, 3].indexOf(NaN), [1, NaN, 3].findIndex(Number.isNaN), [1, NaN].includes(NaN));`,
+    options: ['1 1 true', '-1 1 true', '-1 -1 false', '1 1 false'], answer: 1,
+    explain: 'indexOf dùng === nên KHÔNG tìm được NaN (trả −1); findIndex + Number.isNaN và includes (SameValueZero) thì tìm được.',
+  },
+  {
+    id: 'oq31-fromentries', topic: 'Object',
+    code: `const o = Object.fromEntries([['a', 1], ['b', 2], ['a', 9]]);\nconsole.log(JSON.stringify(o), Object.entries(o).length);`,
+    options: ['{"a":1,"b":2} 2', '{"a":9,"b":2} 2', '{"a":1,"b":2,"a":9} 3', '{"a":9,"b":2} 3'], answer: 1,
+    explain: 'fromEntries dựng object từ mảng cặp; khoá TRÙNG thì cặp SAU ghi đè cặp trước, vị trí khoá vẫn giữ theo lần đầu.',
+  },
+  {
+    id: 'oq31-sort-reverse-mutate', topic: 'Mảng',
+    code: `const a = [3, 1, 2];\nconsole.log(a.sort()[0], a.join());\nconsole.log(a.reverse()[0], a.join());`,
+    options: ['1 1,2,3\n3 3,2,1', '1 3,1,2\n3 3,1,2', '3 1,2,3\n1 3,2,1', '1 1,2,3\n1 1,2,3'], answer: 0,
+    explain: 'Cả sort lẫn reverse đều SỬA TẠI CHỖ và trả về chính mảng đó ⇒ mảng a thay đổi sau mỗi lệnh.',
+  },
+  {
+    id: 'oq31-forin-delete', topic: 'Object',
+    code: `const o = { a: 1, b: 2 };\nfor (const k in o) delete o[k];\nconsole.log(Object.keys(o).length, JSON.stringify(o));`,
+    options: ['2 {"a":1,"b":2}', '0 {}', '1 {"b":2}', 'lỗi khi xoá trong vòng lặp'], answer: 1,
+    explain: 'Xoá thuộc tính trong for…in là hợp lệ (khác việc thêm mới — thứ tự duyệt khi thêm là không xác định) ⇒ object rỗng.',
+  },
+  {
+    id: 'oqi-upper-a', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => [...s].map(c => (c === 'a' ? 'A' : c)).join('');\nconsole.log(f(INPUT));`,
+    out: 'bAnAnA',
+    options: ['"banana"', '"BANANA"', '"bahaha"', '"anana"'], answer: 0,
+    explain: 'Chỉ chữ "a" THƯỜNG được đổi thành "A" ⇒ chuỗi gốc phải là "banana" viết thường ("BANANA" giữ nguyên vì đã hoa).',
+  },
+  {
+    id: 'oqi-fromentries-b', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = pairs => Object.fromEntries(pairs).b;\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ["[['a', 1], ['b', 2]]", "[['b', 1], ['a', 2]]", "[['a', 2]]", "[['b', 3], ['c', 2]]"], answer: 0,
+    explain: 'Dựng object rồi lấy khoá "b" ⇒ cặp ["b", 2] phải có mặt; thiếu khoá b thì ra undefined.',
+  },
+  {
+    id: 'oqi-count-digit-1', topic: 'Đoán input · số học', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => String(n).split('').filter(d => d === '1').length;\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ['101', '111', '10', '222'], answer: 0,
+    explain: 'Đếm CHỮ SỐ 1 trong số: 101 có 2; 111 có 3; 10 có 1; 222 không có.',
+  },
+  {
+    id: 'oqi-sort-locale', topic: 'Đoán input · sort', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => [...a].sort((x, y) => x.localeCompare(y)).join('');\nconsole.log(f(INPUT));`,
+    out: 'abc',
+    options: ["['c', 'a', 'b']", "['a', 'b']", "['x', 'y', 'z']", "['c', 'b']"], answer: 0,
+    explain: 'Sắp theo bảng chữ cái nên thứ tự đầu vào không quan trọng — quan trọng là đúng bộ ký tự a, b, c.',
+  },
 ];

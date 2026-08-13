@@ -2495,4 +2495,51 @@ window.IQ_QUESTIONS = [
     explain: 'Chờ tất cả nghĩa là chờ request CHẬM NHẤT; với 10 request thì khả năng cao có một cái rơi vào đuôi p90–p99 ⇒ gần 800ms.' },
   { id: 'n30-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 3, 6, 12, 21, 33, ?', options: ['45', '48', '51', '54'], answer: 1,
     explain: 'Khoảng cách tăng đều 3, 6, 9, 12, 15 ⇒ 33 + 15 = 48.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #29 =====
+  // Nhảy cóc: cho 4 hình đầu, hỏi hình thứ SÁU (phải chạy quy luật thêm 2 bước)
+  figQ({
+    id: 'skip1', d: 3, q: 'Chuỗi tiếp tục theo cùng quy luật. Hình thứ SÁU sẽ là gì?',
+    fig: figRow([iqSvg(rot(FLAG, 0)), iqSvg(rot(FLAG, 90)), iqSvg(rot(FLAG, 180)), iqSvg(rot(FLAG, 270))]),
+    opts: [iqSvg(rot(FLAG, 90)), iqSvg(rot(FLAG, 0)), iqSvg(rot(FLAG, 180)), iqSvg(rot(FLAG, 270))],
+    explain: 'Xoay 90° mỗi bước: hình 5 là 0° (360°), hình 6 là 90°.',
+  }),
+  figQ({
+    id: 'skip2', d: 3, q: 'Chuỗi tiếp tục theo cùng quy luật. Hình thứ SÁU sẽ là gì?',
+    fig: figRow([gSvg('100/000/000'), gSvg('110/000/000'), gSvg('111/000/000'), gSvg('111/100/000')]),
+    opts: [gSvg('111/111/000'), gSvg('111/110/000'), gSvg('111/111/100'), gSvg('111/111/110')],
+    explain: 'Mỗi bước thêm 1 ô: hình 5 có 5 ô, hình 6 có 6 ô (hai hàng đầu tô kín).',
+  }),
+  // Chọn CẶP có cùng QUAN HỆ với cặp mẫu (analogy bằng hình, dạng chọn cặp)
+  figQ({
+    id: 'relpair1', d: 3, q: 'Cặp mẫu bên dưới có một quan hệ biến đổi. Cặp nào dưới đây có QUAN HỆ GIỐNG như vậy?',
+    fig: figRow([gSvg('110/100/000'), numCell('→'), gSvg(gInv('110/100/000'))]),
+    opts: [
+      `<span style="display:flex;gap:6px">${gSvg('110/010/000')}${gSvg(gInv('110/010/000'))}</span>`,
+      `<span style="display:flex;gap:6px">${gSvg('110/010/000')}${gSvg(gRot('110/010/000'))}</span>`,
+      `<span style="display:flex;gap:6px">${gSvg('110/010/000')}${gSvg(gFlip('110/010/000'))}</span>`,
+      `<span style="display:flex;gap:6px">${gSvg('110/010/000')}${gSvg('110/010/000')}</span>`,
+    ],
+    explain: 'Quan hệ của cặp mẫu là ĐẢO NGƯỢC (ô tô ↔ ô trống). Chỉ một cặp lựa chọn cũng là đảo ngược; các cặp kia là xoay, lật gương hoặc giữ nguyên.',
+  }),
+  gOpQ('gx39', 3, '101/011/010', '110/101/011', 'and', 'Giao hai lưới: chỉ giữ ô cả hai cùng tô.'),
+  // Hai thuộc tính đi NGƯỢC CHIỀU nhau
+  figQ({
+    id: 'invseq', d: 3, q: 'Hình tiếp theo của chuỗi là gì? (hai thuộc tính biến thiên NGƯỢC CHIỀU)',
+    fig: figRow([iqSvg(polyShape(3) + dots(4)), iqSvg(polyShape(4) + dots(3)), iqSvg(polyShape(5) + dots(2)), '?']),
+    opts: [iqSvg(polyShape(6) + dots(1)), iqSvg(polyShape(6) + dots(3)), iqSvg(polyShape(5) + dots(1)), iqSvg(polyShape(7) + dots(1))],
+    explain: 'Số cạnh TĂNG 1 mỗi bước (3, 4, 5, 6) trong khi số chấm GIẢM 1 (4, 3, 2, 1).',
+  }),
+  { id: 'nm35', category: '🖼️ Suy luận hình', d: 3, q: 'Số ở ô dấu ? là bao nhiêu?',
+    fig: figGrid([numCell(6), numCell(2), numCell(3), '?', numCell(4), numCell(3), numCell(20), numCell(5), numCell(4)], 3),
+    options: ['8', '10', '12', '16'], answer: 2,
+    explain: 'Cột 1 ÷ cột 2 = cột 3 (6÷2 = 3, 20÷5 = 4) ⇒ hàng giữa: ? ÷ 4 = 3 ⇒ ? = 12.' },
+  { id: 'dl107', category: '🧠 Logic', d: 3, q: 'Hai người chơi: lần lượt lấy 1 hoặc 2 que từ đống 15 que, ai lấy que CUỐI CÙNG thì THUA. Người đi trước nên lấy mấy que?', options: ['1 que', '2 que', 'Lấy bao nhiêu cũng thắng', 'Đi trước chắc chắn thua'], answer: 1,
+    explain: 'Muốn đối thủ phải lấy que cuối, hãy để lại cho họ 1 que sau lượt của mình ⇒ giữ số que còn lại chia 3 dư 1. 15 − 2 = 13 (13 chia 3 dư 1) ⇒ lấy 2 que.' },
+  { id: 'dl108', category: '➗ Toán nhanh', d: 2, q: 'Một trang tải 2,5MB, người dùng dùng 4G tốc độ 10Mbps (megaBIT/giây). Tải xong mất khoảng bao lâu?', options: ['0,25 giây', '1 giây', '2 giây', '20 giây'], answer: 2,
+    explain: '2,5MB = 20 megabit (nhân 8) ⇒ 20 / 10 = 2 giây. Nhớ phân biệt MB (byte) với Mb (bit).' },
+  { id: 'dl109', category: '🎲 Xác suất', d: 3, q: 'Gieo xúc xắc 2 lần. Xác suất ÍT NHẤT một lần ra mặt 6 là bao nhiêu?', options: ['1/6', '1/3', '11/36', '2/6'], answer: 2,
+    explain: '1 − (5/6)² = 1 − 25/36 = 11/36 (không phải cộng 1/6 + 1/6).' },
+  { id: 'n31-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 4, 7, 12, 19, 28, ?', options: ['37', '38', '39', '40'], answer: 2,
+    explain: 'Khoảng cách là các số lẻ tăng dần 3, 5, 7, 9, 11 ⇒ 28 + 11 = 39.' },
 ];
