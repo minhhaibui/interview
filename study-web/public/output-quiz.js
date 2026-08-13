@@ -2128,4 +2128,62 @@ window.OUTPUT_QUIZ = [
     options: ['{ a: 1, b: 2 }', '{ b: 1, a: 2 }', '{ a: 2, b: 1 }', '{ c: 2, b: 3 }'], answer: 0,
     explain: 'Tìm KHOÁ đầu tiên có giá trị bằng 2 ⇒ khoá "b" phải mang giá trị 2 và không có khoá nào trước nó cũng bằng 2.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #26 =====
+  {
+    id: 'oq28-arguments-type', topic: 'Hàm',
+    code: `function f() { return [typeof arguments, Array.isArray(arguments), arguments.length].join(' '); }\nconsole.log(f(1, 2));`,
+    options: ['object false 2', 'object true 2', 'array false 2', 'object false 0'], answer: 0,
+    explain: 'arguments là object GIỐNG mảng (có length, đánh chỉ số) nhưng KHÔNG phải Array — muốn dùng map/filter phải Array.from(arguments) hoặc rest.',
+  },
+  {
+    id: 'oq28-array-join-empty', topic: 'Mảng',
+    code: `console.log([1, 2, 3].fill(0).join(), Array(3).join('-') + '|', Array(3).fill('x').join('-'));`,
+    options: ['0,0,0 --| x-x-x', '1,2,3 --| x-x-x', '0,0,0 ---| x-x-x', '0,0,0 | x-x-x'], answer: 0,
+    explain: 'Array(3) tạo 3 ô RỖNG; join biến ô rỗng thành chuỗi rỗng nên chỉ còn 2 dấu nối "--".',
+  },
+  {
+    id: 'oq28-rest-default', topic: 'Destructuring',
+    code: `const { a = 1, ...rest } = { b: 2, c: 3 };\nconsole.log(a, JSON.stringify(rest), 'a' in rest);`,
+    options: ['undefined {"b":2,"c":3} false', '1 {"b":2,"c":3} false', '1 {"a":1,"b":2,"c":3} true', '1 {} false'], answer: 1,
+    explain: 'a không có trong object nên lấy mặc định 1; rest gom các khoá CÒN LẠI và không bao giờ chứa khoá đã bóc ra.',
+  },
+  {
+    id: 'oq28-delete-object', topic: 'Object',
+    code: `const o = { a: 1, b: 2 };\ndelete o.a;\nconsole.log(o.a, 'a' in o, Object.keys(o).length, delete o.zzz);`,
+    options: ['undefined false 1 true', 'undefined true 1 true', 'null false 1 false', 'undefined false 2 true'], answer: 0,
+    explain: 'delete xoá hẳn thuộc tính khỏi object (khác mảng chỉ để lại lỗ) và luôn trả true kể cả khi thuộc tính không tồn tại.',
+  },
+  {
+    id: 'oqi-dup-chars', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => [...s].filter((c, i, a) => a.indexOf(c) !== i).join('');\nconsole.log(f(INPUT));`,
+    out: 'l',
+    options: ['"hello"', '"abc"', '"aabb"', '"noon"'], answer: 0,
+    explain: 'Chỉ giữ ký tự LẶP LẠI (không phải lần xuất hiện đầu): "hello" có chữ l lặp một lần ⇒ "l".',
+  },
+  {
+    id: 'oqi-count-key', topic: 'Đoán input · reduce', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.reduce((m, x) => ({ ...m, [x]: (m[x] || 0) + 1 }), {}).a;\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ["['a', 'b', 'a']", "['a', 'b', 'c']", "['b', 'b']", "['a', 'a', 'a']"], answer: 0,
+    explain: 'Đếm tần suất rồi lấy số lần của "a" ⇒ mảng phải có đúng 2 chữ "a".',
+  },
+  {
+    id: 'oqi-half-fixed', topic: 'Đoán input · số học', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => (n / 2).toFixed(1);\nconsole.log(f(INPUT));`,
+    out: '2.5',
+    options: ['5', '2.5', '4', '10'], answer: 0,
+    explain: '5 / 2 = 2,5 ⇒ "2.5". Chọn 2.5 sẽ ra "1.3" (làm tròn 1,25).',
+  },
+  {
+    id: 'oqi-range-diff', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.at(-1) - a.at(0);\nconsole.log(f(INPUT));`,
+    out: '4',
+    options: ['[3, 9, 7]', '[7, 3]', '[1, 2, 3]', '[5, 5]'], answer: 0,
+    explain: 'Lấy phần tử CUỐI trừ phần tử ĐẦU (không phải max − min): 7 − 3 = 4.',
+  },
 ];

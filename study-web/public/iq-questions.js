@@ -2372,4 +2372,47 @@ window.IQ_QUESTIONS = [
     explain: 'Quy luật × 2 + 3: 61 × 2 + 3 = 125.' },
   { id: 'n27-2', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 9, 3, 12, 4, 15, 5, ?', options: ['6', '16', '18', '20'], answer: 2,
     explain: 'Hai dãy đan xen: 9, 12, 15, ? (cộng 3) và 3, 4, 5 (số đứng sau bằng một phần ba số trước) ⇒ tiếp theo là 18.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #26 =====
+  // Suy NGƯỢC: hình đứng TRƯỚC hình đầu tiên
+  figQ({
+    id: 'back1', d: 3, q: 'Nếu chuỗi này kéo dài về phía trước thì hình đứng TRƯỚC hình đầu tiên là gì?',
+    fig: figRow([gSvg('111/110/000'), gSvg('111/111/000'), gSvg('111/111/100'), gSvg('111/111/110')]),
+    opts: [gSvg('111/100/000'), gSvg('111/000/000'), gSvg('110/100/000'), gSvg('111/111/111')],
+    explain: 'Chuỗi tăng đều 1 ô mỗi bước (5, 6, 7, 8 ô) ⇒ hình đứng trước phải có 4 ô: hàng đầu đủ 3 ô cộng 1 ô đầu hàng giữa.',
+  }),
+  figQ({
+    id: 'back2', d: 3, q: 'Nếu chuỗi này kéo dài về phía trước thì hình đứng TRƯỚC hình đầu tiên là gì?',
+    fig: figRow([iqSvg(rot(ARROW, 90)), iqSvg(rot(ARROW, 180)), iqSvg(rot(ARROW, 270))]),
+    opts: [iqSvg(rot(ARROW, 0)), iqSvg(rot(ARROW, 180)), iqSvg(rot(ARROW, 90)), iqSvg(rot(ARROW, 45))],
+    explain: 'Mỗi bước xoay thuận 90°; lùi lại một bước từ 90° là 0° (mũi tên chỉ lên).',
+  }),
+  // So sánh có ĐIỀU KIỆN SỐ HỌC: nhiều hơn mẫu đúng 2 ô
+  { id: 'plus2', category: '🖼️ Suy luận hình', d: 2, q: 'Hình nào có số ô được tô NHIỀU HƠN hình mẫu đúng 2 ô?',
+    fig: figRow([gSvg('110/010/000')]) +
+      figRow([numCell(1), numCell(2), numCell(3), numCell(4)]) +
+      figRow([gSvg('110/010/001'), gSvg('111/110/000'), gSvg('100/010/000'), gSvg('111/111/100')]),
+    options: ['Hình 1', 'Hình 2', 'Hình 3', 'Hình 4'], answer: 1,
+    explain: 'Hình mẫu tô 3 ô nên cần hình tô 5 ô: hình 1 có 4, hình 2 có 5, hình 3 có 2, hình 4 có 7.' },
+  // Bảng 4 cột × 2 hàng
+  figQ({
+    id: 'grid42', d: 2, q: 'Ô dấu ? trong bảng 4×2 là hình nào?',
+    fig: figGrid([iqSvg(dots(1)), iqSvg(dots(2)), iqSvg(dots(3)), iqSvg(dots(4)),
+      iqSvg(dots(2)), iqSvg(dots(4)), iqSvg(dots(6)), '?'], 4),
+    opts: [iqSvg(dots(8)), iqSvg(dots(5)), iqSvg(dots(7)), iqSvg(dots(9))],
+    explain: 'Hàng dưới luôn gấp ĐÔI hàng trên theo từng cột ⇒ ô cuối là 4 × 2 = 8 chấm.',
+  }),
+  gOpQ('gx36', 3, '110/101/010', '011/010/101', 'xor', 'XOR: giữ ô chỉ một bên tô, bỏ ô cả hai cùng tô.'),
+  { id: 'nm32', category: '🖼️ Suy luận hình', d: 2, q: 'Bảng 4×2: số ở ô dấu ? là bao nhiêu?',
+    fig: figGrid([numCell(1), numCell(2), numCell(3), numCell(4), numCell(1), numCell(4), numCell(9), '?'], 4),
+    options: ['12', '16', '20', '25'], answer: 1,
+    explain: 'Hàng dưới là BÌNH PHƯƠNG của hàng trên: 1, 4, 9, rồi 4² = 16.' },
+  { id: 'dl98', category: '🧠 Logic', d: 3, q: 'Trong một cuộc thi 20 câu, đúng được +5 điểm, sai bị −2 điểm. Một bạn làm hết 20 câu và được 58 điểm. Bạn đó làm đúng mấy câu?', options: ['12', '13', '14', '15'], answer: 2,
+    explain: 'Gọi số câu đúng là x: 5x − 2(20 − x) = 58 ⇒ 7x = 98 ⇒ x = 14.' },
+  { id: 'dl99', category: '🎲 Xác suất', d: 3, q: 'Ba người bốc thăm lần lượt từ 3 lá (1 lá trúng, không hoàn lại). Ai có lợi thế nhất?', options: ['Người bốc đầu', 'Người bốc thứ hai', 'Người bốc cuối', 'Cả ba như nhau'], answer: 3,
+    explain: 'Xác suất trúng của mỗi người đều là 1/3 — thứ tự bốc KHÔNG ảnh hưởng (người sau bù lại bằng việc số lá còn ít hơn).' },
+  { id: 'dl100', category: '➗ Toán nhanh', d: 2, q: 'Một bảng dữ liệu 2 triệu dòng, mỗi dòng 500 byte. Nếu nén còn 40% thì tiết kiệm bao nhiêu dung lượng?', options: ['400MB', '600MB', '1GB', '1,4GB'], answer: 1,
+    explain: 'Gốc: 2.000.000 × 500 byte = 1.000MB. Nén còn 40% (400MB) ⇒ tiết kiệm 600MB.' },
+  { id: 'n28-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 2, 6, 15, 31, ?', options: ['48', '52', '56', '62'], answer: 2,
+    explain: 'Khoảng cách là 1, 4, 9, 16 (bình phương) và tiếp theo là 25 ⇒ 31 + 25 = 56.' },
 ];
