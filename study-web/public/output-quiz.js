@@ -1954,4 +1954,62 @@ window.OUTPUT_QUIZ = [
     options: ['[3, 4, 6, 7]', '[1, 2, 3]', '[3, 6, 9]', '[1, 2, 3, 4, 5]'], answer: 0,
     explain: 'Số dư khi chia 3 của [3,4,6,7] là 0,1,0,1 ⇒ chỉ 2 giá trị khác nhau; [1,2,3] cho 3 giá trị; [3,6,9] chỉ 1.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #23 =====
+  {
+    id: 'oq25-reduceright', topic: 'reduce',
+    code: `console.log(['a', 'b', 'c'].reduceRight((x, y) => x + y), ['a', 'b', 'c'].reduce((x, y) => x + y));`,
+    options: ['abc cba', 'cba abc', 'cba cba', 'abc abc'], answer: 1,
+    explain: 'reduceRight duyệt từ PHẢI sang trái nên nối ngược lại; reduce thì từ trái sang phải.',
+  },
+  {
+    id: 'oq25-entries-spread', topic: 'Mảng',
+    code: `console.log([...['x', 'y'].entries()].map(([i, v]) => i + v).join(';'));`,
+    options: ['x0;y1', '0x;1y', 'xy', '0;1'], answer: 1,
+    explain: 'entries() sinh ra từng cặp [chỉ số, giá trị] — chỉ số đứng TRƯỚC ⇒ "0x;1y".',
+  },
+  {
+    id: 'oq25-set-intersection', topic: 'Set',
+    code: `const a = new Set([1, 2, 3]);\nconst b = new Set([2, 3, 4]);\nconsole.log([...a].filter(x => b.has(x)).join(), [...a, ...b].length, new Set([...a, ...b]).size);`,
+    options: ['2,3 6 4', '2,3 4 4', '2,3,4 6 4', '2,3 6 6'], answer: 0,
+    explain: 'Giao hai Set làm bằng filter + has; trải hai Set vào mảng thì vẫn 6 phần tử (còn trùng), phải bọc lại Set mới còn 4.',
+  },
+  {
+    id: 'oq25-structured-clone', topic: 'Tham chiếu',
+    code: `const src = { a: { b: 1 } };\nconst shallow = { ...src };\nconst deep = structuredClone(src);\nsrc.a.b = 99;\nconsole.log(shallow.a.b, deep.a.b);`,
+    options: ['99 99', '1 1', '99 1', '1 99'], answer: 2,
+    explain: 'Spread chỉ copy tầng ngoài nên object lồng vẫn dùng chung; structuredClone copy SÂU nên giữ nguyên giá trị cũ.',
+  },
+  {
+    id: 'oqi-count-nonspace', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => [...s].filter(c => c !== ' ').length;\nconsole.log(f(INPUT));`,
+    out: '5',
+    options: ['"a b c d e"', '"abc"', '"a b"', '"abcdefg"'], answer: 0,
+    explain: 'Bỏ dấu cách rồi đếm ⇒ cần đúng 5 ký tự khác dấu cách.',
+  },
+  {
+    id: 'oqi-abs-distance', topic: 'Đoán input · số học', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => Math.abs(n - 10);\nconsole.log(f(INPUT));`,
+    out: '3',
+    options: ['7', '5', '10', '20'], answer: 0,
+    explain: 'Khoảng cách tới 10: |7 − 10| = 3. (13 cũng cho 3 nên không dùng làm mồi nhử được.)',
+  },
+  {
+    id: 'oqi-keys-desc', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => Object.keys(o).sort((x, y) => y.localeCompare(x))[0];\nconsole.log(f(INPUT));`,
+    out: 'c',
+    options: ['{ a: 1, c: 2, b: 3 }', '{ a: 1, b: 2 }', '{ d: 1, a: 2 }', '{ x: 1 }'], answer: 0,
+    explain: 'Sắp khoá GIẢM DẦN rồi lấy phần tử đầu ⇒ khoá lớn nhất phải là "c".',
+  },
+  {
+    id: 'oqi-flat-truthy', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.flat().filter(Boolean).length;\nconsole.log(f(INPUT));`,
+    out: '3',
+    options: ['[[1, 0], [2, 3]]', '[[1, 2], [3, 4]]', '[[0, 0], [0]]', '[[1], [2]]'], answer: 0,
+    explain: 'Làm phẳng rồi bỏ giá trị falsy: [1,0,2,3] → còn 1, 2, 3 = 3 phần tử.',
+  },
 ];

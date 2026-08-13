@@ -2257,4 +2257,46 @@ window.IQ_QUESTIONS = [
     explain: '30 ngày = 720 giờ ⇒ 720 × 0,10 × 3 máy = 216 USD.' },
   { id: 'n24-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 12, 30, 56, ?', options: ['72', '84', '90', '110'], answer: 2,
     explain: 'Tích của hai số tự nhiên liên tiếp theo từng cặp: 1×2, 3×4, 5×6, 7×8, rồi 9×10 = 90.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #23 =====
+  // Quét cả nhóm: hình nào KHÔNG có mặt trong bảng
+  figQ({
+    id: 'notin1', d: 2, q: 'Hình nào KHÔNG xuất hiện trong bảng bên dưới?',
+    fig: figGrid([gSvg('110/000/000'), gSvg('001/010/000'), gSvg('100/100/100'),
+      gSvg('010/010/010'), gSvg('111/000/000'), gSvg('000/111/000'),
+      gSvg('001/001/001'), gSvg('100/010/001'), gSvg('000/000/111')]),
+    opts: [gSvg('101/000/101'), gSvg('111/000/000'), gSvg('100/010/001'), gSvg('010/010/010')],
+    explain: 'Ba lựa chọn kia đều nằm trong bảng; chỉ hình bốn góc (101/000/101) là không có mặt.',
+  }),
+  // Ma trận lưới: tổng số ô mỗi HÀNG bằng nhau
+  figQ({
+    id: 'rowsum1', d: 3, q: 'Ô dấu ? là hình nào? (tổng SỐ Ô ĐƯỢC TÔ của mỗi hàng đều bằng nhau)',
+    fig: figGrid([gSvg('100/000/000'), gSvg('110/000/000'), gSvg('111/000/000'),
+      gSvg('110/000/000'), gSvg('110/100/000'), gSvg('100/000/000'),
+      gSvg('111/000/000'), gSvg('100/000/000'), '?']),
+    opts: [gSvg('110/000/000'), gSvg('111/000/000'), gSvg('100/000/000'), gSvg('111/100/000')],
+    explain: 'Hai hàng đầu đều tô tổng 6 ô (1+2+3 và 2+3+1) ⇒ hàng cuối cần 6 − 3 − 1 = 2 ô.',
+  }),
+  // Chuỗi XEN KẼ số và hình
+  figQ({
+    id: 'mixnum1', d: 2, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([numCell(3), iqSvg(polyShape(3)), numCell(4), iqSvg(polyShape(4)), numCell(5), '?']),
+    opts: [iqSvg(polyShape(5)), iqSvg(polyShape(6)), numCell(6), iqSvg(polyShape(4))],
+    explain: 'Chuỗi đi theo cặp "số n rồi hình n cạnh": sau số 5 phải là hình 5 cạnh (ngũ giác).',
+  }),
+  gOpQ('gx33', 2, '100/011/110', '110/001/010', 'or', 'Hợp hai lưới: gộp mọi ô được tô của cả hai hình.'),
+  { id: 'nm29', category: '🖼️ Suy luận hình', d: 3, q: 'Số ở ô dấu ? (CỘT ĐẦU) là bao nhiêu?',
+    fig: figGrid([numCell(4), numCell(5), numCell(9), numCell(7), numCell(6), numCell(13), '?', numCell(8), numCell(11)]),
+    options: ['3', '4', '5', '19'], answer: 0,
+    explain: 'Cột 3 = cột 1 + cột 2 (4+5=9, 7+6=13) ⇒ hàng cuối: ? + 8 = 11 ⇒ ? = 3 (phải suy NGƯỢC).' },
+  { id: 'dl89', category: '🧠 Logic', d: 3, q: 'Bạn có 2 sợi dây cháy hết trong 30 phút mỗi sợi (cháy không đều). Đo 15 phút bằng cách nào?', options: ['Đốt một sợi ở một đầu rồi canh nửa chừng', 'Đốt một sợi ở CẢ HAI đầu cùng lúc', 'Đốt cả hai sợi ở một đầu', 'Gấp đôi sợi dây rồi đốt'], answer: 1,
+    explain: 'Đốt hai đầu thì tổng thời gian cháy chia đôi ⇒ đúng 15 phút, bất kể dây cháy không đều.' },
+  { id: 'dl90', category: '🧠 Logic', d: 2, q: 'Một cầu thang máy đi từ tầng 1 lên tầng 5 mất 8 giây. Với cùng tốc độ đó, từ tầng 1 lên tầng 9 mất bao lâu?', options: ['12 giây', '14 giây', '16 giây', '18 giây'], answer: 2,
+    explain: 'Tầng 1→5 là 4 khoảng, mất 8 giây ⇒ 2 giây/khoảng. Tầng 1→9 là 8 khoảng ⇒ 16 giây (không phải nhân đôi số tầng).' },
+  { id: 'dl91', category: '➗ Toán nhanh', d: 3, q: 'Bảng có 1 tỉ dòng, index giúp quét còn 0,001% số dòng. Mỗi lần đọc dòng mất 1 micro giây. Truy vấn mất bao lâu?', options: ['1ms', '10ms', '100ms', '1 giây'], answer: 1,
+    explain: '0,001% của 1 tỉ = 10.000 dòng ⇒ 10.000 × 1µs = 10.000µs = 10ms.' },
+  { id: 'n25-1', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 5, 10, 30, 120, ?', options: ['360', '480', '600', '720'], answer: 2,
+    explain: 'Nhân lần lượt với 2, 3, 4 rồi 5: 120 × 5 = 600.' },
+  { id: 'n25-2', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 31, 28, 31, 30, 31, ?', options: ['28', '29', '30', '31'], answer: 2,
+    explain: 'Đây là SỐ NGÀY các tháng trong năm thường: tháng 1 đến tháng 5 là 31, 28, 31, 30, 31 ⇒ tháng 6 có 30 ngày.' },
 ];
