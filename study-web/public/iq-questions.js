@@ -2335,4 +2335,41 @@ window.IQ_QUESTIONS = [
     explain: '0,99 × 0,99 = 0,9801 = 98,01% (không phải trừ thẳng 2%).' },
   { id: 'n26-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 3, 7, 16, 32, ?', options: ['48', '57', '64', '73'], answer: 1,
     explain: 'Khoảng cách là 1, 4, 9, 16 (bình phương 1², 2², 3², 4²) ⇒ khoảng tiếp theo 5² = 25 ⇒ 32 + 25 = 57.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #25 =====
+  // Hai điều kiện cùng lúc: đối xứng CẢ trục dọc lẫn trục ngang
+  figQ({
+    id: 'both1', d: 3, q: 'Hình nào vừa đối xứng qua trục DỌC vừa đối xứng qua trục NGANG?',
+    opts: [gSvg('101/000/101'), gSvg('111/010/000'), gSvg('110/110/000'), gSvg('100/010/001')],
+    explain: 'Chỉ hình bốn góc mới giữ nguyên khi lật trái↔phải VÀ khi lật trên↔dưới; các hình kia chỉ thoả một chiều hoặc không chiều nào.',
+  }),
+  // Chuỗi xoay 45° (góc lẻ, khó nhận hơn 90°)
+  figQ({
+    id: 'rot45', d: 3, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([iqSvg(rot(shape('t'), 0)), iqSvg(rot(shape('t'), 45)), iqSvg(rot(shape('t'), 90)), '?']),
+    opts: [iqSvg(rot(shape('t'), 135)), iqSvg(rot(shape('t'), 180)), iqSvg(rot(shape('t'), 0)), iqSvg(rot(shape('t'), 90))],
+    explain: 'Tam giác xoay thêm 45° mỗi bước (không phải 90°) ⇒ sau 90° là 135°.',
+  }),
+  // Nhiễu kiểu khác: VỊ TRÍ ô nhảy lung tung, chỉ SỐ Ô là quy luật
+  figQ({
+    id: 'noise2', d: 3, q: 'Hình tiếp theo của chuỗi là gì? (vị trí các ô chỉ là nhiễu)',
+    fig: figRow([gSvg('100/000/000'), gSvg('000/010/001'), gSvg('001/100/010'), gSvg('110/001/010'), '?']),
+    opts: [gSvg('101/010/101'), gSvg('110/010/000'), gSvg('111/111/000'), gSvg('100/000/001')],
+    explain: 'Vị trí ô đổi lung tung — chỉ SỐ Ô là quy luật: 1, 2, 3, 4 ⇒ hình tiếp theo phải có 5 ô.',
+  }),
+  gOpQ('gx35', 2, '111/010/001', '001/110/011', 'or', 'Hợp hai lưới: tô mọi ô có ở ít nhất một hình.'),
+  { id: 'nm31', category: '🖼️ Suy luận hình', d: 2, q: 'Số ở ô dấu ? là bao nhiêu?',
+    fig: figGrid([numCell(12), numCell(3), numCell(4), numCell(20), numCell(5), numCell(4), numCell(36), numCell(9), '?']),
+    options: ['3', '4', '6', '27'], answer: 1,
+    explain: 'Cột 3 = cột 1 ÷ cột 2: 12÷3 = 4, 20÷5 = 4, 36÷9 = 4 — cả ba hàng đều ra 4.' },
+  { id: 'dl95', category: '🧠 Logic', d: 3, q: 'Có 100 bóng đèn đang tắt, đánh số 1–100. Lần lượt bật/tắt các bóng là bội số của 1, 2, 3… đến 100. Cuối cùng bóng số 9 SÁNG hay TẮT?', options: ['Sáng', 'Tắt', 'Phụ thuộc thứ tự làm', 'Không xác định được'], answer: 0,
+    explain: 'Bóng số n bị đảo trạng thái đúng bằng số ước của n. Số 9 có 3 ước (1, 3, 9) — số LẺ lần đảo ⇒ đèn sáng (chỉ số CHÍNH PHƯƠNG mới sáng).' },
+  { id: 'dl96', category: '🧠 Logic', d: 2, q: 'Một cái ly đầy nước, đổ ra 1/3 rồi lại đổ thêm vào 1/4 dung tích ly. Ly đang chứa bao nhiêu phần?', options: ['5/12', '7/12', '11/12', '2/3'], answer: 2,
+    explain: '1 − 1/3 = 2/3 = 8/12; thêm 1/4 = 3/12 ⇒ 11/12 ly.' },
+  { id: 'dl97', category: '➗ Toán nhanh', d: 3, q: 'Deploy mất 12 phút, mỗi ngày deploy 5 lần, đội 4 người đều phải ngồi chờ. Một tháng (22 ngày làm việc) tốn bao nhiêu GIỜ CÔNG chờ?', options: ['22 giờ', '44 giờ', '88 giờ', '176 giờ'], answer: 2,
+    explain: '12 phút × 5 lần × 22 ngày = 1.320 phút = 22 giờ; nhân 4 người ⇒ 88 giờ công.' },
+  { id: 'n27-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 5, 13, 29, 61, ?', options: ['93', '109', '125', '127'], answer: 2,
+    explain: 'Quy luật × 2 + 3: 61 × 2 + 3 = 125.' },
+  { id: 'n27-2', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 9, 3, 12, 4, 15, 5, ?', options: ['6', '16', '18', '20'], answer: 2,
+    explain: 'Hai dãy đan xen: 9, 12, 15, ? (cộng 3) và 3, 4, 5 (số đứng sau bằng một phần ba số trước) ⇒ tiếp theo là 18.' },
 ];

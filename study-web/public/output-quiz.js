@@ -2070,4 +2070,62 @@ window.OUTPUT_QUIZ = [
     options: ['5', '3', '7', '2'], answer: 0,
     explain: 'Sinh 1..n rồi lấy số lẻ: n = 5 cho "135"; n = 3 cho "13"; n = 7 cho "1357".',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #25 =====
+  {
+    id: 'oq27-keys-vs-objectkeys', topic: 'Mảng',
+    code: `const a = ['x', 'y'];\nconsole.log(a.keys().next().value, Object.keys(a).join(), typeof Object.keys(a)[0]);`,
+    options: ['0 0,1 number', '0 0,1 string', 'x 0,1 string', '0 x,y string'], answer: 1,
+    explain: 'a.keys() là iterator trả chỉ số dạng SỐ; Object.keys(a) trả mảng khoá dạng CHUỖI ("0", "1").',
+  },
+  {
+    id: 'oq27-includes-empty', topic: 'Chuỗi',
+    code: `console.log('abc'.includes(''), ''.includes(''), 'abc'.indexOf(''), 'abc'.startsWith(''));`,
+    options: ['true true 0 true', 'false false -1 false', 'true false 0 true', 'true true -1 true'], answer: 0,
+    explain: 'Chuỗi rỗng được coi là nằm ở MỌI vị trí (kể cả trong chuỗi rỗng) ⇒ luôn true và indexOf trả 0.',
+  },
+  {
+    id: 'oq27-throw-in-then', topic: 'Promise',
+    code: `Promise.resolve(1)\n  .then(() => { throw new Error('boom'); })\n  .then(() => console.log('khong chay'))\n  .catch(e => console.log('bat duoc:', e.message));`,
+    options: ['khong chay', 'bat duoc: boom', 'khong chay\nbat duoc: boom', 'Uncaught Error'], answer: 1,
+    explain: 'Lỗi ném trong .then làm mọi .then phía sau bị BỎ QUA, nhảy thẳng tới .catch gần nhất.',
+  },
+  {
+    id: 'oq27-destructure-param', topic: 'Destructuring',
+    code: `console.log([[1, 2], [3, 4]].map(([a, b]) => a + b).join(), [{ n: 1 }, { n: 2 }].map(({ n }) => n * 10).join());`,
+    options: ['3,7 10,20', '1,3 10,20', '3,7 1,2', '12,34 10,20'], answer: 0,
+    explain: 'Có thể destructuring NGAY TRONG tham số của callback — cách viết gọn hay gặp khi xử lý mảng cặp hoặc mảng object.',
+  },
+  {
+    id: 'oqi-pair-multiply', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.map(([x, y]) => x * y).join();\nconsole.log(f(INPUT));`,
+    out: '2,12',
+    options: ['[[1, 2], [3, 4]]', '[[2, 2], [3, 4]]', '[[1, 3], [2, 4]]', '[[2, 3], [1, 4]]'], answer: 0,
+    explain: 'Nhân từng cặp rồi nối: 1×2 = 2 và 3×4 = 12 ⇒ "2,12". Các lựa chọn kia cho "4,12", "3,8" và "6,4".',
+  },
+  {
+    id: 'oqi-first-last', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.at(0) + s.at(-1);\nconsole.log(f(INPUT));`,
+    out: 'an',
+    options: ['"admin"', '"nam"', '"node"', '"api"'], answer: 0,
+    explain: 'Ghép ký tự ĐẦU với ký tự CUỐI: "admin" → "a" + "n" = "an"; "nam" → "nm"; "node" → "ne".',
+  },
+  {
+    id: 'oqi-square-digits', topic: 'Đoán input · số học', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => (n ** 2).toString().length;\nconsole.log(f(INPUT));`,
+    out: '3',
+    options: ['12', '5', '40', '100'], answer: 0,
+    explain: '12² = 144 có 3 chữ số; 5² = 25 có 2; 40² = 1600 có 4; 100² = 10000 có 5.',
+  },
+  {
+    id: 'oqi-find-key-by-value', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => Object.keys(o).find(k => o[k] === 2);\nconsole.log(f(INPUT));`,
+    out: 'b',
+    options: ['{ a: 1, b: 2 }', '{ b: 1, a: 2 }', '{ a: 2, b: 1 }', '{ c: 2, b: 3 }'], answer: 0,
+    explain: 'Tìm KHOÁ đầu tiên có giá trị bằng 2 ⇒ khoá "b" phải mang giá trị 2 và không có khoá nào trước nó cũng bằng 2.',
+  },
 ];
