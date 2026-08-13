@@ -398,10 +398,10 @@ window.OUTPUT_QUIZ = [
     explain: 'JSON.stringify BỎ QUA thuộc tính có giá trị undefined hoặc function (trong mảng thì thay bằng null).',
   },
   {
-    id: 'oq2-try-finally', topic: 'try / finally',
-    code: `function f() {\n  try {\n    return 'try';\n  } finally {\n    console.log('finally');\n  }\n}\nconsole.log(f());`,
-    options: ['try\nfinally', 'finally\ntry', 'try', 'finally'], answer: 1,
-    explain: 'finally chạy TRƯỚC khi hàm thực sự trả về ⇒ in "finally" rồi mới in giá trị trả về.',
+    id: 'oq2-finally-override', topic: 'try / finally',
+    code: `function f() {\n  try {\n    return 'A';\n  } finally {\n    return 'B';\n  }\n}\nconsole.log(f());`,
+    options: ['A', 'B', 'AB', 'undefined'], answer: 1,
+    explain: '`return` trong finally NUỐT luôn giá trị (và cả lỗi) mà try định trả về ⇒ hàm trả "B". Đây là lý do đừng bao giờ return trong finally.',
   },
   {
     id: 'oq2-promise-finally', topic: 'Promise',
@@ -962,5 +962,63 @@ window.OUTPUT_QUIZ = [
     out: '***',
     options: ['3', '2', '4', '0'], answer: 0,
     explain: 'Array(n).fill("*") tạo n dấu sao ⇒ muốn 3 dấu thì n = 3.',
+  },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #6 =====
+  {
+    id: 'oq8-banana', topic: 'Ép kiểu',
+    code: `console.log('b' + 'a' + + 'a' + 'a');`,
+    options: ['baaa', 'baNaNa', 'banana', 'baNaN'], answer: 1,
+    explain: 'Dấu + ĐƠN phía trước "a" là phép đổi sang số: Number("a") = NaN. Nối lại: "b" + "a" + NaN + "a" = "ba" + "NaN" + "a" = "baNaNa".',
+  },
+  {
+    id: 'oq8-chained-compare', topic: 'Toán tử',
+    code: `console.log(1 < 2 < 3, 3 > 2 > 1);`,
+    options: ['true true', 'true false', 'false true', 'false false'], answer: 1,
+    explain: 'So sánh chạy từ TRÁI sang phải: 1<2 → true, rồi true<3 → 1<3 → true. Nhưng 3>2 → true, rồi true>1 → 1>1 → false.',
+  },
+  {
+    id: 'oq8-arguments', topic: 'Hàm',
+    code: `function f() { return arguments.length; }\nconst g = (...a) => a.length;\nconsole.log(f(1, 2, 3), g(1, 2), f());`,
+    options: ['3 2 0', '0 2 0', '3 2 undefined', '3 3 0'], answer: 0,
+    explain: '`arguments` đếm số tham số THỰC TẾ truyền vào (arrow function không có arguments nên phải dùng rest ...a).',
+  },
+  {
+    id: 'oq8-typeerror-name', topic: 'Lỗi',
+    code: `try {\n  const u = null;\n  u.name;\n} catch (e) {\n  console.log(e.constructor.name, e instanceof Error);\n}`,
+    options: ['ReferenceError true', 'TypeError true', 'TypeError false', 'Error true'], answer: 1,
+    explain: 'Đọc thuộc tính của null/undefined ném TypeError (không phải ReferenceError — cái đó dành cho biến chưa khai báo).',
+  },
+  {
+    id: 'oqi-dedupe-chars', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => [...s].filter((c, i, arr) => arr.indexOf(c) === i).join('');\nconsole.log(f(INPUT));`,
+    out: 'abc',
+    options: ['"aabbcc"', '"abcabc "', '"cba"', '"aabbccd"'], answer: 0,
+    explain: 'Chỉ giữ lần XUẤT HIỆN ĐẦU TIÊN của mỗi ký tự ⇒ "aabbcc" → "abc"; "cba" giữ nguyên thứ tự c-b-a.',
+  },
+  {
+    id: 'oqi-reverse-number', topic: 'Đoán input · số học', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => Number(String(n).split('').reverse().join(''));\nconsole.log(f(INPUT));`,
+    out: '321',
+    options: ['123', '321', '456', '213'], answer: 0,
+    explain: 'Đảo ngược chữ số rồi đổi lại thành số: 123 → 321. (Cẩn thận 1230 cũng ra 321 vì Number("0321") bỏ số 0 đứng đầu — nên không dùng làm mồi nhử được.)',
+  },
+  {
+    id: 'oqi-sum-values', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => Object.values(o).reduce((s, x) => s + x, 0);\nconsole.log(f(INPUT));`,
+    out: '6',
+    options: ['{ a: 1, b: 2, c: 3 }', '{ a: 1, b: 2 }', '{ a: 6, b: 1 }', '{ a: 2, b: 2 }'], answer: 0,
+    explain: 'Cộng các GIÁ TRỊ của object (không phải số khoá) ⇒ 1 + 2 + 3 = 6.',
+  },
+  {
+    id: 'oqi-email-domain', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.includes('@') ? s.split('@')[1] : 'invalid';\nconsole.log(f(INPUT));`,
+    out: 'gmail.com',
+    options: ['"an@gmail.com"', '"gmail.com"', '"an@yahoo.com"', '"an.gmail.com"'], answer: 0,
+    explain: 'Không có "@" thì trả "invalid"; có thì lấy phần SAU dấu @ ⇒ chuỗi "gmail.com" trơ trọi lại ra "invalid".',
   },
 ];

@@ -80,6 +80,19 @@ test('iq-questions: KHÔNG còn câu "tương tự chữ" kiểu Ngày:Đêm = T
     'dạng analogy chữ đã bị loại khỏi kho — không thêm lại: ' + analog.map(q => q.q).join(' | '));
 });
 
+test('iq-questions: KHÔNG hai câu nào trùng đề bài (một buổi test bốc trúng cả hai là lộ)', () => {
+  const qs = loadWindow('iq-questions.js').IQ_QUESTIONS;
+  const seen = new Map();
+  const dup = [];
+  for (const q of qs) {
+    if (q.fig || q.optFig) continue; // câu nhìn hình cố tình dùng chung câu chữ ("Hình nào KHÁC NHÓM?"), hình mới là đề
+    const key = (q.q || '').trim();
+    if (seen.has(key)) dup.push(`${seen.get(key)} ≡ ${q.id}: ${key}`);
+    else seen.set(key, q.id);
+  }
+  assert.deepStrictEqual(dup, [], 'câu hỏi IQ bị lặp đề bài:\n  ' + dup.join('\n  '));
+});
+
 test('iq-questions: nhóm 🖼️ nhìn hình — đủ số lượng, mỗi lựa chọn một hình KHÁC NHAU', () => {
   const qs = loadWindow('iq-questions.js').IQ_QUESTIONS;
   const figs = qs.filter(q => q.fig || q.optFig);
@@ -251,6 +264,18 @@ test('output-quiz: CHẠY THẬT mỗi snippet → output đúng = options[answe
     assert.strictEqual(q.options.filter(o => o === out).length, 1,
       `OQ ${q.id}: có >1 option khớp output (đáp án không duy nhất)`);
   }
+});
+
+test('output-quiz: KHÔNG hai câu nào dùng chung một snippet', () => {
+  const qs = loadWindow('output-quiz.js').OUTPUT_QUIZ;
+  const seen = new Map();
+  const dup = [];
+  for (const q of qs) {
+    const key = q.code.trim();
+    if (seen.has(key)) dup.push(`${seen.get(key)} ≡ ${q.id}`);
+    else seen.set(key, q.id);
+  }
+  assert.deepStrictEqual(dup, [], 'snippet bị lặp giữa các câu: ' + dup.join(', '));
 });
 
 test('output-quiz: câu ĐOÁN INPUT — thay INPUT bằng đáp án ra đúng q.out, mồi nhử ra kết quả KHÁC', async () => {
