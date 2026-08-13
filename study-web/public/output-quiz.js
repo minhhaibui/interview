@@ -2360,4 +2360,62 @@ window.OUTPUT_QUIZ = [
     options: ["['c', 'a', 'b']", "['a', 'b']", "['x', 'y', 'z']", "['c', 'b']"], answer: 0,
     explain: 'Sắp theo bảng chữ cái nên thứ tự đầu vào không quan trọng — quan trọng là đúng bộ ký tự a, b, c.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #30 =====
+  {
+    id: 'oq32-numeric-key', topic: 'Object',
+    code: `const m = {};\nm[1] = 'a';\nm['1'] = 'b';\nm[true] = 'c';\nconsole.log(m[1], Object.keys(m).length, Object.keys(m).join());`,
+    options: ["a 2 1,true", "b 2 1,true", "b 3 1,1,true", "b 1 1"], answer: 1,
+    explain: 'Khoá object luôn bị ép về CHUỖI ⇒ m[1] và m["1"] là một khoá (giá trị sau ghi đè); true thành khoá "true" ⇒ tổng 2 khoá.',
+  },
+  {
+    id: 'oq32-boolean-object', topic: 'Truthy / Falsy',
+    code: `console.log(Boolean(new Boolean(false)), new Boolean(false) == false, typeof new Boolean(false));`,
+    options: ['false true object', 'true true object', 'true false object', 'false false boolean'], answer: 1,
+    explain: 'new Boolean(false) là một OBJECT nên luôn truthy; nhưng so lỏng == thì nó bị ép về giá trị nguyên thuỷ false. Đừng bao giờ dùng new Boolean.',
+  },
+  {
+    id: 'oq32-charcode-case', topic: 'Chuỗi',
+    code: `console.log([...'aA'].map(c => c.charCodeAt(0)).join(), 'a' > 'A', 'a'.toUpperCase() === 'A');`,
+    options: ['97,65 true true', '65,97 true true', '97,65 false true', '97,65 true false'], answer: 0,
+    explain: 'Chữ thường có mã LỚN HƠN chữ hoa (97 > 65) nên "a" > "A" là true — đây là lý do sort() mặc định xếp chữ hoa lên trước.',
+  },
+  {
+    id: 'oq32-search-vs-indexof', topic: 'Chuỗi',
+    code: `console.log('abcabc'.indexOf('b'), 'abcabc'.lastIndexOf('b'), 'abcabc'.search(/c/), 'abc'.search(/z/));`,
+    options: ['1 4 2 -1', '1 4 2 0', '1 1 2 -1', '1 4 5 -1'], answer: 0,
+    explain: 'search nhận REGEX và trả vị trí khớp đầu tiên (−1 nếu không có); indexOf/lastIndexOf chỉ nhận chuỗi.',
+  },
+  {
+    id: 'oqi-charcode-sum', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.charCodeAt(0) + s.charCodeAt(1);\nconsole.log(f(INPUT));`,
+    out: '195',
+    options: ['"ab"', '"ac"', '"aa"', '"AB"'], answer: 0,
+    explain: 'Cộng mã của HAI ký tự đầu: 97 ("a") + 98 ("b") = 195; "ac" ra 196; "aa" ra 194; "AB" ra 131.',
+  },
+  {
+    id: 'oqi-ascending-pairs', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.filter((x, i) => i > 0 && x > a[i - 1]).length;\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ['[1, 5, 3, 9]', '[9, 5, 3, 1]', '[1, 2, 3, 4]', '[5, 5, 5]'], answer: 0,
+    explain: 'Đếm số lần một phần tử LỚN HƠN phần tử ngay trước nó: [1,5,3,9] có 5>1 và 9>3 ⇒ 2 lần.',
+  },
+  {
+    id: 'oqi-keys-upper', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => Object.keys(o).map(k => k.toUpperCase()).join('');\nconsole.log(f(INPUT));`,
+    out: 'AB',
+    options: ['{ a: 1, b: 2 }', '{ b: 1, a: 2 }', '{ a: 1 }', '{ x: 1, y: 2 }'], answer: 0,
+    explain: 'Viết hoa từng KHOÁ rồi nối theo thứ tự khai báo ⇒ phải là a trước b.',
+  },
+  {
+    id: 'oqi-digits-desc', topic: 'Đoán input · số học', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => [...String(n)].map(Number).sort((a, b) => b - a).join('');\nconsole.log(f(INPUT));`,
+    out: '954',
+    options: ['459', '953', '944', '9541'], answer: 0,
+    explain: 'Sắp các CHỮ SỐ giảm dần: 459 → "954". Vì phép này không quan tâm thứ tự đầu vào nên các mồi nhử phải dùng BỘ chữ số khác (953 → "953", 944 → "944").',
+  },
 ];
