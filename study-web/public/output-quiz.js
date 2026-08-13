@@ -789,4 +789,62 @@ window.OUTPUT_QUIZ = [
     options: ['"database"', '"server"', '"sql"', '"javascript"'], answer: 0,
     explain: '"database" có a, a, a, e = 4 nguyên âm; "javascript" có 3; "server" có 2; "sql" không có nguyên âm nào.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #3 =====
+  {
+    id: 'oq5-array-plus', topic: 'Ép kiểu',
+    code: `console.log([1, 2, 3] + [4]);\nconsole.log([1, 2, 3].concat([4]).length);`,
+    options: ['1,2,3,4\n4', '1,2,34\n4', '[1,2,3,4]\n4', '1,2,34\n2'], answer: 1,
+    explain: 'Toán tử + ép cả hai mảng về CHUỖI rồi nối: "1,2,3" + "4" = "1,2,34". Muốn ghép mảng thật thì dùng concat/spread.',
+  },
+  {
+    id: 'oq5-rest-destructure', topic: 'Destructuring',
+    code: `const { a, ...rest } = { a: 1, b: 2, c: 3 };\nconsole.log(a, JSON.stringify(rest));`,
+    options: ['1 {"b":2,"c":3}', '1 {"a":1,"b":2,"c":3}', 'undefined {"b":2,"c":3}', '1 {}'], answer: 0,
+    explain: 'Rest gom mọi thuộc tính CÒN LẠI vào object mới — mẹo hay dùng để loại bỏ một field (vd bỏ password khỏi user).',
+  },
+  {
+    id: 'oq5-reassign-vs-mutate', topic: 'Tham chiếu',
+    code: `let a = { n: 1 };\nconst b = a;\na = { n: 2 };\nb.n = 3;\nconsole.log(a.n, b.n);`,
+    options: ['3 3', '2 3', '2 1', '3 1'], answer: 1,
+    explain: 'Gán a = {n:2} chỉ trỏ BIẾN a sang object mới, b vẫn giữ object cũ ⇒ hai object khác nhau: a.n = 2, b.n = 3.',
+  },
+  {
+    id: 'oq5-promise-race', topic: 'Promise',
+    code: `const wait = (ms, v) => new Promise(r => setTimeout(() => r(v), ms));\nPromise.race([wait(30, 'cham'), wait(5, 'nhanh')]).then(v => console.log(v));\nconsole.log('sync');`,
+    options: ['sync\ncham', 'sync\nnhanh', 'nhanh\nsync', 'sync\nnhanh\ncham'], answer: 1,
+    explain: 'Promise.race lấy kết quả của promise XONG TRƯỚC (5ms) và bỏ qua phần còn lại — mẫu hay dùng để đặt timeout cho request.',
+  },
+  {
+    id: 'oqi-slugify', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.trim().replace(/\\s+/g, '-').toLowerCase();\nconsole.log(f(INPUT));`,
+    out: 'hello-world',
+    options: ['"  Hello   World  "', '"World Hello"', '"hello world hi"', '"HELLO_WORLD"'], answer: 0,
+    explain: 'trim bỏ khoảng trắng hai đầu, \\s+ gộp MỌI cụm khoảng trắng thành một dấu "-", rồi hạ chữ thường.',
+  },
+  {
+    id: 'oqi-digit-sum', topic: 'Đoán input · số học', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => [...String(n)].reduce((s, d) => s + Number(d), 0);\nconsole.log(f(INPUT));`,
+    out: '12',
+    options: ['39', '21', '45', '70'], answer: 0,
+    explain: 'Cộng các CHỮ SỐ của số: 3 + 9 = 12. Các lựa chọn kia ra 3, 9 và 7.',
+  },
+  {
+    id: 'oqi-longest-word', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.reduce((m, w) => Math.max(m, w.length), 0);\nconsole.log(f(INPUT));`,
+    out: '5',
+    options: ['["api", "redis", "sql"]', '["node", "sql"]', '["database", "api"]', '["a", "bb"]'], answer: 0,
+    explain: 'Trả về ĐỘ DÀI của từ dài nhất ⇒ cần mảng có từ dài đúng 5 ký tự ("redis"), không có từ nào dài hơn.',
+  },
+  {
+    id: 'oqi-filter-keys', topic: 'Đoán input · object', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = o => Object.keys(o).filter(k => o[k] > 2).join(',');\nconsole.log(f(INPUT));`,
+    out: 'b,c',
+    options: ['{ a: 1, b: 3, c: 5 }', '{ a: 3, b: 3, c: 5 }', '{ b: 1, c: 5 }', '{ a: 1, b: 2, c: 3 }'], answer: 0,
+    explain: 'Lọc KHOÁ có giá trị > 2 và giữ thứ tự khoá ⇒ a phải ≤ 2, còn b và c phải > 2.',
+  },
 ];
