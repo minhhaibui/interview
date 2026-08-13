@@ -1548,4 +1548,62 @@ window.OUTPUT_QUIZ = [
     options: ['["banana", "apple", "cherry"]', '["kiwi", "banana"]', '["cherry", "banana"]', '["apple", "ant"]'], answer: 0,
     explain: 'sort() xếp theo bảng chữ cái rồi lấy phần tử đầu ⇒ chuỗi nhỏ nhất phải là "apple" ("ant" còn nhỏ hơn).',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #16 =====
+  {
+    id: 'oq18-spread-identity', topic: 'Tham chiếu',
+    code: `const x = { a: 1 };\nconst y = { ...x };\nconsole.log(x === y, JSON.stringify(x) === JSON.stringify(y), x.a === y.a);`,
+    options: ['true true true', 'false true true', 'false false true', 'true true false'], answer: 1,
+    explain: 'Spread tạo object MỚI nên === (so sánh địa chỉ) là false, dù nội dung giống hệt. Muốn so nội dung phải so từng field hoặc JSON.',
+  },
+  {
+    id: 'oq18-padend', topic: 'Chuỗi',
+    code: `console.log('abc'.padEnd(5, '*') + '|', 'abcdef'.padEnd(5, '*') + '|');`,
+    options: ['abc**| abcde|', 'abc**| abcdef|', '**abc| abcdef|', 'abc  | abcdef|'], answer: 1,
+    explain: 'padEnd chỉ chèn thêm cho ĐỦ độ dài, không bao giờ CẮT bớt ⇒ chuỗi đã dài hơn thì giữ nguyên.',
+  },
+  {
+    id: 'oq18-fill-map', topic: 'Mảng',
+    code: `console.log(new Array(3).map((_, i) => i).length, new Array(3).fill().map((_, i) => i * 2).join());`,
+    options: ['3 0,2,4', '0 0,2,4', '3 0,1,2', '0 0,1,2'], answer: 0,
+    explain: 'new Array(3) tạo mảng THƯA — map bỏ qua ô rỗng nên không sinh giá trị (length vẫn 3); phải .fill() trước cho ô thành undefined thật.',
+  },
+  {
+    id: 'oq18-truthy-space', topic: 'Truthy / Falsy',
+    code: `console.log(!!'false', !!'', !!' ', !!'0', !!0, !![]);`,
+    options: ['true false true true false true', 'false false true true false true', 'true false false true false true', 'true false true false false false'], answer: 0,
+    explain: 'MỌI chuỗi không rỗng đều truthy — kể cả " " (một dấu cách), "0" và "false". Chỉ "" mới falsy.',
+  },
+  {
+    id: 'oqi-padend-dots', topic: 'Đoán input · chuỗi', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => s.padEnd(5, '.');\nconsole.log(f(INPUT));`,
+    out: 'ab...',
+    options: ['"ab"', '"abc"', '"a"', '"abcde"'], answer: 0,
+    explain: 'Chèn dấu chấm vào CUỐI cho đủ 5 ký tự: "ab" → "ab..."; "abc" → "abc.."; "a" → "a...."; chuỗi đã đủ 5 thì giữ nguyên.',
+  },
+  {
+    id: 'oqi-array-squares', topic: 'Đoán input · Array.from', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => Array.from({ length: n }, (_, i) => i * i).join(',');\nconsole.log(f(INPUT));`,
+    out: '0,1,4',
+    options: ['3', '4', '2', '9'], answer: 0,
+    explain: 'Sinh n phần tử i² từ i = 0 ⇒ "0,1,4" có 3 phần tử nên n = 3.',
+  },
+  {
+    id: 'oqi-reduce-reverse', topic: 'Đoán input · reduce', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = s => [...s].reduce((acc, c) => c + acc, '');\nconsole.log(f(INPUT));`,
+    out: 'cba',
+    options: ['"abc"', '"cba"', '"bca"', '"abcd"'], answer: 0,
+    explain: 'Mỗi ký tự được ghép vào TRƯỚC chuỗi tích luỹ ⇒ kết quả là chuỗi đảo ngược.',
+  },
+  {
+    id: 'oqi-total-length', topic: 'Đoán input · reduce', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.reduce((n, w) => n + w.length, 0);\nconsole.log(f(INPUT));`,
+    out: '7',
+    options: ['["api", "sql", "x"]', '["api", "sql"]', '["node", "js"]', '["a", "b"]'], answer: 0,
+    explain: 'Cộng ĐỘ DÀI tất cả phần tử: 3 + 3 + 1 = 7 (không phải đếm số phần tử).',
+  },
 ];

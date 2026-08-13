@@ -1930,4 +1930,56 @@ window.IQ_QUESTIONS = [
     explain: 'Còn 60% thời gian cũ: 45 × 0,6 = 27 phút.' },
   { id: 'n17-1', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 2, 5, 9, 14, 20, ?', options: ['25', '26', '27', '28'], answer: 2,
     explain: 'Khoảng cách tăng đều 3, 4, 5, 6, 7 ⇒ 20 + 7 = 27.' },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #16 — TƯƠNG TỰ BẰNG HÌNH (A→B thì C→?) =====
+  // Dạng analogy nhưng hoàn toàn bằng HÌNH, không dùng chữ.
+  figQ({
+    id: 'afig1', d: 3, q: 'Hình trên biến đổi theo một quy luật. Áp dụng đúng quy luật đó cho hàng dưới, ô ? là hình nào?',
+    fig: figRow([gSvg('110/100/000'), numCell('→'), gSvg(gRot('110/100/000'))]) +
+      figRow([gSvg('011/010/010'), numCell('→'), '?']),
+    opts: [gSvg(gRot('011/010/010')), gSvg(gFlip('011/010/010')), gSvg(gRot(gRot('011/010/010'))), gSvg(gInv('011/010/010'))],
+    explain: 'Quy luật ở hàng trên là XOAY 90° thuận chiều kim đồng hồ ⇒ áp dụng y hệt cho hình hàng dưới.',
+  }),
+  figQ({
+    id: 'afig2', d: 3, q: 'Hình trên biến đổi theo một quy luật. Áp dụng đúng quy luật đó cho hàng dưới, ô ? là hình nào?',
+    fig: figRow([gSvg('110/010/000'), numCell('→'), gSvg(gInv('110/010/000'))]) +
+      figRow([gSvg('101/010/001'), numCell('→'), '?']),
+    opts: [gSvg(gInv('101/010/001')), gSvg(gFlip('101/010/001')), gSvg(gRot('101/010/001')), gSvg('101/010/001')],
+    explain: 'Quy luật là ĐẢO NGƯỢC (ô tô thành trống, ô trống thành tô) — không phải xoay hay lật.',
+  }),
+  figQ({
+    id: 'afig3', d: 3, q: 'Hình trên biến đổi theo một quy luật. Áp dụng đúng quy luật đó cho hàng dưới, ô ? là hình nào?',
+    fig: figRow([iqSvg(shape('s', 0)), numCell('→'), iqSvg(shape('s', 2))]) +
+      figRow([iqSvg(polyShape(5, 0)), numCell('→'), '?']),
+    opts: [iqSvg(polyShape(5, 2)), iqSvg(polyShape(6, 2)), iqSvg(polyShape(5, 0)), iqSvg(shape('s', 2))],
+    explain: 'Quy luật là TÔ ĐẶC hình (giữ nguyên loại hình) ⇒ ngũ giác rỗng thành ngũ giác đặc.',
+  }),
+  gOpQ('gx26', 2, '011/010/110', '110/011/010', 'and', 'Giao hai lưới: chỉ giữ ô cả hai cùng tô.'),
+  // Ma trận 4×4 — nhiều dữ kiện hơn, phải bắt quy luật theo cả hàng lẫn cột
+  { id: 'mx4x4', category: '🖼️ Suy luận hình', d: 3, q: 'Ma trận 4×4: số ở ô dấu ? là bao nhiêu? (mỗi ô = hàng × cột)',
+    fig: figGrid([
+      numCell(1), numCell(2), numCell(3), numCell(4),
+      numCell(2), numCell(4), numCell(6), numCell(8),
+      numCell(3), numCell(6), numCell(9), numCell(12),
+      numCell(4), numCell(8), '?', numCell(16)], 4),
+    options: ['10', '11', '12', '14'], answer: 2,
+    explain: 'Đây là bảng cửu chương: ô ở hàng 4 cột 3 = 4 × 3 = 12.' },
+  figQ({
+    id: 'mx23', d: 3, q: 'Ma trận 4×4: ô dấu ? là hình nào?',
+    fig: figGrid([
+      iqSvg(rot(ELL, 0)), iqSvg(rot(ELL, 90)), iqSvg(rot(ELL, 180)), iqSvg(rot(ELL, 270)),
+      iqSvg(rot(ELL, 90)), iqSvg(rot(ELL, 180)), iqSvg(rot(ELL, 270)), iqSvg(rot(ELL, 0)),
+      iqSvg(rot(ELL, 180)), iqSvg(rot(ELL, 270)), iqSvg(rot(ELL, 0)), iqSvg(rot(ELL, 90)),
+      iqSvg(rot(ELL, 270)), iqSvg(rot(ELL, 0)), '?', iqSvg(rot(ELL, 180))], 4),
+    opts: [iqSvg(rot(ELL, 90)), iqSvg(rot(ELL, 0)), iqSvg(rot(ELL, 180)), iqSvg(rot(ELL, 270))],
+    explain: 'Mỗi bước sang phải xoay thêm 90°; hàng cuối bắt đầu từ 270° nên ô thứ ba là 270 + 180 = 90°.',
+  }),
+  { id: 'dl68', category: '🧠 Logic', d: 3, q: 'Một hồ có 64 lá súng, số lá tăng gấp đôi mỗi ngày và phủ kín hồ sau 6 ngày nữa. Nếu ban đầu chỉ có 32 lá thì phủ kín sau bao lâu?', options: ['5 ngày', '6 ngày', '7 ngày', '12 ngày'], answer: 2,
+    explain: 'Ít hơn một nửa nghĩa là chậm hơn đúng MỘT ngày ⇒ 6 + 1 = 7 ngày.' },
+  { id: 'dl69', category: '🎲 Xác suất', d: 2, q: 'Tung một xúc xắc 6 mặt. Xác suất được số CHẴN hoặc số lớn hơn 4?', options: ['1/2', '2/3', '3/4', '5/6'], answer: 1,
+    explain: 'Chẵn = {2,4,6}, lớn hơn 4 = {5,6}; hợp lại {2,4,5,6} = 4 trường hợp trên 6 ⇒ 2/3.' },
+  { id: 'dl70', category: '➗ Toán nhanh', d: 3, q: 'API tốn 200ms, trong đó 150ms là gọi DB. Nếu cache bỏ được 80% lần gọi DB thì thời gian TRUNG BÌNH còn bao nhiêu?', options: ['50ms', '80ms', '110ms', '170ms'], answer: 1,
+    explain: '20% số lần vẫn tốn 150ms DB ⇒ trung bình 50 + 0,2 × 150 = 80ms.' },
+  { id: 'n18-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 2, 4, 7, 12, 20, ?', options: ['28', '31', '33', '35'], answer: 2,
+    explain: 'Mỗi số = tổng hai số trước + 1: 12 + 20 + 1 = 33.' },
 ];
