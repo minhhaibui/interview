@@ -234,18 +234,38 @@ test('output-quiz: id duy nhất, answer hợp lệ, options ≥ 2', () => {
   }
 });
 
+/** Chạy thật một snippet với console giả, trả về các dòng đã in (đã xả micro/macrotask). */
+async function runSnippet(code) {
+  const logs = [];
+  new Function('console', code)({ log: (...a) => logs.push(a.map(String).join(' ')) });
+  await new Promise(r => setTimeout(r, 60)); // xả micro/macrotask (Promise, setTimeout 0)
+  return logs.join('\n');
+}
+
 test('output-quiz: CHẠY THẬT mỗi snippet → output đúng = options[answer], và đáp án duy nhất', async () => {
-  const qs = loadWindow('output-quiz.js').OUTPUT_QUIZ;
+  const qs = loadWindow('output-quiz.js').OUTPUT_QUIZ.filter(q => q.kind !== 'input');
   for (const q of qs) {
-    const logs = [];
-    const fakeConsole = { log: (...a) => logs.push(a.map(String).join(' ')) };
-    new Function('console', q.code)(fakeConsole);
-    await new Promise(r => setTimeout(r, 60)); // xả micro/macrotask (Promise, setTimeout 0)
-    const out = logs.join('\n');
+    const out = await runSnippet(q.code);
     assert.strictEqual(out, q.options[q.answer],
       `OQ ${q.id}: output thật ${JSON.stringify(out)} ≠ đáp án ${JSON.stringify(q.options[q.answer])}`);
     assert.strictEqual(q.options.filter(o => o === out).length, 1,
       `OQ ${q.id}: có >1 option khớp output (đáp án không duy nhất)`);
+  }
+});
+
+test('output-quiz: câu ĐOÁN INPUT — thay INPUT bằng đáp án ra đúng q.out, mồi nhử ra kết quả KHÁC', async () => {
+  const all = loadWindow('output-quiz.js').OUTPUT_QUIZ;
+  const qs = all.filter(q => q.kind === 'input');
+  assert.ok(qs.length >= 15, `mới có ${qs.length} câu đoán input — cần ≥15 để vòng đọc code không lặp`);
+  for (const q of qs) {
+    assert.ok(q.code.includes('INPUT'), `OQI ${q.id}: code phải chứa chỗ trống INPUT`);
+    assert.ok(q.out && q.ask, `OQI ${q.id}: thiếu out (kết quả cho sẵn) hoặc ask (câu hỏi riêng)`);
+    const outs = [];
+    for (const o of q.options) outs.push(await runSnippet(q.code.split('INPUT').join(o)));
+    assert.strictEqual(outs[q.answer], q.out,
+      `OQI ${q.id}: đáp án cho ra ${JSON.stringify(outs[q.answer])} ≠ kết quả đề bài ${JSON.stringify(q.out)}`);
+    assert.strictEqual(outs.filter(o => o === q.out).length, 1,
+      `OQI ${q.id}: >1 lựa chọn cùng ra ${JSON.stringify(q.out)} ⇒ câu có nhiều đáp án đúng`);
   }
 });
 
@@ -988,9 +1008,15 @@ test('wiring: 🎯 phỏng vấn — 3 phần (Anh · IQ · Code), IQ chiếm ph
     'kiểu bài chưa được nhớ qua prep-iv-plan (mặc định = buổi đầy đủ)');
   const keys = APP.slice(APP.indexOf('const PREP_KEYS'), APP.indexOf('const PREP_KEYS') + 2400);
   assert.ok(/'prep-iv-plan'/.test(keys), 'PREP_KEYS thiếu prep-iv-plan');
-  // Vòng "đọc code" trộn đoán output + Big-O
+  // Vòng "đọc code": chủ yếu đoán output/input, Big-O chỉ 1–2 câu
   assert.ok(/function pickReadCodeQs/.test(APP), 'thiếu vòng đọc code (pickReadCodeQs)');
   assert.ok(/mode: 'output', q/.test(APP) && /mode: 'bigo', q/.test(APP), 'vòng đọc code chưa trộn output + bigo');
+  assert.ok(/const IV_BIGO_MAX = 2;/.test(APP), 'thiếu trần số câu Big-O mỗi vòng (IV_BIGO_MAX)');
+  const rc = APP.slice(APP.indexOf('function pickReadCodeQs'), APP.indexOf('// --- Vòng HỎI MIỆNG'));
+  assert.ok(/Math\.min\(IV_BIGO_MAX, Math\.max\(1, Math\.floor\(n \/ 4\)\)\)/.test(rc),
+    'số câu Big-O phải bị chặn trên bởi IV_BIGO_MAX (đề 6–10 câu chỉ 1–2 câu độ phức tạp)');
+  assert.ok(rc.indexOf("'bigo'") < rc.indexOf("'output'"),
+    'phải bốc bigo TRƯỚC rồi lấy output cho hết số còn lại (không lại chia đôi như cũ)');
   // Vòng tiếng Anh ưu tiên câu giao tiếp
   assert.ok(/q\.kind === 'comm'/.test(APP), 'vòng tiếng Anh chưa ưu tiên câu giao tiếp (kind=comm)');
   // Trọng số: IQ & code phải nhiều hơn bản cũ (IQ 10, code 1)
@@ -1602,7 +1628,9 @@ test('dashboard: panel Tư duy phủ ĐỦ mode trắc nghiệm kỹ thuật (k�
   // Panel + các gợi ý dùng CHUNG danh sách TECH_QUIZ_MODES — mọi mode kỹ thuật phải có mặt.
   const listM = APP.match(/TECH_QUIZ_MODES\s*=\s*\[([\s\S]*?)\];/);
   assert.ok(listM, 'thiếu hằng TECH_QUIZ_MODES (nguồn dùng chung');
-  const modesBlock = APP.slice(APP.indexOf('const QUIZ_MODES = {'), APP.indexOf('const QUIZ_MODES = {') + 3000);
+  // Cắt đúng thân object QUIZ_MODES (tới hằng TECH_QUIZ_MODES ngay sau nó) — đừng cắt theo số ký tự,
+  // thêm vài dòng vào một mode là mode cuối rơi ra ngoài cửa sổ và test báo nhầm.
+  const modesBlock = APP.slice(APP.indexOf('const QUIZ_MODES = {'), APP.indexOf('const TECH_QUIZ_MODES'));
   for (const mode of ['output', 'api', 'sql', 'cli', 'java', 'redis', 'dist', 'devops']) {
     assert.ok(new RegExp(`'${mode}'`).test(listM[1]), `TECH_QUIZ_MODES chưa liệt kê mode '${mode}'`);
     assert.ok(new RegExp(`\\n  ${mode}: \\{`).test(modesBlock), `mode '${mode}' không tồn tại trong QUIZ_MODES`);

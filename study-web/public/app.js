@@ -4223,7 +4223,7 @@ async function buildPrintSheetHtml() {
 
   const psQHtml = ({ mode, q }) => {
     const cfg = QUIZ_MODES[mode];
-    const body = q.q ? escHtml(q.q) : (cfg ? escHtml(cfg.ask) : 'Đoán output:');
+    const body = q.q ? escHtml(q.q) : escHtml(askOf(cfg, q) || 'Đoán output:');
     const snip = q.sql || q.cmd || q.code;
     return `<div class="ps-q"><span class="ps-mode">${cfg ? cfg.label : mode}</span> ${body}
       ${snip ? `<pre>${escHtml(snip)}</pre>` : ''}
@@ -4942,9 +4942,11 @@ function renderOutputQuiz() {
   const done = Object.keys(oqDone()).filter(id => ids.has(id)).length; // chỉ đếm id còn tồn tại
 
   const best = store.get('prep-oq-best', null);
+  const nIn = all.filter(q => q.kind === 'input').length;
   body.innerHTML = `
     <div class="oq-start">
-      <p>Có <b>${all.length}</b> snippet. Đã làm đúng: <b>${done}/${all.length}</b>${best ? ` · kỷ lục: <b>${best.score}/${best.total}</b>` : ''}.</p>
+      <p>Có <b>${all.length}</b> snippet — <b>${all.length - nIn}</b> câu đoán OUTPUT và <b>${nIn}</b> câu ngược lại: cho sẵn kết quả, đoán INPUT.
+        Đã làm đúng: <b>${done}/${all.length}</b>${best ? ` · kỷ lục: <b>${best.score}/${best.total}</b>` : ''}.</p>
       <button id="oq-go" class="dg-go">▶ Bắt đầu (${all.length} câu, trộn thứ tự)</button>
     </div>`;
   document.getElementById('oq-go').onclick = startOutputQuiz;
@@ -4966,8 +4968,8 @@ function showOutputQuiz() {
   body.innerHTML = `
     <div class="oq-quiz">
       <div class="oq-bar"><span>Câu ${oqIdx + 1}/${all.length} · ✓ ${oqRight}</span><span class="oq-topic">${escHtml(q.topic)}</span></div>
-      <p class="oq-ask">Đoán xem đoạn code in ra gì?</p>
-      <pre class="oq-code"><code class="language-js">${escHtml(q.code)}</code></pre>
+      <p class="oq-ask">${askOf(QUIZ_MODES.output, q)}</p>
+      ${QUIZ_MODES.output.questionHtml(q)}
       <div class="oq-opts">${opts}</div>
       <div id="oq-fb" class="oq-fb" hidden></div>
     </div>`;
@@ -5051,7 +5053,7 @@ function makeQuiz(cfg) {
     el.innerHTML = `
       <div class="oq-quiz">
         <div class="oq-bar"><span>Câu ${idx + 1}/${all.length} · ✓ ${right}</span><span class="oq-topic">${escHtml(q.topic)}</span></div>
-        <div class="oq-ask">${cfg.ask}</div>
+        <div class="oq-ask">${askOf(cfg, q)}</div>
         ${cfg.questionHtml(q)}
         <div class="oq-opts">${opts}</div>
         <div class="oq-fb-box oq-fb" hidden></div>
@@ -5094,12 +5096,17 @@ function makeQuiz(cfg) {
 
 // Registry mô tả cách render mỗi mode trắc nghiệm — NGUỒN DUY NHẤT cho engine makeQuiz
 // (spread làm cfg nền), phiên ôn 🔁/🎲/📌, đếm badge độ phủ và 🔎 tìm kiếm toàn cục.
+/** Câu hỏi có thể tự khai `ask` riêng (vd "đoán input" khác hẳn "đoán output"); không có thì dùng của mode. */
+const askOf = (cfg, q) => (q && q.ask) || (cfg && cfg.ask) || '';
+
 const QUIZ_MODES = {
   output: {
-    label: '🔍 Đoán output', doneKey: 'prep-oq-done', data: () => window.OUTPUT_QUIZ || [],
+    label: '🔍 Đọc code (output/input)', doneKey: 'prep-oq-done', data: () => window.OUTPUT_QUIZ || [],
     ask: 'Đoán xem đoạn code in ra gì?',
     optionHtml: o => `<pre>${escHtml(o)}</pre>`,
-    questionHtml: q => `<pre class="oq-code"><code class="language-js">${escHtml(q.code)}</code></pre>`,
+    // Câu "đoán input" (kind:'input') có thêm q.out — hiện KẾT QUẢ, người làm chọn đầu vào khớp
+    questionHtml: q => `<pre class="oq-code"><code class="language-js">${escHtml(q.code)}</code></pre>` +
+      (q.out ? `<div class="oq-outlbl">Kết quả in ra:</div><pre class="oq-out">${escHtml(q.out)}</pre>` : ''),
     highlight: true,
   },
   bigo: {
@@ -5461,7 +5468,7 @@ function showReview() {
   el.innerHTML = `
     <div class="oq-quiz">
       <div class="oq-bar"><span>Câu ${reviewIdx + 1}/${reviewQueue.length} · ✓ ${reviewRight}</span><span class="oq-topic">${cfg.label}${q.topic ? ' · ' + escHtml(q.topic) : ''}</span></div>
-      <div class="oq-ask">${cfg.ask}</div>
+      <div class="oq-ask">${askOf(cfg, q)}</div>
       ${cfg.questionHtml(q)}
       <div class="oq-opts">${opts}</div>
       <div id="review-fb" class="oq-fb" hidden></div>
@@ -5729,7 +5736,7 @@ function showExamQ() {
   el.innerHTML = `
     <div class="oq-quiz">
       <div class="oq-bar"><span>Câu ${examIdx + 1}/${examQueue.length}</span><span id="exam-clock" class="iqt-timer">⏱ …</span><span class="oq-topic">${cfg.label}</span></div>
-      <div class="oq-ask">${cfg.ask}</div>
+      <div class="oq-ask">${askOf(cfg, q)}</div>
       ${cfg.questionHtml(q)}
       <div class="oq-opts">${shuffledOptsHtml(q, cfg.optionHtml)}</div>
       <p class="exam-note">Chọn đáp án là <b>qua câu luôn</b> (không hiện đúng/sai — như thi thật). <button id="exam-skip" class="exam-skip" type="button">⏭ Bỏ qua câu này</button></p>
@@ -6681,7 +6688,7 @@ const IV_PLANS = {
     rounds: [
       { key: 'english', type: 'mcq', label: '🇬🇧 Tiếng Anh', n: 8, desc: 'Giao tiếp công sở: sát nghĩa, sắc thái & cách phản hồi.' },
       { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 24, desc: 'Phần NẶNG KÝ nhất: nhìn hình, dãy số, logic, toán nhanh — tính giờ, được nhảy câu tự do.' },
-      { key: 'readcode', type: 'readcode', label: '⌨️ Code', n: 8, desc: 'Đọc code: đoán output & tính độ phức tạp Big-O.' },
+      { key: 'readcode', type: 'readcode', label: '⌨️ Code', n: 8, desc: 'Đọc code đoán OUTPUT & đoán INPUT — chỉ kèm 1–2 câu Big-O.' },
     ],
   },
   open: {
@@ -6691,7 +6698,7 @@ const IV_PLANS = {
       { key: 'qa', type: 'open', label: '💬 Hỏi kiến thức', n: 5, desc: 'Câu hỏi MỞ từ kho 180 câu — trả lời như phỏng vấn thật rồi tự chấm.' },
       { key: 'english', type: 'mcq', label: '🇬🇧 Tiếng Anh', n: 8, desc: 'Giao tiếp công sở: sát nghĩa, sắc thái & cách phản hồi.' },
       { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 16, desc: 'Nhìn hình, dãy số, logic, toán nhanh — tính giờ, được nhảy câu tự do.' },
-      { key: 'readcode', type: 'readcode', label: '⌨️ Code', n: 8, desc: 'Đọc code: đoán output & tính độ phức tạp Big-O.' },
+      { key: 'readcode', type: 'readcode', label: '⌨️ Code', n: 8, desc: 'Đọc code đoán OUTPUT & đoán INPUT — chỉ kèm 1–2 câu Big-O.' },
     ],
   },
   code: {
@@ -6699,7 +6706,7 @@ const IV_PLANS = {
     rounds: [
       { key: 'english', type: 'mcq', label: '🇬🇧 Tiếng Anh', n: 8, desc: 'Giao tiếp công sở: sát nghĩa, sắc thái & cách phản hồi.' },
       { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 20, desc: 'Phần NẶNG KÝ nhất: nhìn hình, dãy số, logic, toán nhanh — tính giờ, được nhảy câu tự do.' },
-      { key: 'readcode', type: 'readcode', label: '⌨️ Code — đọc', n: 6, desc: 'Đoán output của đoạn code & tính độ phức tạp Big-O.' },
+      { key: 'readcode', type: 'readcode', label: '⌨️ Code — đọc', n: 6, desc: 'Đọc code đoán OUTPUT & đoán INPUT — chỉ kèm 1 câu Big-O.' },
       { key: 'code', type: 'code', label: '⌨️ Code — viết', n: 2, desc: 'Giải 2 bài, chạy test thật trong trình duyệt.' },
     ],
   },
@@ -6715,7 +6722,7 @@ const IV_PLANS = {
     label: '🧩 IQ + hỏi code', hint: 'Bỏ tiếng Anh — IQ 24 câu rồi 10 câu hỏi code (đoán output & Big-O).',
     rounds: [
       { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 24, desc: 'Nhìn hình, dãy số, logic, toán nhanh — tính giờ, được nhảy câu tự do.' },
-      { key: 'readcode', type: 'readcode', label: '⌨️ Hỏi code', n: 10, desc: 'Đọc code: đoán output & tính độ phức tạp Big-O.' },
+      { key: 'readcode', type: 'readcode', label: '⌨️ Hỏi code', n: 10, desc: 'Đọc code đoán OUTPUT & đoán INPUT — chỉ kèm 1–2 câu Big-O.' },
     ],
   },
 };
@@ -6905,17 +6912,18 @@ function pickEnglishQs(n) {
   return shuffleArr(picked).map(q => ({ mode: 'english', q }));
 }
 
-/** Vòng 🔍 Đọc code: xen kẽ "đoán output" và "tính Big-O" — hai câu hỏi tủ sau mỗi bài code. */
+const IV_BIGO_MAX = 2; // vòng đọc code chỉ hỏi TỐI ĐA 2 câu Big-O, còn lại là đọc code đoán output/input
+
+/** Vòng 🔍 Đọc code: chủ yếu "đoán output / đoán input" của snippet, chỉ kèm 1–2 câu Big-O
+ *  (n nhỏ hơn 4 thì đúng 1 câu) — phỏng vấn thật hỏi đọc code nhiều hơn hỏi độ phức tạp. */
 function pickReadCodeQs(n) {
-  const half = Math.ceil(n / 2);
-  const a = ivPickFresh('output', window.OUTPUT_QUIZ || [], half).map(q => ({ mode: 'output', q }));
-  const b = ivPickFresh('bigo', window.COMPLEXITY_QUIZ || [], n - half + 1).map(q => ({ mode: 'bigo', q }));
-  const out = [];
-  for (let i = 0; out.length < n && (i < a.length || i < b.length); i++) {
-    if (i < a.length && out.length < n) out.push(a[i]);
-    if (i < b.length && out.length < n) out.push(b[i]);
-  }
-  return out;
+  const nBigo = Math.min(IV_BIGO_MAX, Math.max(1, Math.floor(n / 4)));
+  const bigo = ivPickFresh('bigo', window.COMPLEXITY_QUIZ || [], nBigo).map(q => ({ mode: 'bigo', q }));
+  const outQ = ivPickFresh('output', window.OUTPUT_QUIZ || [], n - bigo.length).map(q => ({ mode: 'output', q }));
+  // Câu Big-O rải vào cuối danh sách, không dồn một chỗ
+  const items = [...outQ];
+  bigo.forEach((b, i) => items.splice(Math.min(items.length, Math.round((items.length + 1) * (i + 1) / (bigo.length + 1))), 0, b));
+  return items.slice(0, n);
 }
 
 // --- Vòng HỎI MIỆNG (câu hỏi mở, tự chấm — AI chấm là tuỳ chọn) ---
@@ -7121,6 +7129,7 @@ function showMcq() {
   body.innerHTML = `
     <div class="iv-roundhead">${escHtml(m.label)} · Câu ${m.idx + 1}/${m.items.length}</div>
     <div class="iq-track"><div class="iq-fill" style="width:${m.idx / m.items.length * 100}%"></div></div>
+    ${askOf(cfg, q) ? `<div class="oq-ask">${askOf(cfg, q)}</div>` : ''}
     ${cfg.questionHtml ? cfg.questionHtml(q) : `<div class="iq-q">${escHtml(q.q)}</div>`}
     <div class="iq-opts">${shuffledOptsHtml(q, optHtml, 'iq-opt')}</div>
     <div id="iv-fb" class="iq-fb"></div>
