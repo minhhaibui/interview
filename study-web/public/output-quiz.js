@@ -2824,4 +2824,62 @@ window.OUTPUT_QUIZ = [
     options: ['"abc"', '"ab"', '"abcd"', '"a"'], answer: 0,
     explain: 'Độ dài sau khi lặp 2 lần = 2 × độ dài gốc ⇒ chuỗi gốc dài 3.',
   },
+
+  // ===== ĐỢT BỔ SUNG TỰ ĐỘNG #38 =====
+  {
+    id: 'oq40-sort-stability', topic: 'Array.sort',
+    code: `const a = [{ n: 'a', v: 1 }, { n: 'b', v: 1 }, { n: 'c', v: 0 }];\nconsole.log(a.sort((x, y) => x.v - y.v).map(o => o.n).join());`,
+    options: ['c,a,b', 'c,b,a', 'a,b,c', 'a,c,b'], answer: 0,
+    explain: 'sort trong JS hiện ĐẢM BẢO tính ổn định: hai phần tử bằng điểm (a và b) giữ nguyên thứ tự ban đầu.',
+  },
+  {
+    id: 'oq40-tostring-number', topic: 'Số học',
+    code: `console.log((255).toString(16), (255).toString(2).length, (0.5).toString(2));`,
+    options: ['ff 8 0.1', 'FF 8 0.1', 'ff 7 0.1', 'ff 8 0.5'], answer: 0,
+    explain: 'toString(radix) đổi hệ và trả CHỮ THƯỜNG; 255 cần đúng 8 bit; số thập phân cũng đổi được (0.5 = 0.1 hệ nhị phân).',
+  },
+  {
+    id: 'oq40-promise-order-mixed', topic: 'Event loop',
+    code: `setTimeout(() => console.log('t'), 0);\nPromise.resolve().then(() => {\n  console.log('p1');\n  Promise.resolve().then(() => console.log('p2'));\n});\nconsole.log('s');`,
+    options: ['s\np1\np2\nt', 's\np1\nt\np2', 'p1\np2\ns\nt', 's\nt\np1\np2'], answer: 0,
+    explain: 'Microtask sinh thêm microtask thì chúng vẫn được xử lý HẾT trước khi tới macrotask (setTimeout) — dễ gây "đói" timer nếu lặp vô hạn.',
+  },
+  {
+    id: 'oq40-array-holes-foreach', topic: 'Mảng',
+    code: `const a = [1, , 3];\nlet n = 0;\na.forEach(() => n++);\nconsole.log(n, a.length, a.map(x => 9).length);`,
+    options: ['2 3 3', '3 3 3', '2 2 2', '3 3 2'], answer: 0,
+    explain: 'forEach và map BỎ QUA ô rỗng (nên n = 2) nhưng vẫn giữ nguyên length = 3 của mảng kết quả.',
+  },
+  {
+    id: 'oqi-tostring-radix', topic: 'Đoán input · hệ đếm', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => n.toString(8);\nconsole.log(f(INPUT));`,
+    out: '17',
+    options: ['15', '17', '23', '8'], answer: 0,
+    explain: '17 hệ 8 = 1×8 + 7 = 15. (17 → "21", 23 → "27", 8 → "10".)',
+  },
+  {
+    id: 'oqi-sort-objects', topic: 'Đoán input · sort', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => a.sort((x, y) => x.v - y.v).map(o => o.n).join();\nconsole.log(f(INPUT));`,
+    out: 'b,a',
+    options: ["[{ n: 'a', v: 2 }, { n: 'b', v: 1 }]", "[{ n: 'a', v: 1 }, { n: 'b', v: 2 }]", "[{ n: 'b', v: 2 }, { n: 'a', v: 1 }]", "[{ n: 'a', v: 1 }, { n: 'b', v: 1 }]"], answer: 0,
+    explain: 'Sắp tăng theo v rồi lấy tên ⇒ b phải có v NHỎ HƠN a.',
+  },
+  {
+    id: 'oqi-holes-count', topic: 'Đoán input · mảng', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = a => Object.keys(a).length;\nconsole.log(f(INPUT));`,
+    out: '2',
+    options: ['[1, , 3]', '[1, 2, 3]', '[1]', '[1, 2, 3, 4]'], answer: 0,
+    explain: 'Object.keys bỏ qua Ô RỖNG nên mảng [1, , 3] chỉ có 2 khoá dù length là 3.',
+  },
+  {
+    id: 'oqi-microtask-count', topic: 'Đoán input · Promise', kind: 'input',
+    ask: 'Thay INPUT bằng lựa chọn nào để đoạn code in ra ĐÚNG kết quả bên dưới?',
+    code: `const f = n => Promise.resolve(n).then(v => v * 2);\nf(INPUT).then(v => console.log(v));`,
+    out: '10',
+    options: ['5', '10', '20', '2'], answer: 0,
+    explain: 'Giá trị được nhân đôi trong .then ⇒ đầu vào phải là 5.',
+  },
 ];
