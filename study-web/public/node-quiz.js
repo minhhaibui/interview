@@ -1055,4 +1055,93 @@ window.NODE_QUIZ = [
     ], answer: 2,
     explain: 'Phân loại dependency thành THIẾT YẾU (không có thì không phục vụ được: DB đơn hàng) và KHÔNG thiết yếu (gợi ý, đánh giá, banner khuyến mãi). Với loại sau: đặt timeout ngắn, bọc circuit breaker, và khi lỗi thì trả cache cũ, danh sách mặc định, hoặc đơn giản là ẩn khối đó đi — người dùng vẫn mua hàng được. Để một widget phụ kéo sập cả trang chủ là lỗi thiết kế, và retry liên tục còn dội thêm tải vào service đang ốm. Kèm theo: bulkhead (giới hạn số request đồng thời cho mỗi dependency để nó không nuốt hết pool), ghi metric riêng cho từng fallback, và cảnh báo khi tỉ lệ suy giảm tăng — người dùng không thấy lỗi không có nghĩa là mọi thứ ổn.',
   },
+  // ===== Đợt #8 =====
+  {
+    id: 'node-rest-design', topic: 'Kiến trúc',
+    q: 'Endpoint nào tuân thủ nguyên tắc thiết kế REST tốt nhất?',
+    options: [
+      '`POST /getUserById?id=5` — dùng POST cho mọi thao tác để thống nhất toàn hệ thống',
+      '`GET /users/5/orders?status=paid` — tài nguyên là DANH TỪ số nhiều, hành động nằm ở HTTP method',
+      '`GET /api/doDeleteUserAndOrders/5` — tên endpoint mô tả rõ hành động sẽ thực hiện',
+      '`POST /users/list` và `POST /users/update` — tách riêng từng thao tác thành endpoint',
+    ], answer: 1,
+    explain: 'REST: URL định danh TÀI NGUYÊN (danh từ, số nhiều), HTTP method mang HÀNH ĐỘNG — `GET` đọc (an toàn, cache được, idempotent), `POST` tạo, `PUT` thay toàn bộ, `PATCH` sửa một phần, `DELETE` xoá (`PUT`/`DELETE` idempotent). Nhét động từ vào URL (`/getUser`, `/doDelete`) làm mất hết lợi ích: `GET` mới được cache bởi trình duyệt/CDN, và proxy/thư viện dựa vào tính idempotent để retry an toàn. Vài quy ước tốt kèm theo: lồng tài nguyên tối đa 1–2 cấp, lọc/sắp xếp/phân trang bằng query string, trả đúng status code, và với thao tác không ánh xạ được vào CRUD (`/orders/5/cancel`) thì chấp nhận — thực dụng quan trọng hơn thuần khiết.',
+  },
+  {
+    id: 'node-authn-authz', topic: 'Bảo mật',
+    q: 'Authentication và authorization khác nhau thế nào?',
+    options: [
+      'Authentication = BẠN LÀ AI (đăng nhập); authorization = bạn ĐƯỢC LÀM GÌ (phân quyền)',
+      'Authentication dùng cho người dùng còn authorization dùng cho các service gọi lẫn nhau',
+      'Authentication xảy ra ở frontend còn authorization được kiểm tra ở phía backend',
+      'Hai từ đồng nghĩa, chỉ khác nhau về cách viết tắt là authn và authz',
+    ], answer: 0,
+    explain: 'Authentication xác lập DANH TÍNH (mật khẩu, OTP, OAuth, mTLS); authorization quyết định danh tính đó được làm gì (RBAC theo vai trò, ABAC theo thuộc tính, ACL theo từng tài nguyên). Lỗi kinh điển ở vòng phỏng vấn lẫn thực tế: xác thực xong rồi quên kiểm tra QUYỀN TRÊN TỪNG TÀI NGUYÊN — user A đăng nhập hợp lệ rồi gọi `GET /orders/999` và đọc được đơn của user B. Đây là lỗ hổng IDOR, đứng đầu bảng OWASP. Nguyên tắc: kiểm tra quyền ở SERVER cho mọi request (ẩn nút trên UI không phải là bảo mật), kiểm cả quyền sở hữu chứ không chỉ vai trò, và mặc định TỪ CHỐI rồi mới mở dần.',
+  },
+  {
+    id: 'node-session-jwt', topic: 'Bảo mật',
+    q: 'Session lưu ở server và JWT stateless — đánh đổi chính là gì?',
+    options: [
+      'JWT luôn tốt hơn vì không cần lưu trữ, mọi hệ thống hiện đại nên chuyển sang JWT',
+      'Session an toàn hơn tuyệt đối vì dữ liệu không bao giờ rời khỏi máy chủ',
+      'Session THU HỒI được ngay nhưng cần kho chung (Redis); JWT không cần tra cứu nhưng khó thu hồi trước hạn',
+      'Session chỉ dùng được cho web còn JWT là lựa chọn duy nhất cho ứng dụng di động',
+    ], answer: 2,
+    explain: 'SESSION: server giữ trạng thái, cookie chỉ mang session id — đăng xuất/khoá tài khoản có hiệu lực NGAY, đổi quyền thấy liền, dữ liệu không lộ; cái giá là mỗi request phải tra kho phiên (Redis) và phải scale kho đó. JWT: chữ ký tự chứng thực nên không cần tra cứu, hợp với nhiều service không dùng chung DB; nhưng token đã phát thì HỢP LỆ TỚI KHI HẾT HẠN — người dùng bị khoá vẫn dùng được, đổi quyền không có hiệu lực ngay. Cách dung hoà phổ biến: access token JWT hạn NGẮN (5–15 phút) + refresh token có thể thu hồi lưu ở server; trường hợp khẩn thì thêm danh sách chặn `jti`. Và nhớ: JWT chỉ được ký, KHÔNG mã hoá.',
+  },
+  {
+    id: 'node-microservice-when', topic: 'Kiến trúc',
+    q: 'Khi nào nên tách hệ thống thành microservices?',
+    options: [
+      'Ngay từ đầu, vì chuyển từ monolith sang microservices về sau sẽ rất tốn công sức',
+      'Khi số lượng người dùng vượt qua một ngưỡng nhất định nào đó, thường là 10.000',
+      'Khi ĐỘI NGŨ và miền nghiệp vụ đủ lớn để cần deploy độc lập, và hạ tầng chịu được độ phức tạp phân tán',
+      'Khi cần dùng nhiều ngôn ngữ lập trình khác nhau ở trong cùng một sản phẩm',
+    ], answer: 2,
+    explain: 'Microservices giải bài toán TỔ CHỨC và quy mô vận hành, không phải bài toán code. Cái giá phải trả ngay: lời gọi mạng có thể lỗi/chậm, transaction phân tán (Saga/Outbox), nhất quán cuối cùng, debug xuyên service cần distributed tracing, môi trường dev phức tạp, và chi phí hạ tầng. Tách sai ranh giới còn tệ hơn monolith — bạn nhận được "monolith phân tán": phải deploy đồng thời mà vẫn chịu độ trễ mạng. Lời khuyên phổ biến (và đúng cho phần lớn dự án): bắt đầu bằng MONOLITH CÓ MODULE RÕ RÀNG, để ranh giới nghiệp vụ tự lộ ra, rồi tách dần đúng chỗ đau — thường là phần cần scale riêng hoặc phần một đội muốn release độc lập.',
+  },
+  {
+    id: 'node-cache-layers', topic: 'Kiến trúc',
+    q: 'Một request có thể được cache ở nhiều tầng — tầng nào rẻ nhất và khó nhất?',
+    options: [
+      'Cache trong RAM của ứng dụng luôn là tầng tốt nhất vì có tốc độ truy cập nhanh nhất',
+      'Càng GẦN người dùng càng rẻ (trình duyệt → CDN → Redis → DB), nhưng càng xa nguồn thì càng khó xoá',
+      'Chỉ nên cache ở một tầng duy nhất, cache nhiều tầng luôn gây ra dữ liệu không nhất quán',
+      'Cache ở ngay tầng database là hiệu quả nhất vì dữ liệu gốc nằm ngay tại đó',
+    ], answer: 1,
+    explain: 'Thứ tự từ rẻ tới đắt: cache TRÌNH DUYỆT (không tốn request nào) → CDN/edge (không chạm tới server) → cache ứng dụng/Redis (không chạm DB) → query cache/buffer pool của DB. Mỗi tầng gần người dùng hơn thì tiết kiệm hơn, nhưng bạn cũng MẤT quyền xoá nó — không "với tay" vào cache trong trình duyệt người dùng được, nên phải dựa vào `max-age` ngắn hoặc đổi URL (file có hash). Vì thế quy tắc: nội dung bất biến thì cache thật lâu ở tầng xa; nội dung hay đổi thì cache gần nguồn để invalidate được. Và nhớ hai vấn đề kinh điển: dữ liệu cũ (stale) và cache stampede khi nhiều request cùng miss một lúc.',
+  },
+  {
+    id: 'node-log-pii', topic: 'Bảo mật',
+    q: 'Ghi log trong ứng dụng cần tránh điều gì?',
+    options: [
+      'Tránh log ở mức `info` vì chỉ nên ghi lại khi có lỗi xảy ra để tiết kiệm dung lượng',
+      'Tránh log dữ liệu nhạy cảm: mật khẩu, token, số thẻ, thông tin cá nhân — hãy REDACT trước khi ghi',
+      'Tránh log dưới dạng JSON vì định dạng này chiếm nhiều dung lượng lưu trữ hơn',
+      'Tránh ghi kèm timestamp vì hệ thống thu thập log đã tự gắn thời gian vào rồi',
+    ], answer: 1,
+    explain: 'Log thường được lưu tập trung, giữ hàng tháng, và NHIỀU người truy cập được — nên nó là nơi rò rỉ dữ liệu rất hay bị bỏ quên. Cạm bẫy phổ biến nhất: `logger.info(req.body)` hoặc log nguyên object user, vô tình ghi cả mật khẩu, token, số thẻ, số CMND. Cách xử lý: cấu hình REDACT theo danh sách trường (pino có `redact`), log ID thay vì nội dung, không log nguyên header `Authorization`/`Cookie`, và cẩn thận cả với error object vì nó có thể mang theo dữ liệu request. Kèm theo: đặt thời hạn lưu log, phân quyền truy cập, và biết rằng GDPR coi log chứa thông tin cá nhân là dữ liệu phải xoá được khi người dùng yêu cầu.',
+  },
+  {
+    id: 'node-test-pyramid', topic: 'Kiến trúc',
+    q: 'Chiến lược test cho một service backend nên phân bổ thế nào?',
+    options: [
+      'Chủ yếu test end-to-end vì chỉ có nó mới phản ánh đúng trải nghiệm thật của người dùng',
+      'Chỉ cần unit test với độ phủ 100% là đủ đảm bảo chất lượng của toàn hệ thống',
+      'Nhiều unit test cho logic nghiệp vụ, một lớp integration test chạm DB/queue thật, và ít e2e cho luồng quan trọng',
+      'Không cần test tự động nếu đã có đội QA kiểm thử thủ công trước mỗi lần phát hành',
+    ], answer: 2,
+    explain: 'Kim tự tháp test: đáy là UNIT — nhanh, nhiều, cô lập, hợp với logic thuần (tính giá, validate, chuyển trạng thái). Giữa là INTEGRATION — chạy với DB/queue THẬT (dùng Testcontainers hoặc docker-compose) để bắt lỗi mà mock giấu đi: câu SQL sai, migration thiếu, ràng buộc unique, transaction. Đỉnh là E2E — chậm và dễ chập chờn nên chỉ dành cho vài luồng sống còn (đăng nhập, đặt hàng, thanh toán). Hai điều hay bị hỏi thêm: mock DB quá nhiều thì test xanh mà production đỏ; và độ phủ 100% không đồng nghĩa đúng — nó chỉ nói dòng code đã CHẠY, không nói bạn đã kiểm tra đúng hành vi.',
+  },
+  {
+    id: 'node-project-structure', topic: 'Kiến trúc',
+    q: 'Cấu trúc thư mục theo TẦNG (controllers/, services/, models/) có nhược điểm gì?',
+    options: [
+      'Không có nhược điểm nào cả, đây là cấu trúc chuẩn nên áp dụng cho mọi dự án Node',
+      'Làm chậm quá trình build vì bundler sẽ phải duyệt qua nhiều thư mục lồng nhau hơn',
+      'Khi dự án lớn, một thay đổi nghiệp vụ phải sửa file rải rác khắp các tầng thay vì nằm cạnh nhau',
+      'Không dùng được với TypeScript vì các tầng sẽ tạo ra import vòng giữa những module',
+    ], answer: 2,
+    explain: 'Nhóm theo tầng ổn với dự án nhỏ, nhưng khi lớn thì thư mục `services/` có 80 file không liên quan gì nhau, còn sửa tính năng "đơn hàng" phải mở 5 thư mục khác nhau. Nhóm theo TÍNH NĂNG (`orders/` chứa controller, service, repository, test, type của riêng nó) giữ code cùng thay đổi ở cạnh nhau — dễ tìm, dễ xoá trọn khi bỏ tính năng, dễ tách thành service riêng về sau, và ranh giới module rõ nên hạn chế phụ thuộc lung tung. Trong mỗi tính năng vẫn nên tách tầng: HTTP (controller) → nghiệp vụ (service) → truy cập dữ liệu (repository), với luật một chiều — tầng nghiệp vụ không được biết gì về `req`/`res`.',
+  },
 ];

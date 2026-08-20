@@ -1007,4 +1007,94 @@ window.REACT_QUIZ = [
     ], answer: 1,
     explain: 'Lỗi ở máy người dùng thì bạn không thấy gì cả trừ khi chủ động thu thập. Cần ba lớp: error boundary bắt lỗi lúc render (kèm UI dự phòng để không trắng trang), `window.onerror` bắt lỗi ngoài React, và `unhandledrejection` bắt promise không ai catch. Gửi về Sentry/Rollbar kèm SOURCE MAP — không có nó thì stack trace chỉ là mã đã minify, vô dụng; và nhớ upload source map ở bước build chứ đừng public chúng ra ngoài. Đính kèm ngữ cảnh giúp tái hiện: phiên bản build, route, trình duyệt, id người dùng (ẩn danh nếu cần), vài breadcrumb thao tác gần nhất. Cuối cùng: gom nhóm lỗi trùng và đặt ngưỡng cảnh báo, nếu không mọi người sẽ tắt thông báo.',
   },
+  // ===== Đợt #8 =====
+  {
+    id: 'react-props-vs-state', topic: 'State & props',
+    q: 'Props và state khác nhau ở điểm cốt lõi nào?',
+    options: [
+      'Props dùng cho dữ liệu văn bản còn state dùng cho dữ liệu số và object',
+      'Props do CHA truyền xuống và component không được sửa; state do chính component sở hữu và tự thay đổi',
+      'State chỉ dùng được trong class component, còn function component thì chỉ có props',
+      'Props được lưu trong bộ nhớ còn state được lưu xuống localStorage của trình duyệt',
+    ], answer: 1,
+    explain: 'Props là ĐỐI SỐ của component: đến từ bên ngoài, chỉ đọc (sửa `props.x` là vi phạm tính thuần và React sẽ không render lại theo). State là BỘ NHỚ nội bộ: component sở hữu, đổi bằng setState và việc đổi đó lên lịch render. Câu hỏi tiếp theo thường là "khi nào dùng cái nào": nếu giá trị TÍNH ĐƯỢC từ props thì đừng tạo state; nếu hai component cùng cần thì LIFT lên cha chung; nếu component cha cần biết thay đổi thì truyền callback xuống (`onChange`) — dữ liệu chảy MỘT CHIỀU từ trên xuống, sự kiện đi ngược lên. Ngoại lệ đáng nhớ: dùng props làm giá trị KHỞI TẠO cho state là hợp lệ khi bạn cố ý muốn nó độc lập sau đó.',
+  },
+  {
+    id: 'react-conditional-trap', topic: 'Render & reconciliation',
+    q: '`{items.length && <List/>}` khi mảng rỗng thì render ra gì?',
+    code: 'const items = [];\nreturn <div>{items.length && <List/>}</div>;',
+    options: [
+      'Không render gì cả, vì `0` là giá trị falsy nên React bỏ qua toàn bộ biểu thức',
+      'Render ra số `0` trên màn hình — React bỏ qua `false`/`null`/`undefined` nhưng VẪN hiển thị số 0',
+      'Ném lỗi vì không thể render một giá trị kiểu số bên trong JSX như vậy',
+      'Render component `<List/>` với danh sách rỗng vì toán tử `&&` luôn trả vế phải',
+    ], answer: 1,
+    explain: '`0 && <List/>` trả về `0`, mà React coi số là nội dung hợp lệ để hiển thị — nên một số `0` lạc lõng hiện trên giao diện. React chỉ bỏ qua `false`, `null`, `undefined` và chuỗi rỗng. Đây là bug kinh điển khi hiển thị có điều kiện theo `length`, `count`, `price`. Ba cách viết an toàn: ép về boolean (`items.length > 0 && ...`), dùng `!!items.length && ...`, hoặc dùng toán tử ba ngôi (`items.length ? <List/> : null`). Cùng nhóm cạm bẫy: `{undefined}` không render gì nhưng `{"undefined"}` thì có, và `{NaN}` sẽ hiện chữ NaN.',
+  },
+  {
+    id: 'react-effect-order', topic: 'Hooks',
+    q: 'Effect của component cha và con chạy theo thứ tự nào?',
+    options: [
+      'Cha chạy trước rồi mới tới con, giống thứ tự React render cây component',
+      'CON chạy trước, cha chạy sau — vì effect chạy sau khi cả cây đã commit, theo thứ tự từ dưới lên',
+      'Thứ tự không xác định, phụ thuộc vào việc component nào render xong trước',
+      'Cả hai chạy đồng thời vì effect là bất đồng bộ nên không có thứ tự nhất định',
+    ], answer: 1,
+    explain: 'React render từ trên xuống (cha trước), nhưng effect chạy SAU KHI toàn bộ cây đã commit lên DOM, theo thứ tự từ dưới lên: con mount xong rồi mới tới cha. Điều này hợp lý — khi effect của cha chạy thì DOM của con đã sẵn sàng để đo đạc hay thao tác. Lúc UNMOUNT thì cleanup chạy theo thứ tự ngược lại tương ứng. Hệ quả thực tế: đừng giả định cha đã "chuẩn bị" xong gì đó trong effect trước khi con dùng — nếu con phụ thuộc dữ liệu của cha, hãy truyền qua props/context và để con tự xử lý trạng thái "chưa có". Với `useLayoutEffect` thì thứ tự tương tự, chỉ khác là chạy đồng bộ trước khi trình duyệt vẽ.',
+  },
+  {
+    id: 'react-component-split', topic: 'Mẫu thiết kế',
+    q: 'Khi nào nên tách một component thành nhiều component nhỏ hơn?',
+    options: [
+      'Khi file vượt quá 100 dòng, vì đây là ngưỡng chuẩn nên áp dụng cho mọi dự án',
+      'Không nên tách, giữ tất cả trong một file giúp đọc luồng logic dễ dàng hơn nhiều',
+      'Khi một phần có thể TÁI SỬ DỤNG, có state riêng, hoặc component đang làm quá nhiều việc',
+      'Khi cần dùng nhiều hơn ba hook ở trong cùng một component function duy nhất',
+    ], answer: 2,
+    explain: 'Đếm dòng là chỉ báo kém — 300 dòng JSX phẳng mô tả một form vẫn dễ đọc, còn 60 dòng trộn 4 mối quan tâm thì không. Lý do tách có giá trị: (1) tái sử dụng thật sự ở nơi khác; (2) phần đó có state riêng — tách ra thì mỗi phím gõ chỉ render lại nó chứ không cả trang, đây là cách tối ưu hiệu năng tốt hơn rải `memo`; (3) cần bọc `memo`/`Suspense`/error boundary riêng; (4) component đang vừa lấy dữ liệu vừa xử lý nghiệp vụ vừa vẽ giao diện — tách logic ra CUSTOM HOOK thường tốt hơn là tách thêm component. Tách quá sớm cũng có giá: nhiều file, phải truyền props qua nhiều tầng, khó theo dõi luồng.',
+  },
+  {
+    id: 'react-testing-scope', topic: 'Kiểm thử',
+    q: 'Trong một ứng dụng React, thứ gì đáng viết test nhất?',
+    options: [
+      'Mọi component, kể cả component chỉ hiển thị tĩnh, để đạt độ phủ code cao nhất',
+      'Logic nghiệp vụ (hàm thuần, custom hook, reducer) và các LUỒNG người dùng quan trọng',
+      'Chỉ cần snapshot test toàn bộ cây component là đủ phát hiện mọi thay đổi ngoài ý muốn',
+      'Chỉ test phần gọi API vì đó là nơi duy nhất có thể phát sinh lỗi khi chạy thật',
+    ], answer: 1,
+    explain: 'Giá trị của test tỉ lệ với RỦI RO và tần suất thay đổi. Đáng test nhất: hàm thuần tính toán (giá, thuế, validate) — rẻ, nhanh, ổn định; reducer và custom hook chứa logic trạng thái; và các luồng người dùng sống còn (đăng nhập, thêm giỏ, thanh toán) test theo hành vi với RTL. Ít giá trị: component chỉ render props ra JSX — test lại chính JSX đó là trùng lặp, refactor là đỏ. SNAPSHOT toàn cây là bẫy quen thuộc: đỏ mỗi khi đổi một class, và người ta quen tay bấm cập nhật snapshot nên nó không còn bắt được gì. Nhớ test cả nhánh LỖI và trạng thái rỗng — đó mới là chỗ hay vỡ trên production.',
+  },
+  {
+    id: 'react-seo', topic: 'React hiện đại',
+    q: 'Ứng dụng React thuần (CSR) gặp vấn đề gì về SEO và chia sẻ link?',
+    options: [
+      'Không có vấn đề gì cả, các công cụ tìm kiếm hiện nay đều chạy được JavaScript',
+      'HTML ban đầu gần như rỗng: bot yếu không thấy nội dung, thẻ Open Graph không đổi nên link chia sẻ sai',
+      'Chỉ ảnh hưởng tới tốc độ tải chứ hoàn toàn không ảnh hưởng gì tới thứ hạng khi tìm kiếm',
+      'Vấn đề nằm ở việc URL của SPA không có phần mở rộng `.html` nên bot bỏ qua',
+    ], answer: 1,
+    explain: 'CSR trả về một `<div id="root"></div>` rỗng rồi mới dựng nội dung bằng JS. Googlebot có render được JS nhưng phải xếp hàng và tốn ngân sách thu thập, còn bot của Facebook/Zalo/Slack thì KHÔNG chạy JS — nên thẻ Open Graph phải có sẵn trong HTML, nếu không mọi link chia sẻ đều hiện chung một tiêu đề. Cách xử lý: SSR/SSG (Next.js, Remix) để mỗi route trả HTML đầy đủ với `<title>`, `<meta name="description">`, OG tag, canonical, dữ liệu có cấu trúc; hoặc prerender riêng cho bot với site nhỏ. Kèm theo: sitemap.xml, URL sạch có ngữ nghĩa, dùng thẻ `<a href>` thật (bot không bấm được `onClick`), và Core Web Vitals cũng là yếu tố xếp hạng.',
+  },
+  {
+    id: 'react-third-party', topic: 'Hooks',
+    q: 'Tích hợp thư viện không phải React (biểu đồ, bản đồ, editor) vào component thế nào?',
+    options: [
+      'Gọi hàm khởi tạo của thư viện ngay trong thân component để nó chạy cùng lúc với render',
+      'Ghi trực tiếp vào `document.getElementById` trong JSX để thư viện tìm thấy phần tử đích',
+      'Dùng `ref` trỏ tới phần tử container, khởi tạo trong `useEffect`, và HUỶ trong cleanup',
+      'Bọc thư viện trong `useMemo` để nó chỉ được khởi tạo đúng một lần duy nhất',
+    ], answer: 2,
+    explain: 'Đây là đúng bài toán `useEffect` sinh ra để giải: đồng bộ với một hệ thống BÊN NGOÀI React. Mẫu chuẩn: `const ref = useRef(); useEffect(() => { const inst = new Chart(ref.current, opts); return () => inst.destroy(); }, [])`. Ba điều bắt buộc: (1) khởi tạo trong effect chứ không trong thân component — render phải thuần và DOM chưa tồn tại lúc đó; (2) CLEANUP để huỷ instance, gỡ listener, dừng animation — thiếu bước này thì StrictMode ở dev sẽ tạo hai instance chồng lên nhau và production thì rò rỉ bộ nhớ; (3) đừng để React và thư viện cùng quản lý một vùng DOM — hãy giao hẳn container đó cho thư viện. Khi props đổi thì gọi API cập nhật của thư viện trong một effect riêng thay vì dựng lại từ đầu.',
+  },
+  {
+    id: 'react-render-count', topic: 'Hiệu năng',
+    q: 'Component render 2 lần liên tiếp ở môi trường dev — nguyên nhân phổ biến nhất?',
+    options: [
+      'Do `<StrictMode>` cố ý gọi render hai lần ở dev để phơi bày side effect — production chỉ chạy một lần',
+      'Do React 18 mặc định render mọi component hai lần để so sánh kết quả trước khi commit',
+      'Do có lỗi trong mã nguồn, cần bọc component trong `React.memo` để chặn lần render thứ hai',
+      'Do trình duyệt đang mở DevTools nên React chạy thêm một lượt để thu thập thông tin',
+    ], answer: 0,
+    explain: 'StrictMode ở DEV cố ý gọi component (và initializer, updater) hai lần để lộ ra render không thuần — nếu code đúng thì lần thứ hai vô hại vì render phải không có side effect. Production không bị ảnh hưởng. Đừng "sửa" bằng cách gỡ StrictMode. Nhưng nếu render lặp lại LIÊN TỤC (không dừng) thì đó là bug thật, thường do: setState ngay trong thân component; effect setState với deps là object/hàm tạo mới mỗi render; hoặc hai effect cập nhật lẫn nhau. Cách chẩn đoán: React DevTools Profiler bật "Record why each component rendered" sẽ chỉ đúng prop/hook nào đổi — chính xác hơn nhiều so với đếm `console.log`.',
+  },
 ];

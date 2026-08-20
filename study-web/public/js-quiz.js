@@ -1135,4 +1135,93 @@ window.JS_QUIZ = [
     ], answer: 1,
     explain: 'LCP (Largest Contentful Paint) — khi nào phần tử nội dung lớn nhất hiện ra, nên tốt dưới 2,5s; cải thiện bằng tối ưu ảnh hero, preload, giảm thời gian phản hồi server. CLS (Cumulative Layout Shift) — nội dung nhảy bao nhiêu, tốt dưới 0,1; chữa bằng đặt kích thước cho ảnh/quảng cáo và chừa chỗ trước. INP (Interaction to Next Paint, thay thế FID từ 2024) — bấm/gõ xong bao lâu thì thấy phản hồi, tốt dưới 200ms; hỏng chủ yếu do LONG TASK chặn luồng chính, chữa bằng chia nhỏ tác vụ, giảm JS, tránh render lại cả cây. Đo bằng thư viện `web-vitals` gửi về analytics (dữ liệu người dùng thật) — Lighthouse chỉ là môi trường phòng thí nghiệm.',
   },
+  // ===== Đợt #8 =====
+  {
+    id: 'js-null-undefined', topic: 'Kiểu & ép kiểu',
+    q: 'Khi nào nên dùng `null` và khi nào `undefined`?',
+    options: [
+      'Hai giá trị hoàn toàn thay thế được cho nhau, chọn cái nào cũng như nhau',
+      '`undefined` = "chưa có giá trị" do hệ thống sinh ra; `null` = "CỐ Ý không có giá trị" do lập trình viên gán',
+      '`null` dùng cho số còn `undefined` dùng cho chuỗi và các kiểu tham chiếu khác',
+      '`undefined` chỉ xuất hiện khi có lỗi, code đúng thì không bao giờ gặp giá trị này',
+    ], answer: 1,
+    explain: '`undefined` là mặc định của ngôn ngữ: biến khai báo chưa gán, tham số thiếu, property không tồn tại, hàm không `return`. `null` là một giá trị bạn CHỦ ĐỘNG gán để nói "chỗ này rỗng có chủ đích". Vài hệ quả thực tế: default của tham số và destructuring chỉ kích hoạt với `undefined`, không với `null`; `JSON.stringify` bỏ qua `undefined` trong object nhưng giữ `null`; `typeof null` là `"object"` (bug lịch sử) còn `typeof undefined` là `"undefined"`; `null == undefined` đúng nhưng `null === undefined` sai. Quy ước tốt: API trả `null` cho "không có", tránh trả `undefined` ra ngoài; và dùng `x == null` để bắt gọn cả hai.',
+  },
+  {
+    id: 'js-spread-rest', topic: 'Cú pháp & runtime',
+    q: 'Ba chấm `...` là spread hay rest tuỳ vào đâu?',
+    options: [
+      'Tuỳ theo số lượng phần tử: dưới 3 phần tử là rest, nhiều hơn thì engine coi là spread',
+      'Tuỳ VỊ TRÍ: bên trái phép gán hoặc trong danh sách tham số là REST; bên phải hoặc khi gọi hàm là SPREAD',
+      'Tuỳ theo kiểu dữ liệu: với mảng thì là spread còn với object thì luôn là rest',
+      'Là hai tên gọi của cùng một tính năng, không hề có khác biệt gì về ngữ nghĩa',
+    ], answer: 1,
+    explain: 'Cùng ký hiệu, hai vai trò ngược nhau. SPREAD trải một iterable/object ra: `f(...args)`, `[...a, ...b]`, `{...o, x: 1}`. REST gom phần còn lại: `function f(a, ...rest)`, `const [first, ...tail] = arr`, `const {id, ...others} = obj`. Vài điểm hay bị hỏi thêm: rest phải đứng CUỐI; `...` cho object là copy NÔNG; spread hoạt động với mọi iterable (chuỗi, Set, Map, generator) chứ không riêng mảng; và rest parameter là MẢNG THẬT, khác `arguments` vốn chỉ giống mảng và không tồn tại trong arrow function.',
+  },
+  {
+    id: 'js-callback-to-promise', topic: 'Bất đồng bộ',
+    q: 'Chuyển một hàm callback kiểu `(err, data)` sang Promise thế nào cho đúng?',
+    options: [
+      'Bọc lời gọi trong một `async function` là nó tự động trả về Promise với kết quả đúng',
+      'Dùng `util.promisify` của Node, hoặc tự bọc trong `new Promise` rồi reject khi có `err`',
+      'Gán kết quả callback vào một biến ngoài rồi `await` biến đó cho tới khi có giá trị',
+      'Đổi callback thành `async` rồi trả về giá trị, Promise sẽ tự hình thành từ đó',
+    ], answer: 1,
+    explain: 'Quy ước "error-first callback" của Node: tham số đầu là lỗi. Bọc thủ công thì nhớ REJECT khi có `err`, đừng nuốt. `util.promisify` làm sẵn việc đó cho hàm theo đúng quy ước (nhiều API core còn có sẵn bản promise: `fs/promises`, `timers/promises`). Ba lỗi hay gặp khi tự bọc: gọi `resolve`/`reject` NHIỀU lần (Promise chỉ settle một lần, lần sau bị nuốt im lặng), quên xử lý exception ĐỒNG BỘ do chính `fn` ném ra, và bọc lại một hàm vốn đã trả Promise (thành anti-pattern "explicit promise construction"). Đừng chờ bằng vòng lặp trên biến — event loop không bao giờ chạy tiếp để biến đó đổi.',
+  },
+  {
+    id: 'js-pure-function', topic: 'Cú pháp & runtime',
+    q: 'Hàm thuần (pure function) là gì và vì sao được ưa chuộng?',
+    options: [
+      'Hàm không dùng `this` và không có tham số nào, nên chạy nhanh hơn hàm thường',
+      'Hàm chỉ chứa một biểu thức duy nhất, viết được bằng arrow function một dòng',
+      'Cùng đầu vào luôn cho cùng đầu ra và KHÔNG có side effect — nên dễ test, cache, chạy song song',
+      'Hàm chỉ được gọi từ một nơi duy nhất trong toàn bộ mã nguồn của ứng dụng',
+    ], answer: 2,
+    explain: 'Hai điều kiện: (1) tất định — cùng input ra cùng output; (2) không side effect — không sửa biến ngoài/tham số truyền vào, không gọi API, không ghi file, không đụng DOM. Lợi ích rất cụ thể: test không cần mock hay dựng môi trường; kết quả memoize được; suy luận code chỉ cần nhìn chữ ký; đổi thứ tự hay chạy song song vẫn an toàn. Không phải mọi hàm đều thuần được — chương trình phải có side effect mới làm được việc. Nguyên tắc thực dụng: DỒN side effect ra rìa (tầng I/O, event handler, effect của React) và giữ phần logic nghiệp vụ ở giữa thuần nhất có thể.',
+  },
+  {
+    id: 'js-composition', topic: 'Prototype & OOP',
+    q: '"Ưu tiên composition hơn inheritance" nghĩa là gì?',
+    options: [
+      'Ghép các hành vi nhỏ độc lập vào object thay vì dựng cây kế thừa sâu — tránh ràng buộc cứng giữa các lớp',
+      'Luôn dùng object literal để thay cho class, vì class là tính năng đã lỗi thời của JS',
+      'Gộp nhiều class nhỏ thành một class lớn để giảm số lượng file có trong dự án',
+      'Kế thừa từ nhiều lớp cha cùng một lúc để tái sử dụng được nhiều mã nguồn hơn',
+    ], answer: 0,
+    explain: 'Kế thừa tạo ràng buộc CỨNG: lớp con dính toàn bộ lớp cha ("bạn muốn quả chuối nhưng nhận được cả con khỉ và khu rừng"), sửa lớp cha là vỡ lớp con ở nơi bạn không ngờ, và cây sâu thì rất khó lần. Composition ghép các mảnh hành vi độc lập: `const duck = { ...canFly(), ...canSwim() }`, hoặc TIÊM phụ thuộc qua constructor (`new OrderService(repo, mailer)`) — đổi hành vi bằng cách đổi mảnh, test bằng cách truyền mảnh giả. Trong JS/TS thực tế: dùng interface + dependency injection, custom hook trong React, hàm thuần ghép lại. Kế thừa vẫn hợp lý khi quan hệ thật sự là "LÀ MỘT" và ổn định — ví dụ `class AppError extends Error`.',
+  },
+  {
+    id: 'js-memoize', topic: 'Bộ nhớ',
+    q: 'Memoize một hàm cần cẩn thận điều gì nhất?',
+    options: [
+      'Phải dùng `WeakMap` trong mọi trường hợp, nếu không kết quả cache sẽ luôn sai',
+      'Chỉ memoize được hàm đồng bộ, hàm async thì không có cách nào cache kết quả',
+      'Hàm phải THUẦN, khoá cache phải phản ánh đúng mọi tham số, và cache cần giới hạn (LRU/TTL) kẻo phình mãi',
+      'Phải xoá toàn bộ cache sau mỗi lần gọi để đảm bảo dữ liệu luôn mới nhất',
+    ], answer: 2,
+    explain: 'Ba cạm bẫy. (1) Hàm KHÔNG thuần thì memoize là sai ngay: nó phụ thuộc thời gian, dữ liệu ngoài, hay có side effect cần chạy lại. (2) KHOÁ CACHE: `JSON.stringify(args)` sai khi thứ tự key khác nhau hoặc có `undefined`; dùng object làm khoá thì phải so tham chiếu — `WeakMap` hợp cho trường hợp này và tự dọn khi object hết dùng. (3) Cache không giới hạn là RÒ RỈ BỘ NHỚ dạng chậm — hãy dùng LRU có sức chứa hoặc TTL, nhất là khi khoá đến từ người dùng. Với hàm async, hãy cache chính PROMISE để nhiều lời gọi đồng thời chỉ tạo một request (dedupe) — và nhớ xoá cache khi promise reject.',
+  },
+  {
+    id: 'js-concurrency-parallel', topic: 'Bất đồng bộ',
+    q: 'Concurrency và parallelism khác nhau thế nào trong JavaScript?',
+    options: [
+      'Hai từ đồng nghĩa, chỉ khác nhau cách gọi giữa cộng đồng frontend và backend',
+      'Concurrency = xen kẽ nhiều việc trên MỘT luồng; parallelism = chạy THẬT SỰ cùng lúc trên nhiều lõi',
+      'Concurrency dùng cho tác vụ CPU, còn parallelism thì dùng cho tác vụ vào/ra dữ liệu',
+      'JavaScript chỉ có concurrency, không có cách nào đạt được parallelism thật sự',
+    ], answer: 1,
+    explain: 'CONCURRENCY là cấu trúc: nhiều việc cùng "đang dở", event loop xen kẽ chúng trên một luồng — đủ để phục vụ hàng nghìn kết nối vì phần lớn thời gian là CHỜ I/O, không phải tính toán. PARALLELISM là thực thi đồng thời thật trên nhiều lõi. JS đơn luồng nên chỉ có concurrency theo mặc định; muốn parallelism thì cần `worker_threads`/`cluster` trong Node hoặc Web Worker trên trình duyệt. Hệ quả để trả lời phỏng vấn: Node rất mạnh với tải I/O-bound nhưng một tác vụ CPU-bound chặn hết mọi thứ — lúc đó thêm concurrency không giúp gì, phải chuyển sang parallelism hoặc tách service riêng.',
+  },
+  {
+    id: 'js-debug-technique', topic: 'Cú pháp & runtime',
+    q: 'Kỹ thuật debug nào hiệu quả hơn hẳn việc rải `console.log` khắp nơi?',
+    options: [
+      'Xoá dần từng dòng code cho tới khi lỗi biến mất để tìm ra dòng đang gây lỗi',
+      'Breakpoint có ĐIỀU KIỆN, logpoint, "break on exception" và xem call stack trong debugger',
+      'Chạy lại chương trình thật nhiều lần để xem lỗi có tự biến mất hay không',
+      'Bọc toàn bộ mã nguồn trong `try/catch` rồi in nội dung lỗi bắt được ra màn hình',
+    ], answer: 1,
+    explain: '`console.log` phải sửa code, deploy lại, và chỉ thấy đúng thứ bạn nghĩ ra trước. Debugger cho nhiều hơn: BREAKPOINT CÓ ĐIỀU KIỆN (`i === 500` — dừng đúng vòng lặp cần, thay vì bấm next 500 lần), LOGPOINT (in ra mà không sửa code, không cần deploy lại), "pause on caught/uncaught exception" để dừng ngay tại nơi ném lỗi với đầy đủ scope, và CALL STACK cho biết đường nào dẫn tới đây. Node dùng `node --inspect` rồi gắn Chrome DevTools hoặc VS Code. Vài mẹo nhỏ vẫn rất đáng dùng: `console.table` cho mảng object, `console.trace()` xem ai gọi, `console.time` đo nhanh, và `debugger;` để đặt điểm dừng ngay trong code.',
+  },
 ];
