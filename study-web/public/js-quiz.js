@@ -690,4 +690,93 @@ window.JS_QUIZ = [
     ], answer: 2,
     explain: '`for await...of` gọi `src[Symbol.asyncIterator]()` (không có thì rơi về iterator đồng bộ và await từng giá trị), chờ mỗi `next()` resolve rồi mới chạy thân vòng — nên xử lý TUẦN TỰ, có backpressure tự nhiên. Ứng dụng backend rất thực tế: duyệt stream Node (`for await (const chunk of fs.createReadStream(f))`), duyệt cursor MongoDB, hoặc gọi API phân trang bằng async generator `async function* pages() { ... yield rows }` — code trông như vòng lặp thường mà không phải nạp hết vào RAM. Muốn chạy SONG SONG thì đây là lựa chọn sai, hãy dùng `Promise.all` (hoặc p-limit để giới hạn).',
   },
+  // ===== Đợt #3 =====
+  {
+    id: 'js-date-pitfall', topic: 'Kiểu & ép kiểu',
+    q: 'Bẫy nào KHÔNG phải của `Date` trong JavaScript?',
+    options: [
+      'Tháng đánh số từ 0 — `new Date(2026, 0, 1)` mới là ngày 1 tháng Giêng',
+      '`new Date("2026-08-20")` hiểu là UTC, còn `new Date("2026/08/20")` lại hiểu là giờ ĐỊA PHƯƠNG',
+      'Date luôn lưu kèm múi giờ của nơi tạo ra nó nên so sánh giữa hai máy sẽ bị lệch',
+      'So sánh `d1 === d2` luôn false vì là hai object khác nhau, phải so `getTime()`',
+    ], answer: 2,
+    explain: 'Date KHÔNG lưu múi giờ — bên trong chỉ là một số mili giây tính từ epoch UTC; múi giờ chỉ tham gia lúc PARSE chuỗi và lúc HIỂN THỊ (theo cấu hình máy). Ba bẫy còn lại đều có thật: tháng 0-index; chuỗi `YYYY-MM-DD` được coi là UTC còn `YYYY/MM/DD` là giờ địa phương (nên ở GMT+7 có thể lệch nguyên một ngày); và so sánh bằng `===` giữa hai object luôn false. Thực hành tốt: truyền/lưu ở dạng ISO-8601 UTC, dùng `Intl.DateTimeFormat` để hiển thị, và dùng thư viện (date-fns, Luxon) hoặc `Temporal` khi nó phổ biến hơn.',
+  },
+  {
+    id: 'js-intl', topic: 'Mảng & chuỗi',
+    q: 'Vì sao nên dùng `Intl` thay vì tự viết hàm format số/ngày?',
+    options: [
+      '`Intl` chạy nhanh hơn vì được cài đặt bằng mã máy sẵn có trong engine JavaScript',
+      '`Intl` là API duy nhất được phép dùng khi ứng dụng có nhiều hơn một ngôn ngữ hiển thị',
+      '`Intl` xử lý sẵn quy ước từng locale: dấu phân cách, ký hiệu tiền tệ, thứ tự ngày, số nhiều, sắp xếp có dấu',
+      '`Intl` tự động dịch nội dung sang ngôn ngữ của trình duyệt mà không cần file dịch',
+    ], answer: 2,
+    explain: 'Mỗi locale một quy ước: `1.234,56` (Đức) vs `1,234.56` (Mỹ) vs `1 234,56` (Pháp), vị trí ký hiệu tiền tệ, thứ tự ngày/tháng, quy tắc số nhiều. Tự viết là chắc chắn sai ở locale nào đó. Bộ `Intl`: `NumberFormat` (kèm `style:"currency"`, `notation:"compact"`), `DateTimeFormat`, `RelativeTimeFormat` ("3 ngày trước"), `PluralRules`, `ListFormat`, và `Collator` — cái cuối rất quan trọng vì `sort()` mặc định so theo mã UTF-16 nên tiếng Việt có dấu sắp xếp sai; `[...arr].sort(new Intl.Collator("vi").compare)` mới đúng. Lưu ý: tạo formatter một lần rồi tái dùng, đừng tạo trong vòng lặp.',
+  },
+  {
+    id: 'js-structured-clone', topic: 'Object & tham chiếu',
+    q: '`structuredClone(obj)` copy được những gì?',
+    options: [
+      'Mọi thứ, kể cả function và class instance — đây là bản deep clone hoàn chỉnh nhất của JS',
+      'Deep clone Date/Map/Set và giữ được vòng lặp tham chiếu; nhưng NÉM LỖI với function, mất prototype class',
+      'Chỉ copy được các giá trị nguyên thuỷ, còn object lồng bên trong vẫn dùng chung tham chiếu',
+      'Tương đương hệt `JSON.parse(JSON.stringify(obj))` nhưng chạy nhanh hơn khoảng vài lần',
+    ], answer: 1,
+    explain: '`structuredClone` (thuật toán structured clone, có sẵn trong trình duyệt & Node ≥17) hơn hẳn mẹo `JSON.parse(JSON.stringify(x))`: giữ được `Date` (vẫn là Date chứ không thành chuỗi), `Map`, `Set`, `RegExp`, `ArrayBuffer`, `BigInt`, và xử lý được VÒNG LẶP THAM CHIẾU thay vì ném lỗi. Giới hạn: gặp function/Symbol/DOM node thì ném `DataCloneError`; class instance được copy dữ liệu nhưng MẤT prototype (thành object thường); getter bị đọc thành giá trị tĩnh. Đây cũng chính là thuật toán `postMessage` dùng khi gửi dữ liệu sang worker.',
+  },
+  {
+    id: 'js-weakref', topic: 'Bộ nhớ',
+    q: '`WeakRef` và `FinalizationRegistry` dùng khi nào?',
+    options: [
+      'Dùng thay cho `try/finally` để đảm bảo tài nguyên luôn được giải phóng sau khi dùng xong',
+      'Dùng để ép GC chạy ngay tại một thời điểm xác định trong vòng đời ứng dụng',
+      'Hiếm khi cần: giữ tham chiếu KHÔNG chặn GC (cache "có thì dùng") và nhận thông báo sau khi object bị thu hồi',
+      'Dùng để đếm số tham chiếu tới một object và tự xoá khi bộ đếm về không',
+    ], answer: 2,
+    explain: '`new WeakRef(obj)` giữ tham chiếu YẾU; `ref.deref()` trả object nếu còn sống, `undefined` nếu đã bị thu hồi — hợp cho cache kiểu "có thì dùng, mất thì tính lại". `FinalizationRegistry` gọi callback SAU KHI object bị GC, dùng để dọn tài nguyên ngoài (đóng handle native). Docs MDN cảnh báo rõ: tránh dùng nếu không thật cần — thời điểm GC KHÔNG xác định, callback có thể không bao giờ chạy (ví dụ khi tiến trình thoát), và code phụ thuộc vào nó rất khó suy luận & test. Trong 99% trường hợp `WeakMap`/`WeakSet` là đủ và an toàn hơn nhiều.',
+  },
+  {
+    id: 'js-tagged-template', topic: 'Mảng & chuỗi',
+    q: 'Tagged template (`sql\`SELECT * FROM t WHERE id = ${id}\``) hoạt động thế nào?',
+    options: [
+      'Hàm `sql` nhận MẢNG các đoạn chuỗi tĩnh + các giá trị nhúng RIÊNG — nên biết cái nào là dữ liệu để escape/tham số hoá',
+      'Hàm `sql` nhận vào chuỗi đã được ghép hoàn chỉnh rồi phân tích lại bằng biểu thức chính quy',
+      'Đó chỉ là cú pháp trang trí, engine vẫn ghép chuỗi rồi truyền như một tham số bình thường',
+      'Hàm `sql` được gọi một lần cho mỗi giá trị nhúng, kết quả các lần gọi được nối lại với nhau',
+    ], answer: 0,
+    explain: 'Engine gọi `tag(strings, ...values)`: `strings` là mảng các đoạn TĨNH do lập trình viên viết, `values` là các giá trị nhúng. Tách bạch đó chính là điểm mấu chốt về bảo mật — thư viện biết chắc phần nào là dữ liệu người dùng nên tự chuyển thành tham số truy vấn (`$1`, `$2`) thay vì nối chuỗi, chống SQL injection từ gốc. Đây là cơ chế đằng sau `sql` của postgres.js/slonik, `gql` của GraphQL, `css` của styled-components, và `html` của lit. `strings.raw` cho bản chưa xử lý escape (`String.raw` dùng chính nó).',
+  },
+  {
+    id: 'js-array-from', topic: 'Mảng & chuỗi',
+    q: '`Array.from(x)` khác `[...x]` ở điểm nào?',
+    options: [
+      'Hai cách hoàn toàn tương đương nhau, spread chỉ là cú pháp ngắn gọn hơn của `Array.from`',
+      '`Array.from` xử lý được cả ARRAY-LIKE (có `length`) và nhận thêm hàm map; spread chỉ chạy với iterable',
+      '`Array.from` tạo ra bản sao sâu, còn spread thì chỉ tạo bản sao nông của mảng nguồn',
+      '`Array.from` giữ nguyên các ô trống (hole) còn spread thì biến chúng thành `undefined`',
+    ], answer: 1,
+    explain: 'Spread yêu cầu nguồn ITERABLE (`Symbol.iterator`). `Array.from` nhận thêm ARRAY-LIKE — object chỉ có `length` và key số, ví dụ `arguments`, `NodeList` cũ, hoặc `{length: 5}`. Nhờ vậy mới có mẫu quen thuộc `Array.from({length: n}, (_, i) => i)` để tạo dãy — spread không làm được. Tham số thứ hai là mapFn chạy NGAY trong lúc dựng mảng (tiết kiệm một lượt duyệt so với `.map()` và tránh vấn đề hole). Cả hai đều copy NÔNG.',
+  },
+  {
+    id: 'js-json-revive', topic: 'Object & tham chiếu',
+    q: 'Tham số thứ hai của `JSON.parse` (reviver) và method `toJSON` dùng để làm gì?',
+    options: [
+      'Reviver kiểm tra tính hợp lệ của JSON và ném lỗi khi cấu trúc không khớp schema mong đợi',
+      'Reviver nén dữ liệu lại trước khi parse để tiết kiệm bộ nhớ với các payload lớn',
+      'Reviver biến đổi từng cặp key/value lúc parse (khôi phục Date); `toJSON` tuỳ biến cách object serialize',
+      'Cả hai đều chỉ dùng để định dạng output cho đẹp mắt khi in JSON ra console',
+    ], answer: 2,
+    explain: 'JSON không có kiểu Date/BigInt/Map, nên round-trip sẽ mất kiểu: `JSON.parse(JSON.stringify({d: new Date()}))` trả về chuỗi. Reviver `JSON.parse(s, (k, v) => isIso(v) ? new Date(v) : v)` khôi phục lại lúc parse. Chiều ngược lại, object có method `toJSON()` thì `JSON.stringify` gọi nó thay vì đọc field (chính là cách `Date` tự thành chuỗi ISO) — rất tiện để giấu field nhạy cảm khỏi response. Còn tham số thứ hai của `stringify` (replacer) dùng lọc field khi ghi log. Cẩn thận: reviver chạy cho MỌI cặp key/value nên với payload lớn thì tốn kém.',
+  },
+  {
+    id: 'js-eval', topic: 'Cú pháp & runtime',
+    q: 'Vì sao nên tránh `eval` và `new Function` với chuỗi từ input người dùng?',
+    options: [
+      'Vì hai hàm này đã bị loại khỏi chuẩn ES2020 và không còn chạy ở strict mode nữa',
+      'Vì chúng chạy mã tuỳ ý với đầy đủ quyền của ứng dụng (RCE/XSS) và làm engine mất tối ưu hoá',
+      'Vì chúng chỉ hoạt động trên trình duyệt, còn Node.js đã chặn hoàn toàn hai hàm này',
+      'Vì chúng luôn trả về chuỗi nên phải tự parse lại kết quả, rất dễ sai kiểu dữ liệu',
+    ], answer: 1,
+    explain: 'Hai lý do. BẢO MẬT: chuỗi từ người dùng thành mã chạy với quyền của app — trên trình duyệt là XSS đọc được token, trên Node là thực thi mã từ xa (RCE) đọc file, biến môi trường, kết nối DB. HIỆU NĂNG: `eval` truy cập được scope hiện tại nên V8 không tối ưu được hàm chứa nó (`new Function` đỡ hơn vì chỉ thấy global scope). Ngoài ra Content-Security-Policy chặt sẽ CHẶN cả hai. Cần dữ liệu động thì dùng `JSON.parse`; cần biểu thức do người dùng nhập thì dùng parser/sandbox chuyên dụng, đừng bao giờ `eval` thẳng. Cùng nhóm nguy hiểm: `setTimeout("code")` dạng chuỗi.',
+  },
 ];

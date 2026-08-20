@@ -611,4 +611,93 @@ window.NODE_QUIZ = [
     ], answer: 2,
     explain: 'Quy trình chuẩn: (1) đo EVENT LOOP LAG trước — lag cao nghĩa là có tác vụ đồng bộ chặn, lag thấp mà vẫn chậm thì nghẽn ở I/O/dependency; (2) lấy CPU profile bằng `node --cpu-prof app.js` hoặc gắn `--inspect` rồi record trong Chrome DevTools, đọc FLAME GRAPH tìm hàm chiếm nhiều self-time; `clinic doctor`/`0x` cho báo cáo dễ đọc hơn. (3) Nghi rò rỉ bộ nhớ thì chụp hai heap snapshot cách nhau rồi so sánh. (4) Với hệ phân tán, distributed tracing (OpenTelemetry) chỉ ra chặng nào chậm trước khi bạn đào vào một service.',
   },
+  // ===== Đợt #3 =====
+  {
+    id: 'node-db-pool', topic: 'Kiến trúc',
+    q: 'Vì sao service Node phải dùng connection pool tới database?',
+    options: [
+      'Vì Node không mở được nhiều hơn một kết nối TCP tới cùng một máy chủ database',
+      'Vì pool nén dữ liệu truyền giữa app và database nên giảm được đáng kể lưu lượng mạng',
+      'Vì mở kết nối mới rất đắt và DB chỉ chịu được số kết nối hữu hạn — pool tái dùng và ĐẶT TRẦN',
+      'Vì pool tự động chia truy vấn cho nhiều replica để cân bằng tải giữa các máy chủ',
+    ], answer: 2,
+    explain: 'Mỗi kết nối Postgres là một PROCESS phía server (~vài MB RAM) — mở/đóng liên tục vừa chậm vừa giết DB. Pool giữ sẵn N kết nối và cho mượn. Ba điều hay bị hỏi tiếp: (1) tính `max` theo TỔNG số instance × pool size phải nhỏ hơn `max_connections` của DB, nếu không deploy thêm pod là DB từ chối kết nối; (2) POOL EXHAUSTION — quên `release()`/`client.end()` sau transaction, hoặc gọi API chậm khi đang giữ connection, làm mọi request xếp hàng chờ; (3) transaction PHẢI chạy trên CÙNG một connection mượn ra, không được dùng `pool.query` giữa chừng. Quy mô lớn thì thêm PgBouncer ở giữa.',
+  },
+  {
+    id: 'node-cache-header', topic: 'HTTP',
+    q: '`Cache-Control` và `ETag` phối hợp với nhau thế nào?',
+    options: [
+      '`Cache-Control` cho thời gian dùng cache KHÔNG cần hỏi lại; hết hạn thì `ETag` cho nhận `304` nếu chưa đổi',
+      '`ETag` thay thế được hoàn toàn `Cache-Control`, chỉ cần một trong hai là đủ cho mọi tình huống',
+      '`Cache-Control` dành cho CDN còn `ETag` chỉ có tác dụng với cache của trình duyệt',
+      'Cả hai chỉ là gợi ý, trình duyệt vẫn luôn tải lại tài nguyên mỗi khi người dùng mở trang',
+    ], answer: 0,
+    explain: 'Hai tầng. `Cache-Control: max-age=3600` → trong 1 giờ trình duyệt dùng bản cache mà KHÔNG gửi request nào (nhanh nhất). Hết hạn, nó gửi kèm `If-None-Match: <etag>`; server so sánh, chưa đổi thì trả `304 Not Modified` (không có body — tiết kiệm băng thông nhưng vẫn tốn một RTT). Chiến lược chuẩn cho web: file có hash trong tên (`app.a3f9.js`) thì `max-age=31536000, immutable`; còn `index.html` thì `no-cache` (luôn hỏi lại) để deploy mới có hiệu lực ngay. Thêm `private` cho nội dung theo người dùng và `Vary` khi response phụ thuộc header.',
+  },
+  {
+    id: 'node-compression', topic: 'HTTP',
+    q: 'Nén response (gzip/brotli) cho API Node nên đặt ở đâu?',
+    options: [
+      'Luôn nén trong ứng dụng Node bằng middleware để kiểm soát được mức nén chi tiết nhất',
+      'Ưu tiên nén ở reverse proxy/CDN vì nén là việc CPU-bound; nén trong Node thì chiếm event loop',
+      'Không bao giờ nên nén vì giải nén ở phía client làm trang hiển thị chậm hơn',
+      'Nén ở tầng database để dữ liệu đã nhỏ sẵn trước khi đi qua ứng dụng Node',
+    ], answer: 1,
+    explain: 'Nén là CPU-bound. `compression()` của Express dùng zlib chạy trên thread pool libuv (4 luồng, dùng chung với fs/crypto) — tải cao thì thành nút cổ chai. Đặt ở nginx/CDN/ALB sẽ tốt hơn và còn được brotli sẵn. Nếu buộc phải nén trong Node: đặt ngưỡng (`threshold`) vì payload dưới ~1KB nén xong còn to hơn, đừng nén lại thứ đã nén (ảnh JPEG/PNG, video, file .gz), và cân nhắc cache kết quả nén cho nội dung tĩnh. Lưu ý bảo mật: nén response chứa dữ liệu bí mật kèm input người dùng có thể bị tấn công kiểu BREACH.',
+  },
+  {
+    id: 'node-probe', topic: 'Kiến trúc',
+    q: 'Liveness probe và readiness probe của một service Node khác nhau thế nào?',
+    options: [
+      'Liveness "còn sống không" — fail thì RESTART; readiness "nhận request được chưa" — fail thì tạm gỡ khỏi load balancer',
+      'Liveness kiểm tra ứng dụng còn kết nối được database, readiness kiểm tra tiến trình còn chạy',
+      'Hai probe giống nhau, Kubernetes chỉ giữ cả hai tên để tương thích với bản cũ',
+      'Liveness chạy một lần lúc khởi động, readiness chạy định kỳ trong suốt vòng đời của pod',
+    ], answer: 0,
+    explain: 'Liveness = "tiến trình có hỏng hẳn không" → fail thì K8s giết và tạo pod mới. Readiness = "lúc này có phục vụ được không" → fail thì chỉ tạm ngừng gửi traffic, pod vẫn sống. Sai lầm kinh điển: cho liveness kiểm tra DB — DB chập chờn sẽ khiến K8s restart TOÀN BỘ pod cùng lúc, biến sự cố nhỏ thành sập dịch vụ. Đúng: liveness chỉ trả 200 nếu event loop còn quay; readiness mới kiểm dependency và pool. Readiness còn là chìa khoá của graceful shutdown — nhận SIGTERM thì cho readiness fail TRƯỚC, đợi LB rút traffic rồi mới đóng server.',
+  },
+  {
+    id: 'node-idempotency', topic: 'Kiến trúc',
+    q: 'Vì sao API tạo đơn hàng nên nhận `Idempotency-Key`?',
+    options: [
+      'Để phía server biết thứ tự các request và sắp xếp lại đúng trình tự người dùng thao tác',
+      'Để mã hoá nội dung request, tránh bị đọc trộm khi truyền qua mạng công cộng',
+      'Vì client có thể gửi lại khi timeout/mất mạng — cùng key thì server trả LẠI kết quả cũ thay vì tạo đơn thứ hai',
+      'Để giới hạn số request mỗi người dùng được gửi trong một khoảng thời gian nhất định',
+    ], answer: 2,
+    explain: 'Mạng không đáng tin: client gửi POST, server tạo đơn xong nhưng response mất giữa đường → client retry → hai đơn. Client sinh key duy nhất (UUID) cho MỖI Ý ĐỊNH tạo đơn và gửi kèm; server lưu key → kết quả trong Redis/DB (có TTL), gặp lại key cũ thì trả nguyên response cũ. Cần lưu ý: chèn key vào DB với ràng buộc UNIQUE trong cùng transaction để chống race hai request song song, và xử lý trạng thái "đang chạy dở". Cùng họ ý tưởng: consumer Kafka phải idempotent vì delivery là at-least-once. Đây là câu hỏi gần như chắc chắn có khi phỏng vấn backend thanh toán.',
+  },
+  {
+    id: 'node-queue', topic: 'Kiến trúc',
+    q: 'Khi nào nên đẩy việc sang hàng đợi (BullMQ/SQS) thay vì làm ngay trong request?',
+    options: [
+      'Với mọi thao tác ghi database, để request nào cũng trả về trong vài mili giây',
+      'Chỉ khi hệ thống đã có sẵn Kafka, còn dự án nhỏ thì luôn xử lý trực tiếp là đủ',
+      'Khi việc CHẬM hoặc dễ lỗi mà người dùng không cần chờ: gửi mail, xử lý ảnh, gọi bên thứ ba, xuất báo cáo',
+      'Khi cần đảm bảo dữ liệu nhất quán tuyệt đối, vì queue có transaction mạnh hơn database',
+    ], answer: 2,
+    explain: 'Việc chậm nằm trong request thì giữ connection, chiếm worker, và một lỗi tạm của bên thứ ba làm hỏng cả thao tác chính. Đẩy sang queue: API trả `202 Accepted` ngay, worker xử lý riêng với retry + backoff, DLQ cho job chết, và scale worker độc lập với web. Ba điều phải kèm theo: job phải IDEMPOTENT (at-least-once nên có thể chạy lại), phải có cách báo tiến độ/kết quả cho người dùng (polling, websocket, email), và ghi job trong CÙNG transaction với dữ liệu (mẫu Outbox) để không rơi vào cảnh "đã tạo đơn mà mất job" hoặc ngược lại.',
+  },
+  {
+    id: 'node-cors', topic: 'HTTP',
+    q: 'CORS thực chất bảo vệ ai?',
+    options: [
+      'Bảo vệ server khỏi request độc hại — không cấu hình CORS thì ai cũng gọi được API của bạn',
+      'Là cơ chế của TRÌNH DUYỆT bảo vệ người dùng: chặn JS ở origin A đọc response của origin B khi chưa được cho phép',
+      'Là lớp mã hoá bổ sung cho HTTPS khi request đi qua nhiều tên miền khác nhau',
+      'Là cách giới hạn băng thông để một trang web không gọi quá nhiều API bên ngoài',
+    ], answer: 1,
+    explain: 'CORS KHÔNG bảo vệ server: curl, Postman, hay một backend khác gọi API của bạn thoải mái vì không có trình duyệt nào áp same-origin policy. Nó bảo vệ NGƯỜI DÙNG — ngăn trang độc đọc dữ liệu từ site bạn đang đăng nhập. Cơ chế: request "không đơn giản" (có header tuỳ biến, method PUT/DELETE…) sẽ có preflight `OPTIONS`; server trả `Access-Control-Allow-Origin`/`-Methods`/`-Headers` thì trình duyệt mới cho JS đọc. Hai lưu ý: `Allow-Origin: *` KHÔNG dùng được cùng `credentials: true` (phải liệt kê origin cụ thể); và xác thực/phân quyền vẫn phải làm ở server, CORS không thay thế được.',
+  },
+  {
+    id: 'node-time-utc', topic: 'Kiến trúc',
+    q: 'Lưu thời gian trong hệ thống backend thế nào cho đúng?',
+    options: [
+      'Lưu chuỗi đã format sẵn theo múi giờ người dùng để hiển thị lại cho nhanh, khỏi phải chuyển đổi',
+      'Lưu theo giờ máy chủ, vì mọi instance đều chạy trong cùng một trung tâm dữ liệu',
+      'Lưu mốc thời gian tuyệt đối ở UTC (`timestamptz`/epoch), chỉ đổi sang múi giờ người dùng ở tầng HIỂN THỊ',
+      'Lưu kèm chuỗi tên múi giờ trong cùng một cột để biết thời điểm đó thuộc vùng nào',
+    ], answer: 2,
+    explain: 'Quy tắc: lưu và truyền UTC, đổi múi giờ ở rìa hệ thống (UI). Lưu theo giờ địa phương thì: DST làm một giờ bị lặp lại/biến mất mỗi năm, đổi server sang vùng khác là dữ liệu cũ sai hết, và so sánh/sắp xếp giữa các bản ghi khác vùng thành vô nghĩa. Postgres dùng `timestamptz` (KHÔNG phải `timestamp`) — nó chuẩn hoá về UTC; MySQL thì `DATETIME` lưu UTC + đặt `time_zone` rõ ràng. Ngoại lệ đáng nhớ: sự kiện tương lai theo lịch địa phương ("9h sáng thứ Hai ở Hà Nội") nên lưu thêm TÊN múi giờ IANA (`Asia/Ho_Chi_Minh`), vì quy tắc DST có thể đổi trước khi tới ngày đó.',
+  },
 ];

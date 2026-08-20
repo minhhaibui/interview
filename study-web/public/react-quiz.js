@@ -563,4 +563,93 @@ window.REACT_QUIZ = [
     ], answer: 2,
     explain: 'Với `<Wrapper><Heavy/></Wrapper>`, phần tử `<Heavy/>` được tạo trong lần render của CHA; `Wrapper` chỉ nhận nó qua `props.children` và đặt vào cây. Khi state nội bộ của `Wrapper` đổi, `children` vẫn là ĐÚNG tham chiếu cũ nên React bỏ qua việc render lại `Heavy` — hiệu quả tương đương `memo` mà không cần bọc gì. Đây cũng là cách gọn nhất để phá prop drilling: thay vì truyền dữ liệu xuống nhiều tầng, hãy truyền chính JSX đã dựng sẵn xuống. Mẫu này (composition thay vì kế thừa/cấu hình) được docs React khuyến khích rất mạnh.',
   },
+  // ===== Đợt #3 =====
+  {
+    id: 'react-render-strategy', topic: 'React hiện đại',
+    q: 'CSR, SSR, SSG và ISR khác nhau ở điểm nào?',
+    options: [
+      'Chỉ khác nhau ở công cụ build, còn HTML gửi tới trình duyệt trong bốn cách là như nhau',
+      'CSR render ở trình duyệt; SSR render mỗi request; SSG dựng sẵn lúc build; ISR dựng sẵn rồi làm mới nền theo chu kỳ',
+      'CSR và SSG dành cho trang tĩnh, còn SSR và ISR chỉ dùng được với ứng dụng có đăng nhập',
+      'SSR luôn nhanh hơn cả ba cách còn lại vì server mạnh hơn thiết bị của người dùng',
+    ], answer: 1,
+    explain: 'CSR: server trả HTML rỗng + JS, trình duyệt render — TTFB nhanh nhưng người dùng nhìn màn trắng lâu, kém SEO. SSR: mỗi request server dựng HTML — nội dung cá nhân hoá & luôn mới, đổi lại tốn CPU server và TTFB phụ thuộc dữ liệu. SSG: dựng lúc BUILD, phục vụ từ CDN — nhanh và rẻ nhất, nhưng nội dung đổi thì phải build lại. ISR: SSG + tự dựng lại ở nền sau `revalidate` giây, hợp cho trang nhiều nhưng đổi thưa (blog, danh mục sản phẩm). Thực tế trộn theo từng trang: marketing dùng SSG, danh sách sản phẩm ISR, dashboard đăng nhập CSR/SSR.',
+  },
+  {
+    id: 'react-form-action', topic: 'React hiện đại',
+    q: 'React 19 thêm gì cho việc xử lý form?',
+    options: [
+      'Bắt buộc mọi form phải là controlled component, có `value` và `onChange` cho từng ô',
+      'Tự động validate dữ liệu của form dựa trên thuộc tính `type` của mỗi thẻ input',
+      '`<form action={fn}>` nhận hàm (kể cả Server Action), kèm `useActionState` và `useFormStatus` lo pending/lỗi',
+      'Một component `<Form>` mới thay thế hoàn toàn cho thẻ `<form>` sẵn có của HTML',
+    ], answer: 2,
+    explain: 'Trước đây mỗi form phải tự nuôi state `isSubmitting`, `error`, rồi `preventDefault` và gọi API. React 19: truyền HÀM vào `action` của `<form>` — React tự gọi nó với `FormData`, tự reset form khi xong, và hoạt động cả khi JS chưa tải (progressive enhancement) nếu dùng Server Action. `useActionState(fn, initial)` trả `[state, action, isPending]` để hiện lỗi và trạng thái; `useFormStatus()` cho component con (nút submit) biết form cha đang gửi mà không cần truyền props; `useOptimistic` để hiện kết quả trước rồi hoàn tác nếu lỗi.',
+  },
+  {
+    id: 'react-form-perf', topic: 'Hiệu năng',
+    q: 'Form 40 ô controlled bị giật khi gõ — cách xử lý hợp lý nhất?',
+    options: [
+      'Bọc toàn bộ form trong `useMemo` để React không phải dựng lại cây JSX ở mỗi lần gõ',
+      'Debounce `onChange` 300ms để giảm số lần setState khi người dùng gõ nhanh liên tục',
+      'Thu hẹp phạm vi re-render: tách state xuống từng ô, hoặc dùng uncontrolled + ref (react-hook-form)',
+      'Chuyển toàn bộ state form lên context để các ô chia sẻ chung một nguồn dữ liệu',
+    ], answer: 2,
+    explain: 'Gốc rễ: state của cả form nằm ở component cha nên MỖI phím gõ render lại toàn bộ 40 ô. `useMemo` không cứu được vì state cha đổi thật. Debounce làm ô input trễ theo — hỏng trải nghiệm gõ. Đưa lên context còn tệ hơn: mọi consumer cùng render. Hai hướng đúng: (1) đẩy state XUỐNG từng ô/nhóm ô, cha chỉ nhận giá trị lúc submit; (2) dùng uncontrolled + ref — react-hook-form đăng ký ô qua ref nên gõ KHÔNG gây re-render nào, chỉ render lại khi lỗi validate đổi. Cách đo trước khi sửa: React DevTools Profiler bật "Highlight updates".',
+  },
+  {
+    id: 'react-context-default', topic: 'Context & state',
+    q: 'Quên bọc `<Provider>` mà vẫn gọi `useContext` thì chuyện gì xảy ra?',
+    options: [
+      'React ném lỗi rõ ràng "Context used without Provider" và chỉ ra component gây lỗi',
+      'Hook trả về giá trị MẶC ĐỊNH truyền cho `createContext` — thường là `undefined`, lỗi nổ ở nơi khác rất khó lần',
+      'React tự tạo một Provider ngầm ở gốc cây với giá trị rỗng để ứng dụng vẫn chạy',
+      'Component sẽ không render và bị bỏ qua im lặng cho tới khi Provider xuất hiện',
+    ], answer: 1,
+    explain: 'Không có Provider phía trên thì `useContext` trả `defaultValue` của `createContext(defaultValue)` — mặc định là `undefined`, nên bug lộ ra ở chỗ destructure (`Cannot destructure property of undefined`) chứ không phải ở nguyên nhân thật. Mẫu chuẩn để chặn sớm: tạo custom hook `function useAuth(){ const c = useContext(AuthCtx); if (c === undefined) throw new Error("useAuth phải dùng bên trong <AuthProvider>"); return c }`. Cũng đừng đặt defaultValue là một object "giả" trông hợp lệ — nó biến lỗi thiếu Provider thành hành vi sai âm thầm.',
+  },
+  {
+    id: 'react-deps-lint', topic: 'Hooks',
+    q: 'Vì sao không nên tắt cảnh báo `react-hooks/exhaustive-deps` để "cho hết vòng lặp"?',
+    options: [
+      'Vì tắt lint sẽ khiến bản build production bị lỗi khi bundler kiểm tra lại mã nguồn',
+      'Vì effect thiếu deps sẽ đọc giá trị CŨ (stale closure) — bug âm thầm, khó tái hiện hơn hẳn render thừa',
+      'Vì React sẽ tự động thêm lại các dependency còn thiếu nên việc tắt cảnh báo là vô nghĩa',
+      'Vì quy tắc này bắt buộc theo chuẩn ESLint, tắt đi thì mọi rule khác cũng ngừng hoạt động',
+    ], answer: 1,
+    explain: 'Nói dối deps không sửa lỗi — nó GIẤU lỗi: effect tiếp tục dùng props/state của lần render cũ, gửi API sai giá trị hoặc timer set nhầm số. Vòng lặp vô hạn là TRIỆU CHỨNG cho thấy một dependency đang tạo mới mỗi render; hãy chữa nguyên nhân: đưa giá trị nguyên thuỷ vào deps (`user.id` thay `user`), `useCallback`/`useMemo` cho hàm/object, dùng bản updater `setX(prev => ...)` để khỏi phụ thuộc state, hoặc chuyển logic ra event handler vì thực ra nó không thuộc về effect. Chỉ tắt rule theo TỪNG DÒNG kèm bình luận giải thích, không tắt cả file.',
+  },
+  {
+    id: 'react-profiler', topic: 'Hiệu năng',
+    q: 'Nghi component render thừa — cách đo đúng là gì?',
+    options: [
+      'Đặt `console.log` trong thân mỗi component rồi đếm số dòng in ra ở tab Console',
+      'React DevTools Profiler: record một thao tác, xem component nào render, bao lâu và VÌ SAO lại render',
+      'Đo tổng thời gian tải trang bằng Lighthouse rồi suy ra xem component nào đang chậm',
+      'So sánh dung lượng bundle trước và sau khi bọc component trong `React.memo`',
+    ], answer: 1,
+    explain: 'Profiler ghi lại từng lần commit: flame chart cho biết component nào render, tốn bao lâu, và bật "Record why each component rendered" sẽ chỉ đúng nguyên nhân (prop nào đổi, hook thứ mấy) — thứ mà `console.log` không cho biết. Kèm theo: tuỳ chọn "Highlight updates when components render" vẽ viền quanh vùng render lại, nhìn phát thấy ngay chỗ cả trang nhấp nháy khi gõ một ô input. Quy trình đúng: ĐO trước → tìm component tốn nhiều nhất → sửa nguyên nhân (đưa state xuống thấp, truyền qua `children`, memo hoá đúng chỗ) → đo lại. Nhớ Profiler chỉ chạy ở bản dev.',
+  },
+  {
+    id: 'react-bundle', topic: 'Hiệu năng',
+    q: 'Bundle JS quá lớn làm trang tải chậm — hướng giảm hiệu quả nhất?',
+    options: [
+      'Minify kỹ hơn rồi bật gzip, vì nén là cách duy nhất giảm được dung lượng phải tải về',
+      'Gộp toàn bộ code vào trong một file duy nhất để trình duyệt chỉ phải mở một kết nối',
+      'Phân tích bundle rồi cắt: code split theo route, thay thư viện nặng, tải lười thứ chưa cần',
+      'Chuyển hết logic sang backend để frontend chỉ còn HTML và CSS thuần',
+    ], answer: 2,
+    explain: 'JS đắt gấp đôi: tốn băng thông TẢI VỀ và tốn CPU để PARSE + EXECUTE (nén không giúp gì cho phần thứ hai, nhất là trên máy yếu). Quy trình: chạy bundle analyzer để biết ai đang chiếm chỗ → thường lòi ra vài thủ phạm quen mặt (moment.js với đủ locale → dayjs/date-fns; lodash nguyên gói → import từng hàm; thư viện icon/chart import cả bộ). Rồi code split theo route bằng `lazy`+`Suspense`, tải lười modal/editor/bản đồ, đảm bảo dùng ESM để tree-shaking hoạt động, và cân nhắc RSC để phần chỉ chạy ở server không xuống client. Đặt ngân sách bundle trong CI để không phình lại.',
+  },
+  {
+    id: 'react-animation', topic: 'Chất lượng UI',
+    q: 'Làm animation trong React thế nào để không giật?',
+    options: [
+      'Dùng `setState` trong `setInterval` mỗi 16ms để cập nhật lại vị trí theo từng khung hình',
+      'Ưu tiên CSS transition trên `transform` & `opacity`; cần JS thì `requestAnimationFrame` + ghi thẳng vào ref',
+      'Bọc component đang chạy animation trong `React.memo` để nó không bị render lại nữa',
+      'Tăng tần suất setState lên 120 lần/giây để khớp với màn hình tần số quét cao',
+    ], answer: 1,
+    explain: 'setState mỗi khung hình bắt React chạy trọn chu trình render + diff 60 lần/giây — thừa và dễ rớt khung. Ưu tiên để TRÌNH DUYỆT lo: CSS transition/animation trên `transform` và `opacity` được compositor xử lý, không gây layout/paint lại (tránh animate `width`, `top`, `margin`). Cần điều khiển bằng JS (kéo thả, cuộn) thì dùng `requestAnimationFrame` và ghi thẳng `ref.current.style.transform`, bỏ qua vòng render của React. Thư viện Framer Motion/react-spring đã làm sẵn việc này. Đo bằng tab Performance của DevTools, để ý dòng "dropped frames" và cảnh báo layout thrashing.',
+  },
 ];

@@ -61,22 +61,25 @@ không cần biết mẹo hard-refresh.
     ConcurrentHashMap/ThreadLocal), generics &amp; type erasure, Java 8+ (stream/Optional), OOP,
     Spring/JPA (DI, bean scope, @Transactional, N+1), **MyBatis** (#{}/${}, mapper proxy,
     cache 2 tầng), **SOLID** (5 nguyên lý).
-    📖 **Lý thuyết chuyên sâu JS · Node · React** (165 câu) — hỏi KHÁI NIỆM & CƠ CHẾ, không phải
+    📖 **Lý thuyết chuyên sâu JS · Node · React** (189 câu) — hỏi KHÁI NIỆM & CƠ CHẾ, không phải
     đoán output; **làm riêng** ở đây theo từng mảng, hoặc **làm chung** trong buổi 🎯 Phỏng vấn:
-    🟨 **JavaScript** (61 câu): scope & hoisting/TDZ, closure, `this` & binding, prototype/class,
+    🟨 **JavaScript** (69 câu): scope & hoisting/TDZ, closure, `this` & binding, prototype/class,
     ép kiểu & tham chiếu, event loop & microtask, Promise/async, generator & iterator, Proxy,
     WeakMap & GC, ESM vs CommonJS, Symbol, số nguyên an toàn & BigInt, bẫy regex (ReDoS, lastIndex),
-    mutate vs bất biến, lỗi tuỳ biến & `cause`, async iterator.
-    🟢 **Node.js** (54 câu): 6 pha event loop & libuv thread pool, `nextTick` vs `setImmediate`,
+    mutate vs bất biến, lỗi tuỳ biến & `cause`, async iterator, bẫy `Date` & `Intl`, `structuredClone`,
+    `WeakRef`, tagged template, reviver của JSON, vì sao tránh `eval`.
+    🟢 **Node.js** (62 câu): 6 pha event loop & libuv thread pool, `nextTick` vs `setImmediate`,
     stream & **backpressure**, `pipeline` vs `pipe`, require cache & module wrapper,
     cluster vs worker_threads, Buffer, EventEmitter, `uncaughtException` & **graceful shutdown**,
     rò rỉ bộ nhớ, bảo mật (command injection, path traversal, prototype pollution, băm mật khẩu,
-    JWT, secret, body limit, `npm ci`), dns.lookup vs resolve, và cách profiling khi service chậm.
-    ⚛️ **React** (50 câu): virtual DOM & reconciliation, **key**, batching & bất biến, derived state,
+    JWT, secret, body limit, `npm ci`), dns.lookup vs resolve, profiling khi service chậm, connection pool DB, cache header & nén,
+    liveness vs readiness probe, idempotency key, khi nào đẩy việc sang queue, CORS, và lưu thời gian UTC.
+    ⚛️ **React** (58 câu): virtual DOM & reconciliation, **key**, batching & bất biến, derived state,
     quy tắc hooks, deps & cleanup, **stale closure**, `memo`/`useMemo`/`useCallback`, context
     re-render, virtualization, controlled form, error boundary, StrictMode, và React 18/19
     (Suspense, `useTransition`, `useSyncExternalStore`, `useId`, RSC, hydration); thêm định tuyến SPA,
-    kiểm thử với React Testing Library, server state (React Query) vs store toàn cục, a11y và XSS.
+    kiểm thử với React Testing Library, server state (React Query) vs store toàn cục, a11y và XSS;
+    CSR/SSR/SSG/ISR, form action React 19, form lớn bị giật, đo bằng Profiler, cắt bundle, animation mượt.
   - 🔁 **Ôn câu sai** — gom mọi câu trắc nghiệm từng chọn sai (output/API/SQL/CLI +
     vòng Tiếng Anh/Tình huống của buổi phỏng vấn) vào một phiên ôn tập trung
     (đúng → rời hàng đợi); có **📉 chip chủ đề yếu** (câu sai dồn cụm ở đâu —
@@ -119,8 +122,8 @@ không cần biết mẹo hard-refresh.
   Kho câu đủ lớn để ôn dài hơi mà **không lặp lại**: 🧩 IQ **363 câu** (10 nhóm: dãy số ·
   chữ cái · logic · toán nhanh · tương tự · xác suất · mã hoá · hình & không gian ·
   chuyển động & công việc · chọn từ khác loại), 🇬🇧 tiếng Anh **125 câu** (82 câu giao tiếp),
-  ⌨️ code **110 câu** (đoán output 52 + Big-O 58), 📖 lý thuyết **165 câu**
-  (JS 61 · Node 54 · React 50) — chạy được **~15 buổi liên tiếp** mà IQ, tiếng Anh và
+  ⌨️ code **110 câu** (đoán output 52 + Big-O 58), 📖 lý thuyết **189 câu**
+  (JS 69 · Node 62 · React 58) — chạy được **~15 buổi liên tiếp** mà IQ, tiếng Anh và
   lý thuyết không lặp câu nào.
 
   **🚫 Không hỏi lại câu của buổi trước**: mỗi câu được ghi vào `prep-iv-seen` NGAY khi bạn trả lời
