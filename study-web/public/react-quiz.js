@@ -741,4 +741,92 @@ window.REACT_QUIZ = [
     ], answer: 2,
     explain: 'Modal là chỗ dễ hỏng accessibility nhất. Cần: FOCUS TRAP (Tab không thoát ra nền phía sau), tự focus vào phần tử đầu khi mở và TRẢ focus về nút đã mở khi đóng, phím `Esc` để đóng, `role="dialog" aria-modal="true"` kèm `aria-labelledby` để screen reader đọc đúng, ẩn nội dung nền khỏi cây accessibility, và khoá cuộn body (nhớ bù `scrollbar-gutter` để trang không nhảy). Portal chỉ giải quyết vấn đề `z-index`/`overflow`. Vì nhiều thứ dễ sót, thực tế nên dùng thư viện đã kiểm chứng (Radix, React Aria, Headless UI) hoặc thẻ `<dialog>` gốc với `showModal()`.',
   },
-];
+  // ===== Đợt #5 =====
+  {
+    id: 'react-compound', topic: 'Mẫu thiết kế',
+    q: 'Compound component (`<Tabs><Tabs.List/><Tabs.Panel/></Tabs>`) giải quyết vấn đề gì?',
+    options: [
+      'Giảm số lượng component phải import nên bundle nhỏ hơn và quá trình build nhanh hơn',
+      'Cho phép người dùng tự sắp xếp bố cục & chèn thêm phần tử, còn state dùng chung đi ngầm qua context',
+      'Bắt buộc các component con phải render theo đúng thứ tự đã khai báo trong tài liệu',
+      'Tự động đồng bộ state giữa nhiều instance của cùng một component trên trang',
+    ], answer: 1,
+    explain: 'Thay vì một component nhận hàng chục prop cấu hình (`<Tabs items={[...]} renderTab={...} activeClass={...}/>`), compound component để người dùng TỰ dựng JSX: chèn thêm phần tử, đổi thứ tự, bọc thêm div, style tuỳ ý. Component cha giữ state (tab nào đang mở) và chia sẻ ngầm qua Context, các con tự đăng ký/đọc. Đây là mẫu của Radix, Headless UI, React Aria. Lưu ý khi tự viết: cho context một giá trị mặc định `undefined` rồi ném lỗi rõ ràng nếu con bị dùng ngoài cha, và nhớ memo hoá `value` để không làm mọi con render lại.',
+  },
+  {
+    id: 'react-render-props', topic: 'Mẫu thiết kế',
+    q: 'Vì sao hooks phần lớn thay thế được HOC và render props?',
+    options: [
+      'Vì HOC và render props đều đã bị React gỡ bỏ khỏi API kể từ phiên bản 18',
+      'Vì hooks render nhanh hơn do không phải tạo thêm component trung gian nào nữa',
+      'Vì hooks chia sẻ logic mà KHÔNG thêm tầng component — tránh "wrapper hell" và không đụng độ tên prop',
+      'Vì hooks có thể gọi ở trong điều kiện nên linh hoạt hơn hẳn hai mẫu cũ',
+    ], answer: 2,
+    explain: 'HOC (`withUser(withTheme(Comp))`) và render props (`<Mouse>{pos => ...}</Mouse>`) đều giải bài toán chia sẻ logic, nhưng phải BỌC thêm component: cây DevTools sâu hoằng ("wrapper hell"), prop injection dễ trùng tên và khó suy ra kiểu, ghép 3–4 tầng thì render props lồng thành kim tự tháp. Custom hook chỉ là lời gọi hàm: `const user = useUser(); const theme = useTheme()` — phẳng, rõ nguồn gốc dữ liệu, ghép bao nhiêu cũng được. Hai mẫu cũ vẫn còn chỗ dùng: HOC cho việc bọc cắt ngang (error boundary, phân quyền route), render props khi cần trao quyền quyết định CÁCH RENDER cho người dùng.',
+  },
+  {
+    id: 'react-test-async', topic: 'Kiểm thử',
+    q: 'Test một component gọi API thì nên mock ở đâu?',
+    options: [
+      'Mock hàm `fetch`/axios toàn cục bằng jest.mock cho từng test case cần dùng',
+      'Mock ở tầng MẠNG (MSW) — component chạy code fetch thật, test không phụ thuộc thư viện HTTP nào',
+      'Không mock gì cả, gọi thẳng API thật của môi trường staging cho sát thực tế',
+      'Mock chính component con hiển thị dữ liệu để khỏi phải quan tâm tới việc gọi API',
+    ], answer: 1,
+    explain: 'Mock `fetch` trói test vào CHI TIẾT CÀI ĐẶT: đổi từ fetch sang axios hay React Query là test đỏ dù hành vi y nguyên, và bạn phải tự dựng lại response giả sao cho giống thật. MSW chặn ở tầng network nên component chạy đúng đường code thật, một bộ handler dùng lại được cho cả test lẫn dev. Gọi API thật thì test chậm, chập chờn và phụ thuộc dữ liệu bên ngoài. Kèm theo: dùng `findBy*`/`waitFor` chờ dữ liệu về thay vì `setTimeout`, nhớ test cả nhánh LỖI và loading, và reset handler giữa các test để không rò trạng thái.',
+  },
+  {
+    id: 'react-i18n', topic: 'Chất lượng UI',
+    q: 'Đa ngôn ngữ trong React, cách làm nào SAI?',
+    options: [
+      'Nối chuỗi thủ công: `t("Bạn có") + n + t("tin nhắn")` để ghép câu từ các mảnh đã dịch',
+      'Dùng key + tham số nội suy: `t("inbox.count", { count: n })` và để thư viện lo dạng số nhiều',
+      'Tách file dịch theo namespace và tải lười phần chưa cần tới',
+      'Dùng `Intl.NumberFormat`/`DateTimeFormat` để hiển thị số, tiền tệ và ngày tháng theo locale',
+    ], answer: 0,
+    explain: 'Nối chuỗi là sai lầm kinh điển: trật tự từ khác nhau giữa các ngôn ngữ nên ghép mảnh sẽ ra câu ngớ ngẩn, người dịch không thấy được ngữ cảnh, và quy tắc SỐ NHIỀU thì mỗi ngôn ngữ một kiểu (tiếng Anh 2 dạng, tiếng Nga 3, tiếng Ả Rập 6, tiếng Việt không đổi). Cách đúng: một key cho TRỌN câu kèm tham số, để i18next/FormatJS chọn dạng số nhiều qua `Intl.PluralRules`. Những thứ khác cần nhớ: đừng dùng chính câu tiếng Việt làm key (sửa chính tả là vỡ hết bản dịch), chừa chỗ cho văn bản dài hơn 30–40% khi dịch, xử lý hướng RTL, và định dạng số/ngày phải qua `Intl` chứ không tự viết.',
+  },
+  {
+    id: 'react-animate-list', topic: 'Chất lượng UI',
+    q: 'Animate danh sách khi thêm/xoá phần tử, điều gì QUAN TRỌNG nhất?',
+    options: [
+      'Đặt `transition: all 0.3s` cho phần tử là đủ, trình duyệt tự lo phần còn lại',
+      'Dùng `key` ỔN ĐỊNH theo dữ liệu để React biết phần tử nào thật sự thêm/xoá/di chuyển',
+      'Tăng `z-index` của phần tử đang chuyển động để nó không bị các phần tử khác che mất',
+      'Render toàn bộ danh sách lại từ đầu sau mỗi thay đổi để animation bắt đầu đồng loạt',
+    ], answer: 1,
+    explain: 'Animation danh sách phụ thuộc hoàn toàn vào DANH TÍNH phần tử. Với `key={index}`, xoá phần tử đầu làm mọi phần tử "đổi danh tính" — React cập nhật nội dung tại chỗ thay vì hiểu là một phần tử biến mất, nên animation chạy sai hoàn toàn (thấy chữ nhảy chứ không thấy dòng trượt đi). Key ổn định theo id cho React và thư viện animation biết chính xác cái nào vào, ra, hay chỉ đổi vị trí. Phần tử BỊ XOÁ cần được giữ lại tới khi animation xong (`AnimatePresence` của Framer Motion). Và animate vị trí thì dùng kỹ thuật FLIP trên `transform` — đừng animate `top`/`height` vì gây layout lại mỗi khung hình.',
+  },
+  {
+    id: 'react-image-perf', topic: 'Hiệu năng',
+    q: 'Trang nhiều ảnh bị chậm và layout nhảy — xử lý thế nào?',
+    options: [
+      'Chuyển hết ảnh sang định dạng base64 rồi nhúng thẳng trong HTML để bớt số request',
+      'Đặt `aspect-ratio` để chừa chỗ (chống CLS), `loading="lazy"`, `srcset` theo màn hình, dùng WebP/AVIF',
+      'Bọc mỗi thẻ ảnh trong `React.memo` để chúng không bị render lại khi state đổi',
+      'Tải toàn bộ ảnh ngay khi trang mở để người dùng cuộn tới đâu cũng thấy sẵn',
+    ], answer: 1,
+    explain: 'Hai vấn đề riêng biệt. LAYOUT NHẢY (CLS): ảnh chưa tải thì cao 0px, tải xong đẩy nội dung xuống — chữa bằng `width`/`height` hoặc `aspect-ratio` để trình duyệt chừa chỗ trước. CHẬM: ảnh thường là tài nguyên nặng nhất trang — dùng `loading="lazy"` cho ảnh dưới màn hình (nhưng KHÔNG lazy ảnh hero vì nó là LCP, thậm chí nên `fetchpriority="high"`), `srcset`/`sizes` để điện thoại không tải ảnh 2000px, và định dạng hiện đại (WebP/AVIF) nhỏ hơn JPEG 30–50%. Base64 làm HTML phình to, không cache riêng được và chặn render — chỉ hợp với icon vài trăm byte. `memo` không liên quan gì tới tốc độ tải ảnh.',
+  },
+  {
+    id: 'react-ts-props', topic: 'Chất lượng UI',
+    q: 'Khai báo kiểu cho props trong React + TypeScript, cách nào tốt nhất?',
+    options: [
+      'Dùng `any` cho props để linh hoạt, kiểu thật sẽ được suy ra lúc component được dùng',
+      'Định nghĩa `type Props` tường minh, dùng `ReactNode` cho children và mở rộng props HTML khi bọc thẻ gốc',
+      'Dùng `React.FC<Props>` cho mọi component vì đó là cách duy nhất khai báo children đúng',
+      'Bỏ hẳn kiểu cho props và dựa vào `propTypes` kiểm tra lúc chạy như thời trước',
+    ], answer: 1,
+    explain: 'Khai báo `type Props = { title: string; children?: React.ReactNode }` rồi `function Card({title, children}: Props)` là cách rõ ràng nhất. `React.FC` không còn được khuyến nghị: nó từng tự thêm `children` vào mọi component (đã bỏ ở React 18 types) và làm generic component khó viết hơn. Khi bọc thẻ HTML, hãy MỞ RỘNG props gốc: `type Props = React.ComponentProps<"button"> & { variant: "primary" | "ghost" }` — người dùng truyền được `onClick`, `disabled`, `aria-*` mà bạn không phải liệt kê tay. Dùng union cho các trạng thái loại trừ nhau để TypeScript ép xử lý đủ nhánh, và `as const` cho danh sách giá trị cố định.',
+  },
+  {
+    id: 'react-env-secret', topic: 'Bảo mật',
+    q: 'Đặt API key vào biến môi trường frontend (`VITE_*`, `NEXT_PUBLIC_*`) có an toàn không?',
+    options: [
+      'An toàn, vì biến môi trường được mã hoá trong quá trình build và chỉ giải mã lúc chạy',
+      'An toàn nếu đặt tên biến khó đoán và không commit file `.env` lên repository',
+      'KHÔNG — chúng được NHÚNG THẲNG vào bundle, ai xem source cũng đọc được; secret phải nằm ở server',
+      'An toàn với ứng dụng SSR vì mã nguồn chỉ chạy trên server chứ không gửi xuống client',
+    ], answer: 2,
+    explain: 'Bundler thay thế `import.meta.env.VITE_X` bằng GIÁ TRỊ CHUỖI lúc build — mở DevTools là thấy. Tiền tố `NEXT_PUBLIC_`/`VITE_` chính là lời cảnh báo "cái này sẽ công khai". Chỉ đặt ở đó những thứ vốn công khai: URL API, id analytics, publishable key của Stripe, site key của reCAPTCHA. Mọi secret thật (khoá bí mật, token DB, API key của đối tác) phải ở server — frontend gọi endpoint của bạn, server mới gọi tiếp ra ngoài. Với Next.js, biến KHÔNG có tiền tố chỉ có ở phía server, nhưng cẩn thận đừng lỡ truyền nó xuống client qua props của trang. Lỡ lộ rồi thì phải THU HỒI khoá, xoá code thôi là chưa đủ.',
+  },];

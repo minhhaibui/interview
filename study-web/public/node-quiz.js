@@ -789,4 +789,92 @@ window.NODE_QUIZ = [
     ], answer: 2,
     explain: 'Docker cache theo TỪNG LAYER và huỷ cache từ layer đầu tiên có thay đổi trở đi. Copy cả mã nguồn trước rồi mới `npm ci` thì mỗi lần sửa một dòng code là cài lại toàn bộ dependency — build từ 20 giây thành vài phút. Copy manifest trước, cài, rồi mới copy code thì bước cài chỉ chạy lại khi `package-lock.json` đổi. Các thực hành đi kèm: multi-stage build (stage build có devDependencies, stage cuối chỉ chứa `node_modules` production + dist), `.dockerignore` loại `node_modules`/`.git`, base image `-slim`/`-alpine`, chạy bằng user non-root, và `CMD ["node","server.js"]` dạng exec để nhận được SIGTERM.',
   },
-];
+  // ===== Đợt #5 =====
+  {
+    id: 'node-sse', topic: 'HTTP',
+    q: 'Server-Sent Events (SSE) khác WebSocket ở chỗ nào?',
+    options: [
+      'SSE nhanh hơn WebSocket vì dùng giao thức nhị phân thay cho văn bản thuần như trước',
+      'SSE là HTTP thường, MỘT chiều server→client, tự kết nối lại; WebSocket hai chiều nhưng phải nâng cấp',
+      'SSE hai chiều còn WebSocket chỉ cho phép client gửi dữ liệu lên server',
+      'Hai công nghệ giống nhau, SSE chỉ là tên gọi cũ của WebSocket trước khi được chuẩn hoá',
+    ], answer: 1,
+    explain: 'SSE giữ một response HTTP mở và đẩy dần các dòng `data: ...` — một chiều server→client. Ưu điểm: là HTTP bình thường nên đi qua proxy/CDN/tường lửa dễ, dùng lại được xác thực cookie/header, và `EventSource` TỰ kết nối lại kèm `Last-Event-ID`. Hợp cho thông báo, tiến độ job, log realtime, stream token của LLM. WebSocket mới cần khi client cũng phải gửi liên tục (chat, game, collab). Bẫy khi triển khai với Node: nhớ `Content-Type: text/event-stream`, tắt buffering ở nginx (`X-Accel-Buffering: no`), gửi heartbeat định kỳ chống timeout idle, dọn tài nguyên khi `req.on("close")`, và cẩn thận giới hạn kết nối đồng thời khi scale.',
+  },
+  {
+    id: 'node-nplus1', topic: 'Kiến trúc',
+    q: 'API trả 100 đơn hàng kèm tên khách gọi tới 101 truy vấn — vấn đề gì và chữa sao?',
+    options: [
+      'Bình thường vì ORM luôn cần một truy vấn riêng cho mỗi bản ghi liên kết của kết quả',
+      'N+1 QUERY do lazy loading — chữa bằng eager load/JOIN, một truy vấn `IN (...)`, hoặc DataLoader gom theo batch',
+      'Do thiếu index nên mỗi truy vấn phải quét toàn bảng, thêm index là còn đúng một truy vấn',
+      'Do connection pool quá nhỏ nên ORM phải chia nhỏ truy vấn ra thành nhiều lần gọi',
+    ], answer: 1,
+    explain: 'Một truy vấn lấy danh sách, rồi mỗi phần tử lại một truy vấn lấy quan hệ — 1+N. Mỗi truy vấn tốn một round-trip mạng, nên 101 lần × 2ms là 200ms chỉ để chờ. Cách chữa: eager loading (`include`/`relations` của ORM, hoặc JOIN viết tay); gom id rồi `WHERE id IN (...)` một lần và map lại trong app; với GraphQL thì DataLoader gom các lời gọi trong cùng một tick thành một truy vấn. Phát hiện sớm bằng cách log số truy vấn mỗi request và đặt cảnh báo. Cẩn thận chiều ngược lại: JOIN quá nhiều bảng một lúc lại tạo tích Descartes và trả về dữ liệu lặp khổng lồ.',
+  },
+  {
+    id: 'node-migration', topic: 'Kiến trúc',
+    q: 'Đổi tên cột DB mà không có downtime thì làm thế nào?',
+    options: [
+      'Chạy `ALTER TABLE RENAME COLUMN` cùng lúc với deploy code mới để hai bên khớp nhau',
+      'Tắt service, chạy migration, bật lại — chỉ mất vài giây nên coi như không downtime',
+      'EXPAND/CONTRACT: thêm cột mới → ghi cả hai → backfill → chuyển đọc sang cột mới → deploy → mới xoá cột cũ',
+      'Tạo bảng mới hoàn toàn rồi đổi tên hai bảng cho nhau trong một transaction duy nhất',
+    ], answer: 2,
+    explain: 'Trong lúc rolling deploy, pod cũ và pod mới CHẠY SONG SONG — đổi tên cột một phát thì pod cũ lập tức lỗi. Mẫu expand/contract chia thành nhiều lần deploy: (1) thêm cột mới nullable (schema tương thích ngược cả hai chiều); (2) deploy code GHI cả cột cũ lẫn mới; (3) backfill dữ liệu theo lô, tránh khoá bảng lâu; (4) deploy code ĐỌC cột mới; (5) deploy bỏ ghi cột cũ; (6) một thời gian sau mới drop cột cũ. Nguyên tắc chung: mọi migration phải tương thích ngược với phiên bản code đang chạy, và luôn có đường lùi. Cùng cách nghĩ khi thêm cột NOT NULL (thêm nullable + default trước) hay đổi kiểu dữ liệu.',
+  },
+  {
+    id: 'node-index', topic: 'Kiến trúc',
+    q: 'Có index trên `(user_id, created_at)` — truy vấn nào KHÔNG tận dụng được index đó?',
+    options: [
+      '`WHERE user_id = ? ORDER BY created_at DESC` — dùng được cả lọc lẫn sắp xếp',
+      '`WHERE user_id = ? AND created_at > ?` — khớp tiền tố rồi lọc tiếp theo khoảng',
+      '`WHERE created_at > ?` — chỉ dùng cột thứ hai, không có tiền tố trái nên phải quét',
+      '`WHERE user_id IN (?, ?)` — dùng được vì vẫn bám vào cột đầu của index',
+    ], answer: 2,
+    explain: 'Composite index là B-tree sắp theo THỨ TỰ cột, nên chỉ dùng được khi truy vấn khớp TIỀN TỐ TRÁI: `(user_id)` hoặc `(user_id, created_at)`. Lọc riêng `created_at` thì không có điểm bắt đầu để dò — DB thường phải quét toàn bảng (một số DB có index skip scan nhưng chỉ hiệu quả khi cột đầu ít giá trị phân biệt). Vài điều đi kèm hay bị hỏi: bọc hàm quanh cột (`WHERE DATE(created_at) = ...`) làm mất index — hãy so theo khoảng; `LIKE \'%abc\'` không dùng được index; index làm chậm INSERT/UPDATE nên đừng tạo bừa; và đọc `EXPLAIN ANALYZE` là cách duy nhất để biết chắc DB thật sự dùng gì.',
+  },
+  {
+    id: 'node-api-style', topic: 'Kiến trúc',
+    q: 'Chọn giữa REST, GraphQL và gRPC cho một hệ thống thì căn cứ vào đâu?',
+    options: [
+      'gRPC luôn tốt nhất vì nhanh nhất, nên dùng cho mọi API kể cả API công khai cho web',
+      'REST cho API công khai & dễ cache; GraphQL khi client cần tự chọn dữ liệu; gRPC cho gọi NỘI BỘ hiệu năng cao',
+      'GraphQL thay thế hoàn toàn REST vì luôn giảm được số lượng request cần gửi đi',
+      'Chọn theo ngôn ngữ backend: Node thì REST, Java thì gRPC, Python thì GraphQL',
+    ], answer: 1,
+    explain: 'REST: đơn giản, dùng được cache HTTP/CDN, ai cũng gọi được từ trình duyệt/curl — mặc định tốt cho API công khai; điểm yếu là over/under-fetching và dễ đẻ nhiều endpoint. GraphQL: client tự chọn field, một request lấy đủ dữ liệu cho màn hình — đổi lại phải tự lo cache, chống truy vấn quá sâu/tốn kém, và dễ dính N+1 (cần DataLoader). gRPC: HTTP/2 + protobuf, nhị phân nhỏ và nhanh, có streaming hai chiều và hợp đồng chặt sinh code — rất hợp giữa các service NỘI BỘ, nhưng trình duyệt gọi thẳng không được (cần gRPC-Web/proxy). Thực tế hệ thống lớn dùng cả ba ở các tầng khác nhau.',
+  },
+  {
+    id: 'node-ws-scale', topic: 'Kiến trúc',
+    q: 'WebSocket chạy 3 pod: user A ở pod 1 gửi tin cho user B ở pod 3 mà B không nhận được — vì sao?',
+    options: [
+      'Vì WebSocket chỉ hoạt động khi cả hai người dùng cùng kết nối trên một trình duyệt',
+      'Vì load balancer không hỗ trợ giao thức WebSocket nên đã cắt kết nối của user B',
+      'Vì kết nối là STATE trong RAM của từng pod — pod 1 không giữ socket của B; cần pub/sub ở giữa',
+      'Vì mỗi pod có giới hạn số kết nối nên B đã bị đẩy sang hàng đợi chờ tới lượt',
+    ], answer: 2,
+    explain: 'Socket là kết nối TCP sống, nằm trong bộ nhớ của ĐÚNG pod mà client bắt tay — pod khác không có tham chiếu tới nó. Giải pháp chuẩn: một lớp pub/sub ở giữa (Redis adapter của Socket.IO, NATS, Kafka) — pod 1 publish sự kiện lên kênh, mọi pod subscribe và pod nào đang giữ socket của B thì gửi xuống. Kèm theo: sticky session hoặc bật cả long-polling ở LB để handshake không nhảy pod giữa chừng; lưu bản đồ user→pod nếu cần gửi đích danh; xử lý reconnect và bù tin nhắn lỡ (lưu offset/lịch sử); và nhớ WebSocket giữ kết nối lâu nên rolling deploy sẽ ngắt hàng loạt — cần reconnect có backoff ở client.',
+  },
+  {
+    id: 'node-fetch-native', topic: 'HTTP',
+    q: '`fetch` có sẵn trong Node 18+ (undici) — khác gì so với thói quen dùng axios?',
+    options: [
+      'Không khác gì, `fetch` của Node chỉ là axios được đóng gói sẵn vào runtime',
+      'KHÔNG tự ném lỗi khi status 4xx/5xx, body chỉ đọc được MỘT lần, không có timeout mặc định — phải dùng AbortSignal',
+      '`fetch` chỉ gọi được HTTPS, muốn gọi HTTP nội bộ thì vẫn phải dùng thư viện ngoài',
+      '`fetch` chạy đồng bộ nên chặn event loop, chỉ nên dùng trong script chứ không dùng trong server',
+    ], answer: 1,
+    explain: 'Bốn khác biệt hay khiến người quen axios bị vấp: (1) `fetch` chỉ reject khi lỗi MẠNG — 404/500 vẫn resolve, phải tự kiểm `res.ok`; (2) body là stream đọc một lần, gọi `res.json()` rồi `res.text()` nữa là lỗi (dùng `res.clone()` nếu cần); (3) không có timeout mặc định nên request treo mãi — dùng `AbortSignal.timeout(5000)`; (4) không tự `JSON.stringify` body, phải tự đặt `Content-Type`. Bù lại: không thêm dependency, hỗ trợ stream, và undici có connection pool keep-alive sẵn. Cần retry/interceptor thì tự viết một lớp bọc mỏng hoặc dùng undici API trực tiếp.',
+  },
+  {
+    id: 'node-esm-migrate', topic: 'Module',
+    q: 'Chuyển một codebase Node từ CommonJS sang ESM cần lưu ý gì nhất?',
+    options: [
+      'Chỉ cần đổi `require` thành `import` là xong, mọi thứ còn lại vẫn hoạt động y hệt như cũ',
+      'Phải viết lại toàn bộ dependency vì package CommonJS thì không dùng được trong ESM',
+      'Ghi rõ đuôi file khi import, không còn `__dirname`/`require`, import là TĨNH, và cách mock trong test khác hẳn',
+      'ESM chỉ chạy được với Node phiên bản mới nhất nên phải nâng cấp runtime trước tiên',
+    ], answer: 2,
+    explain: 'Những chỗ vấp thật sự khi migrate: (1) import relative phải ghi ĐỦ đuôi `.js`; (2) mất `__dirname`/`__filename`/`require` — thay bằng `import.meta.url` + `fileURLToPath`, hoặc `createRequire`; (3) `import` là tĩnh và được hoisting, nạp có điều kiện phải dùng `await import()`; (4) TEST — `jest.mock` dựa trên require cache của CJS nên phải chuyển sang `jest.unstable_mockModule` hoặc `node:test` với mock module; (5) package chỉ có CJS thì import được nhưng named export có thể không phân tích ra, phải lấy default rồi destructure. Chiến lược an toàn: nâng Node ≥20, bật `"type": "module"` cho từng package nhỏ trước, hoặc dùng TypeScript rồi build ra cả hai định dạng.',
+  },];

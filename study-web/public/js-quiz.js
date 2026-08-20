@@ -868,4 +868,93 @@ window.JS_QUIZ = [
     ], answer: 1,
     explain: 'Đơn luồng loại bỏ tranh chấp ở mức LỆNH, nhưng mỗi `await` là một điểm nhả quyền — request/sự kiện khác chạy xen vào. Ví dụ kinh điển: `const u = await find(id); if (!u) await create(id)` — hai request song song cùng thấy `!u` rồi cùng tạo, sinh bản ghi trùng. Hoặc người dùng bấm nút hai lần thành hai đơn hàng. Cách chữa: ràng buộc UNIQUE + upsert ở DB, khoá phân tán (Redis) hoặc `SELECT ... FOR UPDATE`, idempotency key, khoá nút khi đang gửi, và ở phía client thì huỷ request cũ bằng `AbortController` hoặc bỏ qua phản hồi đến muộn.',
   },
+  // ===== Đợt #5 =====
+  {
+    id: 'js-hidden-class', topic: 'Bộ nhớ',
+    q: 'V8 tối ưu truy cập thuộc tính object bằng cách nào, và điều đó gợi ý gì cho code?',
+    options: [
+      'V8 lưu mọi object dưới dạng bảng băm nên thứ tự khai báo thuộc tính không ảnh hưởng gì',
+      'V8 dựng HIDDEN CLASS theo hình dạng object + inline cache — nên khởi tạo đủ field, đúng thứ tự, tránh `delete`',
+      'V8 biên dịch trước toàn bộ object thành struct C++ nên thêm thuộc tính lúc chạy sẽ ném lỗi',
+      'V8 sắp xếp lại thuộc tính theo thứ tự bảng chữ cái để tra cứu nhị phân cho nhanh hơn',
+    ], answer: 1,
+    explain: 'V8 gán cho mỗi object một "hình dạng" (hidden class/map); thêm thuộc tính mới tạo hình dạng mới. Ở chỗ truy cập `obj.x`, V8 dùng INLINE CACHE nhớ hình dạng đã gặp — cùng một hình dạng thì đọc nhanh như struct, nhưng nếu chỗ đó thấy nhiều hình dạng khác nhau (megamorphic) thì rơi về tra cứu chậm. Gợi ý thực tế: khởi tạo object với ĐỦ field ngay trong constructor (kể cả `null`), giữ nguyên THỨ TỰ gán, tránh `delete` (dùng `obj.x = undefined`), và giữ mảng ĐỒNG NHẤT kiểu (đừng trộn số với chuỗi, đừng tạo hole). Nhưng đừng tối ưu mù — chỉ làm khi đo được, vì V8 vốn đã rất giỏi.',
+  },
+  {
+    id: 'js-class-field', topic: 'Prototype & OOP',
+    q: 'Khai báo `handle = () => {}` (class field) khác `handle() {}` (method) thế nào?',
+    options: [
+      'Class field nhanh hơn vì được engine biên dịch sẵn ngay từ lúc định nghĩa lớp',
+      'Hai cách giống hệt nhau sau khi biên dịch, chỉ khác nhau ở cú pháp khi viết mã nguồn',
+      'Method nằm trên PROTOTYPE (dùng chung); arrow field tạo hàm RIÊNG mỗi instance, giữ đúng `this` nhưng tốn RAM',
+      'Arrow field nằm trên prototype còn method thường được sao chép vào từng instance',
+    ], answer: 2,
+    explain: 'Method thường sống trên `Class.prototype` — mọi instance dùng CHUNG một hàm, nhưng `this` phụ thuộc call-site nên tách ra làm callback là mất `this`. Arrow class field được gán trong constructor cho TỪNG instance, bắt `this` theo lexical scope nên truyền đi đâu cũng đúng — đổi lại 10.000 instance là 10.000 hàm. Hệ quả khác: field không nằm trên prototype nên override/gọi `super` không áp dụng, và không stub được qua prototype khi viết test. Quy tắc thực dụng: dùng method thường, chỉ dùng arrow field cho handler cần truyền ra ngoài (và với ít instance).',
+  },
+  {
+    id: 'js-concurrency-limit', topic: 'Bất đồng bộ',
+    q: 'Cần gọi API cho 5.000 phần tử — `await Promise.all(items.map(call))` có vấn đề gì?',
+    options: [
+      'Không có vấn đề gì, `Promise.all` vốn tự giới hạn số request đồng thời theo cấu hình mạng',
+      'Bắn 5.000 request CÙNG LÚC — dính rate limit, cạn socket, đối tác sập; cần giới hạn số việc đồng thời',
+      '`Promise.all` chạy tuần tự từng phần tử nên sẽ rất chậm với mảng lớn như vậy',
+      '`map` không hỗ trợ hàm async nên các Promise trả về sẽ bị bỏ qua hoàn toàn',
+    ], answer: 1,
+    explain: '`Promise.all` KHÔNG điều tiết — `map` khởi động tất cả ngay lập tức. Hậu quả: 429 từ đối tác, cạn cổng ephemeral, pool DB hết connection, RAM phình vì 5.000 response cùng lúc, và một lỗi làm cả mẻ hỏng (fail-fast). Cách đúng: giới hạn đồng thời — `p-limit(10)`, `Promise.all` theo LÔ, hoặc async pool tự viết. Kèm theo: dùng `allSettled` nếu chấp nhận một phần lỗi, thêm retry có backoff, và nếu công việc dài thì đẩy sang queue với worker có thể scale thay vì làm hết trong một request.',
+  },
+  {
+    id: 'js-event-delegation', topic: 'DOM & trình duyệt',
+    q: 'Event delegation là gì và dựa trên cơ chế nào?',
+    options: [
+      'Gắn listener lên PHẦN TỬ CHA và dựa vào bubbling để xử lý sự kiện của mọi con, kể cả con thêm sau',
+      'Chia nhỏ listener ra nhiều luồng để xử lý song song khi có quá nhiều sự kiện cùng lúc',
+      'Chuyển việc xử lý sự kiện sang server để giảm khối lượng JavaScript chạy ở trình duyệt',
+      'Gắn cùng một hàm xử lý cho nhiều loại sự kiện khác nhau để tiết kiệm mã nguồn',
+    ], answer: 0,
+    explain: 'Sự kiện DOM đi ba pha: capture (từ ngoài vào), target, rồi BUBBLE (từ trong ra). Delegation lợi dụng pha bubble: một listener ở `<ul>` xử lý click của mọi `<li>` — ít listener hơn (tiết kiệm bộ nhớ, tránh leak khi gỡ phần tử) và tự động áp dụng cho phần tử THÊM SAU. Phân biệt `e.target` (nơi sự kiện thật sự xảy ra) với `e.currentTarget` (nơi gắn listener) và dùng `e.target.closest(".item")` để tìm đúng phần tử quan tâm. Lưu ý: một số sự kiện không bubble (`focus`, `blur` — dùng `focusin`/`focusout` thay thế). Chính React cũng dùng cơ chế này ở gốc cây.',
+  },
+  {
+    id: 'js-storage', topic: 'DOM & trình duyệt',
+    q: 'localStorage, sessionStorage và cookie khác nhau ở điểm nào quan trọng nhất?',
+    options: [
+      'Cả ba đều tự động gửi kèm theo mọi request, chỉ khác nhau ở dung lượng tối đa lưu được',
+      'localStorage lưu vĩnh viễn theo origin; sessionStorage mất khi đóng tab; cookie thì tự GỬI KÈM mọi request',
+      'localStorage là API bất đồng bộ nên không chặn luồng chính khi ghi dữ liệu lớn',
+      'sessionStorage được chia sẻ giữa mọi tab của cùng một trang trong suốt phiên làm việc',
+    ], answer: 1,
+    explain: 'Ba khác biệt cần nhớ: (1) VÒNG ĐỜI — localStorage tồn tại tới khi bị xoá, sessionStorage chỉ trong TAB đó (mở tab mới là kho rỗng), cookie theo `Expires`/`Max-Age`; (2) cookie tự động gửi kèm MỌI request tới domain (nên đừng nhét dữ liệu lớn, và phải đặt `SameSite` chống CSRF), còn hai kho kia thì không; (3) BẢO MẬT — cookie `HttpOnly` thì JS không đọc được, nên an toàn hơn hẳn cho token phiên; mọi thứ trong localStorage đều đọc được bởi bất kỳ script nào chạy trên trang, XSS là mất token. Ngoài ra localStorage là API ĐỒNG BỘ, ghi dữ liệu lớn sẽ chặn luồng chính — dữ liệu lớn thì dùng IndexedDB.',
+  },
+  {
+    id: 'js-web-worker', topic: 'DOM & trình duyệt',
+    q: 'Web Worker trên trình duyệt giải quyết bài toán gì?',
+    options: [
+      'Chạy JS ngay trên server để giảm bớt khối lượng tính toán cho thiết bị của người dùng',
+      'Tăng tốc mạng bằng cách tải nhiều tài nguyên song song trên các kết nối riêng biệt',
+      'Chạy tính toán nặng trên luồng KHÁC để UI không đứng — nhưng không truy cập được DOM của trang',
+      'Giữ ứng dụng chạy nền ngay cả khi người dùng đã đóng hẳn tab trình duyệt',
+    ], answer: 2,
+    explain: 'Trình duyệt chạy JS và render trên CÙNG một luồng, nên một vòng lặp nặng làm cả trang đơ, không cuộn không bấm được. Web Worker chạy script ở luồng riêng: parse file lớn, xử lý ảnh, mã hoá, tính toán bảng — UI vẫn mượt. Giới hạn: KHÔNG chạm được DOM, `window`, hay biến của luồng chính; trao đổi qua `postMessage` với structured clone (copy — payload lớn thì dùng transferable/`SharedArrayBuffer`). Đây chính là bản trình duyệt của `worker_threads` trong Node. Muốn chạy nền sau khi đóng tab thì đó là việc của Service Worker, không phải Web Worker.',
+  },
+  {
+    id: 'js-module-side-effect', topic: 'Module',
+    q: 'Code ở top-level của một module chạy khi nào và bao nhiêu lần?',
+    options: [
+      'Chạy mỗi lần có một file khác `import` module đó, nên nhiều nơi import là chạy nhiều lần',
+      'Chạy MỘT lần khi module được nạp lần đầu, theo thứ tự đồ thị phụ thuộc — side effect ở đó cản tree-shaking',
+      'Chạy lười vào lần đầu tiên một hàm export của module được gọi tới',
+      'Chạy song song với các module khác nên không thể dựa vào thứ tự khởi tạo giữa chúng',
+    ], answer: 1,
+    explain: 'Module được cache nên thân file chỉ chạy MỘT lần cho cả tiến trình — đó là lý do biến top-level thành singleton. Thứ tự: module phụ thuộc được đánh giá trước (depth-first theo đồ thị import). Hệ quả cần cẩn thận: SIDE EFFECT lúc import (mở kết nối DB, đọc file, đăng ký handler toàn cục, gọi `dotenv.config()`) khiến thứ tự import trở thành một phần logic — khó test, khó suy luận, và bundler KHÔNG dám tree-shake module đó vì sợ mất side effect (trừ khi package khai `"sideEffects": false`). Thực hành tốt: module chỉ định nghĩa, việc khởi tạo gọi tường minh trong hàm `bootstrap()`.',
+  },
+  {
+    id: 'js-recursion-stack', topic: 'Cú pháp & runtime',
+    q: 'Đệ quy 100.000 tầng trong JS thì chuyện gì xảy ra?',
+    options: [
+      '`RangeError: Maximum call stack size exceeded` — JS thực tế không có tối ưu đệ quy đuôi (TCO)',
+      'Chạy bình thường vì V8 tự chuyển đệ quy đuôi thành vòng lặp trong mọi trường hợp',
+      'Treo vô hạn vì mỗi lần gọi tạo một microtask mới xếp vào hàng đợi không bao giờ hết',
+      'Tự động tràn sang heap khi stack đầy nên chỉ chậm đi chứ không gây lỗi gì',
+    ], answer: 0,
+    explain: 'Mỗi lời gọi hàm chiếm một frame trên call stack; stack có giới hạn (thường ~10.000–15.000 tầng, tuỳ engine và kích thước frame) nên vượt qua là `RangeError`. Tail Call Optimization CÓ trong chuẩn ES2015 nhưng thực tế chỉ Safari/JavaScriptCore cài đặt — V8 và SpiderMonkey thì không, nên đừng trông cậy vào nó. Cách xử lý: viết lại thành VÒNG LẶP, tự quản lý một stack tường minh khi duyệt cây/đồ thị sâu, chia nhỏ công việc rồi nhả qua `setTimeout`/`setImmediate`, hoặc dùng trampoline. Cũng nhớ: dữ liệu do người dùng cung cấp (JSON lồng rất sâu) có thể là véc-tơ tấn công làm tràn stack.',
+  },
 ];
