@@ -954,6 +954,82 @@ test('wiring: chế độ 🐳 DevOps có đủ id + mode button + script + engi
   assert.ok(sw.includes("'devops-quiz.js'"), 'sw.js PRECACHE thiếu devops-quiz.js');
 });
 
+/* Ba mảng LÝ THUYẾT (JS · Node · React): tách riêng để luyện chuyên đề ở tab 🧠 Tư duy,
+ * đồng thời trộn chung thành vòng 📖 Lý thuyết trong tab 🎯 Phỏng vấn. */
+const THEORY_BANKS = [
+  { key: 'JS_QUIZ', file: 'js-quiz.js', mode: 'js', prefix: 'js-', doneKey: 'prep-js-done', label: '🟨 JavaScript' },
+  { key: 'NODE_QUIZ', file: 'node-quiz.js', mode: 'node', prefix: 'node-', doneKey: 'prep-node-done', label: '🟢 Node.js' },
+  { key: 'REACT_QUIZ', file: 'react-quiz.js', mode: 'react', prefix: 'react-', doneKey: 'prep-react-done', label: '⚛️ React' },
+];
+
+test('bank lý thuyết JS/Node/React: id duy nhất, answer hợp lệ, options ≥ 3, đủ field', () => {
+  for (const b of THEORY_BANKS) {
+    const qs = loadWindow(b.file)[b.key];
+    assert.ok(Array.isArray(qs) && qs.length >= 30, `${b.key} phải ≥30 câu (đang ${qs && qs.length})`);
+    const ids = qs.map(q => q.id);
+    assert.strictEqual(new Set(ids).size, ids.length, `id ${b.file} trùng: ` + ids.filter((x, i) => ids.indexOf(x) !== i));
+    for (const q of qs) {
+      assert.ok(q.q && q.explain && q.topic, `${b.key} ${q.id} thiếu field`);
+      assert.ok(q.id.startsWith(b.prefix), `${b.key} ${q.id} thiếu prefix ${b.prefix}`);
+      assert.ok(Array.isArray(q.options) && q.options.length >= 3, `${b.key} ${q.id}: <3 lựa chọn`);
+      assert.ok(Number.isInteger(q.answer) && q.answer >= 0 && q.answer < q.options.length, `${b.key} ${q.id}: answer ngoài range`);
+      assert.strictEqual(new Set(q.options).size, q.options.length, `${b.key} ${q.id}: options trùng nhau`);
+      // Đây là bank LÝ THUYẾT — giải thích phải đủ dày để đọc xong là hiểu, không chỉ nhắc lại đáp án
+      assert.ok(q.explain.length >= 120, `${b.key} ${q.id}: giải thích quá ngắn (${q.explain.length} ký tự)`);
+    }
+    assert.ok(new Set(qs.map(q => q.topic)).size >= 5, `${b.key} phải phủ ≥5 chủ đề`);
+  }
+});
+
+test('wiring: 3 chế độ 🟨 JS · 🟢 Node · ⚛️ React đủ id + nút mode + script + engine + QUIZ_MODES', () => {
+  for (const b of THEORY_BANKS) {
+    assert.ok(HTML.includes(`id="think-${b.mode}"`), `thiếu #think-${b.mode}`);
+    assert.ok(HTML.includes(`id="${b.mode}-body"`), `thiếu #${b.mode}-body`);
+    assert.ok(HTML.includes(`data-mode="${b.mode}"`), `thiếu nút mode ${b.mode}`);
+    assert.ok(HTML.includes(`data-cov="${b.mode}"`), `thiếu badge độ phủ ${b.mode}`);
+    assert.ok(HTML.includes(`src="${b.file}"`), `index.html thiếu script ${b.file}`);
+    assert.ok(HTML.indexOf(`src="${b.file}"`) < HTML.indexOf('src="app.js"'), `${b.file} phải nạp trước app.js`);
+    assert.ok(new RegExp(`window\\.${b.key}`).test(APP), `QUIZ_MODES chưa trỏ tới window.${b.key}`);
+    assert.ok(new RegExp(`${b.mode}: \\{[\\s\\S]*?doneKey: '${b.doneKey}'`).test(APP), `QUIZ_MODES thiếu entry ${b.mode}`);
+    assert.ok(new RegExp(`document\\.getElementById\\('think-${b.mode}'\\)\\.hidden = m !== '${b.mode}'`).test(APP),
+      `setThinkMode chưa toggle think-${b.mode}`);
+    assert.ok(SW.includes(`'${b.file}'`), `sw.js PRECACHE thiếu ${b.file}`);
+    const keys = APP.slice(APP.indexOf('const PREP_KEYS'), APP.indexOf('const PREP_KEYS') + 2600);
+    assert.ok(keys.includes(`'${b.doneKey}'`) && keys.includes(`'prep-${b.mode}-best'`), `PREP_KEYS thiếu ${b.doneKey}/prep-${b.mode}-best`);
+  }
+  // initThink phải render cả 3 (không thì mở tab lần đầu là panel trắng)
+  for (const fn of ['renderJsQuiz()', 'renderNodeQuiz()', 'renderReactQuiz()'])
+    assert.ok(APP.includes(fn), `initThink chưa gọi ${fn}`);
+  // Có mặt trong TECH_QUIZ_MODES → tự vào panel Dashboard, gợi ý mảng yếu, đề thi thử & ôn câu sai
+  const tech = APP.slice(APP.indexOf('const TECH_QUIZ_MODES'), APP.indexOf('const TECH_QUIZ_MODES') + 200);
+  for (const b of THEORY_BANKS) assert.ok(tech.includes(`'${b.mode}'`), `TECH_QUIZ_MODES thiếu ${b.mode}`);
+});
+
+test('wiring: 📖 vòng lý thuyết dùng CHUNG được với buổi phỏng vấn (2 kiểu bài + trộn 3 kho)', () => {
+  const plans = APP.slice(APP.indexOf('const IV_PLANS'), APP.indexOf('const IV_PLAN_KEYS'));
+  const planRounds = k => {
+    const rest = plans.slice(plans.indexOf(`  ${k}: {`) + 1);
+    const end = rest.search(/\n {2}\w+: \{/);
+    return [...(end < 0 ? rest : rest.slice(0, end)).matchAll(/key: '(\w+)'/g)].map(m => m[1]);
+  };
+  // Làm RIÊNG: kiểu "chỉ lý thuyết" mở màn bằng vòng theory
+  assert.deepStrictEqual(planRounds('theory'), ['theory', 'readcode'],
+    `kiểu "chỉ lý thuyết" phải là lý thuyết → đọc code (đang là ${planRounds('theory')})`);
+  // Làm CHUNG: buổi đầy đủ có chèn thêm vòng lý thuyết, IQ vẫn là phần nặng nhất
+  assert.deepStrictEqual(planRounds('fulltheory'), ['english', 'theory', 'iq', 'readcode'],
+    `kiểu "phỏng vấn + lý thuyết" phải đủ 4 vòng (đang là ${planRounds('fulltheory')})`);
+  const ns = Object.fromEntries([...plans.slice(plans.indexOf('  fulltheory: {')).matchAll(/key: '(\w+)'[\s\S]*?n: (\d+)/g)].map(m => [m[1], +m[2]]));
+  assert.ok(ns.iq > ns.theory + ns.english, `IQ vẫn phải chiếm phần lớn buổi (IQ ${ns.iq} vs ${ns.theory + ns.english})`);
+  // runRound điều hướng đúng + vòng theory trộn ĐỦ ba kho, mỗi kho vẫn "không hỏi lại câu buổi trước"
+  assert.ok(/r\.key === 'theory'\) startMcqRound\(pickTheoryQs\(r\.n\), r\)/.test(APP), 'runRound chưa nối vòng theory');
+  const pick = APP.slice(APP.indexOf('function pickTheoryQs'), APP.indexOf('const IV_BIGO_MAX'));
+  for (const b of THEORY_BANKS) assert.ok(pick.includes(`window.${b.key}`), `pickTheoryQs thiếu kho ${b.key}`);
+  assert.ok(/ivPickFresh\(mode, bank, quota\[i\]\)/.test(pick), 'vòng theory chưa dùng ivPickFresh (sẽ hỏi lại câu buổi trước)');
+  // Màn setup phải đếm được "còn X/Y câu chưa hỏi" cho vòng theory
+  assert.ok(/theory: \(\) => \[\['js',[\s\S]*?\['react',/.test(APP), 'ivFreshLine thiếu nguồn bank cho vòng theory');
+  assert.ok(/theory: '📖 Lý thuyết'/.test(APP), 'IV_ROUND_LABEL thiếu nhãn vòng theory');
+});
+
 /* CHỐNG "LỘ ĐÁP ÁN": tật kinh điển của trắc nghiệm tự soạn là đáp án đúng được viết
  * dài & chi tiết nhất, còn distractor cụt lủn ⇒ nhìn phát chọn được mà không cần hiểu.
  * Luật: đáp án đúng KHÔNG được vừa là dài nhất, vừa dài hơn trung bình distractor ≥40%
@@ -966,6 +1042,7 @@ test('mọi bank trắc nghiệm: đáp án đúng không được "dài nhất 
     ['IQ_QUESTIONS', 'iq-questions.js'], ['API_QUIZ', 'api-quiz.js'], ['SQL_DRILL', 'sql-drill.js'],
     ['CLI_QUIZ', 'cli-quiz.js'], ['JAVA_QUIZ', 'java-quiz.js'], ['REDIS_QUIZ', 'redis-quiz.js'],
     ['DIST_QUIZ', 'dist-quiz.js'], ['DEVOPS_QUIZ', 'devops-quiz.js'], ['COMPLEXITY_QUIZ', 'complexity-quiz.js'],
+    ['JS_QUIZ', 'js-quiz.js'], ['NODE_QUIZ', 'node-quiz.js'], ['REACT_QUIZ', 'react-quiz.js'],
   ];
   const bad = [];
   for (const [key, file] of BANKS) {
@@ -1020,8 +1097,8 @@ test('wiring: chế độ ⏱️ Độ phức tạp có đủ id + mode button +
 
 test('wiring: 🎯 phỏng vấn — 3 phần (Anh · IQ · Code), IQ chiếm phần lớn', () => {
   assert.ok(/const IV_PLANS = \{[\s\S]*?full:[\s\S]*?open:[\s\S]*?code:/.test(APP), 'thiếu 3 kiểu bài IV_PLANS (full/open/code)');
-  assert.ok(/IV_PLAN_KEYS = \['full', 'iqonly', 'iqcode', 'open', 'code'\]/.test(APP),
-    'IV_PLAN_KEYS phải liệt kê đủ 5 kiểu (có "chỉ IQ" và "IQ + hỏi code")');
+  assert.ok(/IV_PLAN_KEYS = \['full', 'fulltheory', 'theory', 'iqonly', 'iqcode', 'open', 'code'\]/.test(APP),
+    'IV_PLAN_KEYS phải liệt kê đủ 7 kiểu (thêm "phỏng vấn + lý thuyết" và "chỉ lý thuyết")');
   // Buổi mặc định ĐÚNG 3 vòng: tiếng Anh → IQ → code, và IQ phải NHIỀU HƠN hai vòng kia cộng lại
   const full = APP.slice(APP.indexOf('  full: {'), APP.indexOf('  open: {'));
   const rk = [...full.matchAll(/key: '(\w+)'/g)].map(m => m[1]);
@@ -1050,7 +1127,7 @@ test('wiring: 🎯 phỏng vấn — 3 phần (Anh · IQ · Code), IQ chiếm ph
   const plans = APP.slice(APP.indexOf('const IV_PLANS'), APP.indexOf('const IV_PLAN_KEYS'));
   const iqNs = [...plans.matchAll(/key: 'iq', type: 'iq'[^}]*?n: (\d+)/g)].map(m => +m[1]);
   const codeNs = [...plans.matchAll(/key: 'code', type: 'code'[^}]*?n: (\d+)/g)].map(m => +m[1]);
-  assert.ok(iqNs.length === 5 && iqNs.every(n => n >= 16), `vòng IQ phải ≥16 câu ở cả 5 kiểu (được ${iqNs})`);
+  assert.ok(iqNs.length === 6 && iqNs.every(n => n >= 16), `vòng IQ phải ≥16 câu ở cả 6 kiểu có IQ (được ${iqNs})`);
   // Lấy đúng khối của MỘT kiểu bài (cắt tới kiểu kế tiếp) — không thì kiểu sau bị tính lẫn vào
   const planRounds = k => {
     const rest = plans.slice(plans.indexOf(`  ${k}: {`) + 1);

@@ -3898,6 +3898,7 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-api-done', 'prep-api-best', 'prep-sql-done', 'prep-sql-best', 'prep-cli-done', 'prep-cli-best',
   'prep-bigo-done', 'prep-bigo-best',
   'prep-java-done', 'prep-java-best', 'prep-redis-done', 'prep-redis-best', 'prep-dist-done', 'prep-dist-best', 'prep-devops-done', 'prep-devops-best',
+  'prep-js-done', 'prep-js-best', 'prep-node-done', 'prep-node-best', 'prep-react-done', 'prep-react-best',
   'prep-en-done', 'prep-sit-done', 'prep-readiness-log',
   'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date',
   'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned', 'prep-exam-history', 'prep-fc-lang', 'prep-iv-plan', 'prep-iv-seen',
@@ -4891,7 +4892,7 @@ let thinkInit = false, thinkMode = 'code';
 function initThink() {
   document.querySelectorAll('.think-mode').forEach(b => { b.onclick = () => setThinkMode(b.dataset.mode); });
   setThinkMode(thinkMode);
-  if (!thinkInit) { renderCodingFilters(); renderCodingList(); renderIQ(); renderOutputQuiz(); renderBigoQuiz(); renderDebugList(); renderApiQuiz(); renderSqlQuiz(); renderCliQuiz(); renderJavaQuiz(); renderRedisQuiz(); renderDistQuiz(); renderDevopsQuiz(); thinkInit = true; }
+  if (!thinkInit) { renderCodingFilters(); renderCodingList(); renderIQ(); renderOutputQuiz(); renderBigoQuiz(); renderDebugList(); renderApiQuiz(); renderSqlQuiz(); renderCliQuiz(); renderJavaQuiz(); renderRedisQuiz(); renderDistQuiz(); renderDevopsQuiz(); renderJsQuiz(); renderNodeQuiz(); renderReactQuiz(); thinkInit = true; }
   refreshThinkBadges();
 }
 
@@ -4911,6 +4912,9 @@ function setThinkMode(m) {
   document.getElementById('think-redis').hidden = m !== 'redis';
   document.getElementById('think-dist').hidden = m !== 'dist';
   document.getElementById('think-devops').hidden = m !== 'devops';
+  document.getElementById('think-js').hidden = m !== 'js';
+  document.getElementById('think-node').hidden = m !== 'node';
+  document.getElementById('think-react').hidden = m !== 'react';
   document.getElementById('think-review').hidden = m !== 'review';
   document.getElementById('think-exam').hidden = m !== 'exam';
   if (m === 'review') renderReview();
@@ -5170,6 +5174,32 @@ const QUIZ_MODES = {
     questionHtml: q => `<p class="oq-question">${escHtml(q.q)}</p>`,
     highlight: false,
   },
+  // 3 mảng LÝ THUYẾT (JS · Node · React) — hỏi khái niệm/cơ chế, không phải đoán output.
+  // Câu nào có q.code thì kèm snippet minh hoạ; đa số chỉ có chữ.
+  js: {
+    label: '🟨 JavaScript', doneKey: 'prep-js-done', data: () => window.JS_QUIZ || [],
+    ask: 'Chọn đáp án đúng:',
+    optionHtml: o => `<span class="oq-otext">${escHtml(o)}</span>`,
+    questionHtml: q => `<p class="oq-question">${escHtml(q.q)}</p>` +
+      (q.code ? `<pre><code class="language-js">${escHtml(q.code)}</code></pre>` : ''),
+    highlight: true,
+  },
+  node: {
+    label: '🟢 Node.js', doneKey: 'prep-node-done', data: () => window.NODE_QUIZ || [],
+    ask: 'Chọn đáp án đúng:',
+    optionHtml: o => `<span class="oq-otext">${escHtml(o)}</span>`,
+    questionHtml: q => `<p class="oq-question">${escHtml(q.q)}</p>` +
+      (q.code ? `<pre><code class="language-js">${escHtml(q.code)}</code></pre>` : ''),
+    highlight: true,
+  },
+  react: {
+    label: '⚛️ React', doneKey: 'prep-react-done', data: () => window.REACT_QUIZ || [],
+    ask: 'Chọn đáp án đúng:',
+    optionHtml: o => `<span class="oq-otext">${escHtml(o)}</span>`,
+    questionHtml: q => `<p class="oq-question">${escHtml(q.q)}</p>` +
+      (q.code ? `<pre><code class="language-jsx">${escHtml(q.code)}</code></pre>` : ''),
+    highlight: true,
+  },
   // 2 vòng trắc nghiệm của Phỏng vấn tổng hợp cũng đổ câu sai về đây (ghi ở answerMcq).
   english: {
     label: '🇬🇧 Tiếng Anh', doneKey: 'prep-en-done', data: () => window.ENGLISH_QUESTIONS || [],
@@ -5189,7 +5219,7 @@ const QUIZ_MODES = {
 
 /** Các mode trắc nghiệm KỸ THUẬT (loại english/situational — thuộc trục ngôn ngữ/hành vi).
  *  Nguồn DUY NHẤT dùng chung cho panel Dashboard 🧠 Tư duy + gợi ý "luyện mảng yếu nhất" ở Hôm nay. */
-const TECH_QUIZ_MODES = ['output', 'bigo', 'api', 'sql', 'cli', 'java', 'redis', 'dist', 'devops'];
+const TECH_QUIZ_MODES = ['output', 'bigo', 'api', 'sql', 'cli', 'java', 'redis', 'dist', 'devops', 'js', 'node', 'react'];
 /** Key lưu điểm cao nhất của mode (output dùng tiền tố 'oq' lịch sử, còn lại theo tên mode). */
 const bestKeyOf = mode => mode === 'output' ? 'prep-oq-best' : `prep-${mode}-best`;
 
@@ -5272,6 +5302,36 @@ const devopsQuiz = makeQuiz({
   resultMsg: pct => pct >= 80 ? 'Rất chắc Docker/K8s — tự tin phần DevOps khi phỏng vấn!' : pct >= 50 ? 'Khá ổn — ôn thêm image layer, Pod/Deployment/Service, probe và HPA.' : 'Docker/K8s hay bị hỏi cho Backend — đọc kỹ giải thích từng câu nhé.',
 });
 function renderDevopsQuiz() { devopsQuiz.render(); }
+
+// ----- 3 chế độ LÝ THUYẾT: 🟨 JavaScript · 🟢 Node.js · ⚛️ React (dùng chung engine makeQuiz) -----
+// Tách riêng theo công nghệ để luyện chuyên đề + có badge độ phủ riêng; vòng 📖 Lý thuyết của
+// tab 🎯 Phỏng vấn thì TRỘN cả ba (xem pickTheoryQs).
+const jsQuiz = makeQuiz({
+  ...QUIZ_MODES.js,
+  mode: 'js',
+  bodyId: 'js-body',
+  bestKey: 'prep-js-best',
+  resultMsg: pct => pct >= 80 ? 'Nền JavaScript rất chắc — trả lời được cả câu hỏi đào sâu!' : pct >= 50 ? 'Khá ổn — ôn thêm closure, this, event loop và prototype.' : 'JS là nền của cả Node lẫn React — đọc kỹ giải thích từng câu nhé.',
+});
+function renderJsQuiz() { jsQuiz.render(); }
+
+const nodeQuiz = makeQuiz({
+  ...QUIZ_MODES.node,
+  mode: 'node',
+  bodyId: 'node-body',
+  bestKey: 'prep-node-best',
+  resultMsg: pct => pct >= 80 ? 'Rất chắc Node.js — sẵn sàng cho vòng phỏng vấn Backend!' : pct >= 50 ? 'Khá ổn — ôn thêm event loop, stream/backpressure và xử lý lỗi.' : 'Đây là phần lõi của vị trí Node.js — đọc kỹ giải thích từng câu nhé.',
+});
+function renderNodeQuiz() { nodeQuiz.render(); }
+
+const reactQuiz = makeQuiz({
+  ...QUIZ_MODES.react,
+  mode: 'react',
+  bodyId: 'react-body',
+  bestKey: 'prep-react-best',
+  resultMsg: pct => pct >= 80 ? 'Nắm rất chắc React — cả phần hooks và hiệu năng!' : pct >= 50 ? 'Khá ổn — ôn thêm key/reconciliation, deps của effect và re-render.' : 'React hay bị hỏi sâu về hooks & render — đọc kỹ giải thích từng câu nhé.',
+});
+function renderReactQuiz() { reactQuiz.render(); }
 
 /** Render nút đáp án theo thứ tự hiển thị NGẪU NHIÊN (chống học vẹt vị trí);
  *  data-i giữ CHỈ SỐ GỐC nên mọi hàm chấm phải so theo dataset.i, không theo vị trí DOM. */
@@ -6725,14 +6785,32 @@ const IV_PLANS = {
       { key: 'readcode', type: 'readcode', label: '⌨️ Hỏi code', n: 10, desc: 'Đọc code đoán OUTPUT & đoán INPUT — chỉ kèm 1–2 câu Big-O.' },
     ],
   },
+  // Hai kiểu có vòng 📖 LÝ THUYẾT (JS · Node · React). Đặt CUỐI object vì các test soi
+  // lát cắt full→open; thứ tự hiển thị do IV_PLAN_KEYS quyết định.
+  theory: {
+    label: '📖 Chỉ lý thuyết', hint: 'Bỏ IQ & tiếng Anh — 16 câu lý thuyết JS · Node.js · React rồi 6 câu đọc code.',
+    rounds: [
+      { key: 'theory', type: 'mcq', label: '📖 Lý thuyết JS · Node · React', n: 16, desc: 'Hỏi khái niệm & cơ chế: closure/this/event loop, stream & lỗi Node, hooks & render React.' },
+      { key: 'readcode', type: 'readcode', label: '⌨️ Code', n: 6, desc: 'Đọc code đoán OUTPUT & đoán INPUT — chỉ kèm 1 câu Big-O.' },
+    ],
+  },
+  fulltheory: {
+    label: '🏅 Phỏng vấn + lý thuyết', hint: 'Buổi đầy đủ, chèn thêm vòng lý thuyết JS/Node/React ngay sau phần tiếng Anh.',
+    rounds: [
+      { key: 'english', type: 'mcq', label: '🇬🇧 Tiếng Anh', n: 8, desc: 'Giao tiếp công sở: sát nghĩa, sắc thái & cách phản hồi.' },
+      { key: 'theory', type: 'mcq', label: '📖 Lý thuyết JS · Node · React', n: 10, desc: 'Vòng hỏi kiến thức nền — trộn đều ba mảng, ưu tiên câu chưa từng hỏi.' },
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 20, desc: 'Phần NẶNG KÝ nhất: nhìn hình, dãy số, logic, toán nhanh — tính giờ, được nhảy câu tự do.' },
+      { key: 'readcode', type: 'readcode', label: '⌨️ Code', n: 8, desc: 'Đọc code đoán OUTPUT & đoán INPUT — chỉ kèm 1–2 câu Big-O.' },
+    ],
+  },
 };
-const IV_PLAN_KEYS = ['full', 'iqonly', 'iqcode', 'open', 'code'];
+const IV_PLAN_KEYS = ['full', 'fulltheory', 'theory', 'iqonly', 'iqcode', 'open', 'code'];
 const ivPlanOf = k => IV_PLANS[k] || IV_PLANS.full;
 const ivRounds = () => ivPlanOf(ivState.plan).rounds;
 const verdClass = o => o >= 80 ? 'ok' : o >= 65 ? 'good' : o >= 50 ? 'mid' : 'low';
 const verdictText = o => o >= 80 ? 'Đậu xuất sắc 🌟' : o >= 65 ? 'Đậu ✅' : o >= 50 ? 'Cân nhắc — có thể vào vòng sau 🤔' : 'Chưa đạt 💪';
 /** Nhãn ngắn của vòng để hiện trong lịch sử/báo cáo (kể cả bản ghi cũ chưa có plan). */
-const IV_ROUND_LABEL = { intro: '🏷 Giới thiệu', qa: '💬 Hỏi kiến thức', english: '🇬🇧 Tiếng Anh', iq: '🧩 IQ', readcode: '🔍 Đọc code', code: '⌨️ Viết code', situational: '🎭 Tình huống' };
+const IV_ROUND_LABEL = { intro: '🏷 Giới thiệu', qa: '💬 Hỏi kiến thức', english: '🇬🇧 Tiếng Anh', theory: '📖 Lý thuyết', iq: '🧩 IQ', readcode: '🔍 Đọc code', code: '⌨️ Viết code', situational: '🎭 Tình huống' };
 
 /** Dòng "còn X/Y câu chưa hỏi" dưới mỗi vòng ở màn setup — cho biết bao giờ kho quay vòng. */
 function ivFreshLine(r) {
@@ -6741,6 +6819,7 @@ function ivFreshLine(r) {
     situational: () => [['situational', window.SITUATIONAL_QUESTIONS]],
     iq: () => [['iq', window.IQ_QUESTIONS]],
     readcode: () => [['output', window.OUTPUT_QUIZ], ['bigo', window.COMPLEXITY_QUIZ]],
+    theory: () => [['js', window.JS_QUIZ], ['node', window.NODE_QUIZ], ['react', window.REACT_QUIZ]],
     code: () => [['code', window.CODING_PROBLEMS]],
   }[r.key === 'intro' || r.key === 'qa' ? '' : r.key];
   if (!banks) return '';
@@ -6892,6 +6971,7 @@ function runRound() {
   else if (r.type === 'code') startIvCode(r);
   else if (r.type === 'readcode') startMcqRound(pickReadCodeQs(r.n), r);
   else if (r.key === 'english') startMcqRound(pickEnglishQs(r.n), r);
+  else if (r.key === 'theory') startMcqRound(pickTheoryQs(r.n), r);
   else startMcqRound(ivPickFresh('situational', window.SITUATIONAL_QUESTIONS || [], r.n).map(q => ({ mode: 'situational', q })), r);
 }
 
@@ -6910,6 +6990,32 @@ function pickEnglishQs(n) {
     picked.push(...ivPickFresh('english', bank.filter(q => !got.has(String(q.id))), n - picked.length));
   }
   return shuffleArr(picked).map(q => ({ mode: 'english', q }));
+}
+
+/** Vòng 📖 Lý thuyết: TRỘN ĐỀU ba kho JS · Node · React (chia n thành 3 phần gần bằng nhau,
+ *  dư thì ưu tiên kho còn nhiều câu chưa hỏi nhất). Mỗi kho vẫn dùng ivPickFresh nên buổi sau
+ *  không hỏi lại câu buổi trước; kho nào cạn thì phần của nó được bù bằng kho khác. */
+function pickTheoryQs(n) {
+  const banks = [['js', window.JS_QUIZ || []], ['node', window.NODE_QUIZ || []], ['react', window.REACT_QUIZ || []]]
+    .filter(([, bank]) => bank.length);
+  if (!banks.length) return [];
+  const quota = banks.map(() => Math.floor(n / banks.length));
+  // Chia phần dư cho kho còn NHIỀU câu chưa hỏi nhất (giữ độ phủ đều giữa ba mảng)
+  const fresh = banks.map(([mode, bank]) => ivFreshCount(mode, bank));
+  for (let i = 0; i < n % banks.length; i++) {
+    const pick = fresh.map((f, idx) => [f - quota[idx], idx]).sort((a, b) => b[0] - a[0])[0][1];
+    quota[pick]++;
+  }
+  const picked = banks.flatMap(([mode, bank], i) => ivPickFresh(mode, bank, quota[i]).map(q => ({ mode, q })));
+  // Kho nào không đủ quota (bank nhỏ hơn) → bù cho đủ n từ các kho còn dư câu chưa dùng
+  if (picked.length < n) {
+    const got = new Set(picked.map(it => String(it.q.id)));
+    for (const [mode, bank] of banks) {
+      if (picked.length >= n) break;
+      picked.push(...ivPickFresh(mode, bank.filter(q => !got.has(String(q.id))), n - picked.length).map(q => ({ mode, q })));
+    }
+  }
+  return shuffleArr(picked).slice(0, n);
 }
 
 const IV_BIGO_MAX = 2; // vòng đọc code chỉ hỏi TỐI ĐA 2 câu Big-O, còn lại là đọc code đoán output/input

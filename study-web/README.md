@@ -47,9 +47,10 @@ không cần biết mẹo hard-refresh.
   SRS/từ cứng đầu dùng chung cơ chế, có 🌏 panel tiến độ + huy hiệu riêng.
 - **✍️ Luyện viết** — dịch từ, điền câu, nghe & gõ, đọc to (TTS + nhận diện giọng nói).
 - **⌨️ Luyện gõ code** — rèn phản xạ gõ, đo WPM.
-- **🧠 Tư duy** — 9 chế độ:
+- **🧠 Tư duy** — 12 chế độ:
   - 💻 **Lập trình** & 🐛 **Sửa bug** — viết/sửa code rồi **chạy test THẬT** trong trình duyệt.
-  - 🧩 **IQ**, 🔍 **Đoán output**, ⏱️ **Độ phức tạp**, 📡 **API/HTTP**, 🗄️ **SQL**, 🖥️ **CLI**, ☕ **Java**, ☁️ **Redis**, 🏗️ **Phân tán**, 🐳 **DevOps** — trắc nghiệm có giải thích.
+  - 🧩 **IQ**, 🔍 **Đoán output**, ⏱️ **Độ phức tạp**, 📡 **API/HTTP**, 🗄️ **SQL**, 🖥️ **CLI**, ☕ **Java**, ☁️ **Redis**, 🏗️ **Phân tán**, 🐳 **DevOps**,
+    🟨 **JavaScript**, 🟢 **Node.js**, ⚛️ **React** — trắc nghiệm có giải thích.
     ⏱️ **Độ phức tạp (Big-O)**: nhìn một đoạn code rồi chọn Big-O — câu hỏi tủ ngay sau khi
     bạn giải xong bài. Gồm vòng lặp lồng, chia đôi (log n), bẫy kinh điển (`includes`/`shift`/
     `unshift` trong vòng lặp), đệ quy & memo hoá, sinh tổ hợp 2ⁿ/n!, và cả **bộ nhớ phụ**.
@@ -60,6 +61,19 @@ không cần biết mẹo hard-refresh.
     ConcurrentHashMap/ThreadLocal), generics &amp; type erasure, Java 8+ (stream/Optional), OOP,
     Spring/JPA (DI, bean scope, @Transactional, N+1), **MyBatis** (#{}/${}, mapper proxy,
     cache 2 tầng), **SOLID** (5 nguyên lý).
+    📖 **Lý thuyết chuyên sâu JS · Node · React** (141 câu) — hỏi KHÁI NIỆM & CƠ CHẾ, không phải
+    đoán output; **làm riêng** ở đây theo từng mảng, hoặc **làm chung** trong buổi 🎯 Phỏng vấn:
+    🟨 **JavaScript** (53 câu): scope & hoisting/TDZ, closure, `this` & binding, prototype/class,
+    ép kiểu & tham chiếu, event loop & microtask, Promise/async, generator & iterator, Proxy,
+    WeakMap & GC, ESM vs CommonJS.
+    🟢 **Node.js** (46 câu): 6 pha event loop & libuv thread pool, `nextTick` vs `setImmediate`,
+    stream & **backpressure**, `pipeline` vs `pipe`, require cache & module wrapper,
+    cluster vs worker_threads, Buffer, EventEmitter, `uncaughtException` & **graceful shutdown**,
+    rò rỉ bộ nhớ, bảo mật (command injection, băm mật khẩu, JWT, secret, `npm ci`).
+    ⚛️ **React** (42 câu): virtual DOM & reconciliation, **key**, batching & bất biến, derived state,
+    quy tắc hooks, deps & cleanup, **stale closure**, `memo`/`useMemo`/`useCallback`, context
+    re-render, virtualization, controlled form, error boundary, StrictMode, và React 18/19
+    (Suspense, `useTransition`, `useSyncExternalStore`, RSC, hydration).
   - 🔁 **Ôn câu sai** — gom mọi câu trắc nghiệm từng chọn sai (output/API/SQL/CLI +
     vòng Tiếng Anh/Tình huống của buổi phỏng vấn) vào một phiên ôn tập trung
     (đúng → rời hàng đợi); có **📉 chip chủ đề yếu** (câu sai dồn cụm ở đâu —
@@ -94,12 +108,17 @@ không cần biết mẹo hard-refresh.
     thân (tiếng Anh) và 💬 hỏi kiến thức từ kho 180 câu — trả lời miệng/gõ, đối chiếu đáp án mẫu
     rồi **tự chấm 3 mức**; có nút 🤖 nhờ AI chấm /10 nếu có API key.
   - ⌨️ **Thêm viết code** — phần code có thêm 2 bài tự giải, chạy test thật trong trình duyệt.
+  - 🏅 **Phỏng vấn + lý thuyết** — buổi đầy đủ, chèn thêm vòng 📖 **lý thuyết 10 câu**
+    (trộn đều JS · Node · React) ngay sau phần tiếng Anh.
+  - 📖 **Chỉ lý thuyết** — bỏ IQ & tiếng Anh: 16 câu lý thuyết JS/Node/React rồi 6 câu đọc code,
+    dành cho buổi phỏng vấn thiên kiến thức nền.
 
   Kho câu đủ lớn để ôn dài hơi mà **không lặp lại**: 🧩 IQ **363 câu** (10 nhóm: dãy số ·
   chữ cái · logic · toán nhanh · tương tự · xác suất · mã hoá · hình & không gian ·
   chuyển động & công việc · chọn từ khác loại), 🇬🇧 tiếng Anh **125 câu** (82 câu giao tiếp),
-  ⌨️ code **110 câu** (đoán output 52 + Big-O 58) — chạy được **~15 buổi liên tiếp** mà
-  IQ và tiếng Anh không lặp câu nào.
+  ⌨️ code **110 câu** (đoán output 52 + Big-O 58), 📖 lý thuyết **141 câu**
+  (JS 53 · Node 46 · React 42) — chạy được **~15 buổi liên tiếp** mà IQ, tiếng Anh và
+  lý thuyết không lặp câu nào.
 
   **🚫 Không hỏi lại câu của buổi trước**: mỗi câu được ghi vào `prep-iv-seen` NGAY khi bạn trả lời
   (bỏ dở buổi cũng không bị hỏi lại), buổi sau chỉ bốc từ phần chưa hỏi — quan trọng nhất với câu

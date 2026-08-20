@@ -331,6 +331,9 @@
         <button class="think-mode" data-mode="redis">☁️ Redis <span class="think-cov" data-cov="redis" hidden></span></button>
         <button class="think-mode" data-mode="dist">🏗️ Phân tán <span class="think-cov" data-cov="dist" hidden></span></button>
         <button class="think-mode" data-mode="devops">🐳 DevOps <span class="think-cov" data-cov="devops" hidden></span></button>
+        <button class="think-mode" data-mode="js">🟨 JavaScript <span class="think-cov" data-cov="js" hidden></span></button>
+        <button class="think-mode" data-mode="node">🟢 Node.js <span class="think-cov" data-cov="node" hidden></span></button>
+        <button class="think-mode" data-mode="react">⚛️ React <span class="think-cov" data-cov="react" hidden></span></button>
       </div>
       <div class="think-group">
         <span class="think-glabel">🔁 Ôn &amp; thi</span>
@@ -433,6 +436,33 @@
         <h1>🏗️ Hệ phân tán &amp; Message Queue</h1>
         <p class="coding-intro">Trắc nghiệm cho phỏng vấn <b>Java backend senior</b>: <b>message queue</b> (vì sao dùng, Kafka partition/consumer group/thứ tự, delivery semantics, chống mất/trùng message, backlog, Kafka vs RabbitMQ), <b>CAP</b>, <b>transaction phân tán</b> (2PC/TCC/Saga/Outbox), <b>distributed ID</b> (Snowflake), <b>idempotency</b>, nhất quán (strong vs eventual). Chọn đáp án để biết đúng/sai kèm <b>giải thích</b>.</p>
         <div id="dist-body"></div>
+      </div>
+    </div>
+
+    <!-- Chế độ 🟨 JAVASCRIPT (lý thuyết chuyên sâu) -->
+    <div id="think-js" hidden>
+      <div class="oq-wrap">
+        <h1>🟨 JavaScript — lý thuyết chuyên sâu</h1>
+        <p class="coding-intro">Trắc nghiệm LÝ THUYẾT (không phải đoán output): <b>scope &amp; hoisting/TDZ</b>, <b>closure</b>, <b>this &amp; binding</b>, <b>prototype &amp; class</b>, ép kiểu &amp; tham chiếu, <b>event loop &amp; microtask</b>, Promise/async, generator &amp; iterator, Proxy/Reflect, WeakMap &amp; GC, <b>ESM vs CommonJS</b>. Chọn đáp án để biết đúng/sai kèm <b>giải thích</b>.</p>
+        <div id="js-body"></div>
+      </div>
+    </div>
+
+    <!-- Chế độ 🟢 NODE.JS (lý thuyết chuyên sâu) -->
+    <div id="think-node" hidden>
+      <div class="oq-wrap">
+        <h1>🟢 Node.js — lý thuyết chuyên sâu</h1>
+        <p class="coding-intro">Trắc nghiệm LÝ THUYẾT cho phỏng vấn Backend: <b>event loop &amp; libuv</b> (6 pha, nextTick vs setImmediate, thread pool), <b>stream &amp; backpressure</b>, module &amp; require cache, <b>cluster vs worker_threads</b>, Buffer, EventEmitter, <b>xử lý lỗi &amp; graceful shutdown</b>, rò rỉ bộ nhớ, bảo mật (injection, JWT, secret). Chọn đáp án để biết đúng/sai kèm <b>giải thích</b>.</p>
+        <div id="node-body"></div>
+      </div>
+    </div>
+
+    <!-- Chế độ ⚛️ REACT (lý thuyết chuyên sâu) -->
+    <div id="think-react" hidden>
+      <div class="oq-wrap">
+        <h1>⚛️ React — lý thuyết chuyên sâu</h1>
+        <p class="coding-intro">Trắc nghiệm LÝ THUYẾT cho phỏng vấn Frontend/Fullstack: <b>virtual DOM &amp; reconciliation</b>, <b>key</b>, state &amp; props (batching, bất biến, derived state), <b>hooks</b> (quy tắc, deps, cleanup, stale closure), hiệu năng (<b>memo/useMemo/useCallback</b>, context re-render, virtualization), form &amp; sự kiện, error boundary, và <b>React 18/19</b> (Suspense, transition, RSC, hydration). Chọn đáp án để biết đúng/sai kèm <b>giải thích</b>.</p>
+        <div id="react-body"></div>
       </div>
     </div>
 
@@ -567,6 +597,9 @@
   <script src="redis-quiz.js"></script>
   <script src="dist-quiz.js"></script>
   <script src="devops-quiz.js"></script>
+  <script src="js-quiz.js"></script>
+  <script src="node-quiz.js"></script>
+  <script src="react-quiz.js"></script>
   <script src="star-questions.js"></script>
   <script src="reverse-questions.js"></script>
   <script src="english-phrases.js"></script>
