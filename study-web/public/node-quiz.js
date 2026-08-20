@@ -966,4 +966,93 @@ window.NODE_QUIZ = [
     ], answer: 2,
     explain: 'Client cần một thứ MÁY ĐỌC ĐƯỢC và ổn định để rẽ nhánh: `{"code":"INSUFFICIENT_BALANCE","message":"...","traceId":"..."}` — code không đổi kể cả khi bạn sửa lời văn hay dịch sang ngôn ngữ khác. Kèm HTTP status đúng ngữ nghĩa (400 sai dữ liệu, 401 chưa xác thực, 403 không đủ quyền, 404 không tồn tại, 409 xung đột, 422 không hợp lệ về nghiệp vụ, 429 quá tần suất, 5xx lỗi phía server) — trả 200 cho mọi thứ làm hỏng cache, retry và giám sát tự động. Đừng trả stack trace: nó lộ đường dẫn, phiên bản thư viện, cấu trúc nội bộ cho kẻ tấn công — hãy log đầy đủ ở server rồi trả về `traceId` để đối chiếu. RFC 7807 (`application/problem+json`) là một chuẩn sẵn có.',
   },
+  // ===== Đợt #7 =====
+  {
+    id: 'node-db-failover', topic: 'Kiến trúc',
+    q: 'DB primary failover sang replica, app Node vẫn báo lỗi kết nối hàng phút — vì sao?',
+    options: [
+      'Vì Node cache địa chỉ IP của database vĩnh viễn nên không nhìn thấy máy chủ mới',
+      'Vì pool giữ các connection ĐÃ CHẾT: cần keepalive, timeout ngắn và tự loại bỏ connection hỏng',
+      'Vì database mới cần thời gian đánh index lại trước khi nhận được kết nối',
+      'Vì Node chỉ mở lại kết nối mới khi tiến trình được khởi động lại hoàn toàn',
+    ], answer: 1,
+    explain: 'Sau failover, các connection trong pool vẫn "trông như" đang mở nhưng thực ra đã chết — mỗi truy vấn phải chờ tới khi TCP timeout mới biết. Cần: bật keepalive, đặt `connectionTimeout`/`query_timeout` ngắn, cấu hình pool tự kiểm tra và loại connection hỏng (`testOnBorrow`, `idleTimeoutMillis`), và retry ở tầng ứng dụng cho lỗi kết nối (chỉ với truy vấn idempotent). Kèm theo: dùng DNS/endpoint của cluster thay vì IP cứng và chú ý TTL của DNS cache; đặt `max_connections` dư cho lúc cả cụm cùng kết nối lại; và readiness probe nên fail khi DB không truy cập được để pod tạm rút khỏi load balancer.',
+  },
+  {
+    id: 'node-dlq', topic: 'Kiến trúc',
+    q: 'Một message trong queue luôn xử lý lỗi và bị retry vô hạn — xử lý thế nào?',
+    options: [
+      'Tăng số lần retry lên thật cao để chắc chắn cuối cùng nó cũng sẽ thành công',
+      'Bắt lỗi rồi ack luôn để message biến mất, tránh làm nghẽn các message phía sau',
+      'Giới hạn số lần thử rồi chuyển sang DEAD LETTER QUEUE để điều tra và phát lại sau',
+      'Xoá toàn bộ queue rồi tạo lại từ đầu để loại bỏ message gây lỗi khỏi hệ thống',
+    ], answer: 2,
+    explain: '"Poison message" (dữ liệu hỏng, bug trong code xử lý, bản ghi phụ thuộc đã bị xoá) sẽ không bao giờ thành công — retry vô hạn làm nghẽn consumer và đốt tài nguyên. Sau N lần thử (kèm backoff), chuyển message sang DLQ: nó rời khỏi luồng chính, hệ thống chạy tiếp, còn bạn có nguyên message để điều tra và PHÁT LẠI sau khi sửa. Nuốt lỗi rồi ack là tệ nhất — mất dữ liệu âm thầm. Phải kèm theo: cảnh báo khi DLQ có message (DLQ không ai theo dõi thì vô dụng), lưu lý do lỗi và số lần thử, phân biệt lỗi TẠM THỜI (đáng retry) với lỗi VĨNH VIỄN (vào DLQ ngay), và consumer phải idempotent vì delivery là at-least-once.',
+  },
+  {
+    id: 'node-json-large', topic: 'Hiệu năng',
+    q: 'API nhận payload JSON 50MB, `JSON.parse` làm server đơ vài giây — cách xử lý?',
+    options: [
+      'Tăng `--max-old-space-size` để V8 có đủ bộ nhớ mà parse chuỗi JSON lớn như vậy',
+      'Chuyển sang `JSON.parse` bất đồng bộ bằng cách bọc nó trong một `async function`',
+      'Giới hạn kích thước body; dữ liệu lớn thì dùng streaming parser, NDJSON, hoặc chuyển sang upload file',
+      'Nén payload bằng gzip trước khi gửi lên để `JSON.parse` xử lý nhanh hơn nhiều lần',
+    ], answer: 2,
+    explain: '`JSON.parse` là ĐỒNG BỘ và chạy trong C++ của V8 — không nhả event loop, nên 50MB nghĩa là cả server đứng vài giây, mọi request khác treo theo. Bọc `async` không giúp gì vì bản thân lời gọi vẫn đồng bộ. Hướng xử lý theo thứ tự ưu tiên: (1) đặt câu hỏi vì sao payload lớn thế — thường nên phân trang hoặc upload file rồi xử lý nền; (2) đặt body limit để chặn từ đầu; (3) nếu buộc phải nhận luồng dữ liệu lớn thì dùng NDJSON (mỗi dòng một object, parse dần theo stream) hoặc streaming parser để không giữ cả cây trong RAM. Gzip chỉ giảm byte truyền, phần parse sau khi giải nén vẫn y nguyên.',
+  },
+  {
+    id: 'node-mtls', topic: 'Bảo mật',
+    q: 'mTLS (mutual TLS) giữa các service nội bộ khác TLS thường ở chỗ nào?',
+    options: [
+      'mTLS dùng thuật toán mã hoá mạnh hơn nên dữ liệu truyền đi khó bị giải mã hơn',
+      'CẢ HAI phía đều xuất trình chứng chỉ — server xác thực client, không chỉ client xác thực server',
+      'mTLS mã hoá cả phần header của request còn TLS thường chỉ mã hoá phần body',
+      'mTLS chỉ hoạt động trong mạng nội bộ, không dùng được khi đi qua Internet công cộng',
+    ], answer: 1,
+    explain: 'TLS thường xác thực MỘT chiều: client kiểm tra chứng chỉ server. mTLS thêm chiều ngược lại — server yêu cầu client xuất trình chứng chỉ, nên danh tính service được xác lập ở tầng kết nối thay vì dựa vào API key có thể bị lộ. Đây là nền của kiến trúc zero-trust: không tin tưởng chỉ vì "cùng nằm trong mạng nội bộ". Trong Node dùng `https.createServer({ ca, cert, key, requestCert: true, rejectUnauthorized: true })`. Vấn đề vận hành lớn nhất là VÒNG ĐỜI CHỨNG CHỈ: cấp phát, phân phối, và XOAY VÒNG trước khi hết hạn — chứng chỉ hết hạn là sự cố kinh điển. Vì thế service mesh (Istio, Linkerd) thường lo phần này thay cho ứng dụng.',
+  },
+  {
+    id: 'node-lock-optimistic', topic: 'Kiến trúc',
+    q: 'Hai người cùng sửa một bản ghi, người sau ghi đè mất thay đổi của người trước — chữa sao?',
+    options: [
+      'Chấp nhận vì đây vốn là hành vi bình thường, ai lưu sau thì dữ liệu của người đó thắng',
+      'OPTIMISTIC LOCK: mang theo `version`, `UPDATE ... WHERE version = ?` — không khớp thì báo xung đột',
+      'Khoá bản ghi lại ngay khi người dùng mở form và chỉ mở khoá khi họ bấm lưu',
+      'Tăng isolation level của database lên SERIALIZABLE để tự động ngăn ghi đè',
+    ], answer: 1,
+    explain: 'Đây là "lost update" — không có transaction nào bị vi phạm vì hai lần ghi cách nhau hàng phút, nên isolation level KHÔNG cứu được. Optimistic lock: client đọc kèm `version`, khi lưu thì `UPDATE ... SET version = version + 1 WHERE id = ? AND version = ?`; nếu số dòng ảnh hưởng là 0 nghĩa là ai đó đã sửa — trả 409 và cho người dùng xem khác biệt rồi quyết định. Hợp với xung đột HIẾM (phần lớn ứng dụng). Pessimistic lock (`SELECT FOR UPDATE`) hợp khi tranh chấp CAO và thao tác ngắn — nhưng khoá suốt thời gian người dùng điền form là chống chỉ định: họ đóng tab thì bản ghi kẹt khoá.',
+  },
+  {
+    id: 'node-search', topic: 'Kiến trúc',
+    q: 'Cần tìm kiếm toàn văn trên bảng sản phẩm — chọn giải pháp nào?',
+    options: [
+      '`LIKE \'%từ khoá%\'` là đủ vì database nào cũng hỗ trợ sẵn và cú pháp lại rất đơn giản',
+      'Tải toàn bộ bản ghi về Node rồi lọc bằng JavaScript để linh hoạt hơn khi so khớp',
+      'Full-text index của DB (`tsvector`) cho quy mô vừa; Elasticsearch khi cần xếp hạng, gợi ý, chịu lỗi chính tả',
+      'Tạo index B-tree trên cột mô tả thì truy vấn `LIKE` sẽ chạy nhanh như khi tìm theo khoá chính',
+    ], answer: 2,
+    explain: '`LIKE \'%abc%\'` KHÔNG dùng được index B-tree (index chỉ giúp khi khớp tiền tố) nên phải quét toàn bảng, và nó không hiểu từ gốc, không xếp hạng độ liên quan, không bỏ dấu tiếng Việt. Postgres full-text (`tsvector` + GIN index) giải quyết tốt phần lớn nhu cầu, ngay trong DB nên không phải đồng bộ dữ liệu. Khi cần xếp hạng tinh vi, gợi ý khi gõ, chịu lỗi chính tả (fuzzy), tìm nhiều mặt (facet) và quy mô lớn thì mới cần công cụ chuyên dụng — cái giá là phải ĐỒNG BỘ dữ liệu sang đó (qua CDC/outbox) và chấp nhận nhất quán cuối cùng. Đừng thêm Elasticsearch khi Postgres còn đủ.',
+  },
+  {
+    id: 'node-file-storage', topic: 'Kiến trúc',
+    q: 'Lưu file người dùng upload ở đâu là hợp lý nhất cho service chạy trên K8s?',
+    options: [
+      'Lưu nội dung file dưới dạng BLOB trong database để dùng chung transaction với metadata',
+      'Lưu vào thư mục cục bộ của container cho nhanh, rồi định kỳ sao lưu ra ngoài',
+      'Object storage (S3/GCS): pod stateless, có CDN, phiên bản & vòng đời — DB chỉ lưu metadata và key',
+      'Lưu vào một volume dùng chung gắn vào tất cả các pod của service đó',
+    ], answer: 2,
+    explain: 'Đĩa cục bộ của container là EPHEMERAL — pod restart hay scale là mất, và pod khác không thấy file của pod này. BLOB trong DB làm bảng phình to, backup chậm, tốn RAM khi đọc và không dùng được CDN. Object storage là lựa chọn mặc định: rẻ, bền, có phiên bản, quy tắc vòng đời tự chuyển sang lưu trữ lạnh, phục vụ qua CDN, và cho phép PRESIGNED URL để client upload/tải THẲNG mà không đi qua server. DB chỉ giữ metadata (key, kích thước, loại, chủ sở hữu). Nhớ xử lý trường hợp ghi DB thành công mà upload lỗi (hoặc ngược lại) — dọn file mồ côi bằng job định kỳ.',
+  },
+  {
+    id: 'node-degradation', topic: 'Kiến trúc',
+    q: 'Service phụ (gợi ý sản phẩm) chết — trang chủ nên hành xử thế nào?',
+    options: [
+      'Trả về lỗi 500 cho toàn bộ trang để người dùng biết là hệ thống đang có vấn đề',
+      'Retry liên tục cho tới chừng nào service đó phản hồi lại được như bình thường',
+      'SUY GIẢM CÓ KIỂM SOÁT: bỏ qua phần gợi ý hoặc dùng cache cũ, phần còn lại vẫn phục vụ',
+      'Chuyển toàn bộ traffic sang một môi trường dự phòng đã dựng sẵn từ trước',
+    ], answer: 2,
+    explain: 'Phân loại dependency thành THIẾT YẾU (không có thì không phục vụ được: DB đơn hàng) và KHÔNG thiết yếu (gợi ý, đánh giá, banner khuyến mãi). Với loại sau: đặt timeout ngắn, bọc circuit breaker, và khi lỗi thì trả cache cũ, danh sách mặc định, hoặc đơn giản là ẩn khối đó đi — người dùng vẫn mua hàng được. Để một widget phụ kéo sập cả trang chủ là lỗi thiết kế, và retry liên tục còn dội thêm tải vào service đang ốm. Kèm theo: bulkhead (giới hạn số request đồng thời cho mỗi dependency để nó không nuốt hết pool), ghi metric riêng cho từng fallback, và cảnh báo khi tỉ lệ suy giảm tăng — người dùng không thấy lỗi không có nghĩa là mọi thứ ổn.',
+  },
 ];

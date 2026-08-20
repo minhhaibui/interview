@@ -918,4 +918,93 @@ window.REACT_QUIZ = [
     ], answer: 0,
     explain: 'Bản đồ chuyển đổi: `constructor` state → `useState`; `componentDidMount` → `useEffect(fn, [])`; `componentDidUpdate` → `useEffect(fn, [deps])`; `componentWillUnmount` → hàm trả về từ effect; `getDerivedStateFromProps` → tính thẳng khi render hoặc đổi `key`; `shouldComponentUpdate` → `React.memo`. Nhưng đừng dịch máy móc — hooks mời bạn nghĩ theo ĐỒNG BỘ HOÁ chứ không theo vòng đời: gom logic theo mối quan tâm (một effect lo subscription, một effect lo tiêu đề trang) thay vì gom theo thời điểm, vốn là lý do `componentDidMount` của class thường phình to và code cleanup nằm cách xa code khởi tạo. Hai thứ vẫn CHỈ class làm được: `getDerivedStateFromError`/`componentDidCatch` của error boundary.',
   },
+  // ===== Đợt #7 =====
+  {
+    id: 'react-a11y-form', topic: 'Chất lượng UI',
+    q: 'Form báo lỗi validate thế nào để người dùng screen reader cũng nắm được?',
+    options: [
+      'Hiện chữ đỏ ngay dưới ô nhập là đủ, vì screen reader tự đọc mọi nội dung mới xuất hiện',
+      'Nối `label` với input, đặt `aria-invalid` + `aria-describedby`, đưa focus về ô lỗi đầu tiên',
+      'Dùng `alert()` của trình duyệt để chắc chắn người dùng không bỏ sót thông báo lỗi',
+      'Đổi viền của ô nhập sang màu đỏ và thêm một biểu tượng cảnh báo bên cạnh ô đó',
+    ], answer: 1,
+    explain: 'Screen reader KHÔNG tự đọc nội dung mới trừ khi được báo. Bộ tối thiểu: `<label htmlFor>` gắn với `id` của input (dùng `useId`); khi lỗi thì `aria-invalid="true"` và `aria-describedby` trỏ tới id của phần tử chứa thông báo — lúc đó focus vào ô là nghe được cả nhãn lẫn lỗi. Sau khi submit hỏng, chuyển focus về ô lỗi ĐẦU TIÊN (hoặc một vùng tóm tắt lỗi) để người dùng bàn phím không phải Tab mò. Thông báo động thì đặt trong vùng `aria-live="polite"`. Và đừng chỉ dùng MÀU để báo lỗi — người mù màu không phân biệt được, luôn kèm chữ hoặc biểu tượng.',
+  },
+  {
+    id: 'react-loading-ux', topic: 'Chất lượng UI',
+    q: 'Hiển thị trạng thái đang tải thế nào cho tốt?',
+    options: [
+      'Luôn hiện spinner toàn màn hình để người dùng biết chắc chắn hệ thống đang xử lý',
+      'Không hiện gì cả, chờ dữ liệu về rồi render một lần cho đỡ nhấp nháy giao diện',
+      'Skeleton đúng hình dạng nội dung cho lần tải đầu (giữ layout, không nháy); chỉ hiện chỉ báo sau một ngưỡng trễ',
+      'Hiện thanh tiến trình chạy từ 0 đến 100% dựa trên thời gian tải trung bình ước tính',
+    ], answer: 2,
+    explain: 'Ba nguyên tắc. (1) Skeleton khớp bố cục thật thì nội dung về sẽ thay chỗ mà không đẩy layout — vừa cảm giác nhanh hơn vừa tránh CLS; spinner toàn màn hình chặn mọi thứ và làm mất ngữ cảnh. (2) Nếu dữ liệu thường về dưới ~200ms thì ĐỪNG hiện gì ngay — chỉ hiện chỉ báo sau một ngưỡng trễ, nếu không giao diện sẽ nhấp nháy loading rồi biến mất, khó chịu hơn cả chờ. (3) Với dữ liệu ĐÃ CÓ mà đang làm mới, hãy giữ nội dung cũ và chỉ báo tinh tế (React Query gọi là `isFetching` khác `isLoading`, hoặc dùng `useTransition`) — đừng xoá màn hình về skeleton mỗi lần refetch.',
+  },
+  {
+    id: 'react-shortcut', topic: 'Chất lượng UI',
+    q: 'Thêm phím tắt toàn cục (ví dụ `/` để focus ô tìm kiếm) cần cẩn thận điều gì?',
+    options: [
+      'Chỉ cần nghe sự kiện `keydown` trên `window` là đủ cho mọi tình huống sử dụng',
+      'Bỏ qua khi người dùng đang gõ trong input, tránh đè phím tắt của trình duyệt, gỡ listener khi unmount',
+      'Phải đăng ký phím tắt ở tầng service worker để hoạt động kể cả khi tab ẩn',
+      'Nên dùng `keypress` thay cho `keydown` vì sự kiện này chính xác hơn với mọi bàn phím',
+    ], answer: 1,
+    explain: 'Bẫy số một: người dùng đang gõ ghi chú mà gõ chữ `/` thì con trỏ nhảy sang ô tìm kiếm — phải kiểm tra `e.target` có phải input/textarea/contenteditable không (và bỏ qua khi có modifier không mong muốn). Thứ hai: đừng chiếm phím tắt của trình duyệt (Ctrl+T, Ctrl+W, Cmd+L) — người dùng sẽ rất bực. Thứ ba: đăng ký trong `useEffect` và GỠ trong cleanup, nếu không mỗi lần mount lại là thêm một listener. Nên có bảng liệt kê phím tắt (thường là `?`), tôn trọng người dùng bàn phím, và nhớ `keypress` đã deprecated — dùng `keydown` với `e.key`.',
+  },
+  {
+    id: 'react-undo', topic: 'Quản lý state',
+    q: 'Làm undo/redo cho một trình soạn thảo trong React, cách tiếp cận nào hợp lý?',
+    options: [
+      'Lưu snapshot của toàn bộ state sau MỖI phím gõ vào một mảng lịch sử không giới hạn',
+      'Giữ hai ngăn xếp past/future, gom nhóm các thao tác nhỏ và giới hạn độ sâu của lịch sử',
+      'Gọi API để lấy lại phiên bản trước từ server mỗi lần người dùng bấm undo',
+      'Dùng `history.back()` của trình duyệt để quay lại trạng thái trước đó của ứng dụng',
+    ], answer: 1,
+    explain: 'Mô hình phổ biến: `{past: [], present, future: []}` — undo đẩy `present` sang `future` và lấy phần tử cuối của `past`; thao tác mới thì xoá `future`. Nhờ structural sharing, lưu snapshot không đắt như tưởng, nhưng vẫn phải GIỚI HẠN độ sâu (ví dụ 50 bước) để không phình bộ nhớ. Điểm hay bị bỏ qua là GOM NHÓM: gõ 20 ký tự liên tiếp nên là MỘT bước undo, không phải 20 — gom theo khoảng lặng hoặc theo loại thao tác. Với dữ liệu lớn thì lưu THAO TÁC đảo ngược (command pattern) thay vì snapshot. Nhớ gắn Cmd/Ctrl+Z và Shift+Cmd+Z, và cẩn thận khi trộn với thay đổi đến từ server (cộng tác nhiều người thì cần CRDT/OT).',
+  },
+  {
+    id: 'react-scroll-restore', topic: 'Chất lượng UI',
+    q: 'Bấm vào một mục trong danh sách dài rồi quay lại, trang nhảy về đầu — chữa sao?',
+    options: [
+      'Không chữa được vì mỗi lần điều hướng là component bị unmount và mất hết trạng thái',
+      'Lưu vị trí cuộn (và dữ liệu danh sách) khi rời trang rồi khôi phục sau khi nội dung đã render lại',
+      'Đặt `overflow: hidden` cho body để trình duyệt không reset vị trí cuộn khi chuyển trang',
+      'Dùng `window.scrollTo(0, 0)` trong `useEffect` để chủ động kiểm soát vị trí cuộn',
+    ], answer: 1,
+    explain: 'SPA tự quản lý điều hướng nên phải tự lo cuộn: mặc định của router thường là cuộn lên đầu khi sang trang mới — đúng cho trang mới, nhưng SAI khi quay LẠI. Cần lưu `scrollY` (vào state của history entry hoặc sessionStorage theo key của route) khi rời trang, và khôi phục SAU KHI nội dung đã render đủ chiều cao — đây là mấu chốt: khôi phục quá sớm thì trang chưa đủ dài để cuộn tới đó. Vì vậy phải giữ luôn DỮ LIỆU danh sách trong cache (React Query) để quay lại không phải tải lại từ đầu. Với danh sách virtualize thì lưu chỉ số phần tử thay vì pixel. React Router có `ScrollRestoration`, Next.js xử lý sẵn phần lớn trường hợp.',
+  },
+  {
+    id: 'react-component-api', topic: 'Mẫu thiết kế',
+    q: 'Thiết kế API cho component dùng chung trong design system, điều gì quan trọng nhất?',
+    options: [
+      'Cung cấp thật nhiều prop cấu hình để mọi trường hợp sử dụng đều được xử lý hết',
+      'Ít prop, ưu tiên composition; chuyển tiếp props/ref của thẻ gốc; `variant` union thay vì nhiều boolean',
+      'Đặt style cứng ở bên trong component để giao diện luôn nhất quán một cách tuyệt đối',
+      'Cho phép truyền thẳng object style vào để người dùng ghi đè được mọi thuộc tính CSS',
+    ], answer: 1,
+    explain: 'Component nhận 30 prop là dấu hiệu nên tách hoặc chuyển sang composition (`children`, slot, compound component) — người dùng dựng bố cục họ cần thay vì chờ bạn thêm prop. Ba nguyên tắc thực dụng: (1) `variant="primary" | "ghost"` (union) thay vì `isPrimary`, `isGhost` — union loại trừ lẫn nhau nên không tạo tổ hợp vô nghĩa; (2) mở rộng props của thẻ gốc (`React.ComponentProps<"button">`) và chuyển tiếp `ref` — người dùng dùng được `onClick`, `aria-*`, `disabled` mà bạn không phải liệt kê; (3) cho phép nối `className` (merge có kiểm soát) thay vì khoá chặt hoặc mở toang `style`. Và giữ API ỔN ĐỊNH — mỗi thay đổi phá vỡ là hàng chục nơi phải sửa.',
+  },
+  {
+    id: 'react-microfrontend', topic: 'Kiến trúc',
+    q: 'Micro-frontend hợp lý khi nào?',
+    options: [
+      'Mọi dự án React lớn hơn 50 component đều nên tách nhỏ ra để dễ quản lý mã nguồn hơn',
+      'Khi cần giảm dung lượng bundle, vì mỗi phần được tải riêng nên tổng JS sẽ nhỏ hơn hẳn',
+      'Khi NHIỀU ĐỘI cần deploy độc lập trên cùng một sản phẩm — đổi lại là trùng lặp thư viện và vận hành phức tạp',
+      'Khi ứng dụng cần dùng nhiều framework khác nhau, đó là lý do duy nhất chính đáng',
+    ], answer: 2,
+    explain: 'Micro-frontend là giải pháp cho vấn đề TỔ CHỨC, không phải vấn đề kỹ thuật: nhiều đội muốn release theo nhịp riêng mà không chờ nhau. Cái giá không nhỏ — mỗi mảnh mang runtime riêng nên tổng JS thường TĂNG chứ không giảm (dù Module Federation cho chia sẻ dependency), phải thống nhất design system và phiên bản React, việc điều hướng/xác thực/state dùng chung trở nên rắc rối, và debug xuyên mảnh rất khó. Với một đội duy nhất, monorepo + code splitting theo route đạt gần hết lợi ích mà không phải trả giá đó. Cần giảm bundle thì `lazy` + `Suspense` mới là công cụ đúng.',
+  },
+  {
+    id: 'react-error-tracking', topic: 'Chất lượng UI',
+    q: 'Theo dõi lỗi frontend trên production cần những gì?',
+    options: [
+      'Đọc log `console.error` trong DevTools của máy lập trình viên là đã đủ để phát hiện lỗi',
+      'Error boundary + bắt `unhandledrejection`/`error` toàn cục, gửi về dịch vụ theo dõi kèm SOURCE MAP',
+      'Bọc mọi hàm trong `try/catch` rồi ghi lỗi vào localStorage để xem lại về sau khi cần',
+      'Chỉ cần theo dõi lỗi phía backend, vì lỗi frontend không ảnh hưởng tới dữ liệu',
+    ], answer: 1,
+    explain: 'Lỗi ở máy người dùng thì bạn không thấy gì cả trừ khi chủ động thu thập. Cần ba lớp: error boundary bắt lỗi lúc render (kèm UI dự phòng để không trắng trang), `window.onerror` bắt lỗi ngoài React, và `unhandledrejection` bắt promise không ai catch. Gửi về Sentry/Rollbar kèm SOURCE MAP — không có nó thì stack trace chỉ là mã đã minify, vô dụng; và nhớ upload source map ở bước build chứ đừng public chúng ra ngoài. Đính kèm ngữ cảnh giúp tái hiện: phiên bản build, route, trình duyệt, id người dùng (ẩn danh nếu cần), vài breadcrumb thao tác gần nhất. Cuối cùng: gom nhóm lỗi trùng và đặt ngưỡng cảnh báo, nếu không mọi người sẽ tắt thông báo.',
+  },
 ];

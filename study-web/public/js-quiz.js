@@ -1046,4 +1046,93 @@ window.JS_QUIZ = [
     ], answer: 1,
     explain: 'Web Worker gắn với một tab và giải bài toán CPU. Service Worker là một worker đặc biệt đứng giữa trang và mạng: nghe sự kiện `fetch` để trả từ cache hay đi mạng, nên làm được offline, cache app shell, background sync, push notification — nền tảng của PWA (chính app study-web này dùng nó). Nó có vòng đời riêng (`install` → `activate`) và SỐNG SÓT qua việc đóng tab. Điều hay gây bối rối: bản mới chỉ tiếp quản sau khi mọi tab cũ đóng, trừ khi gọi `skipWaiting()` + `clients.claim()` — vì thế các app PWA thường hiện banner "có bản mới, tải lại". Chỉ chạy trên HTTPS/localhost.',
   },
+  // ===== Đợt #7 =====
+  {
+    id: 'js-regex-advanced', topic: 'Mảng & chuỗi',
+    q: 'Tính năng regex nào giúp mẫu phức tạp dễ đọc và dễ bảo trì nhất?',
+    options: [
+      'Named capture group `(?<year>\\d{4})` — truy cập qua `m.groups.year` thay vì đếm chỉ số',
+      'Viết mẫu thành một dòng thật dài để engine không phải xử lý ký tự xuống dòng',
+      'Dùng `.*` ở mọi vị trí không chắc chắn để mẫu khớp được nhiều trường hợp hơn',
+      'Bỏ hết ký tự thoát để mẫu ngắn lại và dễ nhìn hơn khi đọc mã nguồn',
+    ], answer: 0,
+    explain: '`(?<year>\\d{4})-(?<month>\\d{2})` cho `m.groups.year` — thêm nhóm ở giữa không làm vỡ code như khi đếm `m[1]`, `m[2]`. Vài thứ hiện đại đáng biết thêm: lookbehind `(?<=\\$)\\d+` (khớp có điều kiện phía trước mà không "ăn" ký tự), cờ `d` cho vị trí khớp, cờ `u`/`v` để `\\p{Script=Han}` hay `\\p{Emoji}` hoạt động đúng với Unicode, và `matchAll` trả iterator gọn hơn vòng `while(exec)`. Ngược lại, `.*` rải khắp nơi chính là công thức tạo ReDoS. Với mẫu phức tạp, hãy tách thành nhiều bước xử lý có tên rõ ràng — regex 200 ký tự là món nợ kỹ thuật.',
+  },
+  {
+    id: 'js-typed-array', topic: 'Bộ nhớ',
+    q: '`ArrayBuffer`, `TypedArray` và `DataView` dùng để làm gì?',
+    options: [
+      'Là phiên bản tối ưu của mảng thường, nên dùng để thay `Array` trong mọi trường hợp',
+      'Chỉ dùng được trong Node.js để đọc file, còn trình duyệt thì không hỗ trợ các kiểu này',
+      'Làm việc với dữ liệu NHỊ PHÂN thô: buffer là vùng byte, TypedArray nhìn theo kiểu số, DataView chọn endianness',
+      'Là ba cách khác nhau để nén mảng số nhằm tiết kiệm băng thông mạng khi truyền đi',
+    ], answer: 2,
+    explain: '`ArrayBuffer` là một khối byte thô không thao tác trực tiếp được. `TypedArray` (`Uint8Array`, `Float32Array`...) là "cửa sổ" nhìn khối đó theo một kiểu số cố định — nhiều view có thể CHIA SẺ cùng buffer, nên ghi qua view này thì view kia thấy ngay. `DataView` linh hoạt hơn: đọc/ghi từng vị trí với kiểu tuỳ ý và chọn được BIG/LITTLE ENDIAN — cần khi parse định dạng nhị phân theo chuẩn mạng. Dùng khi: xử lý file/ảnh/audio, WebGL, WebSocket nhị phân, mã hoá, giao tiếp với WebAssembly, và chia sẻ bộ nhớ giữa worker qua `SharedArrayBuffer`. Với dữ liệu thông thường thì `Array` vẫn tiện và đủ nhanh.',
+  },
+  {
+    id: 'js-parse-int', topic: 'Kiểu & ép kiểu',
+    q: '`parseInt`, `Number()` và `+x` khác nhau thế nào khi chuyển chuỗi sang số?',
+    options: [
+      'Ba cách hoàn toàn tương đương, chỉ khác nhau ở độ dài cú pháp khi viết',
+      '`parseInt` đọc tới ký tự không hợp lệ rồi DỪNG (`"12px"` → 12); `Number`/`+` cần cả chuỗi hợp lệ',
+      '`Number()` đọc được cả tiền tố đơn vị, còn `parseInt` thì luôn trả về `NaN` với chuỗi đó',
+      '`+x` chỉ hoạt động được với số nguyên, muốn số thực thì bắt buộc phải dùng `parseFloat`',
+    ], answer: 1,
+    explain: '`parseInt("12px")` → 12 (dừng ở ký tự lạ), còn `Number("12px")` → `NaN`. Tuỳ mục đích mà chọn: đọc giá trị CSS thì `parseInt` tiện, nhưng validate input người dùng thì `Number` an toàn hơn vì `parseInt("12abc")` lặng lẽ nhận. Ba bẫy kèm theo: (1) luôn truyền RADIX — `parseInt("08")` từng ra 0 ở engine cũ, và `parseInt(x, 10)` là thói quen tốt; (2) `Number("")` là 0 còn `parseInt("")` là `NaN`, `Number(null)` là 0 nhưng `Number(undefined)` là `NaN`; (3) `parseInt` với số rất lớn/rất nhỏ nhận vào dạng số sẽ sai vì nó ép sang chuỗi trước (`parseInt(0.0000005)` ra 5).',
+  },
+  {
+    id: 'js-async-style', topic: 'Bất đồng bộ',
+    q: 'Cần gọi 3 API độc lập rồi trả kết quả gộp — cách viết nào tối ưu?',
+    options: [
+      '`const a = await f1(); const b = await f2(); const c = await f3();` cho dễ đọc theo thứ tự',
+      'Khởi động cả ba trước rồi mới await: `const [a,b,c] = await Promise.all([f1(), f2(), f3()])`',
+      'Dùng `.then()` lồng nhau để kiểm soát chính xác thứ tự hoàn thành của từng lời gọi',
+      'Gọi cả ba trong `useEffect` riêng biệt rồi gộp kết quả lại bằng state',
+    ], answer: 1,
+    explain: 'Chuỗi `await` tuần tự khiến tổng thời gian là TỔNG ba lời gọi, dù chúng độc lập — 3×300ms = 900ms thay vì 300ms. `Promise.all` khởi động cả ba ngay rồi chờ cùng lúc. Nhớ điểm mấu chốt: Promise bắt đầu chạy khi ĐƯỢC TẠO, không phải khi `await` — nên `const p1 = f1(); const p2 = f2(); const a = await p1; const b = await p2;` cũng chạy song song. Chỉ dùng `await` tuần tự khi lời gọi sau PHỤ THUỘC kết quả trước. Lưu ý thêm: `Promise.all` fail-fast, cần chấp nhận một phần lỗi thì dùng `allSettled`; và nếu số lượng lớn thì phải giới hạn đồng thời.',
+  },
+  {
+    id: 'js-leak-detached', topic: 'Bộ nhớ',
+    q: '"Detached DOM node" trong heap snapshot của trình duyệt nghĩa là gì?',
+    options: [
+      'Node bị lỗi cú pháp HTML nên trình duyệt tách nó ra khỏi cây để không render',
+      'Node đã bị gỡ khỏi DOM nhưng JS vẫn giữ tham chiếu — không được GC dọn, dấu hiệu rò rỉ bộ nhớ',
+      'Node đang nằm trong Shadow DOM nên không xuất hiện ở cây DOM chính của trang',
+      'Node được tạo bằng `createElement` nhưng chưa được chèn vào trang lần nào',
+    ], answer: 1,
+    explain: 'Bạn gỡ một phần tử khỏi trang, nhưng đâu đó vẫn còn biến/mảng/closure/listener giữ tham chiếu tới nó — node cùng toàn bộ cây con của nó không được thu hồi. Lặp lại thao tác đó (mở/đóng modal, chuyển trang trong SPA) thì bộ nhớ tăng đều. Cách tìm: DevTools → Memory → chụp heap snapshot, lọc "Detached", rồi xem cột "Retainers" để biết ai đang giữ. Thủ phạm quen mặt: listener chưa gỡ, `setInterval` còn chạy, mảng cache lưu element, biến toàn cục, và observer chưa `disconnect()`. Quy trình chuẩn để khẳng định có leak: chụp snapshot → thao tác nhiều lần → ép GC → chụp lại và so sánh.',
+  },
+  {
+    id: 'js-history-api', topic: 'DOM & trình duyệt',
+    q: '`pushState` và `replaceState` khác nhau thế nào?',
+    options: [
+      '`pushState` THÊM một mục vào lịch sử (back quay lại được); `replaceState` ghi đè mục hiện tại',
+      '`pushState` tải lại trang còn `replaceState` chỉ đổi URL mà không tải lại',
+      '`pushState` chỉ đổi được phần hash của URL, `replaceState` đổi được toàn bộ đường dẫn',
+      'Hai hàm giống nhau, `replaceState` chỉ là tên gọi cũ được giữ lại cho tương thích',
+    ], answer: 0,
+    explain: 'Cả hai đều đổi URL mà KHÔNG tải lại trang — nền tảng của định tuyến SPA. Khác nhau ở lịch sử: `pushState` tạo mục mới nên nút Back đưa người dùng về trạng thái trước; `replaceState` thay tại chỗ. Chọn đúng rất quan trọng cho trải nghiệm: chuyển trang thì `push`, còn đồng bộ ô tìm kiếm hay bộ lọc theo từng phím gõ thì `replace` — nếu không người dùng phải bấm Back 20 lần mới thoát khỏi trang. Nghe `popstate` để xử lý khi người dùng bấm back/forward. Lưu ý: `pushState` KHÔNG kích hoạt `popstate`, và server phải rewrite mọi đường dẫn về `index.html` nếu không F5 sẽ ra 404.',
+  },
+  {
+    id: 'js-observers', topic: 'DOM & trình duyệt',
+    q: 'Bộ ba `IntersectionObserver`, `ResizeObserver`, `MutationObserver` giải quyết gì?',
+    options: [
+      'Là ba cách khác nhau để lắng nghe sự kiện click với những độ ưu tiên khác nhau',
+      'Theo dõi phần tử vào/ra khung nhìn, đổi kích thước, cây DOM thay đổi — bất đồng bộ, không phải polling',
+      'Là ba API dùng để ghi lại hành vi người dùng rồi gửi về server để phân tích',
+      'Ba cách để quan sát thay đổi của biến JavaScript và tự động cập nhật giao diện',
+    ], answer: 1,
+    explain: 'Trước khi có chúng, ta phải nghe `scroll`/`resize` rồi liên tục gọi `getBoundingClientRect` — vừa bắn hàng chục lần mỗi giây vừa ép trình duyệt tính lại layout (layout thrashing). Ba observer này để TRÌNH DUYỆT chủ động báo, callback chạy bất đồng bộ và gộp lô. Ứng dụng: `IntersectionObserver` cho lazy load ảnh, cuộn vô hạn, đo hiển thị quảng cáo; `ResizeObserver` cho component tự thích ứng theo kích thước CONTAINER (chứ không phải màn hình); `MutationObserver` cho việc theo dõi DOM do bên thứ ba chèn vào. Luôn nhớ `disconnect()` trong cleanup, nếu không sẽ giữ tham chiếu tới phần tử đã gỡ.',
+  },
+  {
+    id: 'js-web-vitals', topic: 'DOM & trình duyệt',
+    q: 'Core Web Vitals gồm LCP, CLS và INP — mỗi chỉ số đo cái gì?',
+    options: [
+      'Cả ba đều đo tốc độ tải trang, chỉ khác nhau ở thời điểm bắt đầu đếm giờ',
+      'LCP: tốc độ hiện nội dung chính · CLS: mức độ layout nhảy · INP: độ trễ phản hồi tương tác',
+      'LCP: số lần render lại · CLS: dung lượng CSS · INP: số lượng request mạng của trang',
+      'Ba chỉ số nội bộ của Google, không đo được từ mã nguồn ứng dụng của mình',
+    ], answer: 1,
+    explain: 'LCP (Largest Contentful Paint) — khi nào phần tử nội dung lớn nhất hiện ra, nên tốt dưới 2,5s; cải thiện bằng tối ưu ảnh hero, preload, giảm thời gian phản hồi server. CLS (Cumulative Layout Shift) — nội dung nhảy bao nhiêu, tốt dưới 0,1; chữa bằng đặt kích thước cho ảnh/quảng cáo và chừa chỗ trước. INP (Interaction to Next Paint, thay thế FID từ 2024) — bấm/gõ xong bao lâu thì thấy phản hồi, tốt dưới 200ms; hỏng chủ yếu do LONG TASK chặn luồng chính, chữa bằng chia nhỏ tác vụ, giảm JS, tránh render lại cả cây. Đo bằng thư viện `web-vitals` gửi về analytics (dữ liệu người dùng thật) — Lighthouse chỉ là môi trường phòng thí nghiệm.',
+  },
 ];
