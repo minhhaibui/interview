@@ -779,4 +779,93 @@ window.JS_QUIZ = [
     ], answer: 1,
     explain: 'Hai lý do. BẢO MẬT: chuỗi từ người dùng thành mã chạy với quyền của app — trên trình duyệt là XSS đọc được token, trên Node là thực thi mã từ xa (RCE) đọc file, biến môi trường, kết nối DB. HIỆU NĂNG: `eval` truy cập được scope hiện tại nên V8 không tối ưu được hàm chứa nó (`new Function` đỡ hơn vì chỉ thấy global scope). Ngoài ra Content-Security-Policy chặt sẽ CHẶN cả hai. Cần dữ liệu động thì dùng `JSON.parse`; cần biểu thức do người dùng nhập thì dùng parser/sandbox chuyên dụng, đừng bao giờ `eval` thẳng. Cùng nhóm nguy hiểm: `setTimeout("code")` dạng chuỗi.',
   },
+  // ===== Đợt #4 =====
+  {
+    id: 'js-exports-map', topic: 'Module',
+    q: 'Trường `exports` trong package.json làm gì mà `main` không làm được?',
+    options: [
+      'Liệt kê các package phụ thuộc cần cài kèm theo khi người khác cài package của bạn về',
+      'Khai báo ĐÚNG những đường dẫn được phép import, và trỏ file khác nhau cho ESM/CJS hay Node/trình duyệt',
+      'Ghi danh sách các hàm được export để bundler biết mà loại bỏ phần không dùng tới',
+      'Chỉ định thư mục chứa mã nguồn đã build để npm biết đóng gói phần nào khi publish',
+    ], answer: 1,
+    explain: '`main` chỉ nêu MỘT điểm vào và không chặn ai import sâu vào file nội bộ (`pkg/dist/internal/util.js`) — thành ra mọi file trong package đều là API công khai ngoài ý muốn. `exports` là bản đồ có ĐIỀU KIỆN: khai báo subpath được phép (`"./utils": "./dist/utils.js"`), và trỏ file khác nhau theo điều kiện `import`/`require`/`node`/`browser`/`types`. Cẩn thận DUAL PACKAGE HAZARD: nếu bản ESM và CJS đều mang state riêng thì app có thể nạp cả hai và giữ hai singleton khác nhau — hay gặp với instance client hoặc `instanceof` bỗng trả false.',
+  },
+  {
+    id: 'js-iterator-helpers', topic: 'Generator & iterator',
+    q: 'Iterator helper (`it.map().filter().take(5)`) khác gọi cùng chuỗi đó trên MẢNG thế nào?',
+    options: [
+      'Chúng chạy song song trên nhiều luồng nên nhanh hơn với tập dữ liệu lớn',
+      'Chúng chỉ khác về cú pháp, cả hai đều tạo mảng trung gian sau mỗi bước xử lý',
+      'Chúng LƯỜI: xử lý từng phần tử qua cả chuỗi, không tạo mảng trung gian — chạy được cả trên dãy vô hạn',
+      'Chúng bắt buộc phải có `await` vì mọi iterator helper đều trả về Promise',
+    ], answer: 2,
+    explain: '`arr.map().filter().slice(0,5)` tạo mảng TRUNG GIAN ở mỗi bước và duyệt hết mảng dù chỉ cần 5 phần tử. Iterator helper (ES2025, đã có trong Node 22+ và các trình duyệt mới) hoạt động LƯỜI như stream: kéo một phần tử, cho chạy qua cả chuỗi, `take(5)` đủ số thì DỪNG — không tốn bộ nhớ trung gian và dùng được với generator vô hạn. Bộ helper: `map`, `filter`, `take`, `drop`, `flatMap`, `reduce`, `toArray`, `some`/`every`/`find`. Có bản async cho `AsyncIterator` — rất hợp để xử lý stream dữ liệu trong Node.',
+  },
+  {
+    id: 'js-object-groupby', topic: 'Mảng & chuỗi',
+    q: '`Object.groupBy(arr, fn)` và `Map.groupBy(arr, fn)` khác nhau chỗ nào?',
+    options: [
+      '`Object.groupBy` gom theo chuỗi key và trả object không có prototype; `Map.groupBy` cho key là GIÁ TRỊ BẤT KỲ',
+      '`Object.groupBy` giữ nguyên thứ tự phần tử còn `Map.groupBy` sắp xếp lại theo key tăng dần',
+      '`Map.groupBy` chạy bất đồng bộ nên phải `await` kết quả trước khi dùng tới',
+      'Hai hàm giống hệt nhau, `Map.groupBy` chỉ là bí danh được thêm sau cho nhất quán',
+    ], answer: 0,
+    explain: 'Cả hai (ES2024) thay cho mẫu `reduce` gom nhóm quen thuộc. `Object.groupBy` ép key về CHUỖI và trả về object có prototype `null` — an toàn trước prototype pollution và không dính key kế thừa như `toString`. `Map.groupBy` giữ key ở dạng gốc nên gom theo object, số, hay `null` đều được, và giữ đúng thứ tự chèn. Cả hai giữ nguyên thứ tự phần tử trong mỗi nhóm. Ưu điểm so với `reduce` tự viết: đọc dễ hơn hẳn và tránh bẫy `{...acc}` mỗi vòng vốn biến thuật toán thành O(n²).',
+  },
+  {
+    id: 'js-deep-equal', topic: 'Object & tham chiếu',
+    q: 'Vì sao JS không có sẵn hàm so sánh SÂU hai object?',
+    options: [
+      'Vì so sánh sâu quá chậm nên uỷ ban ECMAScript đã quyết định không đưa nó vào chuẩn ngôn ngữ',
+      'Vì đã có `Object.is`, hàm này vốn so sánh sâu mọi thuộc tính lồng bên trong',
+      'Vì "bằng nhau" phụ thuộc ngữ cảnh: thứ tự key, vòng lặp tham chiếu, Date/Map/Set, NaN, prototype',
+      'Vì mọi object trong JS đều bất biến nên chỉ cần so sánh tham chiếu là đủ chính xác',
+    ], answer: 2,
+    explain: 'Không có định nghĩa "bằng nhau" duy nhất đúng: `{a:1,b:2}` và `{b:2,a:1}` có bằng nhau không (thường là có)? Hai `Date` cùng mốc? Hai instance khác class nhưng cùng field? `NaN` với `NaN`? Vòng lặp tham chiếu xử lý sao? Vì thế ngôn ngữ chỉ cung cấp so sánh THAM CHIẾU (`===`, và `Object.is` chỉ khác ở `NaN` với `±0`). Thực tế: dùng `node:assert.deepStrictEqual` trong test, lodash `isEqual` trong app, hoặc tự so theo schema. Trong React thì hầu như luôn nên tránh so sánh sâu — hãy giữ dữ liệu bất biến để so tham chiếu là đủ.',
+  },
+  {
+    id: 'js-async-error-chain', topic: 'Bất đồng bộ',
+    q: 'Trong `p.then(a).catch(b).then(c)`, khi `a` ném lỗi thì điều gì xảy ra?',
+    options: [
+      '`b` bắt lỗi, sau đó `c` VẪN chạy với giá trị mà `b` trả về — chuỗi được "chữa lành" và đi tiếp',
+      'Cả `b` và `c` đều bị bỏ qua, Promise trả về ở trạng thái rejected vĩnh viễn',
+      '`b` bắt lỗi rồi chuỗi dừng lại, `c` chỉ chạy khi `a` thành công',
+      'Lỗi được ném ra ngoài ngay lập tức, `catch` chỉ bắt được lỗi của chính `p`',
+    ], answer: 0,
+    explain: '`catch` trả về một Promise MỚI đã fulfilled với giá trị nó trả (`undefined` nếu không return gì) — nên chuỗi tiếp tục và `c` chạy. Đây là bẫy hay gặp: bắt lỗi rồi vẫn đi tiếp với dữ liệu rỗng, lỗi lan xuống dưới dưới dạng `undefined`. Muốn dừng hẳn thì trong `catch` phải `throw` lại. Ba điểm liên quan: `.catch(fn)` chỉ là `.then(undefined, fn)`; `.then(a, b)` KHÁC `.then(a).catch(b)` — dạng hai tham số không bắt được lỗi do chính `a` ném; và `finally` chạy ở cả hai nhánh, không đổi giá trị trừ khi nó tự ném lỗi.',
+  },
+  {
+    id: 'js-set-ops', topic: 'Object & tham chiếu',
+    q: 'Cách nào loại trùng một mảng object theo `id` cho đúng và hiệu quả?',
+    options: [
+      '`[...new Set(arr)]` — Set tự loại trùng cho mọi kiểu dữ liệu kể cả object',
+      '`arr.filter((x, i) => arr.findIndex(y => y.id === x.id) === i)` cho mọi kích thước mảng',
+      'Dùng Map theo key: `[...new Map(arr.map(x => [x.id, x])).values()]` — O(n)',
+      '`arr.sort()` rồi bỏ phần tử trùng liền kề, vì sắp xếp luôn nhanh hơn dùng bảng băm',
+    ], answer: 2,
+    explain: '`new Set(arr)` chỉ loại trùng theo THAM CHIẾU — hai object cùng `id` vẫn là hai phần tử khác nhau (Set dùng SameValueZero). Cách `filter` + `findIndex` đúng kết quả nhưng là O(n²), mảng chục nghìn phần tử là thấy chậm ngay. Dựng `Map` theo key cho O(n) và tiện chọn "giữ bản cuối" (như trên) hay "giữ bản đầu" (dùng `if (!map.has(k))`). Với mảng giá trị nguyên thuỷ thì `[...new Set(arr)]` là đúng và gọn nhất. ES2025 còn bổ sung phép toán tập hợp cho Set: `union`, `intersection`, `difference`, `isSubsetOf`.',
+  },
+  {
+    id: 'js-unicode', topic: 'Mảng & chuỗi',
+    q: 'Vì sao `"👨‍👩‍👧".length` không phải là 1, và cắt chuỗi kiểu `str.slice(0, 10)` lại nguy hiểm?',
+    options: [
+      'Vì JS đếm theo byte UTF-8 nên ký tự nhiều byte làm độ dài lớn hơn số ký tự nhìn thấy được',
+      'Vì `length` đếm ĐƠN VỊ MÃ UTF-16: ký tự ngoài BMP chiếm 2 đơn vị — cắt giữa chừng ra ký tự hỏng',
+      'Vì emoji được lưu như một ảnh nhỏ nên độ dài sẽ phụ thuộc kích thước ảnh của từng font',
+      'Vì chuỗi trong JS luôn có ký tự kết thúc ẩn ở cuối được tính vào thuộc tính length',
+    ], answer: 1,
+    explain: 'Chuỗi JS là dãy đơn vị mã UTF-16. Ký tự ngoài BMP (emoji, một số chữ Hán hiếm) cần một cặp surrogate = 2 đơn vị; emoji gia đình còn là NHIỀU codepoint nối bằng ZWJ. Nên `length` không phải số ký tự người dùng thấy, và `slice`/`substring` có thể cắt đôi một cặp surrogate tạo ký tự hỏng. Dùng `[...str]` hoặc `Array.from(str)` để tách theo CODEPOINT, và `Intl.Segmenter` để tách theo cụm ký tự người dùng cảm nhận (chuẩn nhất). Với tiếng Việt còn phải nhớ `normalize("NFC")`: "ế" có thể là 1 hoặc 2 codepoint — trông giống hệt nhau nhưng `===` trả false, gây bug so sánh/tìm kiếm trong DB.',
+  },
+  {
+    id: 'js-race-condition', topic: 'Bất đồng bộ',
+    q: 'JS đơn luồng thì có bị race condition không?',
+    options: [
+      'Không — đơn luồng nên mọi thao tác đều nguyên tử, không thể có tranh chấp xảy ra',
+      'CÓ: giữa hai `await`, code khác chen vào chạy — mẫu "kiểm tra rồi hành động" và double submit đều hỏng',
+      'Chỉ có khi dùng worker_threads, còn code chạy trên luồng chính thì luôn an toàn',
+      'Chỉ xảy ra ở Node, còn trên trình duyệt thì event loop đảm bảo thứ tự tuyệt đối',
+    ], answer: 1,
+    explain: 'Đơn luồng loại bỏ tranh chấp ở mức LỆNH, nhưng mỗi `await` là một điểm nhả quyền — request/sự kiện khác chạy xen vào. Ví dụ kinh điển: `const u = await find(id); if (!u) await create(id)` — hai request song song cùng thấy `!u` rồi cùng tạo, sinh bản ghi trùng. Hoặc người dùng bấm nút hai lần thành hai đơn hàng. Cách chữa: ràng buộc UNIQUE + upsert ở DB, khoá phân tán (Redis) hoặc `SELECT ... FOR UPDATE`, idempotency key, khoá nút khi đang gửi, và ở phía client thì huỷ request cũ bằng `AbortController` hoặc bỏ qua phản hồi đến muộn.',
+  },
 ];

@@ -700,4 +700,93 @@ window.NODE_QUIZ = [
     ], answer: 2,
     explain: 'Quy tắc: lưu và truyền UTC, đổi múi giờ ở rìa hệ thống (UI). Lưu theo giờ địa phương thì: DST làm một giờ bị lặp lại/biến mất mỗi năm, đổi server sang vùng khác là dữ liệu cũ sai hết, và so sánh/sắp xếp giữa các bản ghi khác vùng thành vô nghĩa. Postgres dùng `timestamptz` (KHÔNG phải `timestamp`) — nó chuẩn hoá về UTC; MySQL thì `DATETIME` lưu UTC + đặt `time_zone` rõ ràng. Ngoại lệ đáng nhớ: sự kiện tương lai theo lịch địa phương ("9h sáng thứ Hai ở Hà Nội") nên lưu thêm TÊN múi giờ IANA (`Asia/Ho_Chi_Minh`), vì quy tắc DST có thể đổi trước khi tới ngày đó.',
   },
+  // ===== Đợt #4 =====
+  {
+    id: 'node-upload-stream', topic: 'Stream',
+    q: 'Nhận file upload 500MB rồi đẩy lên S3 — cách làm đúng là gì?',
+    options: [
+      'Đọc toàn bộ vào Buffer, xong mới gọi SDK upload để chắc chắn file không bị hỏng',
+      'Ghi tạm ra đĩa bằng `writeFileSync`, upload xong thì xoá file tạm đi',
+      'STREAM thẳng từ `req` qua parser (busboy/multer) tới S3 — RAM chỉ giữ vài chục KB mỗi lúc',
+      'Chia file thành chuỗi base64 rồi gửi từng phần qua các request JSON nhỏ hơn',
+    ], answer: 2,
+    explain: 'Buffer nguyên file: 10 người upload đồng thời là 5GB RAM → OOM, chưa kể vượt giới hạn buffer của V8. `writeFileSync` thì chặn event loop và cần đĩa trống, dễ rác file tạm khi lỗi. Đúng nhất là stream: `req` vốn là Readable, cho qua busboy để tách phần file rồi truyền thẳng vào `Upload` (multipart) của AWS SDK v3 — backpressure tự động điều tiết. Kèm theo: giới hạn kích thước & số file, kiểm tra MIME thật (đọc magic bytes chứ đừng tin phần mở rộng), sinh tên file ngẫu nhiên, và cân nhắc PRESIGNED URL để client upload THẲNG lên S3, không đi qua server chút nào.',
+  },
+  {
+    id: 'node-otel', topic: 'Kiến trúc',
+    q: 'Ba trụ cột observability (log, metric, trace) khác nhau ở vai trò nào?',
+    options: [
+      'Log ghi SỰ KIỆN chi tiết; metric là số liệu tổng hợp để cảnh báo; trace nối một request qua nhiều service',
+      'Ba thứ là ba tên gọi khác nhau của cùng một loại dữ liệu, chỉ khác nhau ở định dạng lưu trữ',
+      'Log dành cho môi trường dev, metric dành cho staging, còn trace thì chỉ bật ở production',
+      'Log và metric do ứng dụng ghi, còn trace là thứ hạ tầng tự sinh mà app không can thiệp được',
+    ], answer: 0,
+    explain: 'METRIC trả lời "có gì bất thường không" — số đếm/histogram rẻ, giữ được lâu, dùng để cảnh báo (p95 latency, tỉ lệ lỗi, event loop lag). TRACE trả lời "chậm ở ĐÂU" — một `traceId` xuyên suốt gateway → service A → B → DB, mỗi chặng một span có thời gian. LOG trả lời "chuyện gì đã xảy ra" — chi tiết nhất, đắt nhất. Chúng phát huy khi được NỐI với nhau: log có kèm `traceId` thì từ một span chậm nhảy thẳng sang đúng dòng log. OpenTelemetry là chuẩn chung để làm việc đó; trong Node, `AsyncLocalStorage` là thứ giúp `traceId` theo được suốt chuỗi async mà không phải truyền tham số khắp nơi.',
+  },
+  {
+    id: 'node-worker-pool', topic: 'Cluster & Worker',
+    q: 'Dùng `worker_threads` cho tác vụ CPU thì nên tạo worker thế nào?',
+    options: [
+      'Tạo một worker MỚI cho mỗi request để worker nào lỗi cũng không ảnh hưởng request khác',
+      'Dùng POOL worker tái sử dụng (piscina) — khởi động một worker tốn ~10-30ms và một V8 heap riêng',
+      'Tạo sẵn một worker duy nhất cho toàn bộ ứng dụng và xếp hàng mọi tác vụ vào đó',
+      'Tạo số worker bằng số request đồng thời tối đa mà hệ thống dự kiến sẽ phục vụ',
+    ], answer: 1,
+    explain: 'Mỗi worker là một V8 isolate riêng: tốn hàng chục ms để khởi động và vài MB bộ nhớ — tạo mới mỗi request thì chi phí khởi động át cả phần việc muốn tăng tốc. Dùng pool kích thước ~số core (piscina lo sẵn hàng đợi, timeout, tái tạo worker chết). Một worker duy nhất thì thành nút cổ chai; tạo theo số request đồng thời thì tranh chấp CPU và ngốn RAM. Nhớ thêm: chi phí COPY dữ liệu qua `postMessage` có thể nuốt hết lợi ích nếu payload lớn (dùng transfer/SharedArrayBuffer), và nếu tác vụ nặng tới mức đó thì tách hẳn thành service/worker riêng qua queue thường là kiến trúc tốt hơn.',
+  },
+  {
+    id: 'node-retry', topic: 'Kiến trúc',
+    q: 'Retry khi gọi service khác thế nào cho đúng?',
+    options: [
+      'Retry ngay lập tức và không giới hạn số lần cho tới khi request thành công',
+      'Không bao giờ retry, vì thử lại luôn có nguy cơ tạo dữ liệu trùng ở phía bên kia',
+      'Chỉ retry thao tác IDEMPOTENT, với exponential backoff + jitter, giới hạn số lần, kèm circuit breaker',
+      'Retry mọi lỗi kể cả 4xx, vì lỗi nào cũng có thể chỉ là trục trặc nhất thời của mạng',
+    ], answer: 2,
+    explain: 'Retry sai làm sự cố NẶNG THÊM: dịch vụ kia đang quá tải mà bạn nhân ba lưu lượng, và mọi client cùng retry đúng một nhịp tạo "bão đồng bộ" — nên phải có JITTER (ngẫu nhiên hoá độ trễ) chứ không chỉ backoff. Chỉ retry lỗi TẠM THỜI: timeout, `ECONNRESET`, 429, 5xx — còn 400/401/404 thì thử lại vô nghĩa. Thao tác không idempotent (tạo đơn, trừ tiền) phải kèm idempotency key mới an toàn. Bọc thêm CIRCUIT BREAKER: lỗi liên tục thì mở mạch, fail nhanh một khoảng rồi thử lại dè dặt — vừa cứu mình vừa cho bên kia thời gian hồi phục.',
+  },
+  {
+    id: 'node-rate-limit', topic: 'Kiến trúc',
+    q: 'Rate limit bằng biến đếm trong RAM của tiến trình Node có vấn đề gì?',
+    options: [
+      'Không có vấn đề gì, đây là cách chuẩn vì đọc/ghi RAM nhanh hơn hẳn gọi ra Redis',
+      'Chỉ tốn thêm bộ nhớ chứ không ảnh hưởng độ chính xác của việc giới hạn',
+      'Mỗi instance đếm RIÊNG — chạy N pod thì hạn mức thực tế bị nhân lên N lần, và restart là mất sạch',
+      'Biến đếm trong RAM không đếm được request đi qua HTTPS vì nội dung đã bị mã hoá',
+    ], answer: 2,
+    explain: 'Giới hạn "100 req/phút" mà chạy 5 pod thì người dùng thực sự gửi được 500 — và mỗi lần deploy, bộ đếm reset. Muốn đúng thì đếm ở nơi DÙNG CHUNG: Redis (`INCR` + `EXPIRE`, hoặc sliding window bằng sorted set), hoặc đẩy hẳn lên API gateway/CDN — tốt nhất vì chặn được trước khi tốn tài nguyên app. Chọn thuật toán theo nhu cầu: fixed window đơn giản nhưng cho đột biến gấp đôi ở ranh giới cửa sổ; sliding window mượt hơn; token bucket cho phép burst có kiểm soát. Nhớ trả header `Retry-After`/`X-RateLimit-*` và phân hạn mức theo user/API key thay vì theo IP (NAT làm cả văn phòng chung một IP).',
+  },
+  {
+    id: 'node-config-validate', topic: 'Kiến trúc',
+    q: 'Vì sao nên validate biến môi trường ngay lúc khởi động thay vì đọc `process.env` rải rác?',
+    options: [
+      'Vì đọc `process.env` chậm nên gom lại một lần sẽ cải thiện đáng kể hiệu năng',
+      'Vì Node xoá `process.env` sau khi ứng dụng khởi động xong để tiết kiệm bộ nhớ',
+      'Để FAIL FAST: thiếu/sai config thì chết ngay lúc deploy, thay vì lỗi giữa đêm khi vào đúng nhánh code đó',
+      'Vì biến môi trường chỉ đọc được ở tiến trình cha, tiến trình con phải nhận qua tham số',
+    ], answer: 2,
+    explain: '`process.env.X` luôn là chuỗi hoặc `undefined` — không có validate thì `undefined` lặng lẽ trôi vào URL kết nối, `"false"` thành truthy, cổng thành `NaN`. Tệ nhất là lỗi chỉ lộ ra khi chạy đúng nhánh code hiếm gặp, lúc 2 giờ sáng. Cách làm: một module `config.ts` dùng schema (zod/envalid) parse & ép kiểu một lần lúc bootstrap, thiếu thì `process.exit(1)` — pod không bao giờ vào trạng thái ready với config hỏng, rollback tự động. Kèm theo: nêu giá trị mặc định an toàn, không log giá trị secret, và giữ `.env.example` liệt kê đủ biến cần thiết.',
+  },
+  {
+    id: 'node-cron-lock', topic: 'Kiến trúc',
+    q: 'Chạy `node-cron` trong service có 3 pod thì job định kỳ chạy mấy lần?',
+    options: [
+      'Một lần, vì Kubernetes tự điều phối để chỉ một pod thực thi job theo lịch',
+      'BA lần — mỗi pod một bản; cần khoá phân tán, CronJob riêng, hoặc queue có job lặp lại',
+      'Một lần, vì các pod tự bầu chọn pod chạy job thông qua service discovery',
+      'Ba lần nhưng vô hại, vì hai lần sau sẽ tự thất bại do dữ liệu đã được xử lý xong',
+    ], answer: 1,
+    explain: 'Mỗi pod là một tiến trình độc lập, timer trong đó không biết gì về pod khác — job gửi email chạy 3 lần, job tính công nợ cộng ba lần. Bốn cách xử lý: (1) khoá phân tán trước khi chạy (`SET key NX PX ttl` của Redis, hoặc `SELECT FOR UPDATE` trên bảng lịch); (2) tách thành **Kubernetes CronJob** riêng, chạy đúng một pod — sạch nhất; (3) dùng queue có repeatable job (BullMQ) để chính hàng đợi đảm bảo một lần; (4) leader election. Dù chọn cách nào, job vẫn nên IDEMPOTENT: đánh dấu bản ghi đã xử lý, vì mọi cơ chế trên đều có thể trùng trong tình huống hiếm.',
+  },
+  {
+    id: 'node-docker-layer', topic: 'Kiến trúc',
+    q: 'Vì sao Dockerfile Node nên `COPY package*.json` rồi `npm ci` TRƯỚC khi copy mã nguồn?',
+    options: [
+      'Vì npm yêu cầu thư mục phải trống khi cài, có sẵn mã nguồn sẽ gây xung đột file',
+      'Vì thứ tự đó khiến `node_modules` được nén tốt hơn, giảm dung lượng image cuối cùng',
+      'Để tận dụng CACHE LAYER: sửa mã nguồn mà dependency không đổi thì bỏ qua bước cài lại',
+      'Vì Docker chỉ cho phép mỗi lệnh COPY chạy một lần trong suốt quá trình build image',
+    ], answer: 2,
+    explain: 'Docker cache theo TỪNG LAYER và huỷ cache từ layer đầu tiên có thay đổi trở đi. Copy cả mã nguồn trước rồi mới `npm ci` thì mỗi lần sửa một dòng code là cài lại toàn bộ dependency — build từ 20 giây thành vài phút. Copy manifest trước, cài, rồi mới copy code thì bước cài chỉ chạy lại khi `package-lock.json` đổi. Các thực hành đi kèm: multi-stage build (stage build có devDependencies, stage cuối chỉ chứa `node_modules` production + dist), `.dockerignore` loại `node_modules`/`.git`, base image `-slim`/`-alpine`, chạy bằng user non-root, và `CMD ["node","server.js"]` dạng exec để nhận được SIGTERM.',
+  },
 ];

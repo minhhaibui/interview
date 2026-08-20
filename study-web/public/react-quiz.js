@@ -652,4 +652,93 @@ window.REACT_QUIZ = [
     ], answer: 1,
     explain: 'setState mỗi khung hình bắt React chạy trọn chu trình render + diff 60 lần/giây — thừa và dễ rớt khung. Ưu tiên để TRÌNH DUYỆT lo: CSS transition/animation trên `transform` và `opacity` được compositor xử lý, không gây layout/paint lại (tránh animate `width`, `top`, `margin`). Cần điều khiển bằng JS (kéo thả, cuộn) thì dùng `requestAnimationFrame` và ghi thẳng `ref.current.style.transform`, bỏ qua vòng render của React. Thư viện Framer Motion/react-spring đã làm sẵn việc này. Đo bằng tab Performance của DevTools, để ý dòng "dropped frames" và cảnh báo layout thrashing.',
   },
+  // ===== Đợt #4 =====
+  {
+    id: 'react-url-state', topic: 'Quản lý state',
+    q: 'Bộ lọc & số trang của một trang danh sách nên lưu ở đâu?',
+    options: [
+      'Trong `useState` của component trang, vì đó là state cục bộ không ai khác cần tới',
+      'Trong URL (query string) — chia sẻ link được, F5 không mất, nút back hoạt động đúng',
+      'Trong `localStorage` để người dùng quay lại vẫn thấy đúng bộ lọc lần trước',
+      'Trong một store toàn cục để mọi component đều đọc được mà không phải truyền props',
+    ], answer: 1,
+    explain: 'URL chính là một kho state có sẵn, và nó cho những thứ `useState` không cho: gửi link cho đồng nghiệp là họ thấy ĐÚNG kết quả đang lọc, F5 hay mở tab mới không mất trạng thái, nút back/forward của trình duyệt hoạt động tự nhiên, và SSR render được đúng nội dung ngay từ HTML đầu tiên. Dùng `useSearchParams` (React Router / Next.js) hoặc nuqs. Lưu ý: đừng đưa dữ liệu nhạy cảm vào URL, debounce khi đồng bộ ô tìm kiếm để không đẩy quá nhiều mục vào history (dùng `replace` thay `push`), và validate giá trị đọc từ URL vì người dùng sửa được.',
+  },
+  {
+    id: 'react-waterfall', topic: 'Hiệu năng',
+    q: 'Request waterfall trong React là gì và tránh thế nào?',
+    options: [
+      'Là hiệu ứng cuộn thác đổ trên giao diện, tránh bằng cách giảm số ảnh hiển thị cùng lúc',
+      'Là khi component cha fetch xong mới render con để con fetch tiếp — các request NỐI ĐUÔI thay vì song song',
+      'Là khi một request thất bại kéo theo mọi request phía sau cũng bị huỷ theo dây chuyền',
+      'Là khi server trả dữ liệu theo từng phần nhỏ khiến trình duyệt phải render lại nhiều lần',
+    ], answer: 1,
+    explain: 'Cha `useEffect` fetch user (300ms) → render xong con mới fetch orders (300ms) → cháu fetch chi tiết (300ms): tổng 900ms trong khi nếu song song chỉ 300ms. Càng lồng sâu càng tệ, và `Suspense` đặt sai chỗ cũng tạo waterfall tương tự. Cách tránh: nâng việc fetch lên cùng một tầng và chạy `Promise.all`; PREFETCH ở route loader (React Router loader, Next.js) trước khi render; dùng React Query prefetch khi hover; hoặc gộp thành một endpoint/GraphQL query trả đủ dữ liệu. Phát hiện bằng tab Network — nhìn thấy các thanh xếp bậc thang nối tiếp nhau là dính waterfall.',
+  },
+  {
+    id: 'react-imperative', topic: 'Hooks',
+    q: 'Khi nào `useImperativeHandle` là lựa chọn hợp lý?',
+    options: [
+      'Khi muốn component cha đọc và sửa trực tiếp state nội bộ của component con',
+      'Khi cần lộ vài HÀNH ĐỘNG mệnh lệnh (`focus`, `play`, `scrollTo`, `reset`) mà không lộ nguyên DOM node',
+      'Khi cần truyền dữ liệu xuống nhiều tầng mà không muốn dùng context hay props',
+      'Khi component con cần chạy lại effect mỗi lần component cha render lại',
+    ], answer: 1,
+    explain: 'Đa số tương tác nên KHAI BÁO qua props/state. Nhưng có những hành động vốn mang tính mệnh lệnh và không biểu diễn được bằng state: focus vào ô lỗi sau khi submit, phát/dừng video, cuộn tới một mục, reset form, mở modal. `useImperativeHandle(ref, () => ({ focus, reset }), [deps])` cho phép lộ ĐÚNG những hàm đó thay vì trả nguyên DOM node — giữ được tính đóng gói, cha không thể tự ý sửa style hay đọc giá trị bên trong. Đừng dùng nó để mô phỏng việc truyền state ngược lên; cái đó là dấu hiệu nên lift state lên cha.',
+  },
+  {
+    id: 'react-infinite-scroll', topic: 'Hiệu năng',
+    q: 'Làm cuộn vô hạn trong React thế nào là chuẩn?',
+    options: [
+      'Nghe sự kiện `scroll` của `window` rồi so sánh `scrollTop` với chiều cao ở mỗi lần cuộn',
+      'Dùng `setInterval` kiểm tra vị trí cuộn mỗi 100ms để biết khi nào chạm đáy trang',
+      'Dùng `IntersectionObserver` theo dõi phần tử "sentinel" ở cuối danh sách, nhớ ngắt observer khi unmount',
+      'Tải sẵn toàn bộ dữ liệu ngay lần đầu rồi chỉ hiển thị dần theo vị trí cuộn của người dùng',
+    ], answer: 2,
+    explain: 'Sự kiện `scroll` bắn hàng chục lần mỗi giây và việc đọc `offsetHeight`/`scrollTop` ép trình duyệt tính lại layout (layout thrashing) — phải throttle thủ công. `IntersectionObserver` do trình duyệt xử lý ngoài luồng chính, chỉ gọi callback khi sentinel lọt vào khung nhìn; nhớ `observer.disconnect()` trong cleanup của effect. Kèm theo cho một trải nghiệm hoàn chỉnh: chống gọi trùng khi đang tải (cờ `isFetching`), phân trang bằng CURSOR thay vì `offset` (offset sai lệch khi dữ liệu thay đổi), giữ vị trí cuộn khi quay lại, có nút "Tải thêm" dự phòng cho người dùng bàn phím, và ghép với virtualization nếu danh sách rất dài.',
+  },
+  {
+    id: 'react-dark-mode', topic: 'Chất lượng UI',
+    q: 'Dark mode bị "nháy trắng" một khoảnh khắc khi tải trang — vì sao?',
+    options: [
+      'Vì CSS transition trên màu nền chạy quá chậm nên mắt kịp thấy trạng thái trung gian',
+      'Vì theme được đọc trong `useEffect` — chạy SAU lần vẽ đầu tiên, nên trang vẽ theme mặc định trước rồi mới đổi',
+      'Vì trình duyệt luôn vẽ nền trắng trước khi áp dụng bất kỳ CSS nào của trang',
+      'Vì `localStorage` là API bất đồng bộ nên giá trị theme về muộn hơn lần render đầu',
+    ], answer: 1,
+    explain: 'Thứ tự: HTML/CSS vẽ theme mặc định → JS chạy → effect đọc `localStorage` → đổi class → vẽ lại. Khoảng giữa chính là cú nháy (FOUC). Cách chữa: chèn một script ĐỒNG BỘ nhỏ trong `<head>`, chạy TRƯỚC khi body được vẽ, đọc `localStorage` (API này đồng bộ) và gắn `class="dark"` lên thẻ `<html>` ngay. Kết hợp `prefers-color-scheme` làm mặc định khi người dùng chưa chọn, và `<meta name="color-scheme">` để chính khung trình duyệt cũng đúng tông. Với SSR còn phải cẩn thận hydration mismatch — đừng render nhánh phụ thuộc theme ở lần render đầu.',
+  },
+  {
+    id: 'react-form-schema', topic: 'Form & sự kiện',
+    q: 'Lợi ích lớn nhất của việc validate form bằng SCHEMA (zod/yup) là gì?',
+    options: [
+      'Schema chạy validate ở phía server nên client không cần tải thêm thư viện nào',
+      'Một nguồn sự thật: suy ra được kiểu TypeScript, dùng lại schema đó ở backend, thông báo lỗi nhất quán',
+      'Schema tự động sinh ra giao diện form từ định nghĩa các trường dữ liệu',
+      'Schema làm form chạy nhanh hơn vì kiểm tra được nhiều trường cùng một lúc',
+    ], answer: 1,
+    explain: 'Viết `if` rải rác thì luật validate trùng lặp giữa client và server, dễ lệch nhau, và kiểu TypeScript phải khai báo tay song song. Với zod, một schema cho ra cả ba: hàm parse lúc chạy, kiểu tĩnh qua `z.infer`, và thông báo lỗi có cấu trúc — ghép thẳng vào react-hook-form qua resolver. Quan trọng nhất: dùng LẠI chính schema đó ở API để validate body, nên luật chỉ có một chỗ. Nhưng nhớ nguyên tắc bảo mật: validate ở client là để TRẢI NGHIỆM, server vẫn phải validate lại — người dùng bỏ qua form và gọi thẳng API được.',
+  },
+  {
+    id: 'react-debounce-hook', topic: 'Hooks',
+    q: 'Debounce một ô tìm kiếm trong React, cách nào SAI?',
+    options: [
+      'Gọi `debounce(fn, 300)` ngay trong thân component rồi truyền kết quả vào `onChange`',
+      'Tạo hàm debounce bằng `useMemo`/`useRef` một lần, và huỷ timer trong cleanup của effect',
+      'Dùng `useDeferredValue` để React tự hạ ưu tiên phần render nặng theo từ khoá',
+      'Giữ giá trị gõ trong state rồi `useEffect` có deps là giá trị đó, đặt `setTimeout` và clear ở cleanup',
+    ], answer: 0,
+    explain: 'Gọi `debounce()` trong thân component tạo hàm MỚI ở mỗi lần render — mỗi phím gõ một timer riêng, nên không debounce được gì cả, thậm chí bắn nhiều request hơn. Phải giữ ỔN ĐỊNH: `useMemo(() => debounce(fn, 300), [])` hoặc `useRef`, và luôn `cancel()` trong cleanup để timer không chạy sau khi component đã unmount (gây setState trên component đã chết, và request thừa). Hai cách còn lại đều đúng và thường sạch hơn: mẫu `useEffect` + `setTimeout` + clear ở cleanup là bản debounce "thuần React"; còn `useDeferredValue` giải quyết trường hợp nghẽn ở RENDER chứ không phải ở số lần gọi API.',
+  },
+  {
+    id: 'react-modal-a11y', topic: 'Chất lượng UI',
+    q: 'Modal tự viết cần những gì ngoài việc hiển thị đúng vị trí?',
+    options: [
+      'Chỉ cần `z-index` đủ lớn và một lớp phủ mờ ở phía sau là đã đầy đủ chức năng',
+      'Chỉ cần đóng lại được khi người dùng bấm ra ngoài vùng nội dung của modal',
+      'Bẫy focus bên trong, đóng bằng `Esc`, trả focus về nút đã mở, `aria-modal`, khoá cuộn nền',
+      'Chỉ cần render qua portal vào `document.body` là trình duyệt sẽ tự lo phần còn lại',
+    ], answer: 2,
+    explain: 'Modal là chỗ dễ hỏng accessibility nhất. Cần: FOCUS TRAP (Tab không thoát ra nền phía sau), tự focus vào phần tử đầu khi mở và TRẢ focus về nút đã mở khi đóng, phím `Esc` để đóng, `role="dialog" aria-modal="true"` kèm `aria-labelledby` để screen reader đọc đúng, ẩn nội dung nền khỏi cây accessibility, và khoá cuộn body (nhớ bù `scrollbar-gutter` để trang không nhảy). Portal chỉ giải quyết vấn đề `z-index`/`overflow`. Vì nhiều thứ dễ sót, thực tế nên dùng thư viện đã kiểm chứng (Radix, React Aria, Headless UI) hoặc thẻ `<dialog>` gốc với `showModal()`.',
+  },
 ];
