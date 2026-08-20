@@ -877,4 +877,93 @@ window.NODE_QUIZ = [
       'ESM chỉ chạy được với Node phiên bản mới nhất nên phải nâng cấp runtime trước tiên',
     ], answer: 2,
     explain: 'Những chỗ vấp thật sự khi migrate: (1) import relative phải ghi ĐỦ đuôi `.js`; (2) mất `__dirname`/`__filename`/`require` — thay bằng `import.meta.url` + `fileURLToPath`, hoặc `createRequire`; (3) `import` là tĩnh và được hoisting, nạp có điều kiện phải dùng `await import()`; (4) TEST — `jest.mock` dựa trên require cache của CJS nên phải chuyển sang `jest.unstable_mockModule` hoặc `node:test` với mock module; (5) package chỉ có CJS thì import được nhưng named export có thể không phân tích ra, phải lấy default rồi destructure. Chiến lược an toàn: nâng Node ≥20, bật `"type": "module"` cho từng package nhỏ trước, hoặc dùng TypeScript rồi build ra cả hai định dạng.',
-  },];
+  },  // ===== Đợt #6 =====
+  {
+    id: 'node-multi-tenant', topic: 'Kiến trúc',
+    q: 'Ba cách cô lập dữ liệu multi-tenant khác nhau thế nào?',
+    options: [
+      'Chỉ có một cách đúng: mỗi khách hàng một database riêng để dữ liệu tuyệt đối tách bạch',
+      'Cột `tenant_id` chung bảng (rẻ, dễ rò nếu quên lọc) · schema riêng · database riêng (cô lập nhất, vận hành nặng)',
+      'Cả ba cách cho mức cô lập như nhau, chỉ khác nhau ở cú pháp truy vấn phải viết',
+      'Phân biệt theo tầng ứng dụng là đủ, database không cần biết gì về khái niệm tenant',
+    ], answer: 1,
+    explain: 'Đánh đổi giữa CHI PHÍ và CÔ LẬP. (1) Shared table + `tenant_id`: rẻ nhất, migration một lần, nhưng QUÊN một mệnh đề `WHERE tenant_id` là rò dữ liệu chéo — sự cố nghiêm trọng nhất của mô hình SaaS; hãy ép ở tầng thấp bằng Row-Level Security của Postgres hoặc global scope của ORM, đừng tin vào kỷ luật lập trình viên. (2) Schema riêng: cô lập tốt hơn, nhưng migration phải chạy trên N schema và pool connection phức tạp. (3) DB riêng: cô lập cao nhất, dễ khôi phục/xoá theo khách hàng và hợp yêu cầu tuân thủ, nhưng chi phí vận hành lớn. Thực tế nhiều SaaS trộn: khách nhỏ dùng shared, khách lớn tách riêng.',
+  },
+  {
+    id: 'node-soft-delete', topic: 'Kiến trúc',
+    q: 'Soft delete (`deleted_at`) mang lại lợi ích gì và kèm cạm bẫy nào?',
+    options: [
+      'Khôi phục được và giữ toàn vẹn tham chiếu; nhưng MỌI truy vấn phải lọc, và unique index dễ sai',
+      'Giúp bảng nhỏ gọn hơn vì các bản ghi cũ được nén lại thay vì lưu nguyên vẹn',
+      'Không có cạm bẫy nào cả, đây luôn là lựa chọn tốt hơn hẳn so với xoá thật',
+      'Chỉ dùng được với database NoSQL vì SQL không hỗ trợ việc đánh dấu bản ghi đã xoá',
+    ], answer: 0,
+    explain: 'Lợi: khôi phục nhầm lẫn, giữ lịch sử cho audit, không vỡ khoá ngoại của bản ghi liên quan. Bẫy thường gặp: (1) quên `WHERE deleted_at IS NULL` ở một truy vấn là dữ liệu đã xoá lại hiện ra — nên ép bằng VIEW hoặc global scope của ORM; (2) UNIQUE index vẫn tính bản ghi đã xoá nên không đăng ký lại được email cũ — dùng partial index `WHERE deleted_at IS NULL`; (3) bảng phình mãi, cần index kèm cột này; (4) yêu cầu GDPR "xoá dữ liệu của tôi" thì soft delete KHÔNG đủ, phải xoá thật hoặc ẩn danh hoá. Với nhu cầu audit, bảng lịch sử riêng thường sạch hơn là nhét cờ vào bảng chính.',
+  },
+  {
+    id: 'node-feature-flag', topic: 'Kiến trúc',
+    q: 'Feature flag giải quyết vấn đề gì mà nhánh Git dài ngày không giải quyết được?',
+    options: [
+      'Giúp code chạy nhanh hơn vì phần tính năng chưa bật sẽ bị loại bỏ khi build',
+      'Thay thế hoàn toàn việc kiểm thử vì có thể tắt tính năng ngay khi phát hiện lỗi',
+      'TÁCH deploy khỏi release: code lên production nhưng tắt, bật dần theo % người dùng, sự cố thì tắt tức thì',
+      'Cho phép nhiều lập trình viên sửa cùng một file mà không gây xung đột khi merge',
+    ], answer: 2,
+    explain: 'Nhánh dài ngày càng lệch xa main, merge càng đau và rủi ro dồn hết vào một lần. Feature flag cho phép merge liên tục vào main với tính năng TẮT, rồi bật cho nội bộ → 1% → 10% → toàn bộ, và TẮT NGAY khi có sự cố mà không cần rollback deploy — thời gian khắc phục tính bằng giây. Nó cũng là nền cho A/B testing và triển khai theo khách hàng. Cái giá: mỗi flag là một nhánh code phải test, hai flag là bốn tổ hợp — nên phải DỌN flag sau khi tính năng ổn định, đặt hạn cho từng flag, và không dùng flag cho thay đổi schema DB (cái đó cần expand/contract).',
+  },
+  {
+    id: 'node-deploy-strategy', topic: 'Kiến trúc',
+    q: 'Rolling, blue-green và canary khác nhau ở điểm nào?',
+    options: [
+      'Rolling thay dần từng pod; blue-green dựng môi trường mới rồi chuyển toàn bộ; canary cho % nhỏ traffic trước',
+      'Ba tên gọi khác nhau của cùng một quy trình, chỉ khác nhau ở công cụ triển khai được dùng',
+      'Rolling cần downtime, còn blue-green và canary thì không cần downtime chút nào',
+      'Chỉ khác nhau ở số lượng bản sao của ứng dụng chạy đồng thời trong lúc triển khai',
+    ], answer: 0,
+    explain: 'ROLLING (mặc định của K8s): thay dần từng pod — tiết kiệm tài nguyên, nhưng có giai đoạn cũ và mới CHẠY CÙNG LÚC nên schema/API phải tương thích ngược. BLUE-GREEN: dựng nguyên môi trường mới, test xong mới chuyển toàn bộ traffic — rollback tức thì bằng cách trỏ lại, đổi lại tốn gấp đôi tài nguyên và khó với DB dùng chung. CANARY: đẩy 1–5% traffic sang bản mới, theo dõi tỉ lệ lỗi/latency rồi mới tăng dần — phát hiện sớm với ảnh hưởng nhỏ nhất, nhưng cần định tuyến theo tỉ lệ và giám sát tốt. Cả ba đều đòi hỏi graceful shutdown và readiness probe đúng, nếu không vẫn đứt request giữa chừng.',
+  },
+  {
+    id: 'node-csv-large', topic: 'Stream',
+    q: 'Import file CSV 2 triệu dòng vào Postgres từ Node, cách nào tốt nhất?',
+    options: [
+      'Đọc cả file vào mảng rồi `forEach` gọi INSERT từng dòng cho dễ bắt lỗi từng bản ghi',
+      'Chia file thành nhiều phần rồi gọi song song 2 triệu INSERT bằng `Promise.all`',
+      'STREAM đọc + parse, gom theo LÔ vài nghìn dòng rồi bulk insert (hoặc `COPY`), có backpressure và checkpoint',
+      'Chuyển CSV sang JSON rồi dùng một câu INSERT khổng lồ chứa toàn bộ dữ liệu',
+    ], answer: 2,
+    explain: 'Đọc cả file là OOM; INSERT từng dòng là 2 triệu round-trip (hàng giờ); `Promise.all` thì bắn hết cùng lúc làm cạn pool và sập DB. Cách đúng: stream đọc file → parse CSV theo dòng → gom lô 1.000–5.000 dòng → bulk insert; với Postgres thì `COPY FROM STDIN` nhanh hơn INSERT nhiều lần. Vài điều cần kèm: giữ backpressure (dừng đọc khi đang ghi), CHECKPOINT vị trí đã xử lý để chạy lại được sau khi lỗi mà không nhân đôi dữ liệu, `ON CONFLICT DO NOTHING` cho tính idempotent, ghi lại dòng lỗi ra file riêng thay vì huỷ cả mẻ, và chạy trong worker/queue chứ không trong một HTTP request.',
+  },
+  {
+    id: 'node-pagination', topic: 'Kiến trúc',
+    q: 'Vì sao phân trang bằng `LIMIT 20 OFFSET 100000` là lựa chọn tồi?',
+    options: [
+      'Vì Postgres và MySQL đều giới hạn OFFSET tối đa ở mức 65535 nên trang sâu sẽ lỗi',
+      'Vì DB vẫn phải QUÉT rồi bỏ qua 100.000 dòng, và dữ liệu chèn giữa chừng làm lặp hoặc sót bản ghi',
+      'Vì OFFSET không dùng được cùng ORDER BY nên kết quả trả về không có thứ tự ổn định',
+      'Vì mỗi lần OFFSET tăng lên thì DB phải xây lại index từ đầu cho câu truy vấn đó',
+    ], answer: 1,
+    explain: 'OFFSET không "nhảy" tới vị trí — DB phải duyệt rồi VỨT BỎ từng dòng, nên trang 5.000 chậm hơn trang 1 cả trăm lần. Tệ hơn về mặt đúng đắn: có bản ghi mới chèn vào giữa lúc người dùng lật trang thì một số bản ghi bị hiện hai lần, số khác bị bỏ sót. Thay bằng CURSOR (keyset) pagination: `WHERE (created_at, id) < (?, ?) ORDER BY created_at DESC, id DESC LIMIT 20` — dùng thẳng index, thời gian không đổi dù trang sâu tới đâu, và ổn định khi dữ liệu thay đổi. Đánh đổi: không nhảy thẳng tới "trang 500" và khó đếm tổng số trang — thường chấp nhận được vì UI hiện đại dùng cuộn vô hạn.',
+  },
+  {
+    id: 'node-api-version', topic: 'Kiến trúc',
+    q: 'Cần đổi định dạng response của một API đang có client dùng — làm thế nào?',
+    options: [
+      'Đổi thẳng và thông báo cho các team client tự cập nhật trong vòng vài ngày tới',
+      'Thêm phiên bản mới (`/v2` hoặc header) chạy SONG SONG, để client chuyển dần rồi mới ngừng bản cũ',
+      'Thêm một tham số query `format=new` để client cũ không bị ảnh hưởng và bỏ luôn tài liệu bản cũ',
+      'Chỉ đổi ở môi trường production còn staging giữ nguyên để không phá vỡ quy trình test',
+    ], answer: 1,
+    explain: 'Bạn không kiểm soát được client — app di động đã cài trên máy người dùng có thể còn dùng bản cũ hàng năm. Nguyên tắc: thay đổi PHÁ VỠ tương thích thì phải có phiên bản mới chạy song song, kèm lịch ngừng hỗ trợ rõ ràng, đo lượng traffic còn dùng bản cũ trước khi tắt. Thay đổi KHÔNG phá vỡ (thêm field mới, thêm endpoint) thì không cần lên version — miễn client được viết theo nguyên tắc bỏ qua field lạ. Cách đánh version: đường dẫn `/v1` (dễ thấy, dễ định tuyến, phổ biến nhất), header `Accept`/`API-Version` (sạch về mặt REST nhưng khó debug bằng trình duyệt).',
+  },
+  {
+    id: 'node-error-response', topic: 'Kiến trúc',
+    q: 'Thiết kế response lỗi cho API thế nào là tốt?',
+    options: [
+      'Trả nguyên stack trace và message của exception để client dễ dàng gỡ lỗi khi tích hợp',
+      'Luôn trả HTTP 200 kèm `{success: false}` để client chỉ cần xử lý một nhánh duy nhất',
+      'Đúng status code + MÃ LỖI ổn định để client xử lý theo code, message thân thiện, không lộ chi tiết nội bộ',
+      'Chỉ trả status code, message để trống vì client tự biết ý nghĩa của từng mã HTTP',
+    ], answer: 2,
+    explain: 'Client cần một thứ MÁY ĐỌC ĐƯỢC và ổn định để rẽ nhánh: `{"code":"INSUFFICIENT_BALANCE","message":"...","traceId":"..."}` — code không đổi kể cả khi bạn sửa lời văn hay dịch sang ngôn ngữ khác. Kèm HTTP status đúng ngữ nghĩa (400 sai dữ liệu, 401 chưa xác thực, 403 không đủ quyền, 404 không tồn tại, 409 xung đột, 422 không hợp lệ về nghiệp vụ, 429 quá tần suất, 5xx lỗi phía server) — trả 200 cho mọi thứ làm hỏng cache, retry và giám sát tự động. Đừng trả stack trace: nó lộ đường dẫn, phiên bản thư viện, cấu trúc nội bộ cho kẻ tấn công — hãy log đầy đủ ở server rồi trả về `traceId` để đối chiếu. RFC 7807 (`application/problem+json`) là một chuẩn sẵn có.',
+  },
+];

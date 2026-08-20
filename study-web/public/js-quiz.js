@@ -957,4 +957,93 @@ window.JS_QUIZ = [
     ], answer: 0,
     explain: 'Mỗi lời gọi hàm chiếm một frame trên call stack; stack có giới hạn (thường ~10.000–15.000 tầng, tuỳ engine và kích thước frame) nên vượt qua là `RangeError`. Tail Call Optimization CÓ trong chuẩn ES2015 nhưng thực tế chỉ Safari/JavaScriptCore cài đặt — V8 và SpiderMonkey thì không, nên đừng trông cậy vào nó. Cách xử lý: viết lại thành VÒNG LẶP, tự quản lý một stack tường minh khi duyệt cây/đồ thị sâu, chia nhỏ công việc rồi nhả qua `setTimeout`/`setImmediate`, hoặc dùng trampoline. Cũng nhớ: dữ liệu do người dùng cung cấp (JSON lồng rất sâu) có thể là véc-tơ tấn công làm tràn stack.',
   },
+  // ===== Đợt #6 =====
+  {
+    id: 'js-reflect', topic: 'Meta-programming',
+    q: 'Trong một Proxy trap, vì sao nên gọi `Reflect.get(target, key, receiver)` thay vì `target[key]`?',
+    options: [
+      'Vì `Reflect` chạy nhanh hơn do bỏ qua bước tra cứu trên chuỗi prototype',
+      'Vì `Reflect` giữ đúng hành vi mặc định và truyền `receiver` — getter kế thừa mới thấy đúng `this`',
+      'Vì `target[key]` bị cấm bên trong trap và sẽ ném TypeError khi chạy ở strict mode',
+      'Vì `Reflect` tự động ghi log mọi thao tác truy cập để tiện gỡ lỗi khi cần',
+    ], answer: 1,
+    explain: '`Reflect` là bộ hàm phản chiếu ĐÚNG hành vi mặc định của từng trap, với chữ ký khớp một-một (`get`, `set`, `has`, `deleteProperty`, `ownKeys`...). Hai lợi ích: (1) trap chỉ cần thêm phần việc của mình rồi ủy quyền phần còn lại — không phải tự cài lại ngữ nghĩa; (2) tham số `receiver` giữ đúng `this` khi property là GETTER kế thừa từ prototype — dùng `target[key]` sẽ làm getter đó thấy `this` là target thay vì proxy, gây bug rất khó lần. Ngoài ra `Reflect` trả về giá trị hợp lý thay vì ném lỗi: `Reflect.set` trả boolean, `Reflect.defineProperty` trả boolean — hợp với thứ trap cần trả về.',
+  },
+  {
+    id: 'js-decorator', topic: 'Meta-programming',
+    q: 'Decorator (`@log`, `@Injectable`) về bản chất là gì?',
+    options: [
+      'Chú thích cho trình biên dịch, bị xoá hoàn toàn khi build nên không ảnh hưởng lúc chạy',
+      'Cú pháp riêng của TypeScript, JavaScript thuần không bao giờ hỗ trợ được',
+      'HÀM chạy lúc định nghĩa class, nhận phần tử được trang trí và có thể bọc/thay thế nó',
+      'Một dạng kế thừa nhiều lớp, class sẽ nhận toàn bộ method của decorator',
+    ], answer: 2,
+    explain: 'Decorator là hàm được gọi khi class được ĐỊNH NGHĨA (không phải khi khởi tạo), nhận phần tử được trang trí kèm context rồi trả về bản thay thế. Nhờ đó gói gọn được các mối quan tâm CẮT NGANG: logging, cache, đo thời gian, kiểm tra quyền, đăng ký DI (NestJS, Angular, TypeORM đều dựa vào nó). Lưu ý phiên bản: decorator chuẩn ES2022+ (stage 3) có API KHÁC hẳn `experimentalDecorators` cũ của TypeScript mà NestJS/TypeORM đang dùng — trộn hai kiểu là lỗi. Nhược điểm cần biết: làm luồng thực thi ẩn đi, khó lần khi debug, và thường cần `reflect-metadata` để đọc kiểu.',
+  },
+  {
+    id: 'js-abort-advanced', topic: 'Bất đồng bộ',
+    q: 'Muốn một request bị huỷ khi người dùng rời trang HOẶC quá 5 giây thì làm sao?',
+    options: [
+      'Tạo hai `AbortController` rồi truyền cả hai signal vào tham số `signal` của fetch',
+      'Dùng `AbortSignal.any([userSignal, AbortSignal.timeout(5000)])` — huỷ khi BẤT KỲ signal nào kích hoạt',
+      'Bọc fetch trong `Promise.race` với `setTimeout` — cách duy nhất kết hợp được hai điều kiện',
+      'Gọi `controller.abort()` hai lần, lần đầu đặt timeout còn lần sau khi người dùng rời trang',
+    ], answer: 1,
+    explain: '`fetch` chỉ nhận MỘT `signal`. `AbortSignal.any([...])` (Node 20+, trình duyệt hiện đại) gộp nhiều nguồn huỷ thành một — abort ngay khi cái đầu tiên kích hoạt, và `signal.reason` cho biết vì sao. `AbortSignal.timeout(ms)` là timeout dựng sẵn. So với `Promise.race` + `setTimeout`: race chỉ làm Promise của bạn resolve sớm chứ KHÔNG thật sự huỷ request — kết nối vẫn chạy, vẫn tốn socket và băng thông. Thực hành tốt: truyền `signal` xuyên suốt mọi tầng gọi API trong ứng dụng, và bắt riêng lỗi `AbortError` để không báo lỗi nhầm cho người dùng.',
+  },
+  {
+    id: 'js-immutable-perf', topic: 'Object & tham chiếu',
+    q: 'Cập nhật bất biến một state lồng sâu có tốn kém không?',
+    options: [
+      'Có, vì mỗi lần cập nhật phải deep clone toàn bộ cây dữ liệu từ gốc xuống lá',
+      'Không đáng kể: chỉ tạo lại các node TRÊN ĐƯỜNG từ gốc tới chỗ sửa, phần còn lại DÙNG CHUNG tham chiếu',
+      'Có, nên với state lớn thì bắt buộc phải mutate trực tiếp để giữ hiệu năng',
+      'Không, vì JavaScript tự động tối ưu và bỏ qua các phép copy không cần thiết',
+    ], answer: 1,
+    explain: 'Đây gọi là STRUCTURAL SHARING. Sửa `state.a.b.c` chỉ cần tạo object mới cho `state`, `a`, `b` — mọi nhánh khác giữ nguyên tham chiếu cũ, không copy gì. Chi phí tỉ lệ với ĐỘ SÂU (thường 3–5 tầng), không phải với kích thước dữ liệu. Nhờ vậy React/Redux so sánh nông (`===`) là biết chính xác nhánh nào đổi — vừa nhanh vừa đúng. Immer cho phép viết như đang mutate (`draft.a.b.c = 1`) rồi tự sinh ra kết quả bất biến theo đúng cách này. Chỗ THẬT SỰ tốn kém là spread trong vòng lặp (`{...acc}` mỗi vòng của reduce) — đó là O(n²), khác hẳn cập nhật lồng sâu.',
+  },
+  {
+    id: 'js-modern-api', topic: 'Cú pháp & runtime',
+    q: 'Nhóm API hiện đại nào giúp code an toàn hơn so với cách viết cũ?',
+    options: [
+      '`Object.hasOwn(o,k)` thay `o.hasOwnProperty(k)`, `arr.at(-1)` thay `arr[arr.length-1]`, `??=`/`||=`/`&&=`',
+      '`with(obj){}` để bớt phải gõ tên object lặp lại nhiều lần trong cùng một khối',
+      '`var` ở phạm vi module để biến dùng được ở mọi nơi mà không cần truyền qua tham số',
+      '`==` thay cho `===` để khỏi phải tự ép kiểu thủ công trước khi so sánh giá trị',
+    ], answer: 0,
+    explain: '`Object.hasOwn` (ES2022) an toàn hơn `o.hasOwnProperty` vì object tạo bằng `Object.create(null)` không có method đó, và key tên `hasOwnProperty` sẽ che mất bản gốc. `arr.at(-1)` lấy phần tử cuối gọn và chạy được cả với chuỗi. Toán tử gán logic `x ??= v` (chỉ gán khi nullish), `||=`, `&&=` short-circuit nên không gán thừa — quan trọng khi vế phải có side effect hoặc khi setter đắt. Vài cái đáng nhớ khác cùng thời: `Array.prototype.findLast`, `structuredClone`, `Error cause`, `Object.groupBy`, và top-level await trong ESM.',
+  },
+  {
+    id: 'js-long-task', topic: 'DOM & trình duyệt',
+    q: 'Tác vụ JS chạy 2 giây làm trang đơ — cách chia nhỏ nào ĐÚNG?',
+    options: [
+      'Bọc trong một `async function` rồi thêm `await` ở đầu để hàm được chạy bất đồng bộ',
+      'Đưa vào `Promise.resolve().then()` để đẩy sang microtask queue cho khỏi chặn',
+      'Chia thành từng mẻ, giữa các mẻ NHẢ quyền điều khiển qua `setTimeout(0)`/`scheduler.yield()`',
+      'Tăng độ ưu tiên của tác vụ đó bằng `requestIdleCallback` để trình duyệt xử lý nhanh hơn',
+    ], answer: 2,
+    explain: '`async`/`await` và microtask KHÔNG cứu được: microtask được vét sạch trước khi trình duyệt kịp render, nên vẫn đơ y như cũ. Muốn UI phản hồi thì phải trả quyền điều khiển về event loop giữa chừng — xử lý theo mẻ rồi `await new Promise(r => setTimeout(r, 0))`, hoặc `scheduler.yield()` (API mới, nhả nhưng vẫn giữ ưu tiên cao để quay lại nhanh). Tốt hơn nữa với việc thuần tính toán: đẩy sang Web Worker để luồng chính hoàn toàn rảnh. Chuẩn đo lường: mọi tác vụ trên 50ms bị tính là "long task" và làm hỏng chỉ số INP.',
+  },
+  {
+    id: 'js-web-crypto', topic: 'Bảo mật',
+    q: 'Cần băm/mã hoá ở phía JavaScript, nên dùng gì?',
+    options: [
+      'Tự viết hàm băm bằng phép XOR và dịch bit để không phụ thuộc thư viện bên ngoài',
+      'Dùng `btoa`/`atob` vì base64 khiến nội dung không thể đọc được bằng mắt thường',
+      'Web Crypto API (`crypto.subtle`) hoặc `node:crypto` — thuật toán chuẩn, đã kiểm định, chạy native',
+      'Dùng `Math.random()` làm khoá rồi mã hoá bằng phép cộng chuỗi cho nhanh và gọn',
+    ], answer: 2,
+    explain: 'Nguyên tắc số một của mật mã học ứng dụng: đừng tự cài đặt. Web Crypto (`crypto.subtle.digest/encrypt/sign/deriveKey`) và `node:crypto` cung cấp thuật toán đã qua kiểm định, chạy bằng mã native, chống được timing attack và có nguồn ngẫu nhiên an toàn (`crypto.getRandomValues`). `btoa` chỉ là ENCODING, ai cũng giải ngược được — không phải mã hoá. Hai lưu ý quan trọng: Web Crypto chỉ chạy trong secure context (HTTPS/localhost); và mã hoá ở CLIENT gần như luôn là nhầm lẫn về mô hình mối đe doạ — khoá nằm trong bundle thì ai cũng lấy được, hãy bảo vệ ở server.',
+  },
+  {
+    id: 'js-service-worker', topic: 'DOM & trình duyệt',
+    q: 'Service Worker khác Web Worker ở chỗ nào?',
+    options: [
+      'Service Worker chạy nhanh hơn vì được trình duyệt biên dịch sẵn khi cài đặt trang',
+      'Service Worker là PROXY mạng của trang: sống độc lập với tab, chặn request để cache và chạy offline',
+      'Service Worker được phép truy cập DOM còn Web Worker thì không',
+      'Hai loại giống nhau, Service Worker chỉ là tên gọi dùng cho ứng dụng dạng PWA',
+    ], answer: 1,
+    explain: 'Web Worker gắn với một tab và giải bài toán CPU. Service Worker là một worker đặc biệt đứng giữa trang và mạng: nghe sự kiện `fetch` để trả từ cache hay đi mạng, nên làm được offline, cache app shell, background sync, push notification — nền tảng của PWA (chính app study-web này dùng nó). Nó có vòng đời riêng (`install` → `activate`) và SỐNG SÓT qua việc đóng tab. Điều hay gây bối rối: bản mới chỉ tiếp quản sau khi mọi tab cũ đóng, trừ khi gọi `skipWaiting()` + `clients.claim()` — vì thế các app PWA thường hiện banner "có bản mới, tải lại". Chỉ chạy trên HTTPS/localhost.',
+  },
 ];

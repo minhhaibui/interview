@@ -829,4 +829,93 @@ window.REACT_QUIZ = [
       'An toàn với ứng dụng SSR vì mã nguồn chỉ chạy trên server chứ không gửi xuống client',
     ], answer: 2,
     explain: 'Bundler thay thế `import.meta.env.VITE_X` bằng GIÁ TRỊ CHUỖI lúc build — mở DevTools là thấy. Tiền tố `NEXT_PUBLIC_`/`VITE_` chính là lời cảnh báo "cái này sẽ công khai". Chỉ đặt ở đó những thứ vốn công khai: URL API, id analytics, publishable key của Stripe, site key của reCAPTCHA. Mọi secret thật (khoá bí mật, token DB, API key của đối tác) phải ở server — frontend gọi endpoint của bạn, server mới gọi tiếp ra ngoài. Với Next.js, biến KHÔNG có tiền tố chỉ có ở phía server, nhưng cẩn thận đừng lỡ truyền nó xuống client qua props của trang. Lỡ lộ rồi thì phải THU HỒI khoá, xoá code thôi là chưa đủ.',
-  },];
+  },  // ===== Đợt #6 =====
+  {
+    id: 'react-wizard', topic: 'Form & sự kiện',
+    q: 'Form nhiều bước (wizard), nên đặt dữ liệu ở đâu?',
+    options: [
+      'Mỗi bước giữ state riêng, tới bước cuối mới gom lại bằng cách đọc DOM của các bước trước',
+      'Một state DÙNG CHUNG ở component wizard (hoặc URL/storage), mỗi bước validate phần của mình',
+      'Lưu từng bước xuống database ngay khi người dùng bấm Tiếp để không bao giờ mất dữ liệu',
+      'Đưa tất cả vào context toàn cục để mọi component trong app đều đọc được dữ liệu form',
+    ], answer: 1,
+    explain: 'Bước sau thường phụ thuộc bước trước, và người dùng phải quay lui sửa được — nên dữ liệu phải sống ở nơi TỒN TẠI qua các bước, thường là state của wizard (hoặc `useReducer` cho state phức tạp). Nếu bước hiện tại nằm trên URL thì nút back của trình duyệt hoạt động tự nhiên và F5 không mất chỗ. Những điều thường bị bỏ sót: validate theo TỪNG bước (schema riêng cho mỗi bước, ghép lại lúc submit), giữ nguyên dữ liệu khi quay lui, chống mất dữ liệu khi đóng tab (`beforeunload` hoặc lưu nháp vào sessionStorage), và chỉ gọi API MỘT lần ở bước cuối trừ khi nghiệp vụ yêu cầu lưu nháp.',
+  },
+  {
+    id: 'react-dnd', topic: 'Chất lượng UI',
+    q: 'Làm kéo-thả sắp xếp danh sách trong React cần lưu ý gì?',
+    options: [
+      'Chỉ cần dùng HTML5 Drag and Drop API là đủ cho mọi thiết bị và mọi kiểu người dùng',
+      'HTML5 DnD không chạy trên cảm ứng và khó tiếp cận — cần pointer events, hỗ trợ bàn phím, key ổn định',
+      'Phải tắt hoàn toàn re-render ở trong lúc kéo, nếu không vị trí phần tử sẽ bị nhảy loạn',
+      'Chỉ nên làm kéo-thả với danh sách dưới 10 phần tử vì thuật toán sắp xếp rất tốn kém',
+    ], answer: 1,
+    explain: 'HTML5 DnD có tiếng là khó dùng: không hỗ trợ cảm ứng (điện thoại kéo không được), ảnh kéo khó tuỳ biến, sự kiện lắt léo. Thư viện hiện đại (dnd-kit) dùng pointer events nên chạy đồng nhất mọi thiết bị. Những thứ dễ quên: người dùng BÀN PHÍM cũng phải sắp xếp được (Space để nhấc, mũi tên để di chuyển, kèm thông báo qua `aria-live`), `key` phải theo id ổn định nếu không React sẽ hiểu sai phần tử nào di chuyển, cập nhật thứ tự LẠC QUAN ở client rồi mới gọi API (kèm hoàn tác khi lỗi), và lưu thứ tự bằng trường `position` thưa (100, 200, 300) để chèn giữa không phải cập nhật cả bảng.',
+  },
+  {
+    id: 'react-table', topic: 'Hiệu năng',
+    q: 'Bảng dữ liệu 100.000 dòng cần sort, filter, phân trang — kiến trúc nào đúng?',
+    options: [
+      'Tải hết về client rồi sort/filter bằng JavaScript để thao tác phản hồi tức thì',
+      'Đẩy sort/filter/phân trang về SERVER (có index), client chỉ hiển thị một trang và virtualize nếu trang dài',
+      'Tải hết về rồi lưu trong localStorage để lần sau vào không phải tải lại lần nữa',
+      'Chia thành 100 component bảng nhỏ, mỗi cái 1.000 dòng, rồi render tất cả cùng lúc',
+    ], answer: 1,
+    explain: '100.000 dòng là hàng chục MB JSON: tải lâu, parse chặn luồng chính, tốn RAM, và sort/filter trong JS sẽ đơ. Cho DB làm việc nó giỏi — có index thì sort/filter/`LIMIT` gần như tức thì. Client chỉ giữ một trang. Nếu trang vẫn dài (500+ dòng) thì thêm virtualization. Những mảnh ghép kèm theo: cursor pagination cho trang sâu, debounce ô tìm kiếm, đưa trạng thái sort/filter lên URL để chia sẻ và F5 được, giữ cache trang trước bằng React Query để lật trang không nháy, và xuất Excel thì tạo file ở server chứ đừng gom dữ liệu ở client.',
+  },
+  {
+    id: 'react-pwa-offline', topic: 'React hiện đại',
+    q: 'Muốn ứng dụng React dùng được khi mất mạng thì cần gì?',
+    options: [
+      'Chỉ cần lưu dữ liệu vào localStorage là ứng dụng sẽ tự động chạy được khi offline',
+      'Service Worker cache app shell, hàng đợi thao tác ghi để đồng bộ khi có mạng, và UI báo rõ trạng thái',
+      'Chỉ cần bật thuộc tính `offline` trong file manifest của ứng dụng web',
+      'Đóng gói ứng dụng thành app di động, chứ web thuần thì không thể chạy offline được',
+    ], answer: 1,
+    explain: 'Ba phần. (1) TÀI NGUYÊN: Service Worker cache HTML/JS/CSS để mở được app khi mất mạng — chiến lược tuỳ loại (cache-first cho file có hash, network-first cho HTML). (2) DỮ LIỆU: lưu vào IndexedDB (localStorage quá nhỏ và đồng bộ); thao tác GHI lúc offline thì đưa vào hàng đợi rồi phát lại khi có mạng (Background Sync) — và phải xử lý XUNG ĐỘT khi server đã đổi trong lúc đó. (3) UI: hiện rõ đang offline, thao tác nào đang chờ đồng bộ, dữ liệu cũ tới mức nào — người dùng phải biết mình đang xem gì. Đây là phần khó nhất, đừng hứa "offline-first" nếu chưa giải quyết được xung đột.',
+  },
+  {
+    id: 'react-css-strategy', topic: 'Chất lượng UI',
+    q: 'CSS-in-JS runtime (styled-components) có nhược điểm gì so với CSS Modules/Tailwind?',
+    options: [
+      'Không viết được style động phụ thuộc props nên phải dùng thêm class điều kiện',
+      'Không hỗ trợ pseudo-class và media query nên phải viết CSS riêng cho phần đó',
+      'Tính và chèn CSS lúc CHẠY: tốn JS, thêm việc mỗi lần render, và khó dùng trong Server Component',
+      'Không có tính năng cô lập style nên tên class vẫn xung đột giữa các component',
+    ], answer: 2,
+    explain: 'CSS-in-JS runtime rất tiện (style theo props, theme, cô lập tự động) nhưng phải trả giá lúc chạy: thư viện nằm trong bundle, mỗi render có thể phải sinh và chèn CSS, gây thêm việc cho luồng chính và có thể chớp style khi SSR. Nặng nhất là nó cần runtime của client nên KHÔNG dùng được trực tiếp trong React Server Component. Hai hướng thay thế đang phổ biến: CSS Modules (cô lập ở tầng build, không tốn runtime) và Tailwind (class dựng sẵn, CSS gần như không tăng theo số component). Nếu thích cú pháp CSS-in-JS thì có bản ZERO-RUNTIME trích xuất lúc build (vanilla-extract, Linaria, Panda).',
+  },
+  {
+    id: 'react-auth-flow', topic: 'Bảo mật',
+    q: 'Lưu access token của người dùng ở đâu trong ứng dụng React?',
+    options: [
+      'localStorage — tiện và tồn tại qua các phiên, đây là cách được khuyến nghị rộng rãi nhất',
+      'Cookie `HttpOnly` + `Secure` + `SameSite` là an toàn nhất; buộc phải dùng JS thì giữ trong BỘ NHỚ',
+      'Trong biến toàn cục `window.token` để mọi component đều truy cập được thật nhanh chóng',
+      'Trong URL để mỗi request đều tự động mang theo mà không cần cấu hình header',
+    ], answer: 1,
+    explain: 'Mọi thứ trong localStorage/sessionStorage đều đọc được bởi bất kỳ script nào chạy trên trang — một lỗ XSS (kể cả từ thư viện bên thứ ba) là mất token. Cookie `HttpOnly` thì JS không chạm tới được, kèm `Secure` (chỉ HTTPS) và `SameSite=Lax/Strict` (chống CSRF); nếu cần cross-site thì `SameSite=None` + phải có biện pháp chống CSRF riêng. Phương án thứ hai chấp nhận được: giữ access token trong BIẾN JS (mất khi F5) và dùng refresh token trong cookie HttpOnly để lấy lại. Kèm theo: access token hạn ngắn, refresh token xoay vòng và thu hồi được, đăng xuất thì huỷ ở server, và URL thì tuyệt đối không — nó nằm trong log, lịch sử duyệt web và header Referer.',
+  },
+  {
+    id: 'react-realtime', topic: 'Quản lý state',
+    q: 'Cần cập nhật dữ liệu gần thời gian thực — chọn polling, SSE hay WebSocket thế nào?',
+    options: [
+      'Luôn dùng WebSocket vì đó là công nghệ hiện đại nhất và cũng tiết kiệm băng thông nhất',
+      'Polling khi cập nhật thưa & chấp nhận trễ; SSE khi chỉ cần server→client; WebSocket khi cần hai chiều',
+      'Polling đã lỗi thời, mọi ứng dụng hiện nay nên chuyển hẳn sang WebSocket',
+      'Chọn theo backend: Node thì WebSocket, còn với các ngôn ngữ khác thì phải dùng polling',
+    ], answer: 1,
+    explain: 'Đừng bắt đầu bằng WebSocket. POLLING (React Query `refetchInterval`, hoặc chỉ cần refetch khi tab được focus) đơn giản nhất, dùng lại toàn bộ hạ tầng HTTP — đủ tốt cho bảng điều khiển, trạng thái đơn hàng, thông báo. SSE khi cần đẩy tức thì một chiều: tiến độ job, stream token của LLM, thông báo. WEBSOCKET khi client cũng gửi liên tục: chat, cộng tác thời gian thực, game. Chi phí của WebSocket không nhỏ: giữ kết nối lâu, cần pub/sub khi scale nhiều pod, phải tự lo reconnect và bù dữ liệu lỡ, rolling deploy làm đứt hàng loạt. Chọn thứ đơn giản nhất đáp ứng được yêu cầu độ trễ.',
+  },
+  {
+    id: 'react-class-lifecycle', topic: 'Hooks',
+    q: 'Vòng đời của class component tương ứng thế nào trong function component?',
+    options: [
+      '`componentDidMount` → `useEffect(fn, [])`; `componentDidUpdate` → `useEffect` có deps; unmount → cleanup',
+      'Không có tương ứng nào cả, phải giữ nguyên class khi cần tới các phương thức vòng đời',
+      'Mọi phương thức vòng đời đều gộp chung vào `useState`, hook này sẽ tự nhận biết giai đoạn',
+      '`componentDidMount` → `useMemo`; `componentDidUpdate` → `useCallback`; unmount → `useRef`',
+    ], answer: 0,
+    explain: 'Bản đồ chuyển đổi: `constructor` state → `useState`; `componentDidMount` → `useEffect(fn, [])`; `componentDidUpdate` → `useEffect(fn, [deps])`; `componentWillUnmount` → hàm trả về từ effect; `getDerivedStateFromProps` → tính thẳng khi render hoặc đổi `key`; `shouldComponentUpdate` → `React.memo`. Nhưng đừng dịch máy móc — hooks mời bạn nghĩ theo ĐỒNG BỘ HOÁ chứ không theo vòng đời: gom logic theo mối quan tâm (một effect lo subscription, một effect lo tiêu đề trang) thay vì gom theo thời điểm, vốn là lý do `componentDidMount` của class thường phình to và code cleanup nằm cách xa code khởi tạo. Hai thứ vẫn CHỈ class làm được: `getDerivedStateFromError`/`componentDidCatch` của error boundary.',
+  },
+];
