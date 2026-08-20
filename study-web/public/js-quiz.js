@@ -600,4 +600,94 @@ window.JS_QUIZ = [
     ], answer: 2,
     explain: 'Engine hiện đại dùng mark-and-sweep theo reachability, không phải reference counting — nhờ vậy hai object trỏ vòng vào nhau mà không ai ngoài trỏ tới thì VẪN được dọn. V8 chia generation: Scavenger cho young gen (đa số object chết trẻ, dọn rất nhanh), mark-compact cho old gen. Vì vậy "leak" trong JS thường là REACHABLE ngoài ý muốn: biến global, listener chưa gỡ, `setInterval` chưa clear, Map cache lớn dần, closure giữ object nặng. Không có cách ép GC chạy ở code thường (`--expose-gc` chỉ để debug).',
   },
+  // ===== Đợt #2 =====
+  {
+    id: 'js-symbol', topic: 'Meta-programming',
+    q: '`Symbol` sinh ra để giải quyết vấn đề gì?',
+    options: [
+      'Tạo chuỗi ngắn gọn hơn để tiết kiệm bộ nhớ khi dùng làm key của object lớn',
+      'Tạo key DUY NHẤT không bao giờ đụng key khác, và định nghĩa hành vi built-in qua well-known symbol',
+      'Đánh dấu biến là hằng số thật sự, không thể gán lại kể cả bên trong object',
+      'Mã hoá tên thuộc tính để người khác không đọc được khi xem mã nguồn đã build',
+    ], answer: 1,
+    explain: 'Mỗi `Symbol("x")` là một giá trị DUY NHẤT — hai symbol cùng mô tả vẫn khác nhau. Hai công dụng: (1) gắn metadata vào object của bên thứ ba mà chắc chắn không đụng key có sẵn (symbol key bị `Object.keys`/`JSON.stringify` bỏ qua, nên "ẩn" khỏi vòng lặp thông thường — nhưng KHÔNG phải private, `Object.getOwnPropertySymbols` vẫn thấy); (2) WELL-KNOWN SYMBOL để tuỳ biến hành vi ngôn ngữ: `Symbol.iterator` (cho `for...of`), `Symbol.asyncIterator`, `Symbol.toPrimitive`, `Symbol.hasInstance` (đổi `instanceof`), `Symbol.toStringTag`. Cần dùng chung symbol giữa các realm thì dùng `Symbol.for("key")` (registry toàn cục).',
+  },
+  {
+    id: 'js-safe-int', topic: 'Kiểu & ép kiểu',
+    q: 'Backend trả id `9007199254740993` mà frontend hiển thị sai số cuối — vì sao?',
+    options: [
+      'Vì JSON không hỗ trợ số nguyên quá 15 chữ số nên tự cắt bớt phần dư ở cuối chuỗi số',
+      'Vì `JSON.parse` mặc định làm tròn số về 6 chữ số thập phân theo chuẩn ECMA',
+      'Vì `number` là double 64-bit, chỉ chính xác tới 2⁵³−1 — id lớn phải truyền dưới dạng CHUỖI hoặc BigInt',
+      'Vì trình duyệt giới hạn độ dài của số ở 16 ký tự để tránh tràn bộ nhớ khi tính toán',
+    ], answer: 2,
+    explain: 'Double 64-bit chỉ biểu diễn CHÍNH XÁC số nguyên tới 2⁵³−1 = 9007199254740991. Vượt qua đó thì các số bắt đầu "dính" nhau: `9007199254740993` parse ra thành `9007199254740992`. Rất hay gặp với id Snowflake (64-bit), id của Twitter/Discord, hoặc `BIGINT` từ Postgres/MySQL. Cách chuẩn: API trả id dưới dạng CHUỖI (`"id": "9007199254740993"`). Nếu buộc phải tính toán thì dùng `BigInt` (`123n`) — nhưng BigInt không trộn được với number trong cùng phép toán và `JSON.stringify` sẽ ném TypeError. Kiểm tra bằng `Number.isSafeInteger(x)`.',
+  },
+  {
+    id: 'js-regex-backtrack', topic: 'Mảng & chuỗi',
+    q: 'ReDoS (catastrophic backtracking) trong biểu thức chính quy là gì?',
+    options: [
+      'Regex quá dài làm engine hết bộ nhớ khi biên dịch thành máy trạng thái nội bộ',
+      'Regex lồng lượng từ (`(a+)+$`) khiến số đường thử tăng theo hàm mũ — một chuỗi ngắn cũng treo CPU hàng phút',
+      'Regex có ký tự Unicode làm engine phải quét lại chuỗi nhiều lần từ đầu tới cuối',
+      'Regex dùng nhóm bắt `()` quá nhiều khiến engine phải cấp phát thêm mảng kết quả',
+    ], answer: 1,
+    explain: 'Engine regex kiểu backtracking sẽ THỬ LẠI mọi cách chia khi không khớp. Với mẫu lồng lượng từ như `(a+)+$` hoặc `(\\w+\\s?)*$`, số cách chia tăng theo 2ⁿ — chuỗi 30 ký tự "aaaa...!" đủ treo event loop Node hàng phút, biến một input người dùng thành cuộc tấn công từ chối dịch vụ. Phòng: tránh lồng lượng từ và nhánh chồng lấn, neo mẫu (`^...$`), giới hạn độ dài input TRƯỚC khi match, dùng thư viện an toàn (RE2 không backtracking), và quét regex bằng công cụ như `safe-regex`/`eslint-plugin-redos`.',
+  },
+  {
+    id: 'js-regex-lastindex', topic: 'Mảng & chuỗi',
+    q: 'Vì sao `re.test(s)` với regex có cờ `/g` lại lúc true lúc false trên cùng chuỗi?',
+    code: 'const re = /a/g;\nconsole.log(re.test("a"), re.test("a"), re.test("a"));',
+    options: [
+      'Vì cờ `g` khiến regex chạy bất đồng bộ nên kết quả phụ thuộc thứ tự hoàn thành',
+      'Vì `test` với `/g` chỉ trả true cho lần khớp ĐẦU TIÊN, các lần sau luôn trả về false',
+      'Vì regex có `g` (hoặc `y`) giữ `lastIndex` giữa các lần gọi — hết chuỗi thì reset về 0 rồi lặp lại chu kỳ',
+      'Vì engine cache kết quả regex nên lần gọi thứ hai lấy giá trị cũ đã hết hạn cache',
+    ], answer: 2,
+    explain: 'Regex có cờ `g`/`y` là object CÓ TRẠNG THÁI: `test`/`exec` bắt đầu tìm từ `re.lastIndex` và cập nhật nó sau mỗi lần khớp; không khớp thì reset về 0. Nên ví dụ trên in `true false true` — bẫy chết người khi dùng một regex hằng ở module-level để validate trong vòng lặp hoặc trong middleware (request này pass, request kia fail ngẫu nhiên). Cách chữa: bỏ cờ `g` khi chỉ cần kiểm tra, tạo regex mới mỗi lần dùng, hoặc reset `re.lastIndex = 0` trước khi gọi.',
+  },
+  {
+    id: 'js-array-mutate', topic: 'Mảng & chuỗi',
+    q: 'Nhóm nào SỬA TẠI CHỖ mảng gốc (mutate) chứ không trả mảng mới?',
+    options: [
+      '`push`, `pop`, `splice`, `sort`, `reverse`, `fill` — còn `map`/`filter`/`slice`/`concat` trả mảng mới',
+      '`map`, `filter`, `slice`, `concat` — còn `push`/`pop`/`sort` đều trả về một mảng mới',
+      'Tất cả method của Array đều mutate, muốn bất biến thì phải tự spread trước khi gọi',
+      'Không method nào mutate cả, mảng trong JS vốn là cấu trúc dữ liệu bất biến',
+    ], answer: 0,
+    explain: 'Mutate: `push`, `pop`, `shift`, `unshift`, `splice`, `sort`, `reverse`, `fill`, `copyWithin`. Trả mảng mới: `map`, `filter`, `slice`, `concat`, `flat`, `flatMap`. Bẫy hay gặp nhất là `sort`/`reverse` — trông như hàm thuần vì CÓ trả về mảng, nhưng đó chính là mảng gốc đã bị sắp lại; `state.items.sort()` trong React là bug ngay. ES2023 thêm bản bất biến: `toSorted`, `toReversed`, `toSpliced`, `with(i, v)`. Mẹo nhớ: tên ở dạng mệnh lệnh thì mutate, tên có `to` ở đầu thì trả bản mới.',
+  },
+  {
+    id: 'js-destructure-default', topic: 'Cú pháp & runtime',
+    q: 'Giá trị mặc định khi destructuring (`const {a = 1} = obj`) áp dụng khi nào?',
+    options: [
+      'Khi giá trị là falsy: `undefined`, `null`, `0`, chuỗi rỗng hoặc `false` đều lấy mặc định',
+      'CHỈ khi giá trị đúng bằng `undefined` — `null`, `0`, `""` vẫn được giữ nguyên như bình thường',
+      'Khi key hoàn toàn không tồn tại trong object, còn key tồn tại với giá trị `undefined` thì không',
+      'Khi giá trị không cùng kiểu với giá trị mặc định được khai báo trong biểu thức',
+    ], answer: 1,
+    explain: 'Default chỉ kích hoạt với `undefined` — giống hệt tham số mặc định của hàm. Nên `const {a = 1} = {a: null}` cho `a === null` (không phải 1), và `f(undefined)` thì lấy default còn `f(null)` thì không. Đây là nguồn bug rất hay gặp khi API trả `null` cho field rỗng: bạn tưởng default sẽ đỡ nhưng thực tế nhận `null` rồi nổ ở dòng sau. Cách xử lý: chuẩn hoá `null` về `undefined` ở tầng biên, hoặc dùng `?? giá trị` sau khi destructure. Biểu thức default được đánh giá LƯỜI (chỉ chạy khi cần) nên đặt lời gọi hàm vào đó vẫn an toàn.',
+  },
+  {
+    id: 'js-error-cause', topic: 'Xử lý lỗi',
+    q: 'Ném lỗi tuỳ biến trong JS thế nào cho đúng?',
+    options: [
+      'Ném chuỗi hoặc object thường (`throw "lỗi"`, `throw {code: 500}`) cho gọn và dễ serialize',
+      'Luôn ném cùng một `new Error()` chung rồi phân biệt bằng cách đọc nội dung message',
+      '`class AppError extends Error` + đặt `name`, giữ nguyên nguyên nhân gốc qua `{cause}`',
+      'Trả về object `{ok:false, error}` thay vì throw, vì throw làm mất stack trace của hàm gọi',
+    ], answer: 2,
+    explain: 'Ném chuỗi/object thường thì MẤT stack trace — thứ quý nhất khi debug production. Kế thừa `Error` để giữ stack, `instanceof` phân loại được, và đặt `this.name` cho log dễ đọc; thêm field nghiệp vụ (`statusCode`, `code`) để tầng trên xử lý. ES2022 có `new Error("không tạo được đơn", { cause: err })` — giữ NGUYÊN NHÂN GỐC thay vì nuốt mất khi bọc lỗi qua nhiều tầng; `console.error` và Node in cả chuỗi cause. Lưu ý khi kế thừa qua transpile xuống ES5 thì `instanceof` có thể hỏng (cần `Object.setPrototypeOf(this, new.target.prototype)`).',
+  },
+  {
+    id: 'js-async-iterator', topic: 'Generator & iterator',
+    q: '`for await (const x of src)` khác `for (const x of src)` ở chỗ nào?',
+    options: [
+      'Nó chạy song song mọi phần tử rồi gom kết quả lại theo đúng thứ tự ban đầu của nguồn',
+      'Nó tự động bọc mỗi phần tử vào Promise.resolve trước khi đưa vào thân vòng lặp',
+      'Nó dùng `Symbol.asyncIterator` và AWAIT từng phần tử — duyệt được nguồn sinh dữ liệu dần (stream, phân trang API)',
+      'Nó chỉ khác về cú pháp, còn cách duyệt và thời điểm lấy phần tử thì hoàn toàn như nhau',
+    ], answer: 2,
+    explain: '`for await...of` gọi `src[Symbol.asyncIterator]()` (không có thì rơi về iterator đồng bộ và await từng giá trị), chờ mỗi `next()` resolve rồi mới chạy thân vòng — nên xử lý TUẦN TỰ, có backpressure tự nhiên. Ứng dụng backend rất thực tế: duyệt stream Node (`for await (const chunk of fs.createReadStream(f))`), duyệt cursor MongoDB, hoặc gọi API phân trang bằng async generator `async function* pages() { ... yield rows }` — code trông như vòng lặp thường mà không phải nạp hết vào RAM. Muốn chạy SONG SONG thì đây là lựa chọn sai, hãy dùng `Promise.all` (hoặc p-limit để giới hạn).',
+  },
 ];

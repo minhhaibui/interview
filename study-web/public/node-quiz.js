@@ -522,4 +522,93 @@ window.NODE_QUIZ = [
     ], answer: 1,
     explain: 'PID 1 phải nhận và chuyển tiếp tín hiệu; npm là một lớp bọc và thường không forward SIGTERM tới `node` con, cũng không reap tiến trình mồ côi. Kết quả: khi K8s gửi SIGTERM, app không kịp graceful shutdown và bị SIGKILL sau grace period — request đang xử lý bị đứt. Chuẩn: `CMD ["node", "server.js"]` (exec form, không dùng shell form) và thêm `--init`/tini nếu cần reap zombie. Kèm theo các thực hành khác: multi-stage build, chạy bằng user non-root, `NODE_ENV=production`, và `npm ci --omit=dev`.',
   },
+  // ===== Đợt #2 =====
+  {
+    id: 'node-fs-api', topic: 'Hiệu năng',
+    q: 'Node có 3 kiểu API cho `fs` — nên chọn kiểu nào trong service?',
+    options: [
+      '`fs.readFileSync` vì code gọn nhất và không phải lo callback hell hay chuỗi Promise dài',
+      '`fs/promises` (async/await) cho code trong request; bản `*Sync` chỉ dùng lúc khởi động hoặc script CLI',
+      'Bản callback cổ điển vì nó nhanh hơn Promise do không phải tạo object trung gian',
+      'Kiểu nào cũng như nhau vì cả ba đều được libuv đẩy sang thread pool để xử lý',
+    ], answer: 1,
+    explain: 'Ba kiểu: callback (`fs.readFile(p, cb)`), promise (`require("fs/promises")`), và sync (`fs.readFileSync`). Sync CHẶN event loop — chỉ chấp nhận được lúc bootstrap (đọc config, cert) hoặc script chạy một lần. Trong đường xử lý request luôn dùng `fs/promises` cho dễ đọc và bắt lỗi bằng try/catch. Nhớ thêm: file LỚN thì đừng `readFile` kiểu nào cả — dùng stream để không nạp hết vào RAM. Và mọi bản async đều chạy trên thread pool 4 luồng của libuv, nên hàng chục thao tác fs đồng thời vẫn phải xếp hàng.',
+  },
+  {
+    id: 'node-path-traversal', topic: 'Bảo mật',
+    q: 'API tải file nhận `req.query.name` rồi `fs.readFile(path.join(DIR, name))` — lỗ hổng gì?',
+    options: [
+      'Không có lỗ hổng vì `path.join` đã tự động loại bỏ mọi ký tự nguy hiểm trong đường dẫn',
+      'Chỉ rò rỉ tên file trong thư mục, nội dung vẫn an toàn vì bị giới hạn bởi quyền của tiến trình',
+      'PATH TRAVERSAL: `name = "../../.env"` thoát khỏi thư mục — phải `resolve` rồi kiểm tra prefix, hoặc dùng allowlist',
+      'Chỉ là vấn đề hiệu năng vì đường dẫn dài làm hệ điều hành phải duyệt nhiều thư mục hơn',
+    ], answer: 2,
+    explain: '`path.join("/app/files", "../../.env")` cho ra `/.env` — `join` CHUẨN HOÁ đường dẫn chứ không chặn thoát thư mục. Kẻ tấn công đọc được `.env`, `/etc/passwd`, key SSH. Cách chữa đúng: `const p = path.resolve(DIR, name); if (!p.startsWith(DIR + path.sep)) throw ...` — kiểm tra SAU khi resolve; tốt hơn nữa là đừng nhận tên file từ người dùng mà dùng id tra ra tên thật trong DB (allowlist). Cẩn thận thêm: ký tự null byte, symlink trỏ ra ngoài, và tên file đã URL-encode (`%2e%2e%2f`) được decode trước khi tới tay bạn.',
+  },
+  {
+    id: 'node-crypto-random', topic: 'Bảo mật',
+    q: 'Sinh token đặt lại mật khẩu bằng `Math.random().toString(36)` có vấn đề gì?',
+    options: [
+      'Chỉ là vấn đề độ dài: token quá ngắn nên dễ trùng nhau giữa các người dùng khác nhau',
+      '`Math.random` KHÔNG an toàn mật mã — kết quả đoán được từ vài mẫu; phải dùng `crypto.randomBytes`/`randomUUID`',
+      'Không có vấn đề gì, `Math.random` trong V8 đã dùng nguồn entropy của hệ điều hành',
+      '`toString(36)` làm mất entropy vì chỉ giữ lại chữ số và chữ cái thường trong kết quả',
+    ], answer: 1,
+    explain: '`Math.random` dùng PRNG (xorshift128+) tối ưu cho TỐC ĐỘ, không phải bảo mật: biết vài giá trị liên tiếp là suy được trạng thái nội bộ và dự đoán mọi giá trị sau — đủ để kẻ tấn công đoán token reset password của người khác. Dùng CSPRNG: `crypto.randomBytes(32).toString("hex")`, `crypto.randomUUID()`, hoặc `crypto.getRandomValues`. Áp dụng cho: token reset, session id, mã OTP, salt, state của OAuth, tên file tạm. Kèm theo: token phải có HẠN ngắn, dùng một lần, và lưu ở DB dưới dạng đã BĂM (rò DB thì token vẫn vô dụng).',
+  },
+  {
+    id: 'node-express-error', topic: 'HTTP',
+    q: 'Trong Express 4, vì sao lỗi ném từ một async route handler lại làm treo request?',
+    options: [
+      'Vì Express chỉ bắt lỗi ném ĐỒNG BỘ — Promise reject không ai bắt nên không tới được error middleware',
+      'Vì async handler chạy trên thread pool riêng nên Express mất dấu request tương ứng',
+      'Vì Express cần handler khai báo đủ 4 tham số thì mới nhận diện được đây là route hợp lệ',
+      'Vì lỗi bất đồng bộ luôn bị chuyển thành sự kiện `error` của server nên không vào middleware',
+    ], answer: 0,
+    explain: 'Express 4 bọc handler trong try/catch ĐỒNG BỘ; `async` handler trả Promise, reject của nó Express không biết → không gọi `next(err)` → request treo tới timeout, và Node ≥15 có thể crash vì unhandled rejection. Ba cách chữa: (1) tự `try { } catch (e) { next(e) }`; (2) wrapper `const wrap = fn => (req,res,next) => Promise.resolve(fn(req,res,next)).catch(next)`; (3) nâng lên Express 5 — đã tự chuyển tiếp Promise reject. Nhớ thêm: error middleware phải khai báo ĐỦ 4 tham số `(err, req, res, next)` mới được nhận diện, và phải đăng ký SAU tất cả route.',
+  },
+  {
+    id: 'node-body-limit', topic: 'Bảo mật',
+    q: 'Vì sao phải giới hạn kích thước request body?',
+    options: [
+      'Để tiết kiệm băng thông mạng cho người dùng đang dùng kết nối di động chậm',
+      'Vì Node không parse được JSON lớn hơn 1MB nên request sẽ lỗi cú pháp khi vượt ngưỡng',
+      'Không có body limit thì một request lớn nuốt hết RAM (và `JSON.parse` chặn loop) — DoS chỉ với vài request',
+      'Để đảm bảo request đi vừa trong một gói TCP duy nhất, tránh phải ghép lại nhiều mảnh',
+    ], answer: 2,
+    explain: 'Body được gom vào RAM trước khi parse: vài request body 500MB là hết bộ nhớ tiến trình, chưa kể `JSON.parse` một chuỗi khổng lồ chặn event loop hàng giây. Đặt `express.json({ limit: "100kb" })` (mặc định đã là 100kb — đừng nâng vô cớ) và cấu hình limit ở cả reverse proxy (`client_max_body_size` của nginx). Upload file thì đừng đi qua body parser: stream thẳng lên S3/đĩa bằng busboy/multer với giới hạn kích thước và kiểm tra loại file. Cùng nhóm phòng thủ: rate limit, timeout, và giới hạn số kết nối đồng thời.',
+  },
+  {
+    id: 'node-proto-pollution', topic: 'Bảo mật',
+    q: 'Prototype pollution xảy ra thế nào và hậu quả ra sao?',
+    options: [
+      'Khi hai module npm định nghĩa cùng một tên class, prototype của chúng ghi đè lẫn nhau lúc chạy',
+      'Khi merge sâu object từ input người dùng mà không lọc key `__proto__` — mọi object trong app bị thêm thuộc tính',
+      'Khi gán `Object.prototype = null` khiến mọi object trong app mất hết method kế thừa sẵn có',
+      'Khi tạo quá nhiều instance khiến chuỗi prototype dài ra và tra cứu thuộc tính bị chậm dần',
+    ], answer: 1,
+    explain: 'Gửi `{"__proto__": {"isAdmin": true}}` vào một hàm deep-merge cẩu thả thì `Object.prototype.isAdmin = true` — TỪ ĐÓ mọi object trong tiến trình đều "có" `isAdmin`, vượt qua kiểm tra quyền, hoặc chèn được `Object.prototype.shell` để leo thang thành RCE trong một số thư viện. Phòng: bỏ qua key `__proto__`/`constructor`/`prototype` khi merge, dùng `Object.create(null)` cho map thuần, `Object.freeze(Object.prototype)` lúc khởi động, validate input bằng schema (zod/ajv) có `additionalProperties: false`, và dùng `Map` thay object khi key đến từ người dùng.',
+  },
+  {
+    id: 'node-dns', topic: 'Event loop & libuv',
+    q: '`dns.lookup` và `dns.resolve` khác nhau ở điểm nào quan trọng nhất?',
+    options: [
+      '`lookup` trả về nhiều bản ghi, còn `resolve` thì chỉ trả về đúng một địa chỉ IP duy nhất',
+      '`lookup` gọi getaddrinfo của HĐH nên chạy trên THREAD POOL (dễ nghẽn); `resolve` truy vấn DNS qua mạng',
+      '`lookup` là bản đồng bộ, còn `resolve` là bản bất đồng bộ của cùng một chức năng đó',
+      '`lookup` chỉ hoạt động với tên miền nội bộ còn `resolve` dùng cho tên miền công khai',
+    ], answer: 1,
+    explain: '`dns.lookup` (thứ mà `http`, `net`, mọi HTTP client dùng ngầm) gọi `getaddrinfo` của hệ điều hành — API này KHÔNG có bản async nên libuv phải chạy nó trên thread pool 4 luồng, dùng chung với `fs`, `crypto`, `zlib`. Hệ quả bất ngờ: DNS chậm làm nghẽn cả thao tác đọc file, và ngược lại. `dns.resolve*` dùng c-ares gửi truy vấn DNS thẳng qua mạng, không chiếm thread — nhưng bỏ qua `/etc/hosts` và cấu hình hệ thống. Trong service tải cao nên bật DNS cache ở tầng ứng dụng (`cacheable-lookup`) và cân nhắc tăng `UV_THREADPOOL_SIZE`.',
+  },
+  {
+    id: 'node-profiling', topic: 'Hiệu năng',
+    q: 'Service Node chậm mà không biết vì sao — công cụ nào cho biết CPU đang tốn ở đâu?',
+    options: [
+      'Rải `console.time`/`console.timeEnd` khắp code rồi đọc log để đoán xem hàm nào đang chậm nhất',
+      'Đọc `process.memoryUsage()` định kỳ, vì bộ nhớ tăng luôn đồng nghĩa với CPU cao',
+      'CPU profile (`--cpu-prof`, `--inspect` + DevTools, clinic/0x) cho flame graph theo hàm, kèm đo event loop lag',
+      'Bật `NODE_DEBUG=*` để Node in ra thời gian thực thi của từng lời gọi hàm nội bộ của nó',
+    ], answer: 2,
+    explain: 'Quy trình chuẩn: (1) đo EVENT LOOP LAG trước — lag cao nghĩa là có tác vụ đồng bộ chặn, lag thấp mà vẫn chậm thì nghẽn ở I/O/dependency; (2) lấy CPU profile bằng `node --cpu-prof app.js` hoặc gắn `--inspect` rồi record trong Chrome DevTools, đọc FLAME GRAPH tìm hàm chiếm nhiều self-time; `clinic doctor`/`0x` cho báo cáo dễ đọc hơn. (3) Nghi rò rỉ bộ nhớ thì chụp hai heap snapshot cách nhau rồi so sánh. (4) Với hệ phân tán, distributed tracing (OpenTelemetry) chỉ ra chặng nào chậm trước khi bạn đào vào một service.',
+  },
 ];

@@ -474,4 +474,93 @@ window.REACT_QUIZ = [
     ], answer: 1,
     explain: '3 boolean = 8 tổ hợp, trong đó phần lớn là trạng thái vô nghĩa mà code vẫn phải phòng thủ; quên reset một cờ là UI kẹt ở trạng thái lạ. Gom thành MỘT state (`status`) khiến các trạng thái loại trừ nhau theo thiết kế — "làm cho trạng thái không hợp lệ trở nên không biểu diễn được". Đi xa hơn thì dùng discriminated union kèm dữ liệu: `{status:"success", data}` / `{status:"error", error}` — TypeScript sẽ ép bạn xử lý đủ nhánh. Thực tế, React Query đã đóng gói sẵn mô hình này.',
   },
+  // ===== Đợt #2 =====
+  {
+    id: 'react-router-spa', topic: 'Định tuyến',
+    q: 'Client-side routing trong SPA hoạt động thế nào?',
+    options: [
+      'Trình duyệt tải lại toàn bộ trang mới từ server mỗi khi URL trên thanh địa chỉ thay đổi',
+      'Router chặn điều hướng, dùng History API đổi URL mà KHÔNG tải lại trang, rồi render component khớp route',
+      'Mọi route được render sẵn từ đầu rồi ẩn/hiện bằng CSS tuỳ theo đường dẫn hiện tại',
+      'Server gửi kèm một file cấu hình route để trình duyệt tự quyết định tải trang nào tiếp',
+    ], answer: 1,
+    explain: 'Router (React Router, TanStack Router…) bắt click trên `<Link>`, gọi `history.pushState` để đổi URL, rồi render component khớp — không có request tải lại trang nên chuyển trang gần như tức thì và state trong app được giữ. Hai điều PHẢI nhớ khi deploy: (1) server/CDN phải rewrite mọi đường dẫn về `index.html`, nếu không F5 ở `/users/1` sẽ ra 404; (2) SPA thuần render rỗng ở lần tải đầu → kém cho SEO và LCP, nên cân nhắc SSR/SSG. Kết hợp code splitting theo route (`lazy` + `Suspense`) để mỗi trang chỉ tải phần JS của nó.',
+  },
+  {
+    id: 'react-rtl', topic: 'Kiểm thử',
+    q: 'Triết lý của React Testing Library là gì?',
+    options: [
+      'Test theo HÀNH VI người dùng: truy vấn theo role/label/text, tránh soi chi tiết cài đặt bên trong',
+      'Test từng hàm nội bộ và state của component sao cho đạt độ phủ dòng lệnh cao nhất có thể',
+      'Chụp ảnh snapshot toàn bộ cây DOM rồi so sánh với ảnh lưu ở lần chạy trước đó',
+      'Mock toàn bộ component con để mỗi test chỉ kiểm tra đúng một component đơn lẻ',
+    ], answer: 0,
+    explain: 'Nguyên tắc: "test càng giống cách người dùng dùng thì càng đáng tin". Ưu tiên truy vấn theo `getByRole` (kèm `name`) > `getByLabelText` > `getByText`, hạn chế `getByTestId`, và tránh hoàn toàn việc đọc state/props nội bộ — vì refactor cách cài đặt sẽ làm test đỏ dù hành vi không đổi. Dùng `userEvent` thay `fireEvent` (mô phỏng sát hơn: focus, hover, gõ từng phím) và `findBy*`/`waitFor` cho nội dung bất đồng bộ. Lợi ích phụ: query theo role ép bạn viết HTML có ngữ nghĩa, tốt cho accessibility.',
+  },
+  {
+    id: 'react-query', topic: 'Quản lý state',
+    q: 'Vì sao nên dùng React Query/SWR cho dữ liệu từ API thay vì `useEffect` + `useState`?',
+    options: [
+      'Vì chúng gọi API nhanh hơn nhờ dùng giao thức riêng thay cho `fetch` của trình duyệt',
+      'Vì React đã cấm gọi API trực tiếp trong `useEffect` kể từ phiên bản 18 trở đi',
+      'Vì server state cần cache, chống race condition, dedupe, retry, invalidate — tự viết lại rất dễ sai',
+      'Vì chúng lưu dữ liệu vào localStorage nên người dùng offline vẫn xem được nội dung cũ',
+    ], answer: 2,
+    explain: 'Dữ liệu từ server KHÁC state UI: nó có bản gốc ở nơi khác, có thể cũ đi, và nhiều component cùng cần. Tự viết `useEffect` + `useState` nghĩa là phải tự lo: loading/error, race condition khi request cũ về sau, gọi trùng khi nhiều component cùng cần, cache & thời gian stale, retry, refetch khi focus lại tab, và invalidate sau khi mutate. React Query đóng gói sẵn tất cả, cộng thêm optimistic update và devtools. Kết quả thường thấy: xoá được phần lớn state "loading/error/data" thủ công, code ngắn hơn hẳn và ít bug hơn.',
+  },
+  {
+    id: 'react-store-when', topic: 'Quản lý state',
+    q: 'Khi nào cần store toàn cục (Redux/Zustand) thay vì `useState` + Context?',
+    options: [
+      'Ngay từ đầu mọi dự án, để cấu trúc nhất quán và khỏi phải refactor về sau khi app lớn lên',
+      'Khi có state UI đổi thường xuyên và nhiều nhánh xa nhau cùng đọc — cần SELECTOR để chỉ re-render nơi quan tâm',
+      'Khi cần lưu dữ liệu lấy từ API, vì Context không giữ được dữ liệu bất đồng bộ',
+      'Khi ứng dụng có nhiều hơn mười component, dưới ngưỡng đó Context luôn đủ dùng',
+    ], answer: 1,
+    explain: 'Thứ tự nên cân nhắc: state cục bộ → lift lên cha chung → Context (cho giá trị ÍT đổi: theme, user, locale) → store toàn cục. Điểm gãy của Context là hiệu năng: mọi consumer re-render khi `value` đổi tham chiếu, không chọn lọc được field. Store (Redux Toolkit, Zustand, Jotai) có SELECTOR — chỉ component đọc đúng mẩu dữ liệu đó mới render lại — cộng devtools, middleware, time-travel. Lưu ý quan trọng: phần lớn thứ người ta nhét vào store thực ra là SERVER STATE, thuộc về React Query; tách hai loại ra thì store còn lại thường rất nhỏ.',
+  },
+  {
+    id: 'react-a11y', topic: 'Chất lượng UI',
+    q: 'Dùng `<div onClick={...}>` làm nút bấm có vấn đề gì?',
+    options: [
+      'Chỉ là vấn đề thẩm mỹ, phải tự viết thêm CSS để nó trông giống một nút bấm thật sự',
+      'React không cho gắn `onClick` lên thẻ `div`, chỉ `button` và `a` mới nhận sự kiện này',
+      'Mất hành vi sẵn có của `button`: không focus được bằng Tab, không bấm được bằng Enter/Space',
+      'Sự kiện click trên `div` không nổi bọt lên cha nên không dùng được event delegation',
+    ], answer: 2,
+    explain: 'Thẻ ngữ nghĩa mang sẵn: role, khả năng focus theo thứ tự Tab, phím tắt (Enter/Space cho `button`, Enter cho link), trạng thái `disabled`, và cách screen reader thông báo. Dùng `div` thì phải tự thêm `role="button"`, `tabIndex={0}` và xử lý `onKeyDown` — làm thủ công gần như luôn thiếu sót. Quy tắc: dùng HTML đúng ngữ nghĩa trước (`button`, `a href`, `label` gắn với input, `ul/li`, heading đúng cấp), chỉ thêm ARIA khi HTML không diễn đạt được. Kiểm tra bằng `eslint-plugin-jsx-a11y`, axe DevTools, và thử duyệt trang chỉ bằng bàn phím.',
+  },
+  {
+    id: 'react-useid', topic: 'React hiện đại',
+    q: '`useId` dùng để làm gì mà không dùng `Math.random()` hay biến đếm?',
+    options: [
+      'Sinh key cho danh sách trong trường hợp dữ liệu chưa có id thật từ phía server trả về',
+      'Sinh id ỔN ĐỊNH, khớp giữa server với client — nối `label`/`aria-*` với input mà không lỗi hydration',
+      'Sinh id duy nhất toàn cục để làm khoá chính khi lưu bản ghi mới xuống database',
+      'Sinh mã phiên cho mỗi lần người dùng mở ứng dụng lên để phục vụ cho việc ghi log',
+    ], answer: 1,
+    explain: '`Math.random()` cho giá trị KHÁC nhau giữa server và client → hydration mismatch; biến đếm module-level thì hỏng khi có nhiều root hoặc render đồng thời. `useId` sinh chuỗi ổn định theo VỊ TRÍ trong cây nên hai bên khớp nhau. Dùng đúng chỗ: `<label htmlFor={id}>` với `<input id={id}>`, `aria-describedby`, `aria-labelledby` — nhất là trong component tái sử dụng nhiều lần trên cùng trang. Dùng SAI chỗ: làm `key` cho danh sách (key phải đến từ DỮ LIỆU, không phải từ vị trí render).',
+  },
+  {
+    id: 'react-xss', topic: 'Bảo mật',
+    q: 'React chống XSS mặc định bằng cách nào, và chỗ nào vẫn hở?',
+    options: [
+      'React lọc mọi thẻ script trong dữ liệu; `dangerouslySetInnerHTML` cũng được lọc tự động',
+      'React tự động escape giá trị trong JSX; hở ở `dangerouslySetInnerHTML` và ở `href`/`src` nhận `javascript:`',
+      'React chạy toàn bộ render trong sandbox nên không có cách nào chèn được mã độc',
+      'React chỉ escape ở môi trường production, còn ở development thì render nguyên văn để dễ debug',
+    ], answer: 1,
+    explain: 'JSX escape giá trị nhúng, nên `<div>{userInput}</div>` hiện ra chuỗi chứ không chạy thẻ. Ba lối hở còn lại: (1) `dangerouslySetInnerHTML` — chèn HTML thô, phải làm sạch bằng DOMPurify trước; (2) URL do người dùng cung cấp đưa vào `href`/`src` — `javascript:alert(1)` vẫn chạy khi click, phải kiểm tra protocol thuộc allowlist http/https; (3) spread props từ dữ liệu ngoài (`{...userData}`) có thể chèn thẳng thuộc tính sự kiện. Ngoài ra vẫn cần Content-Security-Policy và cờ `HttpOnly` cho cookie phiên — XSS mà đọc được token thì mọi thứ khác vô nghĩa.',
+  },
+  {
+    id: 'react-composition', topic: 'Render & reconciliation',
+    q: 'Truyền JSX qua `children` giúp gì cho hiệu năng và cấu trúc code?',
+    options: [
+      'Làm cho cây component nông hơn nên React duyệt qua ít node hơn ở mỗi lần render lại',
+      'Cho phép component con truy cập thẳng state của cha mà không cần khai báo props',
+      'Phần `children` được tạo ở CHA nên component bọc render lại thì JSX đó không phải dựng lại',
+      'React tự động bọc mọi `children` trong `React.memo` nên chúng không bao giờ render lại',
+    ], answer: 2,
+    explain: 'Với `<Wrapper><Heavy/></Wrapper>`, phần tử `<Heavy/>` được tạo trong lần render của CHA; `Wrapper` chỉ nhận nó qua `props.children` và đặt vào cây. Khi state nội bộ của `Wrapper` đổi, `children` vẫn là ĐÚNG tham chiếu cũ nên React bỏ qua việc render lại `Heavy` — hiệu quả tương đương `memo` mà không cần bọc gì. Đây cũng là cách gọn nhất để phá prop drilling: thay vì truyền dữ liệu xuống nhiều tầng, hãy truyền chính JSX đã dựng sẵn xuống. Mẫu này (composition thay vì kế thừa/cấu hình) được docs React khuyến khích rất mạnh.',
+  },
 ];
