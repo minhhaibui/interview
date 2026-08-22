@@ -1500,4 +1500,93 @@ window.NODE_QUIZ = [
     ], answer: 1,
     explain: 'Trên Linux, socket cũng là file descriptor — nên `EMFILE` hầu như luôn là dấu hiệu RÒ RỈ chứ không phải giới hạn đặt quá thấp. Các nguồn quen thuộc: gọi HTTP ra ngoài mà không dùng agent keep-alive nên mỗi lời gọi mở một socket mới, hoặc có dùng agent nhưng để `maxSockets` vô hạn; `fs.createReadStream` không được đóng khi có lỗi giữa chừng (dùng `pipeline` thay cho `pipe` để cleanup đúng); connection lấy ra khỏi pool mà quên `release()` trên nhánh lỗi; watcher của `fs.watch`, timer giữ socket, hoặc kết nối WebSocket của client đã rời đi mà server không dọn. Cách chẩn đoán: chạy `lsof -p <pid> | wc -l` theo thời gian xem con số có tăng đơn điệu không, rồi xem `lsof` chi tiết để biết loại nào đang phình — nhiều socket tới cùng một host là gợi ý rất rõ; trong container thì đọc `/proc/<pid>/fd`. Nâng `ulimit -n` chỉ là hoãn binh: nó hợp lý khi bạn thật sự phục vụ hàng chục nghìn kết nối đồng thời như WebSocket, còn với service HTTP thường thì phải đi tìm chỗ rò. Phòng ngừa: luôn `try/finally` để đóng tài nguyên, dùng `pipeline` thay vì tự quản stream, đặt `maxSockets` và timeout cho agent, giới hạn số việc chạy song song, và theo dõi số file descriptor như một chỉ số bình thường kèm cảnh báo khi nó tăng dần — cùng nhóm với rò rỉ bộ nhớ, phát hiện sớm là tránh được sự cố lúc nửa đêm.',
   },
+  // ===== Đợt #13 =====
+  {
+    id: 'node-skip-locked', topic: 'Kiến trúc',
+    q: 'Dùng bảng CSDL làm hàng đợi công việc, nhiều worker cùng lấy job — tránh lấy trùng thế nào?',
+    options: [
+      'Cho mỗi worker một khoảng id cố định để không bao giờ đụng nhau, chia đều theo số worker đang chạy',
+      '`SELECT ... FOR UPDATE SKIP LOCKED` trong transaction — worker sau tự bỏ qua dòng đang bị khoá',
+      '`SELECT` rồi `UPDATE` ngay sau đó là đủ, vì CSDL tự khoá dòng giữa hai câu lệnh liên tiếp nhau',
+      'Chỉ chạy đúng một worker cho toàn hệ thống, đó là cách duy nhất bảo đảm không job nào bị làm hai lần',
+    ], answer: 1,
+    explain: '`SELECT` thường không khoá gì cả, nên hai worker cùng đọc được một dòng rồi cùng xử lý — job chạy hai lần. `SELECT ... FOR UPDATE` có khoá dòng, nhưng mặc định worker thứ hai sẽ CHỜ tới khi worker đầu commit, thành ra xếp hàng và mất hết lợi ích của việc chạy song song. `SKIP LOCKED` (PostgreSQL và MySQL 8 đều có) là mảnh ghép còn thiếu: worker thứ hai bỏ qua các dòng đang bị khoá và lấy dòng tiếp theo, nên mỗi worker nhận một tập việc khác nhau mà không phải chờ nhau. Mẫu đầy đủ: mở transaction, `SELECT id FROM jobs WHERE status = "pending" ORDER BY created_at LIMIT 10 FOR UPDATE SKIP LOCKED`, cập nhật trạng thái sang đang xử lý, commit, RỒI mới làm việc nặng bên ngoài transaction — đừng giữ khoá suốt lúc gọi API. Kèm theo phải có: cột đếm số lần thử và một mốc hết hạn để job của worker đã chết được nhặt lại; giới hạn số lần thử rồi chuyển sang bảng thất bại; và bản thân job phải idempotent. Nhân tiện nói về DEADLOCK: nó xảy ra khi hai transaction khoá cùng tập dòng theo THỨ TỰ khác nhau — chữa bằng cách luôn khoá theo một thứ tự nhất quán (ví dụ sắp theo id), giữ transaction thật ngắn, và bắt mã lỗi deadlock để thử lại. Cuối cùng: dùng bảng làm hàng đợi rất ổn ở quy mô vừa và có ưu điểm lớn là nằm cùng transaction với dữ liệu nghiệp vụ; khi lưu lượng lớn hơn mới cần tới Redis, SQS hay Kafka.',
+  },
+  {
+    id: 'node-partitioning', topic: 'Kiến trúc',
+    q: 'Bảng log 500 triệu dòng, chỉ cần giữ 90 ngày — xoá dữ liệu cũ thế nào cho êm?',
+    options: [
+      'Chạy `DELETE FROM logs WHERE created_at < ...` một lần vào ban đêm, CSDL sẽ tự dọn phần còn lại',
+      'PHÂN VÙNG bảng theo thời gian rồi `DROP` cả partition cũ — gần như tức thì và không sinh rác',
+      'Tạo bảng mới rồi copy dữ liệu còn hạn sang, đây là cách duy nhất tránh khoá bảng khi xoá dữ liệu',
+      'Không xoá gì cả, chỉ cần thêm index vào cột thời gian là truy vấn vẫn nhanh dù bảng lớn tới đâu',
+    ], answer: 1,
+    explain: '`DELETE` hàng trăm triệu dòng là ác mộng vận hành: transaction khổng lồ, WAL phình, khoá kéo dài, replica trễ theo, và trong PostgreSQL thì dòng bị xoá chỉ được đánh dấu chết — không gian chỉ thật sự trả lại sau `VACUUM`, mà `VACUUM FULL` thì lại khoá bảng; index cũng phình theo. PHÂN VÙNG giải quyết tận gốc: khai báo bảng partition theo `RANGE` trên cột thời gian với mỗi tháng hoặc mỗi ngày một partition; xoá dữ liệu cũ chỉ còn là `DROP TABLE` một partition — đó là thao tác metadata, gần như tức thì, không sinh rác và không đụng tới phần còn lại. Lợi ích kèm theo: truy vấn có điều kiện thời gian được PARTITION PRUNING nên chỉ quét đúng vài partition; mỗi index nhỏ hơn nên vừa trong bộ nhớ; và việc bảo trì như vacuum hay reindex làm được trên từng phần. Cái giá phải trả: khoá chính buộc phải chứa cột phân vùng; ràng buộc unique toàn cục khó hơn; cần TẠO TRƯỚC partition cho kỳ tới bằng `pg_partman` hoặc một cron job, quên là ứng dụng ghi lỗi ngay; và truy vấn không lọc theo cột phân vùng sẽ phải quét tất cả nên còn chậm hơn bảng thường. Nếu chưa muốn phân vùng thì phương án tạm là xoá theo LÔ nhỏ trong một vòng lặp có nghỉ giữa các lô, kèm index đúng — vẫn êm hơn nhiều so với một lệnh `DELETE` khổng lồ.',
+  },
+  {
+    id: 'node-backup-restore', topic: 'Kiến trúc',
+    q: 'Chiến lược sao lưu CSDL thế nào mới là đủ?',
+    options: [
+      'Bật snapshot tự động hằng ngày của nhà cung cấp cloud là đủ, không cần làm hay kiểm tra gì thêm',
+      'Có replica là đã an toàn, vì dữ liệu luôn tồn tại đồng thời trên nhiều máy khác nhau cùng lúc',
+      'Xuất dữ liệu ra file SQL rồi lưu trên chính server đó để khi cần khôi phục thì có sẵn ngay tại chỗ',
+      'Xác định RPO/RTO, kết hợp snapshot với PITR, để bản sao ở nơi khác, và ĐỊNH KỲ diễn tập khôi phục',
+    ], answer: 3,
+    explain: 'Bắt đầu từ hai con số nghiệp vụ: RPO là được phép mất bao nhiêu dữ liệu tính theo thời gian, RTO là được phép ngừng phục vụ bao lâu. Backup hằng ngày nghĩa là RPO 24 giờ — chấp nhận được với một blog, không chấp nhận được với hệ thống thanh toán. PITR (point-in-time recovery, dựa trên WAL) cho phép khôi phục về đúng một thời điểm và thường đưa RPO xuống còn vài phút; cách làm là kết hợp snapshot định kỳ làm nền cộng với WAL liên tục. Điều quan trọng nhất mà nhiều người bỏ qua: REPLICA KHÔNG PHẢI BACKUP — bạn `DELETE` nhầm hay chạy một migration hỏng thì lỗi đó được sao chép sang replica trong tích tắc; replica chống lỗi PHẦN CỨNG, còn backup chống lỗi CON NGƯỜI và lỗi mã nguồn. Tương tự, để backup trên cùng máy hay cùng tài khoản cloud là vô nghĩa khi mất cả tài khoản — hãy để ở vùng khác, tài khoản khác, và bật khoá chống xoá, vì một kịch bản ransomware điển hình là xoá luôn bản sao. Và quy tắc vàng: BACKUP CHƯA TỪNG KHÔI PHỤC THÌ COI NHƯ KHÔNG CÓ — hãy diễn tập định kỳ, khôi phục sang một môi trường riêng, đo xem mất bao lâu (đó chính là RTO thật của bạn) và kiểm tra dữ liệu có dùng được không; rất nhiều đội phát hiện file backup rỗng hoặc thiếu một schema đúng vào lúc đang có sự cố. Vài thứ hay quên: sao lưu cả object storage và secret, ghi lại quy trình khôi phục ở nơi vẫn đọc được khi hệ thống chết, và cân nhắc soft delete cho các thao tác xoá nguy hiểm.',
+  },
+  {
+    id: 'node-serverless', topic: 'Kiến trúc',
+    q: 'Chuyển service Node sang serverless (Lambda) thì cần chú ý gì?',
+    options: [
+      'Không khác gì chạy trên server thường, chỉ cần đóng gói code lên là mọi thứ hoạt động y hệt như cũ',
+      'Cold start, không giữ được trạng thái giữa các lần gọi, và connection pool tới CSDL dễ bùng nổ số kết nối',
+      'Chỉ cần chú ý chi phí, còn về mặt kỹ thuật thì serverless mạnh hơn nên không có hạn chế nào cả',
+      'Phải viết lại toàn bộ bằng ngôn ngữ khác vì Node không chạy được trong môi trường serverless',
+    ], answer: 1,
+    explain: 'Ba khác biệt lớn. (1) COLD START: mỗi instance mới phải khởi tạo runtime và code của bạn, thêm từ vài chục tới vài trăm mili giây — giảm bằng cách bundle nhỏ lại, tránh import nặng ở cấp cao nhất (chỉ nạp thứ cần bên trong handler), và dùng provisioned concurrency cho endpoint nhạy cảm về độ trễ. (2) KHÔNG CÓ TRẠNG THÁI giữa các lần gọi theo cách bạn quen: instance có thể bị đóng băng rồi tái sử dụng nên cache trong bộ nhớ lúc còn lúc mất — đừng dựa vào nó cho tính đúng đắn; những việc chạy nền sau khi đã trả response có thể không bao giờ hoàn tất vì tiến trình bị đóng băng ngay sau đó; và không có `setInterval` sống lâu, phần cron phải để nền tảng lo. (3) CSDL: mỗi instance giữ pool riêng mà nền tảng có thể mở hàng trăm instance khi tải tăng, chạm `max_connections` rất nhanh — giải pháp là để pool kích thước 1, tái sử dụng connection ở phạm vi ngoài handler, và đặt một lớp gộp như RDS Proxy hay PgBouncer, hoặc dùng driver nói chuyện qua HTTP không cần connection lâu dài. Vài thứ nữa: có giới hạn thời gian chạy nên việc dài phải đẩy sang queue hoặc step function; có giới hạn kích thước payload; ghi log qua stdout vì không có ổ đĩa lâu bền; và chi phí tính theo GB-giây nên cấp thêm bộ nhớ đôi khi lại RẺ HƠN vì hàm chạy nhanh hơn. Serverless hợp với tải lên xuống thất thường và việc chạy theo sự kiện; còn service lưu lượng cao đều đặn thì container thường rẻ và dễ đoán hơn.',
+  },
+  {
+    id: 'node-metrics-cardinality', topic: 'Hiệu năng',
+    q: 'Thêm nhãn `user_id` vào metric Prometheus rồi hệ thống giám sát chậm hẳn. Vì sao?',
+    options: [
+      'Vì tên nhãn quá dài làm tăng dung lượng mỗi lần gửi, rút ngắn tên nhãn lại là giải quyết được',
+      'Vì Prometheus chỉ hỗ trợ tối đa ba nhãn cho mỗi metric, thêm nhãn thứ tư là nó tự động bỏ qua',
+      'Mỗi giá trị nhãn tạo ra một CHUỖI THỜI GIAN riêng — cardinality bùng nổ theo số lượng người dùng',
+      'Vì nhãn phải là số nguyên, truyền chuỗi vào khiến hệ thống phải chuyển đổi kiểu ở mỗi lần ghi',
+    ], answer: 2,
+    explain: 'Trong Prometheus, mỗi TỔ HỢP giá trị nhãn là một chuỗi thời gian độc lập, và mỗi chuỗi tốn bộ nhớ lẫn chỗ trên đĩa. Nhãn `user_id` với một triệu người dùng nghĩa là một triệu chuỗi chỉ cho một metric — nhân thêm với `endpoint` hay `status` thì con số nổ theo cấp số nhân. Hậu quả: bộ nhớ của Prometheus phình tới mức bị OOM, truy vấn chậm, dashboard treo. Những nhãn KHÔNG được dùng: id người dùng, id đơn hàng, request id, email, URL đầy đủ có kèm tham số, thông báo lỗi tự do, và timestamp. Nhãn nên dùng là các giá trị có tập hữu hạn và nhỏ: `method`, `route` ở dạng MẪU chứ không phải đường dẫn thật, `status_code`, `service`, `version`. Nguyên tắc phân vai cho đúng ba trụ quan sát: METRIC để đếm và đo tổng thể với cardinality thấp; LOG để ghi chi tiết từng sự việc kèm id; TRACE để lần theo một request cụ thể xuyên nhiều service. Muốn trả lời câu hỏi "người dùng X vừa gặp chuyện gì" thì đó là việc của log và trace chứ không phải của metric. Vài mẹo vận hành: đặt hạn mức và cảnh báo dựa trên số chuỗi thời gian, dùng truy vấn đếm theo tên metric để tìm cái nào đang phình, và với thứ thật sự cần cardinality cao thì cân nhắc một hệ chuyên dụng cho sự kiện thay vì nhồi hết vào Prometheus.',
+  },
+  {
+    id: 'node-materialized-view', topic: 'Kiến trúc',
+    q: 'Dashboard chạy một truy vấn tổng hợp mất 8 giây, dữ liệu chỉ cần mới trong ngày. Làm gì?',
+    options: [
+      'Thêm index cho mọi cột xuất hiện trong truy vấn, tổng hợp bao nhiêu dòng cũng sẽ nhanh trở lại',
+      'Tăng timeout của API lên 30 giây và hiện spinner để người dùng chờ cho tới khi có kết quả',
+      'TÍNH TRƯỚC: materialized view hoặc bảng tổng hợp, làm mới theo lịch — đọc chỉ còn vài mili giây',
+      'Chuyển truy vấn sang chạy trên replica, như vậy nó sẽ chạy nhanh hơn nhiều so với trên primary',
+    ], answer: 2,
+    explain: 'Truy vấn tổng hợp trên hàng chục triệu dòng thì index không cứu được — nó vẫn phải ĐỌC hết ngần ấy dòng để cộng lại. Chuyển sang replica cũng chỉ dời gánh nặng đi chỗ khác chứ không làm nó nhẹ hơn. Cách đúng là đổi THỜI ĐIỂM tính: tính trước rồi lưu kết quả. MATERIALIZED VIEW của PostgreSQL lưu kết quả truy vấn thành một bảng thật và làm mới bằng `REFRESH MATERIALIZED VIEW` — nhớ dùng `CONCURRENTLY` để không khoá người đọc trong lúc làm mới, đổi lại là cần một unique index và tốn thời gian hơn. Hoặc tự dựng BẢNG TỔNG HỢP rồi cập nhật theo lô, cách này linh hoạt hơn vì chỉ tính lại phần thay đổi kể từ lần trước thay vì tính lại toàn bộ, và giữ được lịch sử theo từng ngày. Chọn nhịp làm mới theo yêu cầu nghiệp vụ — mỗi 15 phút hay mỗi đêm — và HIỂN THỊ mốc thời gian kiểu "số liệu tính lúc 10:30" để người dùng biết mình đang xem gì; chi tiết nhỏ này tránh được rất nhiều hiểu lầm. Vài lựa chọn khác tuỳ tình huống: cache kết quả ở Redis với TTL nếu truy vấn ít biến thể; dùng cột đếm tăng dần cập nhật ngay lúc ghi nếu cần số liệu tức thì; và nếu nhu cầu phân tích ngày càng nặng thì tách hẳn sang kho phân tích chuyên dụng thay vì bắt CSDL nghiệp vụ gánh cả hai vai.',
+  },
+  {
+    id: 'node-encryption-at-rest', topic: 'Bảo mật',
+    q: 'Cần lưu số căn cước của khách hàng trong CSDL — làm thế nào cho đúng?',
+    options: [
+      'Băm bằng bcrypt như mật khẩu, đó là cách an toàn nhất cho mọi loại dữ liệu nhạy cảm nói chung',
+      'Bật mã hoá ổ đĩa của nhà cung cấp cloud là đủ, dữ liệu đã được bảo vệ ở mọi lớp bên trên rồi',
+      'Mã hoá ở TẦNG ỨNG DỤNG với khoá quản lý bởi KMS (envelope encryption), và ghi log mọi lần truy cập',
+      'Lưu nguyên bản nhưng giới hạn quyền truy cập bảng đó cho một vài tài khoản CSDL đáng tin cậy',
+    ], answer: 2,
+    explain: 'Trước hết phân biệt: BĂM là một chiều, dùng cho thứ chỉ cần so khớp như mật khẩu; còn số căn cước thì có lúc phải ĐỌC LẠI để hiển thị hay đối chiếu, nên phải MÃ HOÁ chứ không phải băm. Mã hoá ổ đĩa chỉ chống được trường hợp ai đó lấy được ổ cứng vật lý hay file backup — nó KHÔNG chống được kẻ đã vào được CSDL bằng SQL injection hay bằng một tài khoản bị lộ, vì với chúng dữ liệu vẫn hiện ra dạng thường. Vì thế dữ liệu thật nhạy cảm nên mã hoá ở tầng ứng dụng theo mô hình ENVELOPE: sinh một khoá dữ liệu ngẫu nhiên cho mỗi bản ghi hoặc mỗi nhóm, mã hoá nội dung bằng nó với thuật toán có xác thực như AES-GCM, rồi mã hoá chính khoá đó bằng khoá gốc nằm trong KMS hay Vault và lưu kèm — nhờ vậy xoay vòng khoá gốc không phải mã hoá lại toàn bộ dữ liệu, và ứng dụng không bao giờ giữ khoá gốc trong tay. Nhớ lưu cả IV cùng authentication tag, và đừng bao giờ dùng lại IV. Hệ quả phải chấp nhận: KHÔNG tìm kiếm hay đánh index trực tiếp trên cột đã mã hoá — nếu cần tra cứu chính xác thì lưu thêm một cột HMAC tất định của giá trị đó để so khớp, còn cần tìm gần đúng thì phải thiết kế riêng. Cuối cùng: chỉ lưu thứ thật sự cần vì dữ liệu không có thì không thể mất, che bớt khi hiển thị, chặn không cho lọt vào log, và ghi nhật ký kiểm toán mỗi lần có người đọc.',
+  },
+  {
+    id: 'node-rbac', topic: 'Bảo mật',
+    q: 'Hệ thống có nhiều loại người dùng và quyền phức tạp — thiết kế phân quyền thế nào?',
+    options: [
+      'Kiểm tra `if (user.role === "admin")` rải rác ở các chỗ cần thiết, cách này đơn giản và dễ đọc nhất',
+      'Chỉ cần ẩn các nút và menu mà người dùng không có quyền, họ sẽ không gọi được API tương ứng',
+      'Tách quyền khỏi vai trò (RBAC), kiểm tra tập trung ở SERVER theo cả chủ thể lẫn tài nguyên cụ thể',
+      'Lưu danh sách quyền vào JWT rồi để client tự kiểm tra trước khi gọi, còn server thì tin theo token',
+    ], answer: 2,
+    explain: 'Sai lầm đầu tiên là rải `role === "admin"` khắp code: thêm một vai trò mới là phải sửa hàng chục chỗ, và không ai trả lời được câu hỏi "vai trò X thì làm được những gì". RBAC tách hai tầng: vai trò gán cho người dùng, còn QUYỀN (`order:read`, `order:refund`) gán cho vai trò, và code chỉ hỏi về quyền — nhờ vậy thêm vai trò trở thành việc cấu hình dữ liệu chứ không phải sửa mã nguồn. Nhưng RBAC thuần không đủ khi luật phụ thuộc vào TÀI NGUYÊN cụ thể: "sửa được đơn hàng của chính mình", "quản lý chỉ xem được nhân viên trong phòng ban của mình" — đây là chỗ cần thêm điều kiện theo thuộc tính (ABAC) hoặc theo quan hệ (mô hình kiểu Zanzibar, với các thư viện như Casbin, Oso, OpenFGA). Nguyên tắc thực hành: luôn kiểm tra ở SERVER và kiểm tra ở tầng gần dữ liệu (service hoặc chính câu truy vấn) chứ không chỉ ở route, vì bỏ sót một nhánh là thành lỗ IDOR; ẩn nút ở giao diện chỉ là trải nghiệm chứ không phải bảo mật. Đặt hàm kiểm tra ở MỘT chỗ duy nhất, kiểu `can(user, "order:refund", order)`, để test được và audit được. Vài lưu ý nữa: mặc định là TỪ CHỐI, chỉ cho phép khi có luật rõ ràng; nhét quyền vào JWT thì tiện nhưng thu hồi chậm vì token còn hạn, nên với quyền nhạy cảm hãy tra cứu tại chỗ; ghi nhật ký kiểm toán cho các thao tác quan trọng; và viết test cho ma trận vai trò với hành động, đây là phần rất đáng có test tự động.',
+  },
 ];

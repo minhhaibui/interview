@@ -1453,4 +1453,93 @@ window.REACT_QUIZ = [
     ], answer: 3,
     explain: 'Fast Refresh giữ được state nhờ nhận diện các export trong file là component React rồi thay thế chúng tại chỗ. Nó BỎ CUỘC và tải lại cả trang khi không chắc là an toàn, thường vì mấy lý do sau: file export lẫn cả component và thứ khác — một hằng số, một hàm tiện ích, một context — vì thay đổi thứ đó có thể ảnh hưởng ra ngoài phạm vi component; component là arrow function ẩn danh gán vào biến mà không có tên hiển thị; component không được export mà chỉ dùng nội bộ trong file; hoặc file có side effect ở cấp cao nhất. Ngoài ra state vẫn mất trong vài trường hợp hợp lý khác: khi bạn đổi cấu trúc hook (thêm bớt hook làm đổi thứ tự gọi), khi component đổi tên, hoặc khi một module ở tầng trên trong đồ thị phụ thuộc thay đổi. Cách làm cho êm: mỗi file một component và đặt tên rõ ràng, tách hằng số cùng hàm tiện ích sang file riêng, tránh side effect lúc import. Cũng cần phân biệt: Fast Refresh KHÁC hot reload đơn thuần của bundler ở chỗ nó hiểu React. Và nhớ đây chỉ là tiện nghi lúc phát triển — nếu state biến mất bất thường thì đừng vội đổ cho công cụ, hãy kiểm tra xem `key` có đang đổi không, hoặc component có đang bị định nghĩa lại bên trong render của một component khác không, vì đó cũng làm mất state y hệt nhưng xảy ra ở cả production.',
   },
+  // ===== Đợt #13 =====
+  {
+    id: 'react-double-submit', topic: 'Form & sự kiện',
+    q: 'Người dùng bấm nút "Đặt hàng" hai lần liên tiếp — chặn tạo đơn trùng thế nào?',
+    options: [
+      'Vô hiệu nút bằng CSS `pointer-events: none` là đủ để không có request thứ hai nào được gửi đi',
+      'Không cần làm gì ở client, React tự gộp các lần bấm liên tiếp thành một hành động duy nhất',
+      'Khoá nút theo trạng thái `isSubmitting` ở client VÀ dùng idempotency key ở server cho chắc chắn',
+      'Thêm `debounce` 500ms cho handler, sau khoảng thời gian đó thì chỉ còn một lần bấm được xử lý',
+    ], answer: 2,
+    explain: 'Ở client thì việc tối thiểu là giữ một cờ `isSubmitting`: đặt `true` NGAY khi bắt đầu, `disabled={isSubmitting}` cho nút, và trả về `false` trong `finally` — nhớ dùng `finally` chứ không phải chỉ nhánh thành công, kẻo lỗi một lần là nút chết vĩnh viễn. Đặt cờ bằng state là đủ cho đa số trường hợp; nếu lo hai lần bấm rơi vào cùng một lần render thì dùng ref để chặn ngay lập tức. React 19 có `useFormStatus` và `useActionState` cho sẵn trạng thái pending, React Query thì có `isPending` của mutation. Về giao diện: đổi nhãn nút thành "Đang xử lý..." thay vì chỉ làm mờ, để người dùng biết hệ thống đang chạy chứ không phải bị treo. Nhưng client KHÔNG BAO GIỜ ĐỦ: người dùng có thể tải lại trang rồi submit lại, mạng chập khiến client tự retry, hoặc có kẻ gọi thẳng API. Vì vậy server phải nhận IDEMPOTENCY KEY — một id sinh ở client cho mỗi lần thao tác, server lưu lại và nếu thấy trùng thì trả về kết quả CŨ thay vì tạo đơn mới. Một ràng buộc unique trong CSDL trên khoá nghiệp vụ cũng là lớp chắn tốt. Đây chính là chỗ frontend và backend phải bàn với nhau: chặn ở giao diện là trải nghiệm, còn chặn ở server mới là tính đúng đắn.',
+  },
+  {
+    id: 'react-relative-time', topic: 'Chất lượng UI',
+    q: 'Hiển thị "3 phút trước" trong ứng dụng có SSR thì gặp vấn đề gì?',
+    options: [
+      'Không có vấn đề gì, vì server và client luôn tính ra cùng một kết quả tại mọi thời điểm chạy',
+      'Server và client tính ở hai thời điểm và hai múi giờ khác nhau nên hydration mismatch; nên tính ở client',
+      'Phải tự viết hàm tính vì JavaScript không có sẵn API nào cho việc định dạng thời gian tương đối',
+      'Chỉ hiện được thời gian tuyệt đối trong SSR, thời gian tương đối là thứ không thể làm được với SSR',
+    ], answer: 1,
+    explain: 'Server render lúc 10:00:00 nên viết "3 phút trước"; client hydrate lúc 10:00:02 mà vừa qua mốc thì tính ra "4 phút trước" và React báo hydration mismatch. Tệ hơn nữa là MÚI GIỜ: server chạy UTC còn người dùng ở GMT+7 nên mọi định dạng ngày giờ tuyệt đối cũng lệch. Cách xử lý: render mốc thời gian TUYỆT ĐỐI và ổn định ở server (chuỗi ISO trong thuộc tính `dateTime` của thẻ `<time>`), rồi tính phần tương đối trong `useEffect` sau khi đã hydrate — lần render đầu hiện ngày giờ đầy đủ, sau đó mới đổi sang dạng tương đối; hoặc dùng `suppressHydrationWarning` cho đúng nút đó nếu chấp nhận sai lệch nhỏ. Đừng gọi `new Date()` hay `Math.random()` ngay trong thân component của trang SSR, đó là nguồn mismatch kinh điển. Về định dạng thì đã có sẵn `Intl.RelativeTimeFormat("vi", { numeric: "auto" })` — cho ra "hôm qua" thay vì "1 ngày trước" và tự lo phần số nhiều theo ngôn ngữ, nên đừng tự viết hàm nối chuỗi. Vài chi tiết trải nghiệm: đặt `title` là thời gian đầy đủ để người dùng rê chuột xem chính xác; cập nhật định kỳ nhưng theo bậc thang (mỗi phút khi còn mới, mỗi giờ khi đã cũ) chứ đừng chạy `setInterval` một giây cho cả trăm dòng; và với thứ quá cũ thì chuyển hẳn sang ngày tháng, vì "412 ngày trước" chẳng nói lên điều gì.',
+  },
+  {
+    id: 'react-server-action-security', topic: 'Bảo mật',
+    q: 'Server Action của React 19 chạy trên server — có cần kiểm tra quyền bên trong nó không?',
+    options: [
+      'Không cần, vì server action chỉ gọi được từ chính component đã render nó ra nên vốn đã an toàn',
+      'Không cần nếu đã ẩn nút gọi action đó với những người dùng không có quyền tương ứng',
+      'Có — mỗi action là một ENDPOINT công khai, phải tự xác thực, phân quyền và validate đầu vào',
+      'Chỉ cần kiểm tra khi action có ghi dữ liệu, còn action chỉ đọc thì không cần kiểm tra gì cả',
+    ], answer: 2,
+    explain: 'Đây là hiểu lầm nguy hiểm nhất về server action. Khi bạn đánh dấu `"use server"`, bundler tạo ra một ENDPOINT HTTP thật kèm một id, và client gọi tới nó bằng một request bình thường — ai biết id đó đều gọi được, với bất kỳ tham số nào, bất kể giao diện có hiện nút hay không. Nói cách khác server action đúng bằng một route API, nên phải làm đủ mọi việc của một route API: lấy phiên đăng nhập và xác thực NGAY TRONG action (đừng tin tham số kiểu `userId` do client truyền lên, hãy đọc từ session), kiểm tra quyền trên đúng tài nguyên đó để tránh IDOR, và validate toàn bộ đầu vào bằng schema vì `FormData` là dữ liệu người dùng. Vài điểm nữa: đừng đóng gói dữ liệu nhạy cảm vào closure của action, vì các biến closure được serialize gửi xuống client rồi gửi ngược lại nên có thể bị đọc và bị sửa — hãy đọc lại từ CSDL bên trong action. Cẩn thận với việc vô ý export thêm hàm từ một file `"use server"`, mỗi export là thêm một endpoint. Nhớ gọi `revalidatePath` hoặc `revalidateTag` sau khi ghi để dữ liệu hiển thị không bị cũ, và cân nhắc rate limit như với mọi endpoint khác. Framework có lo phần chống CSRF cơ bản, nhưng phân quyền và validate thì hoàn toàn là việc của bạn.',
+  },
+  {
+    id: 'react-view-transition', topic: 'Chất lượng UI',
+    q: 'View Transitions API giúp gì cho chuyển cảnh trong SPA?',
+    options: [
+      'Nó thay thế toàn bộ CSS animation nên mọi hiệu ứng trong ứng dụng đều phải viết lại theo API mới',
+      'Nó chỉ hoạt động khi tải lại cả trang, còn điều hướng bên trong SPA thì không dùng được',
+      'Trình duyệt chụp trạng thái trước và sau rồi tự nội suy — làm hiệu ứng giữa hai màn hình dễ hơn nhiều',
+      'Nó tải trước trang kế tiếp để chuyển cảnh không bị giật, chứ không liên quan gì tới hiệu ứng hình ảnh',
+    ], answer: 2,
+    explain: 'Trước đây làm hiệu ứng giữa hai trạng thái là việc rất cực: phải giữ cả DOM cũ lẫn mới cùng lúc, tự đo vị trí, tự chạy animation rồi dọn dẹp. `document.startViewTransition(() => { cập nhật DOM })` đảo ngược mọi thứ: trình duyệt CHỤP ảnh trạng thái cũ, để bạn cập nhật DOM, chụp trạng thái mới, rồi tự nội suy giữa hai ảnh đó — mặc định là mờ dần, và bạn tuỳ biến bằng CSS qua các pseudo-element `::view-transition-old` và `::view-transition-new`. Sức mạnh thật sự nằm ở `view-transition-name`: gán cùng một tên cho một phần tử ở hai màn hình thì trình duyệt tự làm hiệu ứng DI CHUYỂN nó — ảnh thu nhỏ trong danh sách bay ra thành ảnh lớn ở trang chi tiết, thứ mà trước kia phải dùng thư viện layout animation. Trong React thì bọc phần cập nhật state vào `startViewTransition`; React 19 đang đưa dần vào dưới dạng `<ViewTransition>` thử nghiệm, còn các router như Next.js đã có tuỳ chọn bật sẵn. Lưu ý: mỗi `view-transition-name` phải DUY NHẤT tại một thời điểm, hai phần tử cùng tên là hiệu ứng bị bỏ; API còn mới nên phải kiểm tra tồn tại trước khi gọi và luôn có nhánh dự phòng; và bắt buộc tôn trọng `prefers-reduced-motion`, hãy tắt hoặc rút gọn khi người dùng đã bật thiết lập đó. Cuối cùng đừng lạm dụng: hiệu ứng nên ngắn, khoảng 200 tới 300 mili giây, và phục vụ việc giúp người dùng hiểu cái gì biến thành cái gì chứ không phải để khoe.',
+  },
+  {
+    id: 'react-nested-layout', topic: 'Định tuyến',
+    q: 'Nested route (route lồng nhau) trong React Router hay App Router mang lại lợi ích gì?',
+    options: [
+      'Chỉ để URL trông đẹp và có phân cấp rõ ràng, còn về mặt kỹ thuật thì không khác gì route phẳng',
+      'Layout của tầng cha KHÔNG bị unmount khi đổi route con — giữ state, và mỗi tầng tự nạp dữ liệu của mình',
+      'Cho phép nhiều component cùng chiếm một URL nên phải tự viết logic quyết định cái nào được hiện ra',
+      'Bắt buộc phải dùng khi ứng dụng có hơn 10 trang, dưới mức đó thì router sẽ tự cảnh báo lỗi cấu hình',
+    ], answer: 1,
+    explain: 'Với route phẳng, mỗi trang tự render lại cả sidebar, header và khung — nghĩa là mỗi lần chuyển tab thì sidebar bị unmount rồi mount lại, mất trạng thái cuộn, mất nhóm menu đang mở, và nạp lại dữ liệu chung một cách không cần thiết. Nested route mô tả đúng thực tế giao diện: một layout cha chứa `<Outlet />` (React Router) hoặc `children` (App Router), và chỉ phần bên trong đổi khi điều hướng giữa các route con. Lợi ích đi kèm rất đáng giá: MỖI TẦNG tự khai báo dữ liệu nó cần và các tầng nạp SONG SONG thay vì chờ nhau — đây chính là cách router hiện đại phá vỡ request waterfall; mỗi tầng có error boundary và trạng thái loading riêng nên một phần hỏng không làm trắng cả trang; và code splitting đi theo từng nhánh của cây route. Vài mẫu hay dùng: route không thêm đoạn nào vào URL để nhóm mấy trang dùng chung một layout; route bảo vệ đặt ở tầng cha để kiểm tra đăng nhập một lần cho cả nhánh; và route index cho nội dung mặc định khi mới vào tầng cha. Lưu ý chiều ngược lại: đôi khi bạn MUỐN reset state khi đổi tham số, ví dụ chuyển từ đơn hàng này sang đơn hàng khác — lúc đó phải chủ động đặt `key={id}` cho component, vì mặc định nó sẽ được tái sử dụng chứ không remount.',
+  },
+  {
+    id: 'react-a11y-testing', topic: 'Kiểm thử',
+    q: 'Chạy `jest-axe` cho các component và không thấy lỗi — vậy đã đạt chuẩn a11y chưa?',
+    options: [
+      'Rồi, công cụ tự động kiểm tra được toàn bộ tiêu chí WCAG nên không cần phải làm gì thêm nữa',
+      'Chưa — công cụ tự động chỉ bắt được khoảng một phần ba vấn đề; bàn phím, focus và ngữ cảnh phải tự kiểm',
+      'Chưa, vì `jest-axe` chỉ chạy được với component class chứ không kiểm tra được function component',
+      'Rồi, miễn là mọi ảnh đều có thuộc tính `alt` và mọi input đều có `label` đi kèm với nó',
+    ], answer: 1,
+    explain: 'Các công cụ dựa trên axe-core rất đáng có: chạy nhanh và bắt chắc những lỗi máy kiểm được — thiếu `alt`, input không có nhãn, tương phản màu không đủ, ARIA dùng sai vai trò, thứ tự heading nhảy cóc. Cài vào test component (`expect(await axe(container)).toHaveNoViolations()`) hoặc vào CI với Playwright là chặn được hồi quy. Nhưng theo chính thống kê của Deque, công cụ tự động chỉ phát hiện được khoảng một phần ba số vấn đề thực tế. Những thứ nó KHÔNG thấy: có dùng được hoàn toàn bằng bàn phím hay không (Tab tới được mọi thứ, không có bẫy focus, thứ tự hợp lý); focus có được quản lý đúng khi mở và đóng modal, khi điều hướng; nội dung động có được thông báo cho screen reader không; `alt` có mô tả ĐÚNG nội dung ảnh hay chỉ là một chuỗi vô nghĩa; nhãn nút có nói rõ hành động không — mười chỗ cùng ghi "Xem thêm" thì hợp lệ về mặt kỹ thuật nhưng vô dụng khi nghe; và thứ tự đọc có khớp với thứ tự nhìn không. Cách kiểm thực dụng: rút chuột ra rồi thao tác cả luồng bằng bàn phím, bật VoiceOver hoặc NVDA nghe thử một màn hình chính, phóng to 200 phần trăm xem layout có vỡ không, và viết test bằng cách truy vấn theo VAI TRÒ (`getByRole("button", { name: "Lưu" })`) — chính cách viết test đó đã ép bạn phải gắn nhãn tử tế.',
+  },
+  {
+    id: 'react-form-autosave', topic: 'Form & sự kiện',
+    q: 'Tự lưu nháp cho một form dài — cần chú ý những gì?',
+    options: [
+      'Gọi API lưu ngay trong `onChange` của mỗi ô để không bao giờ mất dữ liệu người dùng đã gõ vào',
+      'Chỉ lưu khi người dùng bấm nút, vì tự lưu luôn gây xung đột dữ liệu nên không nên dùng trong mọi trường hợp',
+      'Debounce, chỉ lưu khi thật sự DIRTY, hiện trạng thái đã lưu, và xử lý lỗi mạng bằng bản nháp cục bộ',
+      'Dùng `setInterval` mỗi 5 giây gửi toàn bộ form lên server bất kể người dùng có gõ gì hay không',
+    ], answer: 2,
+    explain: 'Lưu ngay ở mỗi phím gõ là bắn hàng trăm request và chúng đua nhau ghi đè — phải DEBOUNCE (thường 500ms tới 2 giây) và chỉ gửi khi form thật sự khác bản đã lưu, kèm huỷ request cũ bằng `AbortController` để response cũ không về sau rồi ghi đè bản mới. Nên gửi phần THAY ĐỔI thay vì cả form nếu dữ liệu lớn. Hiện trạng thái cho người dùng thấy: "Đang lưu...", "Đã lưu lúc 10:32", "Chưa lưu được, sẽ thử lại" — thiếu phần này thì người dùng không dám rời trang, mà đó lại chính là thứ autosave định giải quyết. Xử lý lỗi mạng bằng một lớp nháp CỤC BỘ: ghi vào `localStorage` hoặc IndexedDB trước rồi mới đồng bộ lên server, nhờ vậy mất mạng hay đóng nhầm tab vẫn khôi phục được; khi mở lại thì HỎI người dùng có muốn khôi phục bản nháp không thay vì tự động ghi đè. Cẩn thận với XUNG ĐỘT: nếu cùng một bản ghi được mở ở hai thiết bị thì cần số phiên bản để phát hiện và báo, đừng lặng lẽ ghi đè công của người khác. Vài chi tiết nữa: lưu ngay lập tức khi trang chuyển sang ẩn bằng `sendBeacon`; đừng autosave những thao tác không thể hoàn tác; và với dữ liệu nhạy cảm thì cân nhắc có nên để bản nháp nằm lại trong `localStorage` của một máy dùng chung hay không.',
+  },
+  {
+    id: 'react-list-selection', topic: 'Quản lý state',
+    q: 'Bảng có checkbox chọn nhiều dòng, lại có phân trang và bộ lọc — lưu state chọn thế nào?',
+    options: [
+      'Thêm trường `selected` vào từng object trong mảng dữ liệu, khi lọc lại thì dữ liệu mới tự giữ lựa chọn',
+      'Lưu một `Set` các ID đã chọn ở tầng cha, tách khỏi dữ liệu hiển thị; "chọn tất cả" phải nói rõ phạm vi',
+      'Lưu chỉ số của các dòng đang chọn, vì chỉ số nhẹ hơn và luôn khớp với thứ tự hiển thị trên màn hình',
+      'Không cần state, cứ đọc trực tiếp thuộc tính `checked` từ DOM mỗi khi cần biết dòng nào đang được chọn',
+    ], answer: 1,
+    explain: 'Nguyên tắc gốc: lựa chọn là state của MÀN HÌNH chứ không phải của dữ liệu — nên lưu tách riêng dưới dạng `Set` các id (tra cứu nhanh, thêm bớt gọn) chứ đừng nhét cờ `selected` vào chính mảng dữ liệu; trộn vào là mỗi lần nạp lại từ server sẽ mất hết, và mỗi lần đổi lựa chọn lại phải sao chép cả mảng. Đừng dùng CHỈ SỐ, vì lọc, sắp xếp hay đổi trang là chỉ số trỏ sang dòng khác — đúng cùng một bài học với `key` trong danh sách. Chỗ khó nhất là "CHỌN TẤT CẢ": phải nói rõ với người dùng đó là tất cả trên TRANG NÀY hay tất cả theo BỘ LỌC HIỆN TẠI, mà bộ lọc thì có thể ra 20.000 dòng chưa hề tải về. Mẫu quen thuộc là hai bước: checkbox ở header chọn hết trang hiện tại, rồi hiện một dòng gợi ý "Đã chọn 50 dòng — chọn toàn bộ 20.000 kết quả?"; khi người dùng chọn phương án thứ hai thì đừng cố liệt kê id, hãy chuyển sang lưu chế độ chọn tất cả kèm danh sách LOẠI TRỪ và gửi bộ lọc lên server để nó tự xử lý. Vài chi tiết nữa: checkbox ở header cần trạng thái `indeterminate` khi chỉ chọn một phần, và phải đặt bằng ref vì HTML không có thuộc tính này; quyết định rõ là giữ hay xoá lựa chọn khi đổi trang rồi nói cho người dùng biết bằng một dòng đếm; và với thao tác hàng loạt thì luôn xác nhận kèm con số cụ thể trước khi chạy.',
+  },
 ];

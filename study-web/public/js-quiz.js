@@ -1580,4 +1580,93 @@ window.JS_QUIZ = [
     ], answer: 3,
     explain: 'Mọi property đều có ba cờ đi kèm. `writable` — có gán lại được hay không (gán vào property không writable thì im lặng thất bại ở chế độ thường và ném `TypeError` ở strict mode). `enumerable` — có xuất hiện trong `for...in`, `Object.keys`, spread và `JSON.stringify` hay không. `configurable` — có xoá được hay đổi lại cấu hình được không; đặt `false` là quyết định một chiều, không quay lại được. Cái bẫy lớn: gán bằng `obj.x = 1` cho cả ba cờ là `true`, nhưng `Object.defineProperty` mặc định cả ba là `FALSE` — nên định nghĩa xong rồi ngạc nhiên vì property không hiện trong `Object.keys` hay biến mất khi spread là chuyện xảy ra rất thường. Dùng thật thì gặp ở đâu: tạo field nội bộ mà không muốn lộ ra khi serialize; định nghĩa getter/setter tính toán (`get`/`set` trong descriptor, và khi đó không được có `value` hay `writable`); khoá một hằng số cấu hình. Các API họ hàng: `Object.getOwnPropertyDescriptor` để soi, `Object.defineProperties` cho nhiều cái một lúc, và `Object.freeze` thực chất là đặt `writable` cùng `configurable` thành `false` cho mọi property, mà cũng chỉ ở tầng nông. Ngày nay muốn dữ liệu riêng tư thì `#privateField` của class gọn và rõ hơn nhiều; còn muốn chặn hay theo dõi truy cập ĐỘNG thì dùng `Proxy` — đó chính là cách Vue 3 làm reactivity, thay cho `defineProperty` của Vue 2.',
   },
+  // ===== Đợt #13 =====
+  {
+    id: 'js-indexeddb', topic: 'DOM & trình duyệt',
+    q: 'Khi nào cần IndexedDB thay vì `localStorage`?',
+    options: [
+      'Không bao giờ, `localStorage` nhanh hơn và lưu được mọi kiểu dữ liệu nên đủ cho mọi ứng dụng web',
+      'Khi cần lưu NHIỀU dữ liệu có cấu trúc, truy vấn theo index, và không muốn chặn luồng chính',
+      'Khi muốn dữ liệu tự đồng bộ lên server, vì IndexedDB có sẵn cơ chế đồng bộ với backend',
+      'Khi cần dữ liệu chia sẻ được giữa các domain khác nhau, điều mà `localStorage` không làm được',
+    ], answer: 1,
+    explain: '`localStorage` là kho khoá-giá trị CHUỖI và ĐỒNG BỘ — mỗi lần đọc ghi đều chặn luồng chính, hạn mức chỉ khoảng 5 tới 10MB, và lưu object thì phải `JSON.stringify` qua lại nên tốn CPU khi dữ liệu lớn. IndexedDB là một CSDL giao dịch chạy bất đồng bộ: lưu được object có cấu trúc (structured clone, kể cả Blob và File), tạo được index để truy vấn theo trường và theo khoảng giá trị, dung lượng lên tới hàng trăm MB hoặc một phần dung lượng đĩa tuỳ trình duyệt. Vì thế nó là lựa chọn cho: ứng dụng làm việc offline, cache dữ liệu lớn cho PWA, hàng đợi thao tác chờ đồng bộ khi có mạng trở lại, và lưu file người dùng tải về. Nhược điểm lớn nhất là API gốc dùng sự kiện nên rất rườm rà — hầu như ai cũng dùng `idb` (bản bọc promise) hoặc Dexie. Vài điều cần nhớ khi dùng thật: dữ liệu có thể bị TRÌNH DUYỆT XOÁ khi máy hết chỗ (gọi `navigator.storage.persist()` để xin giữ lại và `estimate()` để biết còn bao nhiêu); mọi thứ theo origin và không chia sẻ được giữa các domain; nâng phiên bản schema phải xử lý trong sự kiện `upgradeneeded`; và Safari từng có nhiều lỗi nên hãy kiểm thử kỹ. Nguyên tắc chọn: vài chục KB cấu hình thì `localStorage` đủ và đơn giản hơn, còn dữ liệu nghiệp vụ thật thì IndexedDB.',
+  },
+  {
+    id: 'js-websocket-client', topic: 'DOM & trình duyệt',
+    q: 'Client WebSocket cần xử lý gì để kết nối thật sự đáng tin cậy?',
+    options: [
+      'Không cần gì cả, giao thức WebSocket tự đảm bảo kết nối luôn được duy trì cho tới khi trang đóng',
+      'Chỉ cần gọi lại `new WebSocket(url)` ngay lập tức mỗi khi sự kiện `close` được kích hoạt là đủ',
+      'Kết nối lại có backoff, heartbeat để phát hiện kết nối chết, và hàng đợi cho tin nhắn gửi lúc mất mạng',
+      'Đặt một `setInterval` để đóng rồi mở lại kết nối định kỳ, nhờ đó tránh được mọi tình trạng treo',
+    ], answer: 2,
+    explain: 'WebSocket không tự hồi phục, có bốn thứ bạn phải tự làm. (1) KẾT NỐI LẠI với exponential backoff CÓ jitter — nối lại ngay lập tức trong vòng lặp là cách nhanh nhất để tự tấn công server của mình khi nó vừa khởi động lại; nhớ giới hạn số lần rồi báo cho người dùng. (2) HEARTBEAT: kết nối TCP có thể chết âm thầm (mạng di động chuyển vùng, NAT hết hạn) mà không hề có sự kiện `close` — client gửi ping định kỳ, quá N giây không thấy pong thì chủ động đóng rồi mở lại; server cũng nên có phía của nó. (3) HÀNG ĐỢI GỬI: khi `readyState` không phải `OPEN` thì đẩy tin nhắn vào hàng đợi rồi gửi lại sau khi nối lại, và quan trọng hơn là ĐỒNG BỘ TRẠNG THÁI — sau khi nối lại phải lấy phần dữ liệu bị lỡ, thường bằng một số thứ tự hoặc mốc thời gian, vì WebSocket không phát lại tin nhắn cũ. (4) VÒNG ĐỜI TRANG: dừng heartbeat khi tab ẩn để đỡ tốn pin, và đóng kết nối trong cleanup của effect kẻo mỗi lần hot reload lại thêm một kết nối. Vài lưu ý khác: dùng `wss://`, đừng đặt token trong URL vì nó lọt vào log của proxy — hãy xác thực bằng tin nhắn đầu tiên hoặc bằng cookie; và cân nhắc SSE nếu bạn chỉ cần một chiều server đẩy xuống, vì nó tự kết nối lại sẵn và đi qua HTTP thường nên ít vướng proxy hơn.',
+  },
+  {
+    id: 'js-page-lifecycle', topic: 'DOM & trình duyệt',
+    q: 'Gửi dữ liệu cuối cùng khi người dùng rời trang thì nên nghe sự kiện nào?',
+    options: [
+      'Sự kiện `unload`, vì nó là sự kiện cuối cùng nên đảm bảo mọi việc đều kịp hoàn tất trước khi trang đóng',
+      '`visibilitychange` khi chuyển sang ẩn (kèm `pagehide`) — `unload` không đáng tin và còn chặn bfcache',
+      '`beforeunload` là đủ, vì trình duyệt luôn chờ mọi request trong handler đó hoàn tất rồi mới đóng trang',
+      'Không có sự kiện nào đáng tin, cách duy nhất là gửi dữ liệu liên tục theo chu kỳ suốt phiên làm việc',
+    ], answer: 1,
+    explain: '`unload` gần như đã chết: nó KHÔNG bắn đáng tin trên mobile (người dùng chuyển app, hệ điều hành thu hồi tab), và quan trọng hơn là sự có mặt của nó VÔ HIỆU HOÁ bfcache — bộ nhớ đệm cho phép nút back và forward khôi phục trang tức thì, đúng nguyên trạng; Chrome đang bỏ dần sự kiện này. Thay vào đó: `visibilitychange` với `document.visibilityState === "hidden"` là tín hiệu ĐÁNG TIN NHẤT rằng người dùng có thể không quay lại, đây là chỗ để gửi analytics và lưu nháp; `pagehide` bổ sung cho trường hợp điều hướng đi, và nó có cờ `event.persisted` cho biết trang có vào bfcache hay không. Vì trang có thể bị đóng ngay sau đó nên request phải dùng `navigator.sendBeacon` hoặc `fetch` với `keepalive: true` — request thường sẽ bị huỷ giữa chừng. Còn `beforeunload` thì chỉ dùng để HỎI người dùng có chắc muốn rời hay không, và nó cũng chặn bfcache nên chỉ đăng ký khi form đang dirty rồi gỡ ngay sau khi lưu xong. Đừng quên chiều ngược lại: `pageshow` với `event.persisted === true` nghĩa là trang vừa được khôi phục từ bfcache — timer, kết nối WebSocket và dữ liệu hiển thị đều có thể đã cũ nên cần khởi động lại; đây là nguồn bug rất khó tái hiện nếu không biết bfcache tồn tại.',
+  },
+  {
+    id: 'js-eventtarget', topic: 'Cú pháp & runtime',
+    q: 'Muốn một module phát sự kiện cho nhiều nơi cùng nghe trong trình duyệt thì dùng gì?',
+    options: [
+      'Phải cài thư viện event emitter từ npm, vì trình duyệt không có sẵn cơ chế nào cho việc này',
+      'Gán một mảng callback vào `window` rồi tự duyệt gọi từng cái mỗi khi có chuyện xảy ra',
+      'Kế thừa `EventTarget` (hoặc dùng `CustomEvent` với `detail`) — cơ chế sự kiện chuẩn có sẵn',
+      'Dùng `postMessage` gửi cho chính cửa sổ hiện tại, đó là cách chuẩn để phát sự kiện nội bộ',
+    ], answer: 2,
+    explain: '`EventTarget` không còn là đặc quyền của DOM — từ khi nó thành constructor công khai, bạn viết `class Store extends EventTarget` rồi `this.dispatchEvent(new CustomEvent("change", { detail: { items } }))`, còn nơi nghe thì `store.addEventListener("change", e => e.detail.items)`. Bạn được luôn cả hệ sinh thái quen thuộc: `removeEventListener`, tuỳ chọn `{ once: true }` cho listener chỉ chạy một lần, và `{ signal }` của `AbortController` để gỡ HÀNG LOẠT listener bằng một lần abort — rất hợp với cleanup trong React. Khi phát sự kiện trên một phần tử DOM thật thì nhớ hai cờ: `bubbles: true` nếu muốn nó nổi lên cha, và `composed: true` nếu muốn nó vượt ra khỏi ranh giới shadow DOM. So sánh nhanh: `EventEmitter` của Node có API khác (`on` và `emit`) và gọi listener ĐỒNG BỘ, còn `EventTarget` cũng đồng bộ nhưng theo mô hình DOM; Node hiện cũng đã hỗ trợ `EventTarget` nên code dùng chung được cho hai môi trường. Vài lưu ý thiết kế: emitter dễ làm luồng dữ liệu khó lần theo nên đừng dùng nó thay cho lời gọi hàm bình thường — chỉ dùng khi thật sự có nhiều bên quan tâm và bên phát không cần biết ai đang nghe; và lỗi ném ra trong một listener không dừng các listener khác nhưng cũng không lan ra chỗ dispatch, nên nhớ tự bắt.',
+  },
+  {
+    id: 'js-microtask-starvation', topic: 'Event loop',
+    q: 'Một vòng lặp liên tục tạo microtask mới (`Promise.resolve().then(loop)`) gây hậu quả gì?',
+    options: [
+      'Không sao cả, vì microtask rất nhẹ nên trình duyệt vẫn xen kẽ vẽ lại giao diện giữa các lần chạy',
+      'Trình duyệt tự chuyển nó sang một luồng nền sau vài nghìn lần lặp để không ảnh hưởng tới trang',
+      'Trang ĐƠ HOÀN TOÀN: hàng đợi microtask phải cạn thì mới tới lượt render, timer và các sự kiện',
+      'Chỉ các `setTimeout` bị hoãn lại, còn giao diện và sự kiện chuột vẫn phản hồi bình thường như cũ',
+    ], answer: 2,
+    explain: 'Sau mỗi tác vụ, event loop phải VÉT CẠN hàng đợi microtask trước khi làm bất cứ việc gì khác — kể cả render, kể cả xử lý sự kiện, kể cả chạy timer. Nếu mỗi microtask lại đẻ ra một microtask mới thì hàng đợi không bao giờ cạn: trang đơ cứng, không cuộn được, không click được, và khác với vòng `while` vô hạn ở chỗ nó trông có vẻ vẫn đang chạy code bất đồng bộ nên khó đoán ra hơn. Đây không phải chuyện lý thuyết: nó xảy ra với vòng đệ quy dùng `await` mà quên điều kiện dừng, với `queueMicrotask` gọi lại chính nó, hoặc với một chuỗi promise xử lý mảng khổng lồ mà không nhả luồng. Cách nhả luồng cho ĐÚNG là dùng MACROTASK: `await new Promise(r => setTimeout(r, 0))` giữa các lô, hoặc `scheduler.yield()` ở trình duyệt mới — còn `await` một promise đã resolve thì KHÔNG nhả luồng, vì nó chỉ tạo thêm một microtask nữa. Ở Node thì `process.nextTick` có ưu tiên còn cao hơn microtask của promise, nên đệ quy `nextTick` sẽ chặn luôn cả I/O; nếu chỉ muốn hoãn sang vòng lặp sau thì dùng `setImmediate`. Nguyên tắc dễ nhớ: microtask để chạy NGAY sau việc hiện tại, còn macrotask để NHƯỜNG chỗ cho trình duyệt vẽ và cho I/O.',
+  },
+  {
+    id: 'js-error-stack', topic: 'Xử lý lỗi',
+    q: 'Stack trace của lỗi trong hàm bất đồng bộ thường bị cụt — vì sao và làm gì?',
+    options: [
+      'Vì hàm async chạy trên luồng riêng nên stack của nó nằm ở luồng khác, không cách nào ghép lại được',
+      'Vì stack bị cắt ngắn mặc định; tăng `Error.stackTraceLimit` là hiện đầy đủ mọi khung trong mọi trường hợp',
+      'Vì `throw` trong hàm async tự xoá phần stack cũ đi để tránh làm lộ cấu trúc mã nguồn ra bên ngoài',
+      'Vì mỗi lượt bất đồng bộ là một ngăn xếp MỚI; giữ ngữ cảnh bằng `cause`, và tránh mẫu nuốt rồi ném lại lỗi',
+    ], answer: 3,
+    explain: 'Ngăn xếp lời gọi bị xoá mỗi khi quay lại event loop, nên lỗi phát sinh trong một callback bất đồng bộ chỉ còn thấy phần từ chỗ đó trở đi, không thấy ai đã khởi động chuỗi việc này. V8 có async stack trace giúp nối lại phần nào cho `async/await` (DevTools và Node hiện đại đều bật sẵn), nhưng nó không cứu được callback thuần và các hàng đợi tự viết. Cách giữ ngữ cảnh: bọc lỗi bằng `new Error("không tạo được đơn", { cause: err })` để giữ nguyên nhân gốc; đừng dùng mẫu `catch (e) { throw new Error(e.message) }` vì nó vứt sạch stack lẫn cause; và với hàng đợi hay retry thì lưu thêm một id tương quan để nối các mảnh log lại với nhau — `AsyncLocalStorage` của Node làm việc này rất gọn. Vài công cụ liên quan: `Error.captureStackTrace(this, MyError)` để bỏ chính hàm khởi tạo ra khỏi stack cho gọn; `Error.stackTraceLimit` mặc định là 10 khung, tăng lên khi debug nhưng nhớ là có chi phí; và `--enable-source-maps` để stack trỏ đúng dòng trong file TypeScript. Cuối cùng nhớ rằng `stack` là một chuỗi không được chuẩn hoá giữa các engine — đừng parse nó để lấy logic nghiệp vụ, chỉ dùng để đọc và để gửi về hệ thống giám sát.',
+  },
+  {
+    id: 'js-import-maps', topic: 'Module',
+    q: 'Import map trong HTML dùng để làm gì?',
+    options: [
+      'Khai báo thứ tự nạp các file JavaScript để trình duyệt biết file nào phải chạy trước file nào',
+      'Ánh xạ tên module trần (`import x from "lodash"`) sang URL thật, để chạy ESM mà không cần bundler',
+      'Liệt kê các module được phép import nhằm chặn mã độc chèn thêm import lạ vào trang của bạn',
+      'Là file sinh ra sau khi build để trình duyệt biết chunk nào chứa module nào trong bundle cuối',
+    ], answer: 1,
+    explain: 'Trình duyệt chỉ hiểu URL trong câu lệnh `import`, không hiểu tên trần như `"lodash"` — đó vốn là quy ước của Node và của bundler. Import map lấp đúng khoảng trống đó: một thẻ `<script type="importmap">` chứa JSON ánh xạ `"lodash"` sang một URL cụ thể, sau đó mọi `import` trong trang dùng được tên trần y như trong dự án có bundler. Lợi ích thực tế: chạy ESM thẳng trên trình duyệt cho prototype, demo hoặc trang nhỏ mà không cần bước build; đổi phiên bản một thư viện chỉ bằng cách sửa map thay vì build lại toàn bộ; và chỉ định bản dự phòng hoặc bản vá cho một package. Có thêm phần `scopes` để một thư mục con dùng phiên bản khác của cùng một thư viện. Giới hạn cần biết: import map phải nằm TRƯỚC mọi module script và mỗi document chỉ được có một cái; không có tree shaking và không gộp file nên nhiều module nhỏ nghĩa là nhiều request (HTTP/2 giảm bớt nhưng không xoá hết vấn đề); và trình duyệt cũ thì cần polyfill. Vì vậy với ứng dụng thật vẫn nên dùng bundler — nhưng import map rất hữu ích cho micro-frontend (chia sẻ một bản React duy nhất giữa các mảnh), cho Deno, và cho việc học ESM mà không phải dựng cả bộ công cụ.',
+  },
+  {
+    id: 'js-form-validation', topic: 'DOM & trình duyệt',
+    q: 'HTML có sẵn `required`, `pattern`, `type="email"` — vẫn cần validate bằng JavaScript không?',
+    options: [
+      'Không cần, thuộc tính HTML đã đủ và trình duyệt sẽ chặn mọi dữ liệu sai trước khi form được gửi đi',
+      'Cần, vì thuộc tính HTML chỉ hoạt động ở trình duyệt Chrome còn các trình duyệt khác thì bỏ qua chúng',
+      'Cần cho luật NGHIỆP VỤ và thông báo tuỳ biến (`setCustomValidity`); và server thì vẫn luôn phải kiểm lại',
+      'Không cần ở client, chỉ cần kiểm ở server rồi trả lỗi về là đủ, làm hai nơi là trùng lặp công sức',
+    ], answer: 2,
+    explain: 'Constraint Validation API của HTML làm được nhiều hơn nhiều người nghĩ: `required`, `min`/`max`, `minlength`, `pattern`, `type="email"` hay `url` hay `number`, và trong JavaScript thì có `input.validity` (đọc được lý do sai: `valueMissing`, `patternMismatch`, `tooShort`), `checkValidity()` để hỏi mà không hiện thông báo, `reportValidity()` để hiện, và `setCustomValidity("...")` để gắn lỗi của riêng bạn — nhớ đặt lại thành chuỗi rỗng khi đã hợp lệ, quên là form không bao giờ submit được. Kèm theo là các pseudo-class CSS `:invalid`, `:valid` và `:user-invalid` — cái cuối chỉ tô đỏ SAU KHI người dùng đã chạm vào ô, tránh cảnh cả form đỏ rực ngay khi vừa mở. Nhưng nó không đủ ở hai chỗ: luật nghiệp vụ (hai mật khẩu phải khớp, ngày kết thúc phải sau ngày bắt đầu, email đã tồn tại hay chưa — cái này phải hỏi server), và giao diện thông báo mặc định của trình duyệt thì xấu, không dịch được theo ý bạn, không đặt được vị trí — nên thường tắt bằng `novalidate` rồi tự render lỗi mà vẫn tận dụng `validity` để biết sai ở đâu. Và luật bất di bất dịch: validate ở client chỉ là TRẢI NGHIỆM, ai cũng bỏ qua được bằng DevTools hay curl, nên server luôn phải kiểm lại. Về a11y thì gắn lỗi bằng `aria-describedby` cùng `aria-invalid`, và focus vào ô sai đầu tiên khi submit hỏng.',
+  },
 ];
