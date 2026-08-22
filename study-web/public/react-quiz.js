@@ -1097,4 +1097,93 @@ window.REACT_QUIZ = [
     ], answer: 0,
     explain: 'StrictMode ở DEV cố ý gọi component (và initializer, updater) hai lần để lộ ra render không thuần — nếu code đúng thì lần thứ hai vô hại vì render phải không có side effect. Production không bị ảnh hưởng. Đừng "sửa" bằng cách gỡ StrictMode. Nhưng nếu render lặp lại LIÊN TỤC (không dừng) thì đó là bug thật, thường do: setState ngay trong thân component; effect setState với deps là object/hàm tạo mới mỗi render; hoặc hai effect cập nhật lẫn nhau. Cách chẩn đoán: React DevTools Profiler bật "Record why each component rendered" sẽ chỉ đúng prop/hook nào đổi — chính xác hơn nhiều so với đếm `console.log`.',
   },
+  // ===== Đợt #9 =====
+  {
+    id: 'react-why-react', topic: 'Kiến trúc',
+    q: 'Vì sao dùng React thay vì thao tác DOM trực tiếp?',
+    options: [
+      'Vì thao tác DOM trực tiếp không chạy được trên trình duyệt di động nên bắt buộc phải đi qua một thư viện',
+      'Vì UI được mô tả KHAI BÁO theo state (`UI = f(state)`) — bạn tả kết quả mong muốn, React lo phần cập nhật DOM',
+      'Vì React thao tác DOM nhanh hơn mã viết tay trong mọi trường hợp, nhờ Virtual DOM tối ưu được từng thay đổi',
+      'Vì React loại bỏ hoàn toàn JavaScript khỏi tầng giao diện, chỉ còn lại JSX với CSS nên code sạch hơn hẳn',
+    ], answer: 1,
+    explain: 'Với DOM thuần bạn viết các bước CHUYỂN TIẾP: "thêm dòng này, gỡ class kia, sửa text nọ". Mỗi trạng thái mới lại thêm một nhánh phải nhớ, số tổ hợp phình theo cấp số nhân, và bug kinh điển là DOM lệch khỏi dữ liệu (danh sách đã xoá nhưng badge đếm vẫn còn số cũ). React đảo ngược hướng: bạn viết một hàm từ state ra UI, mọi thay đổi chỉ còn là `setState` rồi render lại, React so sánh và áp dụng thay đổi tối thiểu. Cái mua được là khả năng suy luận CỤC BỘ — nhìn một component là biết nó hiển thị gì trong mọi trạng thái — cộng với tái sử dụng theo component và một hệ sinh thái lớn (router, form, devtools, React Native). Nên nói thẳng cả mặt trái khi phỏng vấn: Virtual DOM KHÔNG nhanh hơn DOM viết tay được tối ưu kỹ, nó chỉ "đủ nhanh" và đổi lại code dễ bảo trì; Svelte và Solid đạt cùng mô hình khai báo mà không cần VDOM. Và React không phải lựa chọn duy nhất đúng: trang thiên về nội dung tĩnh thì HTML kèm chút JS vẫn nhẹ và nhanh hơn nhiều.',
+  },
+  {
+    id: 'react-hoc', topic: 'Mẫu thiết kế',
+    q: 'Higher-Order Component (HOC) là gì và vì sao custom hook thường được ưa hơn?',
+    options: [
+      'Một component cha đứng ở gốc ứng dụng để cung cấp dữ liệu chung; hook được ưa hơn vì chạy nhanh hơn nhiều lần',
+      'Hàm nhận component, trả về component mới đã bọc thêm logic; hook chia sẻ logic mà không thêm tầng cây, không đụng tên prop',
+      'Một component có độ ưu tiên render cao hơn các component khác; hook được ưa hơn chỉ vì viết ngắn gọn hơn HOC',
+      'Một cách viết component bằng class thay cho function; hook được ưa hơn vì class đã bị React 19 loại bỏ hoàn toàn',
+    ], answer: 1,
+    explain: 'HOC là hàm `Component => Component`: `const withAuth = C => props => { const user = useUser(); return <C {...props} user={user} /> }`. Thời chưa có hook thì đây là cách duy nhất chia sẻ logic có state — `connect` của Redux, `withRouter` đều là HOC. Nhược điểm khiến nó lùi lại: "wrapper hell" khi chồng ba bốn lớp làm cây DevTools rối và khó tìm component thật; prop bị GHI ĐÈ âm thầm khi hai HOC cùng truyền một tên; mất `displayName` nếu không tự đặt; `ref` không tự chuyển tiếp; và TypeScript gõ kiểu khá vất vả. BẪY NGHIÊM TRỌNG nhất: tạo HOC bên trong thân component (`const Wrapped = withX(Y)` rồi render `<Wrapped />`) — mỗi lần render sinh ra một type MỚI nên React unmount toàn bộ cây con và mất sạch state; luôn gọi HOC ở cấp module. Hôm nay: dùng custom hook cho LOGIC, dùng `children`/render prop cho CẤU TRÚC, còn HOC vẫn hợp lý khi cần bọc cắt ngang nhiều component đồng loạt (error boundary, tracking, i18n) hoặc khi bọc component mình không sửa được.',
+  },
+  {
+    id: 'react-compiler', topic: 'React hiện đại',
+    q: 'React Compiler làm gì, và có bỏ được `useMemo`/`useCallback` không?',
+    options: [
+      'Biên dịch JSX thành mã máy để chạy nhanh hơn, còn `useMemo` vẫn phải viết tay như trước vì nằm ngoài phạm vi của nó',
+      'Thay thế hoàn toàn Virtual DOM bằng cách sinh mã cập nhật DOM trực tiếp giống Svelte, nên không còn khái niệm re-render',
+      'Là một công cụ chạy lúc phát triển để báo component nào render thừa, không ảnh hưởng gì tới bản build production',
+      'Tự chèn memo hoá lúc build cho code tuân thủ Rules of React — bỏ được phần lớn memo thủ công, miễn code thật sự thuần',
+    ], answer: 3,
+    explain: 'React Compiler là một plugin build (`babel-plugin-react-compiler`) phân tích component rồi tự chèn bộ nhớ đệm cho các giá trị trung gian và cho JSX — về bản chất là làm thay việc của `React.memo`, `useMemo`, `useCallback`, nhưng ở mức chi tiết hơn con người làm tay và không bỏ sót. Điều kiện tiên quyết: code phải THUẦN theo Rules of React — không sửa props/state tại chỗ, không đọc/ghi ref trong lúc render, không side effect trong thân component. Compiler khá thận trọng: chỗ nào nó không chứng minh được là an toàn thì nó BỎ QUA component đó (bạn cũng có thể loại trừ thủ công bằng chỉ thị `"use no memo"`). Vì vậy bước đầu tiên không phải là bật compiler mà là chạy `eslint-plugin-react-hooks` bản mới (đã gộp các luật của compiler) và sửa hết cảnh báo. Cách triển khai thực tế: bật dần theo thư mục, dùng React DevTools Profiler đo trước/sau, giữ lại vài chỗ memo tay đã đo là có lợi rõ rệt. Và nhớ giới hạn: compiler chỉ bỏ được render thừa, nó không sửa được vấn đề kiến trúc như state đặt quá cao trong cây, fetch waterfall, hay danh sách 10.000 dòng không ảo hoá.',
+  },
+  {
+    id: 'react-use-hook', topic: 'React hiện đại',
+    q: 'Hook `use()` của React 19 khác các hook thông thường ở chỗ nào?',
+    options: [
+      'Là tên viết tắt mới của `useEffect`, dùng để chạy side effect nhưng không cần khai báo mảng phụ thuộc nữa',
+      'Cho phép gọi bất kỳ hook nào ở bên trong nó, nhờ vậy viết được hook lồng nhau mà không vi phạm quy tắc hook',
+      'Đọc được Promise hoặc Context và ĐƯỢC PHÉP gọi trong `if`/vòng lặp; đọc Promise thì component treo lại cho Suspense',
+      'Thay thế `useState` bằng cách suy ra kiểu dữ liệu lúc biên dịch, nhờ đó giảm được số lần render lại của component',
+    ], answer: 2,
+    explain: '`use()` nhận vào một Promise hoặc một Context. Khác biệt then chốt so với mọi hook khác: nó KHÔNG bị ràng buộc "chỉ gọi ở cấp cao nhất" — gọi trong nhánh `if` hay trong vòng lặp đều hợp lệ, vì nó không lưu state theo thứ tự gọi như `useState`/`useEffect`. `use(promise)` sẽ ĐÌNH CHỈ component cho tới khi promise settle, nên cần `<Suspense>` bao ngoài để hiện fallback và một error boundary để bắt trường hợp reject. Bẫy quan trọng: đừng TẠO promise ngay trong render của client component (`use(fetch(url))`) — mỗi lần render lại sinh promise mới nên vòng lặp không bao giờ dừng; promise phải đến từ nơi ổn định: một Server Component tạo rồi truyền xuống làm prop, hoặc một lớp cache/thư viện data (React Query, `cache()` của React). `use(context)` thì thay được `useContext` và ưu điểm là gọi có điều kiện được — ví dụ chỉ đọc theme khi một cờ nào đó bật.',
+  },
+  {
+    id: 'react-event-handler', topic: 'Form & sự kiện',
+    q: 'Vì sao `onClick={handleDelete(id)}` chạy sai, và truyền tham số cho handler thế nào mới đúng?',
+    options: [
+      'Vì React chỉ chấp nhận tên hàm chứ không nhận biểu thức; phải khai báo hàm bên ngoài JSX rồi mới gắn được vào',
+      'Vì tham số bị mất khi đi qua synthetic event; phải đọc lại id từ `event.target.dataset` ngay trong thân hàm xử lý',
+      'Vì handler chạy trước khi state kịp cập nhật; phải bọc trong `useCallback` để hoãn nó lại tới sau lần render đó',
+      'Vì nó GỌI hàm ngay lúc render rồi gán giá trị trả về làm handler; đúng ra phải viết `onClick={() => handleDelete(id)}`',
+    ], answer: 3,
+    explain: 'Trong JSX, phần trong cặp ngoặc nhọn là một BIỂU THỨC được tính ngay khi render. Viết `onClick={handleDelete(id)}` nghĩa là gọi `handleDelete(id)` trong lúc render rồi gán giá trị trả về (thường là `undefined`) cho `onClick` — hậu quả là hàng loạt item bị xoá ngay khi trang hiện ra, hoặc nếu hàm đó `setState` thì bạn được vòng lặp render vô hạn, còn click thật thì chẳng có gì xảy ra. Ba cách đúng: arrow inline `onClick={() => handleDelete(id)}` — mặc định nên dùng, rõ ràng nhất; `onClick={handleDelete.bind(null, id)}` — tương đương, ít gặp hơn; hoặc gắn `data-id` lên phần tử rồi dùng một handler chung đọc `e.currentTarget.dataset.id` — hợp khi danh sách rất dài hoặc muốn uỷ quyền sự kiện. Về hiệu năng: arrow inline tạo hàm mới mỗi lần render, nhưng điều đó chỉ thành vấn đề khi component con được `React.memo` bọc, và React Compiler cũng đã xử lý được — đừng tối ưu sớm. Khi cần cả tham số lẫn event thì `onClick={e => handleDelete(id, e)}`; và nếu handler là hàm async, nhớ bắt lỗi bên trong vì không ai `await` nó cả.',
+  },
+  {
+    id: 'react-state-structure', topic: 'State & props',
+    q: 'Những nguyên tắc nào giúp cấu trúc state gọn và ít sinh bug?',
+    options: [
+      'Luôn gom toàn bộ state của trang vào MỘT object duy nhất để chỉ cần gọi `setState` một lần cho mọi thay đổi',
+      'Không lưu thứ TÍNH ĐƯỢC từ state/props khác, gộp state luôn đổi cùng nhau, tránh lồng sâu và chuẩn hoá theo id',
+      'Luôn tách mỗi field thành một `useState` riêng biệt, kể cả những field luôn thay đổi cùng lúc với nhau trong form',
+      'Sao chép props vào state ngay khi component mount để component chủ động hơn và không còn phụ thuộc component cha',
+    ], answer: 1,
+    explain: 'Bốn nguyên tắc theo tài liệu React. (1) GỘP state đổi cùng nhau: toạ độ `x`, `y` của con trỏ nên nằm trong một object, hai `useState` rời dễ lệch pha. (2) Tránh state MÂU THUẪN: ba boolean `isLoading`/`isError`/`isSuccess` tạo ra tổ hợp vô nghĩa (vừa loading vừa error), thay bằng một `status: "idle" | "loading" | "success" | "error"`. (3) Tránh state THỪA — quan trọng nhất: có `firstName` và `lastName` thì `fullName` phải TÍNH lúc render chứ không setState; có danh sách rồi thì lưu `selectedId` chứ đừng lưu cả object `selectedItem` (khi list cập nhật, object đã lưu bị "đóng băng" ở giá trị cũ — đây là nguồn bug rất hay gặp). (4) Tránh LỒNG SÂU: cập nhật bất biến cho cây ba bốn tầng vừa dài vừa dễ sót, hãy chuẩn hoá thành `{ byId: {...}, allIds: [...] }` như Redux khuyến nghị, hoặc dùng Immer. Kèm theo một luật riêng: đừng sao chép props vào state — `useState(props.value)` chỉ nhận giá trị KHỞI TẠO, props đổi sau đó sẽ không đồng bộ; chỉ làm vậy khi cố ý muốn giữ nguyên giá trị tại thời điểm mở, và khi đó nên đặt tên là `initialValue` cho rõ ý.',
+  },
+  {
+    id: 'react-fetch-race', topic: 'Hooks',
+    q: 'Fetch trong `useEffect` theo `id`; người dùng bấm nhanh id 1 rồi id 2, kết quả hiện ra lại là của id 1. Vì sao?',
+    options: [
+      'Vì `useEffect` chỉ chạy đúng một lần lúc mount nên lần bấm thứ hai không hề kích hoạt thêm request mới nào cả',
+      'Vì state được cập nhật theo lô nên lần `setState` thứ hai bị gộp mất, chỉ cần thêm `flushSync` là xử lý xong',
+      'Vì `id` bên trong effect là giá trị cũ do closure, chỉ cần chuyển sang dùng `useRef` để lưu `id` là hết hiện tượng',
+      'Vì response về KHÔNG theo thứ tự gửi; cần cờ `ignore` trong cleanup hoặc `AbortController` để bỏ kết quả cũ đi',
+    ], answer: 3,
+    explain: 'Đây là race condition, một trong những bug hay gặp nhất khi tự fetch trong effect. Effect chạy lại khi `id` đổi nên có HAI request bay song song; mạng không đảm bảo thứ tự trả về, request của id 1 có thể về SAU và `setUser` đè lên kết quả của id 2. Cách chuẩn trong tài liệu React là dùng cờ trong cleanup: `useEffect(() => { let ignore = false; fetchUser(id).then(d => { if (!ignore) setUser(d) }); return () => { ignore = true } }, [id])` — cleanup luôn chạy TRƯỚC lần effect kế tiếp, nên kết quả của lần cũ bị bỏ qua. `AbortController` mạnh hơn vì huỷ luôn request đang bay (tiết kiệm băng thông), chỉ nhớ nuốt `AbortError` để không hiện thành lỗi thật. Chuyện StrictMode ở dev cố ý chạy effect hai lần chính là để phơi ra đúng loại bug này — sửa nó, đừng gỡ StrictMode. Thực tế trong dự án thì nên dùng React Query hoặc SWR: chúng lo sẵn race, cache, dedupe request trùng, retry, và cả trạng thái loading/error mà bạn không phải viết lại ở từng component.',
+  },
+  {
+    id: 'react-prop-drilling', topic: 'Quản lý state',
+    q: 'Prop drilling là gì, có mấy cách chữa và nên chọn theo tiêu chí nào?',
+    options: [
+      'Là khi một component nhận quá nhiều prop cùng lúc; chữa bằng cách gom tất cả chúng lại thành một object duy nhất',
+      'Là khi prop bị đổi tên qua từng tầng nên khó lần theo; chữa bằng một quy ước đặt tên thống nhất cho cả dự án',
+      'Truyền prop qua nhiều tầng chỉ để đưa xuống dưới; chữa bằng composition, Context hoặc store ngoài, tuỳ nhịp thay đổi',
+      'Là khi component con sửa trực tiếp prop nhận được từ cha; chữa bằng cách đóng băng object trước khi truyền xuống',
+    ], answer: 2,
+    explain: 'Triệu chứng rất dễ nhận ra: component ở giữa nhận một prop mà nó KHÔNG dùng, chỉ để chuyển tiếp xuống dưới — muốn thêm một field thì phải sửa năm file. Ba cách chữa, nên thử theo đúng thứ tự này. (1) COMPOSITION: dựng phần tử ngay tại tầng đang có dữ liệu rồi truyền qua `children` hoặc prop kiểu JSX — `<Layout sidebar={<Profile user={user} />} />` — tầng giữa không cần biết gì về `user`; đây là cách nhẹ nhất, không kéo theo vấn đề re-render nào và thường giải quyết được phần lớn trường hợp. (2) CONTEXT cho dữ liệu ÍT thay đổi và thật sự mang tính toàn cục theo cây (theme, ngôn ngữ, user đang đăng nhập); nhớ memo hoá `value` và tách nhỏ context theo nhịp thay đổi. (3) STORE NGOÀI (Zustand, Redux, Jotai) khi state đổi liên tục, nhiều nơi cùng ghi, và cần selector để chỉ đánh thức đúng component quan tâm. Đừng đảo thứ tự: nhét mọi thứ vào Context là cách nhanh nhất để có một ứng dụng render lại toàn bộ mỗi lần gõ phím. Và nếu chỉ sâu hai tầng thì cứ để nguyên prop — truyền prop ngắn không phải là bug, nó còn dễ đọc hơn.',
+  },
 ];

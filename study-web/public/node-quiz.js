@@ -1144,4 +1144,93 @@ window.NODE_QUIZ = [
     ], answer: 2,
     explain: 'Nhóm theo tầng ổn với dự án nhỏ, nhưng khi lớn thì thư mục `services/` có 80 file không liên quan gì nhau, còn sửa tính năng "đơn hàng" phải mở 5 thư mục khác nhau. Nhóm theo TÍNH NĂNG (`orders/` chứa controller, service, repository, test, type của riêng nó) giữ code cùng thay đổi ở cạnh nhau — dễ tìm, dễ xoá trọn khi bỏ tính năng, dễ tách thành service riêng về sau, và ranh giới module rõ nên hạn chế phụ thuộc lung tung. Trong mỗi tính năng vẫn nên tách tầng: HTTP (controller) → nghiệp vụ (service) → truy cập dữ liệu (repository), với luật một chiều — tầng nghiệp vụ không được biết gì về `req`/`res`.',
   },
+  // ===== Đợt #9 =====
+  {
+    id: 'node-transaction', topic: 'Kiến trúc',
+    q: 'Transaction trong CSDL quan hệ giải quyết chuyện gì, và "isolation level" ảnh hưởng ra sao?',
+    options: [
+      'Chỉ để tăng tốc: gom nhiều câu lệnh vào một lần gửi lên server nên giảm được số vòng truyền qua mạng',
+      'Gói nhiều lệnh thành một đơn vị ALL-OR-NOTHING; mức cô lập quyết định giao dịch song song thấy dữ liệu dở dang tới đâu',
+      'Khoá toàn bộ bảng lại cho tới khi xong, nên mọi mức cô lập đều cho ra cùng kết quả, chỉ khác nhau về tốc độ',
+      'Tự động thử lại câu lệnh bị lỗi cho tới khi thành công, còn mức cô lập quy định số lần thử lại tối đa',
+    ], answer: 1,
+    explain: 'Transaction cho bạn tính NGUYÊN TỬ (trừ tiền tài khoản A và cộng cho B: hoặc cả hai, hoặc không cái nào) cùng ba chữ còn lại của ACID. Mức cô lập là chỗ đánh đổi giữa đúng đắn và thông lượng: READ COMMITTED (mặc định của PostgreSQL) chặn dirty read; REPEATABLE READ (mặc định của MySQL InnoDB) chặn thêm non-repeatable read; SERIALIZABLE chặn cả phantom nhưng dễ bị lỗi tuần tự hoá phải retry. Phần thực hành trong Node hay bị bỏ sót: transaction phải chạy trên MỘT connection lấy ra từ pool (`const c = await pool.connect()` rồi `BEGIN`/`COMMIT`/`ROLLBACK` trên chính `c`) — gọi `pool.query` rời rạc thì mỗi câu có thể rơi vào connection khác và transaction vô nghĩa; luôn `try/catch/finally` để `ROLLBACK` khi lỗi và `c.release()` trong mọi trường hợp, thiếu cái này là rò connection tới khi pool cạn. Giữ transaction NGẮN: đừng gọi API ngoài hay xử lý file bên trong vì khoá bị giữ lâu dẫn tới deadlock và lock timeout; gặp deadlock thì bắt mã lỗi và thử lại với backoff.',
+  },
+  {
+    id: 'node-sql-vs-nosql', topic: 'Kiến trúc',
+    q: 'Căn cứ nào để chọn giữa CSDL quan hệ và CSDL document (MongoDB)?',
+    options: [
+      'Theo quy mô dữ liệu: dưới vài triệu bản ghi thì dùng SQL, vượt qua ngưỡng đó thì bắt buộc phải chuyển sang NoSQL',
+      'Theo ngôn ngữ backend: Node.js hợp với MongoDB vì cùng dùng JSON, còn SQL nên để dành cho Java và .NET',
+      'Theo hình dạng truy vấn và ràng buộc: quan hệ nhiều chiều, giao dịch chặt → SQL; đọc trọn một tài liệu theo khoá → document',
+      'Theo tốc độ: NoSQL luôn nhanh hơn vì bỏ schema, nên chỉ chọn SQL khi cần làm báo cáo cuối kỳ cho kế toán',
+    ], answer: 2,
+    explain: 'Câu hỏi đúng không phải "cái nào tốt hơn" mà là "dữ liệu của tôi được ĐỌC theo kiểu nào". CSDL quan hệ thắng khi có nhiều thực thể liên kết chéo, cần JOIN và truy vấn ad-hoc chưa biết trước, cần ràng buộc khoá ngoại/unique do CSDL bảo đảm, và cần transaction đa bảng. Document DB thắng khi mọi truy cập đều xoay quanh một aggregate root đọc trọn gói (một đơn hàng kèm các dòng hàng), khi mỗi bản ghi có hình dạng khác nhau, hoặc khi cần sharding ghi rất lớn. Hai điều cần nói rõ để không bị bắt lỗi: (1) "schemaless" không phải là không có schema — schema chuyển vào code ứng dụng và bạn vẫn phải viết migration, chỉ là CSDL không nhắc bạn nữa; (2) MongoDB từ 4.0 có transaction đa document nhưng đắt và hiếm dùng, còn PostgreSQL có JSONB nên phần lớn nhu cầu "lưu tự do" vẫn xử lý được bằng SQL. Sai lầm điển hình là nhét mô hình nhiều-nhiều vào Mongo rồi tự JOIN ở tầng ứng dụng — đúng bản chất là N+1 query. Mặc định an toàn cho hệ nghiệp vụ: PostgreSQL, và thêm kho chuyên dụng khi có nhu cầu rõ ràng.',
+  },
+  {
+    id: 'node-middleware-order', topic: 'HTTP',
+    q: 'Thứ tự khai báo middleware trong Express quan trọng tới mức nào?',
+    options: [
+      'Express tự sắp xếp lại theo độ ưu tiên nên viết ở đâu cũng được, miễn là nhớ gọi `next()` ở cuối mỗi hàm',
+      'Chạy đúng thứ tự khai báo: body parser phải đứng trước route dùng `req.body`, middleware lỗi có 4 tham số và đặt cuối',
+      'Thứ tự chỉ quan trọng với route, còn middleware thì luôn chạy song song với nhau trước khi vào tới handler',
+      'Middleware lỗi phải đặt lên đầu tiên để bắt được lỗi của mọi middleware và route khai báo phía sau nó trong file',
+    ], answer: 1,
+    explain: 'Express là một CHUỖI hàm chạy tuần tự đúng theo thứ tự `app.use`/`app.get` được đăng ký: request đi qua từng mắt xích cho tới khi có ai đó trả response hoặc gọi `next()`. Hệ quả thực tế: `express.json()` đặt sau route thì `req.body` là `undefined`; middleware xác thực đặt sau route cần bảo vệ thì route đó mở toang; static file đặt trước route API thì có thể bị nuốt mất. Quên gọi `next()` (và cũng không trả response) là request treo cho tới khi timeout — bug im lặng rất khó tìm. Middleware LỖI nhận đúng bốn tham số `(err, req, res, next)`; thiếu tham số thứ tư thì Express coi nó là middleware thường và không bao giờ gọi tới, và nó phải đặt SAU tất cả route. Thứ tự thường dùng: helmet → cors → body parser → logger (gán request id) → rate limit → routes → handler 404 → error handler. Nhảy thẳng tới error handler bằng `next(err)`. Lưu ý Express 4 KHÔNG tự bắt lỗi ném ra từ async handler (phải bọc `try/catch` hoặc dùng wrapper); Express 5 đã xử lý sẵn.',
+  },
+  {
+    id: 'node-status-code', topic: 'HTTP',
+    q: '401 và 403 khác nhau thế nào, và khi nào nên trả 404 thay cho 403?',
+    options: [
+      '401 dùng cho lỗi sai mật khẩu còn 403 dùng cho lỗi token, hai mã này không liên quan gì tới chuyện phân quyền',
+      '403 nghĩa là token đã hết hạn nên client cần refresh, còn 401 nghĩa là tài khoản bị admin khoá vĩnh viễn',
+      'Hai mã hoàn toàn thay thế được cho nhau, chọn mã nào cũng được miễn là tài liệu API có ghi rõ ý nghĩa',
+      '401 = chưa xác thực được danh tính; 403 = biết bạn là ai nhưng không đủ quyền; trả 404 khi không muốn lộ tài nguyên có tồn tại',
+    ], answer: 3,
+    explain: '401 Unauthorized (tên gọi sai lịch sử, thực chất là UNAUTHENTICATED): thiếu token, token hỏng hoặc hết hạn — client nên đi refresh hoặc đăng nhập lại, và theo chuẩn thì response nên kèm header `WWW-Authenticate`. 403 Forbidden: danh tính đã xác định rồi nhưng không có quyền với tài nguyên này — thử lại cũng vô ích, đừng cho client tự động retry. Trả 404 thay 403 là kỹ thuật chống ENUMERATION: nếu API trả 403 cho repo riêng tư thì kẻ tấn công dò được repo nào tồn tại; GitHub trả 404 để không lộ gì cả. Nhân tiện nhớ luôn nhóm hay nhầm còn lại: 400 (request sai cú pháp, JSON hỏng, thiếu tham số) vs 422 (cú pháp đúng nhưng vi phạm luật nghiệp vụ); 409 cho xung đột trạng thái (email đã tồn tại, phiên bản cũ); 429 cho vượt rate limit, kèm `Retry-After`; 201 cho tạo mới, kèm header `Location`; 204 cho thành công không có body (thường là DELETE). Và quan trọng nhất: đừng bao giờ trả 200 kèm `{"error": ...}` — client, proxy, monitoring đều đọc mã trạng thái.',
+  },
+  {
+    id: 'node-csrf', topic: 'Bảo mật',
+    q: 'CSRF là gì và vì sao API dùng JWT trong header thường không dính lỗi này?',
+    options: [
+      'Kẻ tấn công chèn được mã JavaScript vào trang của bạn rồi đọc trộm cookie; JWT không bị vì đã được ký bằng khoá bí mật',
+      'Trình duyệt TỰ gửi cookie kèm request sang site khác nên site độc hại kích được hành động thay bạn; token trong header không tự gửi',
+      'Kẻ tấn công chặn gói tin giữa client và server để sửa nội dung; JWT không bị vì toàn bộ payload đã được mã hoá kín',
+      'Kẻ tấn công gửi hàng loạt request để làm sập server; JWT không bị vì server không cần tra cứu session trong CSDL nữa',
+    ], answer: 1,
+    explain: 'CSRF lợi dụng chuyện trình duyệt tự động đính cookie của `bank.com` vào MỌI request tới `bank.com`, kể cả request do trang `evil.com` khởi tạo (một form tự submit, một thẻ `<img>` trỏ tới URL hành động). Người dùng đang đăng nhập, nên server thấy request hợp lệ và thực hiện — kẻ tấn công không cần đọc được gì, chỉ cần GÂY RA hành động. Phòng thủ theo lớp: `SameSite=Lax` (mặc định của trình duyệt hiện đại, chặn được phần lớn), `SameSite=Strict` cho thao tác nhạy cảm, CSRF token dạng synchronizer hoặc double-submit cho form truyền thống, kiểm tra header `Origin`/`Referer`, và tuyệt đối không dùng GET cho hành động làm thay đổi dữ liệu. JWT đặt trong header `Authorization` thì trình duyệt KHÔNG tự gửi kèm — code của bạn phải chủ động gắn vào — nên không có CSRF. Nhưng đừng kết luận vội: nếu bạn lưu JWT trong cookie thì CSRF quay lại y nguyên; còn lưu trong localStorage thì đổi rủi ro sang XSS (script chèn được là đọc token thoải mái). Cấu hình vững nhất hiện nay là cookie `HttpOnly` + `Secure` + `SameSite` kèm CSRF token.',
+  },
+  {
+    id: 'node-security-headers', topic: 'Bảo mật',
+    q: 'Các header bảo mật như CSP, HSTS, X-Frame-Options có tác dụng gì?',
+    options: [
+      'Chúng mã hoá nội dung response để trung gian trên đường truyền không đọc được dữ liệu nhạy cảm của người dùng',
+      'Chúng là các header do server tự đặt để phục vụ ghi log, trình duyệt bỏ qua hết nên chỉ có giá trị thống kê',
+      'CSP giới hạn nguồn script được phép chạy, HSTS ép trình duyệt luôn dùng HTTPS, X-Frame-Options chặn nhúng iframe',
+      'Chúng thay thế hoàn toàn việc kiểm tra dữ liệu đầu vào ở server, nên bật đủ header là không cần validate nữa',
+    ], answer: 2,
+    explain: 'Đây là các chỉ thị gửi cho TRÌNH DUYỆT thi hành, một lớp phòng thủ bổ sung chứ không thay thế validate/escape/phân quyền ở server. Trong Express, `app.use(helmet())` bật sẵn một bộ mặc định hợp lý. CSP (`Content-Security-Policy`) khai báo script/style/ảnh được phép nạp từ đâu — là lớp thứ hai chặn XSS: kẻ chèn được script vẫn không chạy được vì không thuộc nguồn cho phép; triển khai nên đi qua `Content-Security-Policy-Report-Only` để thu report trước, tránh `unsafe-inline` bằng nonce hoặc hash, vì bật thẳng rất dễ vỡ trang. HSTS (`Strict-Transport-Security`) buộc trình duyệt chỉ nói chuyện qua HTTPS trong `max-age` — chống downgrade và cookie rò qua HTTP, nhưng chỉ có tác dụng SAU lần truy cập HTTPS đầu tiên, và bật `preload` thì rất khó gỡ nên cân nhắc kỹ. `X-Frame-Options: DENY` chặn clickjacking (nay chuẩn hơn là `frame-ancestors` trong CSP). Thêm `X-Content-Type-Options: nosniff` để trình duyệt không tự đoán MIME, và `Referrer-Policy` để không rò URL nội bộ sang bên thứ ba. Kiểm tra nhanh bằng securityheaders.com hoặc tab Network.',
+  },
+  {
+    id: 'node-money', topic: 'Kiến trúc',
+    q: 'Lưu và tính tiền trong Node/CSDL thế nào cho đúng?',
+    options: [
+      'Dùng `Number` của JavaScript là đủ, vì chuẩn IEEE-754 có tới 15 chữ số nên sai số không bao giờ tới mức một xu',
+      'Lưu dưới dạng chuỗi đã định dạng sẵn như "1.234,50 đ" để hiển thị nhanh và không bao giờ sai số khi đem cộng lại',
+      'Dùng `float` nhưng làm tròn hai chữ số sau mỗi phép tính, cách này khử sạch sai số tích luỹ về sau trong báo cáo',
+      'Lưu bằng SỐ NGUYÊN theo đơn vị nhỏ nhất (xu) hoặc kiểu `DECIMAL`/`NUMERIC`, luôn kèm mã tiền tệ — không dùng `float`',
+    ], answer: 3,
+    explain: '`0.1 + 0.2 === 0.30000000000000004` không phải lỗi của JavaScript mà là bản chất của số dấu phẩy động nhị phân: nhiều số thập phân đơn giản không biểu diễn chính xác được. Với một phép tính thì lệch không đáng kể, nhưng cộng dồn hàng trăm nghìn dòng giao dịch rồi đối soát với ngân hàng thì lệch thật, và không ai muốn giải thích khoản chênh đó. Hai cách chuẩn: lưu số nguyên đơn vị nhỏ nhất — `BIGINT` số xu, cách Stripe dùng — hoặc dùng kiểu thập phân chính xác của CSDL (`NUMERIC(19,4)` của PostgreSQL, `DECIMAL` của MySQL). Bẫy riêng của Node: driver `pg` trả `NUMERIC` về dưới dạng CHUỖI đúng để không mất chính xác khi đi qua `Number` — đừng vội `parseFloat`, hãy tính bằng `BigInt` hoặc thư viện thập phân (decimal.js, dinero.js). Luôn lưu kèm MÃ TIỀN TỆ và đừng giả định lúc nào cũng hai chữ số lẻ: JPY không có phần lẻ, KWD có ba. Cuối cùng, quy tắc làm tròn phải thống nhất toàn hệ thống, chỉ làm tròn ở bước cuối cùng, và định dạng hiển thị bằng `Intl.NumberFormat` chứ không tự nối chuỗi.',
+  },
+  {
+    id: 'node-saga', topic: 'Kiến trúc',
+    q: 'Luồng nghiệp vụ chạy qua 3 service (đặt hàng → trừ kho → thu tiền), bước cuối lỗi thì giữ nhất quán bằng cách nào?',
+    options: [
+      'Mở một transaction CSDL duy nhất bao trọn cả ba service rồi rollback chung khi bước cuối cùng thất bại',
+      'Bỏ qua và để job đêm quét lại dữ liệu lệch, vì hệ phân tán vốn không thể nhất quán bằng bất kỳ cách nào khác',
+      'Chia thành chuỗi bước cục bộ, mỗi bước có hành động BÙ TRỪ để hoàn tác khi một bước sau đó hỏng — mô hình saga',
+      'Gọi cả ba service song song để nếu một cái hỏng thì hai cái còn lại vẫn kịp dừng lại trước khi ghi dữ liệu xuống',
+    ], answer: 2,
+    explain: 'Không có transaction ACID xuyên nhiều service với CSDL riêng: 2PC (two-phase commit) làm được về lý thuyết nhưng giữ khoá xuyên mạng, kéo tính sẵn sàng xuống theo mắt xích yếu nhất, nên thực tế gần như không dùng. SAGA chia luồng thành các transaction CỤC BỘ, mỗi bước kèm một hành động BÙ TRỪ. Chú ý bù trừ không phải rollback: đã trừ kho thì bù bằng "cộng lại kho", đã gửi email thì bù bằng email xin lỗi — có những việc không hoàn tác được nên phải xếp bước rủi ro nhất lên trước hoặc chuyển sang cơ chế giữ chỗ (reserve) rồi mới xác nhận. Hai kiểu điều phối: choreography (mỗi service nghe và phát sự kiện — ít hạ tầng nhưng luồng nằm rải rác, khó lần theo khi có sự cố) và orchestration (một bộ điều phối giữ máy trạng thái, dễ quan sát và dễ thêm bước hơn — Temporal, AWS Step Functions). Ba thứ bắt buộc đi kèm: mọi bước phải IDEMPOTENT vì message có thể tới hai lần; dùng outbox pattern để ghi CSDL và phát message không lệch nhau; và giao diện phải thể hiện được trạng thái trung gian ("đơn hàng đang xử lý") vì nhất quán ở đây là nhất quán CUỐI CÙNG, không tức thì.',
+  },
 ];

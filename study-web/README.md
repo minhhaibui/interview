@@ -61,9 +61,9 @@ không cần biết mẹo hard-refresh.
     ConcurrentHashMap/ThreadLocal), generics &amp; type erasure, Java 8+ (stream/Optional), OOP,
     Spring/JPA (DI, bean scope, @Transactional, N+1), **MyBatis** (#{}/${}, mapper proxy,
     cache 2 tầng), **SOLID** (5 nguyên lý).
-    📖 **Lý thuyết chuyên sâu JS · Node · React** (309 câu) — hỏi KHÁI NIỆM & CƠ CHẾ, không phải
+    📖 **Lý thuyết chuyên sâu JS · Node · React** (333 câu) — hỏi KHÁI NIỆM & CƠ CHẾ, không phải
     đoán output; **làm riêng** ở đây theo từng mảng, hoặc **làm chung** trong buổi 🎯 Phỏng vấn:
-    🟨 **JavaScript** (109 câu): scope & hoisting/TDZ, closure, `this` & binding, prototype/class,
+    🟨 **JavaScript** (117 câu): scope & hoisting/TDZ, closure, `this` & binding, prototype/class,
     ép kiểu & tham chiếu, event loop & microtask, Promise/async, generator & iterator, Proxy,
     WeakMap & GC, ESM vs CommonJS, Symbol, số nguyên an toàn & BigInt, bẫy regex (ReDoS, lastIndex),
     mutate vs bất biến, lỗi tuỳ biến & `cause`, async iterator, bẫy `Date` & `Intl`, `structuredClone`,
@@ -74,8 +74,10 @@ không cần biết mẹo hard-refresh.
     structural sharing, API hiện đại (`Object.hasOwn`, `at`, `??=`), chia nhỏ long task, Web Crypto,
     Service Worker, regex nâng cao, TypedArray & nhị phân, `parseInt` vs `Number`,
     chạy song song đúng cách, detached DOM node, History API, bộ ba Observer, Core Web Vitals, `null` vs `undefined`, spread vs rest, promisify callback,
-    hàm thuần, composition thay kế thừa, memoize, concurrency vs parallelism, và kỹ thuật debug.
-    🟢 **Node.js** (102 câu): 6 pha event loop & libuv thread pool, `nextTick` vs `setImmediate`,
+    hàm thuần, composition thay kế thừa, memoize, concurrency vs parallelism, kỹ thuật debug,
+    danh sách falsy, `var`/`let`/`const`, `call`/`apply`/`bind`, bẫy `return` trong `finally`,
+    `.then` trả về gì, chọn đúng phương thức mảng, `defer` vs `async`, và reflow/repaint & layout thrashing.
+    🟢 **Node.js** (110 câu): 6 pha event loop & libuv thread pool, `nextTick` vs `setImmediate`,
     stream & **backpressure**, `pipeline` vs `pipe`, require cache & module wrapper,
     cluster vs worker_threads, Buffer, EventEmitter, `uncaughtException` & **graceful shutdown**,
     rò rỉ bộ nhớ, bảo mật (command injection, path traversal, prototype pollution, băm mật khẩu,
@@ -89,8 +91,10 @@ không cần biết mẹo hard-refresh.
     versioning API, thiết kế response lỗi, pool sau DB failover, dead letter queue, JSON payload khổng lồ,
     mTLS, optimistic lock, full-text search, lưu file lên object storage, suy giảm có kiểm soát, thiết kế REST, authn vs authz & lỗi IDOR,
     session vs JWT, khi nào tách microservice, các tầng cache, không log dữ liệu nhạy cảm,
-    kim tự tháp test, và cấu trúc dự án theo tính năng.
-    ⚛️ **React** (98 câu): virtual DOM & reconciliation, **key**, batching & bất biến, derived state,
+    kim tự tháp test, cấu trúc dự án theo tính năng, transaction & isolation level,
+    chọn SQL hay document DB, thứ tự middleware Express, 401 vs 403 vs 404, CSRF & SameSite,
+    header bảo mật (CSP/HSTS), lưu tiền không dùng float, và saga & compensating transaction.
+    ⚛️ **React** (106 câu): virtual DOM & reconciliation, **key**, batching & bất biến, derived state,
     quy tắc hooks, deps & cleanup, **stale closure**, `memo`/`useMemo`/`useCallback`, context
     re-render, virtualization, controlled form, error boundary, StrictMode, và React 18/19
     (Suspense, `useTransition`, `useSyncExternalStore`, `useId`, RSC, hydration); thêm định tuyến SPA,
@@ -142,13 +146,15 @@ không cần biết mẹo hard-refresh.
   - 🏅 **Phỏng vấn + lý thuyết** — buổi đầy đủ, chèn thêm vòng 📖 **lý thuyết 10 câu**
     (trộn đều JS · Node · React) ngay sau phần tiếng Anh.
   - 📖 **Chỉ lý thuyết** — bỏ IQ & tiếng Anh: 16 câu lý thuyết JS/Node/React rồi 6 câu đọc code,
+    vì sao dùng React thay DOM thuần, HOC vs custom hook, React Compiler, hook `use()` của React 19,
+    bẫy `onClick={fn(id)}`, cấu trúc state gọn, race condition khi fetch trong effect, và cách chữa prop drilling;
     dành cho buổi phỏng vấn thiên kiến thức nền.
 
   Kho câu đủ lớn để ôn dài hơi mà **không lặp lại**: 🧩 IQ **363 câu** (10 nhóm: dãy số ·
   chữ cái · logic · toán nhanh · tương tự · xác suất · mã hoá · hình & không gian ·
   chuyển động & công việc · chọn từ khác loại), 🇬🇧 tiếng Anh **125 câu** (82 câu giao tiếp),
-  ⌨️ code **110 câu** (đoán output 52 + Big-O 58), 📖 lý thuyết **309 câu**
-  (JS 109 · Node 102 · React 98) — chạy được **~15 buổi liên tiếp** mà IQ, tiếng Anh và
+  ⌨️ code **110 câu** (đoán output 52 + Big-O 58), 📖 lý thuyết **333 câu**
+  (JS 117 · Node 110 · React 106) — chạy được **~15 buổi liên tiếp** mà IQ, tiếng Anh và
   lý thuyết không lặp câu nào.
 
   **🚫 Không hỏi lại câu của buổi trước**: mỗi câu được ghi vào `prep-iv-seen` NGAY khi bạn trả lời

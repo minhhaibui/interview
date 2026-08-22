@@ -1224,4 +1224,93 @@ window.JS_QUIZ = [
     ], answer: 1,
     explain: '`console.log` phải sửa code, deploy lại, và chỉ thấy đúng thứ bạn nghĩ ra trước. Debugger cho nhiều hơn: BREAKPOINT CÓ ĐIỀU KIỆN (`i === 500` — dừng đúng vòng lặp cần, thay vì bấm next 500 lần), LOGPOINT (in ra mà không sửa code, không cần deploy lại), "pause on caught/uncaught exception" để dừng ngay tại nơi ném lỗi với đầy đủ scope, và CALL STACK cho biết đường nào dẫn tới đây. Node dùng `node --inspect` rồi gắn Chrome DevTools hoặc VS Code. Vài mẹo nhỏ vẫn rất đáng dùng: `console.table` cho mảng object, `console.trace()` xem ai gọi, `console.time` đo nhanh, và `debugger;` để đặt điểm dừng ngay trong code.',
   },
+  // ===== Đợt #9 =====
+  {
+    id: 'js-truthy-falsy', topic: 'Kiểu & ép kiểu',
+    q: 'Giá trị nào là falsy trong JavaScript, và vì sao `if ([])` lại đi vào nhánh đúng?',
+    options: [
+      'Mọi giá trị "rỗng" đều falsy: chuỗi rỗng, mảng rỗng, object rỗng, số 0 và cả `NaN` nữa',
+      'Chỉ có tám giá trị falsy: `false`, `0`, `-0`, `0n`, `""`, `null`, `undefined`, `NaN` — mọi object đều truthy',
+      'Mảng rỗng falsy khi so bằng `==` nhưng truthy trong `if`, vì hai phép này dùng bảng ép kiểu khác nhau',
+      'Danh sách falsy phụ thuộc chế độ: ở strict mode chỉ `false` và `null` là falsy, các giá trị khác đều truthy',
+    ], answer: 1,
+    explain: 'Nhớ đúng TÁM giá trị falsy là xong: `false`, `0`, `-0`, `0n`, `""`, `null`, `undefined`, `NaN`. Mọi thứ còn lại truthy — kể cả `[]`, `{}`, `"0"`, `"false"`, `function(){}`, và cả `new Boolean(false)` (vì nó là object). Chỗ hay rối: `[] == false` lại ĐÚNG, nhưng đó là luật khác — `==` ép mảng về chuỗi `""` rồi về số `0`, còn `if` thì gọi ToBoolean và mọi object đều thành `true`. Vài bẫy thực chiến: `if (count)` bỏ sót trường hợp `count === 0`, `if (str)` bỏ sót chuỗi rỗng hợp lệ — dùng `?? ` hoặc so sánh tường minh (`count > 0`, `arr.length === 0`, `x == null` để bắt cả `null` lẫn `undefined`, `Number.isNaN(x)` vì `NaN !== NaN`).',
+  },
+  {
+    id: 'js-var-let-const', topic: 'Scope & hoisting',
+    q: '`var`, `let`, `const` khác nhau ở những điểm nào?',
+    options: [
+      '`var` phạm vi hàm và hoist thành `undefined`; `let`/`const` phạm vi khối, có TDZ; `const` cấm gán lại chứ không đóng băng',
+      '`var` và `let` có cùng phạm vi hàm, khác biệt duy nhất là `let` không cho khai báo trùng tên trong một scope',
+      '`const` tạo giá trị bất biến hoàn toàn, nên mọi property bên trong object khai báo bằng `const` đều không sửa được',
+      'Cả ba đều có phạm vi khối như nhau, khác nhau ở chỗ được gán lại giá trị hay không và thứ tự khởi tạo',
+    ], answer: 0,
+    explain: 'Ba khác biệt cần nói được: (1) PHẠM VI — `var` chỉ bó trong hàm nên rò ra khỏi `if`/`for`, `let`/`const` bó trong cặp ngoặc nhọn gần nhất; (2) HOISTING — cả ba đều được hoist, nhưng `var` khởi tạo sẵn `undefined` còn `let`/`const` nằm trong TDZ nên đọc trước khai báo là `ReferenceError` (an toàn hơn, lỗi hiện ra ngay); (3) GÁN LẠI — `const` cấm gán lại BIẾN, không hề đóng băng GIÁ TRỊ: `const o = {}; o.x = 1` vẫn chạy, muốn chặn thì `Object.freeze` (mà cũng chỉ nông). Thêm hai điểm hay hỏi: `var` ở cấp cao nhất tạo property trên `globalThis`, `let`/`const` thì không; và vòng `for (let i...)` tạo BINDING MỚI mỗi vòng nên closure trong đó bắt đúng giá trị, còn `var` thì cả ba callback cùng thấy giá trị cuối. Thực tế: mặc định `const`, cần gán lại mới dùng `let`, `var` chỉ còn gặp trong code cũ.',
+  },
+  {
+    id: 'js-call-apply-bind', topic: 'this & binding',
+    q: '`call`, `apply`, `bind` khác nhau thế nào?',
+    options: [
+      '`call` gắn `this` vĩnh viễn cho hàm gốc, `apply` chỉ gắn tạm thời, còn `bind` sao chép toàn bộ hàm sang một tên mới',
+      'Cả ba đều trả về một hàm mới, khác nhau ở chỗ có sao chép prototype của hàm gốc sang hàm mới hay không',
+      '`call` và `apply` gọi hàm NGAY (khác nhau ở cách truyền tham số: rời và mảng), `bind` trả về hàm mới đã gắn `this`',
+      '`apply` dùng cho hàm bất đồng bộ, `call` cho hàm đồng bộ, còn `bind` chỉ dùng được với phương thức của class',
+    ], answer: 2,
+    explain: 'Mẹo nhớ: `apply` — `a` là Array. `fn.call(obj, a, b)` và `fn.apply(obj, [a, b])` đều GỌI ngay và trả về kết quả của hàm; `fn.bind(obj, a)` không gọi gì cả mà trả về HÀM MỚI đã khoá `this` (và khoá sẵn tham số đầu — chính là partial application). Bốn điểm hay bị hỏi thêm: (1) `bind` chỉ ăn MỘT lần, bind chồng lần hai không đổi được `this` nữa; (2) `new` trên hàm đã bind sẽ BỎ QUA `this` đã gắn (nhưng vẫn giữ tham số đã khoá); (3) arrow function không có `this` riêng nên cả ba đều vô hiệu với nó; (4) từ khi có spread thì `apply` gần như hết việc — `Math.max(...arr)` thay cho `Math.max.apply(null, arr)`. Chỗ dùng thật còn lại: mượn phương thức (`Array.prototype.slice.call(arguments)`, `Object.prototype.toString.call(x)` để lấy kiểu chính xác) và giữ `this` khi truyền phương thức làm callback.',
+  },
+  {
+    id: 'js-try-finally', topic: 'Xử lý lỗi',
+    q: 'Khối `finally` chạy vào lúc nào, và `return` đặt trong `finally` gây chuyện gì?',
+    options: [
+      'LUÔN chạy kể cả khi `try`/`catch` đã `return` hay `throw`; `return` trong `finally` ghi đè giá trị và NUỐT luôn lỗi',
+      '`finally` chỉ chạy khi không có lỗi nào xảy ra, còn khi có lỗi thì quyền điều khiển chuyển hẳn sang `catch`',
+      '`finally` chạy trước `catch` để kịp dọn tài nguyên, nên `return` đặt ở đó luôn bị `catch` phía sau ghi đè lại',
+      '`return` trong `finally` bị engine bỏ qua hoàn toàn, vì giá trị trả về đã được chốt ngay từ trong khối `try`',
+    ], answer: 0,
+    explain: '`finally` chạy trên MỌI đường thoát khỏi `try`/`catch`: chạy hết bình thường, `return`, `throw`, `break`, `continue` — nên nó là chỗ dọn dẹp (đóng kết nối, `release()` connection, tắt spinner, xoá file tạm). Thứ tự chính xác khi có `return` trong `try`: biểu thức trả về được TÍNH trước, rồi `finally` chạy, rồi hàm mới thật sự trả về — vì vậy sửa một biến primitive trong `finally` không đổi được kết quả (nhưng sửa property của object trả về thì có, vì cùng tham chiếu). Nếu `finally` lại `return`/`throw` thì nó GHI ĐÈ kết quả và NUỐT mất exception đang bay — bug rất khó tìm, ESLint chặn bằng luật `no-unsafe-finally`. Với async: `await` bên trong `finally` vẫn được chờ; còn nếu tiến trình bị `process.exit()` hay crash cứng thì `finally` không có cơ hội chạy — đừng đặt logic nghiệp vụ quan trọng ở đó.',
+  },
+  {
+    id: 'js-then-chain', topic: 'Bất đồng bộ',
+    q: '`.then()` trả về cái gì, và chuyện gì xảy ra nếu callback bên trong quên `return`?',
+    options: [
+      'Trả về chính Promise ban đầu, nên mọi `.then` trong chuỗi đều nhận đúng giá trị resolve gốc lúc ban đầu',
+      'Trả về Promise MỚI; callback trả Promise thì được "mở" ra, quên `return` là mắt xích sau nhận `undefined` và chạy sớm',
+      'Trả về giá trị thô do callback tạo ra, vì vậy phải bọc `Promise.resolve` thủ công ở từng mắt xích trong chuỗi',
+      'Trả về Promise mới, nhưng lỗi ném ra trong callback không lan xuống dưới mà phải bắt ngay tại chính chỗ đó',
+    ], answer: 1,
+    explain: '`.then` LUÔN trả về một Promise MỚI — đó là lý do chuỗi hoá được. Giá trị callback trả về thành giá trị resolve của mắt xích sau; nếu trả về một thenable thì Promise mới ĐỢI và "mở" nó ra (unwrap) chứ không lồng Promise trong Promise. Quên `return` là lỗi kinh điển: `.then(() => { saveUser() })` — mắt xích sau chạy NGAY với `undefined` trong khi `saveUser()` còn đang bay, lỗi của nó thành unhandled rejection và `.catch` cuối chuỗi không bắt được. Tương đương ở async/await là quên `await`. Hai điểm nữa: `.catch(fn)` chỉ là `.then(null, fn)` và cũng trả Promise mới — chuỗi được "chữa lành" sau `catch` nên các `.then` phía sau vẫn chạy tiếp (muốn dừng hẳn thì `throw` lại); `.finally(fn)` cho giá trị đi xuyên qua, không đổi kết quả, trừ khi bên trong nó ném lỗi.',
+  },
+  {
+    id: 'js-array-methods', topic: 'Mảng & chuỗi',
+    q: 'Chọn giữa `forEach`, `map`, `filter`, `find`, `some`/`every` dựa vào tiêu chí nào?',
+    options: [
+      'Theo hiệu năng: `forEach` nhanh nhất nên nếu chỉ cần duyệt qua thì luôn nên chọn nó thay cho các phương thức còn lại',
+      'Theo kiểu dữ liệu phần tử: `map` cho số, `filter` cho chuỗi, còn `find` và `some` chỉ dùng được với mảng object',
+      'Theo thứ CẦN LẤY RA: `map` cho mảng mới cùng độ dài, `filter` cho mảng con, `find` một phần tử, `some`/`every` boolean',
+      'Theo việc có sửa mảng gốc hay không: `map` và `filter` sửa tại chỗ, còn `forEach` và `find` trả về một bản sao mới',
+    ], answer: 2,
+    explain: 'Chọn theo GIÁ TRỊ TRẢ VỀ, đó là toàn bộ câu chuyện: `map` → mảng mới cùng độ dài (biến đổi); `filter` → mảng con (lọc); `find`/`findIndex` → một phần tử/chỉ số đầu tiên khớp, dừng ngay khi thấy; `some`/`every` → boolean, cũng short-circuit; `reduce` → gộp về một giá trị bất kỳ; `forEach` → `undefined`, chỉ dùng khi cần SIDE EFFECT thuần tuý. Ba bẫy hay gặp: (1) `forEach` không `break` được và `return` bên trong chỉ thoát một vòng — cần thoát sớm thì dùng `for...of` hoặc `some`; (2) `forEach` KHÔNG chờ callback async — muốn tuần tự thì `for...of` + `await`, muốn song song thì `Promise.all(arr.map(...))`; (3) dùng `map` mà quên `return` ở một nhánh sẽ ra mảng đầy `undefined` — ESLint có luật `array-callback-return`, và nếu không dùng mảng kết quả thì đáng lẽ phải viết `forEach`. Bản thân các phương thức này không sửa mảng gốc (khác `sort`, `reverse`, `splice`, `push`).',
+  },
+  {
+    id: 'js-script-loading', topic: 'DOM & trình duyệt',
+    q: 'Thẻ `<script>` thường, `<script defer>` và `<script async>` khác nhau thế nào?',
+    options: [
+      'Cả `defer` và `async` đều chạy sau khi trang tải xong hoàn toàn, khác biệt chỉ là `async` được cấp thêm một luồng riêng',
+      '`async` giữ nguyên thứ tự khai báo còn `defer` thì không, nên các script phụ thuộc lẫn nhau bắt buộc phải dùng `async`',
+      '`defer` tải song song rồi chạy sau khi parse xong HTML và giữ đúng thứ tự; `async` chạy ngay khi tải xong nên loạn thứ tự',
+      'Hai thuộc tính này chỉ ảnh hưởng tới lúc TẢI file về, còn thời điểm chạy thì vẫn giống hệt thẻ script thường',
+    ], answer: 2,
+    explain: 'Script thường CHẶN parser: gặp thẻ là trình duyệt dừng dựng DOM, tải xong, chạy xong mới đi tiếp — nên mới có thói quen đặt script cuối `<body>`. `defer`: tải song song với việc parse, chạy SAU khi parse xong (ngay trước `DOMContentLoaded`) và GIỮ ĐÚNG THỨ TỰ khai báo — đây là lựa chọn mặc định cho code ứng dụng, nhất là khi script cần DOM hoặc phụ thuộc nhau. `async`: tải song song và chạy NGAY khi tải xong, chen ngang việc parse, thứ tự chạy là "cái nào về trước chạy trước" — chỉ hợp với script độc lập hoàn toàn (analytics, quảng cáo). Vài điểm thêm: `<script type="module">` mặc định đã là defer (kể cả inline); `defer` không có tác dụng với script inline không có `src`; và `DOMContentLoaded` chờ các script `defer` nhưng KHÔNG chờ `async`. Muốn tải sớm mà chạy muộn thì dùng `<link rel="preload">` kèm theo.',
+  },
+  {
+    id: 'js-reflow-repaint', topic: 'DOM & trình duyệt',
+    q: 'Reflow (layout) khác repaint ra sao, và "layout thrashing" là hiện tượng gì?',
+    options: [
+      'Repaint đắt hơn reflow vì phải vẽ lại từng điểm ảnh; thrashing là khi có quá nhiều phần tử cùng đổi màu nền một lúc',
+      'Reflow tính lại KÍCH THƯỚC/VỊ TRÍ nên đắt hơn repaint (chỉ vẽ lại); xen kẽ đọc–ghi DOM trong vòng lặp gây thrashing',
+      'Hai khái niệm này chỉ là hai tên gọi của cùng một bước; thrashing xảy ra khi CSS có quá nhiều selector lồng vào nhau',
+      'Reflow do JavaScript gây ra còn repaint do CSS gây ra, nên chỉ cần bỏ hết animation viết bằng JS là hết thrashing',
+    ], answer: 1,
+    explain: 'Trình duyệt dựng khung hình theo dây chuyền: style → LAYOUT (reflow: tính lại vị trí và kích thước) → PAINT (vẽ pixel) → COMPOSITE (ghép lớp). Đổi `width`, `top`, `font-size`, thêm/xoá node → chạy lại từ layout, đắt nhất vì có thể lan ra cả cây. Đổi `color`, `background`, `box-shadow` → bỏ qua layout, chỉ paint. Đổi `transform`, `opacity` → chỉ composite, chạy được trên luồng riêng của GPU — vì thế animation nên bám vào hai thuộc tính này. LAYOUT THRASHING: trong một vòng lặp bạn GHI (đổi style) rồi lại ĐỌC (`offsetHeight`, `getBoundingClientRect`, `scrollTop`, `getComputedStyle`) — mỗi lần đọc buộc trình duyệt phải layout đồng bộ ngay để trả số đúng, thành N lần reflow thay vì 1. Cách chữa: TÁCH pha — đọc hết vào biến trước, rồi mới ghi (hoặc ghi trong `requestAnimationFrame`). Tab Performance của DevTools báo thẳng "Forced reflow" và chỉ đúng dòng code gây ra.',
+  },
 ];
