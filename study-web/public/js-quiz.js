@@ -1402,4 +1402,93 @@ window.JS_QUIZ = [
     ], answer: 0,
     explain: 'Trước khi có ESM, mọi file nạp bằng thẻ `<script>` dùng CHUNG một scope toàn cục — hai thư viện đặt trùng tên biến là ghi đè lẫn nhau. IIFE gói thân file vào một hàm rồi gọi ngay: biến bên trong thành riêng tư, chỉ những gì bạn cố ý trả ra ngoài mới lộ. Đó chính là "module pattern": `const Counter = (function () { let n = 0; return { inc: () => ++n } })()` — `n` không ai chạm tới được, đóng gói thật sự bằng closure. Biến thể phổ biến là UMD (chạy được với cả CommonJS, AMD lẫn thẻ script) mà bạn vẫn thấy trong các file `dist` đã minify của thư viện cũ. Ngày nay ESM cho mỗi module một scope riêng, `let`/`const` cho scope khối, nên IIFE gần như hết việc — trừ hai chỗ: cần `await` ở cấp cao nhất trong file CommonJS (`(async () => { ... })()`) và các đoạn script nhỏ nhúng thẳng vào HTML. Bundler thì vẫn tự bọc output trong IIFE, nên mở file build ra thấy nó là chuyện hoàn toàn bình thường.',
   },
+  // ===== Đợt #11 =====
+  {
+    id: 'js-url-api', topic: 'DOM & trình duyệt',
+    q: 'Ghép query string vào URL thì nên dùng gì thay cho nối chuỗi thủ công?',
+    options: [
+      'Nối chuỗi bằng template literal là đủ, chỉ cần nhớ thay dấu cách bằng dấu cộng trước khi gửi đi',
+      '`encodeURI` cho toàn bộ URL đã ghép xong, vì nó xử lý được mọi ký tự đặc biệt nằm trong tham số',
+      '`new URL(base)` kèm `URLSearchParams` — tự encode đúng, sửa/xoá tham số dễ, không lo dấu `?` và `&`',
+      '`JSON.stringify` object tham số rồi gắn vào sau dấu `?`, server sẽ tự parse lại thành object ban đầu',
+    ], answer: 2,
+    explain: '`const u = new URL("/search", "https://api.example.com"); u.searchParams.set("q", "áo & quần"); u.searchParams.set("page", 2)` — mọi ký tự được encode đúng và bạn không phải nhớ khi nào `?` khi nào `&`. `URLSearchParams` còn có `append` (một khoá nhiều giá trị), `getAll`, `delete`, `has`, và duyệt được bằng `for...of`; đọc thì `new URLSearchParams(location.search)`, đổi sang object thì `Object.fromEntries(params)` (nhớ là cách này mất giá trị trùng khoá). Phân biệt hai hàm cũ cho rõ: `encodeURIComponent` dùng cho TỪNG giá trị (encode cả `&`, `=`, `?`), còn `encodeURI` cho cả URL (giữ nguyên ký tự cấu trúc) — dùng nhầm chính là nguồn của lỗi tham số bị cắt cụt khi giá trị có chứa dấu `&`. `URL` có sẵn ở cả trình duyệt lẫn Node nên code dùng chung được. Vài chỗ hữu ích khác: `u.origin`, `u.pathname`, `u.hash`, và giải URL tương đối bằng `new URL(path, base)` thay vì tự nối chuỗi. Lưu ý nhỏ: `URLSearchParams` mã hoá dấu cách thành `+` khi `toString`, đúng chuẩn form nên server chuẩn nào cũng hiểu.',
+  },
+  {
+    id: 'js-cross-tab', topic: 'DOM & trình duyệt',
+    q: 'Người dùng đăng xuất ở một tab, các tab khác cần biết ngay — làm thế nào?',
+    options: [
+      'Không có cách nào, mỗi tab là một tiến trình độc lập nên phải chờ người dùng tự tải lại từng trang',
+      'Nghe sự kiện `storage` hoặc dùng `BroadcastChannel` để phát thông điệp giữa các tab cùng origin',
+      'Dùng biến toàn cục trên `window`, vì các tab của cùng một trang web luôn dùng chung đối tượng `window`',
+      'Chỉ có thể qua server: mở WebSocket ở mọi tab rồi để server phát lệnh đăng xuất xuống từng tab một',
+    ], answer: 1,
+    explain: 'Mỗi tab có một `window` riêng, không chia sẻ biến với nhau. Hai cách chuẩn: (1) sự kiện `storage` — khi một tab GHI vào `localStorage`, các tab KHÁC cùng origin nhận được `window.addEventListener("storage", e => ...)` với `e.key` và `e.newValue`; lưu ý chính tab gây ra thay đổi thì KHÔNG nhận sự kiện của mình, và nó chỉ bắn khi giá trị thật sự đổi. (2) `BroadcastChannel` — kênh phát chuyên dụng và sạch hơn: `const ch = new BroadcastChannel("auth"); ch.postMessage({ type: "logout" })`, mọi tab đang lắng nghe đều nhận, dữ liệu gửi được là structured clone chứ không chỉ chuỗi. Với đăng xuất, cách chắc nhất là kết hợp cả hai: xoá token khỏi `localStorage` (tự sinh sự kiện `storage`) và phát thêm một thông điệp `BroadcastChannel` để các tab xử lý điều hướng. Ngoài ra còn `SharedWorker` khi muốn một kết nối WebSocket dùng chung cho mọi tab (tiết kiệm kết nối), và `navigator.locks` để đảm bảo chỉ MỘT tab đứng ra làm việc refresh token thay vì cả năm tab cùng gọi. Trong React thì gói lại thành một custom hook đăng ký ở tầng cao và nhớ cleanup lúc unmount.',
+  },
+  {
+    id: 'js-blob-file', topic: 'DOM & trình duyệt',
+    q: '`Blob`, `File`, `ArrayBuffer` và `URL.createObjectURL` liên quan với nhau thế nào?',
+    options: [
+      'Đây là bốn tên gọi khác nhau của cùng một kiểu nhị phân, dùng cái nào cũng cho kết quả y hệt nhau',
+      'Blob là dữ liệu nhị phân thô, `File` là Blob có thêm tên và ngày sửa; `createObjectURL` tạo URL tạm trỏ tới nó',
+      '`ArrayBuffer` chỉ dùng được trong Web Worker, còn Blob chỉ dùng được trên luồng chính của trang web',
+      '`createObjectURL` tải dữ liệu lên server rồi trả về một đường dẫn công khai để chia sẻ cho người khác',
+    ], answer: 1,
+    explain: '`Blob` là một khối dữ liệu nhị phân bất biến kèm `type` (MIME) và `size`. `File` KẾ THỪA `Blob` và thêm `name` cùng `lastModified` — đó là thứ bạn nhận từ `<input type="file">` hay từ thao tác kéo thả. `ArrayBuffer` là vùng nhớ thô, đọc ghi qua `TypedArray` hoặc `DataView`, hợp cho xử lý byte (giải mã ảnh, WebSocket nhị phân). Chuyển qua lại rất gọn: `await blob.arrayBuffer()`, `await blob.text()`, `new Blob([buffer], { type: "image/png" })`; API cũ `FileReader` cũng làm được nhưng dùng callback nên nay ưu tiên các phương thức trả promise. `URL.createObjectURL(blob)` sinh một URL dạng `blob:` trỏ tới dữ liệu NGAY TRONG BỘ NHỚ của trang — gán vào `img.src` hay `video.src` để xem trước mà không cần upload; bắt buộc gọi `URL.revokeObjectURL(url)` khi xong, vì trình duyệt giữ blob sống chừng nào URL còn hiệu lực, đây là nguồn rò bộ nhớ rất hay gặp ở danh sách ảnh xem trước. Muốn cho tải về một file sinh từ JS thì tạo Blob rồi gán vào thẻ `<a download>` và click nó. So với data URL (`data:...;base64,`): data URL nhúng thẳng nội dung nên phình khoảng 33% và không huỷ được, chỉ hợp với dữ liệu rất nhỏ.',
+  },
+  {
+    id: 'js-web-components', topic: 'DOM & trình duyệt',
+    q: 'Web Components (custom element + shadow DOM) giải quyết chuyện gì?',
+    options: [
+      'Là API chuẩn của trình duyệt để tạo thẻ HTML riêng có style và DOM được cô lập, dùng được ở mọi framework',
+      'Là một thư viện của Google thay thế React, bắt buộc phải cài thêm gói mới dùng được trong dự án',
+      'Là cách chia file JavaScript thành nhiều component nhỏ để bundler có thể tải chúng theo nhu cầu',
+      'Là chuẩn cho phép chạy component React thẳng trên server mà không cần bất kỳ bước biên dịch nào',
+    ], answer: 0,
+    explain: 'Ba mảnh ghép. CUSTOM ELEMENT (`class X extends HTMLElement` rồi `customElements.define("my-badge", X)`) cho bạn một thẻ riêng với vòng đời `connectedCallback`, `disconnectedCallback`, `attributeChangedCallback`. SHADOW DOM (`this.attachShadow({ mode: "open" })`) tạo một cây DOM con được CÔ LẬP — CSS bên ngoài không lọt vào, CSS bên trong không rò ra, đóng gói thật sự mà không cần quy ước đặt tên hay CSS modules. Và `<template>` cùng `<slot>` để nhận nội dung từ ngoài giống như `children`. Điểm mạnh thật sự là ĐỘC LẬP FRAMEWORK: một `<date-picker>` viết một lần dùng được trong React, Vue, Angular hay HTML thuần, và không chết theo phiên bản framework — nên nó hợp với design system dùng chung nhiều đội, widget nhúng vào trang của khách hàng, và micro-frontend. Đổi lại: không có sẵn quản lý state hay reconciliation (thường dùng kèm Lit cho gọn), tích hợp với React trước bản 19 hơi vướng ở chỗ truyền object và bắt custom event (React 19 đã hỗ trợ tốt hơn hẳn), style xuyên shadow DOM phải đi qua CSS custom property hoặc `::part`, và SSR thì phức tạp. Với một ứng dụng React thuần thì component React vẫn đơn giản hơn — đừng chọn chỉ vì nó là chuẩn.',
+  },
+  {
+    id: 'js-dynamic-import', topic: 'Module',
+    q: '`import()` động khác `import` tĩnh ở chỗ nào?',
+    options: [
+      'Không khác gì nhau, chỉ là hai cách viết của cùng một cú pháp, bundler xử lý y hệt trong cả hai trường hợp',
+      'Trả về Promise và gọi được ở BẤT KỲ đâu (trong `if`, trong hàm) — nền của code splitting và tải theo nhu cầu',
+      'Chạy nhanh hơn vì bỏ qua bước phân tích tĩnh, nên nên dùng `import()` cho mọi module trong dự án',
+      'Chỉ dùng được trong Node chứ trình duyệt không hỗ trợ, muốn tải động ở trình duyệt phải chèn thẻ script',
+    ], answer: 1,
+    explain: '`import` tĩnh phải nằm ở cấp cao nhất và được phân tích lúc build — chính nhờ vậy mới có tree shaking. `import("./heavy.js")` là một BIỂU THỨC trả về Promise của namespace object, gọi được trong nhánh `if`, trong handler, sau khi người dùng bấm nút — nên bundler tách phần đó thành chunk riêng và chỉ tải khi thật sự cần. Dùng thực tế: `const { Chart } = await import("./chart.js")` khi người dùng mở tab biểu đồ; nạp polyfill chỉ khi trình duyệt thiếu tính năng; nạp file ngôn ngữ theo locale; và trong React là `React.lazy(() => import("./Page"))` kèm `<Suspense>`. Vài lưu ý quan trọng: đường dẫn nên đủ TĨNH để bundler nhận ra — biến hoàn toàn động (`import(userInput)`) khiến bundler không tách được chunk và còn là lỗ hổng nếu đầu vào không kiểm soát, hãy dùng mẫu có tiền tố cố định kiểu `./locales/` cộng biến; kết quả được CACHE nên gọi nhiều lần không tải lại; và nhớ `catch` vì chunk có thể tải hỏng sau khi deploy bản mới, mẫu chữa quen thuộc là bắt lỗi rồi reload trang. Node hỗ trợ `import()` cả trong CommonJS — đó là cách nạp package thuần ESM từ file CJS. Đi kèm với ESM còn có top-level await.',
+  },
+  {
+    id: 'js-global-error', topic: 'Xử lý lỗi',
+    q: 'Bắt các lỗi CHƯA được xử lý ở trình duyệt để gửi về hệ thống giám sát thì làm thế nào?',
+    options: [
+      'Bọc toàn bộ mã khởi động trong một `try/catch` lớn là đủ, vì mọi lỗi đều lan ngược về điểm khởi động',
+      'Trình duyệt tự gửi mọi lỗi về server của trang, chỉ cần bật tuỳ chọn báo cáo lỗi trong response header',
+      'Nghe `window.onerror` hoặc sự kiện `error` cho lỗi đồng bộ, và `unhandledrejection` cho promise bị reject',
+      'Ghi đè `console.error` thành hàm gửi log, vì mọi lỗi chưa xử lý đều đi qua `console.error` trước tiên',
+    ], answer: 2,
+    explain: '`try/catch` chỉ bắt được thứ nằm trong nó và KHÔNG bắt được lỗi ném ra từ callback bất đồng bộ chạy sau đó. Hai móc toàn cục cần có: `window.addEventListener("error", e => ...)` cho exception đồng bộ chưa ai bắt (`e.error` có stack, kèm `e.filename`, `e.lineno`), và `window.addEventListener("unhandledrejection", e => ...)` cho promise reject không có `.catch` (`e.reason`) — thiếu cái thứ hai là bạn mù trước phần lớn lỗi trong code async hiện đại. Một điểm ít người biết: sự kiện `error` bắt ở pha CAPTURE còn tóm được cả lỗi TẢI TÀI NGUYÊN (ảnh hỏng, script 404) vì loại đó không bubble. Bẫy kinh điển: script nạp từ CDN khác origin chỉ báo "Script error." không kèm dòng nào — chữa bằng cách thêm thuộc tính `crossorigin` cho thẻ script và bật `Access-Control-Allow-Origin` ở CDN. Thực tế thì cài SDK của Sentry hay Rollbar là xong cả hai móc, kèm breadcrumb, gom nhóm lỗi và ánh xạ source map; phần bạn phải tự lo là gắn ngữ cảnh (user id, phiên bản build), lọc nhiễu do extension của trình duyệt gây ra, và đặt hạn mức gửi để một lỗi trong vòng lặp không làm ngập hệ thống. Trong React thì error boundary lo lỗi lúc render, còn hai móc này lo phần còn lại.',
+  },
+  {
+    id: 'js-performance-api', topic: 'Cú pháp & runtime',
+    q: 'Đo thời gian chạy một đoạn code thì `performance.now()` hơn `Date.now()` ở điểm nào?',
+    options: [
+      'Không hơn gì, hai hàm trả về cùng một giá trị nên chọn hàm nào cũng cho kết quả đo giống hệt nhau',
+      '`Date.now()` chỉ chạy được ở Node còn `performance.now()` là API dành riêng cho phía trình duyệt',
+      'Nó đo luôn cả thời gian của các tác vụ bất đồng bộ đang chờ, còn `Date.now()` thì bỏ qua phần đó',
+      'Đồng hồ ĐƠN ĐIỆU, không nhảy khi hệ thống chỉnh giờ, và chính xác tới dưới mức một mili giây',
+    ], answer: 3,
+    explain: '`Date.now()` bám theo đồng hồ tường: NTP đồng bộ lại hay người dùng chỉnh giờ là số đo nhảy, thậm chí ra số âm; độ phân giải cũng chỉ tới mili giây. `performance.now()` là đồng hồ ĐƠN ĐIỆU tính từ lúc trang bắt đầu, không bao giờ đi lùi, và có phần thập phân (trình duyệt cố tình làm nhiễu bớt độ chính xác để chống tấn công phân tích thời gian, nhưng vẫn mịn hơn nhiều). Node có bản tương đương trong `perf_hooks`, cộng thêm `process.hrtime.bigint()` khi cần độ chính xác nano giây. Muốn đo cho tử tế thì đừng chỉ lấy hiệu hai mốc: dùng `performance.mark` rồi `performance.measure` để các mốc hiện luôn trong tab Performance của DevTools, và `PerformanceObserver` để thu các chỉ số trình duyệt tự sinh (LCP, INP, long task, thời gian tải từng tài nguyên). Vài nguyên tắc benchmark: chạy nhiều lần rồi lấy trung vị chứ đừng tin một lần đo; nhớ rằng code được JIT tối ưu dần nên vài vòng đầu luôn chậm hơn; và với hàm async thì phải `await` xong mới chốt mốc cuối. Quan trọng nhất: số đo trên máy dev không đại diện cho người dùng thật — hãy gửi số liệu thực địa về analytics.',
+  },
+  {
+    id: 'js-cookie-detail', topic: 'Bảo mật',
+    q: 'Các thuộc tính `HttpOnly`, `Secure`, `SameSite`, `Domain` của cookie làm gì?',
+    options: [
+      'Chúng chỉ là siêu dữ liệu để server phân loại cookie, trình duyệt lưu lại nhưng không đổi hành vi gì cả',
+      '`HttpOnly` mã hoá nội dung cookie, `Secure` ký nó bằng khoá bí mật, còn `SameSite` nén lại cho nhẹ hơn',
+      'Tất cả đều do JavaScript đặt qua `document.cookie`, server không can thiệp được vào các thuộc tính này',
+      '`HttpOnly` chặn JavaScript đọc; `Secure` chỉ gửi qua HTTPS; `SameSite` giới hạn việc gửi kèm sang site khác',
+    ], answer: 3,
+    explain: '`HttpOnly` — `document.cookie` không đọc được, nên script bị chèn qua XSS cũng không lấy được token; đây chính là lý do cookie vẫn an toàn hơn `localStorage` cho session. `Secure` — chỉ gửi qua HTTPS (localhost được miễn). `SameSite` có ba mức: `Lax` (mặc định hiện nay — gửi khi điều hướng cấp cao nhất bằng GET, không gửi với POST, iframe hay ảnh từ site khác, đủ chặn phần lớn CSRF), `Strict` (không gửi trong mọi bối cảnh cross-site, an toàn nhất nhưng người dùng bấm link từ email vào sẽ thấy như chưa đăng nhập), `None` (gửi mọi nơi, BẮT BUỘC kèm `Secure`, dành cho nhúng cross-site). `Domain` — bỏ trống thì cookie chỉ thuộc đúng host đó; đặt `Domain=example.com` là mọi subdomain đều nhận, tiện nhưng rủi ro nếu có subdomain kém tin cậy. `Path` giới hạn theo đường dẫn. `Max-Age`/`Expires` — không đặt thì là cookie phiên, đóng trình duyệt là mất. Vài điểm nữa hay được hỏi: tiền tố `__Host-` ép cookie phải có `Secure`, không có `Domain` và `Path=/` — cách chặn subdomain ghi đè cookie; kích thước tối đa khoảng 4KB và cookie ĐI KÈM MỌI request cùng domain nên đừng nhét dữ liệu vào đó; và xoá cookie là đặt lại nó với `Max-Age=0` kèm ĐÚNG `Domain` cùng `Path` cũ.',
+  },
 ];

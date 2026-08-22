@@ -1322,4 +1322,93 @@ window.NODE_QUIZ = [
     ], answer: 1,
     explain: 'API GATEWAY đứng trước cụm service và làm những việc mà service nào cũng cần: kết thúc TLS, xác thực token, rate limit, định tuyến theo đường dẫn, ghi log và trace, giới hạn kích thước request. Lợi ích là không phải sao chép đống code đó vào từng service, và client chỉ cần biết một địa chỉ duy nhất. BFF giải bài toán khác hẳn: web, mobile và smart TV cần hình dạng dữ liệu khác nhau — mobile muốn một lời gọi trả gọn để tiết kiệm pin và số vòng mạng, web lại muốn nhiều chi tiết hơn; thay vì nhồi mọi biến thể vào một API chung, mỗi client có một lớp mỏng do CHÍNH đội front-end đó sở hữu, gom dữ liệu từ vài service rồi cắt gọt đúng nhu cầu. Cảnh báo quan trọng nhất: đừng để hai lớp này phình thành nơi chứa nghiệp vụ — gateway trở thành "smart pipe" nghĩa là bạn vừa tạo ra một monolith mới ngay cửa ngõ, mọi thay đổi đều phải đi qua nó và nó cũng là điểm chết duy nhất (nhớ chạy nhiều bản, đặt timeout và circuit breaker). BFF cũng đừng gọi chuỗi dài đồng bộ — hãy gọi song song rồi hợp nhất, và suy giảm có kiểm soát khi một nguồn hỏng. Đội nhỏ với một client duy nhất thì chưa cần cả hai; và GraphQL đôi khi thay được đúng vai trò của BFF.',
   },
+  // ===== Đợt #11 =====
+  {
+    id: 'node-cache-stampede', topic: 'Kiến trúc',
+    q: 'Cache của một key nóng vừa hết hạn, hàng nghìn request cùng lúc đâm thẳng xuống CSDL. Chữa thế nào?',
+    options: [
+      'Tăng TTL lên thật dài để cache gần như không bao giờ hết hạn, đó là cách duy nhất triệt để cho vấn đề này',
+      'Xoá cache đi và đọc thẳng CSDL mọi lần, vì cache chỉ làm dữ liệu bị cũ chứ không giải quyết được tải',
+      'Chỉ cho MỘT request đi nạp lại (khoá/single-flight), số còn lại chờ hoặc dùng tạm dữ liệu cũ; thêm jitter cho TTL',
+      'Chuyển toàn bộ cache sang bộ nhớ của tiến trình Node để không còn phụ thuộc vào Redis nữa là hết nghẽn',
+    ], answer: 2,
+    explain: 'Hiện tượng này gọi là cache stampede (hay thundering herd): TTL hết đúng lúc lưu lượng cao, mọi request cùng miss và cùng gọi xuống CSDL — đúng thứ mà cache sinh ra để bảo vệ. Ba lớp chữa, nên dùng chung: (1) SINGLE-FLIGHT — dùng khoá phân tán (`SET key NX EX`) hoặc một `Map` các promise đang bay trong tiến trình, để chỉ một người đi nạp còn những người khác chờ chính kết quả đó; (2) STALE-WHILE-REVALIDATE — lưu kèm một mốc "mềm": quá mốc mềm thì vẫn TRẢ dữ liệu cũ ngay và nạp lại ở nền, người dùng không bao giờ phải chờ; (3) JITTER — cộng ngẫu nhiên vài phần trăm vào TTL để các key không cùng hết hạn một lượt, rất quan trọng khi bạn nạp cache hàng loạt lúc khởi động. Nhân tiện phân biệt các chiến lược ghi: CACHE-ASIDE (mặc định — đọc cache, miss thì đọc DB rồi ghi lại cache; đơn giản, chấp nhận dữ liệu cũ trong TTL), WRITE-THROUGH (ghi cache và DB cùng lúc, đọc luôn mới nhưng ghi chậm hơn), WRITE-BEHIND (ghi cache trước rồi dồn xuống DB sau — nhanh nhất, rủi ro mất dữ liệu khi sập). Và nhớ hai họ hàng của bài toán: cache penetration (liên tục hỏi key không tồn tại, chữa bằng cách cache cả kết quả rỗng) và cache avalanche (Redis chết, chữa bằng suy giảm có kiểm soát chứ đừng để toàn bộ tải rơi xuống DB).',
+  },
+  {
+    id: 'node-p99', topic: 'Hiệu năng',
+    q: 'Vì sao theo dõi độ trễ nên nhìn p95/p99 thay vì giá trị trung bình?',
+    options: [
+      'Vì trung bình khó tính trên dữ liệu lớn nên các công cụ giám sát hiện nay không còn hỗ trợ chỉ số đó',
+      'Vì p99 luôn nhỏ hơn trung bình nên báo cáo sẽ đẹp hơn khi trình bày với cấp trên và với khách hàng',
+      'Vì trung bình chỉ áp dụng cho số nguyên còn thời gian phản hồi là số thực nên bắt buộc phải dùng phân vị',
+      'Vì trung bình che mất phần đuôi: một số ít request rất chậm vẫn phá hỏng trải nghiệm của người dùng thật',
+    ], answer: 3,
+    explain: 'Trung bình bị kéo về giữa: 99 request 50ms cộng 1 request 5 giây cho trung bình khoảng 100ms — nghe rất ổn trong khi vừa có người phải chờ 5 giây. Phân vị nói đúng trải nghiệm: p99 = 2s nghĩa là 1% người dùng chờ ít nhất 2 giây, và nếu một trang gọi 10 API thì xác suất một người dùng dính ít nhất một lần chậm là rất cao — đó là lý do phần đuôi quan trọng hơn ta tưởng nhiều. Vài điều nên nói kèm cho chắc: KHÔNG được cộng p99 của nhiều máy rồi chia trung bình (phân vị không cộng được như vậy) — phải gom histogram rồi tính, đó chính là cách Prometheus làm với `histogram_quantile`; và luôn nhìn phân vị KÈM thông lượng, vì p99 đẹp lúc vắng khách thì chẳng nói lên điều gì. Bộ chỉ số nên có: RED cho service (Rate, Errors, Duration) và USE cho tài nguyên (Utilization, Saturation, Errors) — riêng Node thì thêm event loop lag, số connection đang dùng trong pool và bộ nhớ heap. Cuối cùng gắn với SLO: đặt mục tiêu kiểu "99% request dưới 300ms trong 30 ngày", phần được phép vi phạm chính là error budget — hết budget thì ưu tiên sửa ổn định thay vì làm tính năng mới, và cảnh báo nên dựa trên TỐC ĐỘ ĐỐT budget chứ đừng bắn theo từng gai nhọn.',
+  },
+  {
+    id: 'node-docker-image', topic: 'Kiến trúc',
+    q: 'Đóng gói ứng dụng Node vào Docker cho production nên làm thế nào?',
+    options: [
+      'Dùng ảnh gốc `node:latest`, copy cả thư mục dự án vào rồi chạy `npm install` và khởi động bằng user `root`',
+      'Build sẵn ở máy dev rồi copy nguyên `node_modules` vào ảnh để khỏi cài lại, như vậy build nhanh hơn nhiều',
+      'Multi-stage: cài devDependency và build ở stage đầu, stage cuối chỉ giữ mã đã build kèm dependency chạy thật',
+      'Gộp tất cả vào một lệnh `RUN` duy nhất để ảnh chỉ có một layer, nhờ đó dung lượng ảnh giảm xuống thấp nhất',
+    ], answer: 2,
+    explain: 'MULTI-STAGE là điểm chính: stage `builder` cài đủ devDependency rồi chạy `tsc` hay bundler; stage cuối `FROM node:22-alpine` chỉ `COPY --from=builder` phần `dist` cùng `node_modules` production (`npm ci --omit=dev`) — ảnh nhỏ hơn nhiều lần và không mang theo trình biên dịch hay mã nguồn lên production. Những điểm còn lại hay bị bỏ sót: GHIM phiên bản (`node:22.11-alpine`, đừng dùng `latest` vì build không lặp lại được); chạy bằng user không phải root (`USER node`); có `.dockerignore` loại `node_modules`, `.git`, `.env` — thiếu nó là copy cả rác vào ảnh và có khi lộ luôn secret; đừng bao giờ copy `node_modules` từ máy dev vì các gói native được biên dịch theo đúng OS và kiến trúc CPU; và dùng `CMD ["node", "dist/server.js"]` dạng exec chứ đừng qua `npm start` hay shell, để tiến trình Node nhận đúng SIGTERM khi k8s dừng pod (hoặc thêm `--init` nếu cần một PID 1 tử tế). Về kích thước: alpine nhỏ nhưng dùng musl nên đôi khi gói native lỗi, `node:22-slim` là lựa chọn cân bằng, còn distroless thì nhỏ và ít bề mặt tấn công nhưng không có shell để debug. Cuối cùng nhớ thứ tự layer: copy `package*.json` và cài trước, copy mã nguồn sau, để mỗi lần đổi code không phải cài lại toàn bộ.',
+  },
+  {
+    id: 'node-container-memory', topic: 'Bộ nhớ',
+    q: 'Pod Node bị k8s giết với trạng thái OOMKilled nhưng log không có dòng lỗi nào. Vì sao?',
+    options: [
+      'Vì Node đã ghi lỗi vào một file tạm bên trong container, chỉ cần đọc file đó là thấy đầy đủ stack trace',
+      'Vì KERNEL giết tiến trình ngay lập tức khi vượt giới hạn cgroup — Node không kịp chạy handler nào cả',
+      'Vì k8s luôn xoá sạch log của container trước khi khởi động lại, nên không có cách nào xem được lỗi cũ',
+      'Vì tiến trình Node bắt được tín hiệu nhưng cố tình im lặng, chỉ cần bật cờ `--trace-warnings` là hiện ra',
+    ], answer: 1,
+    explain: 'Phân biệt hai kiểu chết vì bộ nhớ. (1) `JavaScript heap out of memory` — V8 tự phát hiện heap chạm trần, CÓ stack trace, thoát với mã 134; đây là chuyện xảy ra bên trong Node. (2) OOMKilled — CGROUP của container vượt `limits.memory` và kernel gửi SIGKILL, tín hiệu này KHÔNG bắt được, không handler nào chạy, log im lặng hoàn toàn; `kubectl describe pod` hiện `Reason: OOMKilled` với exit code 137. Nguyên nhân thường gặp: giới hạn container thấp hơn mức heap mà V8 tự chọn, hoặc bộ nhớ NGOÀI heap phình ra (Buffer, gói native, quá nhiều stream mở) mà `--max-old-space-size` không quản tới. Cách xử lý: đặt `--max-old-space-size` thấp hơn `limits.memory` khoảng 20 tới 25 phần trăm để chừa chỗ cho phần ngoài heap và cho runtime; Node 20 trở lên đọc được cgroup nên để nó tự suy cũng là một lựa chọn, nhưng đặt tay thì chắc chắn hơn. Rồi mới đi tìm gốc rễ: theo dõi `process.memoryUsage()` (so `heapUsed` với `rss`, chênh lệch lớn nghĩa là rò ở ngoài heap), chụp heap snapshot ở hai thời điểm rồi so sánh, và kiểm tra các nghi phạm quen thuộc — cache không giới hạn kích thước, listener không gỡ, đọc cả file lớn vào bộ nhớ thay vì dùng stream. Nhớ đặt `requests` bằng `limits` cho service quan trọng để pod không bị dời chỗ, và bật cảnh báo khi bộ nhớ chạm 80 phần trăm.',
+  },
+  {
+    id: 'node-explain', topic: 'Kiến trúc',
+    q: 'Một truy vấn SQL chậm — đọc `EXPLAIN ANALYZE` thì nhìn vào đâu trước?',
+    options: [
+      'Nhìn tổng số dòng trong bảng, vì bảng càng nhiều dòng thì truy vấn chắc chắn càng chậm theo tỷ lệ thuận',
+      'Nhìn `Seq Scan` trên bảng lớn và chênh lệch giữa số dòng ƯỚC TÍNH với số dòng THẬT — dấu hiệu thống kê sai',
+      'Nhìn thứ tự các cột trong `SELECT`, vì đưa cột nào lên trước sẽ quyết định kế hoạch thực thi của CSDL',
+      'Nhìn tên các index đang tồn tại trong bảng là đủ, có index rồi thì mặc nhiên truy vấn đã được tối ưu tốt',
+    ], answer: 1,
+    explain: '`EXPLAIN` cho kế hoạch dự kiến, `EXPLAIN ANALYZE` chạy thật và cho số liệu thật — luôn dùng cái sau (nhớ bọc trong transaction rồi rollback nếu câu lệnh có ghi dữ liệu). Đọc từ nút trong cùng ra ngoài và soi ba thứ: (1) LOẠI QUÉT — `Seq Scan` trên bảng lớn thường là thiếu index, nhưng `Seq Scan` trên bảng nhỏ lại là lựa chọn ĐÚNG nên đừng vội thêm index; (2) ƯỚC TÍNH so với THẬT — `rows=10` mà `actual rows=500000` nghĩa là thống kê đã lỗi thời, hãy chạy `ANALYZE` bảng đó, vì sai số này lan xuống các nút dưới và làm planner chọn nhầm kiểu JOIN; (3) NÚT ĐẮT NHẤT theo thời gian tích luỹ, chú ý `Nested Loop` với số vòng lặp lớn, `Sort` phải đổ ra đĩa (`external merge`) hay `Hash Join` tràn bộ nhớ — chỉnh `work_mem` hoặc giảm lượng dữ liệu phải sắp. Vài lý do index có mà không được dùng: bọc hàm quanh cột (`WHERE lower(email) = ...` cần index biểu thức), sai kiểu dữ liệu nên phải ép kiểu, `LIKE` mở đầu bằng ký tự đại diện, điều kiện chọn ra quá nhiều dòng nên quét tuần tự rẻ hơn, hoặc sai thứ tự cột trong composite index. Mẹo thêm: nhắm tới `Index Only Scan` bằng cách đưa cột cần đọc vào index qua `INCLUDE`, và dùng `pg_stat_statements` cùng `auto_explain` để tìm câu chậm trong production thay vì ngồi đoán.',
+  },
+  {
+    id: 'node-ts-build', topic: 'Tooling',
+    q: 'Chạy TypeScript ở production Node nên làm thế nào?',
+    options: [
+      'Chạy thẳng bằng `ts-node` trên server production để khỏi mất bước build và luôn khớp với mã nguồn',
+      'Build ra JavaScript lúc CI rồi chạy `node dist/`; bật source map để stack trace vẫn chỉ đúng dòng trong `.ts`',
+      'Đổi hết đuôi file sang `.js` rồi xoá các dòng khai báo kiểu, vì Node không hiểu cú pháp của TypeScript',
+      'Đóng gói cả trình biên dịch TypeScript vào ảnh Docker rồi biên dịch lại mỗi lần container khởi động',
+    ], answer: 1,
+    explain: 'Nguyên tắc: BIÊN DỊCH MỘT LẦN lúc build, thứ chạy ở production là JavaScript thuần. Chạy `ts-node` hay `tsx` trên production nghĩa là phải mang cả devDependency lên server, tốn thời gian và bộ nhớ mỗi lần khởi động, và mất cơ hội để lỗi kiểu bị chặn ngay ở CI. Vì thế: `tsc` (hoặc `tsup`/`esbuild` cho nhanh) trong bước build, `node dist/server.js` khi chạy, kèm `--enable-source-maps` hoặc `sourceMap: true` để stack trace hiện đúng dòng trong file `.ts`. Lưu ý là các bundler nhanh (esbuild, swc) chỉ TRANSPILE chứ không kiểm tra kiểu — hãy chạy thêm `tsc --noEmit` song song trong CI, đừng tưởng build xanh nghĩa là kiểu đã đúng. Về module: chọn dứt khoát giữa CommonJS và ESM ngay từ đầu; nếu để `"type": "module"` thì đường dẫn import phải có đuôi `.js` ngay cả khi bạn đang viết `.ts` (chỗ này gây bực rất nhiều), và `__dirname` phải thay bằng `import.meta.url`. Ở môi trường dev thì `tsx watch` hoặc `node --watch` là đủ nhanh. Node từ bản 22 và 23 đã tự bỏ được phần khai báo kiểu để chạy thẳng `.ts` (type stripping) — tiện cho script nhỏ, nhưng nó không thay thế bước kiểm tra kiểu và không xử lý được mọi tính năng như enum hay decorator, nên production vẫn nên build.',
+  },
+  {
+    id: 'node-request-validation', topic: 'Bảo mật',
+    q: 'Đã dùng TypeScript rồi thì còn cần validate body của request lúc chạy nữa không?',
+    options: [
+      'Không cần, vì TypeScript kiểm tra kiểu nên dữ liệu sai kiểu sẽ bị chặn ngay khi request đi vào handler',
+      'Không cần nếu client cũng viết bằng TypeScript, vì hai bên dùng chung kiểu nên dữ liệu chắc chắn khớp',
+      'Chỉ cần với route công khai, còn route đã đăng nhập thì dữ liệu người dùng gửi lên luôn đáng tin cậy',
+      'Cần — kiểu của TypeScript BIẾN MẤT lúc chạy; phải kiểm tra bằng schema (zod/ajv) ngay tại biên hệ thống',
+    ], answer: 3,
+    explain: 'TypeScript chỉ tồn tại lúc biên dịch; sau khi build thì không còn một dòng kiểm tra nào trong mã chạy. `req.body as CreateOrderDto` chỉ là lời hứa với trình biên dịch — ai đó gửi `{ quantity: "-5" }` hay thiếu hẳn một trường thì code vẫn chạy tiếp và vỡ ở đâu đó sâu bên trong, hoặc tệ hơn là ghi dữ liệu rác vào CSDL. Vì vậy mọi BIÊN của hệ thống đều phải kiểm tra lúc chạy: body, query, params, header, biến môi trường, response của API bên thứ ba, và message lấy từ queue. Dùng zod hay ajv còn được thêm một lợi ích lớn: schema SINH RA luôn kiểu TypeScript (`z.infer`), nên chỉ có một nguồn sự thật thay vì viết interface một nơi và validator một nơi rồi để hai bên lệch nhau. Vài điểm thực hành: đặt validate ở middleware trước handler để handler chỉ nhận dữ liệu đã sạch; bật chế độ nghiêm ngặt để LOẠI BỎ trường thừa, chống mass assignment khi người dùng gửi kèm `role: "admin"`; gộp toàn bộ lỗi rồi trả 400 hoặc 422 kèm danh sách theo từng trường thay vì dừng ở lỗi đầu tiên; và kiểm cả giới hạn độ dài chuỗi cùng kích thước mảng để tránh payload phá bộ nhớ. Nhớ rằng validate KHÔNG thay thế được escape hay parameterized query — đó là hai lớp phòng thủ khác nhau.',
+  },
+  {
+    id: 'node-outbox', topic: 'Kiến trúc',
+    q: 'Ghi đơn hàng vào CSDL rồi publish message; message gửi hỏng nhưng đơn đã lưu. Xử lý gốc rễ thế nào?',
+    options: [
+      'Publish message TRƯỚC rồi mới ghi CSDL, như vậy nếu ghi hỏng thì cũng đã có message để xử lý lại sau',
+      'Bọc cả hai vào một transaction CSDL, vì message broker cũng tham gia được vào transaction đó bình thường',
+      'Thử lại việc publish trong một vòng lặp cho tới khi thành công, kèm `catch` để tiến trình không bị chết',
+      'Ghi message vào BẢNG OUTBOX trong cùng transaction với đơn hàng, rồi một tiến trình riêng đọc bảng đó gửi đi',
+    ], answer: 3,
+    explain: 'Đây là bài toán "dual write": hai hệ thống khác nhau (CSDL và broker) không có transaction chung, nên luôn tồn tại khe cửa để một cái thành công còn cái kia hỏng — tiến trình chết đúng giữa hai lệnh là đủ. Đảo thứ tự không cứu được mà chỉ đổi kiểu sai: publish trước rồi ghi hỏng thì có message cho một đơn hàng không hề tồn tại. Retry trong vòng lặp cũng không cứu, vì tiến trình có thể chết trước khi retry xong. TRANSACTIONAL OUTBOX giải đúng gốc: trong CÙNG transaction ghi đơn hàng, ghi thêm một dòng vào bảng `outbox` (kiểu sự kiện, payload, trạng thái) — hai lệnh cùng một CSDL nên nguyên tử thật sự. Sau đó một tiến trình riêng lấy các dòng chưa gửi rồi publish lên broker và đánh dấu đã gửi; tiến trình này có thể poll theo chu kỳ, hoặc đọc WAL bằng CDC như Debezium khi cần độ trễ thấp. Kết quả là AT-LEAST-ONCE: message có thể gửi trùng nếu bước đánh dấu hỏng giữa chừng, nên consumer bắt buộc phải idempotent — đó là cái giá phải chấp nhận và nó rẻ hơn nhiều so với mất message. Vài lưu ý vận hành: nhớ dọn bảng outbox định kỳ kẻo phình to; giữ thứ tự theo khoá thực thể nếu nghiệp vụ cần; và đặt cảnh báo khi số dòng chưa gửi tăng dần, vì đó là dấu hiệu tiến trình relay đã chết. Mẫu đối xứng ở phía nhận gọi là INBOX: lưu id các message đã xử lý để bỏ qua bản trùng.',
+  },
 ];

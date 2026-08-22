@@ -1275,4 +1275,93 @@ window.REACT_QUIZ = [
     ], answer: 2,
     explain: '`<input type="file">` BẮT BUỘC là uncontrolled — vì lý do bảo mật, JavaScript không gán được `value` cho nó (chỉ gán được chuỗi rỗng để xoá lựa chọn). Đọc file qua `e.target.files` rồi giữ đối tượng `File` trong state nếu cần. Gửi lên server bằng `FormData` (`fd.append("file", file)`) và KHÔNG tự đặt header `Content-Type` — để trình duyệt tự sinh kèm boundary, đặt tay là hỏng ngay. Base64 làm phình dữ liệu khoảng 33% và tốn bộ nhớ nên chỉ hợp với file rất nhỏ. Những thứ hay bị bỏ sót: validate `file.size` và `file.type` ở client cho trải nghiệm tốt nhưng PHẢI kiểm tra lại ở server (client sửa được, và `type` dựa vào phần mở rộng nên cần kiểm tra magic bytes); tạo preview bằng `URL.createObjectURL(file)` thì nhớ `revokeObjectURL` lúc unmount kẻo rò bộ nhớ; `fetch` không báo được tiến trình upload nên muốn có thanh phần trăm thì phải dùng `XMLHttpRequest` hoặc thư viện; cho phép huỷ giữa chừng bằng `AbortController`; và với file lớn thì hướng tốt nhất là xin PRESIGNED URL rồi upload thẳng lên object storage, server chỉ nhận lại khoá — đỡ băng thông và không chiếm event loop của Node. Cuối cùng, chọn lại đúng file vừa xoá sẽ không kích hoạt `onChange` nếu bạn quên reset `e.target.value = ""`.',
   },
+  // ===== Đợt #11 =====
+  {
+    id: 'react-18-migration', topic: 'React hiện đại',
+    q: 'Nâng dự án từ React 17 lên 18/19 thì những gì thay đổi cần chú ý?',
+    options: [
+      'Chỉ cần đổi số phiên bản trong `package.json`, React luôn giữ tương thích ngược tuyệt đối giữa các bản lớn',
+      '`ReactDOM.render` đổi thành `createRoot`, batching áp dụng cả trong promise/timeout, StrictMode gọi effect hai lần',
+      'Toàn bộ component class ngừng hoạt động nên phải viết lại hết bằng function component trước khi nâng cấp',
+      'Hooks bị thay bằng API mới nên `useState` và `useEffect` phải đổi tên theo quy ước của phiên bản 19',
+    ], answer: 1,
+    explain: 'React 18 đổi điểm khởi động sang `createRoot(container).render(<App />)` — chừng nào còn `ReactDOM.render` thì bạn vẫn chạy ở chế độ cũ và không có tính năng concurrent nào cả. AUTOMATIC BATCHING mở rộng ra mọi nơi: trước đây React chỉ gộp các `setState` trong event handler của mình, giờ gộp cả trong promise, `setTimeout` và native event — thường là tốt, nhưng nếu code cũ trót dựa vào việc render xen giữa hai `setState` thì cần `flushSync` cho đúng chỗ đó. StrictMode ở dev sẽ mount rồi unmount rồi mount lại, khiến effect chạy hai lần để phơi ra effect thiếu cleanup — hãy sửa cleanup chứ đừng gỡ StrictMode. React 19 tiếp tục dọn dẹp: `forwardRef` không còn cần vì `ref` đã là prop thường; `defaultProps` bỏ với function component (dùng giá trị mặc định của tham số); các API cũ như string ref và `propTypes` trong core bị loại; đổi lại có thêm `use()`, Actions, `useActionState`, `useOptimistic` và tích hợp React Compiler. Cách nâng an toàn: nâng `react` cùng `react-dom` một lượt, cập nhật `@types/react`, chạy codemod chính thức, bật StrictMode ở dev rồi sửa hết cảnh báo, và kiểm tra các thư viện phụ thuộc — đặc biệt là thư viện quản lý state, chúng cần `useSyncExternalStore` để không bị tearing.',
+  },
+  {
+    id: 'react-unsaved-changes', topic: 'Form & sự kiện',
+    q: 'Người dùng đang sửa form dở dang mà bấm rời trang — cảnh báo họ thế nào?',
+    options: [
+      'Gọi `event.preventDefault()` trong handler của nút back là đủ để chặn mọi kiểu điều hướng rời trang',
+      'Hiện một `confirm()` tuỳ biến trong sự kiện `unload`, vì trình duyệt luôn chờ người dùng trả lời hộp thoại',
+      'Không làm được, mọi thứ do trình duyệt quyết định nên chỉ còn cách tự lưu nháp liên tục lên server',
+      'Hai lớp: `beforeunload` cho việc đóng tab hay tải lại, và blocker của router cho điều hướng trong chính SPA',
+    ], answer: 3,
+    explain: 'Phải phân biệt hai loại điều hướng vì chúng đi qua hai cơ chế hoàn toàn khác nhau. (1) RỜI HẲN TRANG — đóng tab, F5, gõ URL khác: dùng `beforeunload`, đăng ký trong effect và nhớ gỡ khi cleanup, bên trong gọi `e.preventDefault()` rồi gán `e.returnValue = ""`. Trình duyệt sẽ hiện hộp thoại CỦA NÓ với nội dung cố định — bạn không tuỳ biến được chữ (khả năng đó bị bỏ từ lâu vì bị lạm dụng), và nhiều trình duyệt chỉ hiện khi người dùng đã thật sự tương tác với trang. Chỉ đăng ký khi form đang dirty, kẻo làm phiền vô cớ. (2) ĐIỀU HƯỚNG TRONG SPA — bấm vào một `<Link>`: `beforeunload` KHÔNG bắn vì trang không hề tải lại; phải dùng cơ chế của router (`useBlocker` của React Router, hoặc tự kiểm tra trước khi gọi `navigate`) — bù lại ở đây bạn tự dựng được modal đẹp đúng ý mình. Xác định trạng thái dirty bằng cách so state hiện tại với giá trị ban đầu (`formState.isDirty` của React Hook Form làm sẵn việc này), và nhớ TẮT cảnh báo ngay trước khi submit kẻo vừa lưu xong lại bị hỏi. Trải nghiệm tốt hơn cả cảnh báo là tự lưu nháp vào `localStorage` theo debounce rồi khôi phục khi quay lại — cảnh báo chỉ nên là lớp cuối cùng.',
+  },
+  {
+    id: 'react-aria-live', topic: 'Chất lượng UI',
+    q: 'Nội dung cập nhật động (toast, số kết quả tìm kiếm) thì người dùng screen reader biết bằng cách nào?',
+    options: [
+      'Screen reader tự đọc mọi thay đổi trong DOM nên không cần làm gì thêm ở phía ứng dụng cả',
+      'Đặt vùng đó là live region (`aria-live` hoặc `role="status"`) để screen reader đọc mà không cướp focus',
+      'Chuyển focus sang phần tử vừa xuất hiện mỗi khi có thay đổi, đó là cách duy nhất được chuẩn hỗ trợ',
+      'Thêm thuộc tính `alt` cho thẻ chứa nội dung động, screen reader sẽ đọc lại giá trị đó mỗi khi nó đổi',
+    ], answer: 1,
+    explain: 'Screen reader đọc theo con trỏ ảo của người dùng, nên một thông báo hiện ra ở góc màn hình mặc định là VÔ HÌNH với họ. LIVE REGION giải quyết chuyện đó: một vùng có `aria-live` sẽ được đọc lên khi nội dung bên trong thay đổi, mà không di chuyển focus đi đâu cả. Chọn mức độ cho đúng: `aria-live="polite"` (hoặc `role="status"`) đợi người dùng ngừng rồi mới đọc — dùng cho "Đã lưu", "Tìm thấy 12 kết quả", trạng thái đang tải; `aria-live="assertive"` (hoặc `role="alert"`) cắt ngang ngay lập tức — chỉ dành cho lỗi nghiêm trọng và nguy cơ mất dữ liệu, lạm dụng là rất khó chịu. Điểm kỹ thuật hay sai nhất: vùng live phải CÓ SẴN trong DOM từ trước rồi mới đổ nội dung vào — nếu bạn mount cả vùng đó cùng lúc với thông báo thì nhiều screen reader sẽ không đọc; vì vậy hãy render một container rỗng cố định ở tầng cao và chỉ thay chữ bên trong. Nội dung nên ngắn gọn; thứ thay đổi liên tục như bộ đếm ký tự thì nên debounce hoặc chỉ thông báo ở các mốc. Với form thì lỗi validate nên gắn qua `aria-describedby` cộng `aria-invalid` thay vì live region. Điều hướng trong SPA cũng cần thông báo tương tự vì URL đổi mà trang không tải lại — thường là công bố tiêu đề trang mới rồi chuyển focus về vùng nội dung chính. Cuối cùng: hãy thử thật bằng VoiceOver hoặc NVDA, đừng chỉ tin công cụ kiểm tra tự động.',
+  },
+  {
+    id: 'react-web-worker', topic: 'Hiệu năng',
+    q: 'Một hàm tính toán nặng làm treo giao diện — `useMemo` có cứu được không?',
+    options: [
+      'Có, `useMemo` chạy hàm đó ở chế độ nền nên luồng chính vẫn rảnh để xử lý tương tác của người dùng',
+      'Có, nếu bọc thêm `useTransition` bên ngoài thì React sẽ tự chuyển phần tính toán đó sang một luồng khác',
+      'Không — `useMemo` vẫn chạy ĐỒNG BỘ trên luồng chính, chỉ tránh được lần tính thừa; việc nặng phải sang Web Worker',
+      'Không, nhưng chỉ cần chia nhỏ mảng dữ liệu ra rồi gọi `useMemo` nhiều lần là luồng chính sẽ hết bị chặn',
+    ], answer: 2,
+    explain: '`useMemo` chỉ là bộ nhớ đệm: nó tránh TÍNH LẠI khi deps không đổi, nhưng lần tính đầu tiên vẫn chạy đồng bộ ngay trong lúc render và chặn luồng chính y như thường. `useTransition` và `useDeferredValue` cũng không tạo ra luồng mới — chúng chỉ hạ ĐỘ ƯU TIÊN và cho phép React bỏ dở việc render, nên hữu ích khi phần nặng là RENDER nhiều component, còn vô dụng nếu một hàm JavaScript chạy liền 800ms (React không cắt được giữa chừng một hàm đang chạy). Việc nặng thật sự — phân tích file lớn, xử lý ảnh, mã hoá, tính toán trên hàng trăm nghìn bản ghi — nên đẩy sang WEB WORKER: một luồng riêng thật, không chạm được DOM, giao tiếp qua `postMessage`; dùng Comlink để gọi như hàm async bình thường thay vì tự quản lý message thủ công. Trong React thì tạo worker trong `useEffect` và nhớ `worker.terminate()` lúc cleanup; Vite và webpack đều hỗ trợ `new Worker(new URL("./w.js", import.meta.url), { type: "module" })`. Lưu ý chi phí: dữ liệu truyền qua worker bị structured clone, nên mảng lớn hãy dùng transferable (`ArrayBuffer`) để chuyển quyền sở hữu thay vì sao chép. Nếu không muốn thêm worker thì còn hai lựa chọn: chia việc thành từng lát rồi nhả luồng giữa các lát, hoặc tốt hơn cả là đẩy hẳn phần tính toán về server.',
+  },
+  {
+    id: 'react-feature-flag', topic: 'Kiến trúc',
+    q: 'Dùng feature flag ở phía React thì cần lưu ý những gì?',
+    options: [
+      'Flag phía client là bí mật nên dùng được để ẩn tính năng chỉ dành cho nội bộ mà không lo bị lộ ra ngoài',
+      'Mỗi flag nên là một biến môi trường lúc build, vì như vậy đổi flag nào cũng chỉ cần deploy lại là xong',
+      'Flag về muộn gây nháy giao diện; code của cả hai nhánh vẫn nằm trong bundle; và phải có kế hoạch dọn flag cũ',
+      'Chỉ cần bọc component trong `if` là đủ, không có khác biệt gì so với việc bật tắt tính năng ở phía backend',
+    ], answer: 2,
+    explain: 'Ba vấn đề riêng của flag phía client. (1) NHÁY GIAO DIỆN: nếu flag lấy về bằng một request bất đồng bộ thì lần render đầu dùng giá trị mặc định, vài trăm mili giây sau giao diện đổi ngay trước mắt người dùng — chữa bằng cách nhúng flag vào HTML từ server (hoặc vào payload của lần xác thực đầu tiên), cache lại ở `localStorage` để lần sau có ngay, và hiện skeleton thay vì hiện nội dung sai. Với SSR còn thêm rủi ro hydration mismatch nếu server và client tính ra flag khác nhau. (2) CODE VẪN NẰM TRONG BUNDLE: tắt flag không có nghĩa người dùng không tải mã đó về, và họ mở DevTools là thấy — nên đừng coi flag là biện pháp BẢO MẬT; tính năng nhạy cảm phải chặn ở server, còn flag phía client chỉ để điều khiển hiển thị. Muốn thật sự không tải thì kết hợp với `import()` động cho nhánh mới. (3) NỢ KỸ THUẬT: mỗi flag nhân đôi số đường đi cần test, nên hãy đặt hạn dọn ngay lúc tạo, gắn người sở hữu, và xoá cả flag lẫn nhánh code cũ sau khi đã mở 100 phần trăm. Về kỹ thuật: đọc flag qua một Context hay hook duy nhất (`useFlag("new-checkout")`) để dễ đổi nguồn và dễ mock trong test; biến môi trường lúc build chỉ hợp với thứ gần như không đổi, vì muốn tắt là phải deploy lại — mà lý do lớn nhất để dùng flag chính là TẮT NGAY khi có sự cố mà không cần deploy.',
+  },
+  {
+    id: 'react-custom-hook-test', topic: 'Kiểm thử',
+    q: 'Test một custom hook thì nên làm thế nào?',
+    options: [
+      'Gọi thẳng hàm hook trong file test như một hàm bình thường rồi kiểm tra giá trị nó trả về là xong',
+      'Không test được vì hook chỉ chạy trong component, nên phải chuyển hết logic ra khỏi hook trước đã',
+      'Dùng `renderHook` khi hook đủ phức tạp; còn phần lớn trường hợp nên test qua component thật sự dùng nó',
+      'Mock `useState` và `useEffect` của React rồi kiểm tra xem hook có gọi chúng đúng số lần hay không',
+    ], answer: 2,
+    explain: 'Hook chỉ chạy được bên trong một component đang render — gọi thẳng sẽ ném lỗi "invalid hook call". `renderHook` (nay nằm trong `@testing-library/react`) dựng sẵn một component vỏ để chạy hook và trả về `result.current`; cập nhật state thì bọc trong `act`, chờ bất đồng bộ thì `await waitFor`, đổi props thì gọi `rerender`, kiểm tra cleanup thì gọi `unmount`. Nó rất hợp với hook logic thuần như `usePagination` hay `useDebounce`, và với hook được dùng ở nhiều nơi — chỗ mà bạn muốn có một bộ test riêng cho hợp đồng của hook. Nhưng đừng mặc định chọn nó: hook là chi tiết TRIỂN KHAI, và triết lý của Testing Library là test cái người dùng thật sự thấy; với hook chỉ phục vụ đúng một component thì test qua chính component đó vừa bắt được nhiều lỗi hơn (render, sự kiện, nội dung hiển thị) vừa không phải viết lại test mỗi khi bạn đổi cách chia hook. Vài lưu ý: hook cần Context (React Query, theme, store) thì truyền `wrapper` cho `renderHook`; hook có timer thì dùng fake timer và nhớ bọc `act` khi tua thời gian; và đừng bao giờ mock chính các hook của React — làm vậy là test cách viết chứ không phải test hành vi.',
+  },
+  {
+    id: 'react-file-structure', topic: 'Kiến trúc',
+    q: 'Tổ chức thư mục cho một dự án React đang lớn dần thì theo nguyên tắc nào?',
+    options: [
+      'Chia theo LOẠI file ở cấp cao nhất (`components/`, `hooks/`, `utils/`) và giữ nguyên như vậy dù dự án lớn tới đâu',
+      'Nhóm theo TÍNH NĂNG và đặt thứ chỉ một nơi dùng ngay cạnh nơi dùng nó; chỉ đẩy lên `shared` khi đã dùng lại thật',
+      'Mỗi component một thư mục riêng kèm đủ file index, style, test, story — áp dụng đồng loạt cho mọi component',
+      'Đặt tất cả trong một thư mục phẳng rồi dựa vào tính năng tìm kiếm của editor thay vì cấu trúc thư mục',
+    ], answer: 1,
+    explain: 'Chia theo loại file thì lúc nhỏ trông gọn, nhưng khi lớn lên thì `components/` có hai trăm file chẳng liên quan gì nhau, còn sửa một tính năng phải mở bốn thư mục khác nhau. Nhóm theo TÍNH NĂNG (`features/checkout/` chứa component, hook, api, type và test của riêng nó) giữ những thứ cùng thay đổi ở cạnh nhau — dễ tìm, dễ xoá trọn khi bỏ tính năng, và ranh giới rõ nên hạn chế phụ thuộc lung tung. Đi kèm là nguyên tắc COLOCATION: một component con chỉ dùng ở một chỗ thì để ngay cạnh chỗ đó, đừng vội đẩy lên thư mục dùng chung; chỉ khi có nơi thứ hai thật sự cần thì mới nâng lên `shared` hay `ui` — nâng quá sớm là bạn có một component "dùng chung" với năm prop điều kiện chỉ để phục vụ đúng hai màn hình. Vài lưu ý thêm: BARREL FILE (`index.ts` re-export cả thư mục) trông đẹp nhưng dễ tạo phụ thuộc vòng, làm chậm dev server và phá tree shaking, nên dùng tiết kiệm; hãy đặt quy ước rồi ép bằng lint (ví dụ `eslint-plugin-boundaries` cấm `features/a` import thẳng vào ruột `features/b`); và giữ `app/` hay `routes/` thật mỏng, chỉ lắp ráp chứ không chứa nghiệp vụ. Cấu trúc nào cũng được miễn là NHẤT QUÁN và có thể tiến hoá dần — đừng thiết kế sẵn cho quy mô mà bạn chưa có.',
+  },
+  {
+    id: 'react-setstate-callback', topic: 'Hooks',
+    q: 'Class có `setState(obj, callback)` chạy sau khi cập nhật xong — với hooks thì tương đương là gì?',
+    options: [
+      '`setState` của hooks cũng nhận tham số thứ hai là callback, chỉ khác tên gọi so với component class',
+      'Bọc lời gọi trong `await` để chờ state cập nhật xong rồi mới chạy phần code phía sau như bình thường',
+      'Không có callback — dùng `useEffect` phụ thuộc vào state đó, hoặc tính thẳng giá trị mới ngay tại chỗ',
+      'Gọi `flushSync` bọc quanh mọi `setState` để React cập nhật đồng bộ, rồi đọc lại state ở dòng ngay sau đó',
+    ], answer: 2,
+    explain: 'Setter của `useState` KHÔNG nhận callback, và `await setCount(...)` cũng vô nghĩa vì nó không trả về Promise. Ba cách xử lý theo thứ tự nên chọn: (1) TÍNH THẲNG giá trị mới rồi dùng luôn — `const next = count + 1; setCount(next); onChange(next)` — đơn giản và rõ ràng nhất, hợp với đa số trường hợp; (2) `useEffect(() => { ... }, [state])` khi việc cần làm là PHẢN ỨNG với state mới bất kể nó đổi từ nguồn nào (đồng bộ lên server, ghi `localStorage`, gọi lại API) — nhưng đừng lạm dụng, vì nếu chỉ cần chạy sau đúng một hành động cụ thể thì effect là thừa và làm luồng khó đọc; (3) `flushSync(() => setX(v))` khi thật sự cần DOM đã cập nhật ngay ở dòng sau, ví dụ vừa thêm item vừa phải cuộn xuống cuối hoặc đo lại kích thước — nó ép React render đồng bộ nên mất lợi ích batching, chỉ dùng đúng chỗ hẹp đó. Nhớ kèm hai điều: đọc `count` ngay sau `setCount` vẫn ra giá trị CŨ vì biến trong closure của lần render này không hề đổi; và khi giá trị mới phụ thuộc giá trị cũ thì luôn dùng dạng hàm `setCount(c => c + 1)` để không dính state cũ khi có nhiều cập nhật liên tiếp.',
+  },
 ];
