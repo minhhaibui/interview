@@ -1669,4 +1669,93 @@ window.JS_QUIZ = [
     ], answer: 2,
     explain: 'Constraint Validation API của HTML làm được nhiều hơn nhiều người nghĩ: `required`, `min`/`max`, `minlength`, `pattern`, `type="email"` hay `url` hay `number`, và trong JavaScript thì có `input.validity` (đọc được lý do sai: `valueMissing`, `patternMismatch`, `tooShort`), `checkValidity()` để hỏi mà không hiện thông báo, `reportValidity()` để hiện, và `setCustomValidity("...")` để gắn lỗi của riêng bạn — nhớ đặt lại thành chuỗi rỗng khi đã hợp lệ, quên là form không bao giờ submit được. Kèm theo là các pseudo-class CSS `:invalid`, `:valid` và `:user-invalid` — cái cuối chỉ tô đỏ SAU KHI người dùng đã chạm vào ô, tránh cảnh cả form đỏ rực ngay khi vừa mở. Nhưng nó không đủ ở hai chỗ: luật nghiệp vụ (hai mật khẩu phải khớp, ngày kết thúc phải sau ngày bắt đầu, email đã tồn tại hay chưa — cái này phải hỏi server), và giao diện thông báo mặc định của trình duyệt thì xấu, không dịch được theo ý bạn, không đặt được vị trí — nên thường tắt bằng `novalidate` rồi tự render lỗi mà vẫn tận dụng `validity` để biết sai ở đâu. Và luật bất di bất dịch: validate ở client chỉ là TRẢI NGHIỆM, ai cũng bỏ qua được bằng DevTools hay curl, nên server luôn phải kiểm lại. Về a11y thì gắn lỗi bằng `aria-describedby` cùng `aria-invalid`, và focus vào ô sai đầu tiên khi submit hỏng.',
   },
+  // ===== Đợt #14 =====
+  {
+    id: 'js-dialog-popover', topic: 'DOM & trình duyệt',
+    q: 'Thẻ `<dialog>` với `showModal()` cho sẵn những gì mà modal tự viết phải tự làm?',
+    options: [
+      'Không có gì đặc biệt, nó chỉ là một thẻ `div` được đặt tên khác cho dễ đọc mã nguồn hơn',
+      'Top layer (không lo z-index), bẫy focus, đóng bằng Escape, `::backdrop`, và chặn tương tác nền',
+      'Nó tự tải nội dung từ server khi mở nên không cần render trước, đây là khác biệt lớn nhất',
+      'Nó chỉ hoạt động trên trình duyệt di động, còn trên desktop thì phải quay lại modal tự viết',
+    ], answer: 1,
+    explain: '`dialog.showModal()` đưa phần tử vào TOP LAYER — một lớp nằm trên toàn bộ trang, nên không còn phải đấu z-index với header dính hay overlay của thư viện khác, và cũng không bị `overflow: hidden` của cha cắt mất. Kèm theo là những thứ trước đây phải tự viết: nền chặn tương tác (phần còn lại thành `inert` nên không tab tới được), focus tự vào trong dialog, Escape tự đóng qua sự kiện `cancel`, và `::backdrop` để tô nền mờ bằng CSS thuần. Còn `show()` thì mở ở chế độ không chặn. Thuộc tính `popover` mới là họ hàng nhẹ hơn cho menu, tooltip và dropdown: cũng ở top layer, cũng đóng khi bấm ra ngoài hoặc Escape, và nối với nút bằng `popovertarget` mà không cần một dòng JavaScript nào. Vẫn còn việc bạn phải lo: TRẢ FOCUS về nút đã mở sau khi đóng (dialog không làm chuẩn ở mọi trình duyệt), khoá cuộn của trang nền, hiệu ứng mở đóng (cần `allow-discrete` và `@starting-style` vì phần tử nằm ở top layer), và đặt `aria-labelledby` cho tiêu đề. Trong React thì gọi `showModal()` qua ref trong effect thay vì render có điều kiện, và nhớ nghe sự kiện `close` để đồng bộ state. Với dự án cần hỗ trợ trình duyệt cũ hoặc cần kiểm soát hoàn toàn thì thư viện như Radix vẫn hợp lý hơn.',
+  },
+  {
+    id: 'js-web-animations', topic: 'DOM & trình duyệt',
+    q: '`element.animate()` (Web Animations API) khác gì so với CSS transition?',
+    options: [
+      'Không khác gì, nó chỉ là cách viết CSS transition bằng JavaScript nên hiệu năng luôn kém hơn',
+      'Nó vẽ animation lên canvas thay vì DOM, nên hợp với đồ hoạ chứ không dùng cho giao diện thường',
+      'Cùng công cụ chạy của trình duyệt, nhưng ĐIỀU KHIỂN được: tạm dừng, tua, đảo chiều, `finished` là Promise',
+      'Nó chạy trên một luồng riêng nên không bao giờ bị JavaScript của trang làm giật, khác hẳn CSS',
+    ], answer: 2,
+    explain: 'Web Animations API dùng CHÍNH công cụ chạy animation của trình duyệt như CSS — nên các thuộc tính rẻ như `transform` và `opacity` vẫn chạy trên luồng compositor và vẫn mượt y hệt. Khác biệt nằm ở chỗ ĐIỀU KHIỂN: `const a = el.animate(keyframes, options)` trả về một đối tượng `Animation` có `pause()`, `play()`, `reverse()`, `cancel()`, `finish()`, đặt `currentTime` để tua, đổi `playbackRate` để chạy nhanh chậm — những việc mà CSS transition không làm được. Và `a.finished` là một PROMISE nên chuỗi animation viết bằng `await` thay vì lồng callback `transitionend` rồi tự dọn dẹp; nhớ bắt lỗi vì huỷ animation sẽ khiến promise đó reject. Nó cũng gọn hơn hẳn khi keyframe được TÍNH ra lúc chạy — ví dụ bay từ vị trí hiện tại của một phần tử tới vị trí đích vừa đo được, thứ mà CSS phải chèn class động rất vụng về. `getAnimations()` cho phép tìm và dừng mọi animation đang chạy trên một phần tử, rất tiện khi cần huỷ gấp lúc unmount. Chọn thế nào: hiệu ứng đơn giản theo trạng thái thì CSS transition vẫn ngắn gọn nhất; cần điều khiển theo thời gian, theo cuộn hoặc phối hợp nhiều bước thì dùng WAAPI; còn animation phức tạp có mô phỏng vật lý thì mới cần tới thư viện. Và luôn tôn trọng `prefers-reduced-motion`.',
+  },
+  {
+    id: 'js-using-dispose', topic: 'Cú pháp & runtime',
+    q: 'Từ khoá `using` (explicit resource management) trong JavaScript làm gì?',
+    options: [
+      'Import một module vào phạm vi hiện tại, tương đương `import` nhưng chỉ có hiệu lực trong một khối',
+      'Khai báo biến chỉ đọc giống `const` nhưng đóng băng luôn cả các property bên trong đối tượng',
+      'Tự gọi `Symbol.dispose` khi ra khỏi khối — dọn tài nguyên mà không cần `try/finally` thủ công',
+      'Đánh dấu biến để garbage collector ưu tiên thu hồi sớm hơn, giúp giảm bộ nhớ cho tiến trình',
+    ], answer: 2,
+    explain: 'Mẫu quen thuộc `const conn = await pool.connect(); try { ... } finally { conn.release() }` lặp đi lặp lại ở mọi chỗ có tài nguyên, và chỉ cần quên một `finally` là rò connection. `using conn = pool.connect()` khai báo rằng khi ra khỏi KHỐI — dù bằng return, bằng throw hay chạy hết — engine sẽ tự gọi phương thức `[Symbol.dispose]()` của đối tượng đó. Bản bất đồng bộ là `await using`, gọi `[Symbol.asyncDispose]()`, dành cho việc đóng cần `await`. Muốn một đối tượng dùng được với `using` thì chỉ cần cài đặt phương thức tương ứng; nhiều API đã bắt đầu có sẵn, và `DisposableStack` giúp gom nhiều tài nguyên để dọn theo thứ tự ngược. Đây là ý tưởng đã có ở nhiều ngôn ngữ khác — `using` của C#, `with` của Python, RAII của C++ — nay vào JavaScript qua TC39 và đã dùng được trong TypeScript 5.2 cũng như Node phiên bản mới. Chỗ nó có ích nhất: connection tới CSDL, file handle, khoá phân tán, subscription, `AbortController`, và các đối tượng đo đạc cần đóng mốc. Vài lưu ý: thứ tự dọn là NGƯỢC với thứ tự khai báo, giống ngăn xếp; lỗi ném ra từ hàm dọn được gom lại thành `SuppressedError` chứ không bị nuốt mất; và nó chỉ áp dụng cho phạm vi KHỐI nên không thay thế được việc quản lý tài nguyên sống lâu.',
+  },
+  {
+    id: 'js-promise-withresolvers', topic: 'Bất đồng bộ',
+    q: '`Promise.withResolvers()` (ES2024) giải quyết chuyện gì?',
+    options: [
+      'Chạy nhiều promise song song rồi trả về kết quả của cái xong trước, thay cho `Promise.race`',
+      'Đưa `resolve` và `reject` RA NGOÀI phạm vi constructor — không phải gán chúng vào biến ngoài nữa',
+      'Tự động thử lại một promise bị reject cho tới khi thành công hoặc hết số lần được phép thử',
+      'Cho phép huỷ một promise đang chạy, điều mà Promise thông thường vốn không hỗ trợ được',
+    ], answer: 1,
+    explain: 'Mẫu "deferred" — cần settle một promise từ NƠI KHÁC chứ không phải từ trong hàm executor — trước đây phải viết thủ công: khai báo `let resolve, reject` rồi `const p = new Promise((res, rej) => { resolve = res; reject = rej })`, vừa xấu vừa làm TypeScript khó chịu vì biến chưa được gán. `const { promise, resolve, reject } = Promise.withResolvers()` gói đúng việc đó vào một dòng. Chỗ dùng thật: bọc một API dựa trên sự kiện — chờ `onopen` của WebSocket, chờ message từ Worker, chờ người dùng bấm nút trong hộp thoại xác nhận rồi mới resolve; giữ hàng đợi các request đang chờ để settle sau, chính là mẫu single-flight khi refresh token; và làm hàng rào đồng bộ trong test. Nhớ vài luật của Promise vẫn áp dụng: chỉ settle được MỘT lần, lần sau bị bỏ qua im lặng; nếu không ai gọi `resolve` thì promise treo mãi nên hãy kèm timeout hoặc `AbortSignal`; và nếu bạn giữ nó trong một `Map` thì nhớ dọn khi xong kẻo rò bộ nhớ. Cũng đừng dùng khi không cần: nếu logic vốn nằm gọn trong một hàm async thì cả `new Promise` lẫn `withResolvers` đều là thừa — đó chính là anti-pattern "explicit promise construction".',
+  },
+  {
+    id: 'js-sri', topic: 'Bảo mật',
+    q: 'Nhúng thư viện từ CDN của bên thứ ba — làm sao biết file không bị đổi nội dung?',
+    options: [
+      'Không cần lo, HTTPS đã đảm bảo file tải về đúng là file mà nhà cung cấp CDN đang phục vụ',
+      'Kiểm tra dung lượng file sau khi tải về, nếu khớp con số đã ghi lại thì nội dung chắc chắn nguyên vẹn',
+      'Dùng Subresource Integrity: thuộc tính `integrity` chứa mã băm, trình duyệt từ chối nếu không khớp',
+      'Tải file về rồi kiểm tra thủ công mỗi lần deploy, đây là cách duy nhất vì trình duyệt không hỗ trợ',
+    ], answer: 2,
+    explain: 'HTTPS chỉ bảo đảm nội dung không bị sửa TRÊN ĐƯỜNG TRUYỀN — nó không nói gì về việc chính CDN bị xâm nhập hay tài khoản của nhà cung cấp bị chiếm, mà đó lại là kịch bản tấn công chuỗi cung ứng đã xảy ra nhiều lần với các thư viện phổ biến. Subresource Integrity chốt lại nội dung: `<script src="..." integrity="sha384-..." crossorigin="anonymous">` — trình duyệt băm file tải về và TỪ CHỐI thực thi nếu không khớp, coi như request lỗi. Nhớ thuộc tính `crossorigin` đi kèm, thiếu nó thì việc kiểm tra không chạy với tài nguyên khác origin. Ghi được nhiều mã băm cách nhau bằng dấu cách để hỗ trợ nhiều phiên bản. Giới hạn: SRI chỉ hợp với file có nội dung CỐ ĐỊNH, nghĩa là phải ghim đúng phiên bản, và nó không dùng được với endpoint trả nội dung động hay tự cập nhật; nó cũng không cứu được nếu chính script gốc đã độc ngay từ đầu; và cần kế hoạch dự phòng khi CDN chết vì lúc đó trang mất luôn thư viện. Nhưng lời khuyên thực dụng nhất: với ứng dụng nghiêm túc hãy TỰ HOST các phụ thuộc, cài qua npm rồi bundle vào — vừa nhanh hơn vì không tốn thêm một vòng DNS và TLS, vừa không phụ thuộc bên thứ ba, và cái lợi "cache dùng chung giữa các site" ngày xưa thì trình duyệt hiện đại đã chia cache theo origin nên không còn nữa. SRI hợp lý khi bạn buộc phải nhúng script bên ngoài, và nên đi kèm CSP để giới hạn nguồn được phép.',
+  },
+  {
+    id: 'js-open-redirect', topic: 'Bảo mật',
+    q: 'Sau khi đăng nhập, ứng dụng chuyển hướng theo tham số `?next=` trên URL. Rủi ro gì?',
+    options: [
+      'Không có rủi ro nào, vì chuyển hướng chỉ là thay đổi địa chỉ trang chứ không đụng tới dữ liệu',
+      'Chỉ tốn thêm một lần tải trang, nên vấn đề duy nhất là hiệu năng chứ không phải bảo mật',
+      'OPEN REDIRECT: kẻ tấn công dẫn nạn nhân sang site giả — chỉ nhận đường dẫn nội bộ hoặc danh sách trắng',
+      'Tham số URL bị mã hoá sai nên đường dẫn có dấu tiếng Việt sẽ hỏng, cần `encodeURIComponent` là xong',
+    ], answer: 2,
+    explain: 'Nếu ứng dụng chuyển hướng tới bất cứ giá trị nào trong `next` thì kẻ tấn công gửi một link có tên miền THẬT của bạn ở đầu nhưng `next` trỏ sang trang giả — nạn nhân thấy tên miền quen nên tin tưởng, đăng nhập xong thì bị đẩy sang trang giả trông y hệt và gõ lại mật khẩu ở đó. Ngoài lừa đảo, open redirect còn được dùng để vượt bộ lọc URL, và nguy hiểm nhất là trong luồng OAuth: `redirect_uri` không được kiểm chặt thì mã uỷ quyền bay thẳng sang kẻ tấn công. Cách chữa: chỉ chấp nhận ĐƯỜNG DẪN NỘI BỘ — kiểm tra chuỗi bắt đầu bằng đúng MỘT dấu gạch chéo, đề phòng `//evil.com` vốn được hiểu là URL tuyệt đối theo cùng giao thức và cả biến thể dùng dấu gạch ngược mà một số trình duyệt vẫn nhận; hoặc parse bằng `new URL(next, location.origin)` rồi so `origin` với origin của mình; hoặc dùng danh sách trắng và ánh xạ bằng mã ngắn thay vì nhận URL đầy đủ. Đừng chỉ kiểm tra bằng `startsWith("https://mysite.com")`, vì `https://mysite.com.evil.com` cũng khớp. Và nhớ luật chung: mọi giá trị người dùng kiểm soát được mà đem đi dùng làm URL đều phải kiểm — kể cả gán `window.location`, thẻ `<a href>` sinh động (chú ý giao thức `javascript:`), và ở phía server thì đó chính là bài toán SSRF.',
+  },
+  {
+    id: 'js-css-variables', topic: 'DOM & trình duyệt',
+    q: 'Đổi theme bằng cách ghi CSS custom property từ JavaScript — làm thế nào?',
+    options: [
+      'Không làm được, CSS variable chỉ đọc được từ CSS chứ JavaScript không truy cập vào chúng được',
+      'Phải sinh một thẻ `<style>` mới rồi chèn vào trang mỗi lần đổi giá trị, không có cách nào khác',
+      '`el.style.setProperty("--brand", value)` để ghi và `getComputedStyle(el).getPropertyValue` để đọc',
+      'Đổi tên class trên thẻ `body` là cách duy nhất, còn biến CSS thì cố định từ lúc trang được tải',
+    ], answer: 2,
+    explain: 'CSS custom property là biến CỦA THỜI ĐIỂM CHẠY chứ không phải hằng số lúc build như biến của Sass — nên JavaScript đọc và ghi được, và mọi chỗ dùng `var(--brand)` cập nhật ngay mà không cần render lại gì. Ghi bằng `document.documentElement.style.setProperty("--brand", "#0a7")`: đặt trên phần tử gốc là áp cho cả trang, đặt trên một phần tử là chỉ áp cho nhánh đó nhờ tính kế thừa. Đọc thì phải qua `getComputedStyle(el).getPropertyValue("--brand")`, vì `el.style` chỉ thấy giá trị đặt inline. Đây chính là nền của theming hiện đại: định nghĩa bảng màu ở `:root`, đổi cả theme bằng một thuộc tính `data-theme` trên thẻ `html`, và cho phép người dùng tuỳ chỉnh vài giá trị bằng JavaScript. Vài mẹo đáng nhớ: biến CSS dùng được trong `calc()`, có giá trị dự phòng theo kiểu `var(--x, 8px)`, và truyền được từ JavaScript vào animation hay grid; `CSS.registerProperty` khai báo kiểu cho biến để nó NỘI SUY được khi transition, vì biến thường thì không nội suy. Trong React thì truyền thẳng qua `style={{ "--progress": ratio }}` cho từng phần tử — cách rất gọn để đưa dữ liệu vào CSS mà không phải sinh class động. Nhớ hai điều: tên biến phân biệt hoa thường, và ghi biến trên phần tử gốc quá thường xuyên vẫn gây tính lại style nên đừng làm mỗi khung hình cho hàng trăm phần tử.',
+  },
+  {
+    id: 'js-wasm', topic: 'Cú pháp & runtime',
+    q: 'Khi nào WebAssembly thật sự đáng dùng thay cho JavaScript?',
+    options: [
+      'Luôn luôn, vì WASM chạy nhanh hơn JavaScript trong mọi tác vụ nên nên viết lại toàn bộ ứng dụng',
+      'Khi cần thao tác DOM nhiều, vì WASM truy cập DOM trực tiếp nhanh hơn hẳn so với JavaScript',
+      'Tác vụ TÍNH TOÁN nặng và ổn định, hoặc tái dùng thư viện C/C++/Rust sẵn có — không phải cho code thường',
+      'Khi cần bảo vệ mã nguồn, vì WASM đã được biên dịch nên người dùng không thể xem hay dịch ngược',
+    ], answer: 2,
+    explain: 'WebAssembly là định dạng nhị phân chạy trên cùng máy ảo của trình duyệt, với hiệu năng ổn định và dự đoán được vì không phụ thuộc vào chuyện JIT có tối ưu được hay không. Nó thắng rõ ở: xử lý ảnh và video, mã hoá giải mã, nén, dựng hình 3D, engine game, mô phỏng vật lý, và cả những thư viện đã có sẵn bằng C, C++ hay Rust mà bạn không muốn viết lại — ffmpeg, SQLite, các thư viện CAD và công cụ nén đều đã có bản WASM. Nhưng nó KHÔNG phải viên đạn bạc: WASM không truy cập DOM trực tiếp, mọi thao tác giao diện đều phải đi qua JavaScript, và mỗi lần đi qua biên đó đều tốn chi phí — nên code nhiều tương tác DOM mà chuyển sang WASM thường CHẬM đi. Nó cũng không giấu được mã nguồn, vì WASM dịch ngược được và công cụ phân tích khá tốt. Chi phí phải cân nhắc: thêm một chuỗi công cụ build, file nhị phân phải tải về, chi phí khởi tạo và chuyển dữ liệu qua bộ nhớ tuyến tính (mảng lớn nên truyền qua `ArrayBuffer` thay vì sao chép từng phần), và debug khó hơn hẳn. Nguyên tắc thực dụng: hãy ĐO trước, tối ưu thuật toán trong JavaScript trước, cân nhắc Web Worker trước; chỉ chuyển sang WASM đúng phần nút thắt tính toán và giữ giao diện ở JavaScript. Ngoài trình duyệt thì WASM còn dùng cho plugin chạy trong sandbox và cho edge runtime — đó là hướng đang phát triển nhanh.',
+  },
 ];

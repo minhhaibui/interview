@@ -1589,4 +1589,93 @@ window.NODE_QUIZ = [
     ], answer: 2,
     explain: 'Sai lầm đầu tiên là rải `role === "admin"` khắp code: thêm một vai trò mới là phải sửa hàng chục chỗ, và không ai trả lời được câu hỏi "vai trò X thì làm được những gì". RBAC tách hai tầng: vai trò gán cho người dùng, còn QUYỀN (`order:read`, `order:refund`) gán cho vai trò, và code chỉ hỏi về quyền — nhờ vậy thêm vai trò trở thành việc cấu hình dữ liệu chứ không phải sửa mã nguồn. Nhưng RBAC thuần không đủ khi luật phụ thuộc vào TÀI NGUYÊN cụ thể: "sửa được đơn hàng của chính mình", "quản lý chỉ xem được nhân viên trong phòng ban của mình" — đây là chỗ cần thêm điều kiện theo thuộc tính (ABAC) hoặc theo quan hệ (mô hình kiểu Zanzibar, với các thư viện như Casbin, Oso, OpenFGA). Nguyên tắc thực hành: luôn kiểm tra ở SERVER và kiểm tra ở tầng gần dữ liệu (service hoặc chính câu truy vấn) chứ không chỉ ở route, vì bỏ sót một nhánh là thành lỗ IDOR; ẩn nút ở giao diện chỉ là trải nghiệm chứ không phải bảo mật. Đặt hàm kiểm tra ở MỘT chỗ duy nhất, kiểu `can(user, "order:refund", order)`, để test được và audit được. Vài lưu ý nữa: mặc định là TỪ CHỐI, chỉ cho phép khi có luật rõ ràng; nhét quyền vào JWT thì tiện nhưng thu hồi chậm vì token còn hạn, nên với quyền nhạy cảm hãy tra cứu tại chỗ; ghi nhật ký kiểm toán cho các thao tác quan trọng; và viết test cho ma trận vai trò với hành động, đây là phần rất đáng có test tự động.',
   },
+  // ===== Đợt #14 =====
+  {
+    id: 'node-ssrf', topic: 'Bảo mật',
+    q: 'API cho phép người dùng nhập URL ảnh để hệ thống tải về — rủi ro lớn nhất là gì?',
+    options: [
+      'Chỉ là chuyện băng thông, người dùng có thể nhập file rất lớn làm tốn dung lượng lưu trữ của bạn',
+      'Không có rủi ro nếu đã kiểm tra đuôi file là `.jpg` hoặc `.png` trước khi thực hiện việc tải về',
+      'SSRF: server tự gọi vào MẠNG NỘI BỘ (metadata của cloud, dịch vụ nội bộ) thay cho kẻ tấn công',
+      'Ảnh có thể chứa mã độc và tự chạy trên server ngay khi nó vừa được tải về đĩa thành công',
+    ], answer: 2,
+    explain: 'SSRF (Server-Side Request Forgery) biến server của bạn thành công cụ gọi hộ. Server nằm TRONG mạng nội bộ nên nó tới được những nơi kẻ tấn công không tới được: endpoint metadata của cloud tại địa chỉ link-local vốn trả về credential tạm thời của instance — đây là gốc của nhiều vụ rò dữ liệu lớn; các dịch vụ nội bộ không có xác thực vì tưởng đã được mạng che chở; Redis hay Elasticsearch mở cổng nội bộ; và cả giao thức `file://` để đọc file trên đĩa. Phòng thủ phải nhiều lớp vì rất dễ bị vòng qua: chỉ cho phép giao thức `http` và `https`; PHÂN GIẢI DNS rồi kiểm tra địa chỉ IP kết quả có nằm trong dải riêng tư hay loopback không — kiểm tra tên miền là chưa đủ vì kẻ tấn công trỏ một tên miền công khai về địa chỉ nội bộ, và còn chiêu DNS rebinding đổi kết quả giữa lúc kiểm tra và lúc gọi, nên cách chắc chắn là dùng thư viện kiểm tra ngay tại thời điểm kết nối; CHẶN chuyển hướng hoặc kiểm tra lại IP sau mỗi lần redirect; đặt timeout và giới hạn kích thước tải về. Lớp phòng thủ mạnh nhất lại nằm ở hạ tầng: cho việc gọi ra ngoài đi qua một proxy egress ở mạng riêng không thấy được nội bộ, bắt buộc dùng IMDSv2 trên AWS, và áp security group theo nguyên tắc quyền tối thiểu. Cùng bài toán này xuất hiện ở mọi chỗ nhận URL từ người dùng: webhook, import từ URL, chuyển đổi PDF, và xem trước link.',
+  },
+  {
+    id: 'node-jsonb', topic: 'Kiến trúc',
+    q: 'Khi nào nên lưu một cột JSONB trong PostgreSQL thay vì tách thành cột hoặc bảng riêng?',
+    options: [
+      'Luôn dùng JSONB cho mọi thứ, vì nó linh hoạt nên sẽ không bao giờ phải viết migration nữa',
+      'Không bao giờ, JSONB chỉ là tính năng phụ và luôn chậm hơn cột thường trong mọi loại truy vấn',
+      'Cho dữ liệu THƯA hoặc hình dạng thay đổi theo từng bản ghi; thứ hay truy vấn thì vẫn nên là cột thật',
+      'Chỉ khi cần lưu dữ liệu lớn hơn 1MB, vì cột thường không chứa nổi lượng dữ liệu ở mức đó',
+    ], answer: 2,
+    explain: 'JSONB rất hợp cho: thuộc tính tuỳ biến theo từng khách hàng hay từng loại sản phẩm (mỗi loại một tập trường khác nhau, tách cột thì bảng đầy `NULL`); payload gốc lưu lại từ webhook hay API bên ngoài để còn đối chiếu; cấu hình và metadata ít khi truy vấn; và giai đoạn đầu khi hình dạng dữ liệu chưa chốt. Nhưng đừng biến nó thành nơi chứa mọi thứ: những trường bạn LỌC, SẮP XẾP hay JOIN thường xuyên nên là cột thật, vì cột thật có kiểu được kiểm tra, có ràng buộc `NOT NULL` và khoá ngoại, có thống kê tốt hơn cho planner, và index B-tree bình thường. Về index cho JSONB: `GIN` cho phép tìm nhanh theo toán tử chứa và theo khoá, còn nếu chỉ truy vấn một trường cố định thì index BIỂU THỨC trên đúng trường đó gọn và nhanh hơn nhiều. Vài lưu ý kỹ thuật: dùng kiểu `jsonb` chứ không phải `json`, vì bản `json` lưu nguyên văn bản và không index được hiệu quả; JSONB không giữ thứ tự khoá và bỏ khoá trùng; cập nhật một trường nhỏ vẫn ghi lại CẢ dòng nên cột lớn mà cập nhật thường xuyên sẽ rất tốn; và giá trị quá lớn bị đẩy sang lưu trữ ngoài dòng nên đọc chậm hơn. Cuối cùng nhớ rằng schema vẫn tồn tại — chỉ là nó chuyển vào code, nên hãy validate bằng zod hoặc ràng buộc `CHECK` để dữ liệu không trôi mỗi nơi một kiểu.',
+  },
+  {
+    id: 'node-email-auth', topic: 'Kiến trúc',
+    q: 'Email hệ thống gửi đi hay rơi vào hộp thư rác — nguyên nhân kỹ thuật thường là gì?',
+    options: [
+      'Do nội dung email quá ngắn, chỉ cần viết dài hơn và thêm nhiều hình ảnh là sẽ vào hộp thư chính',
+      'Thiếu SPF/DKIM/DMARC nên nơi nhận không xác minh được người gửi; kèm danh tiếng của IP và tên miền',
+      'Do gửi bằng thư viện Node thay vì dùng máy chủ mail thật, nơi nhận phát hiện được điều đó',
+      'Do gửi vào ban đêm, các nhà cung cấp email chấm điểm thấp cho thư đến ngoài giờ hành chính',
+    ], answer: 1,
+    explain: 'Ba bản ghi DNS làm nền cho việc xác minh người gửi. SPF liệt kê những máy chủ được phép gửi thư nhân danh tên miền của bạn. DKIM ký thư bằng khoá riêng và công bố khoá công khai qua DNS, nhờ đó nơi nhận kiểm tra được thư không bị sửa và đúng là do bạn gửi. DMARC nói cho nơi nhận biết phải làm gì khi SPF hay DKIM không khớp — bỏ qua, cho vào rác, hay từ chối — và gửi báo cáo về cho bạn; nên triển khai theo bậc: bắt đầu với chính sách `none` để thu báo cáo, xem có nguồn gửi hợp lệ nào bị bỏ sót không, rồi mới siết dần lên `quarantine` và `reject`. Nhớ khái niệm ALIGNMENT: tên miền trong địa chỉ `From` phải khớp với tên miền đã được SPF hoặc DKIM xác thực, nếu không thì DMARC vẫn trượt dù hai cái kia đều xanh. Ngoài phần kỹ thuật còn có DANH TIẾNG: dùng tên miền phụ riêng cho thư giao dịch, khởi động IP mới từ từ, giữ tỷ lệ bị báo cáo rác thật thấp, luôn có link huỷ đăng ký, và dọn ngay các địa chỉ trả về lỗi vĩnh viễn. Vài lời khuyên thực dụng: đừng tự dựng máy chủ SMTP mà hãy dùng dịch vụ như SES, SendGrid hay Postmark vì họ lo phần danh tiếng và cho bạn webhook về trạng thái gửi; tách thư giao dịch khỏi thư quảng cáo bằng hai tên miền phụ để một bên không kéo bên kia xuống; và kiểm thử bằng công cụ chấm điểm trước khi phát hành.',
+  },
+  {
+    id: 'node-multi-region', topic: 'Kiến trúc',
+    q: 'Triển khai hệ thống ở nhiều vùng địa lý — cái khó nhất là gì?',
+    options: [
+      'Chỉ là chuyện chi phí, về kỹ thuật thì bấm nhân bản hạ tầng sang vùng thứ hai là chạy được ngay',
+      'Đồng bộ mã nguồn giữa các vùng, phải bảo đảm mọi vùng đều chạy đúng cùng một phiên bản build',
+      'DỮ LIỆU: ghi ở đâu, độ trễ giữa các vùng, và chấp nhận nhất quán cuối cùng hay chịu độ trễ cao',
+      'Múi giờ khác nhau nên các tác vụ định kỳ sẽ chạy lệch giờ giữa các vùng và cho kết quả khác nhau',
+    ], answer: 2,
+    explain: 'Nhân bản tầng ứng dụng thì dễ vì nó không giữ trạng thái. Cái khó nằm ở CSDL: hai vùng cách nhau về mặt vật lý nên mỗi lượt đi về đã tốn hàng chục tới hàng trăm mili giây, mà định lý CAP thì không cho bạn vừa nhất quán mạnh vừa sẵn sàng khi mạng giữa hai vùng đứt. Ba mô hình thường gặp. (1) MỘT VÙNG GHI, nhiều vùng đọc: đơn giản và phổ biến nhất — đọc nhanh ở mọi nơi, ghi phải đi về vùng chính nên chậm hơn, và vẫn dính bài toán độ trễ sao chép cùng chuyện đọc lại thứ vừa ghi. (2) GHI Ở NHIỀU VÙNG với phân vùng theo dữ liệu: mỗi khách hàng hay mỗi khu vực có một vùng nhà và ghi luôn về đó — hiệu quả và tránh xung đột, nhưng phải định tuyến đúng và xử lý việc chuyển vùng nhà; đây cũng là cách hay dùng để đáp ứng yêu cầu dữ liệu phải nằm trong lãnh thổ. (3) GHI Ở MỌI NƠI với giải quyết xung đột: cần CRDT hoặc luật kiểu bản ghi cuối thắng, phức tạp và dễ mất dữ liệu âm thầm nếu nghiệp vụ không chấp nhận được. Những thứ khác cũng phải nghĩ: phiên đăng nhập và cache theo vùng hay dùng chung; định tuyến người dùng bằng DNS theo vị trí hay anycast; triển khai từng vùng một để lỗi không lan; và quan trọng nhất là DIỄN TẬP chuyển vùng — chưa từng thử tắt một vùng thì bạn không biết mình có làm được không. Lời khuyên: phần lớn hệ thống chưa cần đa vùng, hãy dùng CDN và replica đọc để giảm độ trễ trước, chỉ đi đa vùng khi có yêu cầu thật về chịu thảm hoạ hoặc về pháp lý.',
+  },
+  {
+    id: 'node-monorepo', topic: 'Tooling',
+    q: 'Dùng monorepo cho nhiều service và package dùng chung — lợi ích và cái giá là gì?',
+    options: [
+      'Chỉ có lợi ích, monorepo luôn tốt hơn nhiều repo trong mọi hoàn cảnh nên đây là lựa chọn mặc định',
+      'Chỉ có bất lợi, vì gộp mọi thứ vào một repo sẽ khiến mọi thay đổi đều phải build lại toàn bộ dự án',
+      'Đổi API và nơi dùng trong MỘT commit; đổi lại là CI phải build tăng dần và quyền hạn khó tách hơn',
+      'Giúp giảm dung lượng lưu trữ trên máy chủ Git, ngoài ra không có khác biệt gì về quy trình làm việc',
+    ], answer: 2,
+    explain: 'Lợi ích lớn nhất của monorepo là THAY ĐỔI NGUYÊN TỬ: sửa một hàm trong package dùng chung và cập nhật mọi nơi gọi nó trong cùng một commit, một pull request, một lần review — thay vì phát hành phiên bản mới, chờ, rồi đi nâng cấp từng repo và sống chung với nhiều phiên bản cùng lúc. Kèm theo là dùng chung cấu hình lint, TypeScript, quy trình CI, và dễ tái sử dụng code hơn hẳn. Cái giá phải trả: CI phải biết CHỈ chạy phần bị ảnh hưởng, vì chạy toàn bộ mỗi lần thì vài phút thành nửa tiếng — đó là lý do có Turborepo, Nx hay Bazel với đồ thị phụ thuộc và cache; phân quyền theo thư mục khó hơn nên phải dùng `CODEOWNERS`; và repo lớn dần thì thao tác Git chậm đi. Về công cụ: npm, pnpm và yarn đều có workspaces để liên kết package nội bộ bằng symlink — pnpm thường được chọn vì tiết kiệm đĩa và nghiêm ngặt hơn về phụ thuộc ẩn. Vài nguyên tắc thực hành: package nội bộ nên dùng phiên bản kiểu workspace chứ đừng phát hành ra ngoài nếu không cần; giữ đồ thị phụ thuộc NÔNG và tránh phụ thuộc vòng; tách rõ package dùng chung với ứng dụng; và cẩn thận với `peerDependencies` của React để không có hai bản React trong cùng một bundle. Cuối cùng: monorepo hợp khi các phần thay đổi cùng nhịp và cùng một tổ chức, còn các hệ thống độc lập khác vòng đời phát hành thì tách repo vẫn hợp lý hơn.',
+  },
+  {
+    id: 'node-chaos', topic: 'Kiến trúc',
+    q: 'Chaos engineering là gì và làm thế nào cho có ích?',
+    options: [
+      'Là viết code cẩu thả có chủ đích để xem hệ thống chịu được tới đâu trước khi phải viết lại',
+      'Là tắt ngẫu nhiên máy chủ production vào giờ cao điểm để kiểm tra phản ứng của đội trực',
+      'Chủ động tiêm lỗi có kiểm soát để KIỂM CHỨNG giả định về khả năng chịu lỗi, bắt đầu từ phạm vi nhỏ',
+      'Là một công cụ tự động sinh dữ liệu ngẫu nhiên để test, tương đương với fuzzing cho API',
+    ], answer: 2,
+    explain: 'Ý tưởng gốc: bạn đã viết retry, circuit breaker, timeout và fallback — nhưng chúng chỉ là GIẢ ĐỊNH cho tới khi được kiểm chứng, và cách duy nhất để biết là gây ra lỗi thật rồi quan sát. Quy trình chuẩn giống một thí nghiệm: nêu giả thuyết (kiểu "Redis chết thì trang chủ vẫn phục vụ được, chậm hơn tối đa 300ms"), xác định chỉ số lúc bình thường, giới hạn PHẠM VI ẢNH HƯỞNG (một pod, một phần trăm lưu lượng), tiêm lỗi, quan sát, rồi dừng ngay khi vượt ngưỡng — phải có nút tắt khẩn cấp. Các lỗi hay tiêm: giết pod, thêm độ trễ mạng, làm rớt gói, chặn một dịch vụ phụ thuộc, cho CSDL failover, ngốn CPU hay đĩa; và đơn giản nhất mà hiệu quả nhất là chặn một dependency rồi xem có đúng là suy giảm có kiểm soát hay không. Điều kiện tiên quyết mà nhiều người bỏ qua: phải có quan sát tốt TRƯỚC, vì không đo được thì thí nghiệm chẳng nói lên điều gì; và phải bắt đầu ở môi trường thử nghiệm, thông báo cho mọi người, chỉ chuyển sang production khi đã tự tin. Người ta thường bắt đầu bằng GAME DAY: hẹn giờ, cả đội ngồi cùng nhau, mô phỏng một sự cố và làm theo runbook — cách này rẻ, không cần công cụ, và thứ nó phát hiện thường là runbook đã cũ, cảnh báo không ai nhận, hay không ai biết cách rollback. Giá trị thật nằm ở việc tìm ra điểm yếu vào lúc bạn CHỌN, thay vì vào 2 giờ sáng.',
+  },
+  {
+    id: 'node-partial-index', topic: 'Kiến trúc',
+    q: 'Bảng đơn hàng 50 triệu dòng nhưng chỉ 2000 dòng đang chờ xử lý — index thế nào cho tốt?',
+    options: [
+      'Index thường trên cột trạng thái là đủ, kích thước index không đáng quan tâm trong trường hợp này',
+      'Không cần index vì cột trạng thái có rất ít giá trị khác nhau nên CSDL sẽ luôn quét tuần tự',
+      'PARTIAL INDEX chỉ trên các dòng đang chờ — index nhỏ xíu, nằm gọn trong bộ nhớ, cập nhật rẻ',
+      'Tạo một bảng riêng cho các dòng đang chờ rồi chuyển qua lại, vì index không giải quyết được việc này',
+    ], answer: 2,
+    explain: 'Index thường trên cột trạng thái sẽ chứa CẢ 50 triệu dòng — tốn đĩa, tốn bộ nhớ đệm, và mỗi lần ghi đều phải cập nhật, trong khi bạn chỉ quan tâm 2000 dòng. Một PARTIAL INDEX với mệnh đề `WHERE` giới hạn đúng trạng thái đang chờ sẽ chỉ chứa các dòng khớp điều kiện: nhỏ tới mức nằm trọn trong bộ nhớ, quét cực nhanh, và dòng nào chuyển sang trạng thái khác thì tự rời khỏi index. Đây là mẫu kinh điển cho hàng đợi công việc trong CSDL và cho các bảng có phân bố lệch. Điều kiện để planner dùng được: mệnh đề `WHERE` của truy vấn phải chứa đúng điều kiện của index hoặc suy ra được từ nó, nên hãy giữ điều kiện đơn giản và tường minh, và tránh dùng hàm phụ thuộc thời điểm chạy như `now()` trong định nghĩa index. Người anh em của nó là INDEX BIỂU THỨC, ví dụ index trên `lower(email)` cho các truy vấn so sánh chữ thường — vì với index thường thì bọc hàm quanh cột là index bị bỏ qua ngay lập tức. Cả hai kỹ thuật đều rất đáng nhớ. Vài lưu ý chung: partial unique index cho phép ràng buộc duy nhất chỉ áp cho các bản ghi chưa xoá mềm; thêm index là làm ghi chậm đi nên đừng tạo bừa; và trong PostgreSQL nhớ dùng `CREATE INDEX CONCURRENTLY` trên bảng đang chạy production để không khoá ghi.',
+  },
+  {
+    id: 'node-upload-validation', topic: 'Bảo mật',
+    q: 'Nhận file người dùng tải lên — cần kiểm tra gì ngoài kích thước?',
+    options: [
+      'Chỉ cần kiểm tra đuôi file, vì đuôi file luôn phản ánh đúng loại nội dung thật bên trong tệp',
+      'Chỉ cần tin `Content-Type` mà trình duyệt gửi kèm, đó là thông tin do trình duyệt tự xác định',
+      'MAGIC BYTES chứ không tin đuôi hay `Content-Type`; đổi tên file, lưu ngoài webroot, giới hạn khi giải nén',
+      'Quét virus là đủ, các bước kiểm tra khác đều đã được phần mềm diệt virus bao quát toàn bộ',
+    ], answer: 2,
+    explain: 'Cả đuôi file lẫn `Content-Type` đều do CLIENT gửi lên nên đều giả được. Hãy đọc MAGIC BYTES (vài byte đầu) để xác định loại thật bằng thư viện như `file-type`, rồi đối chiếu với danh sách TRẮNG các loại bạn chấp nhận. Những việc kèm theo: ĐỔI TÊN file thành một id do bạn sinh ra, vì tên gốc có thể chứa chuỗi thoát thư mục, chứa ký tự điều khiển, hoặc trùng tên gây ghi đè; lưu vào object storage hoặc một thư mục NGOÀI webroot rồi phục vụ qua một route có kiểm tra quyền, đừng để thư mục upload chạy được script; đặt `Content-Type` đúng và `Content-Disposition: attachment` khi trả về để trình duyệt không tự thực thi nội dung, kèm `X-Content-Type-Options: nosniff`. Với ảnh thì nên xử lý lại bằng sharp — vừa loại metadata EXIF chứa toạ độ GPS, vừa vô hiệu hoá payload giấu trong file; và nhớ giới hạn KÍCH THƯỚC ẢNH tính theo pixel chứ không chỉ theo byte, vì một file PNG vài trăm KB có thể giải nén thành ảnh hàng chục nghìn pixel mỗi chiều và ngốn sạch bộ nhớ. Cùng logic đó áp dụng cho file nén: đặt trần cho tổng dung lượng sau khi giải nén và cho số lượng file để chặn zip bomb, đồng thời kiểm tra đường dẫn của từng entry để chặn zip slip. Cuối cùng: SVG thực chất là HTML trá hình nên chứa được script — hoặc sanitize, hoặc chuyển sang ảnh raster, hoặc phục vụ từ một tên miền riêng.',
+  },
 ];

@@ -1542,4 +1542,93 @@ window.REACT_QUIZ = [
     ], answer: 1,
     explain: 'Nguyên tắc gốc: lựa chọn là state của MÀN HÌNH chứ không phải của dữ liệu — nên lưu tách riêng dưới dạng `Set` các id (tra cứu nhanh, thêm bớt gọn) chứ đừng nhét cờ `selected` vào chính mảng dữ liệu; trộn vào là mỗi lần nạp lại từ server sẽ mất hết, và mỗi lần đổi lựa chọn lại phải sao chép cả mảng. Đừng dùng CHỈ SỐ, vì lọc, sắp xếp hay đổi trang là chỉ số trỏ sang dòng khác — đúng cùng một bài học với `key` trong danh sách. Chỗ khó nhất là "CHỌN TẤT CẢ": phải nói rõ với người dùng đó là tất cả trên TRANG NÀY hay tất cả theo BỘ LỌC HIỆN TẠI, mà bộ lọc thì có thể ra 20.000 dòng chưa hề tải về. Mẫu quen thuộc là hai bước: checkbox ở header chọn hết trang hiện tại, rồi hiện một dòng gợi ý "Đã chọn 50 dòng — chọn toàn bộ 20.000 kết quả?"; khi người dùng chọn phương án thứ hai thì đừng cố liệt kê id, hãy chuyển sang lưu chế độ chọn tất cả kèm danh sách LOẠI TRỪ và gửi bộ lọc lên server để nó tự xử lý. Vài chi tiết nữa: checkbox ở header cần trạng thái `indeterminate` khi chỉ chọn một phần, và phải đặt bằng ref vì HTML không có thuộc tính này; quyết định rõ là giữ hay xoá lựa chọn khi đổi trang rồi nói cho người dùng biết bằng một dòng đếm; và với thao tác hàng loạt thì luôn xác nhận kèm con số cụ thể trước khi chạy.',
   },
+  // ===== Đợt #14 =====
+  {
+    id: 'react-form-conditional', topic: 'Form & sự kiện',
+    q: 'Form có trường chỉ hiện khi chọn một tuỳ chọn nào đó — chỗ nào dễ sai nhất?',
+    options: [
+      'Không có gì đặc biệt, chỉ cần render có điều kiện là mọi thứ tự hoạt động đúng như mong đợi',
+      'Phải tạo hai form riêng biệt cho hai trường hợp, không thể dùng chung một form với trường ẩn hiện',
+      'Giá trị và LỖI của trường đã ẩn vẫn còn trong state nên vẫn được gửi đi hoặc vẫn chặn submit',
+      'React không cho phép thay đổi số lượng input trong một form sau khi nó đã được render lần đầu',
+    ], answer: 2,
+    explain: 'Khi một trường bị ẩn, component của nó unmount nhưng GIÁ TRỊ thường vẫn nằm trong state của form ở tầng cha — nên nó vẫn được gửi lên server (dữ liệu rác, có khi trái nghiệp vụ), và tệ hơn là LỖI VALIDATE của nó vẫn còn nên nút submit bị chặn bởi một lỗi mà người dùng không nhìn thấy ở đâu cả; đây là một trong những bug gây bực nhất. Cách xử lý: khi điều kiện tắt thì chủ động dọn giá trị và lỗi của các trường liên quan (`unregister` trong React Hook Form, hoặc bỏ khoá đó khỏi state), hoặc dùng validate theo SCHEMA CÓ ĐIỀU KIỆN — zod thì `discriminatedUnion` theo trường điều khiển, yup thì `when` — để chính schema biết trường nào áp dụng trong trường hợp nào; cách này gọn hơn vì chỉ có một nguồn sự thật. Quyết định sản phẩm cần hỏi rõ: người dùng đổi lựa chọn rồi đổi lại thì có muốn GIỮ những gì đã gõ hay không — giữ thì tiện nhưng phải nhớ loại bỏ lúc submit, còn xoá thì sạch nhưng bắt họ gõ lại. Vài chi tiết nữa: đừng dùng `display: none` để ẩn vì trường vẫn nằm trong DOM và vẫn được gửi theo form HTML; chuyển focus vào trường mới hiện để người dùng bàn phím không bị lạc; và thông báo cho screen reader rằng vừa có trường mới xuất hiện.',
+  },
+  {
+    id: 'react-number-input', topic: 'Form & sự kiện',
+    q: 'Ô nhập tiền tự thêm dấu phân cách hàng nghìn khi gõ — vấn đề hay gặp là gì?',
+    options: [
+      'Không có vấn đề gì, chỉ cần format lại giá trị trong `onChange` là mọi thứ hoạt động trơn tru',
+      'CON TRỎ nhảy về cuối sau mỗi lần format, và giá trị hiển thị khác giá trị số dùng để tính toán',
+      'React không cho phép sửa giá trị của input trong `onChange`, phải dùng uncontrolled input thay thế',
+      'Dấu phân cách làm hỏng thuộc tính `type="number"` nên phải bỏ hẳn việc kiểm tra dữ liệu đầu vào',
+    ], answer: 1,
+    explain: 'Khi bạn format lại chuỗi rồi gán vào `value`, React render lại và trình duyệt đặt con trỏ về CUỐI ô — người dùng đang sửa chữ số ở giữa thì con trỏ nhảy, gõ tiếp là sai chỗ. Cách chữa: sau khi cập nhật, tính lại vị trí con trỏ dựa trên SỐ CHỮ SỐ đứng trước nó (đếm chữ số chứ không đếm ký tự, vì số lượng dấu phân cách thay đổi) rồi gọi `setSelectionRange` trong `useLayoutEffect` để không bị nháy. Vấn đề thứ hai là phải tách bạch hai thứ: giá trị HIỂN THỊ là chuỗi đã format, còn giá trị NGHIỆP VỤ phải là số, hoặc số nguyên đơn vị nhỏ nhất nếu là tiền — giữ cả hai và chỉ chuyển đổi ở biên, đừng bao giờ parse ngược chuỗi đã format rồi đem đi tính. Vài bẫy nữa: `type="number"` không nhận dấu phân cách và ở nhiều trình duyệt còn cho cuộn chuột làm đổi giá trị, nên với tiền thì dùng `type="text"` kèm `inputMode="numeric"` để bàn phím số hiện lên trên di động; định dạng theo LOCALE khác nhau ở dấu chấm và dấu phẩy nên phải parse theo đúng locale chứ đừng giả định; và với IME hoặc bàn phím có gợi ý thì nên nghe thêm `compositionstart` và `compositionend` để không format giữa lúc người dùng đang gõ dở. Lời khuyên thực dụng: đây là loại component nên dùng thư viện đã kiểm chứng thay vì tự viết, nhưng vẫn nên hiểu vì sao nó khó.',
+  },
+  {
+    id: 'react-scroll-lock', topic: 'Chất lượng UI',
+    q: 'Mở modal xong nền phía sau vẫn cuộn được — khoá cuộn thế nào cho đúng?',
+    options: [
+      'Chỉ cần đặt `overflow: hidden` cho `body`, không có tác dụng phụ nào cần phải quan tâm thêm cả',
+      'Đặt `position: fixed` cho `body` là cách duy nhất đúng và hoạt động hoàn hảo trên mọi thiết bị',
+      '`overflow: hidden` cộng BÙ chiều rộng thanh cuộn để trang khỏi nhảy; iOS thì còn cần xử lý riêng',
+      'Bắt sự kiện `scroll` rồi cuộn ngược lại vị trí cũ, đây là cách được khuyến nghị cho ứng dụng web',
+    ], answer: 2,
+    explain: 'Đặt `overflow: hidden` trên `body` là bước đầu, nhưng trên desktop nó làm thanh cuộn biến mất và toàn bộ trang NHẢY ngang vài chục pixel — rất lộ. Bù bằng cách đo hiệu giữa `window.innerWidth` và `documentElement.clientWidth` rồi thêm đúng chừng ấy `padding-right`; nhớ bù cho cả các phần tử `position: fixed` như header dính, không thì chúng vẫn nhảy. iOS Safari là ca khó riêng: `overflow: hidden` không chặn được cuộn bằng chạm, nên mẫu hay dùng là `position: fixed` cho `body` kèm dịch `top` theo vị trí cuộn hiện tại rồi khôi phục khi đóng — đổi lại là mất vị trí cuộn nếu quên khôi phục, và bàn phím ảo có thể gây hiện tượng lạ. Thuộc tính CSS `overscroll-behavior: contain` đặt trên chính phần nội dung modal cũng rất đáng thêm: nó chặn hiện tượng cuộn hết modal thì trang nền cuộn tiếp. Vài điều đi kèm: nhớ ĐẾM số modal đang mở, vì đóng một cái mà mở lại cuộn trong khi cái kia còn mở là hỏng; luôn khôi phục trạng thái trong cleanup của effect kẻo modal unmount bất thường là trang kẹt cứng; và đừng quên đây mới chỉ là một phần của modal đúng chuẩn, còn bẫy focus, `inert` cho phần nền và phím Escape nữa. Lời khuyên: dùng thư viện vì các trường hợp biên rất nhiều, hoặc dùng thẻ `<dialog>` với `showModal()` vốn đã xử lý sẵn phần lớn.',
+  },
+  {
+    id: 'react-floating-position', topic: 'Chất lượng UI',
+    q: 'Tooltip hoặc dropdown bị tràn ra ngoài màn hình khi ở gần mép — xử lý thế nào?',
+    options: [
+      'Đặt `position: absolute` với toạ độ cố định tính sẵn cho từng vị trí có thể xảy ra trên giao diện',
+      'Tính vị trí theo viewport và tự LẬT sang phía đối diện khi thiếu chỗ, cập nhật lại khi cuộn hoặc đổi kích thước',
+      'Đặt `overflow: visible` cho tất cả phần tử cha là đủ để popup không bao giờ bị cắt hay bị tràn nữa',
+      'Luôn hiển thị popup ở giữa màn hình để chắc chắn nó không bao giờ tràn ra ngoài vùng nhìn thấy',
+    ], answer: 1,
+    explain: 'Định vị phần tử nổi khó hơn vẻ ngoài vì phải xử lý một loạt trường hợp biên: thiếu chỗ phía dưới thì LẬT lên trên, lệch sang một bên thì DỊCH vào trong cho vừa, phần tử neo bị cuộn khuất thì popup phải ẩn theo, mũi tên chỉ phải bám đúng tâm phần tử neo, và popup nằm trong một cha có `overflow: hidden` thì bị cắt — chữa bằng cách render qua portal ra `body`, nhưng khi đó lại phải tự đồng bộ vị trí mỗi lần cuộn hoặc đổi kích thước cửa sổ. Đó là lý do nên dùng `floating-ui` (bản kế thừa của Popper): nó cung cấp đúng các middleware cho offset, lật, dịch, mũi tên và giới hạn kích thước, cộng với `autoUpdate` để theo dõi mọi thay đổi vị trí bằng `ResizeObserver` và `IntersectionObserver` thay vì nghe sự kiện `scroll` một cách tốn kém. Hai hướng mới của nền tảng cũng đáng biết: thuộc tính `popover` đưa phần tử lên TOP LAYER nên hết cảnh bị cắt và hết đấu z-index, còn CSS anchor positioning cho phép neo bằng CSS thuần — nhưng hỗ trợ trình duyệt còn chưa đủ rộng nên hiện vẫn cần thư viện. Đừng quên phần a11y: `aria-describedby` cho tooltip, `aria-expanded` cùng `aria-controls` cho dropdown, đóng được bằng Escape, và tooltip phải hiện cả khi focus bằng bàn phím chứ không chỉ khi rê chuột.',
+  },
+  {
+    id: 'react-duplicate-react', topic: 'Công cụ & môi trường',
+    q: 'Lỗi "Invalid hook call" xuất hiện dù code hook viết đúng — nguyên nhân thường là gì?',
+    options: [
+      'Do phiên bản React quá cũ, chỉ cần nâng lên bản mới nhất là lỗi này sẽ tự động biến mất',
+      'Do gọi hook bên trong một vòng lặp, đó là nguyên nhân duy nhất sinh ra thông báo lỗi này',
+      'Có HAI bản React trong cùng ứng dụng — thường do thư viện cục bộ hoặc peer dependency bị lệch',
+      'Do quên import React ở đầu file, từ bản 17 trở đi việc này gây lỗi khi component có dùng hook',
+    ], answer: 2,
+    explain: 'Thông báo này liệt kê ba nguyên nhân, và hai cái đầu (gọi hook sai quy tắc, React với ReactDOM lệch phiên bản) thì dễ thấy. Cái thứ ba mới hay làm mất thời gian: có HAI bản React cùng tồn tại. Hook hoạt động dựa trên một biến nội bộ dùng chung, nên component render bằng bản React này mà gọi hook của bản kia thì bản kia thấy mình không đang render component nào cả. Tình huống điển hình: bạn `npm link` một thư viện đang phát triển và nó có thư mục `node_modules/react` riêng; hoặc một thư viện khai báo React là `dependencies` thay vì `peerDependencies` nên npm cài thêm một bản lồng bên trong; hoặc trong monorepo có hai package cài hai phiên bản React khác nhau. Cách chẩn đoán nhanh: chạy `npm ls react` để xem có mấy bản, hoặc in ra và so sánh đối tượng React lấy từ hai chỗ. Cách chữa: với thư viện của mình thì để React trong `peerDependencies` và thêm vào `devDependencies` để phát triển; trong monorepo thì nâng React lên gốc, hoặc dùng `overrides` của npm cùng `resolutions` của yarn để ép một phiên bản duy nhất; với bundler thì đặt alias cho `react` và `react-dom` trỏ về một đường dẫn cụ thể (webpack có `resolve.alias`, Vite có `resolve.dedupe`). Nguyên tắc chung áp dụng cho mọi thư viện có trạng thái toàn cục — cùng bài học với việc có hai bản của một thư viện state hay router trong một bundle.',
+  },
+  {
+    id: 'react-visual-regression', topic: 'Kiểm thử',
+    q: 'Test hồi quy giao diện bằng chụp ảnh so sánh — dùng thế nào cho hiệu quả?',
+    options: [
+      'Chụp ảnh toàn bộ mọi trang sau mỗi commit rồi so từng pixel, khác một chút là báo lỗi ngay',
+      'Không nên dùng vì ảnh chụp luôn khác nhau giữa các máy nên loại test này không bao giờ ổn định',
+      'Chụp ở môi trường CỐ ĐỊNH (container, font, dữ liệu giả), phạm vi hẹp theo component, có ngưỡng sai lệch',
+      'Thay thế hoàn toàn cho unit test và test tương tác, vì ảnh chụp đã bao quát được mọi hành vi',
+    ], answer: 2,
+    explain: 'Test hồi quy hình ảnh bắt được đúng thứ mà test theo DOM bỏ lọt: sửa một dòng CSS dùng chung làm vỡ layout ở một màn hình bạn đã quên mất. Nhưng nó nổi tiếng là hay nhấp nháy nếu môi trường không cố định — font khác nhau giữa macOS và Linux, cách chống răng cưa khác, con trỏ nhấp nháy, animation chưa xong, ảnh tải chậm, và dữ liệu có ngày giờ hay số ngẫu nhiên. Vì thế: chạy trong CONTAINER dùng cùng một image cho cả máy dev lẫn CI, ghim font, tắt animation và transition khi chụp, chờ trạng thái ổn định thay vì ngủ một khoảng cố định, và dùng dữ liệu giả cố định với mọi mốc thời gian đều được đóng băng. Phạm vi nên là COMPONENT hoặc từng trạng thái của nó — Storybook kèm Chromatic, hoặc component test của Playwright — chứ không phải cả trang: ảnh nhỏ thì lỗi chỉ đúng chỗ cần xem, còn ảnh cả trang thì một thay đổi ở header làm đỏ hai trăm ảnh và rồi không ai buồn duyệt nữa. Đặt ngưỡng sai lệch nhỏ để bỏ qua nhiễu nhưng đừng nới rộng tới mức che mất lỗi thật. Quan trọng không kém là QUY TRÌNH: ảnh khác nhau không phải lúc nào cũng là bug, nên phải có bước duyệt và cập nhật ảnh chuẩn ngay trong pull request, kèm hiển thị khác biệt trực quan. Và nhớ nó BỔ SUNG chứ không thay thế: hành vi vẫn cần test tương tác, còn a11y thì ảnh chụp không nói được gì.',
+  },
+  {
+    id: 'react-responsive-table', topic: 'Chất lượng UI',
+    q: 'Bảng 12 cột hiển thị trên điện thoại thế nào cho dùng được?',
+    options: [
+      'Thu nhỏ chữ lại cho vừa màn hình, như vậy vẫn giữ được đầy đủ mọi cột như trên desktop',
+      'Ẩn bớt các cột phụ và cho cuộn ngang, hoặc đổi hẳn sang dạng THẺ; cột định danh thì nên cố định',
+      'Luôn dùng cuộn ngang cho toàn bộ trang, đó là cách chuẩn duy nhất để hiển thị bảng trên di động',
+      'Bảng vốn không dùng được trên di động nên phải ẩn đi và yêu cầu người dùng mở bằng máy tính',
+    ], answer: 1,
+    explain: 'Không có một câu trả lời đúng cho mọi bảng — hãy chọn theo NHIỆM VỤ của người dùng. Nếu họ cần SO SÁNH các dòng với nhau thì giữ dạng bảng và cho cuộn ngang trong một container riêng (`overflow-x: auto`, đừng để cả trang cuộn ngang), ghim cột định danh bằng `position: sticky` để không bị lạc, và cho thấy rõ là còn nội dung bên phải bằng một vệt bóng ở mép. Nếu họ chỉ cần XEM từng bản ghi thì đổi hẳn sang dạng THẺ: mỗi dòng thành một khối với nhãn đi kèm giá trị, đây thường là lựa chọn dễ dùng nhất trên điện thoại. Cách thứ ba là ưu tiên cột: hiện ba tới bốn cột quan trọng nhất, phần còn lại mở ra khi bấm vào dòng. Vài chi tiết kỹ thuật: nếu đổi cấu trúc DOM giữa hai bố cục thì cẩn thận với screen reader — dùng CSS để biến bảng thành khối sẽ làm mất ngữ nghĩa bảng, cần thêm vai trò phù hợp hoặc chấp nhận đánh đổi; cột hành động nên gom vào một menu thay vì ba nút chen chúc; vùng chạm phải đủ lớn, khoảng 44 pixel; và sắp xếp hay lọc nên đưa ra ngoài thành một thanh riêng vì tiêu đề cột quá chật để bấm. Nguyên tắc cuối: đừng chỉ thu nhỏ chữ — chữ 10 pixel thì vừa màn hình nhưng không ai đọc nổi, và đó là cách nhanh nhất để người dùng bỏ đi.',
+  },
+  {
+    id: 'react-toast-system', topic: 'Mẫu thiết kế',
+    q: 'Xây hệ thống thông báo toast dùng chung cho cả ứng dụng — thiết kế thế nào?',
+    options: [
+      'Đặt một component toast trong mỗi màn hình cần dùng, mỗi nơi tự quản lý trạng thái hiển thị riêng',
+      'Dùng một biến toàn cục lưu nội dung rồi để các component đọc trực tiếp từ biến đó khi cần hiện',
+      'Một provider ở gốc giữ HÀNG ĐỢI, render qua portal, lộ ra hàm `toast()` — kèm live region cho a11y',
+      'Gọi `alert()` của trình duyệt vì nó luôn hiện lên trên cùng và không cần viết thêm dòng code nào',
+    ], answer: 2,
+    explain: 'Toast là ví dụ điển hình của thứ cần một điểm điều khiển duy nhất. Cấu trúc thường dùng: một provider đặt ở gốc giữ MẢNG toast đang hiển thị, render danh sách đó qua `createPortal` ra `body` để không bị `overflow` hay z-index của cha cắt mất, và lộ ra một hàm `toast(message, options)` qua context hoặc qua một store ngoài. Dùng store ngoài có một ưu điểm lớn: gọi được từ NGOÀI cây React — trong interceptor của axios, trong `onError` của React Query — mà không cần hook, đó là lý do các thư viện phổ biến chọn cách này. Những chi tiết quyết định chất lượng: HÀNG ĐỢI và giới hạn số toast hiện cùng lúc, vì mười thông báo chồng lên nhau là vô dụng; gom nhóm thông báo trùng thay vì lặp lại; tự đóng sau vài giây nhưng TẠM DỪNG đếm giờ khi người dùng rê chuột hoặc focus vào; và không tự đóng với thông báo lỗi cần đọc kỹ. Về a11y: đặt vùng chứa là live region (`role="status"` cho thông tin, `role="alert"` cho lỗi), vùng đó phải có sẵn trong DOM từ trước, và nếu toast có nút hành động thì phải tới được bằng bàn phím — đây chính là lý do toast KHÔNG hợp cho thứ bắt buộc phải xử lý, cái đó cần modal. Cuối cùng: đừng lạm dụng toast cho lỗi của một trường trong form, lỗi nên hiện ngay cạnh chỗ gây ra nó.',
+  },
 ];
