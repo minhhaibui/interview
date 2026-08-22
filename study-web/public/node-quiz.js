@@ -1411,4 +1411,93 @@ window.NODE_QUIZ = [
     ], answer: 3,
     explain: 'Đây là bài toán "dual write": hai hệ thống khác nhau (CSDL và broker) không có transaction chung, nên luôn tồn tại khe cửa để một cái thành công còn cái kia hỏng — tiến trình chết đúng giữa hai lệnh là đủ. Đảo thứ tự không cứu được mà chỉ đổi kiểu sai: publish trước rồi ghi hỏng thì có message cho một đơn hàng không hề tồn tại. Retry trong vòng lặp cũng không cứu, vì tiến trình có thể chết trước khi retry xong. TRANSACTIONAL OUTBOX giải đúng gốc: trong CÙNG transaction ghi đơn hàng, ghi thêm một dòng vào bảng `outbox` (kiểu sự kiện, payload, trạng thái) — hai lệnh cùng một CSDL nên nguyên tử thật sự. Sau đó một tiến trình riêng lấy các dòng chưa gửi rồi publish lên broker và đánh dấu đã gửi; tiến trình này có thể poll theo chu kỳ, hoặc đọc WAL bằng CDC như Debezium khi cần độ trễ thấp. Kết quả là AT-LEAST-ONCE: message có thể gửi trùng nếu bước đánh dấu hỏng giữa chừng, nên consumer bắt buộc phải idempotent — đó là cái giá phải chấp nhận và nó rẻ hơn nhiều so với mất message. Vài lưu ý vận hành: nhớ dọn bảng outbox định kỳ kẻo phình to; giữ thứ tự theo khoá thực thể nếu nghiệp vụ cần; và đặt cảnh báo khi số dòng chưa gửi tăng dần, vì đó là dấu hiệu tiến trình relay đã chết. Mẫu đối xứng ở phía nhận gọi là INBOX: lưu id các message đã xử lý để bỏ qua bản trùng.',
   },
+  // ===== Đợt #12 =====
+  {
+    id: 'node-trust-proxy', topic: 'HTTP',
+    q: 'Đặt Node sau nginx, `req.ip` luôn ra 127.0.0.1 và rate limit chặn nhầm mọi người. Vì sao?',
+    options: [
+      'Vì nginx thay đổi gói tin nên Node không đọc được IP thật, bắt buộc phải bỏ nginx đi mới lấy đúng',
+      'Vì kết nối TCP thật sự là từ PROXY tới Node; IP gốc nằm trong `X-Forwarded-For`, cần bật `trust proxy`',
+      'Vì Node cache lại IP của request đầu tiên, chỉ cần tắt keep-alive là mỗi request sẽ lấy đúng IP mới',
+      'Vì rate limiter mặc định dùng IP của server chứ không phải của client, đổi sang dùng user id là hết',
+    ], answer: 1,
+    explain: 'Với reverse proxy, Node chỉ nhìn thấy đầu kia của kết nối TCP — chính là proxy. IP thật của người dùng được proxy ghi vào header `X-Forwarded-For` (một danh sách: client ở đầu, mỗi proxy nối thêm vào cuối), kèm `X-Forwarded-Proto` và `X-Forwarded-Host`. Trong Express thì `app.set("trust proxy", 1)` bảo framework tin đúng MỘT lớp proxy phía trước và lấy `req.ip` từ header đó; sau đó `req.protocol` cũng trả về `https` đúng nên redirect và tạo URL tuyệt đối không còn sai. Hậu quả nếu quên: rate limit gom mọi người dùng vào chung một IP nên hoặc chặn nhầm tất cả hoặc trở nên vô dụng; log ghi sai IP; tra cứu vị trí địa lý sai; và cookie `Secure` có thể bị bỏ vì server tưởng mình đang chạy HTTP. Nhưng đừng đặt `trust proxy` thành `true` một cách bừa bãi: header đó CLIENT tự đặt được, nên nếu Node có thể nhận request trực tiếp từ internet thì kẻ tấn công sẽ giả IP tuỳ ý để né rate limit hoặc đầu độc log. Quy tắc an toàn: chỉ tin đúng số lớp proxy bạn thật sự có (hoặc liệt kê dải IP của chúng), và bảo đảm không ai gọi thẳng vào Node được bằng cách chỉ lắng nghe trên mạng nội bộ. Trên các nền tảng có CDN thì thường có header riêng đáng tin hơn, ví dụ `CF-Connecting-IP` của Cloudflare.',
+  },
+  {
+    id: 'node-pool-size', topic: 'Kiến trúc',
+    q: 'Service chậm khi tải cao — tăng kích thước connection pool lên gấp 5 có giúp gì không?',
+    options: [
+      'Có, càng nhiều connection thì càng nhiều truy vấn chạy song song nên thông lượng luôn tăng theo tỷ lệ',
+      'Có, vì mỗi connection tương ứng một luồng của Node nên tăng pool đồng nghĩa với tăng số luồng xử lý',
+      'Thường KHÔNG — CSDL chỉ có bấy nhiêu CPU và đĩa; pool quá lớn gây tranh chấp, làm mọi truy vấn chậm đều',
+      'Không, vì kích thước pool là cố định theo cấu hình CSDL và ứng dụng không thể thay đổi được giá trị đó',
+    ], answer: 2,
+    explain: 'Pool không phải là công suất — nó chỉ là hàng đợi. CSDL xử lý song song được bao nhiêu là do số nhân CPU và khả năng của đĩa quyết định; mở 200 connection tới một máy 8 nhân chỉ khiến 200 truy vấn tranh nhau, mỗi cái chậm hơn, thêm chi phí chuyển ngữ cảnh và khoá, thậm chí chạm `max_connections` rồi lỗi hàng loạt. Nghịch lý quen thuộc: GIẢM pool lại làm p99 tốt hơn, vì hàng đợi nằm ở phía ứng dụng (chờ có trật tự) thay vì nằm bên trong CSDL (mọi người cùng chậm). Điểm khởi đầu hay được nhắc là công thức của HikariCP, khoảng số nhân nhân đôi cộng số đĩa — tức vài chục chứ không phải vài trăm, rồi đo và chỉnh dần. Nhớ tính TỔNG: 10 pod mỗi pod pool 20 là 200 connection tới cùng một CSDL, đây là chỗ hay vỡ khi scale ngang và cũng là lý do serverless cần một lớp gộp như PgBouncer hay RDS Proxy. Việc cần làm TRƯỚC khi nghĩ tới tăng pool: tìm truy vấn chậm và thêm index, bỏ N+1, rút ngắn transaction (đừng gọi API ngoài khi đang giữ connection), thêm cache. Cuối cùng hãy đo đúng chỗ: tách thời gian CHỜ lấy connection ra khỏi thời gian chạy truy vấn — chờ lâu mà truy vấn nhanh thì đúng là thiếu connection, còn truy vấn tự nó chậm thì tăng pool chỉ làm mọi thứ tệ hơn.',
+  },
+  {
+    id: 'node-uuid-pk', topic: 'Kiến trúc',
+    q: 'Chọn khoá chính cho bảng: số tự tăng hay UUID?',
+    options: [
+      'Luôn dùng UUIDv4 vì nó ngẫu nhiên nên an toàn hơn và không bao giờ trùng trong mọi hoàn cảnh',
+      'Luôn dùng số tự tăng vì nó nhỏ gọn, còn UUID chỉ nên dùng cho tên file và các khoá tạm thời',
+      'Tự tăng gọn và xếp thứ tự tốt nhưng lộ số lượng; UUIDv4 ngẫu nhiên gây phân mảnh index — UUIDv7 dung hoà',
+      'Hai cách giống nhau về hiệu năng, chỉ khác cách hiển thị nên chọn theo sở thích của đội phát triển',
+    ], answer: 2,
+    explain: 'Số TỰ TĂNG: chỉ 4 tới 8 byte, index B-tree luôn ghi vào cuối nên rất ít phân mảnh, và dễ đọc khi debug. Nhược điểm: lộ quy mô kinh doanh (thấy `/orders/1042` là biết bạn có khoảng 1042 đơn) và cho phép dò tuần tự nếu phân quyền yếu; không sinh được ở phía client; và va chạm khi gộp dữ liệu từ nhiều nguồn hoặc khi shard. UUIDv4: 16 byte, sinh ở đâu cũng được nên client tạo id trước rồi gửi lên — rất tiện cho cập nhật lạc quan và cho idempotency key, lại không lộ thông tin gì. Nhược điểm lớn nhất là NGẪU NHIÊN HOÀN TOÀN: mỗi lần chèn rơi vào một chỗ bất kỳ trong B-tree, gây tách trang và phân mảnh, cache kém hiệu quả, index phình to — càng rõ khi bảng lớn dần. UUIDv7 và ULID giải đúng chỗ đó: phần đầu là timestamp nên id TĂNG DẦN theo thời gian, giữ được tính cục bộ khi ghi mà vẫn sinh phân tán được; đây là lựa chọn mặc định hợp lý cho hệ thống mới. Vài lưu ý kỹ thuật: trong PostgreSQL hãy dùng kiểu `uuid` (16 byte) chứ đừng lưu chuỗi 36 ký tự; MySQL InnoDB có clustered index nên hậu quả của khoá ngẫu nhiên còn nặng hơn nữa. Mẹo hay dùng trong thực tế: giữ số tự tăng làm khoá nội bộ và thêm một cột id công khai (UUID hoặc mã ngắn) để lộ ra API — được cả hai mặt.',
+  },
+  {
+    id: 'node-load-test', topic: 'Hiệu năng',
+    q: 'Chuẩn bị cho đợt khuyến mãi lớn, chạy load test thế nào cho có ích?',
+    options: [
+      'Bắn thật nhiều request từ máy cá nhân qua wifi cho tới khi server báo lỗi là biết được giới hạn',
+      'Chỉ cần đo thời gian phản hồi của một request đơn lẻ rồi nhân với số người dùng dự kiến là ra kết quả',
+      'Tăng tải theo bậc trên môi trường giống production, tìm điểm gãy và theo dõi cả chỉ số hệ thống lẫn p99',
+      'Chạy thẳng trên production vào đúng giờ cao điểm để có được số liệu sát với thực tế nhất có thể',
+    ], answer: 2,
+    explain: 'Load test chỉ có giá trị khi trả lời được một câu hỏi cụ thể: hệ thống chịu được bao nhiêu request mỗi giây trước khi p99 vượt ngưỡng cam kết. Vì thế phải TĂNG TẢI THEO BẬC và quan sát đường cong, chứ không phải bắn hết sức rồi xem có sập không. Phân biệt các loại: SMOKE (tải rất nhẹ, kiểm tra kịch bản còn chạy đúng), LOAD (mức dự kiến, xác nhận đạt SLO), STRESS (vượt dự kiến để tìm ĐIỂM GÃY và xem hệ thống gãy có đẹp không — trả 429 hay chết cứng), SOAK (chạy vài giờ để lộ rò rỉ bộ nhớ và connection), SPIKE (tăng đột ngột như lúc mở bán). Công cụ: k6 hoặc Gatling cho kịch bản thật, `autocannon` để đo nhanh một endpoint. Những điều quyết định kết quả có dùng được hay không: môi trường phải GIỐNG production cả về cấu hình lẫn LƯỢNG DỮ LIỆU (bảng 1000 dòng thì index nào cũng nhanh); dữ liệu đầu vào phải đa dạng, đừng để mọi request trúng cùng một key rồi cache che hết mọi vấn đề; kịch bản phải là luồng người dùng thật (đăng nhập, xem, thêm giỏ, thanh toán) chứ không phải một endpoint duy nhất; và máy bắn tải phải đủ khoẻ, nếu không bạn chỉ đang đo chính nó. Trong lúc chạy phải xem đồng thời phía server: CPU, bộ nhớ, event loop lag, số connection trong pool, chỉ số CSDL — chỉ nhìn con số của công cụ bắn tải thì biết là chậm nhưng không biết vì sao. Cuối cùng: đưa vào CI cho các endpoint quan trọng để bắt hồi quy hiệu năng.',
+  },
+  {
+    id: 'node-event-sourcing', topic: 'Kiến trúc',
+    q: 'Event sourcing là gì và khi nào thì thật sự đáng dùng?',
+    options: [
+      'Là ghi log mọi request vào file rồi đọc lại khi cần điều tra, thay cho việc dùng công cụ giám sát',
+      'Là dùng message queue cho mọi lời gọi giữa các service để hệ thống trở nên bất đồng bộ hoàn toàn',
+      'Lưu CHUỖI SỰ KIỆN thay vì trạng thái hiện tại, trạng thái được dựng lại bằng cách phát lại các sự kiện',
+      'Là lưu một bản sao của mỗi bản ghi trước khi cập nhật để có thể khôi phục lại phiên bản cũ khi cần',
+    ], answer: 2,
+    explain: 'CRUD thông thường chỉ giữ trạng thái HIỆN TẠI: số dư là 500, và bạn không biết vì sao lại là 500. Event sourcing lưu một chuỗi sự kiện bất biến (`TienDaNap`, `DonDaDat`, `DonBiHuy`) còn trạng thái là kết quả của việc phát lại chúng. Cái được: lịch sử kiểm toán đầy đủ và không sửa được (quan trọng với tài chính, y tế, kho vận); trả lời được câu hỏi "tại thời điểm X trạng thái ra sao"; dựng được mô hình đọc MỚI từ dữ liệu CŨ, tức là thêm báo cáo mà không cần thu thập lại từ đầu; và gỡ lỗi bằng cách phát lại đúng chuỗi sự kiện đã xảy ra. Cái mất — và đây mới là phần phải nói khi phỏng vấn: truy vấn trở nên khó nên hầu như luôn phải đi kèm CQRS (một mô hình ghi là sự kiện, một hoặc nhiều mô hình đọc được dựng sẵn cho từng màn hình), mà mô hình đọc thì NHẤT QUÁN CUỐI CÙNG nên giao diện phải chịu được độ trễ. Thêm nữa: phát lại hàng triệu sự kiện rất chậm nên cần snapshot định kỳ; sự kiện đã ghi là bất biến nên đổi cấu trúc phải theo kiểu versioning và nâng cấp khi đọc chứ không migrate như bảng thường; và xoá dữ liệu cá nhân theo yêu cầu pháp lý trở nên phiền vì log vốn không được sửa, thường phải giải bằng cách mã hoá rồi vứt khoá. Kết luận thực dụng: đừng áp cho cả hệ thống — chỉ dùng cho vài aggregate mà lịch sử thật sự là yêu cầu nghiệp vụ, phần còn lại cứ CRUD; và nhớ rằng một bảng audit log đơn giản đã giải quyết được phần lớn nhu cầu với chi phí rẻ hơn nhiều.',
+  },
+  {
+    id: 'node-timeout-budget', topic: 'Kiến trúc',
+    q: 'Client đợi 30s, gateway timeout 10s, service gọi nội bộ timeout 30s và retry 3 lần. Vấn đề ở đâu?',
+    options: [
+      'Không có vấn đề gì, mỗi tầng tự quản timeout của mình nên hệ thống vẫn hoạt động đúng như thiết kế',
+      'Timeout tầng trong DÀI HƠN tầng ngoài nên nó vẫn làm việc cho request đã bị bỏ; retry còn nhân tải lên',
+      'Vấn đề duy nhất là số lần retry hơi nhiều, giảm xuống còn một lần là mọi thứ sẽ trở lại bình thường',
+      'Timeout của client quá dài, chỉ cần rút xuống dưới 10s là các tầng phía sau sẽ tự khớp theo giá trị đó',
+    ], answer: 1,
+    explain: 'Nguyên tắc: timeout phải GIẢM DẦN khi đi vào trong. Ở đây gateway đã bỏ cuộc ở giây thứ 10 và trả lỗi cho client, nhưng service bên trong vẫn miệt mài chạy tới giây thứ 30 cho một kết quả không còn ai nhận — chiếm connection, giữ khoá CSDL, đốt CPU vô ích. Tệ hơn là chuyện nhân tải: gateway retry 3 lần, mỗi lần lại kích hoạt thêm một chuỗi gọi bên trong, và nếu tầng dưới cũng retry thì số lời gọi nhân theo cấp số nhân đúng lúc hệ thống đang yếu — đó là retry storm, cơ chế biến một sự cố nhỏ thành sập toàn hệ thống. Cách làm đúng: đặt một NGÂN SÁCH THỜI GIAN cho toàn bộ request rồi chia xuống, mỗi tầng trừ đi phần đã tiêu và truyền phần còn lại xuống dưới (deadline propagation — gRPC có sẵn, còn HTTP thì tự truyền qua header hoặc dùng `AbortSignal.timeout` với giá trị còn lại). Kèm theo là mấy luật đã thành chuẩn: chỉ RETRY Ở MỘT TẦNG, thường là tầng ngoài cùng gần client nhất; dùng exponential backoff CÓ jitter; chỉ retry lỗi tạm thời và thao tác idempotent; đặt ngân sách retry, ví dụ không quá 10 phần trăm tổng lưu lượng; và có circuit breaker để ngừng gọi hẳn khi tầng dưới đang chết. Cuối cùng, giá trị timeout phải chọn từ SỐ ĐO thật — lấy p99 của chính lời gọi đó nhân một hệ số an toàn, đừng lấy con số tròn cho đẹp.',
+  },
+  {
+    id: 'node-openapi', topic: 'Tooling',
+    q: 'Giữ cho tài liệu API và code không lệch nhau thì làm thế nào?',
+    options: [
+      'Viết tài liệu trong file Word rồi cử một người phụ trách cập nhật mỗi khi code có thay đổi',
+      'Coi OpenAPI là HỢP ĐỒNG: sinh type/client từ nó (hoặc sinh nó từ code) và kiểm tra tự động trong CI',
+      'Không cần tài liệu nếu code đã viết bằng TypeScript, vì bên gọi cứ đọc thẳng mã nguồn là đủ hiểu',
+      'Chỉ cần ghi comment đầy đủ ở mỗi route handler, các công cụ sẽ tự hiển thị chúng cho bên gọi xem',
+    ], answer: 1,
+    explain: 'Tài liệu viết tay luôn lệch, chỉ là vấn đề thời gian. Cách chữa là biến đặc tả thành thứ nằm TRONG quy trình build. Hai hướng, chọn một rồi làm cho nhất quán. (1) SPEC-FIRST: viết file OpenAPI trước, sinh ra type TypeScript và client cho phía gọi (`openapi-typescript`, `orval`), thậm chí sinh cả khung cho server — hợp khi nhiều đội cùng dùng và cần chốt hợp đồng trước khi ai đó bắt đầu code. (2) CODE-FIRST: định nghĩa schema bằng zod hoặc decorator của NestJS rồi SINH RA file OpenAPI (`zod-to-openapi`, `@nestjs/swagger`) — hợp khi một đội làm cả hai đầu, và ưu điểm lớn là schema vừa dùng để validate lúc chạy vừa dùng để sinh tài liệu nên không thể lệch nhau được. Việc phải có trong CI dù chọn hướng nào: sinh lại spec rồi so với bản đã commit, khác là fail; kiểm tra thay đổi có PHÁ VỠ tương thích không (bỏ trường, đổi kiểu, thêm trường bắt buộc) bằng công cụ so sánh spec; và chạy contract test để chắc rằng response thật khớp với schema đã công bố. Vài lưu ý: đừng để tài liệu chỉ là một trang Swagger UI đẹp mà không ai sinh code từ nó, vì giá trị nằm ở chỗ SINH RA thứ khác; nhớ mô tả cả phần lỗi (mã trạng thái, hình dạng response lỗi) chứ không chỉ trường hợp thành công; và ghi rõ ví dụ, vì đó là thứ người tích hợp đọc đầu tiên.',
+  },
+  {
+    id: 'node-emfile', topic: 'Hiệu năng',
+    q: 'Service chạy vài giờ thì bắt đầu lỗi `EMFILE: too many open files`. Nguyên nhân gốc thường là gì?',
+    options: [
+      'Ổ đĩa của server đã đầy nên hệ điều hành không cho mở thêm file mới, chỉ cần dọn dung lượng là hết',
+      'Có thứ mở ra mà không đóng lại (socket, file, kết nối) — số file descriptor tăng dần cho tới khi chạm trần',
+      'Node có giới hạn cứng 1024 file cho mỗi tiến trình, muốn vượt qua thì bắt buộc phải chạy nhiều tiến trình',
+      'Do garbage collector chạy quá thưa, chỉ cần gọi `global.gc()` định kỳ là các file sẽ được đóng lại hết',
+    ], answer: 1,
+    explain: 'Trên Linux, socket cũng là file descriptor — nên `EMFILE` hầu như luôn là dấu hiệu RÒ RỈ chứ không phải giới hạn đặt quá thấp. Các nguồn quen thuộc: gọi HTTP ra ngoài mà không dùng agent keep-alive nên mỗi lời gọi mở một socket mới, hoặc có dùng agent nhưng để `maxSockets` vô hạn; `fs.createReadStream` không được đóng khi có lỗi giữa chừng (dùng `pipeline` thay cho `pipe` để cleanup đúng); connection lấy ra khỏi pool mà quên `release()` trên nhánh lỗi; watcher của `fs.watch`, timer giữ socket, hoặc kết nối WebSocket của client đã rời đi mà server không dọn. Cách chẩn đoán: chạy `lsof -p <pid> | wc -l` theo thời gian xem con số có tăng đơn điệu không, rồi xem `lsof` chi tiết để biết loại nào đang phình — nhiều socket tới cùng một host là gợi ý rất rõ; trong container thì đọc `/proc/<pid>/fd`. Nâng `ulimit -n` chỉ là hoãn binh: nó hợp lý khi bạn thật sự phục vụ hàng chục nghìn kết nối đồng thời như WebSocket, còn với service HTTP thường thì phải đi tìm chỗ rò. Phòng ngừa: luôn `try/finally` để đóng tài nguyên, dùng `pipeline` thay vì tự quản stream, đặt `maxSockets` và timeout cho agent, giới hạn số việc chạy song song, và theo dõi số file descriptor như một chỉ số bình thường kèm cảnh báo khi nó tăng dần — cùng nhóm với rò rỉ bộ nhớ, phát hiện sớm là tránh được sự cố lúc nửa đêm.',
+  },
 ];

@@ -1491,4 +1491,93 @@ window.JS_QUIZ = [
     ], answer: 3,
     explain: '`HttpOnly` — `document.cookie` không đọc được, nên script bị chèn qua XSS cũng không lấy được token; đây chính là lý do cookie vẫn an toàn hơn `localStorage` cho session. `Secure` — chỉ gửi qua HTTPS (localhost được miễn). `SameSite` có ba mức: `Lax` (mặc định hiện nay — gửi khi điều hướng cấp cao nhất bằng GET, không gửi với POST, iframe hay ảnh từ site khác, đủ chặn phần lớn CSRF), `Strict` (không gửi trong mọi bối cảnh cross-site, an toàn nhất nhưng người dùng bấm link từ email vào sẽ thấy như chưa đăng nhập), `None` (gửi mọi nơi, BẮT BUỘC kèm `Secure`, dành cho nhúng cross-site). `Domain` — bỏ trống thì cookie chỉ thuộc đúng host đó; đặt `Domain=example.com` là mọi subdomain đều nhận, tiện nhưng rủi ro nếu có subdomain kém tin cậy. `Path` giới hạn theo đường dẫn. `Max-Age`/`Expires` — không đặt thì là cookie phiên, đóng trình duyệt là mất. Vài điểm nữa hay được hỏi: tiền tố `__Host-` ép cookie phải có `Secure`, không có `Domain` và `Path=/` — cách chặn subdomain ghi đè cookie; kích thước tối đa khoảng 4KB và cookie ĐI KÈM MỌI request cùng domain nên đừng nhét dữ liệu vào đó; và xoá cookie là đặt lại nó với `Max-Age=0` kèm ĐÚNG `Domain` cùng `Path` cũ.',
   },
+  // ===== Đợt #12 =====
+  {
+    id: 'js-temporal', topic: 'Cú pháp & runtime',
+    q: 'Vì sao `Date` của JavaScript bị coi là hỏng, và `Temporal` sửa những gì?',
+    options: [
+      '`Date` chỉ hỏng ở trình duyệt cũ, bản mới đã sửa hết nên không cần học thêm API nào khác nữa',
+      'Vì `Date` chậm hơn các thư viện bên ngoài; `Temporal` chỉ là bản viết lại nhanh hơn của cùng API cũ',
+      '`Date` là đối tượng CÓ THỂ SỬA, tháng đếm từ 0, chỉ biết UTC và giờ máy; `Temporal` bất biến, có múi giờ thật',
+      '`Temporal` thay `Date` bằng cách lưu thời gian dưới dạng chuỗi ISO nên không còn sai lệch múi giờ nữa',
+    ], answer: 2,
+    explain: 'Các vấn đề kinh điển của `Date`: nó MUTABLE nên `d.setDate(...)` sửa luôn bản gốc, truyền đi khắp nơi là dính bug chia sẻ tham chiếu; `getMonth()` đếm từ 0 nhưng `getDate()` đếm từ 1; parse chuỗi không chuẩn thì mỗi engine một kiểu (`new Date("2026-03-15")` hiểu là UTC còn `new Date("2026/03/15")` là giờ địa phương); nó chỉ biết UTC và múi giờ của MÁY nên không biểu diễn được "9 giờ sáng ở Hà Nội" như một khái niệm độc lập; và không có kiểu riêng cho "chỉ ngày" hay "chỉ giờ". `Temporal` (đang được triển khai ở trình duyệt, có polyfill dùng ngay) tách rõ từng khái niệm: `PlainDate` cho ngày không giờ (hợp với ngày sinh), `PlainTime`, `PlainDateTime`, `ZonedDateTime` có múi giờ thật và xử lý đúng giờ mùa hè, `Instant` cho một mốc tuyệt đối, `Duration` cho khoảng thời gian. Mọi thứ BẤT BIẾN: `date.add({ days: 7 })` trả về đối tượng mới. So sánh, cộng trừ, làm tròn đều có API rõ ràng thay vì cộng mili giây bằng tay. Trước khi Temporal phổ biến thì dùng `date-fns` hoặc Luxon, đừng chọn Moment cho dự án mới vì nó mutable và đã ngừng phát triển. Nguyên tắc không đổi: server lưu UTC, chỉ đổi sang múi giờ người dùng ở lớp hiển thị.',
+  },
+  {
+    id: 'js-postmessage', topic: 'Bảo mật',
+    q: 'Giao tiếp giữa trang cha và iframe bằng `postMessage` thì cần kiểm tra gì?',
+    options: [
+      'Không cần kiểm tra gì, trình duyệt chỉ cho phép các trang cùng origin gửi message cho nhau thôi',
+      'Kiểm tra `event.origin` khi NHẬN và đặt `targetOrigin` cụ thể khi GỬI, đừng dùng dấu sao cho tiện',
+      'Mã hoá nội dung message bằng khoá chung hai bên thoả thuận trước, đó là yêu cầu bắt buộc theo chuẩn',
+      'Chỉ cần đặt thuộc tính `sandbox` cho iframe là mọi message gửi qua lại đều đã được kiểm duyệt tự động',
+    ], answer: 1,
+    explain: '`postMessage` là cửa duy nhất để hai ngữ cảnh khác origin nói chuyện, và chính vì thế nó bỏ qua same-origin policy — nên phần bảo mật hoàn toàn nằm ở tay bạn. Hai luật bắt buộc: (1) khi NHẬN, luôn kiểm tra `if (event.origin !== "https://trusted.example.com") return` trước khi đụng tới `event.data`; bỏ qua bước này nghĩa là bất kỳ trang nào mở được cửa sổ của bạn cũng gửi lệnh vào được, và nếu bạn lỡ đem dữ liệu đó ghi thẳng vào DOM thì thành lỗ hổng nghiêm trọng; kiểm tra thêm `event.source` khi chỉ muốn nhận từ đúng một khung. (2) khi GỬI, đặt `targetOrigin` cụ thể thay vì `"*"` — dùng dấu sao nghĩa là nếu iframe bị điều hướng sang trang khác thì dữ liệu, có khi là cả token, rơi vào tay trang đó. Ngoài ra: đừng tin cấu trúc của `data`, hãy validate như với mọi dữ liệu đến từ bên ngoài; nội dung được structured clone nên gửi được object nhưng không gửi được hàm; và với iframe của bên thứ ba thì thêm `sandbox` cùng `allow` để giới hạn quyền. Chuyện tương tự áp dụng cho `window.opener`: link mở tab mới nên có `rel="noopener"` để trang đích không điều khiển ngược được tab của bạn — trình duyệt hiện đại đã mặc định như vậy với `target="_blank"`.',
+  },
+  {
+    id: 'js-document-fragment', topic: 'DOM & trình duyệt',
+    q: 'Chèn 1000 phần tử vào DOM sao cho nhanh?',
+    options: [
+      'Gọi `appendChild` cho từng phần tử ngay trong vòng lặp, trình duyệt tự gộp lại nên không có khác biệt',
+      'Nối chuỗi HTML rồi gán `innerHTML` một lần, đây luôn là cách nhanh và an toàn nhất trong mọi tình huống',
+      'Dựng trong `DocumentFragment` (hoặc gom vào mảng rồi `append(...nodes)`) và chèn vào cây MỘT lần duy nhất',
+      'Tạo sẵn 1000 phần tử ẩn trong HTML rồi bật hiển thị dần, vì tạo phần tử mới luôn là thao tác đắt nhất',
+    ], answer: 2,
+    explain: 'Mỗi lần chèn vào cây ĐANG HIỂN THỊ là một cơ hội để trình duyệt phải tính lại layout — chèn 1000 lần trong vòng lặp, nhất là khi xen kẽ đọc kích thước, chính là công thức của layout thrashing. `DocumentFragment` là một container nằm ngoài luồng: thêm node vào nó không gây layout, tới khi `parent.appendChild(fragment)` thì toàn bộ con được chuyển vào một lượt và chỉ có một lần cập nhật. Bản hiện đại còn gọn hơn: gom node vào mảng rồi `parent.append(...nodes)` — `append` nhận nhiều tham số và nhận cả chuỗi (được coi là văn bản nên an toàn). Về `innerHTML`: gán một lần thật sự nhanh, nhưng nó PARSE chuỗi nên có rủi ro XSS với dữ liệu người dùng, phá mất mọi listener và state của node cũ, và nối chuỗi lớn cũng tốn bộ nhớ — chỉ dùng với nội dung do bạn kiểm soát. Vài lưu ý nữa: node bị lấy khỏi fragment sau khi chèn nên fragment rỗng đi; muốn nhân bản nhiều lần thì dùng `<template>` cộng `cloneNode(true)`. Và câu hỏi lớn hơn: chèn 1000 dòng vào DOM thường là dấu hiệu nên ảo hoá danh sách hoặc phân trang — nhanh nhất vẫn là không tạo node nào cả.',
+  },
+  {
+    id: 'js-locale-compare', topic: 'Mảng & chuỗi',
+    q: 'Sắp xếp danh sách tên tiếng Việt bằng `arr.sort()` cho thứ tự sai — chữa thế nào?',
+    options: [
+      'Bỏ dấu hết rồi mới sắp xếp, đó là cách duy nhất để chuỗi tiếng Việt xếp đúng thứ tự bảng chữ cái',
+      'Dùng `localeCompare` (hoặc `Intl.Collator`) làm hàm so sánh để xếp theo đúng quy tắc của ngôn ngữ',
+      'Chuyển tất cả sang chữ thường trước khi so sánh là đủ, vì lỗi chỉ nằm ở chữ hoa với chữ thường',
+      'Tự viết hàm duyệt từng ký tự rồi tra bảng mã Unicode, vì thư viện chuẩn không hỗ trợ việc này',
+    ], answer: 1,
+    explain: '`sort()` mặc định so sánh theo THỨ TỰ MÃ UTF-16, nên "Ánh" bị xếp sau "Bình" (vì mã của chữ Á lớn hơn chữ B), chữ hoa xếp trước chữ thường, và "item10" đứng trước "item9". `a.localeCompare(b, "vi")` so theo quy tắc của ngôn ngữ nên cho đúng thứ tự từ điển tiếng Việt. Khi sắp mảng lớn thì đừng gọi `localeCompare` trực tiếp trong comparator — hãy tạo một `Intl.Collator` MỘT lần rồi tái sử dụng hàm `compare` của nó, nhanh hơn đáng kể vì không phải dựng lại bảng đối chiếu ở mỗi lần so. Các tuỳ chọn đáng nhớ: `sensitivity: "base"` coi hai chuỗi là bằng nhau khi chỉ khác dấu và khác hoa thường, rất hợp cho tìm kiếm; `numeric: true` để "item9" đứng trước "item10"; `caseFirst` khi cần ưu tiên hoa hoặc thường. Việc BỎ DẤU bằng `normalize("NFD")` rồi loại các ký tự dấu vẫn hữu ích nhưng cho mục đích khác: tạo slug cho URL, hoặc cho phép gõ không dấu vẫn tìm ra kết quả — đừng dùng nó để sắp xếp vì sẽ mất phân biệt giữa các nguyên âm. Cuối cùng nhớ rằng nếu dữ liệu đến từ CSDL thì sắp xếp ngay ở CSDL với collation đúng thường tốt hơn, vì như vậy kết quả phân trang mới nhất quán giữa các trang.',
+  },
+  {
+    id: 'js-tofixed', topic: 'Kiểu & ép kiểu',
+    q: 'Vì sao `(1.005).toFixed(2)` cho ra "1.00" chứ không phải "1.01"?',
+    options: [
+      '`toFixed` luôn làm tròn xuống theo thiết kế, muốn làm tròn lên phải cộng thêm một lượng nhỏ trước khi gọi',
+      'Vì số 1.005 khi lưu dưới dạng nhị phân thực chất nhỏ hơn 1.005 một chút, nên làm tròn xuống là đúng',
+      'Vì `toFixed` trả về chuỗi nên nó cắt bớt phần thập phân thay vì làm tròn như các hàm số học khác',
+      'Vì JavaScript dùng quy tắc làm tròn về số chẵn gần nhất, nên 1.005 phải thành 1.00 theo đúng chuẩn',
+    ], answer: 1,
+    explain: 'Không phải `toFixed` sai mà là con số đầu vào vốn đã không đúng: 1.005 không biểu diễn được chính xác bằng nhị phân, giá trị thật được lưu vào khoảng 1.00499999999999989, nên làm tròn hai chữ số cho ra 1.00 là hoàn toàn hợp lý. Thử `(1.005).toPrecision(20)` là thấy ngay. Vài điểm liên quan hay bị hỏi kèm: `Math.round(-0.5)` cho `-0` chứ không phải `-1`, vì `Math.round` làm tròn về phía dương vô cực chứ không phải làm tròn ra xa số 0; `toFixed` trả về CHUỖI nên phải `Number(x.toFixed(2))` mới ra số, và với số rất lớn nó chuyển sang ký hiệu mũ. Cách xử lý tuỳ mục đích: chỉ để HIỂN THỊ thì dùng `Intl.NumberFormat("vi-VN", { minimumFractionDigits: 2 })` — vừa đúng dấu phân cách của tiếng Việt vừa khỏi phải tự nối chuỗi; còn nếu là TIỀN hay số liệu tài chính thì đừng làm tròn số dấu phẩy động chút nào, hãy tính bằng số nguyên đơn vị nhỏ nhất hoặc dùng thư viện decimal. Và luôn làm tròn ở BƯỚC CUỐI, đừng làm tròn sau mỗi phép tính trung gian vì sai số sẽ tích luỹ theo hướng rất khó đoán.',
+  },
+  {
+    id: 'js-string-methods', topic: 'Mảng & chuỗi',
+    q: '`str.replace("a", "b")` chỉ thay được lần xuất hiện đầu tiên — vì sao và chữa thế nào?',
+    options: [
+      'Vì chuỗi là bất biến nên chỉ sửa được một vị trí mỗi lần, phải gọi `replace` lặp lại cho tới khi hết',
+      'Vì tham số thứ nhất phải là mảng các vị trí cần thay, truyền chuỗi thì chỉ áp dụng cho vị trí đầu tiên',
+      'Vì `replace` phân biệt chữ hoa chữ thường nên các lần sau không khớp, thêm cờ `i` là thay được tất cả',
+      'Với tham số chuỗi thì `replace` chỉ thay lần khớp đầu; dùng `replaceAll` hoặc regex có cờ `g` để thay hết',
+    ], answer: 3,
+    explain: 'Đây là bẫy kinh điển: `replace` với tham số CHUỖI chỉ thay lần khớp đầu tiên; muốn thay hết thì `replaceAll("a", "b")` (có từ ES2021) hoặc `replace(/a/g, "b")`. Lưu ý nhỏ: `replaceAll` mà truyền regex thì regex BẮT BUỘC phải có cờ `g`, không thì ném `TypeError`. Nhân tiện phân biệt vài cặp hay nhầm khác. `slice(start, end)` nhận chỉ số ÂM để đếm từ cuối còn `substring` thì không, và `substring` còn tự HOÁN ĐỔI hai tham số khi start lớn hơn end — hành vi bất ngờ đó là lý do nên mặc định dùng `slice`, còn `substr` thì đã lỗi thời. `split("")` cắt theo đơn vị UTF-16 nên làm vỡ emoji và các ký tự ngoài BMP — dùng `[...str]` hoặc `Intl.Segmenter` khi cần cắt theo ký tự mà người dùng nhìn thấy. `trim`, `trimStart`, `trimEnd` chỉ bỏ khoảng trắng ở hai đầu chứ không đụng tới ở giữa. `padStart(2, "0")` là cách gọn nhất để định dạng giờ phút. `at(-1)` lấy ký tự cuối thay cho `charAt(str.length - 1)`. Và nhớ chuỗi trong JavaScript là BẤT BIẾN — mọi phương thức đều trả về chuỗi MỚI, nên gọi `str.trim()` mà không gán lại thì chẳng có gì thay đổi cả.',
+  },
+  {
+    id: 'js-media-query', topic: 'DOM & trình duyệt',
+    q: 'Đọc chế độ tối hoặc chế độ giảm chuyển động của hệ điều hành từ JavaScript thế nào?',
+    options: [
+      'Đọc `navigator.userAgent` để đoán hệ điều hành rồi suy ra thiết lập mà người dùng đang bật',
+      'Không đọc được từ JavaScript, các thiết lập này chỉ dùng được bên trong CSS bằng media query',
+      'Dùng `window.matchMedia("(prefers-color-scheme: dark)")` và nghe sự kiện `change` để cập nhật theo',
+      'Gọi `navigator.permissions.query` với tên quyền tương ứng rồi đọc trạng thái trả về từ trình duyệt',
+    ], answer: 2,
+    explain: '`matchMedia` cho phép hỏi CÙNG các media query mà CSS dùng, nhưng từ phía JavaScript: `const mq = window.matchMedia("(prefers-color-scheme: dark)")` rồi đọc `mq.matches`, và quan trọng là ĐĂNG KÝ `mq.addEventListener("change", handler)` để bắt lúc người dùng đổi thiết lập giữa chừng — nhớ gỡ listener khi cleanup. Ba truy vấn đáng quan tâm nhất: `prefers-color-scheme` (sáng hay tối — nên là mặc định của ứng dụng, còn lựa chọn thủ công của người dùng thì lưu riêng và ưu tiên hơn); `prefers-reduced-motion: reduce` (người dùng bị chóng mặt vì chuyển động, hãy tắt hoặc rút gọn animation — đây là yêu cầu a11y thật chứ không phải tuỳ chọn cho vui); và `(max-width: 768px)` để đổi HÀNH VI theo kích thước màn hình khi CSS thuần không đủ, ví dụ render một component khác hẳn trên mobile thay vì chỉ ẩn đi. Nguyên tắc chung: thứ gì CSS làm được thì để CSS làm, chỉ dùng `matchMedia` khi cần quyết định trong JavaScript. Với React thì gói lại thành `useMediaQuery` và cẩn thận với SSR — server không có `window` nên lần render đầu phải có giá trị mặc định, và `useSyncExternalStore` là cách sạch nhất để tránh hydration mismatch.',
+  },
+  {
+    id: 'js-define-property', topic: 'Meta-programming',
+    q: '`Object.defineProperty` cho bạn điều khiển thêm những gì so với gán bằng dấu bằng?',
+    options: [
+      'Không khác gì, chỉ là cách viết dài dòng hơn của phép gán thông thường nên hiếm khi cần dùng tới',
+      'Nó tạo property ở trên prototype thay vì trên chính đối tượng, nhờ vậy tiết kiệm được bộ nhớ',
+      'Nó chỉ dùng được bên trong class và bắt buộc phải gọi trong constructor thì mới có hiệu lực',
+      'Ba cờ `writable`, `enumerable`, `configurable` — và mặc định của chúng là `false` chứ không phải `true`',
+    ], answer: 3,
+    explain: 'Mọi property đều có ba cờ đi kèm. `writable` — có gán lại được hay không (gán vào property không writable thì im lặng thất bại ở chế độ thường và ném `TypeError` ở strict mode). `enumerable` — có xuất hiện trong `for...in`, `Object.keys`, spread và `JSON.stringify` hay không. `configurable` — có xoá được hay đổi lại cấu hình được không; đặt `false` là quyết định một chiều, không quay lại được. Cái bẫy lớn: gán bằng `obj.x = 1` cho cả ba cờ là `true`, nhưng `Object.defineProperty` mặc định cả ba là `FALSE` — nên định nghĩa xong rồi ngạc nhiên vì property không hiện trong `Object.keys` hay biến mất khi spread là chuyện xảy ra rất thường. Dùng thật thì gặp ở đâu: tạo field nội bộ mà không muốn lộ ra khi serialize; định nghĩa getter/setter tính toán (`get`/`set` trong descriptor, và khi đó không được có `value` hay `writable`); khoá một hằng số cấu hình. Các API họ hàng: `Object.getOwnPropertyDescriptor` để soi, `Object.defineProperties` cho nhiều cái một lúc, và `Object.freeze` thực chất là đặt `writable` cùng `configurable` thành `false` cho mọi property, mà cũng chỉ ở tầng nông. Ngày nay muốn dữ liệu riêng tư thì `#privateField` của class gọn và rõ hơn nhiều; còn muốn chặn hay theo dõi truy cập ĐỘNG thì dùng `Proxy` — đó chính là cách Vue 3 làm reactivity, thay cho `defineProperty` của Vue 2.',
+  },
 ];

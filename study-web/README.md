@@ -61,9 +61,9 @@ không cần biết mẹo hard-refresh.
     ConcurrentHashMap/ThreadLocal), generics &amp; type erasure, Java 8+ (stream/Optional), OOP,
     Spring/JPA (DI, bean scope, @Transactional, N+1), **MyBatis** (#{}/${}, mapper proxy,
     cache 2 tầng), **SOLID** (5 nguyên lý).
-    📖 **Lý thuyết chuyên sâu JS · Node · React** (381 câu) — hỏi KHÁI NIỆM & CƠ CHẾ, không phải
+    📖 **Lý thuyết chuyên sâu JS · Node · React** (405 câu) — hỏi KHÁI NIỆM & CƠ CHẾ, không phải
     đoán output; **làm riêng** ở đây theo từng mảng, hoặc **làm chung** trong buổi 🎯 Phỏng vấn:
-    🟨 **JavaScript** (133 câu): scope & hoisting/TDZ, closure, `this` & binding, prototype/class,
+    🟨 **JavaScript** (141 câu): scope & hoisting/TDZ, closure, `this` & binding, prototype/class,
     ép kiểu & tham chiếu, event loop & microtask, Promise/async, generator & iterator, Proxy,
     WeakMap & GC, ESM vs CommonJS, Symbol, số nguyên an toàn & BigInt, bẫy regex (ReDoS, lastIndex),
     mutate vs bất biến, lỗi tuỳ biến & `cause`, async iterator, bẫy `Date` & `Intl`, `structuredClone`,
@@ -80,8 +80,10 @@ không cần biết mẹo hard-refresh.
     vì sao `fetch` không ném lỗi với 404, `preventDefault` vs `stopPropagation`, `innerHTML` & XSS,
     kiểm tra kiểu chính xác, tree shaking, `requestAnimationFrame`, source map, IIFE/module pattern,
     `URL` & `URLSearchParams`, đồng bộ giữa các tab, Blob/File/ObjectURL, Web Components,
-    `import()` động, bắt lỗi toàn cục (`unhandledrejection`), `performance.now()`, và thuộc tính cookie.
-    🟢 **Node.js** (126 câu): 6 pha event loop & libuv thread pool, `nextTick` vs `setImmediate`,
+    `import()` động, bắt lỗi toàn cục (`unhandledrejection`), `performance.now()`, thuộc tính cookie,
+    Temporal thay `Date`, `postMessage` & kiểm tra origin, DocumentFragment, sắp xếp tiếng Việt bằng `Intl.Collator`,
+    bẫy `toFixed`, `replace` vs `replaceAll`, `matchMedia`, và `Object.defineProperty`.
+    🟢 **Node.js** (134 câu): 6 pha event loop & libuv thread pool, `nextTick` vs `setImmediate`,
     stream & **backpressure**, `pipeline` vs `pipe`, require cache & module wrapper,
     cluster vs worker_threads, Buffer, EventEmitter, `uncaughtException` & **graceful shutdown**,
     rò rỉ bộ nhớ, bảo mật (command injection, path traversal, prototype pollution, băm mật khẩu,
@@ -102,8 +104,11 @@ không cần biết mẹo hard-refresh.
     shard key & hot partition, dependency injection, test double & testcontainers, pub/sub vs work queue,
     API gateway vs BFF, cache stampede & stale-while-revalidate, vì sao đo p99 thay vì trung bình,
     Dockerfile multi-stage, OOMKilled vs heap out of memory, đọc `EXPLAIN ANALYZE`,
-    chạy TypeScript ở production, validate request bằng schema, và transactional outbox.
-    ⚛️ **React** (122 câu): virtual DOM & reconciliation, **key**, batching & bất biến, derived state,
+    chạy TypeScript ở production, validate request bằng schema, transactional outbox,
+    `trust proxy` & `X-Forwarded-For`, kích thước connection pool, UUIDv7 vs khoá tự tăng,
+    load test đúng cách, event sourcing & CQRS, ngân sách timeout & retry storm, OpenAPI làm hợp đồng,
+    và rò rỉ file descriptor (`EMFILE`).
+    ⚛️ **React** (130 câu): virtual DOM & reconciliation, **key**, batching & bất biến, derived state,
     quy tắc hooks, deps & cleanup, **stale closure**, `memo`/`useMemo`/`useCallback`, context
     re-render, virtualization, controlled form, error boundary, StrictMode, và React 18/19
     (Suspense, `useTransition`, `useSyncExternalStore`, `useId`, RSC, hydration); thêm định tuyến SPA,
@@ -161,14 +166,17 @@ không cần biết mẹo hard-refresh.
     gõ kiểu TS cho hook, ranh giới `"use client"`, `staleTime` vs invalidate của React Query,
     effect lặp vô hạn vì deps tham chiếu, upload file, nâng cấp lên React 18/19, cảnh báo rời trang khi form dirty,
     live region cho screen reader, Web Worker khi `useMemo` không cứu nổi, feature flag phía client,
-    test custom hook, cấu trúc thư mục theo tính năng, và thay thế cho `setState(obj, callback)`;
+    test custom hook, cấu trúc thư mục theo tính năng, thay thế cho `setState(obj, callback)`,
+    danh sách trường động, prefetch theo tín hiệu ý định, reset error boundary để thử lại,
+    roving tabindex, component đa hình (`as`/`asChild`), refresh token single-flight,
+    tracking sự kiện đúng chỗ, và vì sao Fast Refresh đôi khi reload cả trang;
     dành cho buổi phỏng vấn thiên kiến thức nền.
 
   Kho câu đủ lớn để ôn dài hơi mà **không lặp lại**: 🧩 IQ **363 câu** (10 nhóm: dãy số ·
   chữ cái · logic · toán nhanh · tương tự · xác suất · mã hoá · hình & không gian ·
   chuyển động & công việc · chọn từ khác loại), 🇬🇧 tiếng Anh **125 câu** (82 câu giao tiếp),
-  ⌨️ code **110 câu** (đoán output 52 + Big-O 58), 📖 lý thuyết **381 câu**
-  (JS 133 · Node 126 · React 122) — chạy được **~15 buổi liên tiếp** mà IQ, tiếng Anh và
+  ⌨️ code **110 câu** (đoán output 52 + Big-O 58), 📖 lý thuyết **405 câu**
+  (JS 141 · Node 134 · React 130) — chạy được **~15 buổi liên tiếp** mà IQ, tiếng Anh và
   lý thuyết không lặp câu nào.
 
   **🚫 Không hỏi lại câu của buổi trước**: mỗi câu được ghi vào `prep-iv-seen` NGAY khi bạn trả lời

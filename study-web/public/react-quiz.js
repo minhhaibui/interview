@@ -1364,4 +1364,93 @@ window.REACT_QUIZ = [
     ], answer: 2,
     explain: 'Setter của `useState` KHÔNG nhận callback, và `await setCount(...)` cũng vô nghĩa vì nó không trả về Promise. Ba cách xử lý theo thứ tự nên chọn: (1) TÍNH THẲNG giá trị mới rồi dùng luôn — `const next = count + 1; setCount(next); onChange(next)` — đơn giản và rõ ràng nhất, hợp với đa số trường hợp; (2) `useEffect(() => { ... }, [state])` khi việc cần làm là PHẢN ỨNG với state mới bất kể nó đổi từ nguồn nào (đồng bộ lên server, ghi `localStorage`, gọi lại API) — nhưng đừng lạm dụng, vì nếu chỉ cần chạy sau đúng một hành động cụ thể thì effect là thừa và làm luồng khó đọc; (3) `flushSync(() => setX(v))` khi thật sự cần DOM đã cập nhật ngay ở dòng sau, ví dụ vừa thêm item vừa phải cuộn xuống cuối hoặc đo lại kích thước — nó ép React render đồng bộ nên mất lợi ích batching, chỉ dùng đúng chỗ hẹp đó. Nhớ kèm hai điều: đọc `count` ngay sau `setCount` vẫn ra giá trị CŨ vì biến trong closure của lần render này không hề đổi; và khi giá trị mới phụ thuộc giá trị cũ thì luôn dùng dạng hàm `setCount(c => c + 1)` để không dính state cũ khi có nhiều cập nhật liên tiếp.',
   },
+  // ===== Đợt #12 =====
+  {
+    id: 'react-form-array', topic: 'Form & sự kiện',
+    q: 'Form có danh sách dòng thêm/xoá được (địa chỉ, sản phẩm) — chỗ nào dễ sai nhất?',
+    options: [
+      'Phải tạo một `useState` riêng cho mỗi dòng, nếu dùng chung một mảng thì React không phát hiện thay đổi',
+      'Dùng index làm `key`: xoá một dòng ở giữa là state và focus của các dòng sau nhảy lệch — cần id ổn định',
+      'Không validate được từng dòng riêng, phải gộp toàn bộ danh sách thành một chuỗi rồi validate một lần',
+      'Phải gọi `forceUpdate` sau mỗi lần thêm hoặc xoá dòng thì giao diện mới cập nhật lại đúng số dòng',
+    ], answer: 1,
+    explain: 'Danh sách trường động là chỗ hội tụ mấy vấn đề đã học. Thứ nhất là KEY: mỗi dòng phải có id ổn định sinh ra lúc THÊM (`crypto.randomUUID()`), không dùng index — vì xoá dòng thứ hai thì dòng thứ ba tụt lên vị trí đó và React tưởng vẫn là component cũ, giữ nguyên giá trị input, vị trí con trỏ và cả thông báo lỗi của dòng vừa bị xoá. Thứ hai là CẬP NHẬT BẤT BIẾN: thêm là `[...rows, newRow]`, xoá là `filter`, sửa một dòng là `map` rồi trả về object mới cho đúng dòng đó — viết `rows[i].name = v` rồi `setRows(rows)` sẽ không render lại vì tham chiếu mảng không hề đổi. Thứ ba là VALIDATE theo mảng: lỗi phải gắn theo id của dòng chứ không theo vị trí, và thông báo tổng ("cần ít nhất một dòng") tách riêng khỏi lỗi của từng dòng. Thứ tư là HIỆU NĂNG: mỗi phím gõ mà render lại cả trăm dòng thì giật — hãy tách mỗi dòng thành component riêng rồi bọc `React.memo`, hoặc dùng form uncontrolled. Trong thực tế thì `useFieldArray` của React Hook Form đã lo sẵn id ổn định, các thao tác `append`/`remove`/`move` và validate theo dòng, dùng nó tiết kiệm rất nhiều công. Cuối cùng nhớ phần trải nghiệm: sau khi bấm thêm dòng thì focus vào ô đầu tiên của dòng mới, và cân nhắc hỏi xác nhận trước khi xoá dòng đã nhập dữ liệu.',
+  },
+  {
+    id: 'react-prefetch', topic: 'Hiệu năng',
+    q: 'Muốn trang đích mở ra gần như tức thì khi người dùng bấm vào link — làm thế nào?',
+    options: [
+      'Tải sẵn toàn bộ dữ liệu của mọi trang ngay khi vào ứng dụng để lúc nào bấm cũng có sẵn dữ liệu',
+      'Không làm được gì thêm, tốc độ hoàn toàn phụ thuộc vào thời gian phản hồi của API phía server',
+      'PREFETCH khi có tín hiệu ý định: hover, focus, hoặc link lọt vào viewport — nạp trước cả code lẫn dữ liệu',
+      'Giữ mọi trang đã mở trong bộ nhớ và chỉ ẩn đi bằng CSS thay vì unmount để lần sau hiện lại ngay',
+    ], answer: 2,
+    explain: 'Khoảng thời gian từ lúc con trỏ dừng trên một link tới lúc người dùng thật sự bấm thường là 100 tới 300 mili giây — đủ để bắt đầu tải trước. Có hai thứ cần nạp và nên nạp cả hai: CHUNK JavaScript của route (`import()` sẽ tự cache, hoặc `<Link prefetch>` của Next.js làm sẵn) và DỮ LIỆU (`queryClient.prefetchQuery` của React Query, hoặc loader của React Router). Chọn tín hiệu ý định cho hợp: `onMouseEnter` và `onFocus` là chuẩn cho desktop — đừng quên `onFocus` vì người dùng bàn phím cũng cần; `onTouchStart` cho mobile; và `IntersectionObserver` để nạp trước những link vừa lọt vào màn hình, đây là cách Next.js dùng mặc định cho `<Link>`. Cần cân nhắc đánh đổi: prefetch tốn băng thông và pin, lại có thể làm nghẽn chính request quan trọng đang chạy — nên giới hạn số link prefetch cùng lúc, bỏ qua khi `navigator.connection.saveData` được bật hoặc mạng chậm, và đừng prefetch những endpoint đắt hay có tác dụng phụ. Vài kỹ thuật đi kèm: `<link rel="preload">` cho tài nguyên chắc chắn cần ở trang hiện tại, `rel="prefetch"` cho thứ có thể cần ở trang sau, và đặt `staleTime` đủ lớn để dữ liệu vừa prefetch không bị nạp lại ngay khi trang mới mount. Cuối cùng, prefetch chỉ che được độ trễ chứ không sửa được API chậm — hãy đo trước xem nút thắt thật sự nằm ở đâu.',
+  },
+  {
+    id: 'react-error-retry', topic: 'Xử lý lỗi',
+    q: 'Error boundary đã bắt lỗi và hiện màn hình lỗi — làm sao cho người dùng thử lại được?',
+    options: [
+      'Không có cách nào ngoài yêu cầu họ tải lại toàn bộ trang, vì error boundary không quay lại được',
+      'Gọi lại chính hàm đã lỗi trong `componentDidCatch`, React sẽ tự render lại phần cây bị hỏng đó',
+      'RESET trạng thái của boundary (`resetErrorBoundary` hoặc đổi `key`) và nạp lại phần dữ liệu đã hỏng',
+      'Bọc thêm một error boundary nữa bên ngoài để nó bắt lại rồi render bản dự phòng thay cho bản lỗi',
+    ], answer: 2,
+    explain: 'Error boundary sau khi bắt lỗi sẽ giữ nguyên trạng thái lỗi, nên phải RESET nó một cách tường minh. Với thư viện `react-error-boundary` thì fallback nhận sẵn `resetErrorBoundary`, kèm prop `resetKeys` để tự reset khi một giá trị nào đó đổi — thường là id của tài nguyên hoặc pathname, nhờ vậy điều hướng sang trang khác là màn lỗi tự biến mất. Tự viết boundary thì cách gọn nhất là đổi `key` của nó để React unmount rồi mount lại toàn bộ cây con. Nhưng chỉ reset thôi chưa đủ: nếu nguồn lỗi là một query đã hỏng thì phải nạp lại nó, không thì render lại vẫn ra đúng lỗi cũ — React Query có `QueryErrorResetBoundary` để nối hai việc đó với nhau. Thiết kế cho tử tế thì nhớ mấy điểm: phân biệt lỗi TẠM THỜI (mạng, 503 — nên có nút thử lại, thậm chí tự retry với backoff) và lỗi VĨNH VIỄN (404, 403, bug — retry vô ích, hãy dẫn người dùng đi chỗ khác); đặt boundary ở nhiều tầng thay vì một cái duy nhất ở gốc, để một widget hỏng không làm trắng cả trang; giữ lại phần khung và điều hướng trong fallback để người dùng còn đường thoát; và luôn GỬI lỗi về hệ thống giám sát trong `onError` kèm ngữ cảnh. Nhớ giới hạn đã biết: error boundary không bắt lỗi trong event handler và trong code bất đồng bộ — chỗ đó phải `try/catch` rồi tự đưa vào state lỗi.',
+  },
+  {
+    id: 'react-roving-tabindex', topic: 'Chất lượng UI',
+    q: 'Menu hoặc danh sách tab điều hướng bằng bàn phím thế nào cho đúng chuẩn?',
+    options: [
+      'Đặt `tabIndex={0}` cho mọi mục để người dùng nhấn Tab đi qua từng mục cho tới khi tới mục cần chọn',
+      'Một mục duy nhất nhận Tab (`tabIndex=0`), các mục khác `-1`, di chuyển bên trong bằng phím MŨI TÊN',
+      'Bắt sự kiện `keydown` ở `document` rồi tự tính xem mục nào đang chọn dựa theo vị trí của con trỏ chuột',
+      'Không cần xử lý gì, trình duyệt tự biết cách điều hướng bên trong các thành phần giao diện phức tạp',
+    ], answer: 1,
+    explain: 'Đây là mẫu ROVING TABINDEX, và lý do rất thực tế: nếu menu có 30 mục mà mục nào cũng nhận Tab thì người dùng bàn phím phải nhấn 30 lần mới thoát ra khỏi nó. Chuẩn WAI-ARIA quy định các thành phần hợp thành — tab list, menu, toolbar, listbox, cây thư mục, lưới — chỉ chiếm MỘT điểm dừng Tab, còn bên trong thì đi bằng phím mũi tên. Cách làm: giữ `activeIndex` trong state, mục đang active có `tabIndex={0}` còn lại `-1`, xử lý `onKeyDown` cho `ArrowDown`/`ArrowUp` (hoặc trái phải với tab list nằm ngang), `Home`/`End` để nhảy đầu cuối, `Enter`/`Space` để chọn, `Escape` để đóng — rồi gọi `.focus()` lên phần tử mới bằng ref sau khi state đổi. Nhớ `preventDefault` cho phím mũi tên kẻo trang cuộn theo. Kèm theo là vai trò ARIA đúng (`role="tablist"`, `role="tab"`, `aria-selected`, `aria-controls`) để screen reader đọc được "tab 2 trên 5". Một lựa chọn thay thế là `aria-activedescendant`: focus giữ nguyên ở container còn con trỏ ảo trỏ tới id của mục đang chọn — hợp với combobox nơi focus buộc phải nằm lại trong ô input. Lời khuyên thực dụng: mấy mẫu này nhiều chi tiết và rất dễ sai, nên với dự án thật hãy dùng thư viện primitive đã kiểm chứng (Radix, React Aria, Headless UI) rồi tự làm phần giao diện — nhưng vẫn nên HIỂU cơ chế để trả lời phỏng vấn và để sửa khi nó cư xử lạ.',
+  },
+  {
+    id: 'react-polymorphic', topic: 'Mẫu thiết kế',
+    q: '`<Button>` trong design system cần render thành thẻ `<a>` khi có link — thiết kế thế nào?',
+    options: [
+      'Tạo hai component riêng `Button` và `LinkButton`, sao chép style sang cả hai để chúng trông giống nhau',
+      'Thêm prop `isLink` rồi bên trong dùng `if` để render ra thẻ tương ứng với từng trường hợp cần thiết',
+      'Prop `as` (polymorphic): `<Button as="a" href=...>`, hoặc `asChild` để mượn chính phần tử con làm thẻ gốc',
+      'Render `<button>` rồi gắn `onClick` gọi `navigate` để chuyển trang, như vậy chỉ cần một component duy nhất',
+    ], answer: 2,
+    explain: 'Prop `as`, còn gọi là component đa hình, cho phép giữ NGUYÊN phần giao diện và hành vi mà đổi thẻ gốc: `<Button as="a" href="/x">` hoặc `<Button as={Link} to="/x">`. Điểm quan trọng nhất không phải style mà là NGỮ NGHĨA: thứ dùng để điều hướng phải là thẻ `<a>` thì mới mở tab mới được, mới copy link được, và screen reader mới đọc đúng là liên kết — dùng `<button onClick={navigate}>` là hỏng cả ba. Gõ kiểu trong TypeScript là phần khó: cần generic để prop hợp lệ đổi theo `as` (chỉ chấp nhận `href` khi `as="a"`), thường viết bằng `ComponentPropsWithoutRef<T>` kết hợp `Omit` để tránh trùng tên, và nhớ chuyển tiếp `ref` cho đúng kiểu phần tử. Vì phần kiểu khá rối nên Radix chọn hướng khác gọn hơn: `asChild` — component không render thẻ của mình mà MƯỢN phần tử con, hợp nhất props và ref vào đó (`<Button asChild><Link to="/x">Đi</Link></Button>`); cách này tránh được generic phức tạp và lồng nhiều lớp cũng không sinh ra thẻ thừa. Vài lưu ý chung khi thiết kế component dùng chung: luôn cho phép truyền tiếp `className` cùng các prop DOM còn lại, luôn chuyển tiếp `ref`, và đừng nhân giống các prop kiểu `isLink`, `isSubmit`, `isIcon` — mỗi prop boolean là thêm một tổ hợp phải test.',
+  },
+  {
+    id: 'react-auth-refresh', topic: 'Bảo mật',
+    q: 'Access token hết hạn, năm request đang chạy cùng nhận 401 — xử lý refresh thế nào?',
+    options: [
+      'Mỗi request tự gọi refresh riêng, nhà cung cấp sẽ tự xử lý các lời gọi trùng nhau nên không sao cả',
+      'Bắt người dùng đăng nhập lại ngay khi gặp lỗi 401 đầu tiên, đó là cách an toàn và đơn giản nhất',
+      'Chỉ MỘT lời gọi refresh (single-flight), các request còn lại xếp hàng chờ rồi phát lại với token mới',
+      'Gọi refresh theo định kỳ mỗi phút bằng `setInterval` để token không bao giờ có cơ hội hết hạn',
+    ], answer: 2,
+    explain: 'Nếu năm request cùng gọi refresh thì bạn gặp mấy vấn đề: tải vô ích lên server auth; và nếu hệ thống có XOAY VÒNG refresh token (mỗi lần dùng là cấp token mới và huỷ token cũ) thì các lời gọi sau dùng token đã bị huỷ, server coi đó là dấu hiệu bị đánh cắp và thu hồi cả phiên — người dùng bị đá ra ngoài dù chẳng làm gì sai. Mẫu chuẩn nằm ở interceptor: giữ một biến `refreshPromise`; request nào gặp 401 mà thấy biến đó đã có thì `await` chính nó thay vì gọi mới (single-flight); refresh xong thì phát lại toàn bộ request đang chờ với token mới, và đặt cờ để mỗi request chỉ được retry MỘT lần kẻo lặp vô hạn khi refresh cũng hỏng. Nếu refresh thất bại thì xoá phiên, chuyển về trang đăng nhập và nhớ đường dẫn cũ để quay lại sau khi đăng nhập. Vài điểm nữa nên nói: cách bền vững nhất là để refresh token trong cookie `HttpOnly` `Secure` `SameSite` với một endpoint refresh riêng — SPA không cần chạm vào nó nên tránh luôn rủi ro XSS đọc mất; nếu buộc phải giữ ở phía JavaScript thì để trong bộ nhớ chứ đừng `localStorage`. Chủ động refresh trước hạn vài chục giây cũng tốt, nhưng đừng bỏ nhánh xử lý 401 vì đồng hồ máy client có thể lệch. Cuối cùng nhớ đồng bộ giữa các tab để năm tab không cùng lúc refresh — dùng `BroadcastChannel` hoặc `navigator.locks`.',
+  },
+  {
+    id: 'react-analytics', topic: 'Chất lượng UI',
+    q: 'Gắn tracking sự kiện người dùng trong React, chỗ nào KHÔNG nên đặt lệnh gửi?',
+    options: [
+      'Trong hàm xử lý sự kiện, vì lúc đó state chưa cập nhật nên dữ liệu gửi đi sẽ luôn là giá trị cũ',
+      'Trong `useEffect`, vì effect chỉ chạy sau khi trình duyệt vẽ xong nên sự kiện luôn bị ghi nhận trễ',
+      'Trong THÂN component lúc render — render phải thuần, và StrictMode ở dev sẽ gọi hai lần gây đếm sai',
+      'Trong callback của `IntersectionObserver`, vì nó chạy ngoài React nên số liệu gửi lên sẽ không chính xác',
+    ], answer: 2,
+    explain: 'Gửi analytics là SIDE EFFECT, mà thân component thì phải thuần — đặt ở đó nghĩa là mỗi lần render lại là một lần gửi, và StrictMode ở dev gọi component hai lần nên số liệu nhân đôi ngay từ máy bạn. Đặt đúng chỗ: sự kiện do HÀNH ĐỘNG thì nằm trong handler (`onClick`, `onSubmit`) — rõ ràng nhất, và ở đó bạn có sẵn dữ liệu vừa dùng; sự kiện kiểu "đã xem trang" thì nằm trong `useEffect` với deps đúng (nhớ rằng StrictMode chạy effect hai lần ở dev nên hoặc chấp nhận vì production không bị, hoặc chặn bằng một ref cho chắc); còn "đã hiển thị trên màn hình" thì dùng `IntersectionObserver` với ngưỡng và thời gian tối thiểu để không đếm những lần lướt qua. Vài điểm kỹ thuật đáng nhớ: gửi lúc người dùng RỜI trang phải dùng `navigator.sendBeacon` hoặc `fetch` với `keepalive: true`, vì request thường bị huỷ khi trang đóng; gom nhiều sự kiện rồi gửi theo lô để đỡ tốn kết nối; và đừng chặn tương tác để chờ analytics trả về. Về tổ chức code: bọc trong một hook hoặc một module `track()` duy nhất để dễ đổi nhà cung cấp, dễ tắt trong test, và để có một chỗ duy nhất gắn ngữ cảnh chung như user id hay phiên bản build. Cuối cùng đừng quên quyền riêng tư: xin đồng ý trước khi bật, đừng gửi dữ liệu cá nhân hay nội dung người dùng gõ vào, và nhớ rằng nhiều người chặn script analytics nên số liệu luôn thiếu một phần.',
+  },
+  {
+    id: 'react-fast-refresh', topic: 'Công cụ & môi trường',
+    q: 'Sửa file thì Fast Refresh giữ nguyên state, nhưng đôi lúc cả trang lại tải lại — vì sao?',
+    options: [
+      'Vì file quá lớn nên công cụ không kịp phân tích, chia nhỏ file ra là state sẽ luôn được giữ nguyên',
+      'Vì Fast Refresh chỉ hoạt động với component class, còn function component thì luôn phải tải lại trang',
+      'Vì trình duyệt tự động xoá state mỗi khi file JavaScript thay đổi, không công cụ nào can thiệp được',
+      'Vì file có export không phải component (hằng số, hàm tiện ích) hoặc component ẩn danh — nó phải reload',
+    ], answer: 3,
+    explain: 'Fast Refresh giữ được state nhờ nhận diện các export trong file là component React rồi thay thế chúng tại chỗ. Nó BỎ CUỘC và tải lại cả trang khi không chắc là an toàn, thường vì mấy lý do sau: file export lẫn cả component và thứ khác — một hằng số, một hàm tiện ích, một context — vì thay đổi thứ đó có thể ảnh hưởng ra ngoài phạm vi component; component là arrow function ẩn danh gán vào biến mà không có tên hiển thị; component không được export mà chỉ dùng nội bộ trong file; hoặc file có side effect ở cấp cao nhất. Ngoài ra state vẫn mất trong vài trường hợp hợp lý khác: khi bạn đổi cấu trúc hook (thêm bớt hook làm đổi thứ tự gọi), khi component đổi tên, hoặc khi một module ở tầng trên trong đồ thị phụ thuộc thay đổi. Cách làm cho êm: mỗi file một component và đặt tên rõ ràng, tách hằng số cùng hàm tiện ích sang file riêng, tránh side effect lúc import. Cũng cần phân biệt: Fast Refresh KHÁC hot reload đơn thuần của bundler ở chỗ nó hiểu React. Và nhớ đây chỉ là tiện nghi lúc phát triển — nếu state biến mất bất thường thì đừng vội đổ cho công cụ, hãy kiểm tra xem `key` có đang đổi không, hoặc component có đang bị định nghĩa lại bên trong render của một component khác không, vì đó cũng làm mất state y hệt nhưng xảy ra ở cả production.',
+  },
 ];
