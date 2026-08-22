@@ -1186,4 +1186,93 @@ window.REACT_QUIZ = [
     ], answer: 2,
     explain: 'Triệu chứng rất dễ nhận ra: component ở giữa nhận một prop mà nó KHÔNG dùng, chỉ để chuyển tiếp xuống dưới — muốn thêm một field thì phải sửa năm file. Ba cách chữa, nên thử theo đúng thứ tự này. (1) COMPOSITION: dựng phần tử ngay tại tầng đang có dữ liệu rồi truyền qua `children` hoặc prop kiểu JSX — `<Layout sidebar={<Profile user={user} />} />` — tầng giữa không cần biết gì về `user`; đây là cách nhẹ nhất, không kéo theo vấn đề re-render nào và thường giải quyết được phần lớn trường hợp. (2) CONTEXT cho dữ liệu ÍT thay đổi và thật sự mang tính toàn cục theo cây (theme, ngôn ngữ, user đang đăng nhập); nhớ memo hoá `value` và tách nhỏ context theo nhịp thay đổi. (3) STORE NGOÀI (Zustand, Redux, Jotai) khi state đổi liên tục, nhiều nơi cùng ghi, và cần selector để chỉ đánh thức đúng component quan tâm. Đừng đảo thứ tự: nhét mọi thứ vào Context là cách nhanh nhất để có một ứng dụng render lại toàn bộ mỗi lần gõ phím. Và nếu chỉ sâu hai tầng thì cứ để nguyên prop — truyền prop ngắn không phải là bug, nó còn dễ đọc hơn.',
   },
+  // ===== Đợt #10 =====
+  {
+    id: 'react-streaming-ssr', topic: 'React hiện đại',
+    q: 'Streaming SSR và selective hydration mang lại điều gì so với SSR truyền thống?',
+    options: [
+      'Bỏ hẳn JavaScript ở phía client nên trang chỉ còn HTML tĩnh, nhờ đó tải nhanh hơn trong mọi trường hợp',
+      'Gửi HTML theo từng phần ngay khi sẵn sàng và hydrate phần người dùng chạm vào trước — hết cảnh chờ phần chậm nhất',
+      'Render toàn bộ trang trên server rồi nén lại bằng thuật toán tốt hơn, nên gói HTML gửi về nhỏ hơn đáng kể',
+      'Chuyển việc hydrate sang một Web Worker chạy nền, nhờ đó luồng chính hoàn toàn rảnh trong lúc trang đang tải',
+    ], answer: 1,
+    explain: 'SSR kiểu cũ là chuỗi "tất cả hoặc không gì": server phải lấy xong MỌI dữ liệu mới render được HTML, client phải tải xong MỌI JS mới hydrate được, và phải hydrate xong cả cây thì trang mới tương tác được — chỉ một truy vấn chậm là toàn trang phải chờ. Với `renderToPipeableStream` (Node) hoặc `renderToReadableStream` (edge) cộng với `<Suspense>`: React gửi ngay phần khung đã sẵn sàng kèm fallback cho phần chậm, rồi khi dữ liệu về thì đẩy tiếp HTML của phần đó xuống cùng một đoạn script nhỏ để chèn vào đúng chỗ. SELECTIVE HYDRATION đi kèm: React hydrate theo từng ranh giới Suspense thay vì cả cây một lượt, và nếu người dùng bấm vào vùng chưa hydrate thì React ưu tiên hydrate đúng vùng đó trước. Kết quả là TTFB và FCP tốt hơn hẳn, phần chậm không kéo phần nhanh xuống theo. Cái giá phải trả: khó đặt mã trạng thái HTTP hay header sau khi đã bắt đầu stream (nên xử lý lỗi bằng error boundary với fallback), và phải chia ranh giới Suspense cho khéo — chia quá vụn thì layout nhảy liên tục, chia quá thô thì mất gần hết lợi ích. Đây cũng chính là nền tảng để React Server Component hoạt động trong Next.js App Router.',
+  },
+  {
+    id: 'react-setstate-unmount', topic: 'Hooks',
+    q: 'Gọi `setState` sau khi component đã unmount có phải là rò rỉ bộ nhớ không?',
+    options: [
+      'Có, mỗi lần như vậy giữ lại toàn bộ cây component trong bộ nhớ nên bắt buộc phải kiểm tra cờ `isMounted` trước',
+      'Không — bản thân nó vô hại và React 18 đã bỏ cảnh báo; rò rỉ thật nằm ở subscription hay timer không được dọn',
+      'Có, và cách chữa duy nhất đúng là bọc mọi lời gọi `setState` trong `try/catch` để nuốt lỗi đi cho êm chuyện',
+      'Không, vì React tự động huỷ mọi tác vụ bất đồng bộ đang chạy ngay tại thời điểm component bị unmount khỏi cây',
+    ], answer: 1,
+    explain: 'Cảnh báo "Cannot perform a React state update on an unmounted component" từng khiến cả cộng đồng đi rắc cờ `isMounted` khắp nơi — React 18 đã GỠ nó, vì chính nhóm React thừa nhận cảnh báo này sai: `setState` trên component đã unmount chỉ là một lệnh không làm gì cả, không rò rỉ gì hết. Rò rỉ THẬT nằm ở chỗ khác: `setInterval` không `clearInterval`, listener không `removeEventListener`, WebSocket hay subscription không đóng, `IntersectionObserver` không `disconnect` — những thứ đó giữ closure sống mãi, mà closure lại giữ cả cây tham chiếu phía sau nó. Cách chữa luôn là cleanup trong `useEffect`, chứ không phải kiểm tra cờ trước mỗi lần setState. Chỗ thật sự cần cờ `ignore` là chuyện KHÁC hẳn: chống race condition khi response cũ về sau response mới — mục đích ở đó là lấy đúng dữ liệu, không phải chống rò rỉ. Muốn kiểm chứng thì mở tab Memory của DevTools, chụp heap snapshot trước và sau khi mở/đóng màn hình vài lần, rồi xem số lượng detached node cùng closure có tăng dần lên hay không.',
+  },
+  {
+    id: 'react-ref-callback', topic: 'Hooks',
+    q: 'Khi nào cần callback ref (`ref={node => ...}`) thay vì `useRef`?',
+    options: [
+      'Khi cần giữ giá trị qua các lần render mà không gây re-render, vì `useRef` sẽ render lại mỗi khi `.current` đổi',
+      'Khi component là function, vì `useRef` chỉ hoạt động được bên trong component viết bằng class như trước đây',
+      'Khi phần tử nằm trong một portal, vì ref thông thường không xuyên qua được ranh giới của cây DOM bên ngoài',
+      'Khi cần BIẾT ngay lúc node được gắn vào hay gỡ ra — đo phần tử render có điều kiện, hoặc giữ ref cho danh sách động',
+    ], answer: 3,
+    explain: '`useRef` cho bạn một cái hộp nhưng KHÔNG báo khi nào nó được điền — phải sau lần render đầu `ref.current` mới có node, và nếu phần tử chỉ render có điều kiện thì bạn không biết lúc nào nó xuất hiện. Callback ref thì được React gọi ngay khi gắn node vào (và gọi lại với `null` khi gỡ ra, ở React 18 trở về trước), nên hợp với: đo kích thước phần tử vừa hiện ra — `useCallback(node => { if (node) setHeight(node.getBoundingClientRect().height) }, [])`; gắn observer đúng thời điểm node xuất hiện; và giữ ref cho DANH SÁCH động, dùng một `Map` id đến node thay vì mảng ref. Lưu ý quan trọng: callback ref viết inline là hàm MỚI sau mỗi render nên React gọi nó hai lần (null rồi node) mỗi lần render — vô hại nếu chỉ gán biến, nhưng nếu bên trong có `setState` thì bọc `useCallback` để khỏi rơi vào vòng lặp. React 19 bổ sung một điểm rất tiện: callback ref được phép TRẢ VỀ hàm dọn dẹp giống `useEffect` (`return () => observer.disconnect()`), và khi đó React không gọi lại với `null` nữa. Cả hai kiểu ref đều nên coi là cửa thoát hiểm — chỉ dùng cho focus, đo đạc, cuộn và tích hợp thư viện bên ngoài.',
+  },
+  {
+    id: 'react-ts-hooks', topic: 'Công cụ & môi trường',
+    q: 'Gõ kiểu TypeScript cho hook trong React thì nên chú ý điều gì?',
+    options: [
+      'Phải khai báo kiểu tường minh cho mọi `useState`, vì TypeScript không suy ra được kiểu từ giá trị khởi tạo',
+      'Dùng `any` cho state và event là cách được khuyến nghị, vì kiểu của React quá phức tạp để gõ cho chính xác',
+      'Suy kiểu tự động là đủ trong đa số trường hợp; khai báo tường minh khi state có thể `null` hoặc là một union',
+      'Hook tuỳ biến bắt buộc phải trả về mảng thì TypeScript mới suy được kiểu, trả về object thì luôn bị mất kiểu',
+    ], answer: 2,
+    explain: '`useState(0)` đã suy ra `number` rồi, không cần gõ thêm. Chỉ khai báo tường minh khi giá trị khởi tạo không nói hết ý: `useState<User | null>(null)` (không thì kiểu bị chốt là `null`), `useState<string[]>([])` (không thì thành `never[]`), và union trạng thái `useState<"idle" | "loading" | "error">("idle")` — cách này bắt lỗi gõ sai chuỗi ngay lúc build. Với `useRef` phân biệt hai dạng: `useRef<HTMLInputElement>(null)` cho ref gắn vào DOM (`current` là chỉ đọc, phải kiểm tra null trước khi dùng) và `useRef<number | undefined>(undefined)` cho hộp giá trị mutable như id của timer. `useReducer` nên gõ action bằng discriminated union (`{ type: "add"; payload: Item } | { type: "clear" }`) để `switch` tự thu hẹp kiểu trong từng nhánh — đây là chỗ TypeScript phát huy rõ nhất. Sự kiện thì dùng kiểu của React chứ không phải của DOM: `React.ChangeEvent<HTMLInputElement>`, `React.FormEvent<HTMLFormElement>`, `React.MouseEvent<HTMLButtonElement>`. Custom hook trả về mảng thì thêm `as const` để có tuple `[T, setter]` thay vì một union mảng. Và với props: dùng `PropsWithChildren` và `ComponentProps<"button">` để kế thừa mọi prop của thẻ gốc thay vì liệt kê bằng tay.',
+  },
+  {
+    id: 'react-nextjs-boundary', topic: 'React hiện đại',
+    q: 'Chỉ thị `"use client"` trong Next.js App Router thực chất đánh dấu điều gì?',
+    options: [
+      'Đánh dấu component đó chỉ chạy ở client và không được render trên server, nên nó vắng mặt trong HTML ban đầu',
+      'Bật chế độ tương tác cho component, thiếu nó thì `onClick` vẫn chạy nhưng `useState` sẽ không hoạt động nữa',
+      'Yêu cầu Next.js tải component đó theo kiểu lazy loading, tương đương bọc trong `React.lazy` kèm `Suspense`',
+      'Đánh dấu RANH GIỚI: từ file đó trở xuống, mọi thứ được import đều thành client component và đi vào bundle',
+    ], answer: 3,
+    explain: 'Hiểu sai phổ biến nhất: `"use client"` không có nghĩa "chỉ chạy ở client". Client component VẪN được render trên server một lần để ra HTML (giống SSR cũ) rồi mới hydrate ở trình duyệt. Ý nghĩa thật của chỉ thị là ĐÁNH DẤU RANH GIỚI giữa hai đồ thị module: mọi thứ mà file đó import — và import tiếp nữa — đều trở thành client component và bị đóng gói gửi xuống trình duyệt. Hệ quả thực tế: đặt `"use client"` ở layout gốc là biến gần như cả ứng dụng thành client và mất sạch lợi ích của RSC; hãy đẩy ranh giới xuống CÀNG SÂU CÀNG TỐT, chỉ những lá thật sự cần state, effect, event handler hay API trình duyệt. Một mẹo rất đáng nhớ: client component vẫn nhận được server component qua `children` hoặc prop kiểu JSX — `<ClientTabs>{<ServerChart />}</ClientTabs>` — vì phần đó đã render sẵn ở server trước khi truyền vào, nhờ vậy bọc một vùng tương tác quanh nội dung nặng mà không kéo nội dung đó sang client. Ràng buộc còn lại: props truyền từ server sang client phải SERIALIZE được (không truyền hàm hay class instance); server component thì không dùng được hook và không có `window`, bù lại được `async/await` và truy cập thẳng CSDL. Còn `"use server"` là chuyện khác hẳn — nó đánh dấu server action chứ không đối xứng với `"use client"`.',
+  },
+  {
+    id: 'react-query-invalidate', topic: 'Quản lý state',
+    q: 'Trong React Query, `staleTime` và invalidate query khác nhau ra sao?',
+    options: [
+      'Hai tên gọi của cùng một cơ chế: hết `staleTime` thì query bị invalidate và bị xoá khỏi cache ngay lập tức',
+      '`staleTime` quyết định BAO LÂU dữ liệu còn được coi là mới; invalidate là chủ động đánh dấu cũ để nạp lại',
+      '`staleTime` là thời gian giữ dữ liệu trong bộ nhớ, còn invalidate chỉ xoá dữ liệu mà không bao giờ gọi lại API',
+      '`staleTime` chỉ áp dụng cho mutation còn invalidate chỉ áp dụng cho query, hai bên không ảnh hưởng gì tới nhau',
+    ], answer: 1,
+    explain: 'Ba khái niệm rất hay bị trộn vào nhau. `staleTime` (mặc định 0) — dữ liệu được coi là MỚI trong bao lâu; còn mới thì mọi lần dùng lại chỉ đọc từ cache, không gọi API, kể cả khi component mount lại hay cửa sổ lấy lại focus. `gcTime`/`cacheTime` (mặc định 5 phút) — dữ liệu KHÔNG còn ai dùng thì được giữ trong bộ nhớ thêm bao lâu trước khi dọn; nó quyết định lần quay lại màn hình có dữ liệu cũ hiện ra ngay trong lúc nạp nền hay không. `invalidateQueries` — chủ động đánh dấu một nhóm query là cũ NGAY, thường gọi trong `onSuccess` của mutation: sửa xong đơn hàng thì `queryClient.invalidateQueries({ queryKey: ["orders"] })` để danh sách tự nạp lại; nó khớp theo TIỀN TỐ của query key nên thiết kế key có phân cấp — `["orders", { status }]`, `["orders", id]` — rất đáng giá. Vài lựa chọn đi kèm: `setQueryData` ghi thẳng kết quả mutation vào cache để đỡ một vòng gọi lại; cập nhật lạc quan kèm `onError` để rollback; và `refetch()` khi muốn ép nạp lại đúng một query bất kể trạng thái. Cuối cùng, chỉnh `staleTime` theo bản chất dữ liệu: danh mục ít đổi thì để vài phút, số liệu tồn kho thì để 0.',
+  },
+  {
+    id: 'react-effect-infinite', topic: 'Hooks',
+    q: 'Effect chạy lặp vô hạn dù mảng deps đã khai báo đầy đủ — nguyên nhân thường gặp nhất là gì?',
+    options: [
+      'Do React StrictMode ở môi trường dev, chỉ cần gỡ StrictMode ra là vòng lặp sẽ dừng lại ngay lập tức',
+      'Do quên trả về hàm cleanup, vì thiếu cleanup thì React buộc phải chạy lại effect cho tới khi có được nó',
+      'Do deps chứa object/mảng/hàm được TẠO MỚI mỗi render nên so sánh tham chiếu luôn khác, hoặc effect tự setState',
+      'Do đặt `useEffect` sau một câu lệnh `return` có điều kiện, khiến React phải đăng ký lại effect ở mỗi lần render',
+    ], answer: 2,
+    explain: 'React so sánh deps bằng `Object.is` — nghĩa là so TRỊ với nguyên thuỷ nhưng so THAM CHIẾU với object, mảng và hàm. Viết `useEffect(..., [{ page, size }])` hay `[options]` với `options` khai báo ngay trong thân component thì lần render nào cũng là một object mới, effect chạy lại, và nếu bên trong có `setState` thì lại render tiếp — thành vòng lặp. Bốn cách chữa theo thứ tự nên thử: (1) đưa deps về NGUYÊN THUỶ, dùng `[page, size]` thay cho `[filters]`; (2) chuyển việc tạo object hay hàm vào TRONG effect, vì thứ chỉ effect dùng thì không cần nằm ngoài; (3) `useMemo`/`useCallback` ở phía component CHA nếu giá trị đến từ props; (4) với callback không nên kích hoạt lại effect (kiểu `onChange`) thì giữ trong ref rồi gọi `ref.current()` bên trong. Hai biến thể khác cũng gây lặp: effect `setState` đúng giá trị mà chính nó đang nằm trong deps, và effect fetch rồi setState kết quả trong khi deps lại chứa chính dữ liệu đó. Chẩn đoán nhanh: log từng phần tử deps kèm so sánh với giá trị lần trước lưu trong ref, hoặc bật "why did this render" trong React DevTools Profiler để nó chỉ thẳng cái nào đổi. Và nhớ phân biệt: StrictMode chạy effect hai lần ở dev là CỐ Ý, khác hẳn lặp vô hạn — đừng nhầm rồi đi gỡ StrictMode.',
+  },
+  {
+    id: 'react-file-upload', topic: 'Form & sự kiện',
+    q: 'Làm chức năng upload file trong React thì cần chú ý những gì?',
+    options: [
+      'Đặt `value` cho input file giống như mọi input khác để kiểm soát hoàn toàn giá trị của nó qua state của React',
+      'Đọc toàn bộ file thành chuỗi base64 rồi gửi kèm trong JSON, vì đó là cách duy nhất gửi được file qua HTTP',
+      'Input file luôn là UNCONTROLLED; gửi bằng `FormData`, kiểm tra kích thước và loại ở cả client lẫn phía server',
+      'Bọc input trong `useMemo` để tránh mất file đã chọn mỗi khi component cha render lại vì bất kỳ lý do nào',
+    ], answer: 2,
+    explain: '`<input type="file">` BẮT BUỘC là uncontrolled — vì lý do bảo mật, JavaScript không gán được `value` cho nó (chỉ gán được chuỗi rỗng để xoá lựa chọn). Đọc file qua `e.target.files` rồi giữ đối tượng `File` trong state nếu cần. Gửi lên server bằng `FormData` (`fd.append("file", file)`) và KHÔNG tự đặt header `Content-Type` — để trình duyệt tự sinh kèm boundary, đặt tay là hỏng ngay. Base64 làm phình dữ liệu khoảng 33% và tốn bộ nhớ nên chỉ hợp với file rất nhỏ. Những thứ hay bị bỏ sót: validate `file.size` và `file.type` ở client cho trải nghiệm tốt nhưng PHẢI kiểm tra lại ở server (client sửa được, và `type` dựa vào phần mở rộng nên cần kiểm tra magic bytes); tạo preview bằng `URL.createObjectURL(file)` thì nhớ `revokeObjectURL` lúc unmount kẻo rò bộ nhớ; `fetch` không báo được tiến trình upload nên muốn có thanh phần trăm thì phải dùng `XMLHttpRequest` hoặc thư viện; cho phép huỷ giữa chừng bằng `AbortController`; và với file lớn thì hướng tốt nhất là xin PRESIGNED URL rồi upload thẳng lên object storage, server chỉ nhận lại khoá — đỡ băng thông và không chiếm event loop của Node. Cuối cùng, chọn lại đúng file vừa xoá sẽ không kích hoạt `onChange` nếu bạn quên reset `e.target.value = ""`.',
+  },
 ];

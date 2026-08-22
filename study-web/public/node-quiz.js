@@ -1233,4 +1233,93 @@ window.NODE_QUIZ = [
     ], answer: 2,
     explain: 'Không có transaction ACID xuyên nhiều service với CSDL riêng: 2PC (two-phase commit) làm được về lý thuyết nhưng giữ khoá xuyên mạng, kéo tính sẵn sàng xuống theo mắt xích yếu nhất, nên thực tế gần như không dùng. SAGA chia luồng thành các transaction CỤC BỘ, mỗi bước kèm một hành động BÙ TRỪ. Chú ý bù trừ không phải rollback: đã trừ kho thì bù bằng "cộng lại kho", đã gửi email thì bù bằng email xin lỗi — có những việc không hoàn tác được nên phải xếp bước rủi ro nhất lên trước hoặc chuyển sang cơ chế giữ chỗ (reserve) rồi mới xác nhận. Hai kiểu điều phối: choreography (mỗi service nghe và phát sự kiện — ít hạ tầng nhưng luồng nằm rải rác, khó lần theo khi có sự cố) và orchestration (một bộ điều phối giữ máy trạng thái, dễ quan sát và dễ thêm bước hơn — Temporal, AWS Step Functions). Ba thứ bắt buộc đi kèm: mọi bước phải IDEMPOTENT vì message có thể tới hai lần; dùng outbox pattern để ghi CSDL và phát message không lệch nhau; và giao diện phải thể hiện được trạng thái trung gian ("đơn hàng đang xử lý") vì nhất quán ở đây là nhất quán CUỐI CÙNG, không tức thì.',
   },
+  // ===== Đợt #10 =====
+  {
+    id: 'node-webhook', topic: 'HTTP',
+    q: 'Nhận webhook từ bên thứ ba (Stripe, GitHub) cần lưu ý những gì?',
+    options: [
+      'Chỉ cần kiểm tra IP nguồn có nằm trong dải đã công bố, vì đó là cách xác thực duy nhất mà nhà cung cấp hỗ trợ',
+      'Xác thực CHỮ KÝ trên RAW body, xử lý idempotent vì có thể nhận trùng, và trả 2xx nhanh rồi làm việc nặng sau',
+      'Xử lý xong toàn bộ nghiệp vụ rồi mới trả mã 200, nếu không thì bên gửi sẽ coi là thất bại và ngừng gửi hẳn',
+      'Không cần xác thực gì cả vì URL webhook vốn đã là bí mật, chỉ cần đặt đường dẫn thật khó đoán là đủ an toàn',
+    ], answer: 1,
+    explain: 'Webhook là endpoint CÔNG KHAI nên ai cũng gọi được — bắt buộc xác thực chữ ký HMAC trong header (`Stripe-Signature`, `X-Hub-Signature-256`), so sánh bằng `crypto.timingSafeEqual`, kèm kiểm tra timestamp để chống replay. Bẫy số một trong Express: `express.json()` parse rồi serialize lại nên chuỗi không còn byte-for-byte như lúc bên kia ký, chữ ký luôn sai — phải giữ RAW body riêng cho route đó (`express.raw({ type: "application/json" })` hoặc tuỳ chọn `verify` của body parser). Thứ hai, giao hàng là AT-LEAST-ONCE: mạng chập là bên gửi thử lại nên bạn sẽ nhận trùng — lưu `event.id` đã xử lý và bỏ qua bản lặp, đừng cộng tiền hai lần. Thứ ba, trả 2xx trong vài giây rồi ĐẨY việc nặng sang queue: xử lý đồng bộ mà chậm là bên gửi timeout, đánh dấu thất bại rồi retry, thành vòng lặp tự nhân đôi tải. Thêm một điểm hay bị bỏ sót: sự kiện có thể tới KHÔNG đúng thứ tự (`updated` về trước `created`), nên đừng giả định trình tự — kiểm tra trạng thái hiện tại hoặc gọi API lấy bản mới nhất; và log lại toàn bộ payload để còn phát lại được khi cần debug.',
+  },
+  {
+    id: 'node-oauth2', topic: 'Bảo mật',
+    q: 'Luồng OAuth2 "authorization code + PKCE" hoạt động ra sao và giải quyết vấn đề gì?',
+    options: [
+      'Ứng dụng gửi thẳng username/password của người dùng lên nhà cung cấp rồi nhận token, PKCE chỉ để mã hoá mật khẩu',
+      'Nhà cung cấp trả access token thẳng trên URL chuyển hướng, PKCE dùng để rút ngắn thời gian sống của token đó',
+      'App và nhà cung cấp chia sẻ chung một khoá bí mật cố định, PKCE là tên gọi của thuật toán băm khoá đó',
+      'Người dùng đăng nhập ở nhà cung cấp, app nhận CODE dùng một lần rồi đổi lấy token; PKCE chặn kẻ chiếm được code',
+    ], answer: 3,
+    explain: 'Ý tưởng gốc của OAuth2: ứng dụng KHÔNG bao giờ nhìn thấy mật khẩu người dùng. Luồng authorization code: app chuyển hướng người dùng sang nhà cung cấp → người dùng đăng nhập và đồng ý cấp quyền → nhà cung cấp chuyển hướng ngược lại kèm một `code` dùng một lần, sống rất ngắn → BACKEND của app đổi `code` đó lấy access token (kèm `client_secret`). PKCE thêm một bước: app sinh `code_verifier` ngẫu nhiên và gửi kèm `code_challenge` (bản băm) ở bước đầu, rồi phải xuất trình `code_verifier` khi đổi token — nên kẻ chiếm được `code` (qua log, lịch sử trình duyệt, một ứng dụng độc trên máy) cũng không dùng được. Vì thế PKCE là BẮT BUỘC cho SPA và mobile, nơi không giữ nổi `client_secret`, và nay được khuyến nghị cho mọi loại client; implicit flow trả token thẳng trên URL đã bị loại khỏi OAuth 2.1. Nhớ phân biệt cho rõ: OAuth2 là UỶ QUYỀN, muốn biết người dùng LÀ AI thì cần OIDC với `id_token`. Luôn kiểm tra tham số `state` để chống CSRF, xác thực chữ ký cùng `aud`/`iss` của token, và giữ refresh token ở nơi an toàn kèm cơ chế xoay vòng.',
+  },
+  {
+    id: 'node-replica-lag', topic: 'Kiến trúc',
+    q: 'Tách đọc sang read replica xong, user sửa hồ sơ rồi tải lại trang vẫn thấy dữ liệu cũ. Vì sao?',
+    options: [
+      'Vì cache HTTP của trình duyệt giữ lại response cũ, chỉ cần thêm header `Cache-Control: no-store` là giải quyết xong',
+      'Vì replica đồng bộ có ĐỘ TRỄ; lần đọc ngay sau khi ghi cần trỏ về primary hoặc chờ replica bắt kịp vị trí ghi',
+      'Vì connection pool giữ lại transaction cũ chưa commit, chỉ cần giảm thời gian sống tối đa của connection là hết',
+      'Vì replica chỉ đồng bộ theo lịch mỗi đêm nên dữ liệu trong ngày luôn là bản của hôm trước, đây là hành vi đúng',
+    ], answer: 1,
+    explain: 'Replica sao chép bất đồng bộ: độ trễ thường chỉ vài mili giây nhưng có thể vọt lên khi ghi nhiều hoặc replica đang bận — và thời điểm ngay sau một lần GHI chính là lúc dễ đọc trúng dữ liệu cũ nhất. Đây là bài toán kinh điển "read your own writes". Ba cách chữa theo thứ tự đơn giản dần: (1) ĐỊNH TUYẾN theo ngữ cảnh — trong N giây sau khi user ghi, mọi truy vấn của chính user đó đi thẳng về primary (đánh dấu bằng cookie hoặc session), phần còn lại vẫn dùng replica; (2) chờ theo vị trí — lưu LSN/GTID lúc commit rồi yêu cầu replica chỉ phục vụ khi đã bắt kịp mốc đó, PostgreSQL và MySQL đều có cơ chế này; (3) trả thẳng dữ liệu vừa ghi về cho client (dùng `RETURNING` của lệnh UPDATE) thay vì đọc lại từ đầu. Nguyên tắc chung khi thiết kế: đọc và ghi trong cùng một luồng nghiệp vụ thì đừng trộn hai nguồn; báo cáo, thống kê, tìm kiếm, xuất dữ liệu mới là chỗ hợp với replica. Cuối cùng nhớ giám sát độ trễ (`pg_stat_replication`, `Seconds_Behind_Master`) và đặt cảnh báo — replica trễ vài phút mà không ai biết là một sự cố im lặng.',
+  },
+  {
+    id: 'node-sharding', topic: 'Kiến trúc',
+    q: 'Khi nào mới cần shard CSDL, và chọn shard key dựa trên tiêu chí gì?',
+    options: [
+      'Nên shard ngay từ đầu dự án cho mọi bảng, vì chuyển sang shard về sau là việc gần như không thể thực hiện được',
+      'Bất cứ khi nào bảng vượt một triệu dòng; chọn khoá chính tự tăng làm shard key vì nó luôn duy nhất tuyệt đối',
+      'Chỉ khi một node đã hết đường mở rộng; chọn key phân bố ĐỀU và có mặt trong hầu hết truy vấn, tránh hot partition',
+      'Khi cần sao lưu nhanh hơn; chọn theo ngày tạo bản ghi để mỗi shard giữ đúng dữ liệu của một khoảng thời gian',
+    ], answer: 2,
+    explain: 'Shard là chia dữ liệu ra NHIỀU node, mỗi node giữ một phần — khác hẳn replica (mỗi node giữ một bản sao đầy đủ). Nó giải bài toán ghi và dung lượng vượt quá sức một máy, đổi lại là mất gần hết những thứ tiện lợi: JOIN xuyên shard, transaction xuyên shard, khoá tự tăng toàn cục, truy vấn ad-hoc. Vì vậy hãy vắt kiệt các bậc rẻ hơn trước đã: index đúng, cache, tách bảng nóng, read replica cho tải đọc, nâng cấu hình máy, phân vùng theo thời gian ngay trong một node. Khi buộc phải shard, shard key quyết định tất cả: phải phân bố ĐỀU (khoá tự tăng dồn hết ghi mới vào một shard, băm `user_id` thì đều hơn); phải XUẤT HIỆN trong đa số truy vấn, vì thiếu nó là phải hỏi tất cả shard rồi gộp kết quả — chậm gấp bội; và nên gom dữ liệu hay đọc cùng nhau về chung một shard (mọi thứ của một khách hàng nằm cạnh nhau). Cẩn thận HOT PARTITION: shard theo `tenant_id` mà có một khách hàng lớn gấp trăm lần phần còn lại thì một node vẫn quá tải. Cuối cùng phải tính trước chuyện resharding — dùng consistent hashing hoặc một lớp ánh xạ logic để thêm node mà không phải chuyển toàn bộ dữ liệu.',
+  },
+  {
+    id: 'node-di', topic: 'Kiến trúc',
+    q: 'Dependency injection mang lại lợi ích gì cho một service Node?',
+    options: [
+      'Giúp giảm dung lượng bundle vì các module chỉ được nạp khi thật sự có ai đó gọi tới chúng lần đầu tiên',
+      'Là bắt buộc khi dùng TypeScript, vì decorator không hoạt động được nếu thiếu container quản lý vòng đời',
+      'Tự động tạo lại đối tượng mỗi lần gọi hàm nên tránh được mọi vấn đề trạng thái dùng chung giữa các request',
+      'Đưa phụ thuộc VÀO từ bên ngoài thay vì tự khởi tạo bên trong — đổi cài đặt và thay bằng bản giả lúc test rất dễ',
+    ], answer: 3,
+    explain: 'So sánh trực tiếp: `class OrderService { constructor() { this.db = new PgClient(...) } }` khoá cứng vào PostgreSQL — muốn test phải dựng CSDL thật, muốn đổi sang thứ khác phải sửa trong ruột lớp. Với DI: `constructor(db, mailer, clock)` — người gọi quyết định truyền vào cái gì, nên lúc test truyền bản giả trong bộ nhớ, truyền `clock` cố định để kiểm thử logic hết hạn mà không phụ thuộc giờ thật. Lợi ích sâu hơn nằm ở chỗ ĐẢO NGƯỢC phụ thuộc: tầng nghiệp vụ khai báo interface nó cần, tầng hạ tầng đi hiện thực — nghiệp vụ không còn biết gì về driver hay HTTP client, và bạn thay Postgres bằng thứ khác mà không đụng vào logic. Trong Node không nhất thiết phải có framework: truyền tham số qua constructor hoặc factory function là đủ cho phần lớn dự án, cộng thêm một file `container.js` nối dây tại điểm khởi động. NestJS, tsyringe, awilix thêm container tự resolve theo kiểu và quản lý vòng đời (singleton, scoped theo request) — hữu ích khi cây phụ thuộc lớn, đổi lại là decorator, metadata và một lớp ma thuật phải học. Đừng lạm dụng: hàm thuần chẳng cần inject gì, và inject cả `lodash` chỉ làm code khó đọc hơn.',
+  },
+  {
+    id: 'node-test-double', topic: 'Tooling',
+    q: 'Test một service có gọi API bên ngoài và CSDL thì xử lý phần phụ thuộc đó thế nào?',
+    options: [
+      'Gọi thẳng API thật và CSDL production ngay trong test để chắc chắn kết quả khớp với môi trường thực tế nhất',
+      'Mock TẤT CẢ, kể cả các hàm nội bộ của chính module đang test, để test chạy nhanh và không phụ thuộc vào gì hết',
+      'Chặn ở BIÊN: giả HTTP bằng nock/msw, CSDL thật trong Docker cho test tích hợp; đừng mock thứ mình không sở hữu',
+      'Bỏ qua các nhánh có gọi ra ngoài và chỉ test những hàm thuần, vì phần còn lại vốn dĩ không thể kiểm thử được',
+    ], answer: 2,
+    explain: 'Nguyên tắc gốc: "đừng mock thứ bạn không sở hữu". Mock trực tiếp thư viện bên thứ ba (`jest.mock("axios")`) khiến test ràng vào chi tiết cách gọi, và vẫn xanh nguyên khi API thật đổi hợp đồng. Thay vào đó hãy chặn ở BIÊN mạng: `nock` hoặc `msw` bắt request HTTP thật rồi trả response bạn dựng sẵn — nhờ vậy test được cả header, retry, timeout và các mã lỗi 500; hoặc bọc bên thứ ba sau một interface của mình rồi thay bằng bản giả. Với CSDL, mock thường phản tác dụng vì phần dễ sai nhất chính là SQL, migration, ràng buộc unique và transaction — hãy chạy CSDL thật bằng testcontainers hoặc docker-compose, mỗi test dọn dữ liệu bằng rollback transaction hoặc truncate. Phân biệt các loại test double khi bị hỏi: STUB trả sẵn dữ liệu; MOCK còn kiểm tra được gọi thế nào (rất dễ làm test giòn nên dùng tiết kiệm); FAKE là bản hiện thực rút gọn nhưng chạy thật, ví dụ repository trong bộ nhớ; SPY chỉ ghi lại các lời gọi. Và đừng quên tầng trên cùng: một vài contract test hoặc smoke test chạm hệ thống thật sau khi deploy để bắt đúng những chỗ mà mọi bản giả đều bỏ sót.',
+  },
+  {
+    id: 'node-pubsub-vs-queue', topic: 'Kiến trúc',
+    q: 'Pub/sub và work queue khác nhau ở chỗ nào, khi nào chọn cái nào?',
+    options: [
+      'Pub/sub dùng cho dữ liệu nhỏ còn work queue dùng cho dữ liệu lớn, ngoài kích thước message ra thì giống hệt nhau',
+      'Work queue luôn giữ đúng thứ tự tuyệt đối còn pub/sub thì không, nên việc cần thứ tự bắt buộc phải dùng queue',
+      'Pub/sub là phiên bản cũ đã bị work queue thay thế, nên hệ thống mới chỉ cần dùng queue cho mọi trường hợp',
+      'Queue: mỗi message do MỘT consumer xử lý (chia việc); pub/sub: MỌI subscriber quan tâm đều nhận một bản (fan-out)',
+    ], answer: 3,
+    explain: 'Khác biệt cốt lõi nằm ở SỐ NGƯỜI NHẬN. WORK QUEUE (SQS, BullMQ, RabbitMQ với một queue) dùng để chia tải: job "resize ảnh" chỉ nên có đúng một worker làm, thêm worker là tăng thông lượng. PUB/SUB (Kafka topic với nhiều consumer group, SNS, Redis pub/sub) dùng để phát tán sự kiện: "đơn hàng đã thanh toán" cần cả service gửi mail, service kho lẫn service phân tích cùng nhận, mỗi bên xử lý theo cách riêng — và thêm một bên tiêu thụ mới thì không phải sửa gì ở bên phát. Kafka gộp được cả hai mô hình: trong cùng một consumer group thì các partition chia đều cho consumer (work queue), còn giữa các group thì mỗi group nhận đủ bản sao (pub/sub). Vài điểm hay được hỏi thêm: hầu hết hệ thống chỉ đảm bảo AT-LEAST-ONCE nên consumer bắt buộc phải idempotent; thứ tự chỉ được giữ trong phạm vi hẹp (một partition Kafka, một message group của SQS FIFO) nên hãy chọn key sao cho các sự kiện của cùng một thực thể rơi vào cùng partition; Redis pub/sub là fire-and-forget, không lưu trữ, subscriber offline là mất message nên đừng dùng cho việc quan trọng. Về mặt thiết kế: queue mang MỆNH LỆNH ("hãy gửi mail"), pub/sub mang SỰ KIỆN đã xảy ra ("đơn hàng đã thanh toán") — đặt tên đúng vai trò giúp hệ thống dễ mở rộng hơn nhiều.',
+  },
+  {
+    id: 'node-gateway-bff', topic: 'Kiến trúc',
+    q: 'API gateway và BFF (backend for frontend) giải quyết chuyện gì?',
+    options: [
+      'Gateway là tên gọi khác của load balancer, còn BFF là một cách gọi khác của chính API gateway trong hệ Node',
+      'Gateway gom việc dùng chung ở cửa ngõ (auth, rate limit, định tuyến); BFF gom dữ liệu theo nhu cầu riêng từng client',
+      'Cả hai đều là nơi đặt toàn bộ logic nghiệp vụ để các service phía sau chỉ còn nhiệm vụ đọc ghi cơ sở dữ liệu',
+      'Gateway chỉ để cache response tĩnh, còn BFF chỉ để nén dữ liệu lại trước khi trả về cho ứng dụng di động',
+    ], answer: 1,
+    explain: 'API GATEWAY đứng trước cụm service và làm những việc mà service nào cũng cần: kết thúc TLS, xác thực token, rate limit, định tuyến theo đường dẫn, ghi log và trace, giới hạn kích thước request. Lợi ích là không phải sao chép đống code đó vào từng service, và client chỉ cần biết một địa chỉ duy nhất. BFF giải bài toán khác hẳn: web, mobile và smart TV cần hình dạng dữ liệu khác nhau — mobile muốn một lời gọi trả gọn để tiết kiệm pin và số vòng mạng, web lại muốn nhiều chi tiết hơn; thay vì nhồi mọi biến thể vào một API chung, mỗi client có một lớp mỏng do CHÍNH đội front-end đó sở hữu, gom dữ liệu từ vài service rồi cắt gọt đúng nhu cầu. Cảnh báo quan trọng nhất: đừng để hai lớp này phình thành nơi chứa nghiệp vụ — gateway trở thành "smart pipe" nghĩa là bạn vừa tạo ra một monolith mới ngay cửa ngõ, mọi thay đổi đều phải đi qua nó và nó cũng là điểm chết duy nhất (nhớ chạy nhiều bản, đặt timeout và circuit breaker). BFF cũng đừng gọi chuỗi dài đồng bộ — hãy gọi song song rồi hợp nhất, và suy giảm có kiểm soát khi một nguồn hỏng. Đội nhỏ với một client duy nhất thì chưa cần cả hai; và GraphQL đôi khi thay được đúng vai trò của BFF.',
+  },
 ];

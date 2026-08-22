@@ -1313,4 +1313,93 @@ window.JS_QUIZ = [
     ], answer: 1,
     explain: 'Trình duyệt dựng khung hình theo dây chuyền: style → LAYOUT (reflow: tính lại vị trí và kích thước) → PAINT (vẽ pixel) → COMPOSITE (ghép lớp). Đổi `width`, `top`, `font-size`, thêm/xoá node → chạy lại từ layout, đắt nhất vì có thể lan ra cả cây. Đổi `color`, `background`, `box-shadow` → bỏ qua layout, chỉ paint. Đổi `transform`, `opacity` → chỉ composite, chạy được trên luồng riêng của GPU — vì thế animation nên bám vào hai thuộc tính này. LAYOUT THRASHING: trong một vòng lặp bạn GHI (đổi style) rồi lại ĐỌC (`offsetHeight`, `getBoundingClientRect`, `scrollTop`, `getComputedStyle`) — mỗi lần đọc buộc trình duyệt phải layout đồng bộ ngay để trả số đúng, thành N lần reflow thay vì 1. Cách chữa: TÁCH pha — đọc hết vào biến trước, rồi mới ghi (hoặc ghi trong `requestAnimationFrame`). Tab Performance của DevTools báo thẳng "Forced reflow" và chỉ đúng dòng code gây ra.',
   },
+  // ===== Đợt #10 =====
+  {
+    id: 'js-fetch-errors', topic: 'Bất đồng bộ',
+    q: 'Vì sao bọc `try/catch` quanh `fetch` mà lỗi 404 vẫn lọt qua?',
+    options: [
+      '`fetch` tự động ném lỗi với mọi mã trạng thái từ 400 trở lên, nên `catch` bắt được hết trừ khi bạn nuốt lỗi',
+      '`fetch` chỉ reject khi lỗi MẠNG; 404 hay 500 vẫn là resolve thành công nên phải tự kiểm tra `res.ok`',
+      'Phải bọc thêm một `try/catch` nữa quanh `res.json()` thì mới bắt được lỗi HTTP, vì lỗi nằm trong phần body',
+      '`fetch` không bao giờ ném lỗi trong mọi trường hợp, muốn bắt lỗi thì bắt buộc phải quay về dùng XMLHttpRequest',
+    ], answer: 1,
+    explain: '`fetch` chỉ reject khi request KHÔNG hoàn thành được: mất mạng, DNS hỏng, CORS chặn, bị abort. Server trả 404 hay 500 nghĩa là giao dịch HTTP đã thành công — promise resolve bình thường, chỉ có `res.ok` là `false`. Mẫu đúng: `const res = await fetch(url); if (!res.ok) throw new HttpError(res.status, await res.text()); return res.json()`. Vài điểm đi kèm hay bị hỏi: `fetch` KHÔNG có timeout mặc định, dùng `AbortSignal.timeout(5000)` (Node 18+ và trình duyệt hiện đại); `res.json()` ném `SyntaxError` khi body rỗng hoặc khi server trả về trang lỗi HTML; body chỉ đọc được MỘT lần, cần đọc hai lần thì `res.clone()`; lỗi CORS phía JS chỉ hiện "TypeError: Failed to fetch" không kèm chi tiết nên phải xem tab Network; và muốn gửi cookie cross-origin thì cần `credentials: "include"`. Axios thì ngược lại — nó reject sẵn với 4xx/5xx, đó chính là khác biệt hay được hỏi kèm.',
+  },
+  {
+    id: 'js-prevent-stop', topic: 'DOM & trình duyệt',
+    q: '`preventDefault()`, `stopPropagation()` và `stopImmediatePropagation()` khác nhau ra sao?',
+    options: [
+      'Cả ba đều dừng sự kiện lại, khác nhau ở chỗ dừng tại pha capture, pha target hay pha bubble mà thôi',
+      '`stopPropagation` chặn hành vi mặc định, còn `preventDefault` chỉ ghi nhận log để tiện debug trong DevTools',
+      '`preventDefault` chặn HÀNH VI MẶC ĐỊNH của trình duyệt; hai cái kia chặn sự kiện lan tới các listener khác',
+      '`stopImmediatePropagation` huỷ luôn sự kiện khỏi hàng đợi nên những sự kiện sau đó cũng không bắn nữa',
+    ], answer: 2,
+    explain: '`preventDefault()` huỷ HÀNH VI MẶC ĐỊNH của trình duyệt: form không submit, link không điều hướng, checkbox không đổi trạng thái, `contextmenu` không hiện menu — nhưng sự kiện vẫn tiếp tục lan bình thường. `stopPropagation()` chặn sự kiện đi tiếp lên cha (hoặc xuống con ở pha capture), song các listener KHÁC gắn trên CÙNG phần tử vẫn chạy. `stopImmediatePropagation()` chặn cả hai: không lan, và các listener còn lại trên chính phần tử đó cũng bị bỏ qua. Trong handler kiểu HTML hoặc jQuery, `return false` làm cả hai việc preventDefault và stopPropagation — nguồn gốc của rất nhiều nhầm lẫn; còn trong `addEventListener` thuần thì `return false` chẳng có tác dụng gì. Cảnh báo thực chiến: `stopPropagation` dùng bừa sẽ phá event delegation và làm hỏng các thư viện nghe ở `document` (đóng dropdown khi click ra ngoài, analytics) — ưu tiên kiểm tra `e.target` thay vì chặn. Nếu listener đăng ký với `{ passive: true }` thì `preventDefault` bị bỏ qua kèm cảnh báo, và đó là mặc định của `touchmove`/`wheel` trên trình duyệt hiện đại. Kiểm tra trạng thái bằng `e.defaultPrevented`.',
+  },
+  {
+    id: 'js-innerhtml-xss', topic: 'Bảo mật',
+    q: 'Đưa dữ liệu người dùng ra DOM: `innerHTML` khác `textContent` ở chỗ nào?',
+    options: [
+      'Hai cái giống nhau về mặt an toàn, `innerHTML` chỉ khác ở chỗ nhanh hơn khi gán chuỗi dài nhiều lần liên tiếp',
+      '`textContent` nguy hiểm hơn vì giữ nguyên ký tự đặc biệt, còn `innerHTML` tự escape mọi thứ trước khi chèn vào',
+      '`innerHTML` PARSE chuỗi thành HTML nên chèn được thẻ và sự kiện độc; `textContent` luôn coi mọi thứ là văn bản',
+      '`innerHTML` an toàn vì trình duyệt hiện đại đã chặn sẵn mọi thẻ `<script>` được chèn vào theo cách này',
+    ], answer: 2,
+    explain: '`textContent` gán chuỗi thô — trình duyệt không parse, nên `<b>` hiện ra đúng như chữ. `innerHTML` PARSE chuỗi thành cây DOM, vì vậy dữ liệu người dùng có chứa thẻ sẽ trở thành thẻ thật. Điểm hay bị hiểu sai: thẻ `<script>` chèn qua `innerHTML` KHÔNG chạy (đúng theo spec), nhưng điều đó không cứu được bạn — `<img src=x onerror=alert(1)>` hay `<svg onload=...>` chạy ngon lành và đó mới là payload XSS phổ biến nhất. Nguyên tắc: mặc định dùng `textContent`; cần dựng cấu trúc thì tạo phần tử bằng `createElement` + `setAttribute` + `textContent`; buộc phải nhận HTML từ người dùng (trình soạn thảo rich text) thì sanitize bằng DOMPurify — đừng tự viết regex lọc thẻ, luôn thua. Các API cùng họ cũng nguy hiểm y hệt: `outerHTML`, `insertAdjacentHTML`, `document.write`, và gán chuỗi `javascript:` vào `href`/`src`. Trong React thì tương ứng là `dangerouslySetInnerHTML`. CSP chỉ là lớp chắn thứ hai, không thay thế được việc escape đúng chỗ.',
+  },
+  {
+    id: 'js-type-check', topic: 'Kiểu & ép kiểu',
+    q: 'Kiểm tra kiểu dữ liệu chính xác trong JavaScript thì nên dùng gì?',
+    options: [
+      '`typeof` là đủ cho mọi trường hợp, chỉ cần nhớ thêm rằng nó trả về "object" khi gặp giá trị `null`',
+      '`instanceof` chính xác nhất nên dùng cho mọi kiểu, kể cả chuỗi, số và các giá trị nguyên thuỷ khác',
+      'So sánh `constructor.name` với tên kiểu là cách duy nhất đúng, các cách còn lại đều cho kết quả sai lệch',
+      '`typeof` cho nguyên thuỷ và hàm; `Array.isArray` cho mảng; `Object.prototype.toString.call` khi cần phân biệt sâu',
+    ], answer: 3,
+    explain: '`typeof` nhanh và an toàn cho nguyên thuỷ ("string", "number", "boolean", "bigint", "symbol", "undefined") và cho "function" — nhưng mọi object, mảng, `null`, `Date`, `Map` đều ra "object". `Array.isArray(x)` là cách đúng cho mảng và hoạt động cả khi mảng đến từ iframe hay realm khác, đúng chỗ mà `x instanceof Array` cho kết quả sai. `instanceof` dựa vào chuỗi prototype nên hỏng qua realm, hỏng khi transpile xuống ES5, và có thể bị lừa bằng `Symbol.hasInstance`. Muốn phân biệt sâu (Date vs RegExp vs Map vs Promise) thì `Object.prototype.toString.call(x)` trả về "[object Date]". Thêm vài mẹo hay dùng: `Number.isInteger`, `Number.isNaN` (khác hàm toàn cục `isNaN` vốn ép kiểu trước khi kiểm tra), `x == null` bắt gọn cả `null` lẫn `undefined`, `Object.hasOwn(o, k)` thay cho `hasOwnProperty`. Và nguyên tắc lớn hơn: ở BIÊN hệ thống — body của request, JSON từ bên ngoài — đừng tự đoán kiểu bằng mấy hàm này, hãy validate bằng schema (zod, ajv) rồi mới dùng.',
+  },
+  {
+    id: 'js-tree-shaking', topic: 'Module',
+    q: 'Tree shaking là gì và vì sao đôi khi nó không loại được code chết?',
+    options: [
+      'Là bước nén file bằng cách xoá khoảng trắng và đổi tên biến, nên không phụ thuộc gì vào cách bạn viết import',
+      'Bundler loại export KHÔNG dùng tới nhờ phân tích tĩnh ESM; hỏng khi module có side effect hoặc là CommonJS',
+      'Là cơ chế trình duyệt tự bỏ qua hàm không được gọi trong lúc chạy, nên kích thước file tải về vẫn nguyên vẹn',
+      'Là việc chia bundle thành nhiều file nhỏ tải theo route, nhờ đó phần code chưa dùng tới sẽ không bao giờ tải',
+    ], answer: 1,
+    explain: 'Tree shaking loại bỏ các export không ai dùng tới, và nó chỉ khả thi nhờ ESM có cấu trúc TĨNH — `import`/`export` phân tích được lúc build, khác `require()` vốn có thể gọi động trong một nhánh `if`. Ba lý do thường gặp khiến nó không ăn: (1) module có SIDE EFFECT lúc import (đăng ký polyfill, sửa prototype, gán vào `window`) nên bundler không dám xoá — khai báo `"sideEffects": false` trong `package.json` (hoặc liệt kê riêng các file CSS) để cho phép; (2) thư viện chỉ phát hành bản CommonJS, hoặc build tool transpile ESM xuống CJS TRƯỚC khi bundle — nhớ giữ `module`/`target` ở dạng ESM và để bundler lo phần hạ cấp; (3) import cả namespace, ví dụ `import _ from "lodash"` thay vì dùng `lodash-es` với import lẻ từng hàm. Cách kiểm chứng đúng đắn là mở `webpack-bundle-analyzer` hoặc `rollup-plugin-visualizer` xem thật sự cái gì đang nằm trong bundle, đừng đoán. Nhớ phân biệt với CODE SPLITTING — chia nhỏ để tải theo nhu cầu là kỹ thuật khác, thường dùng chung với nhau.',
+  },
+  {
+    id: 'js-raf', topic: 'DOM & trình duyệt',
+    q: 'Vì sao animation nên dùng `requestAnimationFrame` thay cho `setInterval(fn, 16)`?',
+    options: [
+      'Vì `setInterval` không chạy được dưới mức 16ms, còn `requestAnimationFrame` cho phép đạt tần số cao hơn nhiều',
+      'Vì `requestAnimationFrame` chạy trên một luồng riêng nên không bị JavaScript của trang làm nghẽn lại',
+      'Vì rAF đồng bộ với NHỊP VẼ của màn hình và tự dừng khi tab bị ẩn; `setInterval` trôi nhịp và chạy tốn pin',
+      'Vì `setInterval` không truy cập được DOM trong callback nên phải gom thay đổi lại rồi mới áp dụng sau đó',
+    ], answer: 2,
+    explain: 'Trình duyệt vẽ theo nhịp màn hình (thường 60Hz, nhưng cũng có 90 hay 120Hz). `requestAnimationFrame` gọi callback NGAY TRƯỚC lần vẽ kế tiếp nên mỗi khung hình cập nhật đúng một lần — không thừa, không thiếu. `setInterval(fn, 16)` không khớp nhịp đó: có khung bị bỏ qua, có khung chạy hai lần, kết quả là hình giật; thêm nữa timer bị trôi dần và bị siết còn tối đa một lần mỗi giây khi tab chạy nền, trong khi rAF DỪNG HẲN lúc tab ẩn (tiết kiệm pin, đúng ý người dùng). Callback nhận sẵn timestamp — hãy tính vị trí theo THỜI GIAN TRÔI QUA chứ đừng cộng dồn từng bước cố định, để tốc độ như nhau trên mọi tần số màn hình. Muốn lặp thì gọi lại `requestAnimationFrame` ở cuối callback và nhớ `cancelAnimationFrame` khi component unmount. Hai công dụng nữa: gom các thay đổi DOM vào cùng một khung để tránh layout thrashing, và throttle sự kiện `scroll`/`mousemove` theo khung hình. Nhưng nếu chỉ là chuyển động đơn giản thì CSS `transition`/`animation` với `transform`/`opacity` vẫn mượt hơn vì chạy trên luồng compositor.',
+  },
+  {
+    id: 'js-source-map', topic: 'Cú pháp & runtime',
+    q: 'Source map dùng để làm gì và nên xử lý thế nào ở môi trường production?',
+    options: [
+      'Là bản đồ các module trong bundle để bundler biết thứ tự nạp, không liên quan gì tới việc đọc stack trace',
+      'Là bản sao mã nguồn gốc kèm trong bundle, bắt buộc phải công khai thì DevTools mới hiển thị đúng dòng được',
+      'Ánh xạ mã đã build ngược về mã nguồn gốc để đọc được stack trace; nên sinh ra nhưng upload riêng cho công cụ giám sát',
+      'Là tệp ghi lại mọi lỗi xảy ra phía người dùng, được trình duyệt tự động gửi về server mỗi khi có exception',
+    ], answer: 2,
+    explain: 'Code chạy ở production đã bị minify, bundle và transpile nên stack trace kiểu `main.a3f.js:1:48213` hoàn toàn vô dụng. Source map (`.map`) chứa ánh xạ ngược về đúng file, dòng, cột và cả tên biến gốc, để DevTools cùng các công cụ theo dõi lỗi (Sentry, Rollbar) hiển thị đúng chỗ. Điểm cần cẩn thận: đưa file `.map` lên public đồng nghĩa với công khai mã nguồn — cách làm chuẩn là VẪN sinh source map nhưng UPLOAD riêng cho hệ thống giám sát rồi không phát hành kèm bundle (hoặc chặn ở CDN), đồng thời bỏ dòng chú thích `sourceMappingURL` trỏ tới file công khai. Trong Node, cờ `--enable-source-maps` làm stack trace của code TypeScript đã build hiện đúng dòng trong file `.ts`. Vài lưu ý khi cấu hình: chọn đúng `devtool` (webpack) hoặc `sourcemap: true` (vite/rollup) — các bản `eval-*` nhanh cho dev nhưng đừng dùng cho production; và source map phải khớp ĐÚNG bản build đã deploy nên nhớ gắn release/version lúc upload, lệch một commit là ánh xạ sai hết.',
+  },
+  {
+    id: 'js-iife-module', topic: 'Module',
+    q: 'IIFE `(function () { ... })()` giải quyết chuyện gì, và ngày nay còn cần nữa không?',
+    options: [
+      'Tạo PHẠM VI riêng để biến không rò ra global — nền của module pattern thời chưa có ESM; nay phần lớn đã hết cần',
+      'Bắt buộc phải có để hàm chạy bất đồng bộ, vì hàm khai báo thông thường luôn chạy đồng bộ trên luồng chính',
+      'Giúp hàm chạy nhanh hơn nhờ engine biên dịch sẵn phần thân, nên vẫn nên bọc mọi file bằng IIFE như trước kia',
+      'Là cách duy nhất tạo được hàm ẩn danh trong JavaScript, vì cú pháp không cho phép gán hàm vào một biến thường',
+    ], answer: 0,
+    explain: 'Trước khi có ESM, mọi file nạp bằng thẻ `<script>` dùng CHUNG một scope toàn cục — hai thư viện đặt trùng tên biến là ghi đè lẫn nhau. IIFE gói thân file vào một hàm rồi gọi ngay: biến bên trong thành riêng tư, chỉ những gì bạn cố ý trả ra ngoài mới lộ. Đó chính là "module pattern": `const Counter = (function () { let n = 0; return { inc: () => ++n } })()` — `n` không ai chạm tới được, đóng gói thật sự bằng closure. Biến thể phổ biến là UMD (chạy được với cả CommonJS, AMD lẫn thẻ script) mà bạn vẫn thấy trong các file `dist` đã minify của thư viện cũ. Ngày nay ESM cho mỗi module một scope riêng, `let`/`const` cho scope khối, nên IIFE gần như hết việc — trừ hai chỗ: cần `await` ở cấp cao nhất trong file CommonJS (`(async () => { ... })()`) và các đoạn script nhỏ nhúng thẳng vào HTML. Bundler thì vẫn tự bọc output trong IIFE, nên mở file build ra thấy nó là chuyện hoàn toàn bình thường.',
+  },
 ];
