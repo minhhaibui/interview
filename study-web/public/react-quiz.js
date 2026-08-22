@@ -1631,4 +1631,93 @@ window.REACT_QUIZ = [
     ], answer: 2,
     explain: 'Toast là ví dụ điển hình của thứ cần một điểm điều khiển duy nhất. Cấu trúc thường dùng: một provider đặt ở gốc giữ MẢNG toast đang hiển thị, render danh sách đó qua `createPortal` ra `body` để không bị `overflow` hay z-index của cha cắt mất, và lộ ra một hàm `toast(message, options)` qua context hoặc qua một store ngoài. Dùng store ngoài có một ưu điểm lớn: gọi được từ NGOÀI cây React — trong interceptor của axios, trong `onError` của React Query — mà không cần hook, đó là lý do các thư viện phổ biến chọn cách này. Những chi tiết quyết định chất lượng: HÀNG ĐỢI và giới hạn số toast hiện cùng lúc, vì mười thông báo chồng lên nhau là vô dụng; gom nhóm thông báo trùng thay vì lặp lại; tự đóng sau vài giây nhưng TẠM DỪNG đếm giờ khi người dùng rê chuột hoặc focus vào; và không tự đóng với thông báo lỗi cần đọc kỹ. Về a11y: đặt vùng chứa là live region (`role="status"` cho thông tin, `role="alert"` cho lỗi), vùng đó phải có sẵn trong DOM từ trước, và nếu toast có nút hành động thì phải tới được bằng bàn phím — đây chính là lý do toast KHÔNG hợp cho thứ bắt buộc phải xử lý, cái đó cần modal. Cuối cùng: đừng lạm dụng toast cho lỗi của một trường trong form, lỗi nên hiện ngay cạnh chỗ gây ra nó.',
   },
+  // ===== Đợt #15 =====
+  {
+    id: 'react-iframe', topic: 'Kiến trúc',
+    q: 'Nhúng một ứng dụng khác vào trang React bằng `<iframe>` — cần xử lý những gì?',
+    options: [
+      'Chỉ cần đặt thẻ iframe với thuộc tính `src` là xong, mọi thứ còn lại thì trình duyệt tự lo hết',
+      'Giao tiếp qua `postMessage` có kiểm tra origin, tự đồng bộ chiều cao, và giới hạn quyền bằng `sandbox`',
+      'Truyền dữ liệu bằng cách gọi trực tiếp hàm bên trong iframe thông qua thuộc tính `contentWindow`',
+      'Đặt state của React vào một biến toàn cục để iframe đọc được, đó là cách chuẩn để chia sẻ dữ liệu',
+    ], answer: 1,
+    explain: 'iframe là một ngữ cảnh duyệt web RIÊNG BIỆT — khác origin thì bạn không đọc được DOM bên trong, không gọi được hàm của nó, và cũng không tự biết nó cao bao nhiêu. Ba việc phải tự làm. (1) GIAO TIẾP qua `postMessage` với kiểm tra `event.origin` ở cả hai chiều và `targetOrigin` cụ thể khi gửi — đây là một hợp đồng bạn phải thiết kế và ghi tài liệu như một API thật. (2) CHIỀU CAO: iframe không tự co giãn theo nội dung, nên bên trong phải đo bằng `ResizeObserver` rồi gửi chiều cao ra ngoài để trang cha đặt lại; không làm thì sẽ có hai thanh cuộn lồng nhau, một trải nghiệm rất tệ. (3) QUYỀN: dùng thuộc tính `sandbox` để mặc định chặn hết rồi mở đúng thứ cần, và `allow` để kiểm soát camera, micro, thanh toán; thêm `referrerpolicy` và `loading="lazy"` nếu iframe nằm dưới màn hình. Trong React thì giữ `src` ổn định để iframe không bị tải lại mỗi lần render — đổi `key` hay đổi `src` là mất sạch trạng thái bên trong; đăng ký listener `message` trong effect và nhớ gỡ khi cleanup. Vài chuyện khác: cookie bên thứ ba trong iframe đang bị các trình duyệt chặn dần nên luồng đăng nhập lồng trong iframe rất dễ vỡ; về a11y thì nhớ đặt `title` cho iframe; và nếu bạn kiểm soát được cả hai bên thì micro-frontend bằng module federation hoặc Web Components thường gọn hơn iframe.',
+  },
+  {
+    id: 'react-font-loading', topic: 'Chất lượng UI',
+    q: 'Chữ trên trang nhấp nháy đổi phông sau khi font tải xong — xử lý thế nào?',
+    options: [
+      'Chấp nhận vì đó là hành vi cố định của trình duyệt, không có cách nào can thiệp vào quá trình này',
+      'Ẩn toàn bộ chữ cho tới khi font tải xong, như vậy người dùng không còn thấy hiện tượng đổi phông',
+      '`font-display`, preload font quan trọng, và chọn font dự phòng có kích thước gần với `size-adjust`',
+      'Chuyển tất cả chữ thành ảnh để chắc chắn hiển thị đúng phông ngay từ lần render đầu tiên',
+    ], answer: 2,
+    explain: 'Trình duyệt phải quyết định hiển thị gì trong lúc font tuỳ chỉnh đang tải. `font-display: swap` hiện ngay bằng font dự phòng rồi ĐỔI khi font thật về — chữ đọc được ngay nhưng có hiện tượng nhấp nháy đổi phông. `block` thì giấu chữ một lúc rồi mới hiện — không nhấp nháy nhưng người dùng nhìn vào khoảng trống. `optional` để trình duyệt tự quyết và thường bỏ luôn font tuỳ chỉnh ở lần đầu nếu mạng chậm, đây là lựa chọn tốt cho trang thiên về nội dung. Cách giảm tác động: PRELOAD đúng font quan trọng nhất (nhớ thuộc tính `crossorigin` kể cả khi cùng origin), tự host thay vì gọi sang CDN của bên khác để bớt một vòng kết nối, dùng định dạng `woff2` và cắt bớt bộ ký tự không dùng, và chỉ nạp đúng những độ đậm thật sự cần. Phần tinh tế nhất là giảm layout shift khi đổi phông: chọn font dự phòng có hình dáng gần giống rồi tinh chỉnh `size-adjust`, `ascent-override` cùng `descent-override` trong `@font-face` để hai font chiếm gần đúng cùng một chỗ — làm tốt thì mắt gần như không thấy chữ nhảy và điểm CLS cũng đẹp lên. Trong Next.js thì `next/font` lo sẵn phần lớn việc này, gồm cả tự host và tính toán số đo cho font dự phòng. Cuối cùng nhớ rằng font hệ thống vẫn là lựa chọn nhanh nhất, vì nó không phải tải gì cả.',
+  },
+  {
+    id: 'react-rtl-layout', topic: 'Chất lượng UI',
+    q: 'Ứng dụng cần hỗ trợ ngôn ngữ viết từ phải sang trái — thay đổi lớn nhất nằm ở đâu?',
+    options: [
+      'Chỉ cần dịch nội dung, còn bố cục thì trình duyệt tự đảo chiều khi phát hiện ngôn ngữ đó',
+      'Viết một bộ CSS thứ hai đảo ngược mọi giá trị `left` và `right` rồi nạp có điều kiện theo ngôn ngữ',
+      'Đặt `dir="rtl"` và dùng thuộc tính LOGIC (`margin-inline-start`, `inset-inline`) thay cho left/right',
+      'Đảo ngược thứ tự các phần tử trong JSX khi ngôn ngữ là RTL để chúng hiển thị đúng chiều mong muốn',
+    ], answer: 2,
+    explain: 'Trình duyệt CÓ đảo chiều rất nhiều thứ khi bạn đặt `dir="rtl"` trên thẻ `html` — thứ tự chữ, thứ tự các item trong flex và grid, chiều căn lề mặc định — nhưng chỉ với những thuộc tính CSS mang tính LOGIC. Mọi chỗ bạn viết cứng `margin-left`, `padding-right`, `left: 0`, `text-align: left` hay `border-left` đều sẽ sai chiều. Cách làm hiện đại là dùng thuộc tính logic: `margin-inline-start` thay `margin-left`, `padding-inline`, `inset-inline-start`, `text-align: start`, `border-inline-end` — chúng tự hiểu theo chiều viết nên bạn chỉ cần một bộ CSS duy nhất cho cả hai chiều, và Tailwind cũng có các tiện ích tương ứng. Những thứ vẫn phải xử lý thủ công: ICON có hướng (mũi tên quay lại, nút tiến lùi, biểu tượng gửi đi) phải lật, nhưng biểu tượng KHÔNG có hướng như logo hay đồng hồ thì đừng lật; hiệu ứng trượt và thao tác vuốt phải đổi chiều; biểu đồ và dòng thời gian phải cân nhắc riêng; còn số điện thoại, mã sản phẩm và đoạn code thì vẫn viết từ trái sang phải ngay trong một câu RTL nên cần bọc riêng. Hai lời khuyên thực hành: dùng thuộc tính logic NGAY TỪ ĐẦU dù chưa cần RTL, vì chuyển đổi về sau rất tốn công; và kiểm thử bằng cách đặt `dir="rtl"` ở gốc rồi xem lại toàn bộ giao diện, việc đó sẽ lộ ra rất nhiều chỗ viết cứng chiều mà bạn không ngờ tới.',
+  },
+  {
+    id: 'react-nextjs-cache', topic: 'React hiện đại',
+    q: 'Sửa dữ liệu trong CSDL nhưng trang Next.js App Router vẫn hiện số liệu cũ. Vì sao?',
+    options: [
+      'Do trình duyệt cache response, chỉ cần tải lại trang một lần là dữ liệu sẽ luôn mới từ đó về sau',
+      'Do React giữ state cũ trong bộ nhớ, chỉ cần đổi `key` của component là dữ liệu được nạp lại ngay',
+      'Next.js cache ở NHIỀU tầng (fetch, route, router phía client) — phải revalidate đúng tầng cần thiết',
+      'Do Server Component chỉ chạy đúng một lần lúc build nên dữ liệu luôn là bản của thời điểm build',
+    ], answer: 2,
+    explain: 'Đây là chỗ gây bối rối nhất của App Router vì có tới bốn tầng cache chồng lên nhau. (1) Request Memoization: cùng một `fetch` gọi nhiều lần trong MỘT lần render được gộp lại — vô hại và tự động. (2) Data Cache: kết quả `fetch` được lưu qua nhiều request và cả nhiều lần deploy, điều khiển bằng tuỳ chọn `cache` và `next.revalidate`; đây là chỗ hay khiến dữ liệu cũ trơ ra. (3) Full Route Cache: HTML và payload của một route tĩnh được lưu sẵn ở phía server. (4) Router Cache ở phía CLIENT: payload của các route đã ghé được giữ trong bộ nhớ trình duyệt, nên bấm quay lại có thể thấy dữ liệu cũ dù server đã mới. Cách chữa phải nhắm đúng tầng: sau khi ghi dữ liệu trong server action thì gọi `revalidatePath` hoặc `revalidateTag` để dọn tầng dữ liệu và tầng route; gắn `tags` cho các `fetch` liên quan để dọn theo nhóm thay vì theo từng đường dẫn; dữ liệu phải luôn mới thì khai báo không cache hoặc đặt cả route là động; còn tầng router phía client thì `router.refresh()` là cách nạp lại. Lưu ý các giá trị mặc định đã đổi qua từng phiên bản — bản đầu cache khá hung hăng còn bản mới thì bớt đi nhiều — nên hãy KIỂM TRA hành vi ở đúng phiên bản bạn dùng thay vì tin trí nhớ, và luôn thử trên bản build production vì ở chế độ dev thì cache hoạt động khác.',
+  },
+  {
+    id: 'react-container-query', topic: 'Chất lượng UI',
+    q: 'Một component card cần đổi bố cục theo chiều rộng của CHÍNH NÓ, không theo màn hình — làm sao?',
+    options: [
+      'Dùng media query theo chiều rộng màn hình rồi chấp nhận sai ở những chỗ card nằm trong cột hẹp',
+      'Đo bằng `ResizeObserver` rồi đổi class trong JavaScript, đây là cách duy nhất khả thi hiện nay',
+      'CONTAINER QUERY: đặt `container-type: inline-size` cho cha rồi viết `@container` theo kích thước đó',
+      'Truyền một prop `size` từ component cha xuống để card biết mình đang nằm trong bố cục nào',
+    ], answer: 2,
+    explain: 'Media query hỏi về VIEWPORT, nhưng một component tái sử dụng thì không quan tâm màn hình rộng bao nhiêu — nó quan tâm CHỖ CỦA MÌNH rộng bao nhiêu. Cùng một card có thể nằm trong cột chính rộng 800 pixel hoặc trong sidebar hẹp 240 pixel trên cùng một màn hình desktop, mà media query không phân biệt được hai trường hợp đó. Container query giải đúng bài toán: khai báo `container-type: inline-size` (thường kèm `container-name`) cho phần tử bao ngoài, rồi trong CSS của card viết `@container (min-width: 400px)` — bố cục đổi theo kích thước thật của khung chứa. Đây là mảnh ghép còn thiếu để một component thật sự đóng gói được phần giao diện của mình, và nó đã được hỗ trợ ở tất cả trình duyệt hiện đại. Đi kèm là các đơn vị theo container cho phép chia tỷ lệ chữ theo khung chứa. Vài lưu ý: phần tử đặt `container-type` bị áp `contain` về kích thước theo chiều đó nên nó không còn co theo nội dung con — chuyện này dễ gây bất ngờ, hãy đặt trên một lớp bọc riêng thay vì trên chính card; không truy vấn được kích thước của CHÍNH phần tử đang áp style mà phải là cha của nó; và có một chi phí layout nhỏ nên đừng rải trên hàng nghìn phần tử. So với cách đo bằng `ResizeObserver` thì container query không cần JavaScript, không gây thêm lần render nào, và không nhấp nháy ở lần vẽ đầu tiên.',
+  },
+  {
+    id: 'react-skip-link', topic: 'Chất lượng UI',
+    q: 'Người dùng bàn phím phải Tab qua 30 mục menu mới tới nội dung chính — chữa thế nào?',
+    options: [
+      'Đặt `tabIndex={-1}` cho toàn bộ menu để bàn phím bỏ qua nó và nhảy thẳng vào phần nội dung',
+      'Thêm SKIP LINK ở đầu trang (hiện ra khi focus) nhảy tới nội dung chính, kèm các landmark rõ ràng',
+      'Không chữa được, đó là hành vi mặc định của trình duyệt và không thể can thiệp bằng HTML hay CSS',
+      'Chuyển menu xuống cuối HTML rồi dùng CSS đưa lên trên, như vậy thứ tự Tab sẽ đúng như mong muốn',
+    ], answer: 1,
+    explain: 'Skip link là một liên kết đặt NGAY ĐẦU trang, ẩn về mặt thị giác nhưng HIỆN RA khi được focus, trỏ tới id của vùng nội dung chính — người dùng bàn phím vừa vào trang, nhấn Tab một lần là thấy nó và nhảy thẳng qua phần điều hướng. Đây là một trong những cải thiện a11y rẻ nhất và rõ rệt nhất. Hai chi tiết hay làm sai: đừng ẩn bằng `display: none` vì như vậy nó không nhận được focus, hãy dùng kỹ thuật ẩn trực quan rồi đưa vào tầm nhìn khi `:focus`; và phần tử đích nên có `tabIndex={-1}` để nhận được focus khi nhảy tới, nếu không thì trình duyệt cuộn tới nhưng focus vẫn ở chỗ cũ và lần Tab tiếp theo lại quay về đầu trang. Đặt `tabIndex={-1}` cho cả menu như phương án sai ở trên là làm hỏng hoàn toàn: người dùng bàn phím sẽ không truy cập được menu nữa. Bổ sung cho skip link là LANDMARK ngữ nghĩa — `header`, `nav`, `main`, `aside`, `footer` — vì screen reader cho phép nhảy giữa các vùng này, và một trang chỉ nên có một `main`. Với ứng dụng nhiều vùng thì có thể có nhiều skip link. Nhớ thêm hai điều liên quan: khi điều hướng trong SPA thì phải chủ động chuyển focus về đầu nội dung mới, vì trang không tải lại nên focus đang kẹt ở link vừa bấm; và đừng bao giờ đặt `outline: none` mà không thay bằng một chỉ báo focus rõ ràng.',
+  },
+  {
+    id: 'react-storybook', topic: 'Công cụ & môi trường',
+    q: 'Storybook mang lại giá trị gì, và khi nào thì không đáng bỏ công duy trì?',
+    options: [
+      'Nó thay thế hoàn toàn việc viết test nên chỉ cần có Storybook là không cần test tự động nữa',
+      'Nó là công cụ bắt buộc cho mọi dự án React, thiếu nó thì không quản lý được component dùng chung',
+      'Phát triển component TÁCH BIỆT, dựng sẵn các trạng thái khó tái hiện; ít giá trị nếu ít component dùng lại',
+      'Nó tự sinh ra component từ thiết kế Figma nên đội frontend không còn phải viết giao diện bằng tay',
+    ], answer: 2,
+    explain: 'Giá trị chính của Storybook là làm việc với component MÀ KHÔNG cần chạy cả ứng dụng: bạn dựng sẵn từng trạng thái — đang tải, rỗng, lỗi, chữ rất dài, danh sách 500 dòng, quyền hạn chế — những thứ mà trong ứng dụng thật phải đăng nhập, tạo dữ liệu rồi bấm qua năm màn hình mới thấy được. Nhờ đó việc phát triển nhanh hơn, review giao diện dễ hơn, và những trạng thái biên vốn hay bị bỏ quên thì nay có mặt sẵn. Nó cũng thành tài liệu sống cho design system — người mới và cả đội thiết kế đều xem được kho component thật thay vì đọc file thiết kế. Và mỗi story là một điểm neo sẵn cho những việc khác: test tương tác, kiểm tra a11y bằng addon dựa trên axe, và test hồi quy hình ảnh chụp theo từng story. Cái giá phải trả: thêm một hạ tầng nữa phải cấu hình và giữ cho chạy được, story dễ bị bỏ lạc hậu nếu không ai cập nhật, và việc mock dữ liệu cho component phức tạp đôi khi tốn công hơn cả viết chính nó. Vì thế nó đáng nhất với thư viện UI dùng chung cho nhiều đội và với dự án có nhiều component tái sử dụng; còn với một ứng dụng nhỏ mà mỗi màn hình chỉ dùng một lần thì công duy trì thường lớn hơn lợi ích — lúc đó test tương tác cùng một trang demo nội bộ là đủ.',
+  },
+  {
+    id: 'react-combobox', topic: 'Chất lượng UI',
+    q: 'Ô tìm kiếm có danh sách gợi ý (combobox) — điều gì dễ bị bỏ sót nhất?',
+    options: [
+      'Không có gì khó, chỉ cần một `input` và một `div` danh sách hiện ra bên dưới khi người dùng gõ',
+      'Chỉ cần nhớ debounce lời gọi API, phần còn lại thì trình duyệt và React đã tự xử lý đúng hết',
+      'Bàn phím và ARIA: mũi tên chọn, Enter xác nhận, `aria-activedescendant`, và thông báo số kết quả',
+      'Phải render danh sách gợi ý bên trong chính thẻ `input` thì screen reader mới đọc được nội dung',
+    ], answer: 2,
+    explain: 'Combobox là một trong những component khó làm đúng nhất vì nó gộp nhiều thứ lại. Về BÀN PHÍM: mũi tên lên xuống di chuyển giữa các gợi ý mà FOCUS vẫn phải nằm trong ô input để người dùng gõ tiếp được — nên không dùng roving tabindex mà dùng `aria-activedescendant` trỏ tới id của mục đang chọn; Enter xác nhận, Escape đóng danh sách rồi Escape lần nữa xoá nội dung, Tab thì đóng và đi tiếp. Về ARIA: ô input mang `role="combobox"` với `aria-expanded` và `aria-controls` trỏ tới danh sách, danh sách là `role="listbox"` với các `role="option"` kèm `aria-selected`. Về THÔNG BÁO: số kết quả phải được công bố qua live region, vì người dùng screen reader không nhìn thấy danh sách vừa hiện ra. Về BẤT ĐỒNG BỘ: debounce lời gọi, huỷ request cũ để kết quả cũ không về sau rồi đè lên kết quả mới, hiện rõ trạng thái đang tải và trạng thái không có kết quả. Còn lại là hàng loạt chi tiết: cuộn để mục đang chọn luôn trong tầm nhìn, định vị danh sách sao cho không tràn màn hình, đóng khi bấm ra ngoài, giữ được giá trị đã chọn khi người dùng gõ tiếp rồi bỏ đi, và trên di động thì bàn phím ảo hay che mất danh sách. Lời khuyên: dùng primitive đã kiểm chứng như Downshift, React Aria hay Radix rồi tự làm phần giao diện — nhưng vẫn nên hiểu các mảnh trên để trả lời phỏng vấn và để sửa khi nó cư xử lạ.',
+  },
 ];

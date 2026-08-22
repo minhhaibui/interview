@@ -1758,4 +1758,93 @@ window.JS_QUIZ = [
     ], answer: 2,
     explain: 'WebAssembly là định dạng nhị phân chạy trên cùng máy ảo của trình duyệt, với hiệu năng ổn định và dự đoán được vì không phụ thuộc vào chuyện JIT có tối ưu được hay không. Nó thắng rõ ở: xử lý ảnh và video, mã hoá giải mã, nén, dựng hình 3D, engine game, mô phỏng vật lý, và cả những thư viện đã có sẵn bằng C, C++ hay Rust mà bạn không muốn viết lại — ffmpeg, SQLite, các thư viện CAD và công cụ nén đều đã có bản WASM. Nhưng nó KHÔNG phải viên đạn bạc: WASM không truy cập DOM trực tiếp, mọi thao tác giao diện đều phải đi qua JavaScript, và mỗi lần đi qua biên đó đều tốn chi phí — nên code nhiều tương tác DOM mà chuyển sang WASM thường CHẬM đi. Nó cũng không giấu được mã nguồn, vì WASM dịch ngược được và công cụ phân tích khá tốt. Chi phí phải cân nhắc: thêm một chuỗi công cụ build, file nhị phân phải tải về, chi phí khởi tạo và chuyển dữ liệu qua bộ nhớ tuyến tính (mảng lớn nên truyền qua `ArrayBuffer` thay vì sao chép từng phần), và debug khó hơn hẳn. Nguyên tắc thực dụng: hãy ĐO trước, tối ưu thuật toán trong JavaScript trước, cân nhắc Web Worker trước; chỉ chuyển sang WASM đúng phần nút thắt tính toán và giữ giao diện ở JavaScript. Ngoài trình duyệt thì WASM còn dùng cho plugin chạy trong sandbox và cho edge runtime — đó là hướng đang phát triển nhanh.',
   },
+  // ===== Đợt #15 =====
+  {
+    id: 'js-web-streams', topic: 'Bất đồng bộ',
+    q: 'Muốn hiển thị dần nội dung API trả về (streaming) thay vì đợi hết — làm thế nào?',
+    options: [
+      'Gọi `res.json()` nhiều lần cho tới khi hết dữ liệu, mỗi lần sẽ trả về một phần của nội dung',
+      'Đọc `response.body` bằng reader của `ReadableStream`, giải mã từng đoạn rồi cập nhật giao diện',
+      'Không làm được với `fetch`, phải chuyển hẳn sang WebSocket thì mới nhận được dữ liệu từng phần',
+      'Đặt `responseType` thành stream cho `fetch` rồi nghe sự kiện `data` giống như stream của Node',
+    ], answer: 1,
+    explain: '`res.json()` và `res.text()` đều CHỜ hết body rồi mới trả về. Muốn xử lý dần thì đi thẳng vào `response.body` — đó là một `ReadableStream` của Web Streams API: `const reader = res.body.pipeThrough(new TextDecoderStream()).getReader()` rồi lặp `const { value, done } = await reader.read()`; ở môi trường hỗ trợ thì gọn hơn nữa với `for await (const chunk of res.body)`. `TextDecoderStream` rất quan trọng: một ký tự UTF-8 nhiều byte có thể bị cắt đôi giữa hai chunk, tự giải mã từng mảnh mà không có chế độ stream là ra ký tự hỏng. Đây chính là cách các giao diện chat hiển thị chữ chạy dần, và cũng là cách xử lý file lớn mà không nạp hết vào bộ nhớ. Web Streams có ba loại — `ReadableStream`, `WritableStream`, `TransformStream` — nối với nhau bằng `pipeThrough` và `pipeTo`; mô hình giống stream của Node và cũng có BACKPRESSURE, nhưng API khác hẳn (Node có `Readable.toWeb` để chuyển đổi qua lại, và `fetch` của Node cũng dùng Web Streams). Vài lưu ý: body chỉ đọc được MỘT lần nên cần dùng ở hai nơi thì `res.clone()` hoặc `tee()`; nhớ `reader.cancel()` khi người dùng bỏ đi hoặc dùng `AbortController` cho cả request; và server phải thật sự gửi theo kiểu chunked, chứ có một proxy nào đó đệm lại là mọi nỗ lực phía client thành vô nghĩa.',
+  },
+  {
+    id: 'js-scroll-into-view', topic: 'DOM & trình duyệt',
+    q: 'Cuộn tới một phần tử nhưng nó bị header dính che mất — chữa thế nào cho gọn?',
+    options: [
+      'Tự tính vị trí bằng `getBoundingClientRect` rồi trừ đi chiều cao header trong mọi lần cuộn',
+      'Đặt `scroll-margin-top` bằng chiều cao header cho phần tử đích — `scrollIntoView` sẽ tự chừa chỗ',
+      'Không chữa được, phải bỏ header dính đi thì việc cuộn tới phần tử mới hoạt động chính xác',
+      'Thêm một phần tử rỗng cao bằng header ngay phía trên mỗi mục tiêu cần cuộn tới trong trang',
+    ], answer: 1,
+    explain: '`el.scrollIntoView()` cuộn sao cho phần tử lọt vào vùng nhìn thấy, nhưng nó không biết gì về header `position: sticky` đang phủ lên trên. Cách chữa gọn nhất là CSS: `scroll-margin-top: 80px` trên phần tử đích, hoặc đặt chung cho mọi `:target` — trình duyệt sẽ chừa đúng chừng ấy chỗ khi cuộn tới, và nó áp dụng cho cả `scrollIntoView`, cho việc nhảy theo neo trong URL, lẫn cho scroll snapping. Không phải tự tính toạ độ, không lệch khi header đổi chiều cao theo breakpoint. Các tuỳ chọn của `scrollIntoView({ behavior, block, inline })` cũng nên nhớ: `block: "nearest"` chỉ cuộn khi thật sự cần nên tránh giật vô cớ, rất hợp khi di chuyển bằng phím mũi tên trong danh sách; `behavior: "smooth"` thì mượt nhưng phải tôn trọng `prefers-reduced-motion`, và nhớ nó BẤT ĐỒNG BỘ nên muốn biết khi nào xong thì dùng sự kiện `scrollend` thay vì đoán bằng timer. Vài chú ý khác: phần tử nằm trong một container có `overflow: auto` thì nó cuộn container đó chứ không cuộn cả trang; đặt `scroll-behavior: smooth` trong CSS sẽ áp cho mọi lần cuộn kể cả khi bạn không muốn; và trong React thì gọi sau khi DOM đã cập nhật, tức trong effect hoặc trong callback ref, chứ đừng gọi ngay lúc `setState`.',
+  },
+  {
+    id: 'js-polyfill-transpile', topic: 'Module',
+    q: 'Polyfill và transpile khác nhau ở chỗ nào?',
+    options: [
+      'Là hai tên gọi của cùng một việc, Babel làm cả hai cùng lúc nên không cần phân biệt gì cả',
+      'Transpile đổi CÚ PHÁP mới sang cú pháp cũ; polyfill bổ sung API còn THIẾU lúc chạy',
+      'Polyfill xử lý cú pháp còn transpile bổ sung các hàm bị thiếu, ngược lại với điều nhiều người tưởng',
+      'Transpile chỉ dùng cho TypeScript còn polyfill chỉ dùng cho JavaScript thuần trong trình duyệt cũ',
+    ], answer: 1,
+    explain: 'TRANSPILE là chuyện của CÚ PHÁP: arrow function, optional chaining, class field, `async/await` — trình duyệt cũ không PARSE nổi những cú pháp này nên Babel hay esbuild viết lại chúng thành cú pháp cũ tương đương. POLYFILL là chuyện của API: `Array.prototype.at`, `Object.hasOwn`, `Promise.allSettled`, `structuredClone` — cú pháp thì hợp lệ, chỉ là hàm đó không tồn tại lúc chạy nên phải nạp thêm code cài đặt nó vào. Hai việc hoàn toàn khác nhau và thường cần cả hai. Công cụ: `@babel/preset-env` đọc cấu hình `browserslist` để biết cần hạ cấp những cú pháp nào, và với tuỳ chọn `useBuiltIns: "usage"` thì nó tự chèn đúng những polyfill của `core-js` mà code bạn dùng tới, thay vì nạp cả gói khổng lồ. Điểm cần cân nhắc: mỗi mức hỗ trợ trình duyệt cũ hơn là bundle to hơn và code chậm hơn — vòng lặp `for...of` sau khi hạ cấp xuống ES5 chậm hơn đáng kể — nên hãy nhìn số liệu người dùng thật rồi đặt `browserslist` cho đúng chứ đừng mặc định hỗ trợ tới tận IE. Vài mẹo: dùng cặp thuộc tính module và nomodule để trình duyệt hiện đại nhận bundle nhẹ; nạp polyfill có điều kiện bằng `import()` động sau khi kiểm tra tính năng; và nhớ polyfill không tạo ra được thứ nền tảng không có, chỗ đó cần một phương án dự phòng thật sự.',
+  },
+  {
+    id: 'js-feature-detection', topic: 'Cú pháp & runtime',
+    q: 'Muốn dùng một API mới mà không vỡ ở trình duyệt cũ — kiểm tra thế nào?',
+    options: [
+      'Đọc `navigator.userAgent` rồi đối chiếu với bảng phiên bản trình duyệt có hỗ trợ tính năng đó',
+      'Cứ gọi thẳng rồi bọc `try/catch`, đó là cách kiểm tra tính năng được khuyến nghị hiện nay',
+      'PHÁT HIỆN TÍNH NĂNG: kiểm tra sự tồn tại (`"share" in navigator`, `CSS.supports`) trước khi dùng',
+      'Không cần kiểm tra, trình duyệt cũ sẽ tự bỏ qua các API mà nó không hiểu và chạy tiếp bình thường',
+    ], answer: 2,
+    explain: 'Đoán theo `userAgent` là cách làm đã lỗi thời và luôn sai dần theo thời gian: chuỗi UA bị giả mạo tràn lan (chính vì các trang đoán sai nên trình duyệt phải giả dạng lẫn nhau), bảng phiên bản của bạn lỗi thời ngay khi vừa viết xong, và trình duyệt mới không nằm trong bảng thì bị chặn oan. Hãy hỏi thẳng nền tảng: `if ("share" in navigator)`, `if (typeof structuredClone === "function")`, `if (CSS.supports("container-type: inline-size"))`, `if ("IntersectionObserver" in window)`. Với thuộc tính HTML thì tạo một phần tử rồi kiểm tra property tương ứng có tồn tại không. Nguyên tắc lớn hơn là NÂNG CẤP TIỆM TIẾN: viết bản cơ bản chạy được ở mọi nơi rồi thêm phần nâng cao khi có hỗ trợ — trang vẫn dùng được nếu thiếu, chỉ là kém tiện hơn. Và cả chiều ngược lại, SUY GIẢM AN TOÀN: nếu tính năng là bắt buộc thì phải có thông báo rõ ràng thay vì để trang trắng. Vài lưu ý: kiểm tra một lần rồi lưu kết quả chứ đừng hỏi trong vòng lặp; cẩn thận với những trình duyệt CÓ API nhưng cài đặt hỏng, chỗ này thì bảng dữ liệu như caniuse hữu ích hơn; và `try/catch` chỉ nên là lớp chắn cuối chứ không phải cách phát hiện chính, vì nó nuốt luôn cả lỗi thật của bạn. Đọc UA thì nay chỉ còn hợp lý cho thống kê và cho một vài cách chữa lỗi riêng của từng trình duyệt.',
+  },
+  {
+    id: 'js-intl-segmenter', topic: 'Mảng & chuỗi',
+    q: 'Đếm số ký tự của chuỗi có emoji thì `str.length` cho kết quả sai — vì sao?',
+    options: [
+      'Vì emoji được lưu dưới dạng ảnh nên không tính được độ dài, phải bỏ chúng ra trước khi đếm',
+      '`length` đếm ĐƠN VỊ UTF-16, mà một emoji có thể gồm nhiều đơn vị — dùng `Intl.Segmenter` để đếm đúng',
+      'Vì chuỗi trong JavaScript không lưu được emoji nên nó bị thay bằng dấu hỏi trước khi đem đếm',
+      'Do trình duyệt hiển thị emoji rộng hơn ký tự thường nên số đếm bị lệch theo chiều rộng hiển thị',
+    ], answer: 1,
+    explain: 'Chuỗi JavaScript là dãy các đơn vị mã UTF-16. Ký tự ngoài mặt phẳng cơ bản — phần lớn emoji, một số chữ Hán hiếm — chiếm HAI đơn vị, nên độ dài của một emoji đơn giản đã là 2. Tệ hơn nữa là các emoji ghép: cờ quốc gia, emoji có màu da, biểu tượng gia đình — chúng được nối bằng ký tự zero-width joiner và có thể dài tới cả chục đơn vị. Dùng `[...str]` hay `Array.from(str)` thì khá hơn vì duyệt theo CODE POINT, nhưng vẫn tách rời các cụm ghép đó. Đúng nhất là `Intl.Segmenter` với `granularity: "grapheme"` — nó cắt theo cụm ký tự mà NGƯỜI DÙNG nhìn thấy là một, và đó mới là con số bạn muốn khi đếm ký tự cho ô nhập liệu, khi cắt chuỗi để hiện dấu ba chấm, hay khi xoá lùi một ký tự. Cùng API đó còn cắt được theo TỪ và theo CÂU, có tính tới quy tắc của từng ngôn ngữ — nên đếm từ tiếng Việt hay tiếng Nhật đều đúng, thứ mà tách theo dấu cách không làm nổi. Cẩn thận thêm: `slice` cắt giữa chừng một cặp thay thế sẽ tạo ra ký tự hỏng; so sánh chuỗi có dấu thì nhớ `normalize("NFC")` vì cùng một chữ có thể được mã hoá theo hai cách; và nếu backend giới hạn độ dài theo BYTE thì phải đếm bằng `TextEncoder` chứ không phải bằng `length`.',
+  },
+  {
+    id: 'js-canvas', topic: 'DOM & trình duyệt',
+    q: 'Vẽ lên `<canvas>` mà hình bị mờ trên màn hình Retina — vì sao?',
+    options: [
+      'Do trình duyệt nén ảnh canvas để tiết kiệm bộ nhớ, chỉ cần tăng chất lượng khi xuất ra là hết',
+      'Kích thước BỘ ĐỆM khác kích thước hiển thị: phải nhân theo `devicePixelRatio` rồi `scale` context',
+      'Do canvas không hỗ trợ màn hình mật độ cao, phải chuyển sang SVG thì mới nét trên mọi thiết bị',
+      'Do vẽ bằng số thực, làm tròn toạ độ về số nguyên là hình sẽ nét lại trên mọi loại màn hình',
+    ], answer: 1,
+    explain: 'Canvas có HAI kích thước khác nhau: thuộc tính `width` và `height` quy định số pixel thật của bộ đệm vẽ, còn CSS quy định kích thước hiển thị. Trên màn hình có `devicePixelRatio` bằng 2, một canvas bộ đệm 300 pixel hiển thị ở 300 CSS pixel sẽ bị kéo giãn gấp đôi nên mờ. Cách làm đúng: đặt bộ đệm bằng kích thước CSS nhân với `devicePixelRatio`, giữ CSS ở kích thước mong muốn, rồi gọi `ctx.scale(dpr, dpr)` để mọi toạ độ bạn viết vẫn tính theo CSS pixel. Nhớ làm lại việc này mỗi khi canvas đổi kích thước, dùng `ResizeObserver` cho tiện, và lưu ý gán `canvas.width` sẽ XOÁ sạch nội dung đang có. Vài điều khác về canvas: nó là bitmap nên không có DOM, không có sự kiện trên từng hình vẽ, không có ngữ nghĩa cho screen reader — muốn tương tác thì phải tự tính va chạm và phải cung cấp bản thay thế cho a11y. Về hiệu năng: gom các thay đổi rồi vẽ lại trong `requestAnimationFrame`, hạn chế đổi trạng thái context, tách nền tĩnh sang một canvas riêng nằm dưới, và với hoạt cảnh nặng thì cân nhắc `OffscreenCanvas` chạy trong Web Worker. Chọn công cụ cho đúng: DOM và CSS cho giao diện thường; SVG khi cần tương tác trên từng phần tử và cần nét ở mọi mức phóng; canvas khi có hàng nghìn đối tượng hoặc xử lý ảnh theo pixel; WebGL khi cần hơn thế nữa.',
+  },
+  {
+    id: 'js-content-visibility', topic: 'DOM & trình duyệt',
+    q: 'Trang rất dài làm lần render đầu chậm — `content-visibility: auto` giúp được gì?',
+    options: [
+      'Nó nén nội dung lại để giảm dung lượng HTML tải về, nhờ đó trang hiện ra nhanh hơn hẳn',
+      'Nó xoá các phần tử ngoài màn hình khỏi DOM và chèn lại khi người dùng cuộn tới chỗ đó',
+      'Trình duyệt BỎ QUA việc dựng layout và vẽ cho phần ngoài màn hình, đến khi cần mới làm',
+      'Nó tải ảnh và font theo kiểu lười biếng, còn phần văn bản thì vẫn được xử lý đầy đủ như cũ',
+    ], answer: 2,
+    explain: '`content-visibility: auto` nói với trình duyệt rằng nội dung bên trong phần tử này có thể BỎ QUA việc dựng layout, vẽ và ghép lớp chừng nào nó chưa gần vùng nhìn thấy — nội dung vẫn nằm trong DOM và vẫn tìm kiếm được, vì trình duyệt tự bỏ qua trạng thái này khi người dùng tìm trong trang hoặc khi cần focus vào bên trong. Với một trang dài nhiều khối, đây là cách rẻ nhất để giảm mạnh thời gian dựng khung hình đầu tiên mà không phải viết một dòng JavaScript nào. Bắt buộc đi kèm là `contain-intrinsic-size`: vì trình duyệt chưa dựng layout nên nó không biết khối đó cao bao nhiêu, không khai báo thì thanh cuộn nhảy loạn khi bạn cuộn qua — hãy ước lượng chiều cao, và bản `auto` sẽ ghi nhớ kích thước thật sau lần đầu dựng. So sánh với ẢO HOÁ danh sách: virtualization chỉ giữ vài chục dòng trong DOM nên tiết kiệm cả bộ nhớ và phù hợp với danh sách hàng chục nghìn dòng, nhưng phải viết code và làm hỏng chức năng tìm trong trang lẫn khả năng in ấn; còn `content-visibility` giữ nguyên toàn bộ DOM nên đơn giản hơn nhiều nhưng không giúp gì về bộ nhớ. Chọn theo quy mô: vài trăm khối thì dùng CSS, hàng chục nghìn thì phải ảo hoá. Lưu ý phần tử được đặt thuộc tính này cũng nhận `contain` nên có vài giới hạn về định vị và về nội dung tràn ra ngoài.',
+  },
+  {
+    id: 'js-trusted-types', topic: 'Bảo mật',
+    q: 'Trusted Types giúp chặn XSS kiểu DOM-based như thế nào?',
+    options: [
+      'Nó quét nội dung chuỗi để tìm mã độc rồi tự động xoá các đoạn nguy hiểm trước khi chèn vào DOM',
+      'Nó mã hoá toàn bộ HTML của trang nên kẻ tấn công không đọc và không sửa được cấu trúc DOM',
+      'Cấm gán CHUỖI THƯỜNG vào các chỗ nguy hiểm (`innerHTML`) — phải đi qua policy do bạn khai báo',
+      'Nó thay thế hoàn toàn CSP nên bật Trusted Types là không cần cấu hình bảo mật nào khác nữa',
+    ], answer: 2,
+    explain: 'XSS kiểu DOM-based xảy ra khi dữ liệu do kẻ tấn công kiểm soát chảy tới một "hố" nguy hiểm: `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `document.write`, `eval`, `setTimeout` với tham số chuỗi, hay gán vào `script.src`. Vấn đề là những hố này rải rác khắp mã nguồn và cả trong thư viện, nên rà soát bằng mắt gần như bất khả thi. Trusted Types đảo ngược mặc định: bật bằng chỉ thị CSP `require-trusted-types-for` thì trình duyệt TỪ CHỐI mọi phép gán chuỗi thường vào các hố đó — chỉ chấp nhận đối tượng do một POLICY bạn tự khai báo tạo ra, và trong policy đó bạn đặt đúng một chỗ để sanitize, thường là gọi DOMPurify. Nhờ vậy toàn bộ bề mặt tấn công gom về vài dòng code duy nhất, và mọi vi phạm khác bị chặn ở tầng trình duyệt chứ không phụ thuộc vào việc lập trình viên có nhớ hay không. Cách triển khai: bật ở chế độ CHỈ BÁO CÁO trước để xem có bao nhiêu vi phạm và chúng nằm ở đâu — thường thư viện bên thứ ba là nguồn chính — sửa dần rồi mới siết. Lưu ý Trusted Types là một LỚP bổ sung chứ không thay CSP, không thay việc escape ở server, và cũng không cứu được XSS kiểu phản chiếu từ HTML do server sinh ra. Hỗ trợ trình duyệt hiện tập trung ở nhóm Chromium, nhưng vì nó chỉ siết thêm nên bật vẫn an toàn.',
+  },
 ];

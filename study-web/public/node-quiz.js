@@ -1678,4 +1678,93 @@ window.NODE_QUIZ = [
     ], answer: 2,
     explain: 'Cả đuôi file lẫn `Content-Type` đều do CLIENT gửi lên nên đều giả được. Hãy đọc MAGIC BYTES (vài byte đầu) để xác định loại thật bằng thư viện như `file-type`, rồi đối chiếu với danh sách TRẮNG các loại bạn chấp nhận. Những việc kèm theo: ĐỔI TÊN file thành một id do bạn sinh ra, vì tên gốc có thể chứa chuỗi thoát thư mục, chứa ký tự điều khiển, hoặc trùng tên gây ghi đè; lưu vào object storage hoặc một thư mục NGOÀI webroot rồi phục vụ qua một route có kiểm tra quyền, đừng để thư mục upload chạy được script; đặt `Content-Type` đúng và `Content-Disposition: attachment` khi trả về để trình duyệt không tự thực thi nội dung, kèm `X-Content-Type-Options: nosniff`. Với ảnh thì nên xử lý lại bằng sharp — vừa loại metadata EXIF chứa toạ độ GPS, vừa vô hiệu hoá payload giấu trong file; và nhớ giới hạn KÍCH THƯỚC ẢNH tính theo pixel chứ không chỉ theo byte, vì một file PNG vài trăm KB có thể giải nén thành ảnh hàng chục nghìn pixel mỗi chiều và ngốn sạch bộ nhớ. Cùng logic đó áp dụng cho file nén: đặt trần cho tổng dung lượng sau khi giải nén và cho số lượng file để chặn zip bomb, đồng thời kiểm tra đường dẫn của từng entry để chặn zip slip. Cuối cùng: SVG thực chất là HTML trá hình nên chứa được script — hoặc sanitize, hoặc chuyển sang ảnh raster, hoặc phục vụ từ một tên miền riêng.',
   },
+  // ===== Đợt #15 =====
+  {
+    id: 'node-passkey', topic: 'Bảo mật',
+    q: 'Passkey (WebAuthn) khác mật khẩu ở điểm căn bản nào?',
+    options: [
+      'Chỉ là mật khẩu được lưu sẵn trong trình duyệt cho tiện, bản chất vẫn là một bí mật chia sẻ',
+      'Nó là mã OTP sáu chữ số sinh tự động, thay cho việc người dùng phải tự gõ mật khẩu vào ô nhập',
+      'Dùng cặp khoá: server chỉ giữ khoá CÔNG KHAI, khoá riêng không rời thiết bị — nên chống được phishing',
+      'Nó băm mật khẩu ở phía client trước khi gửi lên nên server không bao giờ thấy mật khẩu gốc nữa',
+    ], answer: 2,
+    explain: 'Mật khẩu là BÍ MẬT CHIA SẺ: server phải lưu một dạng của nó dù đã băm, người dùng có thể bị lừa gõ nó vào trang giả, và rò rỉ ở một nơi thì lan sang mọi nơi họ dùng lại. Passkey dựa trên mật mã khoá công khai: thiết bị sinh một cặp khoá riêng cho từng trang, gửi khoá CÔNG KHAI cho server, còn khoá riêng nằm trong phần cứng bảo mật của thiết bị hoặc được đồng bộ có mã hoá qua tài khoản đám mây, và không bao giờ rời đi. Khi đăng nhập, server gửi một chuỗi thử thách và thiết bị ký nó sau khi người dùng xác nhận bằng vân tay hoặc khuôn mặt. Ba hệ quả lớn: (1) CHỐNG PHISHING theo thiết kế, vì chữ ký gắn với đúng tên miền nên trang giả có lừa được người dùng cũng không nhận được gì dùng được; (2) không có gì để đánh cắp từ CSDL của bạn, khoá công khai lộ ra cũng vô hại; (3) không còn chuyện dùng lại mật khẩu giữa các trang. Về phía server bạn cần lưu id thông tin xác thực, khoá công khai, và một BỘ ĐẾM chữ ký để phát hiện thiết bị bị nhân bản — nên dùng thư viện như SimpleWebAuthn thay vì tự cài đặt giao thức. Những chỗ phải nghĩ kỹ khi triển khai: cho phép đăng ký NHIỀU passkey vì mất thiết bị là mất đường vào; luôn có phương án khôi phục an toàn, và đây thường lại là mắt xích yếu nhất; giai đoạn chuyển tiếp thì chạy song song với mật khẩu, xem passkey như một cách đăng nhập mạnh hơn chứ đừng ép ngay.',
+  },
+  {
+    id: 'node-2fa', topic: 'Bảo mật',
+    q: 'Thêm xác thực hai lớp bằng TOTP — cần chú ý gì ngoài việc sinh mã?',
+    options: [
+      'Chỉ cần lưu secret rồi so mã người dùng nhập với mã hiện tại, không có gì khác phải quan tâm',
+      'Mã OTP nên gửi qua SMS vì đó là cách an toàn nhất và được khuyến nghị trong mọi hoàn cảnh',
+      'Mã khôi phục, chống dò mã, cho phép lệch vài chu kỳ, và mã đã dùng thì không cho dùng lại',
+      'Bắt buộc phải đổi secret sau mỗi lần đăng nhập để mã cũ không bị dùng lại lần thứ hai nữa',
+    ], answer: 2,
+    explain: 'TOTP sinh mã sáu chữ số từ một secret dùng chung và mốc thời gian hiện tại, thường mỗi 30 giây một mã. Những thứ dễ bỏ sót khi cài đặt: (1) MÃ KHÔI PHỤC — người dùng mất điện thoại là mất đường vào, hãy sinh sẵn một bộ mã dùng một lần, hiển thị đúng một lần lúc bật, và lưu chúng ở dạng đã BĂM như mật khẩu; (2) CHỐNG DÒ — sáu chữ số chỉ có một triệu khả năng và mã sống 30 giây, không giới hạn số lần thử là dò được, nên phải khoá theo tài khoản sau vài lần sai; (3) LỆCH ĐỒNG HỒ — chấp nhận mã của một chu kỳ trước và một chu kỳ sau là đủ, nới rộng hơn thì giảm an toàn; (4) CHỐNG DÙNG LẠI — lưu chu kỳ vừa dùng để cùng một mã không xác thực được hai lần trong khoảng thời gian đó; (5) BẢO VỆ SECRET — nó là khoá đối xứng nên phải mã hoá khi lưu, và bắt người dùng xác nhận một mã hợp lệ trước khi thật sự bật để họ không tự khoá mình ra ngoài. Về lựa chọn phương thức: SMS là yếu nhất vì có thể bị chiếm số điện thoại và bị chặn tin nhắn, chỉ dùng khi không còn cách nào khác; ứng dụng TOTP tốt hơn; mạnh nhất là passkey hay khoá phần cứng vì chúng chống được phishing, thứ mà TOTP không chống được — kẻ tấn công dựng trang giả vẫn xin được mã rồi dùng ngay lập tức. Cuối cùng nhớ yêu cầu xác thực lại khi người dùng đổi email, đổi mật khẩu hoặc tắt 2FA.',
+  },
+  {
+    id: 'node-password-reset', topic: 'Bảo mật',
+    q: 'Thiết kế luồng quên mật khẩu thế nào cho an toàn?',
+    options: [
+      'Gửi lại mật khẩu hiện tại qua email cho người dùng, như vậy họ không phải đặt lại từ đầu',
+      'Token NGẪU NHIÊN dùng một lần, hạn ngắn, lưu ở dạng băm; và không tiết lộ email có tồn tại hay không',
+      'Cho người dùng nhập email rồi đặt mật khẩu mới ngay tại đó, gửi email thông báo sau khi xong',
+      'Dùng chính id người dùng làm token trong link để hệ thống biết ai đang yêu cầu đặt lại mật khẩu',
+    ], answer: 1,
+    explain: 'Gửi lại mật khẩu cũ nghĩa là bạn đang lưu nó ở dạng đọc được — sai ngay từ gốc. Luồng đúng: sinh một token NGẪU NHIÊN đủ dài bằng `crypto.randomBytes`, gửi bản gốc trong link qua email, và lưu ở CSDL bản đã BĂM cùng thời điểm hết hạn — vì nếu CSDL rò rỉ thì token dạng thường cho phép chiếm mọi tài khoản. Hạn nên ngắn, khoảng 15 tới 60 phút, dùng một lần, và huỷ ngay sau khi đổi thành công cũng như khi người dùng yêu cầu link mới. Đừng dùng id người dùng hay bất cứ thứ gì đoán được làm token. Vài chi tiết quan trọng khác: PHẢN HỒI GIỐNG NHAU dù email có tồn tại hay không, nếu không thì trang của bạn thành công cụ dò xem ai đã đăng ký; rate limit theo cả email lẫn IP để không bị lợi dụng làm máy gửi thư rác; sau khi đổi mật khẩu thì HUỶ MỌI PHIÊN đang đăng nhập và mọi refresh token, rồi gửi email thông báo cho người dùng biết — đó là tín hiệu để họ phản ứng nếu không phải mình làm; và cẩn thận với việc dựng link bằng header `Host` do client gửi lên, vì đó là lỗ host header injection khiến token bay sang tên miền của kẻ tấn công, hãy lấy tên miền từ cấu hình. Cuối cùng, nên yêu cầu xác thực hai lớp nếu tài khoản đã bật, vì email cũng có thể đã bị chiếm.',
+  },
+  {
+    id: 'node-audit-log', topic: 'Kiến trúc',
+    q: 'Nhật ký kiểm toán (audit log) khác log ứng dụng ở chỗ nào?',
+    options: [
+      'Không khác gì, chỉ cần ghi thêm chữ AUDIT vào đầu dòng log thường là đủ để phân biệt hai loại',
+      'Audit log chỉ ghi lỗi còn log ứng dụng ghi mọi thứ, đó là khác biệt duy nhất giữa hai loại này',
+      'Ghi AI làm GÌ với dữ liệu nào, là bằng chứng nghiệp vụ nên phải bất biến và giữ lâu, không được sửa',
+      'Audit log chỉ dùng khi hệ thống có sự cố, bình thường thì nên tắt đi để tiết kiệm dung lượng lưu trữ',
+    ], answer: 2,
+    explain: 'Log ứng dụng phục vụ việc GỠ LỖI: nó nhiều, ồn, xoay vòng sau vài ngày, và sửa hay mất vài dòng cũng không sao. Audit log phục vụ TRÁCH NHIỆM GIẢI TRÌNH: ai đã làm gì, với tài nguyên nào, vào lúc nào, từ đâu — nó là bằng chứng cho câu hỏi "vì sao đơn hàng này bị huỷ" hay "ai đã xem hồ sơ này", và trong nhiều lĩnh vực thì luật bắt buộc phải có. Vì thế yêu cầu khác hẳn: BẤT BIẾN (chỉ thêm, không sửa không xoá — dùng bảng riêng chỉ cấp quyền thêm, hoặc đẩy sang kho có khoá chống xoá), giữ LÂU theo quy định, và tách khỏi hệ thống log thường để không bị xoay vòng mất. Nội dung mỗi bản ghi nên có: chủ thể (id người dùng, và cả tài khoản quản trị nếu đang mạo danh người khác), hành động, đối tượng, thời điểm, địa chỉ IP cùng user agent, id tương quan của request, và giá trị TRƯỚC với SAU cho những thay đổi quan trọng. Vài lưu ý thực hành: đừng ghi dữ liệu nhạy cảm nguyên bản vào đó, hãy che bớt hoặc chỉ ghi là trường nào đã đổi; ghi ở tầng nghiệp vụ chứ đừng ghi ở middleware HTTP vì bạn cần Ý NGHĨA chứ không phải đường dẫn; ghi trong CÙNG transaction với thay đổi dữ liệu để hai bên không lệch nhau; và nhớ rằng việc ĐỌC dữ liệu nhạy cảm cũng đáng ghi chứ không chỉ việc ghi. Cuối cùng, có nhật ký mà không ai xem thì vô dụng — hãy làm giao diện tra cứu và đặt cảnh báo cho vài hành vi bất thường.',
+  },
+  {
+    id: 'node-gdpr-delete', topic: 'Kiến trúc',
+    q: 'Người dùng yêu cầu xoá toàn bộ dữ liệu cá nhân — xử lý thế nào cho đúng?',
+    options: [
+      'Chạy `DELETE` trên bảng người dùng là xong, các bảng khác sẽ tự xoá theo nhờ ràng buộc khoá ngoại',
+      'Chỉ cần đánh dấu tài khoản là đã xoá rồi ẩn khỏi giao diện, dữ liệu vẫn giữ nguyên để còn đối chiếu',
+      'ẨN DANH HOÁ phần phải giữ (hoá đơn, log), xoá phần còn lại, và có kế hoạch cho backup lẫn hệ thống phụ',
+      'Xuất toàn bộ dữ liệu ra file gửi cho người dùng rồi xoá tài khoản, các hệ thống khác không liên quan',
+    ], answer: 2,
+    explain: 'Xoá cứng mọi thứ thường KHÔNG làm được và cũng không đúng luật: hoá đơn phải giữ theo quy định kế toán, dữ liệu tổng hợp cho báo cáo không nên mất, và nhật ký kiểm toán thì vốn phải bất biến. Cách làm thực tế là ẨN DANH HOÁ: thay tên, email, số điện thoại và địa chỉ bằng giá trị vô nghĩa hoặc bằng một mã không truy ngược được, giữ lại phần cấu trúc cần cho nghiệp vụ. Một kỹ thuật gọn là mã hoá dữ liệu cá nhân bằng khoá riêng của từng người dùng, rồi khi cần xoá thì chỉ việc VỨT KHOÁ — dữ liệu còn đó nhưng vĩnh viễn không đọc được, đặc biệt hữu ích với backup và với event log vốn không sửa được. Đừng quên rằng dữ liệu cá nhân không chỉ nằm ở bảng người dùng: nó rải trong log ứng dụng, trong cache, trong hệ thống phân tích, trong công cụ gửi email và CRM của bên thứ ba, trong file đính kèm, và trong các bản backup — hãy lập DANH SÁCH nơi lưu trữ trước rồi mới viết quy trình. Về backup: không ai khôi phục cả bản backup chỉ để xoá một người, nên cách chấp nhận được là ghi lại yêu cầu xoá và áp lại nếu có lúc phải khôi phục, cộng với việc backup cũng có hạn lưu trữ. Vài điểm nữa: cho một khoảng chờ trước khi xoá thật để tránh thao tác nhầm và chống lạm dụng; xác minh danh tính người yêu cầu; ghi lại chính việc xoá vào audit log; và làm luôn chức năng XUẤT dữ liệu, vì quyền truy cập thường đi kèm quyền xoá.',
+  },
+  {
+    id: 'node-server-timeout', topic: 'HTTP',
+    q: 'Server Node sau load balancer thỉnh thoảng trả lỗi 502 ngẫu nhiên. Nghi ngờ đầu tiên là gì?',
+    options: [
+      'Do CPU quá tải nên tiến trình Node không kịp xử lý, chỉ cần thêm máy là hết lỗi 502 ngay',
+      '`keepAliveTimeout` của Node NGẮN hơn của load balancer — nó đóng connection đúng lúc LB gửi request mới',
+      'Do DNS phân giải sai nên một phần request bị gửi tới máy chủ không tồn tại và trả về lỗi 502',
+      'Do thiếu header CORS nên trình duyệt chặn response và load balancer ghi nhận đó là một lỗi 502',
+    ], answer: 1,
+    explain: 'Đây là một trong những lỗi 502 khó chịu nhất vì nó ngẫu nhiên và không tái hiện được. Cơ chế: load balancer giữ connection keep-alive tới Node để tái sử dụng; nếu Node đóng connection SỚM hơn LB nghĩ thì sẽ có một khoảnh khắc LB vừa gửi request vào đúng connection mà Node vừa quyết định đóng — request rơi vào hư không và LB trả 502. Quy tắc chữa: `server.keepAliveTimeout` của Node phải LỚN HƠN idle timeout của load balancer, ví dụ LB đặt 60 giây thì Node nên đặt 65 giây, và `server.headersTimeout` phải lớn hơn `keepAliveTimeout` một chút nữa. Mặc định của Node từng chỉ là 5 giây, thấp hơn hẳn mức 60 giây thường thấy ở các load balancer đám mây, nên đây là lỗi rất phổ biến khi triển khai. Nhân tiện nhớ luôn bộ timeout phía server: `requestTimeout` giới hạn tổng thời gian nhận một request và chống được kiểu tấn công gửi nhỏ giọt, `headersTimeout` giới hạn thời gian nhận header, `server.timeout` cho socket không hoạt động, còn với response chạy lâu thì phải tự đặt timeout ở tầng ứng dụng. Vài nguyên nhân 502 khác cũng nên loại trừ: tiến trình bị OOM rồi khởi động lại, health check quá nhạy nên pod bị rút ra giữa chừng, và graceful shutdown không đợi các request đang chạy hoàn tất trước khi đóng server.',
+  },
+  {
+    id: 'node-schema-registry', topic: 'Kiến trúc',
+    q: 'Nhiều service trao đổi message qua Kafka — làm sao đổi cấu trúc message mà không làm vỡ bên nhận?',
+    options: [
+      'Thông báo trước cho các đội rồi cùng deploy đồng loạt, đó là cách duy nhất đảm bảo không ai bị vỡ',
+      'Đặt số phiên bản vào tên topic và tạo topic mới mỗi lần đổi, bên nhận cũ cứ dùng topic cũ mãi',
+      'Schema registry + luật TƯƠNG THÍCH: chỉ thêm trường có giá trị mặc định, không xoá và không đổi kiểu',
+      'Gửi message dạng JSON tự do để bên nhận tự bỏ qua những trường mà nó không hiểu là xong chuyện',
+    ], answer: 2,
+    explain: 'Message trong hệ thống bất đồng bộ khác lời gọi API ở một điểm cốt tử: bên gửi và bên nhận KHÔNG deploy cùng lúc, và message cũ có thể còn nằm trong topic hàng ngày trời. Vì thế hợp đồng phải tiến hoá được. Schema registry lưu schema theo từng topic, gán id vào mỗi message, và quan trọng nhất là KIỂM TRA TƯƠNG THÍCH khi ai đó đăng ký schema mới — vi phạm thì bị chặn ngay lúc build chứ không để vỡ lúc chạy. Ba chế độ hay dùng: BACKWARD (bên nhận mới đọc được dữ liệu cũ — cho phép thêm trường có mặc định, xoá trường tuỳ chọn), FORWARD (bên nhận cũ đọc được dữ liệu mới), và FULL là cả hai. Luật thực hành rút ra: chỉ THÊM trường và luôn có giá trị mặc định; không xoá, không đổi tên, không đổi kiểu — muốn bỏ thì đánh dấu là đã lỗi thời rồi chờ mọi bên chuyển xong; và với enum thì bên nhận phải xử lý được giá trị lạ. Về định dạng: Avro và Protobuf gọn hơn JSON nhiều và có schema chặt chẽ, còn JSON Schema thì dễ đọc hơn nhưng tốn băng thông. Nếu chưa cần cả một registry thì tối thiểu hãy đặt trường phiên bản trong message, giữ schema trong một package dùng chung có kiểm phiên bản, và viết contract test cho cả bên gửi lẫn bên nhận. Nguyên tắc cuối: bên nhận nên KHOAN DUNG — bỏ qua trường lạ thay vì ném lỗi.',
+  },
+  {
+    id: 'node-tls-cert', topic: 'Kiến trúc',
+    q: 'Chứng chỉ TLS hết hạn lúc nửa đêm làm cả hệ thống ngừng hoạt động — phòng thế nào?',
+    options: [
+      'Mua chứng chỉ có thời hạn thật dài, ví dụ 10 năm, để không bao giờ phải lo việc gia hạn nữa',
+      'Đặt lịch nhắc thủ công trên lịch của người phụ trách rồi gia hạn bằng tay trước ngày hết hạn',
+      'TỰ ĐỘNG gia hạn (ACME hoặc cert-manager) kèm GIÁM SÁT ngày hết hạn và cảnh báo trước nhiều tuần',
+      'Bỏ HTTPS cho các dịch vụ nội bộ vì chúng không ra internet nên không cần chứng chỉ nào cả',
+    ], answer: 2,
+    explain: 'Chứng chỉ hết hạn vẫn là một trong những nguyên nhân gây sự cố phổ biến nhất, và nó luôn xảy ra đúng lúc không ai để ý. Thời hạn lại đang NGẮN dần chứ không dài ra — các trình duyệt đã siết xuống dưới một năm và lộ trình còn tiếp tục rút ngắn, nên gia hạn bằng tay là cách làm không bền vững. Cách đúng là tự động hoá bằng giao thức ACME: Certbot hoặc `cert-manager` trên Kubernetes tự xin và tự thay chứng chỉ, thường làm việc đó khi còn khoảng một phần ba thời hạn để có dư địa xử lý nếu hỏng. Nhưng tự động hoá KHÔNG thay thế giám sát: hãy kiểm tra ngày hết hạn từ BÊN NGOÀI, đúng như người dùng thấy, và cảnh báo ở nhiều mốc — 30 ngày, 14 ngày, 7 ngày; rất nhiều sự cố xảy ra vì cơ chế tự gia hạn im lặng hỏng suốt hai tháng mà không ai biết. Những chỗ hay bị bỏ sót: chứng chỉ của dịch vụ NỘI BỘ và mTLS giữa các service, vì không có ai bên ngoài phàn nàn nên không ai nhớ; chứng chỉ dùng để ký ứng dụng; chứng chỉ trên thiết bị mạng; và chứng chỉ bị ghim cứng trong các client cũ. Vài điều nữa: sau khi thay chứng chỉ phải nạp lại đúng cách mà không làm rớt kết nối đang có; cẩn thận nếu bạn tự ghim chứng chỉ ở phía client vì gia hạn sẽ làm vỡ; và nếu vẫn còn chỗ nào phải gia hạn thủ công thì viết runbook rõ ràng, bởi lúc cần dùng nó là lúc mọi người đang hoảng.',
+  },
 ];

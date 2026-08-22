@@ -61,9 +61,9 @@ không cần biết mẹo hard-refresh.
     ConcurrentHashMap/ThreadLocal), generics &amp; type erasure, Java 8+ (stream/Optional), OOP,
     Spring/JPA (DI, bean scope, @Transactional, N+1), **MyBatis** (#{}/${}, mapper proxy,
     cache 2 tầng), **SOLID** (5 nguyên lý).
-    📖 **Lý thuyết chuyên sâu JS · Node · React** (453 câu) — hỏi KHÁI NIỆM & CƠ CHẾ, không phải
+    📖 **Lý thuyết chuyên sâu JS · Node · React** (477 câu) — hỏi KHÁI NIỆM & CƠ CHẾ, không phải
     đoán output; **làm riêng** ở đây theo từng mảng, hoặc **làm chung** trong buổi 🎯 Phỏng vấn:
-    🟨 **JavaScript** (157 câu): scope & hoisting/TDZ, closure, `this` & binding, prototype/class,
+    🟨 **JavaScript** (165 câu): scope & hoisting/TDZ, closure, `this` & binding, prototype/class,
     ép kiểu & tham chiếu, event loop & microtask, Promise/async, generator & iterator, Proxy,
     WeakMap & GC, ESM vs CommonJS, Symbol, số nguyên an toàn & BigInt, bẫy regex (ReDoS, lastIndex),
     mutate vs bất biến, lỗi tuỳ biến & `cause`, async iterator, bẫy `Date` & `Intl`, `structuredClone`,
@@ -86,8 +86,10 @@ không cần biết mẹo hard-refresh.
     IndexedDB, WebSocket client tự hồi phục, `visibilitychange` & bfcache, `EventTarget`,
     microtask làm đói event loop, stack trace bất đồng bộ, import map, Constraint Validation API,
     `<dialog>` & `popover`, Web Animations API, `using` & `Symbol.dispose`, `Promise.withResolvers`,
-    Subresource Integrity, open redirect, CSS variable từ JS, và khi nào cần WebAssembly.
-    🟢 **Node.js** (150 câu): 6 pha event loop & libuv thread pool, `nextTick` vs `setImmediate`,
+    Subresource Integrity, open redirect, CSS variable từ JS, khi nào cần WebAssembly,
+    Web Streams & `response.body`, `scroll-margin-top`, polyfill vs transpile, phát hiện tính năng,
+    `Intl.Segmenter` đếm emoji, canvas & devicePixelRatio, `content-visibility`, và Trusted Types.
+    🟢 **Node.js** (158 câu): 6 pha event loop & libuv thread pool, `nextTick` vs `setImmediate`,
     stream & **backpressure**, `pipeline` vs `pipe`, require cache & module wrapper,
     cluster vs worker_threads, Buffer, EventEmitter, `uncaughtException` & **graceful shutdown**,
     rò rỉ bộ nhớ, bảo mật (command injection, path traversal, prototype pollution, băm mật khẩu,
@@ -115,8 +117,11 @@ không cần biết mẹo hard-refresh.
     phân vùng bảng theo thời gian, RPO/RTO & diễn tập khôi phục, Node trên serverless,
     cardinality của metric, materialized view, mã hoá envelope với KMS, RBAC/ABAC, SSRF khi nhận URL,
     khi nào dùng cột JSONB, SPF/DKIM/DMARC, triển khai đa vùng, monorepo & workspaces,
-    chaos engineering & game day, partial index, và kiểm tra file upload bằng magic bytes.
-    ⚛️ **React** (146 câu): virtual DOM & reconciliation, **key**, batching & bất biến, derived state,
+    chaos engineering & game day, partial index, kiểm tra file upload bằng magic bytes,
+    passkey/WebAuthn, TOTP & mã khôi phục, luồng quên mật khẩu, nhật ký kiểm toán,
+    xoá dữ liệu theo yêu cầu (ẩn danh hoá), `keepAliveTimeout` gây 502, schema registry,
+    và tự động gia hạn chứng chỉ TLS.
+    ⚛️ **React** (154 câu): virtual DOM & reconciliation, **key**, batching & bất biến, derived state,
     quy tắc hooks, deps & cleanup, **stale closure**, `memo`/`useMemo`/`useCallback`, context
     re-render, virtualization, controlled form, error boundary, StrictMode, và React 18/19
     (Suspense, `useTransition`, `useSyncExternalStore`, `useId`, RSC, hydration); thêm định tuyến SPA,
@@ -182,14 +187,16 @@ không cần biết mẹo hard-refresh.
     nested layout route, giới hạn của test a11y tự động, autosave nháp, state chọn nhiều dòng,
     trường form có điều kiện, ô nhập tiền có định dạng, khoá cuộn nền khi mở modal,
     định vị tooltip/dropdown, "Invalid hook call" do hai bản React, test hồi quy hình ảnh,
-    bảng nhiều cột trên di động, và hệ thống toast dùng chung;
+    bảng nhiều cột trên di động, hệ thống toast dùng chung, nhúng iframe an toàn, font & CLS,
+    hỗ trợ RTL bằng thuộc tính logic, bốn tầng cache của Next.js App Router, container query,
+    skip link & landmark, khi nào Storybook đáng dùng, và combobox đúng chuẩn;
     dành cho buổi phỏng vấn thiên kiến thức nền.
 
   Kho câu đủ lớn để ôn dài hơi mà **không lặp lại**: 🧩 IQ **363 câu** (10 nhóm: dãy số ·
   chữ cái · logic · toán nhanh · tương tự · xác suất · mã hoá · hình & không gian ·
   chuyển động & công việc · chọn từ khác loại), 🇬🇧 tiếng Anh **125 câu** (82 câu giao tiếp),
-  ⌨️ code **110 câu** (đoán output 52 + Big-O 58), 📖 lý thuyết **453 câu**
-  (JS 157 · Node 150 · React 146) — chạy được **~15 buổi liên tiếp** mà IQ, tiếng Anh và
+  ⌨️ code **110 câu** (đoán output 52 + Big-O 58), 📖 lý thuyết **477 câu**
+  (JS 165 · Node 158 · React 154) — chạy được **~15 buổi liên tiếp** mà IQ, tiếng Anh và
   lý thuyết không lặp câu nào.
 
   **🚫 Không hỏi lại câu của buổi trước**: mỗi câu được ghi vào `prep-iv-seen` NGAY khi bạn trả lời
