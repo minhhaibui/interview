@@ -61,9 +61,9 @@ không cần biết mẹo hard-refresh.
     ConcurrentHashMap/ThreadLocal), generics &amp; type erasure, Java 8+ (stream/Optional), OOP,
     Spring/JPA (DI, bean scope, @Transactional, N+1), **MyBatis** (#{}/${}, mapper proxy,
     cache 2 tầng), **SOLID** (5 nguyên lý).
-    📖 **Lý thuyết chuyên sâu JS · Node · React** (501 câu) — hỏi KHÁI NIỆM & CƠ CHẾ, không phải
+    📖 **Lý thuyết chuyên sâu JS · Node · React** (525 câu) — hỏi KHÁI NIỆM & CƠ CHẾ, không phải
     đoán output; **làm riêng** ở đây theo từng mảng, hoặc **làm chung** trong buổi 🎯 Phỏng vấn:
-    🟨 **JavaScript** (173 câu): scope & hoisting/TDZ, closure, `this` & binding, prototype/class,
+    🟨 **JavaScript** (181 câu): scope & hoisting/TDZ, closure, `this` & binding, prototype/class,
     ép kiểu & tham chiếu, event loop & microtask, Promise/async, generator & iterator, Proxy,
     WeakMap & GC, ESM vs CommonJS, Symbol, số nguyên an toàn & BigInt, bẫy regex (ReDoS, lastIndex),
     mutate vs bất biến, lỗi tuỳ biến & `cause`, async iterator, bẫy `Date` & `Intl`, `structuredClone`,
@@ -91,8 +91,12 @@ không cần biết mẹo hard-refresh.
     `Intl.Segmenter` đếm emoji, canvas & devicePixelRatio, `content-visibility`, Trusted Types,
     Clipboard API & nút "Sao chép", `FormData` khi upload, xin quyền thông báo đúng lúc & Push,
     Web Share API, listener `passive` & `touch-action`, `showSaveFilePicker` vs `<a download>`,
-    kéo-thả file (`dragover` + `preventDefault`), và bộ gõ tiếng Việt (`isComposing`).
-    🟢 **Node.js** (166 câu): 6 pha event loop & libuv thread pool, `nextTick` vs `setImmediate`,
+    kéo-thả file (`dragover` + `preventDefault`), bộ gõ tiếng Việt (`isComposing`),
+    chính sách autoplay & `AudioContext` bị treo, camera/micro (`stop()` từng track), định vị
+    & độ chính xác, `preconnect`/`preload`/`prefetch` & `fetchpriority`, quản lý focus
+    (`:focus-visible`, `inert`), `navigator.onLine` nói dối, giữ vị trí cuộn khi chèn nội dung
+    phía trên, và luồng xin quyền (`navigator.permissions.query`).
+    🟢 **Node.js** (174 câu): 6 pha event loop & libuv thread pool, `nextTick` vs `setImmediate`,
     stream & **backpressure**, `pipeline` vs `pipe`, require cache & module wrapper,
     cluster vs worker_threads, Buffer, EventEmitter, `uncaughtException` & **graceful shutdown**,
     rò rỉ bộ nhớ, bảo mật (command injection, path traversal, prototype pollution, băm mật khẩu,
@@ -126,8 +130,12 @@ không cần biết mẹo hard-refresh.
     tự động gia hạn chứng chỉ TLS, HTTP Range & 206 (tải tiếp/tua video), native addon & N-API,
     hạn chế thiệt hại khi package bị chiếm (`--ignore-scripts`, mô hình quyền của Node),
     chống bot đăng ký nhiều lớp, xoay khoá có khoảng giao nhau (`kid`/JWKS), deadlock & thứ tự khoá,
-    `node:test` so với Jest/Vitest, và ranh giới i18n giữa server với client.
-    ⚛️ **React** (162 câu): virtual DOM & reconciliation, **key**, batching & bất biến, derived state,
+    `node:test` so với Jest/Vitest, ranh giới i18n giữa server với client, HTTP/2 nên để LB
+    kết thúc, `statement_timeout`/`lock_timeout`/`idle_in_transaction`, MVCC bloat & autovacuum
+    bị chặn, GỬI webhook (ký HMAC, retry, hàng đợi theo khách), job dài & checkpoint chống
+    restart, cảnh báo theo triệu chứng & tốc độ đốt ngân sách lỗi, khách "hàng xóm ồn ào"
+    (quota & bulkhead), và phục vụ file người dùng tải lên an toàn.
+    ⚛️ **React** (170 câu): virtual DOM & reconciliation, **key**, batching & bất biến, derived state,
     quy tắc hooks, deps & cleanup, **stale closure**, `memo`/`useMemo`/`useCallback`, context
     re-render, virtualization, controlled form, error boundary, StrictMode, và React 18/19
     (Suspense, `useTransition`, `useSyncExternalStore`, `useId`, RSC, hydration); thêm định tuyến SPA,
@@ -144,7 +152,10 @@ không cần biết mẹo hard-refresh.
     và vì sao component render 2 lần ở dev; phân quyền UI chỉ là trải nghiệm (server vẫn phải chặn),
     design token ngữ nghĩa, publish thư viện component (peerDeps, `"use client"`), chiến lược E2E hết chập chờn,
     cử chỉ vuốt bằng Pointer Events & `touch-action`, middleware Next không phải hàng rào duy nhất,
-    hiển thị đa múi giờ với `Intl.DateTimeFormat`, và `dvh`/`safe-area`/`visualViewport` trên di động.
+    hiển thị đa múi giờ với `Intl.DateTimeFormat`, `dvh`/`safe-area`/`visualViewport` trên di động;
+    lỗi 422 gắn vào đúng ô form, in & xuất PDF (client hay server), lưu state bền vững có version,
+    ngân sách hiệu năng chặn ở CI, `prefers-reduced-motion`, đồng bộ nhiều tab bằng `BroadcastChannel`,
+    cộng tác thời gian thực (CRDT/OT, hiện diện), và đóng gói widget nhúng vào site khách.
   - 🔁 **Ôn câu sai** — gom mọi câu trắc nghiệm từng chọn sai (output/API/SQL/CLI +
     vòng Tiếng Anh/Tình huống của buổi phỏng vấn) vào một phiên ôn tập trung
     (đúng → rời hàng đợi); có **📉 chip chủ đề yếu** (câu sai dồn cụm ở đâu —
@@ -205,7 +216,7 @@ không cần biết mẹo hard-refresh.
   chữ cái · logic · toán nhanh · tương tự · xác suất · mã hoá · hình & không gian ·
   chuyển động & công việc · chọn từ khác loại), 🇬🇧 tiếng Anh **125 câu** (82 câu giao tiếp),
   ⌨️ code **110 câu** (đoán output 52 + Big-O 58), 📖 lý thuyết **477 câu**
-  (JS 173 · Node 166 · React 162) — chạy được **~15 buổi liên tiếp** mà IQ, tiếng Anh và
+  (JS 181 · Node 174 · React 170) — chạy được **~15 buổi liên tiếp** mà IQ, tiếng Anh và
   lý thuyết không lặp câu nào.
 
   **🚫 Không hỏi lại câu của buổi trước**: mỗi câu được ghi vào `prep-iv-seen` NGAY khi bạn trả lời

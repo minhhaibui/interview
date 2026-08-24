@@ -1856,4 +1856,93 @@ window.NODE_QUIZ = [
     ], answer: 1,
     explain: 'Ranh giới hợp lý: những gì NGƯỜI DÙNG NHÌN THẤY DO CLIENT VẼ RA thì client dịch, những gì SERVER TỰ GỬI ĐI thì server dịch. Cụ thể, API không nên trả `"Số dư không đủ"` mà nên trả mã cùng tham số — `{ "code": "INSUFFICIENT_BALANCE", "params": { "needed": 50000 } }` — để client hiển thị theo ngôn ngữ của họ, còn log và metric của bạn thì ổn định theo mã chứ không vỡ mỗi khi ai đó sửa câu chữ. Nhưng email, SMS, push và file PDF xuất ra là do server sinh nên server BẮT BUỘC phải có bộ bản dịch cùng template theo từng locale, và phải chọn ngôn ngữ theo hồ sơ người nhận chứ không theo `Accept-Language` của request đang chạy (job chạy nền thì làm gì có request nào). Vài chi tiết dễ sai: số nhiều không phải cứ thêm "s" — dùng `Intl.PluralRules` hoặc ICU MessageFormat, và đừng bao giờ nối chuỗi kiểu `"Bạn có " + n + " tin"` vì trật tự từ mỗi ngôn ngữ một khác; định dạng tiền, ngày, số dùng `Intl.NumberFormat`/`Intl.DateTimeFormat` với đúng locale VÀ đúng múi giờ của người nhận (email báo lịch hẹn sai giờ là lỗi kinh điển); dữ liệu đa ngôn ngữ trong DB thì tách bảng translation hoặc dùng cột JSONB theo locale, kèm quy tắc quay về ngôn ngữ mặc định khi thiếu bản dịch; sắp xếp danh sách theo `Intl.Collator` hoặc collation của DB chứ không theo mã ký tự. Và nếu response phụ thuộc ngôn ngữ thì nhớ `Vary: Accept-Language`, không thì CDN sẽ phục vụ bản tiếng Anh cho toàn bộ người dùng Việt. Dịch máy tại chỗ thì vừa chậm, vừa tốn, vừa không kiểm soát được thuật ngữ — chỉ hợp với nội dung do người dùng tạo và phải nói rõ đó là bản dịch tự động.',
   },
+  // ===== Đợt #17 =====
+  {
+    id: 'node-http2', topic: 'HTTP',
+    q: 'Có nên cho Node phục vụ HTTP/2 trực tiếp, và HTTP/2 thật sự giải quyết chuyện gì?',
+    options: [
+      'Nên bật HTTP/2 trong Node cho mọi dịch vụ vì nó nén dữ liệu tốt hơn nên giảm băng thông đáng kể',
+      'HTTP/2 ghép nhiều request trên một kết nối; thực tế thường để LB/CDN kết thúc, Node nói HTTP/1.1 phía trong',
+      'HTTP/2 là bắt buộc cho mọi API vì các trình duyệt hiện đại đã bỏ hẳn hỗ trợ HTTP/1.1 từ lâu rồi',
+      'Chỉ cần bật HTTP/2 thì các lời gọi tới database và service nội bộ cũng tự động nhanh lên theo',
+    ], answer: 1,
+    explain: 'Vấn đề của HTTP/1.1 là mỗi kết nối chỉ chạy được một request tại một thời điểm, nên trình duyệt phải mở tới sáu kết nối cho mỗi origin và vẫn xếp hàng khi trang có nhiều tài nguyên. HTTP/2 ghép nhiều stream trên MỘT kết nối TCP, nén header bằng HPACK và có cơ chế ưu tiên — lợi rõ rệt với trang tải hàng chục tệp nhỏ, còn với một API trả về một khối JSON thì gần như không khác gì. Kiến trúc thực tế của hầu hết hệ thống: TLS và HTTP/2 (hay HTTP/3) được kết thúc ở CDN, ingress hoặc load balancer; từ đó vào Node là HTTP/1.1 với keep-alive — đơn giản, dễ debug bằng `curl`, và mọi middleware đều chạy đúng. Node có sẵn `node:http2` cùng chế độ tương thích, nhưng nhiều thư viện trong hệ sinh thái Express giả định API của `http` nên dễ vấp những lỗi khó chịu; nếu không có nhu cầu đặc biệt (như tự phục vụ gRPC) thì đặt sau proxy vẫn là lựa chọn ít rủi ro nhất. Vài điều nên biết thêm: HTTP/2 vẫn bị head-of-line blocking ở tầng TCP khi mạng mất gói, đó chính là lý do HTTP/3 chuyển sang QUIC trên UDP và lợi nhất cho người dùng di động; server push đã bị các trình duyệt loại bỏ, thay thế bằng `103 Early Hints`; và HTTP/2 không giúp gì nếu nút thắt của bạn nằm ở truy vấn database hay CPU. Với hướng NGƯỢC LẠI — Node gọi ra service khác — thứ đáng làm trước tiên không phải HTTP/2 mà là bật keep-alive agent để khỏi bắt tay TLS lại ở mỗi request.',
+  },
+  {
+    id: 'node-db-timeouts', topic: 'Kiến trúc',
+    q: 'Một truy vấn kẹt làm cạn connection pool rồi sập cả service — đặt hàng rào ở đâu?',
+    options: [
+      'Tăng số kết nối tối đa của pool lên để luôn còn kết nối rảnh cho những request khác đi qua bình thường',
+      'Đặt `statement_timeout`, `lock_timeout` và `idle_in_transaction_session_timeout` cho từng loại kết nối',
+      'Bọc mọi truy vấn trong `Promise.race` với `setTimeout` ở tầng Node là đủ để giải phóng kết nối đang kẹt',
+      'Chuyển hết truy vấn nặng sang chạy trên read replica, khi đó pool của primary sẽ không bao giờ cạn nữa',
+    ], answer: 1,
+    explain: 'Timeout đặt ở tầng Node chỉ khiến bạn NGỪNG CHỜ chứ không huỷ được việc: truy vấn vẫn chạy tiếp trên server database, kết nối vẫn bận, và với `Promise.race` thì còn tệ hơn vì nhánh thua cuộc thường chẳng ai release kết nối — bạn vừa thêm một chỗ rò rỉ. Hàng rào thật phải nằm ở phía database. `statement_timeout` giới hạn thời gian một câu lệnh và nên đặt KHÁC NHAU theo ngữ cảnh: vài giây cho truy vấn phục vụ web request, vài phút cho job báo cáo — đặt theo role hoặc bằng `SET LOCAL` ngay trong transaction. `lock_timeout` để không xếp hàng vô hạn phía sau một khoá của người khác. `idle_in_transaction_session_timeout` giết những transaction đã mở rồi bị bỏ quên vì code quên commit hoặc vì một lời gọi HTTP treo giữa transaction — đây là thủ phạm kinh điển vừa giữ khoá vừa chặn autovacuum suốt đêm. Ở tầng ứng dụng, hãy tách bạch hai loại thời hạn: chờ để LẤY được kết nối từ pool (`connectionTimeoutMillis`) và thời gian chạy truy vấn; hết chờ thì trả lỗi nhanh và giới hạn độ dài hàng chờ để hệ thống suy giảm có kiểm soát thay vì đổ sập. Kèm theo là khả năng quan sát: `pg_stat_activity` cho biết ai đang treo và treo vì gì, `pg_cancel_backend` để huỷ mềm một truy vấn cụ thể, và một ngân sách timeout nhất quán xuyên tầng (client ngắn hơn API, API ngắn hơn database) để không có tầng nào chờ lâu hơn tầng gọi nó. Tăng pool chỉ dời thời điểm sập ra sau vài phút, đồng thời ép database ôm thêm kết nối — thường làm mọi thứ tệ hơn.',
+  },
+  {
+    id: 'node-vacuum-bloat', topic: 'Kiến trúc',
+    q: 'Bảng Postgres ghi liên tục ngày càng phình to và chậm dần dù số dòng gần như không tăng — vì sao?',
+    options: [
+      'Do index bị phân mảnh; cách duy nhất là xoá rồi tạo lại toàn bộ index của bảng đó theo định kỳ',
+      'MVCC để lại các dòng chết; autovacuum phải dọn được — transaction dài hoặc replica giữ snapshot sẽ chặn nó',
+      'Do thống kê cũ nên planner chọn sai kế hoạch; chỉ cần chạy `ANALYZE` là kích thước bảng trở lại bình thường',
+      'Do WAL không được dọn nên file dữ liệu phình theo; cấu hình lại `wal_keep_size` là bảng sẽ nhỏ lại',
+    ], answer: 1,
+    explain: 'Postgres dùng MVCC nên `UPDATE` không sửa tại chỗ: nó ghi một phiên bản MỚI của dòng và đánh dấu phiên bản cũ đã chết; `DELETE` cũng chỉ đánh dấu. Autovacuum có nhiệm vụ thu hồi những chỗ đó để tái sử dụng. Bảng phình mãi (bloat) nghĩa là autovacuum không theo kịp hoặc đang bị CHẶN, và danh sách thủ phạm khá ngắn: một transaction mở rất lâu (kể cả trạng thái `idle in transaction` do code quên commit), một replication slot bị bỏ hoang, `hot_standby_feedback` khiến replica giữ snapshot cũ, hoặc bảng ghi quá nặng so với ngưỡng mặc định. Hệ quả dây chuyền: mỗi lần quét phải đọc qua rác nên I/O tăng, tỉ lệ trúng cache giảm, index cũng phình theo, truy vấn chậm dần mà `EXPLAIN` nhìn vẫn "đúng kế hoạch" — và ở trường hợp xấu nhất là nguy cơ wraparound transaction id buộc database dừng để dọn khẩn cấp. Việc cần làm: theo dõi `n_dead_tup` cùng `last_autovacuum` trong `pg_stat_user_tables` và đưa lên dashboard; hạ `autovacuum_vacuum_scale_factor` cho những bảng nóng thay vì để mặc định 20% (bảng trăm triệu dòng thì 20% là quá muộn); đặt `idle_in_transaction_session_timeout`; đẩy job báo cáo chạy hàng giờ sang replica; dùng `pg_repack` để nén lại bảng mà không khoá dài, khác `VACUUM FULL` vốn khoá độc quyền cả bảng; và với dữ liệu theo thời gian thì phân vùng rồi `DROP` nguyên phân vùng thay vì `DELETE` hàng loạt. `ANALYZE` chỉ cập nhật thống kê cho planner — cần thiết, nhưng không thu hồi một byte nào.',
+  },
+  {
+    id: 'node-webhook-send', topic: 'Kiến trúc',
+    q: 'Hệ thống của bạn GỬI webhook cho khách hàng — thiết kế thế nào cho đáng tin cậy?',
+    options: [
+      'Gọi HTTP tới URL của khách ngay trong request tạo đơn, và ghi log lại nếu họ trả về lỗi để xử lý sau',
+      'Đẩy vào hàng đợi, ký payload, thử lại có backoff, tách hàng đợi theo khách và cho họ xem lại lịch sử',
+      'Giữ kết nối mở và gửi lại liên tục cho tới khi khách trả về 200, như vậy không sự kiện nào bị mất cả',
+      'Gửi song song mọi sự kiện tới tất cả khách để tăng thông lượng, ai chậm thì bên đó tự chịu trách nhiệm',
+    ], answer: 1,
+    explain: 'Endpoint của khách nằm ngoài tầm kiểm soát của bạn: nó chậm, nó sập, chứng chỉ hết hạn, domain đổi chủ. Gọi thẳng trong luồng nghiệp vụ nghĩa là request tạo đơn của bạn treo ba mươi giây vì máy chủ của người khác — nên mẫu đúng luôn là ghi sự kiện vào outbox hoặc hàng đợi, rồi để worker riêng lo việc giao. Từng phần cần có: KÝ payload bằng HMAC với secret riêng của từng khách, đưa timestamp vào phần được ký để chống phát lại, và hướng dẫn họ so sánh chữ ký theo kiểu chống timing attack. THỬ LẠI với backoff luỹ thừa kèm jitter, trải ra vài giờ đến vài ngày, nhưng chỉ với lỗi mạng và 5xx — 4xx nghĩa là họ chủ động từ chối, nện tiếp chỉ tốn tài nguyên hai bên. Mỗi sự kiện mang một `id` ổn định để khách khử trùng lặp, vì thứ bạn hứa được chỉ là "ít nhất một lần"; và THỨ TỰ thì không đảm bảo, nên kèm timestamp hoặc số phiên bản để họ bỏ qua sự kiện đến muộn. CÔ LẬP theo khách: hàng đợi hoặc hạn mức riêng để một endpoint chậm không làm nghẽn tất cả, và sau nhiều lần hỏng liên tiếp thì ngắt mạch, tạm dừng endpoint rồi gửi email báo. Về vận hành, thứ đội hỗ trợ sẽ biết ơn mỗi ngày là một trang lịch sử giao hàng: mã trạng thái, thân phản hồi, số lần thử và nút GỬI LẠI thủ công. Cuối cùng đừng quên phía bạn cũng có rủi ro: URL do khách nhập nên phải chống SSRF (chặn dải IP nội bộ, chặn chuyển hướng tới đó), đặt timeout ngắn, giới hạn kích thước phản hồi đọc về, và không bao giờ đưa dữ liệu nhạy cảm vào payload nếu chỉ cần gửi id để họ tự gọi API lấy.',
+  },
+  {
+    id: 'node-long-job-resume', topic: 'Kiến trúc',
+    q: 'Job chạy vài giờ hay bị pod restart giữa chừng rồi phải làm lại từ đầu — thiết kế lại thế nào?',
+    options: [
+      'Tăng `terminationGracePeriodSeconds` lên thật lớn để job luôn kịp chạy xong trước khi pod bị dừng hẳn',
+      'Chia thành nhiều lô nhỏ, ghi tiến độ sau mỗi lô, và làm mỗi lô chạy lại được mà không hỏng dữ liệu',
+      'Chạy job trong một tiến trình tách khỏi Kubernetes để không bị ảnh hưởng khi triển khai phiên bản mới',
+      'Bắt tín hiệu `SIGTERM` rồi bỏ qua nó, như vậy job sẽ được chạy tiếp cho tới khi hoàn tất công việc',
+    ], answer: 1,
+    explain: 'Mọi tiến trình rồi sẽ bị giết: deploy, scale xuống, node bị thu hồi (spot instance), OOM, hoặc đơn giản là hạ tầng đang vá lỗi. Vì thế bị ngắt giữa chừng phải được coi là chuyện BÌNH THƯỜNG chứ không phải ngoại lệ. Ba yếu tố cần có. Thứ nhất, chia công việc thành các LÔ đủ nhỏ để một lô chỉ mất vài giây tới vài phút. Thứ hai, sau mỗi lô ghi CHECKPOINT bền vững — con trỏ của bản ghi cuối cùng đã xử lý, hoặc đánh dấu trạng thái ngay trên từng bản ghi — để lần chạy sau tiếp tục đúng chỗ. Thứ ba, mỗi lô phải IDEMPOTENT: upsert theo khoá tự nhiên, hoặc ghi lại id đã xử lý, sao cho chạy lại một lô không tạo dữ liệu trùng và không gửi email hai lần. Có đủ ba thứ đó thì việc bị giết chỉ tốn lại đúng một lô. Bổ sung xung quanh: bắt `SIGTERM` để dừng SẠCH — xử lý nốt lô hiện tại, ghi checkpoint, đóng kết nối rồi thoát; bỏ qua tín hiệu chỉ đổi lấy một cú `SIGKILL` sau grace period, còn grace period dài thì làm mọi lần deploy chậm chạp và vẫn không cứu nổi job chạy ba tiếng. Dùng khoá phân tán hoặc `FOR UPDATE SKIP LOCKED` để hai bản sao không cùng nhận một lô. Báo tiến độ ra ngoài (số bản ghi đã xong, phần trăm, thời gian ước tính) để người trực không phải đoán xem job còn sống hay đã treo, kèm cảnh báo khi tiến độ ĐỨNG YÊN quá lâu — đó là dấu hiệu hữu ích hơn nhiều so với việc job chạy lâu. Và khi dữ liệu thật sự lớn thì tách hẳn thành nhiều job song song theo dải khoá: vừa nhanh hơn, vừa cho phép chạy lại đúng phần bị hỏng.',
+  },
+  {
+    id: 'node-alerting', topic: 'Kiến trúc',
+    q: 'Đội bị "mù cảnh báo" — báo động kêu suốt ngày nhưng sự cố thật vẫn lọt — chỉnh lại ra sao?',
+    options: [
+      'Nâng ngưỡng của tất cả cảnh báo lên cao hơn cho tới khi số lượng thông báo giảm về mức chịu đựng được',
+      'Chỉ đánh thức người khi TRIỆU CHỨNG mà người dùng cảm nhận được vượt ngưỡng; phần còn lại để trên dashboard',
+      'Cảnh báo mọi chỉ số hạ tầng (CPU, RAM, đĩa) vì sự cố luôn bắt đầu từ đó trước khi lan ra ngoài',
+      'Gộp tất cả cảnh báo vào một kênh chung để cả đội cùng nhìn thấy và ai đang rảnh thì vào xử lý trước',
+    ], answer: 1,
+    explain: 'Mỗi cảnh báo đánh thức người lúc ba giờ sáng là một khoản nợ: nếu nó không đòi hỏi hành động NGAY thì nó không nên là cảnh báo, mà là một dòng trên dashboard hoặc một ticket. Nguyên tắc gốc là cảnh báo theo TRIỆU CHỨNG chứ không theo nguyên nhân — tỉ lệ lỗi tăng, độ trễ p99 vượt ngưỡng, hàng đợi tăng không ngừng, số đơn hàng mỗi phút tụt bất thường. CPU 80% có thể hoàn toàn bình thường; nó chỉ đáng nhìn khi đã có triệu chứng và bạn đang đi tìm nguyên nhân. Cách làm cho nguyên tắc đó đo được là SLO: định nghĩa mục tiêu về tỉ lệ thành công và độ trễ, tính ngân sách lỗi, rồi cảnh báo theo TỐC ĐỘ ĐỐT ngân sách — đốt nhanh thì gọi điện ngay, đốt chậm thì mở ticket trong giờ hành chính. Kỹ thuật giảm ồn: đặt điều kiện kéo dài (`for: 5m`) để bỏ qua nhiễu thoáng qua, gom nhóm và ức chế cảnh báo phụ thuộc (database chết thì đừng bắn bốn mươi cảnh báo của bốn mươi service), im lặng có kế hoạch khi bảo trì, và tách hẳn hai kênh "gọi ngay" với "xem sau". Mỗi cảnh báo phải kèm runbook trả lời được ba câu: nó nghĩa là gì, đang ảnh hưởng tới ai, và bước kiểm tra đầu tiên là gì. Rồi đo lại chính hệ thống cảnh báo: bao nhiêu phần trăm là báo động giả, cảnh báo nào tháng nào cũng kêu mà chẳng ai làm gì — cái đó phải sửa hoặc xoá, để lại chỉ tổ dạy cả đội thói quen phớt lờ. Và nhớ chiều ngược lại: thêm kiểm tra tổng hợp từ BÊN NGOÀI, vì sự cố tệ nhất là loại làm cho chính hệ thống giám sát im lặng.',
+  },
+  {
+    id: 'node-tenant-fairness', topic: 'Kiến trúc',
+    q: 'Một khách hàng lớn gọi API ồ ạt làm chậm tất cả khách còn lại — xử lý thế nào?',
+    options: [
+      'Nâng cấu hình máy chủ và tăng số pod lên để hệ thống đủ sức phục vụ cả lúc khách đó gọi nhiều nhất',
+      'Đặt hạn mức và hàng đợi theo TỪNG khách, tách tài nguyên cho việc nặng, giới hạn cả độ đắt của mỗi truy vấn',
+      'Chặn tạm khách đó cho tới khi lưu lượng giảm rồi mở lại, đây là cách công bằng nhất với những người còn lại',
+      'Chuyển toàn bộ API sang xử lý bất đồng bộ qua hàng đợi, khi đó sẽ không ai phải chờ ai trong lúc gọi nữa',
+    ], answer: 1,
+    explain: 'Đây là bài toán "hàng xóm ồn ào" trong hệ thống nhiều khách hàng. Chỉ nâng cấu hình là trả tiền cho trường hợp xấu nhất của MỘT người và vẫn không ngăn được lần sau. Công cụ xếp theo lớp. (1) Hạn mức theo KHÁCH chứ không theo IP: token bucket gắn với `tenant_id`, trả `429` kèm `Retry-After` và header cho biết còn lại bao nhiêu, để họ tự điều tiết thay vì đoán mò — hạn mức công bố rõ trong tài liệu còn giúp bạn có cơ sở khi phải nói chuyện với khách. (2) Hàng đợi CÔNG BẰNG: thay vì một hàng chung theo thứ tự đến, chia theo khách rồi phục vụ luân phiên, để một khách đẩy vào trăm nghìn job không đẩy mọi người khác xuống cuối hàng. (3) CÔ LẬP tài nguyên theo mẫu bulkhead: pool kết nối và nhóm worker riêng cho việc nặng như xuất báo cáo hay import file, tách khỏi luồng API tương tác — để phần chậm không ăn hết pool chung; giới hạn số việc nặng chạy song song cũng thuộc nhóm này. (4) Giới hạn ĐỘ ĐẮT chứ không chỉ số lượng: chặn khoảng thời gian truy vấn quá rộng, giới hạn kích thước trang, đặt `statement_timeout` — một request cũng đủ hạ cả cụm nếu nó quét cả bảng. (5) Với khách quá lớn thì cân nhắc tách hẳn hạ tầng riêng, và tính tiền theo mức sử dụng để lợi ích hai bên cùng chiều. Điều kiện tiên quyết cho tất cả: mọi metric và log phải gắn nhãn khách hàng thì mới biết ai đang gây ra chuyện gì — nhưng chú ý cardinality khi số khách rất lớn, khi đó chỉ gắn nhãn cho nhóm khách lớn và gộp phần đuôi lại.',
+  },
+  {
+    id: 'node-serving-user-files', topic: 'Bảo mật',
+    q: 'Cho người dùng tải lên rồi tải xuống file (ảnh, PDF) — phục vụ lại thế nào cho an toàn?',
+    options: [
+      'Lưu vào thư mục `public/` của server rồi trả link tĩnh, đặt tên file theo id ngẫu nhiên để không ai đoán được',
+      'Phục vụ từ tên miền riêng, ép `Content-Disposition: attachment` cùng `nosniff`, và cấp link ký có hạn',
+      'Chỉ cần kiểm tra phần mở rộng lúc tải lên là đủ, vì file sai định dạng đã bị chặn ngay từ cửa vào rồi',
+      'Trả file qua chính API có xác thực và đặt `Content-Type` theo đúng đuôi file mà người dùng đã tải lên',
+    ], answer: 1,
+    explain: 'File do người lạ tải lên mà phục vụ từ ORIGIN CHÍNH là một lỗ XSS lưu trữ chờ ngày nổ: một file HTML — hoặc một file SVG, vốn chạy được JavaScript — sẽ chạy trong ngữ cảnh tên miền của bạn và đọc được cookie phiên của mọi người xem nó. Vì vậy hãy phục vụ từ tên miền riêng không dùng chung cookie (kiểu `usercontent.example.com`), luôn đặt `X-Content-Type-Options: nosniff` để trình duyệt không tự đoán kiểu nội dung, đặt `Content-Type` theo kết quả DÒ magic bytes của chính bạn chứ không theo đuôi file hay theo header client gửi lên, và với mọi thứ không cần hiển thị trực tiếp thì ép `Content-Disposition: attachment` để trình duyệt tải về thay vì mở ra. Ảnh nên được xử lý lại qua thư viện như sharp — vừa loại bỏ payload nhúng trong tệp, vừa xoá EXIF vốn chứa toạ độ GPS chỗ người dùng chụp; SVG thì làm sạch bằng bộ lọc hoặc chuyển hẳn sang ảnh raster. Về kiểm soát truy cập, đừng dựa vào "URL khó đoán": link rò ra qua header Referer, qua lịch sử duyệt, qua log của CDN và qua chính người dùng chia sẻ nhầm — hãy phát URL KÝ có hạn ngắn từ object storage và kiểm quyền tại thời điểm phát link, như vậy vừa an toàn vừa không bắt Node gánh luồng byte. Còn lại là những thứ nhỏ nhưng quan trọng: giới hạn kích thước mỗi file và tổng dung lượng theo người dùng, quét virus với file sẽ được người khác mở, thêm `Content-Security-Policy: sandbox` cho phần xem trước, và luôn sinh đường dẫn lưu trữ từ id do BẠN tạo — ghép tên file người dùng gửi lên vào đường dẫn chính là cách mở cửa cho path traversal.',
+  },
 ];

@@ -1809,4 +1809,93 @@ window.REACT_QUIZ = [
     ], answer: 1,
     explain: '`100vh` trên di động được tính theo viewport LỚN — tức là lúc thanh địa chỉ đã thu gọn — nên khi thanh địa chỉ còn hiện, khối của bạn cao hơn màn hình và nút ở đáy bị đẩy khuất. Bộ đơn vị mới giải quyết trực tiếp: `svh` (viewport nhỏ, an toàn nhất cho khung luôn vừa màn hình), `lvh` (lớn) và `dvh` (động, đổi liên tục theo thanh địa chỉ). Thực dụng thì `min-height: 100svh` cho khung chính là lựa chọn ít gây bất ngờ, còn `dvh` hợp cho lớp phủ toàn màn hình — nhưng nhớ rằng giá trị `dvh` thay đổi trong lúc cuộn nên đặt cho khối có nội dung dài dễ gây giật. Mẹo đo `innerHeight` rồi gán biến CSS là cách cũ, vẫn chạy nhưng thêm một vòng render và luôn trễ một nhịp so với CSS thuần. Phần thứ hai là tai thỏ và thanh home: muốn dùng trọn màn hình thì đặt `viewport-fit=cover` trong thẻ meta viewport, rồi chừa chỗ bằng `padding-bottom: env(safe-area-inset-bottom)` cho thanh công cụ dính đáy — thiếu bước này là nút bị thanh gạt ngang của iOS đè lên. Phần thứ ba là bàn phím ảo: iOS KHÔNG thu nhỏ layout viewport khi bàn phím hiện lên, nó chỉ đổi VISUAL viewport — nên thanh cố định ở đáy sẽ nằm dưới bàn phím. Cách xử lý là nghe `window.visualViewport` (`resize` và `scroll`) rồi dịch thanh đó lên theo `visualViewport.height` và `offsetTop`; trên Chrome Android còn có `interactive-widget=resizes-content` khai trong thẻ meta để trình duyệt tự thu layout. Thêm hai điều nhỏ mà hay gặp: `100vw` tính cả thanh cuộn nên gây tràn ngang trên desktop (dùng `100%` hoặc `dvw`), và mọi thứ ở trên chỉ nên tin sau khi thử trên máy thật — chế độ giả lập di động của DevTools không tái hiện được thanh địa chỉ co giãn lẫn bàn phím ảo.',
   },
+  // ===== Đợt #17 =====
+  {
+    id: 'react-form-server-errors', topic: 'Form & sự kiện',
+    q: 'Server trả 422 kèm lỗi theo từng trường — hiển thị lại trong form React thế nào?',
+    options: [
+      'Hiện một thông báo lỗi chung ở đầu form, vì client đã validate rồi nên lỗi từ server rất hiếm khi xảy ra',
+      'Nhận lỗi theo tên trường, gắn vào đúng ô, chuyển focus tới ô lỗi đầu tiên và giữ nguyên dữ liệu đã nhập',
+      'Xoá form rồi bắt người dùng nhập lại từ đầu để bảo đảm dữ liệu gửi lên lần sau luôn sạch và hợp lệ',
+      'Bắt bằng error boundary rồi hiện màn hình lỗi, vì đây là lỗi không thể xử lý ngay trong component form',
+    ], answer: 1,
+    explain: 'Có những luật CHỈ server biết: email đã có người dùng, mã giảm giá vừa hết hạn, số dư thay đổi giữa chừng, phiên bản bản ghi bị người khác sửa trước. Validate ở client không bao giờ thay được validate ở server, nên phải coi lỗi 422 là đường đi bình thường chứ không phải trường hợp hiếm. Hợp đồng API nên trả cấu trúc máy đọc được — `{ "errors": [{ "field": "email", "code": "ALREADY_TAKEN" }] }` — theo TÊN TRƯỜNG và MÃ lỗi, để client dịch sang ngôn ngữ người dùng thay vì server trả sẵn một câu tiếng Việt cứng. Phía React: đưa lỗi vào state của form (React Hook Form có `setError`, Formik có `setErrors`), gắn vào ô bằng `aria-invalid` cùng `aria-describedby` trỏ tới phần tử chứa thông báo, và chuyển focus tới ô lỗi ĐẦU TIÊN — bước này quyết định với người dùng bàn phím và screen reader, vì nếu không họ chỉ nghe thấy "gửi thất bại" mà không biết sai ở đâu. Form dài thì thêm một bản tóm tắt ở đầu với link nhảy tới từng ô. Tuyệt đối giữ nguyên những gì họ đã nhập. Vài chi tiết làm nên sự khác biệt: xoá lỗi của một trường ngay khi người dùng bắt đầu sửa trường đó; lỗi không thuộc trường nào (409 xung đột, phiên hết hạn) thì hiện ở mức form; phân biệt rõ ba loại — 422 là dữ liệu sai nên sửa rồi gửi lại, 500 là lỗi hệ thống nên cho thử lại, mất mạng thì giữ nguyên và tự thử lại — vì mỗi loại cần một lời khuyên khác nhau. Và đừng quên mở khoá nút gửi trong nhánh lỗi, không thì người dùng kẹt cứng ở đó.',
+  },
+  {
+    id: 'react-print-export', topic: 'Chất lượng UI',
+    q: 'Cần in hoá đơn hoặc xuất PDF từ giao diện React — cách nào hợp lý?',
+    options: [
+      'Chụp khối DOM thành ảnh rồi nhét vào PDF, như vậy bản in giống hệt những gì đang hiển thị trên màn hình',
+      'Bản in cho tiện thì làm bằng CSS `@media print`; còn hoá đơn chuẩn thì để SERVER dựng PDF từ template',
+      'Gọi `window.print()` là đủ cho mọi trường hợp vì trình duyệt tự lo phần trình bày trang khi in ra giấy',
+      'Dựng PDF ngay trong trình duyệt bằng thư viện JS để giảm tải cho server và không cần thêm API nào cả',
+    ], answer: 1,
+    explain: 'Đây là hai bài toán khác nhau nên đừng dùng chung một lời giải. IN CHO TIỆN (danh sách, báo cáo xem nhanh, phiếu nội bộ): làm bằng CSS `@media print` là rẻ nhất — ẩn thanh điều hướng và nút bấm, chuyển nền về trắng chữ đen, mở sẵn những phần đang thu gọn, dùng `break-inside: avoid` để không cắt đôi một dòng bảng, cho `thead` lặp lại ở đầu mỗi trang, đặt lề bằng `@page`, và nhớ rằng link trên giấy nên in kèm URL. XUẤT VĂN BẢN CHÍNH THỨC (hoá đơn, hợp đồng, chứng từ) là chuyện khác hẳn: nó phải giống nhau trên mọi máy, phải lưu trữ được, phải gửi kèm email và đôi khi cần chữ ký số — nên dựng ở SERVER từ template là lựa chọn đúng, bằng Puppeteer render HTML hay thư viện PDF chuyên dụng. Ở server bạn kiểm soát được font (nhớ nhúng font có đủ dấu tiếng Việt — đây là lỗi số một khi xuất PDF), số trang, đánh số hoá đơn, và bản xuất ra không phụ thuộc trình duyệt hay máy in của người dùng. Cách chụp DOM thành ảnh rồi đóng gói (html2canvas) cho ra một tệp mà chữ không chọn được, không tìm kiếm được, nét kém khi in, dung lượng lớn và font tiếng Việt hay vỡ — chỉ nên dùng cho biểu đồ hoặc thứ vốn đã là hình. Nếu vì lý do nào đó vẫn phải dựng ở client thì nhớ nhúng font Unicode và đẩy việc nặng sang Web Worker để giao diện không đứng. Còn `window.print()` chỉ mở hộp thoại in, nó không sửa được bố cục; in đúng một phần trang thì mẹo quen thuộc là dựng nội dung đó trong một iframe ẩn rồi in iframe.',
+  },
+  {
+    id: 'react-state-persist', topic: 'Quản lý state',
+    q: 'Muốn giữ state qua các lần tải lại trang (bộ lọc, giỏ hàng, nháp đang gõ) — làm sao cho chắc?',
+    options: [
+      'Ghi toàn bộ store vào `localStorage` sau mỗi lần state đổi rồi nạp lại nguyên vẹn lúc khởi động app',
+      'Chỉ lưu phần thật sự cần, đọc sau khi mount để tránh lệch hydration, và đánh phiên bản để nâng cấp dữ liệu cũ',
+      'Dùng `sessionStorage` cho tất cả vì nó tự dọn nên không bao giờ gặp vấn đề dữ liệu cũ còn tồn đọng lại',
+      'Lưu state trong cookie để server đọc được và trả sẵn HTML đã có state ngay từ lần tải trang đầu tiên',
+    ], answer: 1,
+    explain: 'Có ba cái bẫy, và cả ba đều chỉ lộ ra ở production. Thứ nhất là HYDRATION: đọc `localStorage` ngay trong lần render đầu khiến HTML dựng ở server (nơi không có `localStorage`) khác với client, React cảnh báo rồi vẽ lại — hãy đọc trong effect sau khi mount, hoặc chấp nhận một nhịp hiển thị skeleton. Thứ hai là DI CƯ DỮ LIỆU: hình dạng state sẽ thay đổi qua các phiên bản, nhưng trong máy người dùng vẫn còn bản từ ba tháng trước; luôn lưu kèm `version` và một hàm migrate, và khi không migrate được thì VỨT BỎ chứ đừng để app rơi vào trạng thái hỏng mà không ai tái hiện nổi (`zustand/persist` và `redux-persist` đều có sẵn cơ chế này — dùng nó thay vì tự viết). Thứ ba là CHỌN LỌC: đừng lưu cả store. Dữ liệu của server — danh sách sản phẩm, hồ sơ người dùng — thuộc về tầng cache của React Query, lưu bền vững chỉ khiến người dùng nhìn thấy dữ liệu cũ mà không biết cũ tới mức nào; thứ đáng lưu là Ý ĐỊNH của người dùng: bộ lọc, cách sắp xếp, nháp đang gõ dở, giỏ hàng khi chưa đăng nhập, tab đang mở. Vài lưu ý kỹ thuật: không lưu token hay dữ liệu nhạy cảm vì mọi script trên trang đều đọc được; hạn mức chỉ khoảng 5MB và thao tác ghi là ĐỒNG BỘ nên đừng ghi theo từng phím gõ (throttle lại); bọc `try/catch` vì chế độ riêng tư hoặc trình duyệt chặn lưu trữ sẽ ném lỗi; xoá sạch dữ liệu bền vững khi người dùng đăng xuất; dữ liệu lớn thì dùng IndexedDB. Và nếu state cần chia sẻ được qua link hoặc cần server biết thì chỗ đúng của nó là URL, không phải localStorage.',
+  },
+  {
+    id: 'react-perf-budget', topic: 'Hiệu năng',
+    q: 'Trang nhanh lúc mới làm rồi chậm dần qua từng sprint — làm sao chặn hồi quy hiệu năng?',
+    options: [
+      'Định kỳ mỗi quý dành hẳn một sprint để tối ưu lại toàn bộ những chỗ đã chậm đi trong thời gian qua',
+      'Đặt ngân sách (dung lượng bundle, chỉ số Lighthouse) cho CI chặn PR vượt ngưỡng, kèm đo từ người dùng thật',
+      'Yêu cầu mọi người bọc component trong `memo` và `useMemo` để mặc định ứng dụng luôn ở trạng thái tối ưu',
+      'Chỉ cần theo dõi bảng điều khiển hiệu năng hằng tuần rồi nhắc nhau mỗi khi thấy các chỉ số đi xuống',
+    ], answer: 1,
+    explain: 'Hiệu năng suy giảm theo kiểu mỗi PR thêm tám kilobyte, không ai thấy gì cho tới ngày trang nặng gấp ba. Chỉ hàng rào TỰ ĐỘNG mới giữ được. Bước đầu là đặt ngân sách cụ thể rồi gắn vào CI: giới hạn dung lượng từng bundle theo route bằng `size-limit` hoặc tương tự, cho build đỏ khi vượt, và in ra báo cáo cho biết package nào vừa được thêm — phần lớn ca phình đột ngột đều do vô tình kéo cả một thư viện vào (một bộ icon nhập trọn gói, một thư viện ngày tháng nặng, lodash import sai kiểu nên mất tree-shaking). Bổ sung Lighthouse CI chạy trên vài trang tiêu biểu để bắt hồi quy LCP, CLS và thời gian chặn luồng chính. Nhưng số đo trong phòng thí nghiệm không phải sự thật: hãy đo RUM từ người dùng thật (thư viện `web-vitals` gửi về hệ thống của bạn, hoặc dữ liệu CrUX), nhìn theo phân vị 75 chứ không nhìn trung bình, và chia theo thiết bị cùng quốc gia — khách hàng thật của bạn thường dùng Android tầm trung trên mạng 4G, không phải chiếc MacBook của lập trình viên. Vài điều nữa: ảnh và font thường nặng hơn JavaScript nên đừng chỉ soi bundle; thêm một bước cân nhắc chi phí mỗi khi đưa thư viện mới vào; ngân sách phải có người CHỦ TRÌ và một quy trình xin ngoại lệ rõ ràng, nếu không đội sẽ chọn cách nhanh nhất là tắt kiểm tra đi. Cuối cùng, rải `memo` khắp nơi không phải là tối ưu: nó thêm chi phí so sánh, làm code khó đọc, và che mất nguyên nhân thật vốn thường là bundle quá lớn hoặc request xếp hàng chứ không phải render lại.',
+  },
+  {
+    id: 'react-reduced-motion', topic: 'Chất lượng UI',
+    q: 'Làm hiệu ứng chuyển động trong app — cần tính tới người nhạy cảm với chuyển động thế nào?',
+    options: [
+      'Thêm một công tắc tắt hiệu ứng trong phần cài đặt của app là đủ, ai không thích thì họ tự vào tắt đi',
+      'Tôn trọng `prefers-reduced-motion`: bỏ chuyển động lớn nhưng giữ lại đổi mờ nhẹ để vẫn thấy có gì đó đổi',
+      'Giảm thời lượng mọi animation xuống dưới 200ms, khi đó chuyển động đủ nhanh nên sẽ không gây khó chịu',
+      'Chỉ cần tránh hiệu ứng nhấp nháy vì đó là loại duy nhất thật sự gây hại cho người dùng nhạy cảm',
+    ], answer: 1,
+    explain: 'Chuyển động lớn — trượt cả màn hình, phóng to đột ngột, hiệu ứng thị sai khi cuộn, xoay — có thể gây chóng mặt và buồn nôn thật sự với người bị rối loạn tiền đình; đây là tiêu chí của WCAG chứ không phải chuyện thẩm mỹ, và tốc độ nhanh hơn không làm nó dịu đi. Hệ điều hành đã có công tắc "giảm chuyển động" và trình duyệt phơi ra thành `@media (prefers-reduced-motion: reduce)` — tôn trọng lựa chọn ĐÓ mới là cách đúng, vì người dùng đặt một lần cho mọi ứng dụng thay vì phải đi tìm cài đặt trong từng app; bạn vẫn có thể thêm công tắc riêng, nhưng hãy lấy giá trị hệ thống làm mặc định. "Giảm" không có nghĩa là bỏ sạch: giữ lại một chuyển tiếp mờ ngắn hoặc đổi màu để người dùng vẫn nhận ra trạng thái vừa thay đổi, vì mất hết phản hồi lại khiến giao diện khó hiểu hơn. Trong React, với animation chạy bằng JS thì đọc qua `matchMedia("(prefers-reduced-motion: reduce)")` và phải LẮNG NGHE thay đổi (`useSyncExternalStore` rất hợp cho việc này) chứ đừng đọc một lần lúc mount; Framer Motion có sẵn `useReducedMotion`; còn với CSS thì viết một khối `@media` ghi đè `animation` và `transition` về gần như tức thời. Nhớ áp cho cả những chỗ ít ai nghĩ tới: `scroll-behavior: smooth` cũng là chuyển động, video nền tự chạy, ảnh động, hiệu ứng chuyển trang, và skeleton nhấp nháy liên tục. Song song đó là ngưỡng an toàn cho chứng động kinh cảm quang: không để nội dung nhấp nháy quá ba lần mỗi giây.',
+  },
+  {
+    id: 'react-multi-tab-sync', topic: 'Quản lý state',
+    q: 'Người dùng mở app ở hai tab, đăng xuất ở tab này nhưng tab kia vẫn hiện dữ liệu — xử lý sao?',
+    options: [
+      'Mỗi tab là một phiên độc lập nên để nguyên là hợp lý, người dùng sẽ tự tải lại tab kia khi cần dùng tới',
+      'Phát tín hiệu qua `BroadcastChannel` (hoặc sự kiện `storage`) để các tab khác cùng dọn state và điều hướng',
+      'Hỏi server vài giây một lần ở tất cả các tab để tab nào cũng biết phiên đã kết thúc rồi tự đăng xuất theo',
+      'Chỉ cho phép mở app ở một tab duy nhất, tab mở sau sẽ hiện thông báo yêu cầu người dùng đóng bớt tab đi',
+    ], answer: 1,
+    explain: 'Các tab cùng origin dùng chung cookie và `localStorage`, nhưng KHÔNG dùng chung state trong bộ nhớ của React — đó là nguồn gốc của mọi cảnh lệch pha: tab A đăng xuất, tab B vẫn hiện tên người dùng cũ rồi bấm gì cũng nhận 401; tab A đổi ngôn ngữ hay bật chế độ tối, tab B vẫn nguyên; tab A vừa sửa đơn hàng, tab B lưu đè bằng dữ liệu cũ. `BroadcastChannel` là cách sạch nhất: mở một kênh cùng tên ở mọi tab rồi `postMessage`, không đụng gì tới bộ nhớ lưu trữ. Phương án dự phòng cho môi trường cũ là sự kiện `storage` — nó chỉ bắn ở CÁC TAB KHÁC khi `localStorage` thay đổi, đúng ngữ nghĩa ta cần. Với đăng xuất, tab nhận tín hiệu phải làm đủ ba việc: xoá state ứng dụng, xoá cache dữ liệu (`queryClient.clear()` với React Query), rồi điều hướng về trang đăng nhập — chỉ đổi một lá cờ là chưa đủ vì dữ liệu cũ vẫn nằm trong cache và vẫn hiện ra. Việc này cũng đáng làm cho vài luồng khác: ĐĂNG NHẬP ở một tab thì tab kia nên tự nạp lại thay vì tiếp tục hiện màn hình khách; làm mới token thì chỉ nên MỘT tab thực hiện rồi báo cho các tab khác (dùng Web Locks API để bầu tab chủ, tránh năm tab cùng gọi refresh và làm vô hiệu lẫn nhau); và làm mới dữ liệu khi tab được focus lại — React Query bật sẵn `refetchOnWindowFocus` chính vì lý do này. Điều quan trọng nhất ở cuối: dù đồng bộ tốt tới đâu thì server vẫn phải coi mọi request đều có thể đến từ một phiên đã hết hạn, và xử lý 401 tập trung ở tầng gọi API mới là hàng rào thật.',
+  },
+  {
+    id: 'react-collab-realtime', topic: 'Kiến trúc',
+    q: 'Nhiều người cùng sửa một tài liệu trong app — kiến trúc phải giải quyết những gì?',
+    options: [
+      'Khoá tài liệu cho một người sửa tại mỗi thời điểm, những người còn lại chỉ được xem cho tới khi khoá mở',
+      'Trạng thái người đang xem, gộp thay đổi mà không cần khoá (CRDT/OT), và làm việc tiếp được khi mạng chập chờn',
+      'Gửi toàn bộ nội dung tài liệu lên server sau mỗi lần gõ phím, ai gửi sau thì bản của người đó được giữ lại',
+      'Chỉ cần WebSocket phát lại mọi thay đổi cho các client khác là mọi bản sao sẽ tự khớp nhau theo thời gian',
+    ], answer: 1,
+    explain: 'Cộng tác thời gian thực là ba bài toán chồng lên nhau. (1) HỘI TỤ: hai người sửa cùng lúc thì mọi bản sao phải về cùng một kết quả. Gửi cả tài liệu theo kiểu "ai gửi sau thắng" sẽ xoá mất chữ của người kia — cách đúng là gửi những THAO TÁC nhỏ rồi hợp nhất bằng OT (mô hình của Google Docs, cần server làm trọng tài) hoặc CRDT (Yjs, Automerge — hội tụ được mà không cần trọng tài, nên chạy tốt cả khi ngoại tuyến rồi đồng bộ sau). Đừng tự viết: cả hai đều dày đặc trường hợp biên và đã có thư viện chín. (2) HIỆN DIỆN: con trỏ, vùng bôi đen và avatar của người khác — đây là dữ liệu tạm, tần suất cao, nên đi kênh riêng, được throttle và biến mất khi ai đó ngắt kết nối; chính phần này tạo ra CẢM GIÁC đang cộng tác, thiếu nó thì người dùng vẫn thấy như đang làm một mình. (3) MẠNG VÀ BỀN VỮNG: WebSocket phải tự kết nối lại và đồng bộ tiếp từ phiên bản cuối cùng đã nhận; lưu bền vững theo mốc (ảnh chụp trạng thái cộng nhật ký thao tác) để không mất việc khi server restart; giới hạn kích thước tài liệu và phân quyền tới từng thao tác. Phía React có một điểm kỹ thuật quan trọng: giữ dữ liệu cộng tác NGOÀI state của React và đăng ký bằng `useSyncExternalStore`, nếu không mỗi phím gõ của người khác sẽ render lại cả cây; hiển thị lạc quan tại chỗ rồi để lớp đồng bộ chỉnh lại sau. Cuối cùng, câu hỏi nên đặt trước tiên: có thật sự cần không? Rất nhiều sản phẩm chỉ cần khoá mềm kèm dòng chữ "ai đó đang sửa" và tự động lưu — rẻ hơn nhiều lần và giải quyết đúng vấn đề thực tế.',
+  },
+  {
+    id: 'react-widget-embed', topic: 'Kiến trúc',
+    q: 'Đóng gói app React thành widget để nhúng vào website của khách hàng — cần giải quyết gì?',
+    options: [
+      'Cho khách thêm một thẻ `<script>` trỏ tới bundle rồi render thẳng vào một thẻ div trên trang của họ',
+      'Cách ly CSS và biến toàn cục (iframe hoặc shadow DOM), giữ bundle nhỏ, và giữ tương thích khi nâng cấp',
+      'Yêu cầu khách cài đúng phiên bản React giống bạn rồi import component như một package bình thường',
+      'Nhúng qua iframe với chiều cao cố định là xong, vì iframe đã cách ly hoàn toàn khỏi trang của khách rồi',
+    ], answer: 1,
+    explain: 'Khác hẳn với việc dùng component trong app của chính mình: ở đây bạn chạy trong nhà người khác, không kiểm soát được gì và cũng không được phá gì. CSS là mặt trận đầu tiên — trang của khách có thể có reset lạ, `box-sizing` khác, hay `!important` đè lên widget của bạn, và ngược lại CSS của bạn có thể làm vỡ layout của họ. Hai lối thoát: `iframe` cách ly tuyệt đối nhưng phải tự đồng bộ chiều cao qua `postMessage`, khó làm dropdown hay modal tràn ra ngoài khung, và tốn thêm một vòng tải; hoặc `shadow DOM` — cùng trang nên nhẹ và linh hoạt hơn, nhưng phải nhét style vào trong shadow root và cẩn thận với thư viện UI dùng portal, vì `document.body` nằm NGOÀI shadow. Về JavaScript: khác với thư viện nội bộ, ở đây nên đóng gói React vào bundle của widget để không phụ thuộc trang chủ nhà, đồng thời tránh chạm vào biến toàn cục và đặt tên riêng cho custom element; giữ bundle nhỏ vì bạn đang tiêu băng thông của người khác, và nạp bất đồng bộ để không chặn quá trình tải trang của họ. Tương thích là điểm mà nhiều đội đánh giá thấp: khách sẽ KHÔNG bao giờ cập nhật đoạn mã nhúng, nên hãy coi nó như một API công khai — giữ ổn định mãi mãi, đưa mọi thay đổi vào phía sau, và phát hành theo kênh phiên bản để khách quan trọng có thể ghim. Còn lại là bảo mật và vận hành: CSP của khách có thể chặn bạn nên phải hướng dẫn họ khai domain; cookie bên thứ ba đang bị chặn rộng rãi nên đừng dựa vào nó để giữ phiên mà hãy dùng token ký ngắn hạn do server của khách phát; và luôn có phương án cho tình huống widget lỗi hoặc CDN của bạn chết — nó phải im lặng biến mất chứ không được làm vỡ trang của khách hàng.',
+  },
 ];

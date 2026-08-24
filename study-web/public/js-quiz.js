@@ -1936,4 +1936,93 @@ window.JS_QUIZ = [
     ], answer: 0,
     explain: 'Bộ gõ (IME — Unikey, Telex, bộ gõ tiếng Nhật/Trung/Hàn) không tạo ký tự ngay mỗi lần bấm phím: nó dựng một chuỗi TẠM đang soạn, gạch chân trong ô nhập, rồi mới chốt. Trong giai đoạn đó trình duyệt vẫn bắn `input` liên tục với những giá trị dở dang, nên tìm kiếm tức thì sẽ gửi đi những chuỗi vô nghĩa và làm nhảy kết quả trước mắt người dùng. Bộ ba sự kiện dành cho việc này là `compositionstart` → `compositionupdate` → `compositionend`: đặt một cờ khi bắt đầu, bỏ qua các `input` trong lúc cờ đang bật, xử lý giá trị ở `compositionend`. Gọn hơn nữa, bản thân sự kiện `input` có `e.isComposing` — chỉ cần `if (e.isComposing) return`. Chỗ vấp nghiêm trọng hơn nằm ở phím Enter: khi người dùng bấm Enter để CHỌN ứng viên mà bộ gõ đang gợi ý, trình duyệt vẫn bắn `keydown` (với `keyCode` 229 ở nhiều bộ gõ) — nếu bạn coi đó là "gửi tin nhắn" hay "chọn dòng trong danh sách gợi ý" thì ứng dụng sẽ gửi đi chữ chưa gõ xong, một lỗi rất hay gặp ở khung chat và ô combobox mà người viết code không dùng bộ gõ sẽ chẳng bao giờ tự phát hiện. Cách chữa: kiểm tra `e.isComposing` trong `keydown` trước khi xử lý Enter. Debounce vẫn nên có nhưng chỉ giảm số request chứ không sửa được bản chất, và kéo dài debounce thì đánh đổi bằng cảm giác chậm cho tất cả mọi người.',
   },
+  // ===== Đợt #17 =====
+  {
+    id: 'js-media-autoplay', topic: 'DOM & trình duyệt',
+    q: 'Video đặt `autoplay` nhưng trình duyệt không cho chạy — quy tắc thật sự là gì?',
+    options: [
+      'Chỉ video CÓ TIẾNG mới bị chặn; muốn tự chạy thì phải `muted`, hoặc chờ một tương tác của người dùng',
+      'Trình duyệt chặn mọi video tự chạy, không có cách nào khác ngoài việc người dùng bấm nút phát thủ công',
+      'Thêm thuộc tính `autoplay` cùng `preload="auto"` là đủ để mọi trình duyệt cho phép chạy tự động ngay',
+      'Chỉ bị chặn khi trang chưa được cài làm PWA hoặc chưa bật quyền media trong phần cài đặt trình duyệt',
+    ], answer: 0,
+    explain: 'Chính sách autoplay sinh ra để chống quảng cáo phát tiếng bất ngờ, nên ranh giới nằm ở ÂM THANH: video `muted` (hoặc video không có âm thanh) được tự chạy, còn có tiếng thì cần "kích hoạt của người dùng" — một cú bấm, chạm hoặc phím trên chính trang đó. Vì vậy `video.play()` trả về một Promise và bạn BẮT BUỘC phải `.catch(...)`: khi bị chặn nó ném `NotAllowedError`, và cách xử lý tử tế là hiện nút phát to rõ thay vì để khung hình đen im lặng. Vài chi tiết hay làm mất thời gian: trên iOS còn phải có thuộc tính `playsinline`, thiếu nó video nhảy sang chế độ toàn màn hình; bật tiếng bằng JS ngay sau khi bắt đầu phát cũng bị chặn — muốn có tiếng thì để người dùng tự bấm biểu tượng loa; và `AudioContext` được tạo ở trạng thái `suspended` cho tới khi bạn gọi `resume()` bên trong một cử chỉ, đó là lý do âm thanh trong game hay ứng dụng nhạc "không kêu" mà chẳng có lỗi nào. Chrome còn có chỉ số tương tác của người dùng với từng site: site họ hay xem video sẽ được nới lỏng, nên máy bạn chạy được không có nghĩa là máy người dùng cũng vậy — luôn kiểm tra ở hồ sơ trình duyệt sạch. Với video nền trang trí, công thức an toàn là `muted playsinline loop` kèm `poster` để có hình ngay, và nên tôn trọng `prefers-reduced-motion` cùng chế độ tiết kiệm dữ liệu.',
+  },
+  {
+    id: 'js-getusermedia', topic: 'DOM & trình duyệt',
+    q: 'Web app cần quay video và thu âm từ camera, micro của người dùng — lưu ý gì?',
+    options: [
+      'Gọi `getUserMedia` sớm nhất có thể để trình duyệt hỏi quyền xong trước khi người dùng bắt đầu thao tác',
+      'Chỉ chạy ở secure context và phải xin quyền; xong việc phải `stop()` từng track thì đèn camera mới tắt',
+      'Nếu người dùng đã cấp quyền một lần thì stream vẫn còn sống kể cả sau khi họ chuyển sang trang khác',
+      'Muốn lấy danh sách thiết bị thì gọi `enumerateDevices`, nó luôn trả đầy đủ tên của từng camera và micro',
+    ], answer: 1,
+    explain: '`navigator.mediaDevices.getUserMedia({ video: true, audio: true })` chỉ tồn tại ở secure context (https hoặc localhost) và luôn cần quyền của người dùng. Điều quan trọng nhất mà ai cũng quên: gán `video.srcObject = null` KHÔNG tắt camera — muốn đèn báo tắt và thiết bị được nhả thì phải `stream.getTracks().forEach(t => t.stop())`, nếu không người dùng sẽ thấy đèn camera sáng suốt cả phiên và đó là chuyện gây mất lòng tin ngay lập tức. Các lỗi cần phân biệt để hiển thị đúng thông điệp: `NotAllowedError` (bị từ chối, hoặc quyền đã bị chặn từ trước), `NotFoundError` (máy không có thiết bị nào khớp), `NotReadableError` (một ứng dụng khác đang chiếm camera — rất hay gặp khi người dùng đang mở phần mềm họp) và `OverconstrainedError` (ràng buộc quá chặt). `enumerateDevices` chỉ trả về TÊN thiết bị sau khi bạn đã được cấp quyền ít nhất một lần — đó là biện pháp chống nhận dạng người dùng, nên luồng đúng là xin quyền trước rồi mới liệt kê để cho họ chọn camera. Ràng buộc trong `getUserMedia` chỉ là mong muốn: dùng `track.getSettings()` để biết độ phân giải thực nhận được và `applyConstraints` để đổi giữa chừng; nghe `devicechange` khi người dùng cắm hoặc rút tai nghe. Ghi lại thì dùng `MediaRecorder` nhưng định dạng phụ thuộc trình duyệt nên phải kiểm tra `isTypeSupported`. Cuối cùng: camera tốn pin và làm máy nóng, trong iframe phải khai `allow="camera; microphone"`, và giao diện luôn phải cho thấy rõ khi nào đang ghi.',
+  },
+  {
+    id: 'js-geolocation', topic: 'DOM & trình duyệt',
+    q: 'Lấy vị trí người dùng bằng `navigator.geolocation` — điều nào đúng?',
+    options: [
+      'Toạ độ trả về đáng tin cho việc chống gian lận vì trình duyệt lấy thẳng từ GPS của thiết bị người dùng',
+      'Cần secure context và quyền; `watchPosition` rất tốn pin, và toạ độ do client gửi lên thì không thể tin tuyệt đối',
+      'Nên gọi `getCurrentPosition` ngay khi trang vừa tải để có sẵn vị trí trước lúc người dùng cần dùng tới nó',
+      'Người dùng từ chối thì gọi lại sau vài giây sẽ hiện lại hộp thoại để họ có thêm cơ hội cấp quyền lần nữa',
+    ], answer: 1,
+    explain: 'API này cần https và cần quyền, mà quyền thì chỉ hỏi được một lần — bị từ chối là ngõ cụt cho tới khi người dùng tự vào cài đặt trình duyệt. Vì vậy đừng hỏi lúc trang vừa mở; hãy hỏi khi họ bấm "tìm cửa hàng gần tôi", và nên có một bước giải thích bằng giao diện của mình trước. Tuỳ chọn đáng quan tâm: `enableHighAccuracy` bật GPS nên chính xác hơn nhưng chậm và ngốn pin (trong nhà thì thường không bắt được); `timeout` là bắt buộc, thiếu nó callback có thể không bao giờ được gọi và giao diện treo ở trạng thái "đang tìm" mãi mãi; `maximumAge` cho phép dùng lại kết quả cũ trong bao lâu. Dùng `watchPosition` cho theo dõi liên tục thì nhớ `clearWatch` khi rời màn hình. Luôn đọc `coords.accuracy` (bán kính sai số tính bằng mét): máy tính để bàn định vị qua WiFi/IP có thể lệch vài km, nên vẽ một chấm nhỏ chính xác giả là đang nói dối người dùng — hãy vẽ vòng tròn sai số. Về bảo mật, đây là điểm mấu chốt: toạ độ do TRÌNH DUYỆT gửi lên, mà DevTools cho phép ghi đè vị trí chỉ bằng vài cú bấm, cộng thêm vô số ứng dụng giả GPS trên di động — nên chấm công theo vị trí, khuyến mãi theo khu vực hay giới hạn địa lý phải được kiểm chứng thêm ở phía server (đối chiếu IP, thiết bị, lịch sử di chuyển bất thường) chứ không được tin thẳng. Và về riêng tư: chỉ lấy khi thật cần, nói rõ mục đích, đừng lưu lịch sử vị trí nếu nghiệp vụ không đòi.',
+  },
+  {
+    id: 'js-resource-hints', topic: 'DOM & trình duyệt',
+    q: '`preconnect`, `preload` và `prefetch` khác nhau chỗ nào?',
+    options: [
+      'Cả ba đều tải trước tài nguyên, chỉ khác nhau ở mức ưu tiên mà trình duyệt gán cho từng request đó',
+      '`preconnect` bắt tay sẵn với một origin, `preload` tải thứ cần cho trang HIỆN TẠI, `prefetch` cho trang SAU',
+      '`preload` chỉ dùng được cho ảnh và font, còn script với CSS thì phải dùng `prefetch` mới có tác dụng',
+      'Nên `preload` mọi tài nguyên quan trọng của trang để trình duyệt tải tất cả song song ngay từ đầu',
+    ], answer: 1,
+    explain: 'Ba thứ này giải quyết ba giai đoạn khác nhau. `preconnect` làm sẵn phần bắt tay với một origin khác — tra DNS, mở TCP, đàm phán TLS — tiết kiệm cỡ 100–300ms cho request đầu tiên tới đó; rất đáng cho origin của API hoặc CDN font, nhưng chỉ dùng cho vài origin thật sự quan trọng vì mỗi kết nối mở sẵn đều tốn tài nguyên (`dns-prefetch` là bản nhẹ hơn, chỉ tra DNS). `preload` nói "tôi CHẮC CHẮN cần tệp này ở trang này, tải sớm với ưu tiên cao" — bắt buộc khai đúng `as` (`as="font"` phải kèm `crossorigin`, thiếu là tải hai lần), hợp nhất với những tài nguyên bị phát hiện muộn như font trong CSS hay ảnh nền của khối đầu trang. `prefetch` thì ngược lại: ưu tiên THẤP, dành cho thứ có thể cần ở lần điều hướng SAU, tải lúc trình duyệt rảnh. Cái bẫy lớn nhất là lạm dụng `preload`: preload mọi thứ nghĩa là không có gì được ưu tiên, băng thông bị chia cho những tệp chưa cần và chính tài nguyên quan trọng lại về chậm hơn — console sẽ cảnh báo những tài nguyên preload không được dùng trong vài giây. Hai công cụ mới bổ sung cho bộ này: `fetchpriority="high"` để đẩy ảnh LCP lên trước (hoặc `low` để hạ ảnh dưới màn hình), và Speculation Rules API cho phép khai báo prefetch hay thậm chí PRERENDER cả trang tiếp theo — mạnh nhưng tiêu tài nguyên máy người dùng nên phải chọn lọc theo xác suất điều hướng thật. Nguyên tắc chung: nhìn biểu đồ waterfall để biết cái gì đang về muộn rồi mới thêm gợi ý, đừng rải theo cảm tính.',
+  },
+  {
+    id: 'js-focus-management', topic: 'DOM & trình duyệt',
+    q: 'Bảo đảm giao diện dùng được bằng bàn phím — quản lý focus trong JS thế nào cho đúng?',
+    options: [
+      'Đặt `outline: none` cho gọn giao diện rồi tự vẽ trạng thái focus bằng `:hover` cho các phần tử tương tác',
+      'Dùng `tabindex="-1"` để focus bằng code, `:focus-visible` cho viền, và `inert` để khoá vùng nền phía sau',
+      'Đặt `tabindex` tăng dần (1, 2, 3...) cho từng phần tử để kiểm soát chính xác thứ tự di chuyển bằng Tab',
+      'Gọi `element.focus()` sau mỗi lần render để con trỏ luôn nằm ở phần tử quan trọng nhất của màn hình',
+    ], answer: 1,
+    explain: 'Thứ tự Tab đi theo thứ tự DOM, nên giữ DOM đúng thứ tự đọc đã giải quyết phần lớn công việc; `tabindex` dương phá vỡ trật tự tự nhiên, tạo ra một danh sách song song mà bạn phải bảo trì bằng tay và gần như luôn sai sau vài lần sửa giao diện. Cái đáng dùng là `tabindex="-1"`: phần tử không nằm trong chuỗi Tab nhưng focus được BẰNG CODE — dành cho tiêu đề của vùng nội dung vừa xuất hiện, cho thông báo lỗi, cho hộp thoại. `:focus-visible` là lý do không còn ai cần `outline: none`: trình duyệt chỉ vẽ viền khi người dùng điều hướng bằng bàn phím, chuột bấm thì không hiện — xoá viền mà không thay thế bằng thứ gì rõ ràng vẫn đang là lỗi accessibility phổ biến nhất trên web, và `:hover` thì vô nghĩa với người không dùng chuột. Với lớp phủ, `inert` (hoặc `<dialog>` mở bằng `showModal()`) làm cả vùng nền không focus được và biến mất khỏi cây trợ năng — sạch hơn nhiều so với tự viết bẫy focus. Quy tắc vào/ra: mở overlay thì chuyển focus vào trong nó, đóng thì TRẢ focus về đúng phần tử đã mở nó; xoá một phần tử đang được focus mà không xử lý thì focus rơi về `body` và người dùng bàn phím mất hoàn toàn vị trí. Điều hướng trong SPA cũng vậy: URL đổi nhưng focus vẫn nằm ở link cũ, nên hãy chuyển focus tới tiêu đề trang mới và thông báo qua vùng `aria-live`. Cách kiểm tra rẻ nhất: bỏ tay khỏi chuột và đi hết một luồng nghiệp vụ chỉ bằng Tab, Enter và Escape.',
+  },
+  {
+    id: 'js-offline-detection', topic: 'DOM & trình duyệt',
+    q: 'App cần xử lý lúc người dùng mất mạng — dựa vào `navigator.onLine` có đủ không?',
+    options: [
+      'Đủ, `navigator.onLine` phản ánh chính xác việc có kết nối tới server hay không tại đúng thời điểm đọc',
+      'Nó chỉ cho biết máy có kết nối mạng nào đó; server vẫn có thể không tới được — phải dựa vào chính request',
+      'Không nên dùng; cách duy nhất đáng tin là gọi một endpoint ping đều đặn vài giây một lần để kiểm tra',
+      'Chỉ đáng tin khi app đã đăng ký Service Worker, vì khi đó trình duyệt mới cập nhật trạng thái này',
+    ], answer: 1,
+    explain: 'Giá trị này bất đối xứng: `false` thì gần như chắc chắn là mất mạng (dùng được), nhưng `true` chỉ có nghĩa là máy có một giao diện mạng đang hoạt động — WiFi quán cà phê chưa đăng nhập cổng, VPN vừa rớt, DNS hỏng, hay chính server của bạn đang chết đều cho `true`. Cặp sự kiện `online`/`offline` hữu ích để phản ứng NHANH (hiện banner, thử lại ngay khi có mạng) nhưng không phải nguồn chân lý. Nguồn chân lý là kết quả của những request thật mà app vốn đã gửi: hãy phân biệt cho rõ lỗi mạng (`fetch` bị reject với `TypeError`) với lỗi HTTP (4xx/5xx vẫn resolve bình thường — đây là chỗ rất nhiều người viết sai), và luôn kèm thời hạn bằng `AbortSignal.timeout` vì một kết nối treo còn tệ hơn một lỗi rõ ràng. Thử lại thì có backoff luỹ thừa kèm jitter, và chỉ tự động thử lại với thao tác an toàn — POST muốn thử lại phải có idempotency key, không thì người dùng lãnh hai đơn hàng. Về trải nghiệm: giữ nguyên dữ liệu họ đang nhập (đừng bao giờ xoá form khi lỗi mạng), xếp hàng thao tác để gửi lại khi có mạng (Background Sync của Service Worker), hiện rõ trạng thái "đang ngoại tuyến — sẽ gửi lại sau" thay vì một toast đỏ rồi thôi, và tự thử lại khi tab được focus trở lại. Còn ping định kỳ thì tốn pin, tốn băng thông, tự nó cũng có thể sai, và vẫn không nói được gì về endpoint mà bạn sắp gọi — hãy để chính lưu lượng của app làm cảm biến.',
+  },
+  {
+    id: 'js-scroll-anchoring', topic: 'DOM & trình duyệt',
+    q: 'Danh sách tin nhắn tải thêm ở PHÍA TRÊN làm nội dung đang đọc bị nhảy — chữa thế nào?',
+    options: [
+      'Cuộn xuống cuối danh sách sau mỗi lần tải thêm để người dùng luôn nhìn thấy nội dung mới nhất hiện ra',
+      'Ghi lại `scrollHeight` ngay trước khi chèn rồi bù `scrollTop` theo phần chênh lệch ngay sau khi chèn xong',
+      'Đặt `scroll-behavior: smooth` cho vùng cuộn để chuyển động mượt và người dùng không nhận ra vị trí bị nhảy',
+      'Dùng `IntersectionObserver` để tải thêm sớm hơn, khi đó nội dung mới kịp vào trước lúc người dùng cuộn tới',
+    ], answer: 1,
+    explain: 'Chèn nội dung vào PHÍA TRÊN vị trí đang xem sẽ đẩy mọi thứ xuống, mà `scrollTop` là khoảng cách tính từ đỉnh — nên con số cũ giờ trỏ vào một chỗ hoàn toàn khác và người dùng bị bắn đi nơi khác giữa lúc đang đọc. Cách chuẩn là bù lại đúng phần vừa thêm: lưu `const before = el.scrollHeight` ngay trước khi chèn, rồi sau khi DOM đã cập nhật nhưng TRƯỚC khi trình duyệt vẽ (trong `useLayoutEffect`, hoặc `requestAnimationFrame` với JS thuần) đặt `el.scrollTop += el.scrollHeight - before`. Làm ở `useEffect` thường thì người dùng vẫn kịp thấy một khung hình bị giật. Trình duyệt có sẵn cơ chế scroll anchoring (`overflow-anchor: auto`) tự làm việc này, nhưng nó ngừng can thiệp khi bạn tự đụng vào `scrollTop`, và không đáng tin với danh sách ảo hoá — nên các ứng dụng chat vẫn tự xử lý. Hai kỹ thuật bổ trợ: `flex-direction: column-reverse` cho khung chat khiến điểm neo tự nhiên nằm ở đáy (đơn giản nhưng gây rắc rối cho cuộn bằng bàn phím và thứ tự đọc của screen reader); và đặt `overflow-anchor: none` cho phần tử canh chừng ở đầu danh sách để trình duyệt không bù chồng lên phép bù của bạn. Hai nguồn nhảy khác cần dọn cùng lúc: ảnh và iframe chưa khai kích thước (đặt `aspect-ratio` hoặc `width`/`height`), và nội dung tải muộn chèn vào giữa. Cuối cùng là quy tắc trải nghiệm: chỉ tự cuộn xuống đáy khi người dùng ĐANG ở sát đáy; nếu họ đang đọc lên trên thì giữ nguyên vị trí và hiện nút "có tin nhắn mới" để họ tự quyết định.',
+  },
+  {
+    id: 'js-permissions-api', topic: 'DOM & trình duyệt',
+    q: 'App cần nhiều quyền của trình duyệt (vị trí, camera, thông báo) — thiết kế luồng xin quyền ra sao?',
+    options: [
+      'Xin hết mọi quyền cần dùng ngay ở màn hình đầu tiên để về sau không bị gián đoạn giữa chừng nữa',
+      'Hỏi đúng lúc tính năng được dùng, xem trước trạng thái bằng `navigator.permissions.query`, có lối đi khi bị từ chối',
+      'Gọi `navigator.permissions.request` để chủ động xin quyền mà không cần đụng tới API của tính năng đó',
+      'Nếu `query` trả về `denied` thì cứ gọi lại API tính năng, trình duyệt sẽ hiện lại hộp thoại xin quyền lần nữa',
+    ], answer: 1,
+    explain: 'Quyền trong trình duyệt gắn với ORIGIN và có ba trạng thái: `granted`, `denied`, `prompt`. `navigator.permissions.query({ name: "geolocation" })` cho bạn BIẾT trạng thái mà không làm hiện hộp thoại nào — dùng để quyết định nên hiện nút, hiện hướng dẫn mở lại quyền, hay bỏ qua tính năng. Nhưng không có `permissions.request` dùng chung: muốn xin thì phải gọi chính API của tính năng (`getCurrentPosition`, `getUserMedia`, `Notification.requestPermission`) và gần như luôn phải nằm trong một cử chỉ của người dùng. Điểm đau lớn nhất là `denied`: code không xin lại được, người dùng phải tự vào cài đặt trình duyệt để mở — nghĩa là mỗi hộp thoại hệ thống là một viên đạn chỉ bắn được một lần. Từ đó ra ba nguyên tắc thiết kế. Một, hỏi ĐÚNG NGỮ CẢNH: xin vị trí khi họ bấm "tìm quanh đây", xin camera khi họ bấm "chụp ảnh" — xin cả loạt ở màn hình chào là cách nhanh nhất để bị từ chối sạch. Hai, PRE-PROMPT: dùng giao diện của chính bạn giải thích sẽ dùng để làm gì và họ được lợi gì, chỉ khi họ đồng ý mới gọi API thật; ai bấm "để sau" thì không mất gì cả. Ba, luôn có ĐƯỜNG VÒNG: nhập địa chỉ bằng tay thay cho định vị, tải ảnh lên thay cho chụp trực tiếp, hiện thông báo trong ứng dụng thay cho push. Vài chi tiết kỹ thuật: đối tượng trả về từ `query` có sự kiện `change` để biết quyền bị thu hồi giữa chừng; trong iframe còn phải được trang cha cho phép qua Permissions Policy (`allow="camera; geolocation"`); và tên quyền hỗ trợ khác nhau giữa các trình duyệt nên hãy bọc `try/catch` quanh chính lời gọi `query`.',
+  },
 ];
