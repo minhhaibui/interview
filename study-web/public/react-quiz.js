@@ -1720,4 +1720,93 @@ window.REACT_QUIZ = [
     ], answer: 2,
     explain: 'Combobox là một trong những component khó làm đúng nhất vì nó gộp nhiều thứ lại. Về BÀN PHÍM: mũi tên lên xuống di chuyển giữa các gợi ý mà FOCUS vẫn phải nằm trong ô input để người dùng gõ tiếp được — nên không dùng roving tabindex mà dùng `aria-activedescendant` trỏ tới id của mục đang chọn; Enter xác nhận, Escape đóng danh sách rồi Escape lần nữa xoá nội dung, Tab thì đóng và đi tiếp. Về ARIA: ô input mang `role="combobox"` với `aria-expanded` và `aria-controls` trỏ tới danh sách, danh sách là `role="listbox"` với các `role="option"` kèm `aria-selected`. Về THÔNG BÁO: số kết quả phải được công bố qua live region, vì người dùng screen reader không nhìn thấy danh sách vừa hiện ra. Về BẤT ĐỒNG BỘ: debounce lời gọi, huỷ request cũ để kết quả cũ không về sau rồi đè lên kết quả mới, hiện rõ trạng thái đang tải và trạng thái không có kết quả. Còn lại là hàng loạt chi tiết: cuộn để mục đang chọn luôn trong tầm nhìn, định vị danh sách sao cho không tràn màn hình, đóng khi bấm ra ngoài, giữ được giá trị đã chọn khi người dùng gõ tiếp rồi bỏ đi, và trên di động thì bàn phím ảo hay che mất danh sách. Lời khuyên: dùng primitive đã kiểm chứng như Downshift, React Aria hay Radix rồi tự làm phần giao diện — nhưng vẫn nên hiểu các mảnh trên để trả lời phỏng vấn và để sửa khi nó cư xử lạ.',
   },
+  // ===== Đợt #16 =====
+  {
+    id: 'react-permission-ui', topic: 'Bảo mật',
+    q: 'Ẩn/hiện chức năng theo quyền của người dùng ở phía React — làm sao cho đúng?',
+    options: [
+      'Kiểm tra quyền ở frontend là đủ, vì người dùng không nhìn thấy nút thì cũng không gọi được API đó',
+      'Quyền ở frontend chỉ để giao diện gọn gàng — server vẫn phải kiểm tra lại quyền ở từng request',
+      'Nhúng sẵn bảng quyền vào bundle lúc build để lúc chạy không phải gọi thêm API kiểm tra quyền nữa',
+      'Chỉ cần không khai báo route đó trong router là người dùng sẽ không có cách nào truy cập được vào',
+    ], answer: 1,
+    explain: 'Phân quyền ở frontend là chuyện TRẢI NGHIỆM, không phải chuyện bảo mật: bundle nằm trong máy người dùng, ai cũng đọc được, và bất kỳ ai cũng gọi thẳng API bằng `curl` được mà không cần đi qua giao diện của bạn. Vì thế mọi endpoint phải tự kiểm tra quyền, kể cả Server Action. Về cách tổ chức phía client: sau khi đăng nhập, server trả về danh sách KHẢ NĂNG cụ thể của người dùng (`invoice.refund`, `user.invite`) chứ đừng để frontend tự suy từ vai trò — luật quyền sẽ tiến hoá và hai nơi suy luận độc lập chắc chắn lệch nhau, dẫn tới cảnh nút hiện ra rồi bấm vào nhận 403. Đóng gói thành một hook `usePermission("invoice.refund")` hoặc component `<Can do="...">` để không rải `if (role === "admin")` khắp nơi: kiểm theo HÀNH ĐỘNG thì đổi luật chỉ cần sửa ở server, còn kiểm theo VAI TRÒ thì mỗi lần thêm vai trò phải sửa hàng chục file. Ẩn hay vô hiệu hoá? Ẩn những thứ người dùng không bao giờ có quyền (hiện ra chỉ gây tò mò và bối rối), còn vô hiệu hoá kèm lời giải thích với những thứ họ CÓ THỂ xin được quyền — nút xám không kèm lý do là một trong những trải nghiệm khó chịu nhất. Vẫn cần chặn ở tầng route vì URL gõ tay được, và vẫn phải xử lý 403 trả về từ API thành thông báo tử tế thay vì đá người dùng ra trang đăng nhập (dễ tạo vòng lặp đăng xuất). Cuối cùng: đừng gửi dữ liệu nhạy cảm xuống rồi ẩn bằng CSS — cái gì không được xem thì API đừng trả.',
+  },
+  {
+    id: 'react-design-tokens', topic: 'Chất lượng UI',
+    q: 'Mỗi nơi trong codebase một mã màu, đổi nhận diện thương hiệu là phải sửa hàng trăm chỗ — hướng ra?',
+    options: [
+      'Tạo file `colors.ts` export hằng số rồi import vào từng component để tất cả cùng dùng một nguồn màu',
+      'Định nghĩa token ngữ nghĩa (`--color-danger`) bằng CSS variable, component chỉ dùng token, chủ đề đổi giá trị',
+      'Dùng bộ màu sẵn của thư viện UI rồi ghi đè bằng `!important` ở những chỗ cần khác đi một chút',
+      'Đặt toàn bộ màu vào Context của React rồi đọc bằng hook, như vậy đổi chủ đề không cần tải lại trang',
+    ], answer: 1,
+    explain: 'Chìa khoá nằm ở chỗ đặt TÊN. Token nên có hai tầng: tầng nguyên thuỷ mô tả màu (`--blue-500`) và tầng NGỮ NGHĨA mô tả vai trò (`--color-danger`, `--surface-raised`, `--text-muted`, `--border-subtle`). Component chỉ được chạm vào tầng ngữ nghĩa; đổi thương hiệu, thêm chế độ tối hay làm chủ đề riêng cho một khách hàng lớn khi đó chỉ là gán lại giá trị ở `:root` và `[data-theme="dark"]` — không component nào phải sửa. Vì sao CSS variable thắng hằng số JavaScript: nó đổi được ngay ở tầng CSS mà React không phải render lại gì cả, kế thừa theo cây DOM nên khoanh vùng một nhánh giao diện rất dễ, và dùng được cả trong CSS thuần lẫn thư viện bên thứ ba — trong khi nhét bảng màu vào Context làm cả cây component re-render mỗi lần đổi chủ đề, còn hằng số `colors.ts` thì chỉ giải quyết được nửa vấn đề (vẫn phải sửa code khi đổi chủ đề, và không phủ được CSS tĩnh). Với Tailwind, khai báo token trong config trỏ tới `var(--color-danger)` để giữ được cả hai lợi thế. Token không chỉ dành cho màu: khoảng cách, bo góc, đổ bóng, cỡ chữ, thời lượng chuyển động đều nên có — chính chúng tạo cảm giác "cùng một sản phẩm". Giữ kỷ luật bằng công cụ: stylelint chặn mã hex viết thẳng, review chặn `!important`, và đồng bộ tên token với Figma (Style Dictionary xuất từ một file nguồn ra cả CSS lẫn iOS/Android). Một lợi ích ít ai nhắc: đã có token thì kiểm tra độ tương phản WCAG chỉ cần làm trên bảng token cho cả hai chủ đề, thay vì đi soi từng màn hình.',
+  },
+  {
+    id: 'react-component-library', topic: 'Công cụ & môi trường',
+    q: 'Tách bộ component dùng chung thành package nội bộ cho nhiều app — cần chú ý gì?',
+    options: [
+      'Đóng gói luôn React vào bundle của thư viện để app chắc chắn dùng đúng phiên bản mà thư viện đã test',
+      'Để React là `peerDependency`, xuất ESM giữ được tree-shaking, và đánh dấu `"use client"` cho phần tương tác',
+      'Gộp mọi component vào một file bundle duy nhất để app chỉ cần một câu import là dùng được tất cả',
+      'Chỉ publish mã nguồn TypeScript thô rồi để mỗi app tự biên dịch theo cấu hình riêng của dự án đó',
+    ], answer: 1,
+    explain: 'Sai lầm đắt nhất là đóng gói React vào trong thư viện: app sẽ nạp HAI bản React, hook lập tức vỡ với thông báo "Invalid hook call" hoặc Context thành hai vũ trụ tách rời không thấy nhau. React (và `react-dom`) phải nằm ở `peerDependencies`, chỉ đưa vào `devDependencies` để build và test; lúc phát triển bằng `npm link` cũng phải trỏ alias về một bản React duy nhất, vì đây chính là nguyên nhân số một của lỗi đó trong monorepo. Về đóng gói: xuất ESM và KHÔNG gộp tất cả vào một file, khai báo `"sideEffects": false` để bundler của app tree-shake được — gộp một file nghĩa là app nào import một cái nút cũng kéo về cả thư viện. Dùng trường `exports` để khai đường dẫn kèm kiểu, và luôn phát hành file `.d.ts`, đừng bắt app biên dịch mã nguồn thô của bạn (mỗi app một cấu hình TypeScript, bạn sẽ vỡ ở một dự án nào đó vào lúc không ngờ nhất). Với App Router, component có state hay sự kiện phải mang directive `"use client"` ở đầu file và bundler đóng gói phải được cấu hình để GIỮ directive đó lại — nếu không, app dùng thư viện sẽ báo lỗi hook trong Server Component. Tách CSS ra file riêng (hoặc dùng giải pháp không cần runtime) vì CSS-in-JS chạy lúc runtime không sống được trong Server Component. Cuối cùng là phần con người: semver nghiêm túc — đổi tên hay bỏ một prop là breaking change thật; dùng changesets để sinh changelog; và đầu tư test cùng a11y kỹ hơn bình thường, bởi một lỗi trong thư viện dùng chung sẽ nhân lên ở mọi app.',
+  },
+  {
+    id: 'react-e2e-strategy', topic: 'Kiểm thử',
+    q: 'Bộ test E2E ngày càng chậm và hay đỏ oan khiến cả đội mất niềm tin — sửa chiến lược thế nào?',
+    options: [
+      'Tăng số lần chạy lại và thêm `waitForTimeout` vào các bước hay hỏng cho tới khi bộ test hết đỏ oan',
+      'Giữ ít kịch bản nhưng đúng luồng quan trọng, chờ theo trạng thái giao diện, mỗi test tự tạo dữ liệu riêng',
+      'Chuyển toàn bộ E2E sang chạy hằng đêm để CI của pull request không còn bị chậm và bị đỏ vì chúng nữa',
+      'Thay E2E bằng test đơn vị cho mọi thứ vì test đơn vị chạy nhanh hơn và không bao giờ chập chờn như vậy',
+    ], answer: 1,
+    explain: 'Test chập chờn nguy hiểm hơn không có test: đội bắt đầu chạy lại cho tới khi xanh, và ngày nó bắt được lỗi thật thì không ai tin nữa. Ba nguyên nhân chiếm gần hết số ca. Một là CHỜ SAI: `waitForTimeout` cố định vừa chậm vừa không chắc — dùng locator có cơ chế tự chờ và khẳng định theo trạng thái (`await expect(page.getByRole("alert")).toBeVisible()`), chờ điều bạn thật sự cần chứ không chờ đồng hồ. Hai là DỮ LIỆU DÙNG CHUNG: các test chạy song song cùng sửa một tài khoản sẽ đè lên nhau — mỗi test tự tạo dữ liệu riêng qua API rồi mới bước vào giao diện, và không được phụ thuộc vào thứ tự chạy. Ba là môi trường không tất định: animation, đồng hồ, múi giờ, dữ liệu ngẫu nhiên, bên thứ ba chập chờn — cố định múi giờ và thời gian, tắt animation lúc test, chặn hoặc giả lập request ra ngoài. Về phạm vi: E2E đắt nên chỉ dành cho các luồng ra tiền (đăng ký → thanh toán → nhận hàng), còn phần lớn hành vi kiểm ở tầng component với Testing Library — nhanh hơn hàng chục lần và chỉ ra chỗ hỏng chính xác hơn. Vài mẹo giảm thời gian rất hiệu quả: đăng nhập một lần qua API rồi tái dùng `storageState` thay vì gõ form ở mỗi test; chạy song song và chia shard trên CI; lấy selector theo vai trò và nhãn (`getByRole`) thay vì chuỗi CSS dễ vỡ. Bật trace/video/ảnh chụp khi hỏng để không phải ngồi đoán, và nếu phải cách ly một test chập chờn thì gắn hạn xử lý cho nó — danh sách cách ly không có hạn sẽ phình ra mãi.',
+  },
+  {
+    id: 'react-touch-gesture', topic: 'Form & sự kiện',
+    q: 'Làm thao tác vuốt (swipe) trên di động trong React — dùng gì và bẫy nào hay gặp?',
+    options: [
+      'Dùng `onMouseDown`/`onMouseMove` vì trình duyệt di động tự chuyển sự kiện chạm thành sự kiện chuột tương ứng',
+      'Dùng Pointer Events kèm `setPointerCapture`, và CSS `touch-action` để nhường hoặc chặn cuộn theo từng trục',
+      'Chỉ cần `onTouchStart` với `onTouchEnd` rồi so sánh toạ độ đầu cuối là nhận diện được mọi thao tác vuốt',
+      'Gọi `preventDefault` trong tất cả sự kiện chạm để cử chỉ của ứng dụng không xung đột với cuộn của trình duyệt',
+    ], answer: 1,
+    explain: 'Pointer Events hợp nhất chuột, cảm ứng và bút vào một bộ sự kiện (`pointerdown`/`pointermove`/`pointerup`/`pointercancel`, phân biệt bằng `e.pointerType`) nên bạn viết một lần chạy cho mọi thiết bị, thay vì duy trì hai nhánh chuột và chạm. `setPointerCapture(e.pointerId)` bảo đảm phần tử vẫn nhận được sự kiện khi ngón tay đã trượt ra ngoài biên của nó — thiếu bước này là thao tác kéo đứt gãy giữa chừng. Sự kiện BẮT BUỘC phải xử lý mà hầu như ai cũng quên là `pointercancel`: trình duyệt có quyền cướp cử chỉ (để cuộn, để thực hiện thao tác hệ thống), lúc đó bạn phải trả giao diện về trạng thái nghỉ, nếu không nó sẽ kẹt vĩnh viễn ở dạng "đang kéo". Chuyện xung đột với cuộn nên giải bằng CSS chứ không bằng `preventDefault`: đặt `touch-action: pan-y` nghĩa là "cho phép cuộn dọc, phần ngang để tôi lo" — trình duyệt biết điều này TRƯỚC khi chạy JS nên không mất khung hình nào; còn `touch-action: none` chặn hẳn. `preventDefault` chỉ có tác dụng khi listener không passive, mà React 17+ gắn listener ở gốc nên đôi khi bạn phải `addEventListener` thủ công với `{ passive: false }` — thêm một lý do nữa để ưu tiên `touch-action`. Sự kiện chuột giả lập từ chạm thì trễ, không có đa điểm, và không có ở mọi trình duyệt — đừng dựa vào. Về chất lượng: đặt ngưỡng quãng đường, hướng và vận tốc để phân biệt vuốt với chạm hụt; vùng chạm nên rộng ít nhất 44px; và luôn có đường thay thế bằng nút hoặc bàn phím, vì thao tác vuốt gần như vô hình với người dùng screen reader. Cần nhiều cử chỉ phức tạp thì dùng thư viện (`@use-gesture`, thuộc tính `drag` của Framer Motion) thay vì tự viết.',
+  },
+  {
+    id: 'react-nextjs-middleware', topic: 'Kiến trúc',
+    q: 'Chặn người chưa đăng nhập trong Next.js App Router — nên đặt việc kiểm tra ở đâu?',
+    options: [
+      'Chỉ cần trong `middleware.ts` vì nó chạy trước mọi request nên đủ bảo vệ toàn bộ trang lẫn route handler',
+      'Middleware để điều hướng sớm, nhưng từng trang và route handler VẪN phải tự xác thực trước khi đọc dữ liệu',
+      'Trong `useEffect` của layout gốc: thấy chưa đăng nhập thì gọi `router.push` sang trang đăng nhập ngay',
+      'Trong `generateMetadata` vì nó là thứ chạy sớm nhất trong vòng đời render của một trang App Router',
+    ], answer: 1,
+    explain: 'Middleware chạy trước khi request tới trang, trên edge runtime — nghĩa là chỉ có Web API, không có đủ API của Node, và không nên truy vấn database ở đó. Việc hợp lý cho nó là những phép kiểm RẺ: có cookie phiên không, JWT còn hạn không (xác minh bằng thư viện chạy được trên edge như `jose`), rồi `NextResponse.redirect` về trang đăng nhập. Đó là tối ưu trải nghiệm — người dùng không phải tải cả trang mới biết mình bị đá ra. Nhưng nó KHÔNG được là hàng rào duy nhất, vì hai lý do. Thứ nhất, dữ liệu thật được đọc trong Server Component và route handler, và những chỗ đó có thể bị gọi tới theo đường khác (request từ client, RSC payload, một Server Action). Thứ hai là bài học lịch sử: Next từng có lỗ hổng cho phép bỏ qua middleware chỉ bằng một header, và mọi ứng dụng đặt toàn bộ niềm tin vào middleware đều phơi dữ liệu ra ngay lập tức. Vì vậy hãy lấy session ngay tại nơi truy vấn dữ liệu và `redirect()` (từ `next/navigation`) hoặc `notFound()` nếu không hợp lệ — tốt nhất là gói vào một hàm `requireUser()` dùng chung để không ai quên. Server Action cũng là endpoint công khai nên phải tự kiểm quyền bên trong. Vài chi tiết vận hành: dùng `matcher` để middleware không chạy trên file tĩnh; nhớ rằng đọc cookie làm route thành động nên đừng vô tình vứt bỏ cache của cả trang; và tuyệt đối đừng phòng thủ bằng `useEffect` — nó chạy sau khi HTML đã tới trình duyệt, vừa nhấp nháy vừa có thể đã gửi kèm dữ liệu không được phép xem.',
+  },
+  {
+    id: 'react-timezone-display', topic: 'Chất lượng UI',
+    q: 'Ứng dụng có người dùng ở nhiều nước — hiển thị ngày giờ thế nào để không ai thấy sai?',
+    options: [
+      'Lưu chuỗi giờ địa phương của người tạo rồi hiển thị nguyên văn để tất cả mọi người cùng nhìn thấy giống nhau',
+      'Server trả ISO 8601 kèm offset hoặc UTC; client định dạng bằng `Intl.DateTimeFormat` theo múi giờ người xem',
+      'Quy hết về UTC rồi hiển thị luôn giờ UTC kèm nhãn "UTC" để mỗi người tự quy đổi cho thật chính xác',
+      'Cộng trừ số giờ chênh lệch của người dùng vào timestamp trước rồi mới đưa qua `toLocaleString` để hiện ra',
+    ], answer: 1,
+    explain: 'Quy tắc nền: lưu và truyền một THỜI ĐIỂM tuyệt đối (timestamp UTC, cột `timestamptz`, chuỗi ISO 8601 có offset như `2026-08-24T09:00:00Z`), rồi định dạng ở nơi hiển thị bằng `new Intl.DateTimeFormat(locale, { timeZone, dateStyle, timeStyle })`. Múi giờ lấy từ lựa chọn của người dùng, và nếu chưa có thì đoán bằng `Intl.DateTimeFormat().resolvedOptions().timeZone`. Tự cộng trừ số giờ là sai ở hai tầng: mùa hè và mùa đông của nhiều nước lệch nhau một tiếng (DST) nên offset thay đổi trong năm, và bản thân offset không đủ mô tả một vùng — chỉ tên IANA (`Asia/Ho_Chi_Minh`, `America/New_York`) mới mang theo được luật DST. Có một ngoại lệ quan trọng: sự kiện TƯƠNG LAI theo giờ địa phương (cuộc họp 9 giờ sáng thứ Hai hằng tuần) nên lưu giờ địa phương kèm tên múi giờ chứ đừng quy về instant, vì chính phủ vẫn đổi luật DST và cuộc họp phải bám theo 9 giờ sáng chứ không bám theo con số UTC đã tính lúc tạo. Với SSR, máy chủ và trình duyệt thường khác múi giờ nên chuỗi ngày render hai nơi sẽ lệch và gây cảnh báo hydration — chữa bằng cách để phần đó render ở client, hoặc truyền múi giờ đã chọn xuống từ server để hai bên cùng một đầu vào. Chi tiết làm nên chất lượng: kèm nhãn múi giờ khi ngữ cảnh có nhiều quốc gia, hiện tooltip giờ đầy đủ cho những chỗ ghi "3 giờ trước", và dùng thẻ `<time dateTime="...">` để máy đọc được. `Date` của JavaScript vốn nhiều bẫy quanh khoản này — `Temporal` sinh ra để thay nó, còn trong lúc chờ thì các thư viện như `date-fns-tz` hay `Luxon` sẽ đỡ cho bạn phần nặng nhất.',
+  },
+  {
+    id: 'react-mobile-viewport', topic: 'Chất lượng UI',
+    q: 'Trên di động `height: 100vh` bị hụt hoặc thừa, bàn phím ảo còn che mất ô nhập — xử lý ra sao?',
+    options: [
+      'Đo `window.innerHeight` trong effect rồi gán vào một biến CSS, và cập nhật lại mỗi lần `resize` bắn ra',
+      'Dùng đơn vị động `100dvh` (cùng họ `svh`/`lvh`) với `env(safe-area-inset-*)`; bàn phím thì theo `visualViewport`',
+      'Đặt `position: fixed` cho toàn bộ khung ứng dụng để chiều cao luôn khớp với vùng nhìn thấy của thiết bị',
+      'Thêm `<meta name="viewport" content="height=device-height">` để trình duyệt tính lại chiều cao cho chuẩn',
+    ], answer: 1,
+    explain: '`100vh` trên di động được tính theo viewport LỚN — tức là lúc thanh địa chỉ đã thu gọn — nên khi thanh địa chỉ còn hiện, khối của bạn cao hơn màn hình và nút ở đáy bị đẩy khuất. Bộ đơn vị mới giải quyết trực tiếp: `svh` (viewport nhỏ, an toàn nhất cho khung luôn vừa màn hình), `lvh` (lớn) và `dvh` (động, đổi liên tục theo thanh địa chỉ). Thực dụng thì `min-height: 100svh` cho khung chính là lựa chọn ít gây bất ngờ, còn `dvh` hợp cho lớp phủ toàn màn hình — nhưng nhớ rằng giá trị `dvh` thay đổi trong lúc cuộn nên đặt cho khối có nội dung dài dễ gây giật. Mẹo đo `innerHeight` rồi gán biến CSS là cách cũ, vẫn chạy nhưng thêm một vòng render và luôn trễ một nhịp so với CSS thuần. Phần thứ hai là tai thỏ và thanh home: muốn dùng trọn màn hình thì đặt `viewport-fit=cover` trong thẻ meta viewport, rồi chừa chỗ bằng `padding-bottom: env(safe-area-inset-bottom)` cho thanh công cụ dính đáy — thiếu bước này là nút bị thanh gạt ngang của iOS đè lên. Phần thứ ba là bàn phím ảo: iOS KHÔNG thu nhỏ layout viewport khi bàn phím hiện lên, nó chỉ đổi VISUAL viewport — nên thanh cố định ở đáy sẽ nằm dưới bàn phím. Cách xử lý là nghe `window.visualViewport` (`resize` và `scroll`) rồi dịch thanh đó lên theo `visualViewport.height` và `offsetTop`; trên Chrome Android còn có `interactive-widget=resizes-content` khai trong thẻ meta để trình duyệt tự thu layout. Thêm hai điều nhỏ mà hay gặp: `100vw` tính cả thanh cuộn nên gây tràn ngang trên desktop (dùng `100%` hoặc `dvw`), và mọi thứ ở trên chỉ nên tin sau khi thử trên máy thật — chế độ giả lập di động của DevTools không tái hiện được thanh địa chỉ co giãn lẫn bàn phím ảo.',
+  },
 ];

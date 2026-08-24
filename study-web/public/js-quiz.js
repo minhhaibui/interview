@@ -1847,4 +1847,93 @@ window.JS_QUIZ = [
     ], answer: 2,
     explain: 'XSS kiểu DOM-based xảy ra khi dữ liệu do kẻ tấn công kiểm soát chảy tới một "hố" nguy hiểm: `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `document.write`, `eval`, `setTimeout` với tham số chuỗi, hay gán vào `script.src`. Vấn đề là những hố này rải rác khắp mã nguồn và cả trong thư viện, nên rà soát bằng mắt gần như bất khả thi. Trusted Types đảo ngược mặc định: bật bằng chỉ thị CSP `require-trusted-types-for` thì trình duyệt TỪ CHỐI mọi phép gán chuỗi thường vào các hố đó — chỉ chấp nhận đối tượng do một POLICY bạn tự khai báo tạo ra, và trong policy đó bạn đặt đúng một chỗ để sanitize, thường là gọi DOMPurify. Nhờ vậy toàn bộ bề mặt tấn công gom về vài dòng code duy nhất, và mọi vi phạm khác bị chặn ở tầng trình duyệt chứ không phụ thuộc vào việc lập trình viên có nhớ hay không. Cách triển khai: bật ở chế độ CHỈ BÁO CÁO trước để xem có bao nhiêu vi phạm và chúng nằm ở đâu — thường thư viện bên thứ ba là nguồn chính — sửa dần rồi mới siết. Lưu ý Trusted Types là một LỚP bổ sung chứ không thay CSP, không thay việc escape ở server, và cũng không cứu được XSS kiểu phản chiếu từ HTML do server sinh ra. Hỗ trợ trình duyệt hiện tập trung ở nhóm Chromium, nhưng vì nó chỉ siết thêm nên bật vẫn an toàn.',
   },
+  // ===== Đợt #16 =====
+  {
+    id: 'js-clipboard', topic: 'DOM & trình duyệt',
+    q: 'Làm nút "Sao chép" đáng tin cậy trên web — cần lưu ý gì?',
+    options: [
+      'Dùng `document.execCommand("copy")` vì đây là cách duy nhất còn chạy được trên mọi trình duyệt',
+      '`navigator.clipboard.writeText` cần secure context và cử chỉ người dùng — luôn bọc `try/catch` kèm dự phòng',
+      'Ghi vào clipboard thì lúc nào cũng được, chỉ khi ĐỌC clipboard trình duyệt mới hỏi quyền người dùng',
+      'Phải xin quyền `clipboard-write` qua Permissions API trước, không xin thì lệnh ghi sẽ luôn thất bại',
+    ], answer: 1,
+    explain: 'Clipboard API hiện đại là bất đồng bộ và có ba điều kiện dễ quên: trang phải ở SECURE CONTEXT (https hoặc localhost), lệnh ghi phải nằm trong một cử chỉ người dùng còn hiệu lực (bấm nút — gọi trong `setTimeout` dài hay sau một `await` mạng chậm là mất quyền), và tài liệu phải đang được focus (gọi lúc DevTools đang chiếm focus sẽ ném `NotAllowedError` — rất hay làm người ta tưởng code sai). GHI thì không cần hỏi quyền, ĐỌC (`readText`) mới bị hỏi ở Chromium và bị chặn hẳn ở Firefox trừ khi người dùng dán bằng phím tắt — nên đừng thiết kế tính năng phụ thuộc việc tự đọc clipboard. Muốn chép ảnh hay HTML thì dùng `navigator.clipboard.write` với `ClipboardItem`; riêng Safari đòi Promise dữ liệu phải được TẠO ngay trong cử chỉ (truyền thẳng promise vào `ClipboardItem`, đừng `await` trước rồi mới gọi). Dự phòng cho môi trường cũ vẫn là `textarea` ẩn + `select()` + `execCommand("copy")` — đã bị đánh dấu lỗi thời nhưng còn hoạt động. Về trải nghiệm: đổi nhãn nút thành "Đã chép" trong 2 giây và thông báo qua vùng `aria-live` để người dùng screen reader biết, vì thao tác này không có phản hồi thị giác tự nhiên. Muốn can thiệp lúc người dùng dán thì nghe sự kiện `paste` và đọc `e.clipboardData` — chỗ này không cần quyền gì cả.',
+  },
+  {
+    id: 'js-form-data', topic: 'DOM & trình duyệt',
+    q: 'Upload file kèm vài trường text lên server bằng JS — chọn cách nào?',
+    options: [
+      'Đọc file thành base64 rồi nhét vào JSON, vì API nào cũng nhận JSON nên không phải sửa gì ở server',
+      'Dựng `FormData`, `append` file cùng các trường rồi truyền thẳng đối tượng đó vào `body` của `fetch`',
+      'Tự đặt header `Content-Type: multipart/form-data` rồi nối chuỗi boundary cho từng phần của body',
+      'Dùng `URLSearchParams` cho toàn bộ dữ liệu vì nó mã hoá được cả file lẫn text trong cùng một body',
+    ], answer: 1,
+    explain: '`FormData` sinh đúng body `multipart/form-data`: `fd.append("avatar", fileInput.files[0])`, `fd.append("name", "Linh")`, rồi `fetch(url, { method: "POST", body: fd })`. Điều PHẢI nhớ: ĐỪNG tự set `Content-Type` — trình duyệt cần tự điền kèm chuỗi `boundary` ngẫu nhiên, set tay là boundary mất và server parse hỏng (lỗi kinh điển "Multipart: Boundary not found"). Có sẵn form thì `new FormData(formEl)` gom mọi input có thuộc tính `name`, kể cả nhiều file cùng key. Base64 trong JSON làm dữ liệu phình khoảng 33%, tốn bộ nhớ vì phải nạp cả file vào chuỗi, và với file trăm MB thì gần như chắc chắn treo tab — chỉ dùng cho ảnh nhỏ vài chục KB. Điểm yếu của `fetch` là KHÔNG báo tiến độ upload (chỉ có tiến độ tải xuống); cần thanh phần trăm thì vẫn phải dùng `XMLHttpRequest` với `xhr.upload.onprogress`, hoặc chuyển sang upload trực tiếp lên object storage bằng presigned URL — cách này còn tránh cho Node phải gánh luồng byte. Phía server nhớ giới hạn kích thước, kiểm tra kiểu file bằng magic bytes chứ không tin `file.type`, và với file lớn thì stream thẳng ra đích thay vì ghi tạm vào bộ nhớ.',
+  },
+  {
+    id: 'js-notification-push', topic: 'DOM & trình duyệt',
+    q: 'Web app muốn gửi thông báo đẩy cho người dùng — điều gì ĐÚNG?',
+    options: [
+      'Gọi `Notification.requestPermission()` ngay lúc trang tải xong để không bỏ lỡ người dùng nào cả',
+      'Chỉ xin quyền sau một hành động có ngữ cảnh; muốn đẩy thật thì cần Service Worker và Push subscription',
+      'Chỉ cần `new Notification(...)` là thông báo vẫn hiện lên được kể cả khi người dùng đã đóng tab',
+      'Thông báo đẩy trên web chỉ chạy được nếu đóng gói thành PWA và người dùng cài vào màn hình chính',
+    ], answer: 1,
+    explain: 'Quyền thông báo chỉ hỏi được MỘT lần: người dùng bấm "Chặn" là thành `denied` vĩnh viễn, code không xin lại được, họ phải tự vào phần cài đặt của trình duyệt — nên hỏi ngay lúc mở trang là cách nhanh nhất để mất kênh này mãi mãi (Chrome còn tự chặn lời nhắc ở những site có tỉ lệ từ chối cao). Cách làm đúng là "pre-prompt": hiện giao diện của chính bạn giải thích sẽ gửi gì, chỉ khi người dùng đồng ý mới gọi API thật, và gắn nó vào một hành động có ngữ cảnh (vừa đặt đơn xong → "báo tôi khi hàng được giao"). Phân biệt hai thứ: `new Notification()` chỉ hiện thông báo khi trang ĐANG mở; muốn đẩy lúc tab đã đóng thì phải có Service Worker đăng ký `pushManager.subscribe({ userVisibleOnly: true, applicationServerKey })` — khoá VAPID; subscription trả về `endpoint` gửi lên server lưu lại, server ký bằng khoá riêng và gọi push service (FCM, Mozilla...), trình duyệt đánh thức SW ở sự kiện `push` và bạn gọi `showNotification`. `userVisibleOnly` là bắt buộc: không được đẩy im lặng để theo dõi người dùng. Vận hành: endpoint trả 404/410 nghĩa là đã hết hiệu lực, phải xoá khỏi DB; subscription có thể tự đổi nên đăng ký lại khi cần; xử lý `notificationclick` để focus tab đang mở thay vì mở thêm tab mới; iOS chỉ hỗ trợ từ Safari 16.4 và chỉ khi web app đã được thêm vào màn hình chính.',
+  },
+  {
+    id: 'js-web-share', topic: 'DOM & trình duyệt',
+    q: 'Làm nút "Chia sẻ" gọi hộp chia sẻ gốc của hệ điều hành — dùng thế nào cho đúng?',
+    options: [
+      'Kiểm tra `navigator.share` có tồn tại, gọi trong sự kiện người dùng, và có phương án chép link dự phòng',
+      'Gọi thẳng `navigator.share` rồi bắt lỗi, vì trình duyệt không hỗ trợ cũng chỉ im lặng bỏ qua lệnh này',
+      'Tự dựng danh sách link chia sẻ tới từng mạng xã hội vì như vậy mới kiểm soát được nội dung chia sẻ',
+      'Gọi trong `setTimeout` ngay sau khi trang tải xong để hộp chia sẻ hiện lên sớm cho người dùng thấy',
+    ], answer: 0,
+    explain: 'Web Share API mở đúng bảng chia sẻ gốc của máy — người dùng gửi được sang Zalo, Messenger, AirDrop, ghi chú... mà bạn không phải nhúng SDK của ai. Ba ràng buộc: chỉ chạy ở secure context, BẮT BUỘC nằm trong cử chỉ người dùng còn hiệu lực (gọi trong `setTimeout` hay sau `await` dài sẽ bị `NotAllowedError`), và không phải trình duyệt nào cũng có — Firefox trên desktop chưa hỗ trợ, nên `if (navigator.share)` là bắt buộc chứ không phải cho đẹp. Gọi `await navigator.share({ title, text, url })`; muốn gửi kèm ảnh hay file thì kiểm tra trước bằng `navigator.canShare({ files })` vì tập kiểu file được phép khá hẹp. Người dùng bấm huỷ sẽ ném `AbortError` — đây KHÔNG phải lỗi, đừng hiện toast đỏ; hãy phân biệt nó với lỗi thật. Dự phòng khi không có API: nút chép link (Clipboard API) hoặc `mailto:`, giữ nguyên vị trí nút để giao diện không nhảy. Lưu ý về đo đạc: bạn không biết được người dùng cuối cùng chia sẻ đi đâu — đó là chủ ý bảo vệ riêng tư, muốn thống kê thì gắn tham số UTM vào chính URL đem chia sẻ. Chiều ngược lại có Web Share Target: PWA đã cài khai báo trong manifest để xuất hiện trong bảng chia sẻ của hệ điều hành và NHẬN nội dung từ app khác.',
+  },
+  {
+    id: 'js-passive-listener', topic: 'DOM & trình duyệt',
+    q: 'Trang cuộn giật sau khi thêm listener `touchmove`/`wheel` — vì sao và chữa thế nào?',
+    options: [
+      'Vì listener chạy quá chậm — bọc phần thân xử lý trong `requestAnimationFrame` là cuộn sẽ mượt trở lại',
+      'Trình duyệt phải đợi xem listener có gọi `preventDefault` hay không — khai báo `{ passive: true }` để khỏi đợi',
+      'Vì mỗi lần cuộn sinh ra quá nhiều sự kiện; hãy throttle bằng `setTimeout` để giảm số lần listener chạy',
+      'Do listener gắn ở `window` nên sự kiện phải bong bóng qua cả cây DOM — gắn thẳng vào phần tử cuộn là hết',
+    ], answer: 1,
+    explain: 'Cuộn được chạy trên luồng hợp thành (compositor) nên thường mượt kể cả khi JS bận. Nhưng nếu có listener `touchstart`, `touchmove` hay `wheel` mà trình duyệt KHÔNG biết trước bạn có huỷ sự kiện hay không, nó buộc phải dừng lại chờ listener chạy xong mới dám cuộn — mỗi khung hình trễ thêm chừng ấy, cảm giác là "dính tay". Khai báo `addEventListener("touchmove", fn, { passive: true })` là lời hứa "tôi sẽ không gọi `preventDefault`", trình duyệt cuộn ngay không cần chờ (gọi `preventDefault` trong listener passive sẽ bị bỏ qua kèm cảnh báo). Chrome đã mặc định passive cho các sự kiện này khi gắn ở `window`/`document`/`body`, nhưng KHÔNG mặc định khi gắn vào phần tử cụ thể — nên vẫn phải khai rõ. Khi thật sự cần chặn cuộn (carousel vuốt ngang, pull-to-refresh tuỳ biến) thì hướng hiện đại là dùng CSS `touch-action` — `pan-y` cho phép cuộn dọc và nhường thao tác ngang cho bạn, `none` chặn hẳn — thay vì `preventDefault` với `{ passive: false }`; CSS được đọc trước nên không tốn khoảng chờ nào. Vài điểm nữa: sự kiện `scroll` vốn không huỷ được nên luôn passive; React 17+ gắn listener ở container gốc nên muốn `{ passive: false }` thì phải `addEventListener` thủ công trong effect; `requestAnimationFrame` và throttle vẫn có ích để phần thân xử lý không chạy quá nhiều lần, nhưng chúng không xoá được khoảng chờ do listener không passive gây ra.',
+  },
+  {
+    id: 'js-file-system-access', topic: 'DOM & trình duyệt',
+    q: 'Cho người dùng LƯU kết quả xuống máy từ một web app thuần client — làm cách nào?',
+    options: [
+      'Ghi thẳng vào thư mục Tải về bằng module `fs` của trình duyệt sau khi người dùng bấm nút cho phép',
+      'Tạo `Blob` rồi `URL.createObjectURL` gắn vào thẻ `<a download>`; nơi hỗ trợ thì dùng `showSaveFilePicker`',
+      'Bắt buộc gửi dữ liệu lên server rồi trả về kèm `Content-Disposition: attachment` mới tải xuống được',
+      'Lưu nội dung vào `localStorage` rồi mở tab mới trỏ tới `data:` URL để người dùng tự bấm lưu lại file',
+    ], answer: 1,
+    explain: 'Cách chạy ở mọi nơi: `const url = URL.createObjectURL(new Blob([data], { type: "text/csv" }))`, gán vào một thẻ `a` có thuộc tính `download="bao-cao.csv"`, gọi `a.click()` rồi `URL.revokeObjectURL(url)` để giải phóng bộ nhớ — quên bước cuối là blob sống tới khi đóng tab. Vài giới hạn thật: thuộc tính `download` bị BỎ QUA nếu href trỏ sang origin khác (khi đó trình duyệt điều hướng thay vì tải), người dùng không chọn được nơi lưu, và toàn bộ nội dung phải nằm trong bộ nhớ nên file rất lớn sẽ đuối. File System Access API giải quyết đúng những chỗ đó: `showSaveFilePicker()` mở hộp thoại lưu thật, trả về một `FileSystemFileHandle`, `createWritable()` cho ghi theo dòng chảy nên xuất được file lớn mà không nạp hết vào RAM. Quan trọng hơn: giữ lại handle thì lần sau bấm "Lưu" là ghi đè đúng file cũ — đây là thứ biến web app thành trình soạn thảo thật sự; handle còn cất được vào IndexedDB để dùng lại sau khi tải lại trang (trình duyệt sẽ hỏi lại quyền). Đổi lại, API này cần cử chỉ người dùng, secure context, và hiện chỉ có trên Chromium — nên phải `if ("showSaveFilePicker" in window)` rồi hạ cấp về cách anchor ở trên. Họ hàng gần: `showOpenFilePicker`/`showDirectoryPicker` để đọc, và OPFS (`navigator.storage.getDirectory()`) — một hệ thống file riêng của origin, nhanh, hợp cho dữ liệu tạm cỡ lớn nhưng người dùng không nhìn thấy trong máy.',
+  },
+  {
+    id: 'js-drag-drop', topic: 'DOM & trình duyệt',
+    q: 'Vùng kéo-thả file đã nghe sự kiện `drop` nhưng thả vào không ăn gì — thiếu gì?',
+    options: [
+      'Thiếu `preventDefault()` trong `dragover` — không chặn thì trình duyệt xử lý mặc định là mở luôn file đó',
+      'Thiếu thuộc tính `draggable="true"` trên vùng thả để trình duyệt biết đây là đích nhận file kéo vào',
+      'Thiếu listener `dragstart` — chuỗi sự kiện kéo thả buộc phải bắt đầu từ chính phần tử nhận thả đó',
+      'Thiếu `e.dataTransfer.setData` trong `drop` để lấy được danh sách file mà người dùng vừa thả vào',
+    ], answer: 0,
+    explain: 'Theo đặc tả HTML, mặc định KHÔNG phần tử nào là đích thả hợp lệ; bạn tuyên bố nó hợp lệ bằng cách gọi `e.preventDefault()` trong `dragover` (và nên gọi cả trong `dragenter`). Thiếu bước đó thì `drop` không bao giờ bắn, và hành vi mặc định của trình duyệt là điều hướng để mở file — đúng cái cảnh "thả ảnh vào thì cả trang biến thành ảnh". Lấy file trong `drop` bằng `e.dataTransfer.files` (và nhớ `preventDefault` ở đây nữa); `setData` là dành cho phía KÉO, còn `draggable="true"` đặt trên phần tử được kéo đi chứ không phải nơi nhận. Bẫy thường gặp thứ hai là hiệu ứng viền sáng nhấp nháy: `dragleave` bắn mỗi lần con trỏ đi qua một phần tử CON bên trong vùng thả — chữa bằng bộ đếm tăng ở `dragenter`, giảm ở `dragleave`, chỉ tắt trạng thái khi về 0, hoặc đặt `pointer-events: none` cho phần tử con. Muốn nhận cả THƯ MỤC thì phải duyệt `e.dataTransfer.items` với `webkitGetAsEntry()` chứ `files` chỉ có file phẳng. `dataTransfer.effectAllowed`/`dropEffect` quyết định con trỏ hiện dấu sao chép hay di chuyển. Cuối cùng, kéo thả KHÔNG dùng được bằng bàn phím và gần như vô dụng trên di động — luôn kèm một `<input type="file">` thật (ẩn bằng CSS nhưng vẫn focus được) làm đường thay thế.',
+  },
+  {
+    id: 'js-ime-composition', topic: 'DOM & trình duyệt',
+    q: 'Ô tìm kiếm gõ tiếng Việt bằng bộ gõ bị bắn request lúc chữ chưa ghép xong — xử lý sao?',
+    options: [
+      'Nghe `compositionstart`/`compositionend` và bỏ qua `input` khi đang soạn, hoặc lấy giá trị lúc soạn xong',
+      'Nghe `keyup` thay cho `input` vì bộ gõ chỉ phát `keyup` sau khi ký tự đã được ghép hoàn chỉnh xong',
+      'Tăng thời gian debounce lên khoảng một giây, đủ lâu để mọi bộ gõ kịp hoàn tất việc ghép ký tự đó',
+      'Chuẩn hoá chuỗi bằng `normalize("NFD")` rồi chỉ gửi đi phần chữ cái không dấu để tránh trạng thái dở dang',
+    ], answer: 0,
+    explain: 'Bộ gõ (IME — Unikey, Telex, bộ gõ tiếng Nhật/Trung/Hàn) không tạo ký tự ngay mỗi lần bấm phím: nó dựng một chuỗi TẠM đang soạn, gạch chân trong ô nhập, rồi mới chốt. Trong giai đoạn đó trình duyệt vẫn bắn `input` liên tục với những giá trị dở dang, nên tìm kiếm tức thì sẽ gửi đi những chuỗi vô nghĩa và làm nhảy kết quả trước mắt người dùng. Bộ ba sự kiện dành cho việc này là `compositionstart` → `compositionupdate` → `compositionend`: đặt một cờ khi bắt đầu, bỏ qua các `input` trong lúc cờ đang bật, xử lý giá trị ở `compositionend`. Gọn hơn nữa, bản thân sự kiện `input` có `e.isComposing` — chỉ cần `if (e.isComposing) return`. Chỗ vấp nghiêm trọng hơn nằm ở phím Enter: khi người dùng bấm Enter để CHỌN ứng viên mà bộ gõ đang gợi ý, trình duyệt vẫn bắn `keydown` (với `keyCode` 229 ở nhiều bộ gõ) — nếu bạn coi đó là "gửi tin nhắn" hay "chọn dòng trong danh sách gợi ý" thì ứng dụng sẽ gửi đi chữ chưa gõ xong, một lỗi rất hay gặp ở khung chat và ô combobox mà người viết code không dùng bộ gõ sẽ chẳng bao giờ tự phát hiện. Cách chữa: kiểm tra `e.isComposing` trong `keydown` trước khi xử lý Enter. Debounce vẫn nên có nhưng chỉ giảm số request chứ không sửa được bản chất, và kéo dài debounce thì đánh đổi bằng cảm giác chậm cho tất cả mọi người.',
+  },
 ];

@@ -1767,4 +1767,93 @@ window.NODE_QUIZ = [
     ], answer: 2,
     explain: 'Chứng chỉ hết hạn vẫn là một trong những nguyên nhân gây sự cố phổ biến nhất, và nó luôn xảy ra đúng lúc không ai để ý. Thời hạn lại đang NGẮN dần chứ không dài ra — các trình duyệt đã siết xuống dưới một năm và lộ trình còn tiếp tục rút ngắn, nên gia hạn bằng tay là cách làm không bền vững. Cách đúng là tự động hoá bằng giao thức ACME: Certbot hoặc `cert-manager` trên Kubernetes tự xin và tự thay chứng chỉ, thường làm việc đó khi còn khoảng một phần ba thời hạn để có dư địa xử lý nếu hỏng. Nhưng tự động hoá KHÔNG thay thế giám sát: hãy kiểm tra ngày hết hạn từ BÊN NGOÀI, đúng như người dùng thấy, và cảnh báo ở nhiều mốc — 30 ngày, 14 ngày, 7 ngày; rất nhiều sự cố xảy ra vì cơ chế tự gia hạn im lặng hỏng suốt hai tháng mà không ai biết. Những chỗ hay bị bỏ sót: chứng chỉ của dịch vụ NỘI BỘ và mTLS giữa các service, vì không có ai bên ngoài phàn nàn nên không ai nhớ; chứng chỉ dùng để ký ứng dụng; chứng chỉ trên thiết bị mạng; và chứng chỉ bị ghim cứng trong các client cũ. Vài điều nữa: sau khi thay chứng chỉ phải nạp lại đúng cách mà không làm rớt kết nối đang có; cẩn thận nếu bạn tự ghim chứng chỉ ở phía client vì gia hạn sẽ làm vỡ; và nếu vẫn còn chỗ nào phải gia hạn thủ công thì viết runbook rõ ràng, bởi lúc cần dùng nó là lúc mọi người đang hoảng.',
   },
+  // ===== Đợt #16 =====
+  {
+    id: 'node-range-request', topic: 'HTTP',
+    q: 'Cho tải file lớn có thể tạm dừng rồi tiếp tục, và tua được video — server cần làm gì?',
+    options: [
+      'Chia file thành nhiều request nhỏ ngay ở client rồi ghép lại bằng `Blob` sau khi tải xong hết các phần',
+      'Đáp `Accept-Ranges: bytes`, đọc header `Range` của request rồi trả 206 kèm `Content-Range` đúng đoạn',
+      'Bật nén gzip cho file để giảm dung lượng, nhờ đó trình duyệt tự nối lại được khi kết nối bị đứt giữa chừng',
+      'Trả `Transfer-Encoding: chunked` — trình duyệt sẽ nhớ vị trí đã nhận và tự xin phần còn thiếu khi cần',
+    ], answer: 1,
+    explain: 'Cơ chế chuẩn là HTTP Range Request. Server báo khả năng bằng `Accept-Ranges: bytes`; client xin `Range: bytes=1048576-`; server đáp **206 Partial Content** với `Content-Range: bytes 1048576-5242879/5242880` và chỉ ghi đúng đoạn đó ra body — trong Node là `fs.createReadStream(path, { start, end })`. Range sai hoặc vượt kích thước thì trả **416**; không có header `Range` thì cứ 200 như bình thường. Đây chính là thứ làm nên hai tính năng người dùng thấy được: trình quản lý tải nối tiếp sau khi mất mạng, và thanh tua video nhảy tới giữa phim mà không tải từ đầu (thẻ `<video>` gần như luôn gửi Range, thiếu hỗ trợ là không tua được). Điểm dễ sai khi tự cài: phải kèm `ETag` hoặc `Last-Modified`, và tôn trọng `If-Range` — nếu file đã đổi kể từ lần tải trước, phải trả nguyên file 200 thay vì đoạn 206, không thì client ghép hai phiên bản khác nhau thành file hỏng. Nhớ set `Content-Length` đúng bằng độ dài ĐOẠN, đừng bật nén cho nội dung đã nén (nén cùng Range là nguồn lỗi lệch byte), và xử lý nhiều dải trong một request thì phức tạp hơn nhiều — thực tế client hầu như chỉ xin một dải. Cuối cùng, thư viện `send` (Express `res.sendFile` dùng bên dưới) và `@fastify/static` đã làm sẵn hết; và nếu file nằm trên object storage thì tốt nhất là phát presigned URL cho client tải thẳng từ S3/CDN — nơi đó hỗ trợ Range sẵn và Node không phải gánh luồng byte.',
+  },
+  {
+    id: 'node-native-addon', topic: 'Tooling',
+    q: 'Dự án thêm một package có native addon (phải biên dịch bằng `node-gyp`) — rủi ro nào cần lường?',
+    options: [
+      'Không có rủi ro đáng kể vì npm luôn tải sẵn bản đã biên dịch cho mọi hệ điều hành và mọi kiến trúc CPU',
+      'Phải biên dịch theo đúng OS/kiến trúc/ABI của Node — image đa nền tảng và việc nâng Node dễ vỡ',
+      'Native addon chỉ nạp được bằng CommonJS nên toàn bộ dự án buộc phải từ bỏ ESM mới dùng được nó',
+      'Addon chạy ngoài event loop nên mọi lời gọi tới nó đều bất đồng bộ và không bao giờ chặn tiến trình Node',
+    ], answer: 1,
+    explain: 'Native addon là mã C/C++ được nạp vào tiến trình Node, nên nó gắn chặt với nền tảng: hệ điều hành, kiến trúc CPU (arm64 của Mac M-series khác amd64 của CI), thư viện C chuẩn (Alpine dùng musl, Debian dùng glibc — binary của bên này không chạy bên kia) và ABI của Node. Hệ quả thực tế: copy `node_modules` từ máy Mac vào image Linux là hỏng; `npm ci` phải chạy TRONG image đúng nền tảng; build image đa kiến trúc cần buildx với đúng platform. Nhiều package đã giảm đau bằng `prebuild`/`prebuildify` — tải sẵn binary nếu có, chỉ khi không khớp mới rơi về biên dịch tại chỗ, và lúc đó máy phải có Python cùng toolchain, khiến thời gian cài phồng lên và CI hỏng vào những ngày xấu trời. Về ABI: addon viết theo **N-API (node-api)** ổn định qua các bản Node lớn nên nâng Node không phải build lại — hãy ưu tiên package dùng N-API thay vì NAN đời cũ. Rủi ro vận hành nặng hơn: addon lỗi thì **sập cả tiến trình** chứ không ném exception bắt được, và bộ nhớ nó cấp phát nằm NGOÀI heap V8 nên rò rỉ sẽ không hiện trong heap snapshot (phải nhìn RSS). Lời gọi vào addon mặc định là ĐỒNG BỘ và chặn event loop, trừ khi addon chủ động đẩy việc sang threadpool. Vì vậy: cân nhắc bản thuần JS hoặc WASM nếu chênh lệch hiệu năng không đáng, và ghim phiên bản Node trong Dockerfile lẫn CI để không bị nâng ngầm.',
+  },
+  {
+    id: 'node-permission-model', topic: 'Bảo mật',
+    q: 'Giảm thiệt hại nếu một package trong `node_modules` bị chiếm và trở nên độc hại — làm gì?',
+    options: [
+      'Chạy `npm audit fix` định kỳ là đủ, vì package độc hại nào cũng đã được đánh dấu trong cơ sở dữ liệu đó',
+      'Ghim phiên bản, cài bằng lockfile, tắt script cài đặt, và giới hạn quyền của tiến trình lúc chạy',
+      'Đưa toàn bộ dependency sang `devDependencies` để chúng không được nạp khi ứng dụng chạy ở production',
+      'Bọc mỗi package trong `vm.createContext` lúc require để nó không chạm được vào các module lõi của Node',
+    ], answer: 1,
+    explain: '`npm audit` chỉ biết những lỗ hổng ĐÃ được công bố — nó vô dụng đúng vào lúc nguy hiểm nhất: vài giờ đầu sau khi một package phổ biến bị chiếm tài khoản và đẩy bản độc. Phòng thủ phải xếp lớp. Trước hết là kiểm soát nguồn: `npm ci` với lockfile đã commit, ghim phiên bản chính xác, bật cơ chế chờ (renovate/dependabot có tuỳ chọn giữ bản mới vài ngày trước khi nâng) và giảm số dependency — mỗi package là một tài khoản của người lạ có quyền chạy code trên máy bạn. Vector kinh điển là script cài đặt: một `postinstall` là đủ để đọc biến môi trường và gửi đi, nên `npm ci --ignore-scripts` (hoặc `ignore-scripts=true` trong `.npmrc`) rồi cho phép có chọn lọc là bước rẻ mà hiệu quả cao; xem thêm provenance/attestation của npm để biết package thật sự build từ repo nào. Lớp thứ hai là lúc CHẠY: Node có mô hình quyền tích hợp (`--permission` cùng `--allow-fs-read`, `--allow-fs-write`, `--allow-child-process`, `--allow-worker`) chặn hẳn việc đọc bừa hệ thống file hay sinh tiến trình con; kèm `--frozen-intrinsics` nếu muốn khoá prototype. Lớp thứ ba là hạ tầng: container chạy non-root, hệ thống file chỉ đọc, giới hạn egress bằng firewall để dữ liệu không gửi ra ngoài được, và secret cấp riêng cho từng service kèm khả năng xoay nhanh khi nghi lộ. Còn `vm` thì tài liệu Node ghi rõ **không phải cơ chế bảo mật** — thoát khỏi nó là chuyện đã biết, đừng dựa vào.',
+  },
+  {
+    id: 'node-bot-abuse', topic: 'Bảo mật',
+    q: 'Form đăng ký bị bot tạo hàng nghìn tài khoản rác mỗi giờ — chống thế nào cho hiệu quả?',
+    options: [
+      'Chặn theo user-agent và ẩn nút gửi bằng JS, vì bot không chạy JS nên sẽ không gửi được form nữa',
+      'Nhiều lớp: giới hạn theo IP và dải mạng, xác minh email, captcha khi nghi ngờ, chặn email dùng một lần',
+      'Đặt rate limit thật chặt cho toàn bộ endpoint, chẳng hạn một request mỗi phút cho mọi người dùng',
+      'Chỉ cần gắn captcha vào form là xong, đây là biện pháp mà bot hiện nay vẫn chưa vượt qua được',
+    ], answer: 1,
+    explain: 'Không có một biện pháp nào chặn được bot, chỉ có việc nâng chi phí của kẻ tấn công lên cao hơn lợi ích họ thu được. Lớp rẻ nhất: honeypot — một trường ẩn mà người thật không bao giờ điền, cùng phép đo thời gian điền form (dưới một giây gần như chắc chắn là máy). Lớp mạng: rate limit không chỉ theo IP (đổi IP bằng proxy pool là chuyện thường) mà theo cả dải ASN, theo tên miền email, theo dấu vân tay thiết bị — và nhớ rằng đằng sau NAT của một công ty có thể là hàng trăm người thật, nên chặn cứng theo IP dễ gây thiệt hại nhầm. Lớp thử thách: captcha hiện đại kiểu Turnstile/hCaptcha chỉ nên bật khi điểm rủi ro cao, vì bật cho tất cả thì tỉ lệ hoàn tất đăng ký tụt trông thấy — mà dịch vụ giải captcha thuê ngoài vẫn phá được, nó chỉ làm bot tốn tiền hơn. Lớp xác minh: chưa xác minh email/số điện thoại thì tài khoản chỉ được dùng hạn chế, và chặn danh sách tên miền email dùng một lần. Đặc biệt chú ý những hành động TỐN TIỀN của bạn: gửi SMS, gửi email, tạo tài nguyên đám mây — bot bơm SMS có thể đốt sạch ngân sách trong một đêm, nên phải có hạn mức riêng và cảnh báo theo ngưỡng. Và mọi thứ phải thực thi ở SERVER: giấu nút bằng JS hay chặn user-agent là vô nghĩa vì bot gọi thẳng API. Cuối cùng là giám sát: theo dõi tỉ lệ đăng ký so với tỉ lệ kích hoạt, phát hiện sớm luôn rẻ hơn dọn dẹp hàng chục nghìn tài khoản rác sau đó.',
+  },
+  {
+    id: 'node-secret-rotation', topic: 'Bảo mật',
+    q: 'Xoay khoá ký JWT hoặc API key mà không làm gián đoạn người dùng đang dùng — làm sao?',
+    options: [
+      'Đổi biến môi trường rồi khởi động lại đồng loạt toàn bộ pod để mọi nơi cùng dùng chung một khoá mới',
+      'Chấp nhận NHIỀU khoá cùng lúc: ký bằng khoá mới nhưng vẫn xác minh khoá cũ tới khi token cũ hết hạn',
+      'Đặt hạn dùng của token thật dài để khỏi phải xoay khoá thường xuyên, tránh rủi ro gián đoạn dịch vụ',
+      'Đánh số phiên bản khoá rồi để client tự gửi kèm phiên bản khoá phù hợp với token mà nó đang giữ',
+    ], answer: 1,
+    explain: 'Nguyên tắc chung của mọi lần xoay khoá là có một KHOẢNG GIAO NHAU trong đó hệ thống chấp nhận cả khoá cũ lẫn khoá mới. Quy trình ba bước: (1) nạp khoá mới vào TẬP khoá dùng để XÁC MINH ở mọi service, chờ triển khai xong khắp nơi; (2) chuyển việc KÝ sang khoá mới; (3) sau khi thời hạn của token cũ trôi qua hết thì mới gỡ khoá cũ. Đảo thứ tự — ký bằng khoá mới trước khi mọi nơi biết xác minh nó — là toàn bộ người dùng bị đăng xuất. Với JWT, công cụ để làm việc này là trường `kid` trong header: bên xác minh đọc `kid` để biết dùng khoá nào, và nếu bạn công bố JWKS thì bên thứ ba tự tải danh sách khoá, cache lại, và tải lại khi gặp một `kid` lạ. Restart đồng loạt không giải quyết được gì vì token đã phát ra vẫn nằm trong tay client. Với API key cấp cho khách hàng: cho phép hai key hoạt động song song để họ chuyển dần, hiển thị key nguyên văn đúng một lần rồi chỉ lưu bản băm, ghi lại thời điểm dùng cuối của từng key để biết lúc nào gỡ được an toàn. Với mật khẩu database: lấy từ trình quản lý secret ngay lúc mở pool và có nhánh thử lại khi xác thực hỏng, để việc xoay không đòi hỏi triển khai lại. Cuối cùng, hãy tách bạch xoay ĐỊNH KỲ với xoay KHẨN CẤP: khi khoá đã lộ thì bỏ luôn khoảng giao nhau, thu hồi ngay và chấp nhận đăng xuất toàn bộ — và đó cũng là lúc bạn biết ơn vì đã diễn tập quy trình này trước.',
+  },
+  {
+    id: 'node-db-deadlock', topic: 'Kiến trúc',
+    q: 'Production thỉnh thoảng báo lỗi "deadlock detected" khi cập nhật nhiều dòng — vì sao và xử lý sao?',
+    options: [
+      'Do connection pool cạn kết nối; tăng kích thước pool lên là các transaction sẽ không còn phải chờ nhau',
+      'Hai transaction khoá cùng một nhóm dòng theo THỨ TỰ khác nhau — hãy khoá theo thứ tự cố định và thử lại',
+      'Do isolation level đặt quá thấp; chuyển toàn bộ sang `SERIALIZABLE` sẽ loại bỏ hẳn hiện tượng này',
+      'Do thiếu index nên database phải khoá cả bảng; thêm index vào là mọi deadlock biến mất không cần sửa code',
+    ], answer: 1,
+    explain: 'Deadlock khác với chờ khoá quá hạn: nó là vòng tròn chờ đợi — A giữ dòng 1 và xin dòng 2, B giữ dòng 2 và xin dòng 1 — và database phát hiện được vòng đó rồi GIẾT một bên làm nạn nhân. Điểm mấu chốt về vận hành: lỗi này là lỗi CÓ THỂ THỬ LẠI (mã `40P01` ở Postgres, `1213` ở MySQL), khác hẳn lỗi nghiệp vụ, nên tầng data nên bắt riêng và retry với backoff ngẫu nhiên cùng giới hạn số lần — miễn là thao tác đã được viết theo kiểu idempotent. Cách phòng ngừa gốc rễ là làm cho thứ tự khoá NHẤT QUÁN: sắp xếp danh sách id trước khi cập nhật hàng loạt, hoặc gộp thành một câu lệnh duy nhất có `ORDER BY` thay vì lặp từng dòng ở tầng ứng dụng; nếu quy trình luôn động tới hai bảng thì cả hệ thống thống nhất một chiều (luôn `accounts` trước rồi mới `orders`). Kế đó là giữ transaction thật NGẮN: mở transaction rồi gọi HTTP ra ngoài hay chờ người dùng bấm nút là công thức chắc chắn sinh deadlock. `SERIALIZABLE` không phải liều thuốc — nó chuyển vấn đề sang lỗi serialization failure (`40001`) mà bạn vẫn phải bắt và thử lại, kèm giá phải trả về thông lượng. Thiếu index thì có góp phần thật, vì quét nhiều dòng nghĩa là chạm và khoá nhiều dòng hơn cần thiết, nên thêm index đúng thường làm giảm tần suất — nhưng nó không sửa được thứ tự khoá sai. Để chẩn đoán, bật `log_lock_waits` cùng `deadlock_timeout` ở Postgres, hoặc đọc `SHOW ENGINE INNODB STATUS` ở MySQL để biết chính xác cặp câu lệnh nào đang cắn nhau.',
+  },
+  {
+    id: 'node-test-runner', topic: 'Tooling',
+    q: 'Node có sẵn `node:test` — khi nào nó đủ dùng, khi nào nên chọn Jest hoặc Vitest?',
+    options: [
+      'Chỉ hợp cho ví dụ nhỏ vì `node:test` không có assert, không mock được và cũng không chạy song song',
+      'Đủ cho phần lớn test backend (mock, độ phủ, watch, song song); Jest/Vitest hợp khi cần môi trường DOM',
+      'Luôn nên dùng Jest vì `node:test` không chạy được TypeScript và cũng không xuất được báo cáo độ phủ',
+      'Chỉ nên dùng `node:test` cho test tích hợp, còn unit test thì bắt buộc phải có framework bên ngoài',
+    ], answer: 1,
+    explain: 'Trình chạy test tích hợp sẵn của Node đã đủ chín cho công việc backend thường ngày: `node --test` tự tìm file test, có `describe`/`it`, dùng chung module `node:assert`, chạy các FILE song song và mỗi file trong một tiến trình riêng nên cách ly rất sạch (đổi lại là chi phí khởi động cao hơn khi có nhiều file nhỏ). Nó có `mock.fn`, `mock.method`, `mock.timers` để giả lập thời gian, chế độ `--watch`, báo cáo độ phủ, nhiều kiểu reporter và cả snapshot. Với TypeScript, Node đời mới chạy trực tiếp file `.ts` bằng cách bỏ phần kiểu (`--experimental-strip-types`), hoặc dùng `tsx` — không còn là lý do để loại nó. Lợi ích lớn nhất là ZERO dependency: không có chuỗi công cụ transform để hỏng khi nâng cấp, CI nhẹ, và test chạy đúng ngữ nghĩa module thật của Node (ESM/CJS) thay vì qua một lớp biến đổi. Khi nào chọn Jest/Vitest: cần môi trường DOM giả (jsdom/happy-dom) để test component; cần mock MODULE mạnh tay kiểu `jest.mock` được nâng lên đầu file (Node có `module.register`/`mock.module` nhưng còn thô hơn); cần hệ sinh thái matcher sẵn có như `@testing-library/jest-dom`; hoặc dự án đã dùng Vite và muốn Vitest chia sẻ luôn cấu hình transform, alias, biến môi trường. Nói gọn: dịch vụ Node thuần thì `node:test` là lựa chọn mặc định tốt; frontend hoặc monorepo có cả hai phía thì một framework thống nhất thường tiết kiệm công hơn.',
+  },
+  {
+    id: 'node-i18n-backend', topic: 'Kiến trúc',
+    q: 'Sản phẩm phục vụ nhiều ngôn ngữ — phần nào của việc dịch thuộc trách nhiệm của backend?',
+    options: [
+      'Server nên trả sẵn chuỗi đã dịch cho mọi API để frontend khỏi phải quản lý file ngôn ngữ nào cả',
+      'Nội dung sinh từ dữ liệu và email/thông báo là việc của server; chuỗi giao diện thì trả mã lỗi cho client dịch',
+      'Dịch thuật hoàn toàn là việc của frontend; server chỉ cần lưu ngôn ngữ ưa thích trong hồ sơ người dùng',
+      'Server nên gọi API dịch máy ngay lúc trả response để không phải duy trì bản dịch thủ công cho từng ngôn ngữ',
+    ], answer: 1,
+    explain: 'Ranh giới hợp lý: những gì NGƯỜI DÙNG NHÌN THẤY DO CLIENT VẼ RA thì client dịch, những gì SERVER TỰ GỬI ĐI thì server dịch. Cụ thể, API không nên trả `"Số dư không đủ"` mà nên trả mã cùng tham số — `{ "code": "INSUFFICIENT_BALANCE", "params": { "needed": 50000 } }` — để client hiển thị theo ngôn ngữ của họ, còn log và metric của bạn thì ổn định theo mã chứ không vỡ mỗi khi ai đó sửa câu chữ. Nhưng email, SMS, push và file PDF xuất ra là do server sinh nên server BẮT BUỘC phải có bộ bản dịch cùng template theo từng locale, và phải chọn ngôn ngữ theo hồ sơ người nhận chứ không theo `Accept-Language` của request đang chạy (job chạy nền thì làm gì có request nào). Vài chi tiết dễ sai: số nhiều không phải cứ thêm "s" — dùng `Intl.PluralRules` hoặc ICU MessageFormat, và đừng bao giờ nối chuỗi kiểu `"Bạn có " + n + " tin"` vì trật tự từ mỗi ngôn ngữ một khác; định dạng tiền, ngày, số dùng `Intl.NumberFormat`/`Intl.DateTimeFormat` với đúng locale VÀ đúng múi giờ của người nhận (email báo lịch hẹn sai giờ là lỗi kinh điển); dữ liệu đa ngôn ngữ trong DB thì tách bảng translation hoặc dùng cột JSONB theo locale, kèm quy tắc quay về ngôn ngữ mặc định khi thiếu bản dịch; sắp xếp danh sách theo `Intl.Collator` hoặc collation của DB chứ không theo mã ký tự. Và nếu response phụ thuộc ngôn ngữ thì nhớ `Vary: Accept-Language`, không thì CDN sẽ phục vụ bản tiếng Anh cho toàn bộ người dùng Việt. Dịch máy tại chỗ thì vừa chậm, vừa tốn, vừa không kiểm soát được thuật ngữ — chỉ hợp với nội dung do người dùng tạo và phải nói rõ đó là bản dịch tự động.',
+  },
 ];

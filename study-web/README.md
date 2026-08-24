@@ -61,9 +61,9 @@ không cần biết mẹo hard-refresh.
     ConcurrentHashMap/ThreadLocal), generics &amp; type erasure, Java 8+ (stream/Optional), OOP,
     Spring/JPA (DI, bean scope, @Transactional, N+1), **MyBatis** (#{}/${}, mapper proxy,
     cache 2 tầng), **SOLID** (5 nguyên lý).
-    📖 **Lý thuyết chuyên sâu JS · Node · React** (477 câu) — hỏi KHÁI NIỆM & CƠ CHẾ, không phải
+    📖 **Lý thuyết chuyên sâu JS · Node · React** (501 câu) — hỏi KHÁI NIỆM & CƠ CHẾ, không phải
     đoán output; **làm riêng** ở đây theo từng mảng, hoặc **làm chung** trong buổi 🎯 Phỏng vấn:
-    🟨 **JavaScript** (165 câu): scope & hoisting/TDZ, closure, `this` & binding, prototype/class,
+    🟨 **JavaScript** (173 câu): scope & hoisting/TDZ, closure, `this` & binding, prototype/class,
     ép kiểu & tham chiếu, event loop & microtask, Promise/async, generator & iterator, Proxy,
     WeakMap & GC, ESM vs CommonJS, Symbol, số nguyên an toàn & BigInt, bẫy regex (ReDoS, lastIndex),
     mutate vs bất biến, lỗi tuỳ biến & `cause`, async iterator, bẫy `Date` & `Intl`, `structuredClone`,
@@ -88,8 +88,11 @@ không cần biết mẹo hard-refresh.
     `<dialog>` & `popover`, Web Animations API, `using` & `Symbol.dispose`, `Promise.withResolvers`,
     Subresource Integrity, open redirect, CSS variable từ JS, khi nào cần WebAssembly,
     Web Streams & `response.body`, `scroll-margin-top`, polyfill vs transpile, phát hiện tính năng,
-    `Intl.Segmenter` đếm emoji, canvas & devicePixelRatio, `content-visibility`, và Trusted Types.
-    🟢 **Node.js** (158 câu): 6 pha event loop & libuv thread pool, `nextTick` vs `setImmediate`,
+    `Intl.Segmenter` đếm emoji, canvas & devicePixelRatio, `content-visibility`, Trusted Types,
+    Clipboard API & nút "Sao chép", `FormData` khi upload, xin quyền thông báo đúng lúc & Push,
+    Web Share API, listener `passive` & `touch-action`, `showSaveFilePicker` vs `<a download>`,
+    kéo-thả file (`dragover` + `preventDefault`), và bộ gõ tiếng Việt (`isComposing`).
+    🟢 **Node.js** (166 câu): 6 pha event loop & libuv thread pool, `nextTick` vs `setImmediate`,
     stream & **backpressure**, `pipeline` vs `pipe`, require cache & module wrapper,
     cluster vs worker_threads, Buffer, EventEmitter, `uncaughtException` & **graceful shutdown**,
     rò rỉ bộ nhớ, bảo mật (command injection, path traversal, prototype pollution, băm mật khẩu,
@@ -120,8 +123,11 @@ không cần biết mẹo hard-refresh.
     chaos engineering & game day, partial index, kiểm tra file upload bằng magic bytes,
     passkey/WebAuthn, TOTP & mã khôi phục, luồng quên mật khẩu, nhật ký kiểm toán,
     xoá dữ liệu theo yêu cầu (ẩn danh hoá), `keepAliveTimeout` gây 502, schema registry,
-    và tự động gia hạn chứng chỉ TLS.
-    ⚛️ **React** (154 câu): virtual DOM & reconciliation, **key**, batching & bất biến, derived state,
+    tự động gia hạn chứng chỉ TLS, HTTP Range & 206 (tải tiếp/tua video), native addon & N-API,
+    hạn chế thiệt hại khi package bị chiếm (`--ignore-scripts`, mô hình quyền của Node),
+    chống bot đăng ký nhiều lớp, xoay khoá có khoảng giao nhau (`kid`/JWKS), deadlock & thứ tự khoá,
+    `node:test` so với Jest/Vitest, và ranh giới i18n giữa server với client.
+    ⚛️ **React** (162 câu): virtual DOM & reconciliation, **key**, batching & bất biến, derived state,
     quy tắc hooks, deps & cleanup, **stale closure**, `memo`/`useMemo`/`useCallback`, context
     re-render, virtualization, controlled form, error boundary, StrictMode, và React 18/19
     (Suspense, `useTransition`, `useSyncExternalStore`, `useId`, RSC, hydration); thêm định tuyến SPA,
@@ -135,7 +141,10 @@ không cần biết mẹo hard-refresh.
     polling vs SSE vs WebSocket, bản đồ vòng đời class → hooks, a11y cho form lỗi, skeleton vs spinner,
     phím tắt, undo/redo, khôi phục vị trí cuộn, thiết kế API component, micro-frontend, theo dõi lỗi production, props vs state, bẫy `0 &&` khi render có điều kiện,
     thứ tự effect cha/con, khi nào tách component, nên test gì, SEO cho SPA, tích hợp thư viện ngoài,
-    và vì sao component render 2 lần ở dev.
+    và vì sao component render 2 lần ở dev; phân quyền UI chỉ là trải nghiệm (server vẫn phải chặn),
+    design token ngữ nghĩa, publish thư viện component (peerDeps, `"use client"`), chiến lược E2E hết chập chờn,
+    cử chỉ vuốt bằng Pointer Events & `touch-action`, middleware Next không phải hàng rào duy nhất,
+    hiển thị đa múi giờ với `Intl.DateTimeFormat`, và `dvh`/`safe-area`/`visualViewport` trên di động.
   - 🔁 **Ôn câu sai** — gom mọi câu trắc nghiệm từng chọn sai (output/API/SQL/CLI +
     vòng Tiếng Anh/Tình huống của buổi phỏng vấn) vào một phiên ôn tập trung
     (đúng → rời hàng đợi); có **📉 chip chủ đề yếu** (câu sai dồn cụm ở đâu —
@@ -196,7 +205,7 @@ không cần biết mẹo hard-refresh.
   chữ cái · logic · toán nhanh · tương tự · xác suất · mã hoá · hình & không gian ·
   chuyển động & công việc · chọn từ khác loại), 🇬🇧 tiếng Anh **125 câu** (82 câu giao tiếp),
   ⌨️ code **110 câu** (đoán output 52 + Big-O 58), 📖 lý thuyết **477 câu**
-  (JS 165 · Node 158 · React 154) — chạy được **~15 buổi liên tiếp** mà IQ, tiếng Anh và
+  (JS 173 · Node 166 · React 162) — chạy được **~15 buổi liên tiếp** mà IQ, tiếng Anh và
   lý thuyết không lặp câu nào.
 
   **🚫 Không hỏi lại câu của buổi trước**: mỗi câu được ghi vào `prep-iv-seen` NGAY khi bạn trả lời
