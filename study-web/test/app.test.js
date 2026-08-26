@@ -2464,3 +2464,233 @@ test('enFillerCount: đếm đúng tiếng ậm ừ, KHÔNG chê oan "like/you k
   const qs = loadWindow('english-interview.js').ENGLISH_INTERVIEW;
   assert.deepStrictEqual(qs.filter(q => enFillerCount(q.sample) > 0).map(q => q.id), []);
 });
+
+// ---------------------------------------------------------------------------
+// 🇬🇧 TIẾNG ANH GIAO TIẾP CÔNG VIỆC (english-support.js + tab english)
+// ---------------------------------------------------------------------------
+const ESUP = loadWindow('english-support.js');
+
+test('english-support: wiring tab/view/script/sw', () => {
+  assert.ok(HTML.includes('data-view="english"'), 'index.html thiếu tab english');
+  assert.ok(HTML.includes('id="view-english"'), 'index.html thiếu <div id="view-english">');
+  assert.ok(HTML.includes('<script src="english-support.js"></script>'), 'index.html chưa nạp english-support.js');
+  assert.ok(/name === 'english'/.test(APP), "switchView thiếu nhánh 'english'");
+  assert.ok(SW.includes("'english-support.js'"), 'sw.js PRECACHE thiếu english-support.js');
+  // Tab có lưu tiến độ (SRS) → phải nằm trong GATED_VIEWS
+  assert.ok(/GATED_VIEWS = new Set\(\[[^\]]*'english'/.test(APP), "GATED_VIEWS thiếu 'english'");
+});
+
+test('english-support: các id DOM app.js dùng đều có trong index.html', () => {
+  for (const id of ['es-scope', 'es-only-wrong', 'es-stats', 'es-prompt', 'es-input',
+                    'es-feedback', 'es-check', 'es-reveal', 'es-next', 'es-copy',
+                    'es-progress', 'es-log', 'es-drill', 'es-read']) {
+    assert.ok(HTML.includes(`id="${id}"`), `index.html thiếu #${id}`);
+  }
+  // 5 nút chế độ khớp đúng mảng ES_MODES
+  const modes = [...HTML.matchAll(/class="es-mode[^"]*"\s+data-mode="(\w+)"/g)].map(m => m[1]);
+  const m = APP.match(/const ES_MODES = \[([^\]]+)\]/);
+  assert.ok(m, 'không tìm thấy ES_MODES');
+  const declared = m[1].split(',').map(s => s.trim().replace(/['"]/g, '')).filter(Boolean);
+  assert.deepStrictEqual(modes, declared, 'nút .es-mode lệch với ES_MODES');
+});
+
+test('english-support: KHÔNG có cơ chế gợi ý (yêu cầu người dùng: tự viết)', () => {
+  // Tab này cố ý không có nút 💡 và không mask chữ cái — thấy gợi ý là não chuyển
+  // sang chế độ NHẬN RA thay vì TẠO RA câu. Test khoá lại để lần sửa sau không vô tình thêm.
+  const view = HTML.slice(HTML.indexOf('id="view-english"'), HTML.indexOf('VIEW: LUYỆN GÕ CODE'));
+  assert.ok(!/es-hint|💡/.test(view), 'view-english không được có nút gợi ý');
+  const fn = APP.slice(APP.indexOf('function esCheck('), APP.indexOf('function esReveal('));
+  assert.ok(!/maskWords|lcsMatch|pct/.test(fn), 'esCheck không được lộ mask/diff/% khi chấm sai');
+});
+
+test('english-support: dữ liệu đủ & không trùng id', () => {
+  const S = ESUP.EN_SUP_SENTENCES, V = ESUP.EN_SUP_VOCAB, E = ESUP.EN_SUP_ERRORS;
+  assert.ok(S.length >= 100, `câu VI→EN phải ≥100, đang có ${S.length}`);
+  assert.ok(V.length >= 100, `từ vựng phải ≥100, đang có ${V.length}`);
+  assert.strictEqual(E.length, 4, 'phải đúng 4 nhóm lỗi hệ thống');
+  assert.strictEqual(ESUP.EN_SUP_PLAN.length, 12, 'lộ trình phải đủ 12 tuần');
+  const ids = [...S.map(x => x.id), ...V.map(x => x.id), ...E.flatMap(g => g.items.map(i => i.id))];
+  const dup = ids.filter((x, i) => ids.indexOf(x) !== i);
+  assert.deepStrictEqual(dup, [], 'id trùng: ' + dup);
+});
+
+test('english-support: mỗi câu có đủ vi/en/note, sit & wk hợp lệ', () => {
+  const sits = new Set(ESUP.EN_SUP_SITS.map(s => s.key));
+  const weeks = new Set(ESUP.EN_SUP_PLAN.map(p => p.wk));
+  for (const s of ESUP.EN_SUP_SENTENCES) {
+    assert.ok(s.vi && s.en && s.note, `${s.id} thiếu vi/en/note`);
+    assert.ok(sits.has(s.sit), `${s.id} có sit lạ: ${s.sit}`);
+    assert.ok(weeks.has(s.wk), `${s.id} có wk lạ: ${s.wk}`);
+    assert.ok(/[a-zA-Z]/.test(s.en), `${s.id}: en phải là tiếng Anh`);
+    assert.ok(Array.isArray(s.alt), `${s.id}: alt phải là mảng`);
+  }
+  // Mọi tình huống đều phải có câu, không để nhóm rỗng lọt vào ô chọn phạm vi
+  for (const k of sits) {
+    assert.ok(ESUP.EN_SUP_SENTENCES.some(s => s.sit === k), `tình huống '${k}' không có câu nào`);
+  }
+});
+
+test('english-support: đáp án alt không trùng đáp án chính (sau chuẩn hoá)', () => {
+  // Khai triển rút gọn giống enSupNorm trong app.js — alt chỉ nên là cách viết KHÁC,
+  // liệt kê "I am" khi en đã là "I'm" là thừa, làm bank phình mà không thêm giá trị.
+  const norm = s => String(s).toLowerCase()
+    .replace(/[’]/g, "'").replace(/[-–—/]/g, ' ').replace(/[^a-z0-9' ]+/g, ' ')
+    .replace(/\bi'm\b/g, 'i am').replace(/\bi've\b/g, 'i have').replace(/\bi'll\b/g, 'i will')
+    .replace(/\bwe'll\b/g, 'we will').replace(/\bwe've\b/g, 'we have').replace(/\bwe're\b/g, 'we are')
+    .replace(/\byou're\b/g, 'you are').replace(/\bit's\b/g, 'it is').replace(/\bthat's\b/g, 'that is')
+    .replace(/\bhere's\b/g, 'here is').replace(/\bisn't\b/g, 'is not').replace(/\bdoesn't\b/g, 'does not')
+    .replace(/\bdon't\b/g, 'do not').replace(/\bhaven't\b/g, 'have not').replace(/\bcan't\b/g, 'can not')
+    .replace(/\bwon't\b/g, 'will not').replace(/\bplease\b/g, '')
+    .replace(/\s+/g, ' ').trim();
+  for (const s of ESUP.EN_SUP_SENTENCES) {
+    for (const a of s.alt || []) {
+      assert.notStrictEqual(norm(a), norm(s.en), `${s.id}: alt "${a}" trùng đáp án chính sau chuẩn hoá`);
+    }
+  }
+});
+
+test('english-support: bài sửa lỗi — câu sai phải KHÁC câu đúng', () => {
+  for (const g of ESUP.EN_SUP_ERRORS) {
+    assert.ok(g.key && g.title && g.why && g.rules.length, `nhóm ${g.key} thiếu metadata`);
+    assert.ok(g.items.length >= 5, `nhóm ${g.key} phải có ≥5 bài, đang có ${g.items.length}`);
+    for (const i of g.items) {
+      assert.ok(i.bad && i.good && i.note, `${i.id} thiếu bad/good/note`);
+      assert.notStrictEqual(i.bad, i.good, `${i.id}: câu sai trùng câu đúng`);
+      assert.ok(Array.isArray(i.alt), `${i.id}: alt phải là mảng`);
+    }
+  }
+});
+
+test('english-support: từ vựng có nhóm hợp lệ & nhóm nào cũng có từ', () => {
+  const groups = new Set(ESUP.EN_SUP_VGROUPS.map(g => g.key));
+  for (const v of ESUP.EN_SUP_VOCAB) {
+    assert.ok(v.en && v.vi, `${v.id} thiếu en/vi`);
+    assert.ok(groups.has(v.g), `${v.id} có nhóm lạ: ${v.g}`);
+  }
+  for (const k of groups) {
+    assert.ok(ESUP.EN_SUP_VOCAB.some(v => v.g === k), `nhóm từ vựng '${k}' rỗng`);
+  }
+});
+
+test('english-support: mẫu thư đủ cả hai mạch & có nội dung', () => {
+  const T = ESUP.EN_SUP_TEMPLATES;
+  assert.ok(T.length >= 7, `mẫu thư phải ≥7, đang có ${T.length}`);
+  assert.ok(T.some(t => t.track === 'itv'), 'thiếu mẫu thư cho track phỏng vấn');
+  assert.ok(T.some(t => t.track !== 'itv'), 'thiếu mẫu thư cho track support');
+  for (const t of T) {
+    assert.ok(t.title && t.when && t.body, `${t.id} thiếu trường`);
+    assert.ok(t.body.split('\n').length >= 5, `${t.id}: thân thư quá ngắn`);
+  }
+  const ids = T.map(t => t.id);
+  assert.strictEqual(new Set(ids).size, ids.length, 'id mẫu thư trùng');
+});
+
+// ---------------------------------------------------------------------------
+// 3 MẠCH NỘI DUNG: 🎯 phỏng vấn · 💬 đời thường · 💼 support
+// ---------------------------------------------------------------------------
+test('english-support: 3 track khai báo đúng & bank/sits tồn tại', () => {
+  const T = ESUP.EN_SUP_TRACKS;
+  assert.deepStrictEqual(T.map(t => t.key), ['itv', 'life', 'sup'],
+    'thứ tự track phải là phỏng vấn → đời thường → support (ưu tiên của người học)');
+  for (const t of T) {
+    assert.ok(Array.isArray(ESUP[t.bank]) && ESUP[t.bank].length, `track ${t.key}: bank ${t.bank} rỗng`);
+    assert.ok(Array.isArray(ESUP[t.sits]) && ESUP[t.sits].length, `track ${t.key}: sits ${t.sits} rỗng`);
+    assert.ok(t.icon && t.label, `track ${t.key} thiếu icon/label`);
+  }
+  // app.js phải trỏ đúng vào window[...] chứ không hard-code tên bank
+  assert.ok(/window\[t\.sits\]/.test(APP) && /window\[t\.bank\]/.test(APP),
+    'esTrackData phải đọc bank/sits qua tên khai báo trong EN_SUP_TRACKS');
+});
+
+test('english-support: mỗi track — câu hợp lệ, sit tồn tại, không trùng id toàn cục', () => {
+  const weeks = new Set(ESUP.EN_SUP_PLAN.map(p => p.wk));
+  const seen = new Set();
+  for (const t of ESUP.EN_SUP_TRACKS) {
+    const sits = new Set(ESUP[t.sits].map(x => x.key));
+    for (const s of ESUP[t.bank]) {
+      assert.ok(s.vi && s.en && s.note, `${s.id} thiếu vi/en/note`);
+      assert.ok(sits.has(s.sit), `${s.id} (track ${t.key}) có sit lạ: ${s.sit}`);
+      assert.ok(weeks.has(s.wk), `${s.id} có wk lạ: ${s.wk}`);
+      assert.ok(Array.isArray(s.alt), `${s.id}: alt phải là mảng`);
+      assert.ok(!seen.has(s.id), `id trùng giữa các track: ${s.id}`);
+      seen.add(s.id);
+    }
+    // không để tình huống rỗng lọt vào ô chọn phạm vi
+    for (const k of sits) {
+      assert.ok(ESUP[t.bank].some(s => s.sit === k), `track ${t.key}: tình huống '${k}' không có câu nào`);
+    }
+  }
+  assert.ok(seen.size >= 250, `tổng câu VI→EN phải ≥250, đang có ${seen.size}`);
+});
+
+test('english-support: track phỏng vấn phủ đủ các chặng của một buổi thật', () => {
+  const sits = ESUP.EN_SUP_ITV_SITS.map(s => s.key);
+  for (const must of ['itv-warm', 'itv-about', 'itv-exp', 'itv-behav', 'itv-tech',
+                      'itv-salary', 'itv-ask', 'itv-stuck', 'itv-close']) {
+    assert.ok(sits.includes(must), `track phỏng vấn thiếu chặng '${must}'`);
+  }
+  // Nhóm "cứu nguy lúc bí" là nhóm quan trọng nhất khi phỏng vấn bằng ngoại ngữ:
+  // bí một lần mà không có câu đỡ là hỏng cả buổi. Khoá lại để không ai xoá bớt.
+  const stuck = ESUP.EN_SUP_ITV_SENTENCES.filter(s => s.sit === 'itv-stuck');
+  assert.ok(stuck.length >= 6, `nhóm cứu nguy phải có ≥6 câu, đang có ${stuck.length}`);
+  assert.ok(stuck.some(s => /repeat that/i.test(s.en)), 'thiếu câu "could you repeat that?"');
+});
+
+test('english-support: lộ trình từng track trỏ vào tình huống có thật', () => {
+  const plans = ESUP.EN_SUP_TRACK_PLANS;
+  for (const t of ESUP.EN_SUP_TRACKS) {
+    const plan = plans[t.key];
+    assert.ok(plan, `thiếu lộ trình cho track ${t.key}`);
+    assert.ok(plan.title && plan.intro && plan.steps.length, `lộ trình ${t.key} thiếu nội dung`);
+    const sits = new Set(ESUP[t.sits].map(x => x.key));
+    for (const st of plan.steps) {
+      assert.ok(sits.has(st.sit), `lộ trình ${t.key} trỏ vào sit không tồn tại: ${st.sit}`);
+      assert.ok(st.why, `lộ trình ${t.key}/${st.sit} thiếu lý do`);
+    }
+    // lộ trình phải phủ HẾT tình huống, không bỏ sót nhóm nào
+    assert.strictEqual(plan.steps.length, sits.size,
+      `lộ trình ${t.key} có ${plan.steps.length} bước nhưng track có ${sits.size} tình huống`);
+  }
+});
+
+test('english-support: hàng chọn track dựng từ dữ liệu, không hard-code trong HTML', () => {
+  // index.html cố ý KHÔNG liệt kê track — thêm track mới chỉ cần sửa english-support.js
+  assert.ok(!/data-track="/.test(HTML), 'index.html không được hard-code nút track');
+  assert.ok(/class="es-track" data-track=/.test(APP), 'app.js phải dựng nút track');
+  assert.ok(/prep-es-track/.test(APP), 'phải nhớ track đang chọn giữa các phiên');
+});
+
+test('english-support: từ vựng chia theo track, nhóm nào cũng có từ', () => {
+  let total = 0;
+  const seen = new Set();
+  for (const t of ESUP.EN_SUP_TRACKS) {
+    const vocab = ESUP[t.vocab], groups = ESUP[t.vgroups];
+    assert.ok(Array.isArray(vocab) && vocab.length >= 50,
+      `track ${t.key}: từ vựng phải ≥50, đang có ${vocab?.length}`);
+    assert.ok(Array.isArray(groups) && groups.length, `track ${t.key}: thiếu nhóm từ vựng`);
+    const keys = new Set(groups.map(g => g.key));
+    for (const v of vocab) {
+      assert.ok(v.en && v.vi, `${v.id} thiếu en/vi`);
+      assert.ok(keys.has(v.g), `${v.id} (track ${t.key}) có nhóm lạ: ${v.g}`);
+      assert.ok(!seen.has(v.id), `id từ vựng trùng giữa các track: ${v.id}`);
+      seen.add(v.id);
+    }
+    for (const k of keys) {
+      assert.ok(vocab.some(v => v.g === k), `track ${t.key}: nhóm '${k}' rỗng`);
+    }
+    for (const g of groups) assert.ok(g.icon && g.label, `nhóm ${g.key} thiếu icon/label`);
+    total += vocab.length;
+  }
+  assert.ok(total >= 240, `tổng từ vựng phải ≥240, đang có ${total}`);
+});
+
+test('english-support: EN_SUP_TRACKS là nguồn duy nhất — app.js không hard-code tên bank', () => {
+  // Thêm track mới chỉ cần sửa english-support.js, không phải đụng app.js.
+  for (const name of ['EN_SUP_ITV_SENTENCES', 'EN_SUP_LIFE_SENTENCES',
+                      'EN_SUP_ITV_VOCAB', 'EN_SUP_LIFE_VOCAB',
+                      'EN_SUP_ITV_VGROUPS', 'EN_SUP_LIFE_VGROUPS']) {
+    assert.ok(!APP.includes(name), `app.js không được nhắc trực tiếp ${name}`);
+  }
+  assert.ok(/window\[t\.vocab\]/.test(APP) && /window\[t\.vgroups\]/.test(APP),
+    'esTrackData phải đọc vocab/vgroups qua khai báo track');
+});

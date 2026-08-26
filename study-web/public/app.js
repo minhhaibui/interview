@@ -302,7 +302,7 @@ function updateNavActive(name) {
 
 // Các tab có LƯU TIẾN ĐỘ → cần đăng nhập (chỉ áp dụng khi đã cấu hình Firebase).
 // Tab 📚 Tài liệu để mở tự do cho người chưa đăng nhập còn đọc nội dung.
-const GATED_VIEWS = new Set(['today', 'flashcards', 'writing', 'code', 'coding', 'mock', 'star', 'design', 'plan', 'dashboard']);
+const GATED_VIEWS = new Set(['today', 'flashcards', 'writing', 'english', 'code', 'coding', 'mock', 'star', 'design', 'plan', 'dashboard']);
 let authResolved = false; // true sau lần onAuthStateChanged đầu tiên
 const viewGated = name => syncReady && GATED_VIEWS.has(name);
 
@@ -341,6 +341,7 @@ function switchView(name) {
   if (name === 'coding') initThink();
   // setMkMode TRƯỚC khi await pool: initMock chờ mạng, để sau thì tab trống vài giây (hoặc mãi nếu fetch lỗi)
   if (name === 'mock') { setMkMode(mkMode); initMock().then(() => { if (mkInit) fillMockWeekSelect(); }); }
+  if (name === 'english') renderEnglish();
   if (name === 'star') renderStar();
   if (name === 'design') renderDesign();
   if (name === 'plan') renderPlan();
@@ -8230,7 +8231,7 @@ function quizNextButton() {
 }
 
 function initShortcuts() {
-  const order = ['today', 'docs', 'flashcards', 'writing', 'code', 'coding', 'design', 'mock', 'star', 'plan', 'dashboard'];
+  const order = ['today', 'docs', 'flashcards', 'writing', 'english', 'code', 'coding', 'design', 'mock', 'star', 'plan', 'dashboard'];
   document.addEventListener('keydown', e => {
     if (onboardOpen() || shortcutsOpen() || gsearchOpen()) return; // hộp thoại đang mở → không nhảy tab phía sau
     if (e.repeat) return; // giữ phím (key-repeat) không spam chuyển tab / nhấp nháy bảng phím tắt
@@ -8917,3 +8918,499 @@ function toggleShortcuts() { shortcutsOpen() ? closeShortcuts() : openShortcuts(
   // Quay lại đúng tab đang dùng trước khi reload (trừ khi mở bằng link #doc=…)
   if (!hashDoc && lastView !== 'docs') switchView(lastView);
 })();
+
+// ===========================================================================
+// 🇬🇧 TIẾNG ANH GIAO TIẾP CÔNG VIỆC — trọng tâm VIẾT câu Việt → Anh
+//
+// Nguyên tắc thiết kế (theo yêu cầu người dùng): KHÔNG GỢI Ý.
+//   - không nút 💡, không lộ chữ cái đầu, không tô màu từ đúng/sai khi chấm sai
+//   - sai chỉ báo "chưa khớp", muốn xem đáp án phải bấm 👁️ (cố ý, có ghi nhận)
+//   - mọi câu đã làm được ghi vào NHẬT KÝ dưới màn hình để chụp/chép đi nhờ AI review
+// Lý do: người học phải tự bật ra câu; thấy gợi ý là não chuyển sang chế độ NHẬN RA
+// (dễ) thay vì TẠO RA (khó) — mất đúng cái kỹ năng đang cần luyện.
+// ===========================================================================
+
+const ES_MODES = ['write', 'errors', 'vocab', 'plan', 'tpl'];
+let esMode = 'write';
+let esTrack = 'itv';         // 🎯 phỏng vấn | 💬 đời thường | 💼 support — mặc định phỏng vấn
+let esQueue = [];
+let esIndex = 0;
+let esState = 'answering';   // 'answering' | 'done'
+let esRevealed = false;      // đã bấm 👁️ ở câu này chưa (đã xem thì không tính đúng)
+let esLog = [];              // [{ vi, user, want, ok, revealed }] — nguồn của 📋 và nhật ký
+let esWired = false;
+
+const esSentences = () => window.EN_SUP_SENTENCES || [];
+const esErrors = () => window.EN_SUP_ERRORS || [];
+const esPlan = () => window.EN_SUP_PLAN || [];
+const esSits = () => window.EN_SUP_SITS || [];
+const esTracks = () => window.EN_SUP_TRACKS || [];
+const esTrackPlans = () => window.EN_SUP_TRACK_PLANS || {};
+/** Bank + danh sách tình huống của track đang chọn (tên biến khai báo trong EN_SUP_TRACKS). */
+function esTrackData(key) {
+  const t = esTracks().find(x => x.key === key) || esTracks()[0];
+  if (!t) return { sits: [], bank: [], vocab: [], vgroups: [], meta: null };
+  return {
+    sits: window[t.sits] || [], bank: window[t.bank] || [],
+    vocab: window[t.vocab] || [], vgroups: window[t.vgroups] || [], meta: t,
+  };
+}
+const esTemplates = () => window.EN_SUP_TEMPLATES || [];
+
+/** Rút gọn → dạng đầy đủ, để "I'm" và "I am" chấm như nhau.
+ *  Không có bảng này thì người học viết ĐÚNG vẫn bị báo sai — lỗi chí mạng của
+ *  kiểu bài dịch, vì mỗi câu sẽ cần liệt kê 4–8 biến thể alt mới đủ. */
+const ES_CONTRACTIONS = [
+  [/\bi'm\b/g, 'i am'], [/\bi've\b/g, 'i have'], [/\bi'll\b/g, 'i will'], [/\bi'd\b/g, 'i would'],
+  [/\byou're\b/g, 'you are'], [/\byou've\b/g, 'you have'], [/\byou'll\b/g, 'you will'], [/\byou'd\b/g, 'you would'],
+  [/\bwe're\b/g, 'we are'], [/\bwe've\b/g, 'we have'], [/\bwe'll\b/g, 'we will'], [/\bwe'd\b/g, 'we would'],
+  [/\bthey're\b/g, 'they are'], [/\bthey've\b/g, 'they have'], [/\bthey'll\b/g, 'they will'],
+  [/\bit's\b/g, 'it is'], [/\bit'll\b/g, 'it will'], [/\bthat's\b/g, 'that is'], [/\bthere's\b/g, 'there is'],
+  [/\bhere's\b/g, 'here is'], [/\bwhat's\b/g, 'what is'], [/\blet's\b/g, 'let us'],
+  [/\bdon't\b/g, 'do not'], [/\bdoesn't\b/g, 'does not'], [/\bdidn't\b/g, 'did not'],
+  [/\bisn't\b/g, 'is not'], [/\baren't\b/g, 'are not'], [/\bwasn't\b/g, 'was not'], [/\bweren't\b/g, 'were not'],
+  [/\bhaven't\b/g, 'have not'], [/\bhasn't\b/g, 'has not'], [/\bhadn't\b/g, 'had not'],
+  [/\bwon't\b/g, 'will not'], [/\bwouldn't\b/g, 'would not'], [/\bcan't\b/g, 'can not'],
+  [/\bcannot\b/g, 'can not'], [/\bcouldn't\b/g, 'could not'], [/\bshouldn't\b/g, 'should not'],
+];
+
+/** Chuẩn hóa để so đáp án: normAnswer + khai triển rút gọn + bỏ "please" và dấu nháy kép.
+ *  "please" bỏ vì thêm/bớt nó câu vẫn đúng và vẫn lịch sự — chấm sai chỗ này là oan. */
+function enSupNorm(s) {
+  let t = normAnswer(String(s || ''));
+  for (const [re, full] of ES_CONTRACTIONS) t = t.replace(re, full);
+  return t.replace(/\bplease\b/g, '').replace(/\s+/g, ' ').trim();
+}
+
+/** Đúng khi khớp đáp án chính HOẶC bất kỳ biến thể alt nào. */
+function esMatches(user, item) {
+  const got = enSupNorm(user);
+  if (!got) return false;
+  return [item.want, ...(item.alts || [])].some(a => enSupNorm(a) === got);
+}
+
+// ---------- dựng hàng câu hỏi theo chế độ + phạm vi ----------
+
+/** Chuẩn hoá 3 nguồn dữ liệu về CÙNG một hình dạng để khung làm bài dùng chung. */
+function esItemsFor(mode) {
+  if (mode === 'write') {
+    const { sits, bank } = esTrackData(esTrack);
+    return bank.map(s => ({
+      id: s.id, ask: s.vi, want: s.en, alts: s.alt || [], note: s.note,
+      tag: (sits.find(x => x.key === s.sit) || {}).label || '', wk: s.wk, scope: s.sit,
+    }));
+  }
+  if (mode === 'vocab') {
+    const { vocab, vgroups } = esTrackData(esTrack);
+    return vocab.map(v => ({
+      id: v.id, ask: v.vi, want: v.en, alts: [], note: '',
+      tag: (vgroups.find(x => x.key === v.g) || {}).label || '', scope: v.g,
+    }));
+  }
+  if (mode === 'errors') {
+    return esErrors().flatMap(g => g.items.map(i => ({
+      id: i.id, ask: i.bad, want: i.good, alts: i.alt || [], note: i.note,
+      tag: g.title, wk: g.wk, scope: g.key, isFix: true,
+    })));
+  }
+  return [];
+}
+
+function esBuildQueue() {
+  const scope = document.getElementById('es-scope')?.value || 'all';
+  const onlyWrong = !!document.getElementById('es-only-wrong')?.checked;
+  const fails = store.get('prep-fails', {});
+  let items = esItemsFor(esMode);
+  if (scope !== 'all') {
+    items = scope.startsWith('wk:')
+      ? items.filter(i => String(i.wk) === scope.slice(3))
+      : items.filter(i => i.scope === scope);
+  }
+  if (onlyWrong) items = items.filter(i => fails[i.id]);
+  // Ưu tiên câu tới hạn ôn (SRS) rồi mới tới câu mới — cùng cơ chế với flashcards.
+  const srs = store.get('prep-srs', {});
+  const now = Date.now();
+  const due = items.filter(i => srs[i.id] && srsDue(srs[i.id]) <= now);
+  const fresh = items.filter(i => !srs[i.id]);
+  const rest = items.filter(i => srs[i.id] && srsDue(srs[i.id]) > now);
+  esQueue = [...shuffleArr(due), ...shuffleArr(fresh), ...shuffleArr(rest)];
+  esIndex = 0;
+  esRenderCard();
+}
+
+/** Đổ các lựa chọn phạm vi cho từng chế độ. */
+function esFillScope() {
+  const sel = document.getElementById('es-scope');
+  if (!sel) return;
+  const n = esItemsFor(esMode).length;
+  let opts = [`<option value="all">Tất cả (${n})</option>`];
+  const count = pred => esItemsFor(esMode).filter(pred).length;
+  if (esMode === 'write') {
+    opts.push('<optgroup label="Theo tuần">');
+    for (const p of esPlan()) {
+      const c = count(i => i.wk === p.wk);
+      if (c) opts.push(`<option value="wk:${p.wk}">Tuần ${p.wk} — ${p.title} (${c})</option>`);
+    }
+    opts.push('</optgroup><optgroup label="Theo tình huống">');
+    for (const s of esTrackData(esTrack).sits) {
+      const c = count(i => i.scope === s.key);
+      if (c) opts.push(`<option value="${s.key}">${s.icon} ${s.label} (${c})</option>`);
+    }
+    opts.push('</optgroup>');
+  } else if (esMode === 'vocab') {
+    for (const g of esTrackData(esTrack).vgroups) {
+      const c = count(i => i.scope === g.key);
+      if (c) opts.push(`<option value="${g.key}">${g.icon} ${g.label} (${c})</option>`);
+    }
+  } else if (esMode === 'errors') {
+    for (const g of esErrors()) opts.push(`<option value="${g.key}">${g.icon} ${g.title} (${g.items.length})</option>`);
+  }
+  sel.innerHTML = opts.join('');
+}
+
+// ---------- khung làm bài ----------
+
+function esRenderCard() {
+  const box = document.getElementById('es-prompt');
+  const fb = document.getElementById('es-feedback');
+  const input = document.getElementById('es-input');
+  if (!box) return;
+  esState = 'answering';
+  esRevealed = false;
+  fb.innerHTML = '';
+  input.value = '';
+  input.disabled = false;
+
+  const it = esQueue[esIndex];
+  if (!it) {
+    box.innerHTML = `<div class="es-empty">🎉 Hết câu trong phạm vi này.<br>
+      <span class="es-sub">Đổi phạm vi ở ô bên trên, hoặc bỏ tick “chỉ câu từng sai”.</span></div>`;
+    input.disabled = true;
+    esUpdateStats();
+    return;
+  }
+  box.innerHTML = it.isFix
+    ? `<div class="es-tagline">${escHtml(it.tag)} · sửa câu sai</div>
+       <div class="es-badq">${escHtml(it.ask)}</div>
+       <div class="es-sub">Viết lại cho đúng:</div>`
+    : `<div class="es-tagline">${escHtml(it.tag)}</div>
+       <div class="es-vi">${escHtml(it.ask)}</div>`;
+  esUpdateStats();
+  input.focus();
+}
+
+function esUpdateStats() {
+  const el = document.getElementById('es-stats');
+  if (!el) return;
+  const done = esLog.length;
+  const ok = esLog.filter(l => l.ok).length;
+  const pct = done ? Math.round((ok / done) * 100) : 0;
+  el.textContent = `Câu ${Math.min(esIndex + 1, esQueue.length)}/${esQueue.length}`
+    + (done ? ` · phiên này: ${ok}/${done} đúng (${pct}%)` : '');
+  const pr = document.getElementById('es-progress');
+  if (pr) {
+    const w = esQueue.length ? Math.round((esIndex / esQueue.length) * 100) : 0;
+    pr.innerHTML = `<div class="es-bar"><i style="width:${w}%"></i></div>`;
+  }
+}
+
+function esCheck() {
+  const it = esQueue[esIndex];
+  if (!it || esState === 'done') return;
+  const input = document.getElementById('es-input');
+  const fb = document.getElementById('es-feedback');
+  const user = input.value.trim();
+  if (!user) { input.focus(); return; }
+
+  if (!esMatches(user, it)) {
+    // KHÔNG lộ gì cả: không % khớp, không tô từ, không mask chữ cái.
+    // Nói "chưa khớp đáp án mẫu" chứ không nói "sai" — câu người học viết vẫn có thể
+    // đúng theo cách khác mà bank chưa liệt kê; nói "sai" là quy kết oan.
+    fb.innerHTML = `<div class="es-wrong">✗ Chưa khớp đáp án mẫu. Đọc lại câu tiếng Việt, sửa rồi <kbd>Enter</kbd> thử lại.
+      <br><span class="es-sub">Chắc chắn câu mình đúng? Bấm 👁️ để đối chiếu, rồi 📋 chép cả bài đi nhờ AI phân xử.</span></div>`;
+    if (!it._missed) { it._missed = true; bumpSrs({ id: it.id }, false); }
+    input.focus();
+    return;
+  }
+
+  esState = 'done';
+  logActivity();
+  const clean = !it._missed && !esRevealed;   // đúng ngay lần đầu, không xem đáp án
+  bumpSrs({ id: it.id }, clean);
+  if (clean) {
+    const fails = store.get('prep-fails', {});
+    if (fails[it.id]) { delete fails[it.id]; store.set('prep-fails', fails); } // đã sửa được → rời danh sách ôn sai
+  }
+  esPushLog(it, user, true);
+  fb.innerHTML = `<div class="es-right">✅ Chính xác!</div>
+    <div class="es-answer">${escHtml(it.want)} <button class="es-say" data-say="${escHtml(it.want)}">🔊</button></div>
+    ${it.note ? `<div class="es-note">📌 ${it.note}</div>` : ''}
+    ${(it.alts || []).length ? `<div class="es-sub">Cách viết khác cũng đúng: ${it.alts.map(a => escHtml(a)).join(' · ')}</div>` : ''}`;
+  esUpdateStats();
+}
+
+function esReveal() {
+  const it = esQueue[esIndex];
+  if (!it || esState === 'done') return;
+  const input = document.getElementById('es-input');
+  const user = input.value.trim();
+  esRevealed = true;
+  esState = 'done';
+  bumpSrs({ id: it.id }, false);
+  esPushLog(it, user, false);
+  document.getElementById('es-feedback').innerHTML =
+    `<div class="es-shown">👁️ Đáp án mẫu:</div>
+     <div class="es-answer">${escHtml(it.want)} <button class="es-say" data-say="${escHtml(it.want)}">🔊</button></div>
+     ${it.note ? `<div class="es-note">📌 ${it.note}</div>` : ''}
+     ${(it.alts || []).length ? `<div class="es-sub">Cách viết khác cũng đúng: ${it.alts.map(a => escHtml(a)).join(' · ')}</div>` : ''}
+     ${user ? `<div class="es-sub">Bạn đã viết: “${escHtml(user)}” — chép cả bài (📋) đi nhờ AI xem câu này có dùng được không.</div>` : ''}`;
+  esUpdateStats();
+}
+
+function esNext() {
+  if (esIndex < esQueue.length) esIndex++;
+  esRenderCard();
+}
+
+/** Ghi vào nhật ký phiên — đây là thứ người học CHỤP MÀN HÌNH / CHÉP đi nhờ AI review. */
+function esPushLog(it, user, ok) {
+  esLog.push({ ask: it.ask, isFix: !!it.isFix, user: user || '(bỏ trống)', want: it.want, ok });
+  esRenderLog();
+}
+
+function esRenderLog() {
+  const el = document.getElementById('es-log');
+  if (!el) return;
+  if (!esLog.length) { el.innerHTML = ''; return; }
+  const rows = esLog.map((l, i) => `
+    <div class="es-logrow ${l.ok ? 'ok' : 'no'}">
+      <span class="es-logn">${i + 1}</span>
+      <div class="es-logbody">
+        <div class="es-logq">${l.isFix ? '🧯 Sửa: ' : ''}${escHtml(l.ask)}</div>
+        <div class="es-logu"><b>Bạn viết:</b> ${escHtml(l.user)}</div>
+        <div class="es-logw"><b>Mẫu:</b> ${escHtml(l.want)}</div>
+      </div>
+    </div>`).join('');
+  el.innerHTML = `<h3>📝 Bài làm phiên này (${esLog.length} câu — ${esLog.filter(l => l.ok).length} đúng)</h3>
+    <p class="es-sub">Chụp màn hình phần này, hoặc bấm 📋 ở trên để chép sẵn kèm câu nhờ AI review.</p>
+    ${rows}
+    <button id="es-clearlog" class="es-clearlog">🗑️ Xoá nhật ký phiên</button>`;
+}
+
+/** Gom bài làm thành một khối text đã kèm sẵn câu nhờ review — dán thẳng vào AI là chạy. */
+function esCopyWork() {
+  if (!esLog.length) { esToast('Chưa làm câu nào để chép.'); return; }
+  const head = 'Tôi đang luyện viết tiếng Anh giao tiếp công việc (trình độ A2, ngữ cảnh: support khách hàng '
+    + 'của một app Shopify). Dưới đây là các câu tôi tự dịch Việt → Anh.\n\n'
+    + 'Với TỪNG câu, hãy: (1) chấm câu tôi viết có dùng được với khách không, '
+    + '(2) chỉ ra lỗi cụ thể (mạo từ / giới từ / chia động từ / mức độ lịch sự), '
+    + '(3) viết lại bản tự nhiên nhất, (4) giải thích ngắn gọn bằng tiếng Việt.\n'
+    + 'Cuối cùng tổng kết: tôi đang lặp lại nhóm lỗi nào nhiều nhất?\n\n';
+  const body = esLog.map((l, i) =>
+    `${i + 1}. ${l.isFix ? 'Sửa câu sai' : 'Tiếng Việt'}: ${l.ask}\n`
+    + `   Tôi viết: ${l.user}\n`
+    + `   Đáp án mẫu của app: ${l.want}`).join('\n\n');
+  const text = head + body;
+  const done = () => esToast(`📋 Đã chép ${esLog.length} câu — dán vào AI để nhờ review.`);
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(done, () => esCopyFallback(text, done));
+  else esCopyFallback(text, done);
+}
+
+/** Trình duyệt cũ / không có quyền clipboard: dùng textarea ẩn + execCommand. */
+function esCopyFallback(text, done) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); done(); }
+  catch { esToast('Không chép được — bạn chụp màn hình phần nhật ký bên dưới nhé.'); }
+  ta.remove();
+}
+
+function esToast(msg) {
+  let el = document.getElementById('es-toast');
+  if (!el) { el = document.createElement('div'); el.id = 'es-toast'; document.body.appendChild(el); }
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+// ---------- chế độ chỉ đọc: lộ trình & mẫu thư ----------
+
+function esRenderPlan() {
+  const srs = store.get('prep-srs', {});
+  const done = items => items.length
+    ? Math.round(items.filter(i => (srs[i.id]?.box || 0) >= 2).length / items.length * 100) : 0;
+  const doneWk = wk => done(esItemsFor('write').filter(i => i.wk === wk));
+
+  // --- phần 1: thứ tự nên học của TỪNG track (nội dung), tách khỏi nền ngữ pháp ---
+  const tp = esTrackPlans();
+  const trackBlocks = esTracks().map(t => {
+    const plan = tp[t.key];
+    if (!plan) return '';
+    const { sits, bank } = esTrackData(t.key);
+    const label = k => (sits.find(x => x.key === k) || {}).label || k;
+    const icon = k => (sits.find(x => x.key === k) || {}).icon || '•';
+    return `<details class="es-trackplan" ${t.key === esTrack ? 'open' : ''}>
+      <summary>${t.icon} ${escHtml(plan.title)}</summary>
+      <p class="es-why">${escHtml(plan.intro)}</p>
+      <ol class="es-steps">${plan.steps.map(st => {
+        const items = bank.filter(x => x.sit === st.sit)
+          .map(x => ({ id: x.id }));
+        return `<li>
+          <div class="es-stephead">${icon(st.sit)} <b>${escHtml(label(st.sit))}</b>
+            <span class="es-wkpct">${done(items)}% · ${items.length} câu</span></div>
+          <div class="es-sub">${escHtml(st.why)}</div>
+        </li>`;
+      }).join('')}</ol>
+    </details>`;
+  }).join('');
+
+  return `<div class="es-plan">
+    <h2 class="es-h2">📚 Học nhóm nào trước</h2>
+    <p class="es-tip">Phần trăm là tỉ lệ câu bạn đã nhớ tới hộp SRS ≥2 — tức viết đúng vài lần
+      CÁCH QUÃNG, không phải thuộc vẹt trong một buổi.</p>
+    ${trackBlocks}
+    <h2 class="es-h2">🧱 Nền ngữ pháp — 12 tuần (dùng chung cả ba mạch)</h2>
+    <p class="es-tip">Mạo từ, giới từ, chia động từ… sai ở đâu cũng sai như nhau, nên phần nền này
+      học một lần dùng cho cả phỏng vấn lẫn đời thường. Phần trăm tính trên mạch đang chọn
+      (${escHtml((esTracks().find(t => t.key === esTrack) || {}).label || '')}).</p>
+    ${esPlan().map(p => `
+      <div class="es-week">
+        <div class="es-wkhead">
+          <span class="es-wkno">${p.icon} Tuần ${p.wk}</span>
+          <span class="es-wktitle">${escHtml(p.title)}</span>
+          <span class="es-wkpct">${doneWk(p.wk)}%</span>
+        </div>
+        <div class="es-wkgoal">🎯 ${escHtml(p.goal)}</div>
+        <ul class="es-wklearn">${p.learn.map(l => `<li>${l}</li>`).join('')}</ul>
+        <div class="es-wkdrill">▶️ Bài tập: ${escHtml(p.drill)}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function esRenderTemplates() {
+  const itv = esTemplates().filter(t => t.track === 'itv');
+  const sup = esTemplates().filter(t => t.track !== 'itv');
+  const card = t => `
+      <div class="es-tplcard">
+        <h3>${t.icon} ${escHtml(t.title)}</h3>
+        <div class="es-tplwhen">Dùng khi: ${escHtml(t.when)}</div>
+        <pre class="es-tplbody">${escHtml(t.body)}</pre>
+        <button class="es-tplcopy" data-tpl="${t.id}">📋 Chép mẫu</button>
+      </div>`;
+  return `<div class="es-tpl">
+    <p class="es-tip">Khuôn thư viết sẵn — đọc để thấy các mẫu câu ghép vào nhau thế nào.
+      Tới tuần 12 bạn tự viết được mà không cần nháp tiếng Việt.</p>
+    <h2 class="es-h2">🎯 Phỏng vấn</h2>
+    ${itv.map(card).join('')}
+    <h2 class="es-h2">💼 Support khách hàng</h2>
+    ${sup.map(card).join('')}
+  </div>`;
+}
+
+/** Bảng 4 lỗi hệ thống hiện ở đầu chế độ 🧯 — là LUẬT, không phải gợi ý đáp án. */
+function esRenderErrorRules() {
+  return `<div class="es-rules">
+    ${esErrors().map(g => `
+      <details class="es-rule">
+        <summary>${g.icon} ${escHtml(g.title)} <span class="es-sub">— tuần ${g.wk}</span></summary>
+        <p class="es-why">${escHtml(g.why)}</p>
+        <ul>${g.rules.map(r => `<li>${r}</li>`).join('')}</ul>
+      </details>`).join('')}
+  </div>`;
+}
+
+// ---------- chuyển chế độ + gắn sự kiện ----------
+
+function esSetMode(mode) {
+  if (!ES_MODES.includes(mode)) mode = 'write';
+  esMode = mode;
+  store.set('prep-es-mode', mode);
+  document.querySelectorAll('.es-mode').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  const drill = document.getElementById('es-drill');
+  const read = document.getElementById('es-read');
+  const isRead = mode === 'plan' || mode === 'tpl';
+  drill.hidden = isRead;
+  read.hidden = !isRead;
+  const trackRow = document.getElementById('es-tracks');
+  if (trackRow) trackRow.hidden = !(mode === 'write' || mode === 'vocab');
+  if (isRead) { read.innerHTML = mode === 'plan' ? esRenderPlan() : esRenderTemplates(); return; }
+  // Luật 4 lỗi hiện ngay trên khung làm bài của chế độ 🧯
+  const holder = document.getElementById('es-rules-holder');
+  if (holder) holder.innerHTML = mode === 'errors' ? esRenderErrorRules() : '';
+  esFillScope();
+  esBuildQueue();
+}
+
+/** Đổi mạch nội dung. Reset về phạm vi "Tất cả" vì scope cũ thuộc track cũ,
+ *  giữ lại thì ô chọn trỏ vào tình huống không tồn tại → hàng câu rỗng. */
+function esSetTrack(key) {
+  if (!esTracks().some(t => t.key === key)) key = 'itv';
+  esTrack = key;
+  store.set('prep-es-track', key);
+  document.querySelectorAll('.es-track').forEach(b => b.classList.toggle('active', b.dataset.track === key));
+  esFillScope();
+  esBuildQueue();
+}
+
+function renderEnglish() {
+  if (!esWired) {
+    esWired = true;
+    // chỗ đặt bảng luật của chế độ 🧯 (chèn trước khung điều khiển)
+    const drill = document.getElementById('es-drill');
+    const holder = document.createElement('div');
+    holder.id = 'es-rules-holder';
+    drill.prepend(holder);
+
+    // hàng chọn track dựng bằng JS để index.html không phải lặp lại danh sách track
+    const row = document.createElement('div');
+    row.id = 'es-tracks';
+    row.className = 'es-tracks';
+    row.innerHTML = esTracks().map(t =>
+      `<button class="es-track" data-track="${t.key}">${t.icon} ${escHtml(t.label)}</button>`).join('');
+    drill.prepend(row);
+    row.addEventListener('click', e => {
+      const b = e.target.closest('.es-track');
+      if (b) esSetTrack(b.dataset.track);
+    });
+
+    document.querySelectorAll('.es-mode').forEach(b =>
+      b.addEventListener('click', () => esSetMode(b.dataset.mode)));
+    document.getElementById('es-scope').addEventListener('change', esBuildQueue);
+    document.getElementById('es-only-wrong').addEventListener('change', esBuildQueue);
+    document.getElementById('es-check').addEventListener('click', esCheck);
+    document.getElementById('es-reveal').addEventListener('click', esReveal);
+    document.getElementById('es-next').addEventListener('click', esNext);
+    document.getElementById('es-copy').addEventListener('click', esCopyWork);
+
+    const input = document.getElementById('es-input');
+    input.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' || e.shiftKey) return; // Shift+Enter = xuống dòng
+      e.preventDefault();
+      if (esState === 'done') esNext(); else esCheck();
+    });
+    // 🔊 đọc đáp án (chỉ xuất hiện SAU khi đã có đáp án nên không phải gợi ý)
+    document.getElementById('view-english').addEventListener('click', e => {
+      const say = e.target.closest('.es-say');
+      if (say) { speak(say.dataset.say, 'en-US'); return; }
+      const cp = e.target.closest('.es-tplcopy');
+      if (cp) {
+        const t = esTemplates().find(x => x.id === cp.dataset.tpl);
+        if (t) {
+          const ok = () => esToast('📋 Đã chép mẫu thư.');
+          if (navigator.clipboard?.writeText) navigator.clipboard.writeText(t.body).then(ok, () => esCopyFallback(t.body, ok));
+          else esCopyFallback(t.body, ok);
+        }
+        return;
+      }
+      if (e.target.id === 'es-clearlog') { esLog = []; esRenderLog(); esUpdateStats(); }
+    });
+  }
+  esTrack = store.get('prep-es-track', 'itv');
+  document.querySelectorAll('.es-track').forEach(b => b.classList.toggle('active', b.dataset.track === esTrack));
+  esSetMode(store.get('prep-es-mode', 'write'));
+  esRenderLog();
+}

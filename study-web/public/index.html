@@ -29,6 +29,7 @@
           <button class="tab" data-view="docs">📖 Tài liệu</button>
           <button class="tab" data-view="flashcards">🃏 Flashcards</button>
           <button class="tab" data-view="writing">✍️ Luyện viết</button>
+          <button class="tab" data-view="english">🇬🇧 Tiếng Anh giao tiếp</button>
           <button class="tab" data-view="code">⌨️ Gõ code</button>
         </div>
       </div>
@@ -159,6 +160,51 @@
         </div>
       </div>
       <div id="wr-progress" class="wr-progress"></div>
+    </div>
+  </div>
+
+  <!-- ============ VIEW: TIẾNG ANH GIAO TIẾP CÔNG VIỆC ============ -->
+  <div id="view-english" class="view">
+    <div class="es-wrap">
+      <h1>🇬🇧 Tiếng Anh giao tiếp công việc</h1>
+      <p class="es-tip">Trọng tâm: <b>nhìn tiếng Việt → tự viết ra tiếng Anh</b>. Không có gợi ý,
+        không lộ đáp án trước — viết xong bấm 📋 để chép nguyên bài làm đi nhờ AI review.</p>
+
+      <div class="es-modes">
+        <button class="es-mode active" data-mode="write">✍️ Viết câu VI→EN</button>
+        <button class="es-mode" data-mode="errors">🧯 Sửa lỗi sai</button>
+        <button class="es-mode" data-mode="vocab">🔤 Từ vựng</button>
+        <button class="es-mode" data-mode="plan">🗺️ Lộ trình 12 tuần</button>
+        <button class="es-mode" data-mode="tpl">📬 Mẫu tin nhắn</button>
+      </div>
+
+      <!-- ---------- chế độ VIẾT CÂU / SỬA LỖI / TỪ VỰNG (dùng chung khung làm bài) ---------- -->
+      <div id="es-drill" class="es-drill">
+        <div class="es-controls">
+          <select id="es-scope" title="Chọn phạm vi ôn"></select>
+          <label class="es-chk"><input type="checkbox" id="es-only-wrong" /> 🔁 Chỉ câu từng sai</label>
+          <span id="es-stats" class="es-stats"></span>
+        </div>
+
+        <div class="es-card">
+          <div id="es-prompt" class="es-prompt"></div>
+          <textarea id="es-input" rows="2" autocomplete="off" autocapitalize="off"
+                    spellcheck="false" placeholder="Gõ câu tiếng Anh rồi nhấn Enter…"></textarea>
+          <div id="es-feedback" class="es-feedback"></div>
+          <div class="es-actions">
+            <button id="es-check">✅ Kiểm tra <kbd>Enter</kbd></button>
+            <button id="es-reveal">👁️ Xem đáp án</button>
+            <button id="es-next">⏭️ Câu sau <kbd>→</kbd></button>
+            <button id="es-copy" title="Chép bài làm để dán sang AI nhờ review">📋 Chép bài làm</button>
+          </div>
+        </div>
+
+        <div id="es-progress" class="es-progress"></div>
+        <div id="es-log" class="es-log"></div>
+      </div>
+
+      <!-- ---------- chế độ LỘ TRÌNH / MẪU THƯ (chỉ đọc) ---------- -->
+      <div id="es-read" class="es-read" hidden></div>
     </div>
   </div>
 
@@ -702,6 +748,7 @@
   <script src="reverse-questions.js"></script>
   <script src="english-phrases.js"></script>
   <script src="english-interview.js"></script>
+  <script src="english-support.js"></script>
   <script src="capstone-tracker.js"></script>
   <script src="ko-vocab.js"></script>
   <script src="zh-vocab.js"></script>
