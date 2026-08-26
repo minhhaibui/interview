@@ -320,6 +320,7 @@ function switchView(name) {
   try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch { /* trình duyệt không hỗ trợ */ } // tắt TTS đang đọc
   try { if (wrRecog) { wrRecog.abort(); wrRecog = null; } } catch { /* noop */ } // tắt mic Luyện viết khi rời tab
   stopDictation(); // tắt micro 🎙️ nói-để-điền (Mock/STAR) khi rời tab
+  if (typeof enInit !== 'undefined' && enInit) enPause(); // đóng băng buổi 🗣️ tiếng Anh (mic + đồng hồ) khi rời tab
   try { if (aiRecog) { aiRecog.abort(); aiRecog = null; } } catch { /* noop */ } // tắt mic Phỏng vấn AI khi rời tab
   document.querySelectorAll('.listening').forEach(el => el.classList.remove('listening')); // gỡ trạng thái mic đang nghe
   store.set('prep-last-view', name); // nhớ tab đang mở cho lần reload sau
@@ -3283,12 +3284,15 @@ Quy tắc tiến hành:
 /** Chế độ đang mở của tab 🎯 Phỏng vấn: 'full' (buổi đầy đủ) · 'self' (luyện hỏi đáp) · 'ai'. */
 let mkMode = 'full';
 function setMkMode(m) {
-  mkMode = ['full', 'self', 'ai'].includes(m) ? m : 'full';
+  mkMode = ['full', 'self', 'ai', 'en'].includes(m) ? m : 'full';
   stopDictation(); // đổi chế độ: khu đang nghe sắp ẩn (mic ẩn sẽ chép cả TTS của AI)
   document.querySelectorAll('.mkm').forEach(x => x.classList.toggle('active', x.dataset.mkmode === mkMode));
   document.getElementById('mk-full').hidden = mkMode !== 'full';
   document.getElementById('mk-ai').hidden = mkMode !== 'ai';
   document.getElementById('mk-self').hidden = mkMode !== 'self';
+  document.getElementById('mk-en').hidden = mkMode !== 'en';
+  // 🗣️ Tiếng Anh: khởi tạo lười; rời chế độ thì đóng băng đồng hồ (buổi dở vẫn giữ nguyên)
+  if (mkMode === 'en') { initEnInterview(); enResume(); } else if (enInit) enPause();
   if (mkMode === 'ai' && aiInit) fillAiTopics(); // chưa initAiInterview thì nó tự fill ở cuối init
   // Vào lại 🏅 buổi đầy đủ mà KHÔNG đang dở buổi nào → vẽ màn chọn kiểu bài
   if (mkMode === 'full' && !document.getElementById('iv-body').innerHTML.trim()) renderCompany();
@@ -3521,6 +3525,657 @@ function renderAiRecent() {
       return `<div class="score-row"><span>${h.date} · ${escHtml(h.topic)} · ${escHtml(h.level)}</span>
        <span class="${h.score != null && h.score >= 7 ? 'pass' : 'fail'}">${h.score != null ? h.score + '/10' : '—'}${passTxt}</span></div>`;
     }).join('');
+}
+
+// ======================================================================
+// 🗣️ PHỎNG VẤN TIẾNG ANH (giao tiếp) — người hỏi ↔ người trả lời như buổi thật.
+// Interviewer đọc câu hỏi bằng tiếng Anh (TTS), ứng viên NÓI (speech-to-text)
+// hoặc GÕ; hết buổi có tổng kết: số từ, tốc độ nói, từ đệm, độ phủ ý + câu mẫu.
+// Chạy offline bằng kho ENGLISH_INTERVIEW; bật 🤖 thì Claude làm interviewer động.
+// ======================================================================
+const EN_LIM = { mins: [5, 60, 5], perQ: [30, 300, 15], rate: [0.6, 1.3, 0.05] }; // [min, max, step]
+const EN_FILLERS = ['um', 'uh', 'erm', 'er', 'ah', 'i mean', 'basically', 'so yeah', 'and stuff'];
+// Nhóm này chỉ là từ đệm khi bị tách bằng dấu phẩy: "let you know", "that kind of work"
+// là dùng đúng nghĩa — đếm tuốt thì người học bị chê oan.
+const EN_SOFT_FILLERS = ['you know', 'actually', 'kind of', 'sort of'];
+const EN_PLAN_W = { warmup: 1, about: 2, exp: 3, behav: 2, tech: 3, culture: 1 }; // tỉ trọng số câu mỗi vòng khi chọn "cả buổi"
+
+let enInit = false;
+let enCfg = { mins: 15, perQ: 90, rate: 1, phase: 'all', level: 'Mid-level', accent: 'en-US', tts: true, autoMic: true, ai: false };
+let enState = null;   // { queue, idx, answers, endAt, qEndAt, remain, qRemain, followed, startedAt, finished, aiMsgs }
+let enTimerId = null;
+let enRecog = null;
+let enBusy = false;   // đang chờ Claude trả lời (chế độ AI)
+let enSid = 0;        // đánh dấu phiên — stream cũ không ghi vào phiên mới
+
+const enBank = () => window.ENGLISH_INTERVIEW || [];
+const enPhases = () => window.EN_INTERVIEW_PHASES || [];
+const enPhaseOf = k => enPhases().find(p => p.key === k) || { icon: '💬', label: k, vi: '' };
+const enWordCount = t => (t.trim().match(/[A-Za-zÀ-ỹ0-9'-]+/g) || []).length;
+
+/** Đếm từ đệm (um, uh, ", you know,"…) — chỉ tính khi dùng như tiếng ậm ừ */
+function enFillerCount(text) {
+  const low = ' ' + text.toLowerCase().replace(/[^a-z, ]/g, ' ').replace(/\s+/g, ' ') + ' ';
+  let n = 0;
+  for (const f of EN_FILLERS) n += (low.match(new RegExp('(?<![a-z])' + f + '(?![a-z])', 'g')) || []).length;
+  for (const f of EN_SOFT_FILLERS) n += (low.match(new RegExp(',\\s*' + f + '(?![a-z])|(?<![a-z])' + f + '\\s*,', 'g')) || []).length;
+  // "like" phải có dấu phẩy CẢ HAI phía mới là ậm ừ — ", like payments" là "such as", dùng đúng
+  n += (low.match(/,\s*like\s*,/g) || []).length;
+  return n;
+}
+
+// Khớp ý mềm: bỏ đuôi biến cách (fixed ~ fixing ~ fix), coi gạch nối như dấu cách
+// (trade-off ~ trade off) và bỏ hư từ — nếu khớp cứng từng chữ thì chính CÂU MẪU cũng trượt.
+const EN_STOP = new Set(['a', 'an', 'the', 'to', 'of', 'is', 'it', 'in', 'on', 'for']);
+const enStem = w => (w.length > 4 ? w.replace(/(ies|ing|ed|es|s)$/, '') : w);
+// Giãn dạng rút gọn trước khi so: người nói 'I've been' vẫn phải khớp ý 'i have been'
+const EN_CONTRACT = [[/\bi'm\b/g, 'i am'], [/\bcan't\b/g, 'can not'], [/\bwon't\b/g, 'will not'], [/n't\b/g, ' not'],
+  [/'re\b/g, ' are'], [/'ve\b/g, ' have'], [/'ll\b/g, ' will'], [/'d\b/g, ' would']];
+const enNorm = s => {
+  let t = s.toLowerCase().replace(/’/g, "'");
+  for (const [re, rep] of EN_CONTRACT) t = t.replace(re, rep);
+  return ' ' + t.replace(/[^a-z0-9]+/g, ' ').trim().split(/\s+/).map(enStem).join(' ') + ' ';
+};
+
+/** Hiện keyword cho người học: "a|b|c" là các CÁCH NÓI thay thế nhau → "a / b / c" */
+const enKwLabel = k => k.split('|').join(' / ');
+
+/** Ý trong keywords đã được nhắc tới chưa. Một keyword có thể liệt kê nhiều cách nói,
+ *  ngăn bằng "|" (vd 'root cause|why it happened') — trúng cách nào cũng tính. */
+function enHit(answer, kw) {
+  const hay = enNorm(answer);
+  return kw.split('|').some(alt => enNorm(alt).trim().split(' ')
+    .filter(w => w && !EN_STOP.has(w))
+    .every(w => hay.includes(' ' + w + ' ')));
+}
+
+function initEnInterview() {
+  if (enInit) return;
+  enInit = true;
+  const saved = store.get('prep-en-iv-cfg', null);
+  if (saved) enCfg = { ...enCfg, ...saved };
+
+  enFillPhaseSelect();
+  document.getElementById('en-phase').value = enCfg.phase;
+  document.getElementById('en-level').value = enCfg.level;
+  document.getElementById('en-accent').value = enCfg.accent;
+  document.getElementById('en-tts').checked = enCfg.tts;
+  document.getElementById('en-automic').checked = enCfg.autoMic;
+  document.getElementById('en-ai').checked = enCfg.ai;
+  const k = store.get('prep-ai-key', '');
+  if (k) document.getElementById('en-aikey').value = k;
+  enPaintCfg();
+
+  // 3 cặp nút −/+ : thời lượng buổi, thời gian mỗi câu, tốc độ đọc
+  const bump = (field, dir) => {
+    const [lo, hi, step] = EN_LIM[field];
+    enCfg[field] = Math.min(hi, Math.max(lo, +(enCfg[field] + dir * step).toFixed(2)));
+    enPaintCfg();
+    enSaveCfg();
+  };
+  document.getElementById('en-mins-dec').addEventListener('click', () => bump('mins', -1));
+  document.getElementById('en-mins-inc').addEventListener('click', () => bump('mins', 1));
+  document.getElementById('en-perq-dec').addEventListener('click', () => bump('perQ', -1));
+  document.getElementById('en-perq-inc').addEventListener('click', () => bump('perQ', 1));
+  document.getElementById('en-rate-dec').addEventListener('click', () => bump('rate', -1));
+  document.getElementById('en-rate-inc').addEventListener('click', () => bump('rate', 1));
+  ['en-phase', 'en-level', 'en-accent', 'en-tts', 'en-automic', 'en-ai'].forEach(id =>
+    document.getElementById(id).addEventListener('change', enSaveCfg));
+
+  document.getElementById('en-start').addEventListener('click', enStart);
+  // () => enSend() chứ KHÔNG truyền thẳng enSend: click gửi MouseEvent vào tham số skip → luôn bỏ qua câu đào sâu
+  document.getElementById('en-send').addEventListener('click', () => enSend());
+  document.getElementById('en-mic').addEventListener('click', enListen);
+  document.getElementById('en-repeat').addEventListener('click', () => enSpeak(enState?.lastQ || '', true));
+  document.getElementById('en-hint').addEventListener('click', enToggleHint);
+  document.getElementById('en-skip').addEventListener('click', () => enSend(true));
+  document.getElementById('en-end').addEventListener('click', () => enFinish('manual'));
+  document.getElementById('en-quit').addEventListener('click', enQuit);
+  document.getElementById('en-t-dec').addEventListener('click', () => enAdjustTime(-60));
+  document.getElementById('en-t-inc').addEventListener('click', () => enAdjustTime(60));
+  document.getElementById('en-tts-toggle').addEventListener('click', () => {
+    enCfg.tts = !enCfg.tts;
+    document.getElementById('en-tts').checked = enCfg.tts;
+    document.getElementById('en-tts-toggle').style.opacity = enCfg.tts ? '1' : '.4';
+    if (!enCfg.tts && 'speechSynthesis' in window) speechSynthesis.cancel();
+    enSaveCfg();
+  });
+  document.getElementById('en-answer').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enSend(); }
+  });
+  // Nút trong bảng tổng kết (render động) → uỷ quyền sự kiện
+  document.getElementById('en-result').addEventListener('click', e => {
+    const play = e.target.closest('[data-en-play]');
+    if (play) return enSpeak(play.getAttribute('data-en-play'), true);
+    if (e.target.closest('#en-again')) { document.getElementById('en-result').hidden = true; document.getElementById('en-setup').hidden = false; return; }
+    if (e.target.closest('#en-copy')) return enCopyTranscript();
+    if (e.target.closest('#en-aigrade')) return enAiGrade();
+  });
+  if ('speechSynthesis' in window) speechSynthesis.getVoices();
+  enRenderRecent();
+}
+
+function enFillPhaseSelect() {
+  const sel = document.getElementById('en-phase');
+  sel.innerHTML = '<option value="all">— Cả buổi (đủ 6 vòng) —</option>' +
+    enPhases().map(p => `<option value="${p.key}">${p.icon} ${escHtml(p.label)} — ${escHtml(p.vi)}</option>`).join('');
+}
+
+function enPaintCfg() {
+  document.getElementById('en-mins').textContent = `${enCfg.mins} phút`;
+  document.getElementById('en-perq').textContent = `${enCfg.perQ} giây`;
+  document.getElementById('en-rate').textContent = `${enCfg.rate.toFixed(2)}×`;
+}
+
+function enSaveCfg() {
+  enCfg.phase = document.getElementById('en-phase').value;
+  enCfg.level = document.getElementById('en-level').value;
+  enCfg.accent = document.getElementById('en-accent').value;
+  enCfg.tts = document.getElementById('en-tts').checked;
+  enCfg.autoMic = document.getElementById('en-automic').checked;
+  enCfg.ai = document.getElementById('en-ai').checked;
+  store.set('prep-en-iv-cfg', enCfg);
+}
+
+/** Bốc danh sách câu hỏi cho buổi: chia đều theo tỉ trọng các vòng, tránh câu vừa hỏi buổi trước */
+function enPlanQueue() {
+  const bank = enBank();
+  if (!bank.length) return [];
+  // Số câu ước lượng: mỗi câu tốn ~ thời gian trả lời + ~15s đọc đề & phản hồi
+  const total = enCfg.mins * 60;
+  const want = Math.max(3, Math.min(40, Math.round(total / (enCfg.perQ + 15))));
+  const seen = new Set(store.get('prep-en-iv-seen', []));
+  const pickFrom = (list, n) => {
+    const fresh = shuffleArr(list.filter(q => !seen.has(q.id)));
+    const rest = shuffleArr(list.filter(q => seen.has(q.id)));
+    return [...fresh, ...rest].slice(0, n);
+  };
+  if (enCfg.phase !== 'all') return pickFrom(bank.filter(q => q.phase === enCfg.phase), want);
+
+  const order = enPhases().map(p => p.key).filter(k => bank.some(q => q.phase === k));
+  const wsum = order.reduce((s, k) => s + (EN_PLAN_W[k] || 1), 0);
+  const out = [];
+  order.forEach((k, i) => {
+    const list = bank.filter(q => q.phase === k);
+    // vòng nào cũng phải có ≥1 câu; vòng cuối (câu hỏi ngược) luôn đúng 1 để chốt buổi
+    let n = i === order.length - 1 ? 1 : Math.max(1, Math.round((want * (EN_PLAN_W[k] || 1)) / wsum));
+    out.push(...pickFrom(list, n));
+  });
+  // cắt bớt từ giữa ra (giữ warm-up mở màn + vòng chốt cuối) nếu lỡ vượt quá
+  while (out.length > want && out.length > 2) out.splice(Math.floor(out.length / 2), 1);
+  return out;
+}
+
+function enStart() {
+  const bank = enBank();
+  if (!bank.length) { alert('Chưa nạp được kho câu hỏi tiếng Anh (english-interview.js).'); return; }
+  enSaveCfg();
+  const aiKeyVal = document.getElementById('en-aikey').value.trim();
+  if (enCfg.ai) {
+    if (!aiKeyVal) { alert('Bật chế độ AI interviewer thì cần dán API key Anthropic (hoặc bỏ tick để chạy offline).'); document.getElementById('en-aikey').focus(); return; }
+    store.set('prep-ai-key', aiKeyVal);
+  }
+  enSid++;
+  enBusy = false;
+  const queue = enPlanQueue();
+  enState = {
+    queue, idx: 0, answers: [], followed: false, finished: false, lastQ: '',
+    startedAt: Date.now(), endAt: Date.now() + enCfg.mins * 60000, qEndAt: 0,
+    aiMsgs: [], aiKey: aiKeyVal,
+  };
+  document.getElementById('en-setup').hidden = true;
+  document.getElementById('en-result').hidden = true;
+  document.getElementById('en-session').hidden = false;
+  document.getElementById('en-chat').innerHTML = '';
+  document.getElementById('en-answer').value = '';
+  document.getElementById('en-hintbox').hidden = true;
+  document.getElementById('en-end').disabled = false;
+  document.getElementById('en-tts-toggle').style.opacity = enCfg.tts ? '1' : '.4';
+  enPaintMeta();
+  enStartTimer();
+  if (enCfg.ai) enAiTurn('Hello, I am ready. Please start the interview.');
+  else enAsk();
+}
+
+function enPaintMeta() {
+  if (!enState) return;
+  const cur = enState.queue[enState.idx];
+  const ph = cur ? enPhaseOf(cur.phase) : null;
+  const nQ = enCfg.ai ? enState.answers.length + 1 : `${Math.min(enState.idx + 1, enState.queue.length)}/${enState.queue.length}`;
+  document.getElementById('en-meta').textContent =
+    `${enCfg.ai ? '🤖 AI interviewer' : '🗣️ Offline'} · ${enCfg.level} · Question ${nQ}${ph ? ' · ' + ph.icon + ' ' + ph.label : ''}`;
+}
+
+// ---------- đồng hồ: tổng buổi + từng câu (chạy theo deadline nên không lệch khi tab bị throttle) ----------
+function enStartTimer() {
+  clearInterval(enTimerId);
+  enTimerId = setInterval(enTick, 1000);
+  enTick();
+}
+
+function enTick() {
+  if (!enState || enState.finished) return;
+  const now = Date.now();
+  const left = Math.max(0, Math.round((enState.endAt - now) / 1000));
+  const el = document.getElementById('en-timer');
+  el.textContent = `⏱ ${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`;
+  el.classList.toggle('late', left <= 60);
+  const q = document.getElementById('en-qtimer');
+  if (enState.qEndAt) {
+    const qleft = Math.max(0, Math.round((enState.qEndAt - now) / 1000));
+    q.textContent = qleft ? `câu này ${qleft}s` : 'câu này: hết giờ';
+    q.classList.toggle('late', qleft <= 10);
+  } else { q.textContent = ''; q.classList.remove('late'); }
+  if (left <= 0) enFinish('timeup');
+}
+
+/** −1′ / +1′ ngay giữa buổi — kéo dài hoặc rút ngắn thời gian phỏng vấn */
+function enAdjustTime(sec) {
+  if (!enState || enState.finished) return;
+  const min = Date.now() + 10000; // không cho rút xuống dưới 10 giây
+  enState.endAt = Math.max(min, enState.endAt + sec * 1000);
+  enTick();
+  toast(sec > 0 ? '⏱ Thêm 1 phút cho buổi phỏng vấn' : '⏱ Rút ngắn buổi 1 phút');
+}
+
+// ---------- hỏi / trả lời ----------
+function enBubble(role, text, cls = '') {
+  const chat = document.getElementById('en-chat');
+  const wrap = document.createElement('div');
+  wrap.className = 'ai-bubble ' + role + (cls ? ' ' + cls : '');
+  wrap.innerHTML = `<span class="ai-who">${role === 'user' ? '🙋 You' : '🧑‍💼 Interviewer'}</span>
+    <div class="ai-bubble-body">${escHtml(text).replace(/\n/g, '<br>')}</div>`;
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+  return wrap;
+}
+
+/** Đọc to bằng giọng tiếng Anh theo accent đã chọn */
+function enSpeak(text, force = false) {
+  if (!text) return;
+  if (!force && !enCfg.tts) { enAfterSpeak(); return; }
+  if (!('speechSynthesis' in window)) { enAfterSpeak(); return; }
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text.replace(/[*`#>_]/g, '').slice(0, 600));
+  u.lang = enCfg.accent;
+  u.rate = enCfg.rate;
+  const voices = speechSynthesis.getVoices();
+  const v = voices.find(x => x.lang && x.lang.replace('_', '-') === enCfg.accent)
+    || voices.find(x => x.lang && x.lang.toLowerCase().startsWith('en'));
+  if (v) u.voice = v;
+  u.onend = () => enAfterSpeak();
+  u.onerror = () => enAfterSpeak();
+  speechSynthesis.speak(u);
+}
+
+/** Đọc xong câu hỏi mới bật micro — bật sớm hơn thì mic chép lại đúng giọng interviewer */
+function enAfterSpeak() {
+  if (!enState || enState.finished) return;
+  document.getElementById('en-answer').focus();
+  if (enCfg.autoMic && !enRecog) enListen();
+}
+
+/** Hỏi câu tiếp theo từ kho (chế độ offline) */
+function enAsk() {
+  if (!enState || enState.finished) return;
+  const it = enState.queue[enState.idx];
+  if (!it) return enFinish('done');
+  enState.followed = false;
+  enState.lastQ = it.q;
+  enState.qEndAt = Date.now() + enCfg.perQ * 1000;
+  const ph = enPhaseOf(it.phase);
+  enBubble('assistant', it.q);
+  document.getElementById('en-hintbox').hidden = true;
+  enPaintMeta();
+  const seen = store.get('prep-en-iv-seen', []);
+  store.set('prep-en-iv-seen', [...seen.filter(x => x !== it.id), it.id].slice(-40));
+  enTick();
+  enSpeak(`${ph.key === 'warmup' && enState.idx === 0 ? '' : ''}${it.q}`);
+}
+
+/** Gửi câu trả lời. skip=true → bỏ qua câu này. */
+function enSend(skip = false) {
+  if (!enState || enState.finished || enBusy) return;
+  const ta = document.getElementById('en-answer');
+  const text = ta.value.trim();
+  if (!text && !skip) { toast('Nói bằng 🎤 hoặc gõ câu trả lời rồi bấm Trả lời nhé'); return; }
+  enStopMic();
+  ta.value = '';
+  const spent = enState.qEndAt ? Math.max(1, enCfg.perQ - Math.max(0, Math.round((enState.qEndAt - Date.now()) / 1000))) : 0;
+  if (text) {
+    enBubble('user', text);
+    const cur = enState.answers[enState.answers.length - 1];
+    if (enState.followed && cur && cur.qid === enState.queue[enState.idx]?.id) {
+      cur.text += ' ' + text; cur.sec += spent;               // câu đào sâu → gộp vào cùng một câu hỏi
+    } else {
+      const it = enCfg.ai ? null : enState.queue[enState.idx];
+      enState.answers.push({ qid: it?.id || `ai-${enState.answers.length + 1}`, q: enState.lastQ, text, sec: spent, item: it || null });
+    }
+    logActivity();
+  }
+  if (enCfg.ai) return enAiTurn(text || '(The candidate skipped this question.)');
+
+  const it = enState.queue[enState.idx];
+  // Trả lời quá ngắn → interviewer đào sâu một lần, đúng như phỏng vấn thật
+  if (!skip && text && !enState.followed && it?.followups?.length && enWordCount(text) < 25) {
+    enState.followed = true;
+    const f = it.followups[Math.floor(Math.random() * it.followups.length)];
+    enState.lastQ = f;
+    enState.qEndAt = Date.now() + Math.round(enCfg.perQ * 0.6) * 1000;
+    enBubble('assistant', f, 'en-follow');
+    enTick();
+    enSpeak(f);
+    return;
+  }
+  enState.idx++;
+  if (enState.idx >= enState.queue.length) return enFinish('done');
+  enAsk();
+}
+
+function enToggleHint() {
+  const box = document.getElementById('en-hintbox');
+  if (!box.hidden) { box.hidden = true; return; }
+  const it = enState && !enCfg.ai ? enState.queue[enState.idx] : null;
+  box.innerHTML = it ? `
+      <p class="en-hint-vi">💡 ${escHtml(it.vi)}</p>
+      <p class="en-hint-kw">Ý nên có: ${it.keywords.map(k => `<code>${escHtml(enKwLabel(k))}</code>`).join(' · ')}</p>
+      <details class="en-hint-sample"><summary>Xem câu trả lời mẫu (chỉ xem khi bí — tự nói trước sẽ nhớ lâu hơn)</summary>
+        <p class="en-sample">${escHtml(it.sample)}</p>
+        <button type="button" class="ai-mini" data-en-play="${escHtml(it.sample)}">🔊 Nghe câu mẫu</button>
+      </details>`
+    : `<p class="en-hint-vi">💡 Chế độ AI không có câu mẫu cố định. Câu "mua thời gian" luôn dùng được:</p>
+       <p class="en-sample">"That's a good question — let me think for a second." · "Just to make sure I understand, are you asking about…?" · "I haven't used that specific tool, but based on my experience with…"</p>`;
+  box.hidden = false;
+}
+
+// ---------- micro (speech-to-text tiếng Anh) ----------
+function enStopMic() {
+  if (!enRecog) return;
+  const r = enRecog;
+  enRecog = null;
+  r.onresult = r.onerror = r.onend = null;
+  try { r.abort(); } catch { /* đã dừng */ }
+  document.getElementById('en-mic').classList.remove('listening');
+}
+
+function enListen() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const mic = document.getElementById('en-mic');
+  if (!SR) { toast('Trình duyệt chưa hỗ trợ nhận diện giọng nói — dùng Chrome/Edge, hoặc gõ câu trả lời'); return; }
+  if (enRecog) return enStopMic();
+  const rec = new SR();
+  rec.lang = enCfg.accent;
+  rec.interimResults = true;
+  rec.continuous = true;
+  const ta = document.getElementById('en-answer');
+  let baseline = ta.value;
+  rec.onresult = e => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const r = e.results[i];
+      if (r.isFinal) baseline = (baseline + ' ' + r[0].transcript).trim();
+      else interim += r[0].transcript;
+    }
+    ta.value = (baseline + (interim ? ' ' + interim : '')).trim();
+  };
+  rec.onerror = ev => {
+    enStopMic();
+    if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed')
+      alert('Trình duyệt đang chặn micro — cấp quyền micro cho trang này rồi bấm 🎤 lại nhé.');
+  };
+  rec.onend = () => enStopMic(); // im lặng lâu → trình duyệt tự ngắt
+  try { rec.start(); } catch { toast('🎤 Micro đang bận — đợi 1 giây rồi bấm lại nhé'); return; }
+  enRecog = rec;
+  mic.classList.add('listening');
+}
+
+// ---------- chế độ AI interviewer (BYOK, tái dùng callClaudeStream) ----------
+function enAiSystem() {
+  const planned = (enCfg.phase === 'all' ? enPhases() : enPhases().filter(p => p.key === enCfg.phase))
+    .map(p => p.label).join(' → ');
+  return `You are a friendly but professional technical interviewer at a product company. You are interviewing a candidate for a Backend Engineer (Node.js) role at ${enCfg.level} level. The candidate is Vietnamese and is practising job interviews in English; your questions are read aloud to them.
+
+Rules:
+- Speak ONLY English. Use natural, spoken English with short sentences — no markdown, no bullet lists, no code blocks.
+- Ask exactly ONE question per turn, at most 45 words. NEVER answer for the candidate.
+- Open with a one-sentence greeting, then your first question.
+- After each answer: react in at most one short sentence, then either ask a follow-up on the same topic or move on.
+- Follow this interview plan in order: ${planned}.
+- The whole session lasts about ${enCfg.mins} minutes, so keep a good pace.
+- If an answer is very short or unclear, ask them to give a concrete example or to rephrase.
+- If their English is hard to follow, stay kind and simply ask them to say it another way.
+- Never grade or summarise the interview yourself — the final feedback is written by a separate coach pass.`;
+}
+
+async function enAiTurn(userText) {
+  if (!enState || enBusy) return;
+  enBusy = true;
+  const sid = enSid;
+  enSetInputDisabled(true);
+  enState.aiMsgs.push({ role: 'user', content: userText });
+  const bubble = enBubble('assistant', '');
+  const body = bubble.querySelector('.ai-bubble-body');
+  body.textContent = '…';
+  try {
+    const full = await callClaudeStream({
+      apiKey: enState.aiKey,
+      model: 'claude-sonnet-4-6',
+      system: enAiSystem(),
+      messages: enState.aiMsgs,
+      maxTokens: enState.finished ? 1200 : 400,
+      onText: t => { if (sid === enSid) { body.textContent = t; document.getElementById('en-chat').scrollTop = 1e9; } },
+    });
+    if (sid !== enSid) return;
+    enState.aiMsgs.push({ role: 'assistant', content: full });
+    body.textContent = full;
+    enState.lastQ = full;
+    if (enState.finished) return; // hết giờ giữa lúc stream → đừng hỏi tiếp nữa
+    enState.qEndAt = Date.now() + enCfg.perQ * 1000;
+    enPaintMeta();
+    enTick();
+    enSpeak(full);
+  } catch (err) {
+    if (sid === enSid) body.innerHTML = `<span class="ai-err">⚠️ ${escHtml(err.message)}</span>`;
+  } finally {
+    if (sid === enSid) { enBusy = false; enSetInputDisabled(false); }
+  }
+}
+
+function enSetInputDisabled(d) {
+  ['en-answer', 'en-send', 'en-mic', 'en-skip'].forEach(id => { const el = document.getElementById(id); if (el) el.disabled = d; });
+}
+
+// ---------- kết thúc & tổng kết ----------
+function enQuit() {
+  enStopMic();
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  clearInterval(enTimerId); enTimerId = null;
+  enSid++; enBusy = false;
+  enState = null;
+  document.getElementById('en-session').hidden = true;
+  document.getElementById('en-setup').hidden = false;
+  enRenderRecent();
+}
+
+function enFinish(reason) {
+  if (!enState || enState.finished) return;
+  enState.finished = true;
+  enStopMic();
+  clearInterval(enTimerId); enTimerId = null;
+  enState.qEndAt = 0;
+  document.getElementById('en-qtimer').textContent = '';
+  document.getElementById('en-end').disabled = true;
+  const bye = reason === 'timeup'
+    ? "That's all the time we have today. Thank you for your time — we'll be in touch."
+    : "Great, that's the end of the interview. Thank you for your time.";
+  enBubble('assistant', bye);
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  const wasTts = enCfg.tts;
+  enCfg.tts = false; enSpeak(bye, wasTts); enCfg.tts = wasTts; // đọc lời chào cuối nhưng KHÔNG bật lại micro sau đó
+
+  const stats = enStats();
+  if (stats.answered) {
+    const hist = store.get('prep-en-iv-history', []);
+    hist.push({
+      date: new Date().toISOString().slice(0, 10),
+      phase: enCfg.phase, level: enCfg.level, ai: enCfg.ai,
+      minutes: Math.max(1, Math.round((Date.now() - enState.startedAt) / 60000)),
+      answered: stats.answered, words: stats.words, wpm: stats.wpm,
+      fillers: stats.fillers, coverage: stats.coverage,
+    });
+    store.set('prep-en-iv-history', hist.slice(-50));
+  }
+  enRenderResult(stats);
+  document.getElementById('en-session').hidden = true;
+  document.getElementById('en-result').hidden = false;
+  enRenderRecent();
+  // Đã trả tiền cho buổi AI thì nhận xét cuối buổi phải tự chạy, không bắt bấm thêm nút
+  if (enCfg.ai && enState.aiKey && stats.answered) enAiGrade();
+}
+
+/** Thống kê buổi: số câu, số từ, tốc độ nói, từ đệm, độ phủ ý */
+function enStats() {
+  const ans = enState ? enState.answers : [];
+  const words = ans.reduce((s, a) => s + enWordCount(a.text), 0);
+  const sec = ans.reduce((s, a) => s + a.sec, 0);
+  const fillers = ans.reduce((s, a) => s + enFillerCount(a.text), 0);
+  const covd = ans.filter(a => a.item?.keywords?.length);
+  const coverage = covd.length
+    ? Math.round(covd.reduce((s, a) => s + a.item.keywords.filter(k => enHit(a.text, k)).length / a.item.keywords.length, 0) / covd.length * 100)
+    : null;
+  return {
+    answered: ans.length, words, sec, fillers, coverage,
+    wpm: sec > 20 ? Math.round(words / (sec / 60)) : null,
+    avgWords: ans.length ? Math.round(words / ans.length) : 0,
+    minutes: enState ? Math.max(1, Math.round((Date.now() - enState.startedAt) / 60000)) : 0,
+  };
+}
+
+function enRenderResult(s) {
+  const ans = enState ? enState.answers : [];
+  const tips = [];
+  if (s.avgWords < 35) tips.push('Câu trả lời còn ngắn (trung bình ' + s.avgWords + ' từ). Phỏng vấn thật nên nói 60–120 từ mỗi câu: ý chính → ví dụ cụ thể → kết quả.');
+  if (s.avgWords > 200) tips.push('Câu trả lời khá dài — dễ lan man. Tập chốt trong ~90 giây rồi hỏi lại "Would you like me to go deeper on that?".');
+  if (s.fillers >= Math.max(4, s.answered * 2)) tips.push(`Dùng ${s.fillers} từ đệm (um, like, you know…). Thay bằng một khoảng lặng ngắn — im lặng 1 giây nghe tự tin hơn nhiều.`);
+  if (s.wpm && s.wpm < 90) tips.push(`Tốc độ ~${s.wpm} từ/phút là hơi chậm so với nhịp hội thoại (110–150). Luyện đọc to câu mẫu theo giọng interviewer.`);
+  if (s.wpm && s.wpm > 175) tips.push(`Tốc độ ~${s.wpm} từ/phút là khá nhanh — người nghe khó bắt kịp. Chủ động chậm lại ở câu định nghĩa và con số.`);
+  if (s.coverage != null && s.coverage < 60) tips.push(`Mới chạm ${s.coverage}% ý then chốt. Trước khi nói, điểm nhanh 3 ý sẽ nói — mở bài, ví dụ, kết quả.`);
+  if (!tips.length) tips.push('Phong độ tốt: độ dài, tốc độ và độ phủ ý đều ổn. Giữ nhịp này và tăng dần thời lượng buổi lên 30–45 phút.');
+
+  const review = ans.map((a, i) => {
+    const kw = a.item?.keywords || [];
+    const missed = kw.filter(k => !enHit(a.text, k));
+    return `
+      <details class="en-rv" ${i === 0 ? 'open' : ''}>
+        <summary><b>Q${i + 1}.</b> ${escHtml(a.q)}</summary>
+        <p class="en-rv-you"><b>Bạn nói:</b> ${escHtml(a.text)} <em>(${enWordCount(a.text)} từ · ${a.sec}s)</em></p>
+        ${kw.length ? `<p class="en-rv-kw">${missed.length
+          ? '⚠️ Ý còn thiếu: ' + missed.map(k => `<code>${escHtml(enKwLabel(k))}</code>`).join(' · ')
+          : '✅ Đã chạm hết các ý then chốt'}</p>` : ''}
+        ${a.item ? `<p class="en-rv-sample"><b>Câu mẫu:</b> ${escHtml(a.item.sample)}
+          <button type="button" class="ai-mini" data-en-play="${escHtml(a.item.sample)}">🔊</button></p>
+          <p class="en-rv-vi">💡 ${escHtml(a.item.vi)}</p>` : ''}
+      </details>`;
+  }).join('');
+
+  document.getElementById('en-result').innerHTML = `
+    <h2>🗣️ Tổng kết buổi phỏng vấn tiếng Anh</h2>
+    <div class="en-stats">
+      <div class="en-stat"><b>${s.minutes}′</b><span>thời lượng</span></div>
+      <div class="en-stat"><b>${s.answered}</b><span>câu đã trả lời</span></div>
+      <div class="en-stat"><b>${s.words}</b><span>tổng số từ</span></div>
+      <div class="en-stat"><b>${s.avgWords}</b><span>từ / câu</span></div>
+      <div class="en-stat"><b>${s.wpm ?? '—'}</b><span>từ / phút</span></div>
+      <div class="en-stat"><b>${s.fillers}</b><span>từ đệm</span></div>
+      <div class="en-stat"><b>${s.coverage != null ? s.coverage + '%' : '—'}</b><span>độ phủ ý</span></div>
+    </div>
+    <ul class="en-tips">${tips.map(t => `<li>${escHtml(t)}</li>`).join('')}</ul>
+    <div class="en-res-actions">
+      <button type="button" id="en-again" class="mk-start">🔁 Buổi mới</button>
+      <button type="button" id="en-copy" class="ai-mini">📋 Chép transcript</button>
+      <button type="button" id="en-aigrade" class="ai-mini">🤖 Nhờ Claude chấm tiếng Anh</button>
+    </div>
+    <div id="en-aiout" class="mk-aiout" hidden></div>
+    <h3>Đối chiếu từng câu</h3>
+    ${review || '<p>Chưa có câu trả lời nào được ghi lại.</p>'}`;
+}
+
+function enTranscript() {
+  const ans = enState ? enState.answers : [];
+  return ans.map((a, i) => `Q${i + 1}. ${a.q}\nA${i + 1}. ${a.text}`).join('\n\n');
+}
+
+function enCopyTranscript() {
+  const t = enTranscript();
+  if (!t) return toast('Chưa có transcript để chép');
+  navigator.clipboard?.writeText(t).then(() => toast('📋 Đã chép transcript'), () => toast('Trình duyệt chặn clipboard'));
+}
+
+/** Nhờ Claude chấm riêng phần TIẾNG ANH của transcript (ngữ pháp, từ vựng, cấu trúc) */
+async function enAiGrade() {
+  const out = document.getElementById('en-aiout');
+  const btn = document.getElementById('en-aigrade');
+  const key = (document.getElementById('en-aikey').value || store.get('prep-ai-key', '')).trim();
+  if (!key) { alert('Cần API key Anthropic — dán vào ô 🤖 ở màn hình cài đặt trước khi bắt đầu.'); return; }
+  const script = enTranscript();
+  if (!script) return;
+  store.set('prep-ai-key', key);
+  btn.disabled = true; btn.textContent = 'Đang chấm…';
+  out.hidden = false; out.textContent = '…';
+  try {
+    const full = await callClaudeStream({
+      apiKey: key, model: 'claude-sonnet-4-6', maxTokens: 1400,
+      system: `You are an English communication coach for Vietnamese software engineers preparing for interviews in English. You will receive an interview transcript. Assess ONLY the candidate's English (A lines), not their technical depth.
+Answer in this exact order:
+1. "Score: X/10" for spoken business English.
+2. "CEFR estimate" (A2 / B1 / B2 / C1) with one short reason.
+3. "Fix these sentences" — 3 to 5 items, each: the sentence the candidate actually said → your corrected, natural version → a 5-word note why.
+4. "Better words" — 3 upgrades from basic to natural interview vocabulary.
+5. "Practice next" — 3 concrete drills.
+Write items 1-5 in English, then a compact Vietnamese summary after a line starting with "— Tóm tắt tiếng Việt:". No markdown headings, plain lines only.`,
+      messages: [{ role: 'user', content: script }],
+      onText: t => { out.textContent = t; },
+    });
+    out.innerHTML = window.marked ? marked.parse(full) : escHtml(full);
+  } catch (err) {
+    out.innerHTML = `<span class="ai-err">⚠️ ${escHtml(err.message)}</span>`;
+  } finally {
+    btn.disabled = false; btn.textContent = '🤖 Nhờ Claude chấm tiếng Anh';
+  }
+}
+
+
+function enRenderRecent() {
+  const el = document.getElementById('en-recent');
+  if (!el) return;
+  const hist = store.get('prep-en-iv-history', []);
+  if (!hist.length) { el.innerHTML = ''; return; }
+  el.innerHTML = '<h3>🗂️ Buổi tiếng Anh gần đây</h3>' + hist.slice(-6).reverse().map(h => {
+    const ph = h.phase === 'all' ? 'Cả buổi' : enPhaseOf(h.phase).label;
+    return `<div class="score-row"><span>${h.date} · ${escHtml(ph)} · ${h.minutes}′ · ${h.answered} câu</span>
+      <span class="${h.coverage != null && h.coverage >= 60 ? 'pass' : 'fail'}">${h.words} từ${h.wpm ? ' · ' + h.wpm + ' wpm' : ''}${h.coverage != null ? ' · phủ ý ' + h.coverage + '%' : ''}</span></div>`;
+  }).join('');
+}
+
+/** Rời tab/đổi chế độ: dừng đồng hồ + micro + TTS, GIỮ nguyên buổi đang dở (đồng hồ đóng băng) */
+function enPause() {
+  enStopMic();
+  if (!enState || enState.finished) { clearInterval(enTimerId); enTimerId = null; return; }
+  clearInterval(enTimerId); enTimerId = null;
+  if (enState.remain) return; // đã đóng băng rồi: tính lại từ endAt cũ sẽ ăn mất thời gian vừa đóng băng
+  const now = Date.now();
+  enState.remain = Math.max(1000, enState.endAt - now);
+  enState.qRemain = enState.qEndAt ? Math.max(0, enState.qEndAt - now) : 0;
+}
+
+function enResume() {
+  if (!enState || enState.finished || enTimerId) return;
+  if (enState.remain) {
+    enState.endAt = Date.now() + enState.remain;
+    enState.qEndAt = enState.qRemain ? Date.now() + enState.qRemain : 0;
+    enState.remain = enState.qRemain = 0;
+  }
+  enStartTimer();
 }
 
 // ---------- Dashboard ----------
@@ -3902,7 +4557,8 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-en-done', 'prep-sit-done', 'prep-readiness-log',
   'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date',
   'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned', 'prep-exam-history', 'prep-fc-lang', 'prep-iv-plan', 'prep-iv-seen',
-  'prep-doc-notes', 'prep-remind-time'];
+  'prep-doc-notes', 'prep-remind-time',
+  'prep-en-iv-history', 'prep-en-iv-cfg', 'prep-en-iv-seen'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */

@@ -174,7 +174,7 @@ không cần biết mẹo hard-refresh.
     (đồ thị 🎓 ở Dashboard, tab Hôm nay nhắc thi lại khi quá 7 ngày chưa đo phong độ).
   - Mỗi nút mode có **badge độ phủ** (đã đúng/tổng). Bấm **1–4** chọn đáp án, **Enter** sang câu tiếp.
 - **🏛️ Thiết kế hệ thống** — đề kinh điển + rubric 5 bước, tự chấm hoặc nhờ **AI chấm**.
-- **🎯 Phỏng vấn** — một tab gộp cả buổi phỏng vấn, có 3 chế độ:
+- **🎯 Phỏng vấn** — một tab gộp cả buổi phỏng vấn, có 4 chế độ:
   - **🏅 Buổi phỏng vấn** (mặc định) — đúng **3 phần** như phần lớn buổi thật:
     🇬🇧 Tiếng Anh **8 câu** → 🧩 **IQ 24 câu** (phần nặng ký nhất, có tính giờ) →
     ⌨️ Code **8 câu** (đọc code: đoán output & tính Big-O), khép lại bằng gợi ý
@@ -183,6 +183,20 @@ không cần biết mẹo hard-refresh.
     tự chấm; câu chưa tốt vào kho ôn lại.
   - **🤖 Phỏng vấn AI** — Claude đóng vai người phỏng vấn (BYOK API key): hỏi → bạn trả lời
     (gõ hoặc nói) → đào sâu → chấm điểm cuối buổi.
+  - **🗣️ Tiếng Anh (giao tiếp)** — buổi phỏng vấn **hoàn toàn bằng tiếng Anh**, có người hỏi ↔
+    người trả lời như thật: interviewer **đọc to** câu hỏi (giọng 🇺🇸/🇬🇧/🇦🇺/🇮🇳, chỉnh được tốc độ),
+    bạn **NÓI** (🎤 speech-to-text, micro chỉ bật sau khi đọc xong câu hỏi để khỏi chép lại giọng máy)
+    hoặc **GÕ**; trả lời quá ngắn thì bị **hỏi đào sâu** đúng như phỏng vấn thật. Kho 62 câu chia
+    **6 vòng** (👋 warm-up · 🙋 về bản thân · 💼 kinh nghiệm & dự án · 🌟 behavioral STAR ·
+    ⚙️ giải thích kỹ thuật bằng tiếng Anh · 🤝 văn hoá & câu hỏi ngược) — chọn cả buổi hoặc luyện
+    riêng một vòng, mỗi câu có 💡 gợi ý + **câu trả lời mẫu** (nghe được) + mẹo tiếng Việt.
+    **Cài đặt thời gian**: −/+ chỉnh **thời lượng buổi** (5–60 phút, số câu tự giãn theo),
+    **thời gian mỗi câu** (30–300 giây) và **tốc độ đọc** (0.60×–1.30×); giữa buổi vẫn bấm
+    **−1′ / +1′** để co giãn. Hết buổi có tổng kết: số câu, tổng từ, **từ/phút**, **từ đệm**
+    (um, ", you know,"…), **độ phủ ý** so với ý then chốt của từng câu, đối chiếu câu mẫu,
+    chép transcript, và nút 🤖 nhờ Claude chấm riêng phần tiếng Anh (ngữ pháp/từ vựng/cấu trúc,
+    sửa lại chính câu bạn vừa nói). Chạy **offline**; bật 🤖 thì Claude làm interviewer động và
+    tự chấm khi kết thúc.
 
   Ô trả lời có **🎙️ nói-để-điền** (đọc chính tả VI/EN thay vì gõ — cũng có ở 4 ô STAR và
   dàn ý Thiết kế HT). Ngoài buổi đầy đủ còn **chọn được kiểu bài khác**:

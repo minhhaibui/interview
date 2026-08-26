@@ -2355,3 +2355,112 @@ test('wiring: 📉 ôn câu sai theo chủ đề — chip topic + filter queue +
   const CSS = read('styles.css');
   assert.ok(CSS.includes('.rt-chip'), 'styles.css thiếu style chip chủ đề');
 });
+
+// ---------------------------------------------------------------------------
+// 🗣️ PHỎNG VẤN TIẾNG ANH (giao tiếp) — kho câu hỏi + wiring buổi hỏi-đáp
+// ---------------------------------------------------------------------------
+test('english-interview: id duy nhất, đủ field, phase hợp lệ, mỗi vòng đủ câu', () => {
+  const w = loadWindow('english-interview.js');
+  const qs = w.ENGLISH_INTERVIEW, phases = w.EN_INTERVIEW_PHASES;
+  assert.ok(Array.isArray(phases) && phases.length >= 5, 'thiếu EN_INTERVIEW_PHASES');
+  assert.ok(Array.isArray(qs) && qs.length >= 50, `kho quá mỏng (${qs?.length}) — buổi 45 phút sẽ lặp câu`);
+  const ids = qs.map(q => q.id);
+  assert.strictEqual(new Set(ids).size, ids.length, 'id trùng: ' + ids.filter((x, i) => ids.indexOf(x) !== i));
+  const keys = new Set(phases.map(p => p.key));
+  for (const p of phases) assert.ok(p.key && p.icon && p.label && p.vi, `phase ${p.key} thiếu field`);
+  for (const q of qs) {
+    assert.ok(keys.has(q.phase), `${q.id}: phase '${q.phase}' không có trong EN_INTERVIEW_PHASES`);
+    assert.ok(q.q && q.sample && q.vi, `${q.id}: thiếu q/sample/vi`);
+    assert.ok(Array.isArray(q.followups) && q.followups.length, `${q.id}: thiếu câu đào sâu`);
+    assert.ok(Array.isArray(q.keywords) && q.keywords.length >= 3, `${q.id}: cần ≥3 keyword để chấm độ phủ ý`);
+    // Câu hỏi + câu mẫu phải là TIẾNG ANH (interviewer đọc to) — bắt sót tiếng Việt
+    assert.ok(!/[àáâãèéêìíòóôõùúýăđĩũơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]/i.test(q.q + q.sample),
+      `${q.id}: câu hỏi/câu mẫu phải bằng tiếng Anh`);
+  }
+  // mỗi vòng phải có ≥5 câu để bốc nhiều buổi không lặp lại ngay
+  for (const p of phases) {
+    const n = qs.filter(q => q.phase === p.key).length;
+    assert.ok(n >= 5, `vòng ${p.key} chỉ có ${n} câu — cần ≥5`);
+  }
+});
+
+test('wiring: 🗣️ chế độ phỏng vấn tiếng Anh — nút chế độ, khung phiên, TTS + micro', () => {
+  assert.ok(HTML.includes('data-mkmode="en"'), 'thiếu nút chế độ 🗣️ Tiếng Anh');
+  assert.ok(HTML.includes('id="mk-en"'), 'thiếu khung #mk-en');
+  assert.ok(HTML.indexOf('id="mk-en"') > HTML.indexOf('id="view-mock"'), '#mk-en phải nằm TRONG tab 🎯 Phỏng vấn');
+  assert.ok(/mkMode = \['full', 'self', 'ai', 'en'\]/.test(APP), "setMkMode chưa nhận chế độ 'en'");
+  assert.ok(/document\.getElementById\('mk-en'\)\.hidden = mkMode !== 'en'/.test(APP), 'setMkMode chưa toggle mk-en');
+  assert.ok(/if \(mkMode === 'en'\) \{ initEnInterview\(\); enResume\(\); \}/.test(APP),
+    'vào chế độ en phải init + chạy tiếp đồng hồ buổi đang dở');
+  // người trả lời được NÓI hoặc GÕ
+  const sess = HTML.slice(HTML.indexOf('id="en-session"'), HTML.indexOf('id="en-result"'));
+  assert.ok(sess.includes('id="en-answer"') && sess.includes('id="en-mic"') && sess.includes('id="en-send"'),
+    'phiên phỏng vấn thiếu ô gõ / nút micro / nút gửi');
+  assert.ok(/rec\.lang = enCfg\.accent/.test(APP), 'micro phải nghe theo giọng tiếng Anh đã chọn');
+  assert.ok(/u\.lang = enCfg\.accent/.test(APP), 'TTS phải đọc câu hỏi bằng giọng tiếng Anh đã chọn');
+  // mic chỉ bật SAU khi đọc xong câu hỏi, không thì nó chép lại giọng interviewer
+  assert.ok(/u\.onend = \(\) => enAfterSpeak\(\)/.test(APP) && /if \(enCfg\.autoMic && !enRecog\) enListen\(\)/.test(APP),
+    'micro phải bật sau onend của TTS');
+  for (const fn of ['initEnInterview', 'enStart', 'enAsk', 'enSend', 'enFinish', 'enStats', 'enPause', 'enResume'])
+    assert.ok(new RegExp(`function ${fn}\\b`).test(APP), `thiếu hàm ${fn}`);
+  assert.ok(SW.includes("'english-interview.js'"), 'sw.js PRECACHE thiếu english-interview.js');
+  assert.ok(HTML.includes('<script src="english-interview.js">'), 'index.html chưa nạp english-interview.js');
+  const CSS = read('styles.css');
+  assert.ok(CSS.includes('.en-cfg') && CSS.includes('.stepper') && CSS.includes('.en-stats'),
+    'styles.css thiếu style cho buổi phỏng vấn tiếng Anh');
+});
+
+test('wiring: ⏱️ setting tăng/giảm thời gian phỏng vấn (trước & trong buổi)', () => {
+  for (const id of ['en-mins-dec', 'en-mins-inc', 'en-perq-dec', 'en-perq-inc', 'en-rate-dec', 'en-rate-inc'])
+    assert.ok(HTML.includes(`id="${id}"`), `thiếu nút ${id}`);
+  // giới hạn kẹp — không cho đặt buổi 0 phút hay đọc nhanh không nghe kịp
+  const m = APP.match(/const EN_LIM = \{([^}]+\][^}]*)\};/);
+  assert.ok(m, 'thiếu bảng giới hạn EN_LIM');
+  const LIM = new Function('return {' + m[1] + '}')();
+  for (const k of ['mins', 'perQ', 'rate']) {
+    assert.ok(Array.isArray(LIM[k]) && LIM[k].length === 3, `EN_LIM.${k} phải là [min, max, step]`);
+    assert.ok(LIM[k][0] > 0 && LIM[k][0] < LIM[k][1] && LIM[k][2] > 0, `EN_LIM.${k} không hợp lệ`);
+  }
+  assert.ok(/Math\.min\(hi, Math\.max\(lo,/.test(APP), 'nút −/+ chưa kẹp trong [min, max]');
+  // chỉnh được NGAY GIỮA BUỔI: −1′ / +1′ dời deadline
+  assert.ok(HTML.includes('id="en-t-dec"') && HTML.includes('id="en-t-inc"'), 'thiếu nút ±1 phút trong phiên');
+  assert.ok(/function enAdjustTime\(sec\)/.test(APP) && /enState\.endAt = Math\.max\(min, enState\.endAt \+ sec \* 1000\)/.test(APP),
+    'enAdjustTime chưa dời deadline buổi');
+  // cài đặt + lịch sử phải được đồng bộ
+  for (const k of ['prep-en-iv-cfg', 'prep-en-iv-history'])
+    assert.ok(APP.includes(`'${k}'`) && new RegExp(`PREP_KEYS[\\s\\S]{0,2200}'${k}'`).test(APP), `PREP_KEYS thiếu ${k}`);
+});
+
+test('enHit: khớp ý mềm (biến cách, gạch nối, dạng rút gọn, nhiều cách nói)', () => {
+  const seg = APP.slice(APP.indexOf('const EN_STOP ='), APP.indexOf('function initEnInterview'));
+  assert.ok(seg.includes('function enHit'), 'không tách được enHit từ app.js');
+  const { enHit } = new Function(seg + '; return { enHit };')();
+  assert.ok(enHit('I fixed the bug', 'fixed'), 'khớp đúng chữ');
+  assert.ok(enHit('I am fixing the bug', 'fixed'), 'phải khớp qua biến cách fixing ~ fixed');
+  assert.ok(enHit('we discussed the trade off', 'trade-off'), 'gạch nối phải coi như dấu cách');
+  assert.ok(enHit("I've been on call for two years", 'i have been'), 'dạng rút gọn phải giãn ra');
+  assert.ok(enHit("we didn't cover that", 'did not cover'), "n't phải giãn thành not");
+  assert.ok(enHit('I found the job posting', 'job ad|job posting'), 'trúng cách nói thứ 2 vẫn tính');
+  assert.ok(!enHit('I like coffee', 'root cause'), 'không được khớp bừa');
+  assert.ok(!enHit('the cause of the problem', 'root cause'), 'thiếu một từ trong cụm thì chưa tính');
+});
+
+test('english-interview: CÂU MẪU phải chạm gần hết keyword của chính nó (thước đo phải chuẩn)', () => {
+  // Nếu chính câu trả lời mẫu còn trượt keyword thì % "độ phủ ý" báo cho người học là sai lệch
+  const seg = APP.slice(APP.indexOf('const EN_STOP ='), APP.indexOf('function initEnInterview'));
+  const { enHit } = new Function(seg + '; return { enHit };')();
+  const qs = loadWindow('english-interview.js').ENGLISH_INTERVIEW;
+  const bad = qs.map(q => ({ id: q.id, miss: q.keywords.filter(k => !enHit(q.sample, k)) })).filter(x => x.miss.length);
+  assert.deepStrictEqual(bad.map(x => `${x.id}: ${x.miss.join(' ~ ')}`), [],
+    'câu mẫu không chạm các ý này — sửa keyword (thêm cách nói sau dấu |) hoặc sửa câu mẫu');
+});
+
+test('enFillerCount: đếm đúng tiếng ậm ừ, KHÔNG chê oan "like/you know" dùng đúng nghĩa', () => {
+  const seg = APP.slice(APP.indexOf('const EN_LIM'), APP.indexOf('function initEnInterview'));
+  const { enFillerCount } = new Function(seg + '; return { enFillerCount };')();
+  assert.strictEqual(enFillerCount('Um, I think, you know, it is basically, like, fine. I mean, actually yes.'), 6);
+  assert.strictEqual(enFillerCount('I will let you know. It is like a spreadsheet, like payments, and that kind of work.'), 0);
+  // câu mẫu là chuẩn mực để bắt chước — không câu nào được bị đếm là có từ đệm
+  const qs = loadWindow('english-interview.js').ENGLISH_INTERVIEW;
+  assert.deepStrictEqual(qs.filter(q => enFillerCount(q.sample) > 0).map(q => q.id), []);
+});

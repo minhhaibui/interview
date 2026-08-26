@@ -187,6 +187,7 @@
         <button class="mkm active" data-mkmode="full">🏅 Buổi đầy đủ</button>
         <button class="mkm" data-mkmode="self">🧩 Luyện nhanh (hỏi đáp)</button>
         <button class="mkm" data-mkmode="ai">🤖 Phỏng vấn AI (Claude)</button>
+        <button class="mkm" data-mkmode="en">🗣️ Tiếng Anh (giao tiếp)</button>
       </div>
 
       <!-- ===== BUỔI ĐẦY ĐỦ / các kiểu bài chấm tự động (trước đây là tab "Phỏng vấn tổng hợp") ===== -->
@@ -247,6 +248,103 @@
             <button id="ai-quit">⏹ Thoát</button>
           </div>
         </div>
+      </div>
+
+      <!-- ===== PHỎNG VẤN TIẾNG ANH (giao tiếp): interviewer hỏi ↔ bạn nói/gõ trả lời ===== -->
+      <div id="mk-en" hidden>
+        <div id="en-setup">
+          <p class="mk-tip">Một buổi phỏng vấn <b>hoàn toàn bằng tiếng Anh</b>: người phỏng vấn đọc câu hỏi to (giọng bản ngữ) → bạn <b>NÓI</b> (🎤 tự chuyển thành chữ) hoặc <b>GÕ</b> câu trả lời → hỏi đào sâu → hết giờ có tổng kết, đối chiếu câu mẫu. Chạy <b>offline</b>, không cần API key; bật 🤖 nếu muốn Claude hỏi đáp linh hoạt như người thật.</p>
+
+          <div class="en-cfg">
+            <div class="en-cfg-row">
+              <span class="en-cfg-label">⏱️ Thời lượng buổi phỏng vấn</span>
+              <span class="stepper">
+                <button type="button" id="en-mins-dec" class="st-btn" title="Giảm 5 phút">−</button>
+                <b id="en-mins" class="st-val">15 phút</b>
+                <button type="button" id="en-mins-inc" class="st-btn" title="Tăng 5 phút">+</button>
+              </span>
+              <small class="en-cfg-note">5–60 phút · trong lúc phỏng vấn vẫn tăng/giảm được</small>
+            </div>
+            <div class="en-cfg-row">
+              <span class="en-cfg-label">⏳ Thời gian tối đa mỗi câu</span>
+              <span class="stepper">
+                <button type="button" id="en-perq-dec" class="st-btn" title="Giảm 15 giây">−</button>
+                <b id="en-perq" class="st-val">90 giây</b>
+                <button type="button" id="en-perq-inc" class="st-btn" title="Tăng 15 giây">+</button>
+              </span>
+              <small class="en-cfg-note">30–300 giây · hết giờ chỉ báo đỏ, không tự cắt lời</small>
+            </div>
+            <div class="en-cfg-row">
+              <span class="en-cfg-label">🗣️ Tốc độ đọc của interviewer</span>
+              <span class="stepper">
+                <button type="button" id="en-rate-dec" class="st-btn" title="Đọc chậm lại">−</button>
+                <b id="en-rate" class="st-val">1.00×</b>
+                <button type="button" id="en-rate-inc" class="st-btn" title="Đọc nhanh hơn">+</button>
+              </span>
+              <small class="en-cfg-note">0.60×–1.30× · chậm lại nếu chưa nghe kịp</small>
+            </div>
+          </div>
+
+          <div class="ai-options">
+            <label>Vòng phỏng vấn <select id="en-phase"></select></label>
+            <label>Cấp độ
+              <select id="en-level">
+                <option value="Junior">Junior</option>
+                <option value="Mid-level" selected>Mid-level</option>
+                <option value="Senior">Senior</option>
+              </select>
+            </label>
+            <label>Giọng interviewer
+              <select id="en-accent">
+                <option value="en-US" selected>🇺🇸 Mỹ (en-US)</option>
+                <option value="en-GB">🇬🇧 Anh (en-GB)</option>
+                <option value="en-AU">🇦🇺 Úc (en-AU)</option>
+                <option value="en-IN">🇮🇳 Ấn Độ (en-IN)</option>
+              </select>
+            </label>
+            <label class="ai-voice-opt"><input type="checkbox" id="en-tts" checked /> 🔊 Đọc to câu hỏi</label>
+            <label class="ai-voice-opt"><input type="checkbox" id="en-automic" checked /> 🎤 Tự bật micro sau câu hỏi</label>
+          </div>
+
+          <details class="en-aibox">
+            <summary>🤖 Dùng Claude làm người phỏng vấn (tuỳ chọn · cần API key)</summary>
+            <p class="mk-tip">Bật để interviewer hỏi <b>linh hoạt theo câu bạn vừa trả lời</b> (đào sâu thật sự) thay vì đọc theo kho câu hỏi có sẵn. Dùng chung key với “🤖 Phỏng vấn AI”, lưu cục bộ trong trình duyệt.</p>
+            <label class="ai-voice-opt"><input type="checkbox" id="en-ai" /> Bật chế độ AI interviewer</label>
+            <input id="en-aikey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-api03-… (lưu cục bộ trên máy bạn)" />
+          </details>
+
+          <button id="en-start" class="mk-start">▶️ Bắt đầu phỏng vấn tiếng Anh</button>
+          <div id="en-recent" class="ai-recent"></div>
+        </div>
+
+        <div id="en-session" hidden>
+          <div class="en-top">
+            <span id="en-meta" class="ai-meta"></span>
+            <span class="en-clocks">
+              <span id="en-qtimer" class="en-qtimer" title="Thời gian câu hiện tại"></span>
+              <span id="en-timer" class="mk-timer" title="Thời gian còn lại của buổi"></span>
+              <button type="button" id="en-t-dec" class="ai-mini" title="Rút ngắn buổi 1 phút">−1′</button>
+              <button type="button" id="en-t-inc" class="ai-mini" title="Kéo dài buổi 1 phút">+1′</button>
+              <button type="button" id="en-tts-toggle" class="ai-mini" title="Bật/tắt đọc to">🔊</button>
+            </span>
+          </div>
+          <div id="en-chat" class="ai-chat"></div>
+          <div class="ai-input-row">
+            <textarea id="en-answer" rows="2" placeholder="Answer in English — nói bằng 🎤 hoặc gõ ở đây (Enter để gửi, Shift+Enter xuống dòng)"></textarea>
+            <button id="en-mic" class="ai-mic" title="Bấm rồi trả lời bằng giọng nói (tiếng Anh)">🎤</button>
+            <button id="en-send" class="ai-send">Trả lời</button>
+          </div>
+          <div class="en-actions">
+            <button id="en-repeat" title="Nghe lại câu hỏi">🔁 Nghe lại</button>
+            <button id="en-hint" title="Xem gợi ý &amp; mẫu câu cho câu hỏi này">💡 Gợi ý</button>
+            <button id="en-skip" title="Bỏ qua, sang câu tiếp">⏭ Câu tiếp</button>
+            <button id="en-end" class="en-end">🏁 Kết thúc &amp; tổng kết</button>
+            <button id="en-quit">⏹ Thoát</button>
+          </div>
+          <div id="en-hintbox" class="en-hintbox" hidden></div>
+        </div>
+
+        <div id="en-result" class="en-result" hidden></div>
       </div>
 
       <!-- ===== SELF-GRADED (offline) ===== -->
@@ -603,6 +701,7 @@
   <script src="star-questions.js"></script>
   <script src="reverse-questions.js"></script>
   <script src="english-phrases.js"></script>
+  <script src="english-interview.js"></script>
   <script src="capstone-tracker.js"></script>
   <script src="ko-vocab.js"></script>
   <script src="zh-vocab.js"></script>
