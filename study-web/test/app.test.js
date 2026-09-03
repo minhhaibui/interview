@@ -1859,7 +1859,7 @@ test('wiring: 🧩 bài test IQ — nhảy câu tự do, đổi đáp án, chố
   assert.ok(/if \(s\.chotDiem\) return;/.test(iv), 'finishIvIq phải chống chấm 2 lần (hết giờ + bấm nút)');
 });
 
-test('pickIQTest: mỗi đề dành sẵn ~30% câu NHÌN HÌNH, không lặp câu', () => {
+test('pickIQTest: đề nâng cao — phần lớn DÃY SỐ, ~30% hình, KHÔNG có toán nhanh, không lặp câu', () => {
   const qs = loadWindow('iq-questions.js').IQ_QUESTIONS;
   // Dựng lại pickIQTest/pickByDiff từ app.js (không có DOM) để chạy thật, không chỉ khớp regex
   const grab = name => {
@@ -1871,19 +1871,29 @@ test('pickIQTest: mỗi đề dành sẵn ~30% câu NHÌN HÌNH, không lặp c�
     }
     throw new Error(`không tìm thấy ${name}`);
   };
-  const scope = { shuffleArr: a => [...a].sort(() => Math.random() - 0.5), qDiff: q => q.d || 2, IQ_FIG_SHARE: 0.3, isFigQ: q => !!(q.fig || q.optFig) };
+  const isFigQ = q => !!(q.fig || q.optFig);
+  const scope = {
+    shuffleArr: a => [...a].sort(() => Math.random() - 0.5), qDiff: q => q.d || 2,
+    IQ_FIG_SHARE: 0.3, IQ_SEQ_SHARE: 0.5, IQ_SKIP_CATS: ['➗ Toán nhanh'], IQ_TEST_DIFF: { 1: 0, 2: 0.35, 3: 0.65 },
+    isFigQ, isSeqQ: q => q.category === '🔢 Dãy số', isGeoQ: q => isFigQ(q) || q.category === '🧭 Hình & không gian',
+  };
   const pick = new Function(...Object.keys(scope), `${grab('pickByDiff')}\n${grab('pickIQTest')}\nreturn pickIQTest;`)(...Object.values(scope));
   for (let t = 0; t < 30; t++) {
     const got = pick(qs, 30);
     assert.strictEqual(got.length, 30, 'đề thiếu câu');
     assert.strictEqual(new Set(got.map(q => q.id)).size, 30, 'đề bị lặp câu');
-    const nf = got.filter(scope.isFigQ).length;
-    assert.ok(nf >= 8, `đề chỉ có ${nf} câu nhìn hình — quota 30% không được tôn trọng`);
+    const nSeq = got.filter(scope.isSeqQ).length, nGeo = got.filter(scope.isGeoQ).length;
+    assert.ok(nSeq >= 14, `đề chỉ có ${nSeq} câu dãy số — phải chiếm phần lớn`);
+    assert.ok(nGeo >= 8, `đề chỉ có ${nGeo} câu hình — quota 30% không được tôn trọng`);
+    assert.deepStrictEqual(got.filter(q => q.category === '➗ Toán nhanh'), [], 'đề vẫn còn câu toán tính nhanh (đã bị bỏ)');
+    const hard = got.filter(q => (q.d || 2) === 3).length;
+    assert.ok(hard >= 15, `đề chỉ có ${hard}/30 câu khó — bản nâng cấp phải nghiêng hẳn về câu khó`);
+    assert.strictEqual(got.filter(q => (q.d || 2) === 1).length, 0, 'đề nâng cao không được có câu dễ (d=1)');
   }
-  // Kho KHÔNG có câu hình (bank cũ / đã lọc hết) vẫn phải bốc đủ đề
-  assert.strictEqual(pick(qs.filter(q => !scope.isFigQ(q)), 30).length, 30, 'kho không có hình thì đề bị hụt câu');
+  // Kho hẹp (vòng phỏng vấn đã lọc bớt câu cũ) vẫn phải bốc đủ đề
+  assert.strictEqual(pick(qs.filter(q => !isFigQ(q)), 30).length, 30, 'kho không có hình thì đề bị hụt câu');
+  assert.strictEqual(pick(qs.slice(0, 30), 30).length, 30, 'kho vừa đúng 30 câu thì đề bị hụt câu');
 });
-
 test('wiring: câu IQ nhìn hình — SVG chèn thẳng (không escape), review cũng hiện hình', () => {
   assert.ok(/const iqStemHtml = q => .*\$\{q\.fig \|\| ''\}/.test(APP),
     'iqStemHtml phải chèn q.fig nguyên bản (escape thì hiện ra chữ <svg…>)');

@@ -1228,6 +1228,10 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 .iqfig .so { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
 .iqfig .sf { fill: currentColor; stroke: none; }
 .iqfig .stx { fill: currentColor; font-size: 21px; font-weight: 700; }
+/* Khối 3D (chiếu trục đo): mặt phải TÔ ĐỤC thì khối phía sau mới bị che đúng như thật */
+.iqfig .c3 { fill: var(--bg2); stroke: currentColor; stroke-width: 1.3; stroke-linejoin: round; }
+.iqfig .c3s { fill: currentColor; stroke: none; }                               /* lớp phủ tạo khối sáng/tối */
+.iqfig .stxs { fill: currentColor; font-size: 9px; font-weight: 700; }          /* nhãn mặt trong hình khai triển */
 
 .iq-frow, .iq-mtx { display: grid; gap: 8px; justify-content: center; margin: 0 0 18px; }
 .iq-frow { grid-auto-flow: column; }

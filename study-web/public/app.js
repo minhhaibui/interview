@@ -7045,9 +7045,22 @@ function runDirect(code, fnName, tests) {
 // ----- Chế độ IQ / Logic -----
 let iqState = null;
 
-const IQ_TEST_N = 30, IQ_TEST_SEC = 20 * 60; // 30 câu trong 20 phút
+const IQ_TEST_N = 30, IQ_TEST_SEC = 25 * 60; // 30 câu trong 25 phút (đề nặng hơn nên nới giờ)
 let iqTimerId = null;
 const qDiff = q => q.d || 2; // câu chưa gắn độ khó coi như trung bình (2)
+
+// ----- Cấu hình ĐỀ NÂNG CAO -----
+// Bỏ hẳn nhóm tính nhẩm (đo tốc độ bấm máy chứ không đo tư duy), lấy DÃY SỐ làm trục chính
+// và dành hẳn một mảng cho hình học (gồm cả khối 3D · hình khai triển · đồng hồ · đối xứng).
+const IQ_SKIP_CATS = ['➗ Toán nhanh'];
+const IQ_SEQ_SHARE = 0.5;  // dãy số chiếm một nửa đề
+const IQ_FIG_SHARE = 0.3;  // hình học chiếm ~30%
+const IQ_TEST_DIFF = { 1: 0, 2: 0.35, 3: 0.65 }; // không còn câu dễ; 2/3 đề là câu KHÓ
+const isFigQ = q => !!(q.fig || q.optFig);
+const isSeqQ = q => q.category === '🔢 Dãy số';
+const isGeoQ = q => isFigQ(q) || q.category === '🧭 Hình & không gian';
+/** Kho câu dùng cho mọi chế độ IQ (đã bỏ nhóm bị loại). */
+const iqBank = () => (window.IQ_QUESTIONS || []).filter(q => !IQ_SKIP_CATS.includes(q.category));
 
 /** Xấp xỉ hàm phân vị chuẩn (probit) — Acklam. Dùng dựng đường cong IQ giống phân bố thật. */
 function invNorm(p) {
@@ -7062,32 +7075,39 @@ function invNorm(p) {
   q = Math.sqrt(-2 * Math.log(1 - p)); return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
 }
 
-/** Bốc N câu từ một pool, phối trộn độ khó ~40% dễ / 45% TB / 15% khó. */
-function pickByDiff(pool, N) {
+/** Bốc N câu từ một pool theo tỉ lệ độ khó `mix` (mặc định 40% dễ / 45% TB / 15% khó). */
+function pickByDiff(pool, N, mix) {
+  const w = mix || { 1: 0.4, 2: 0.45, 3: 0.15 };
   const byD = { 1: [], 2: [], 3: [] };
   pool.forEach(q => byD[qDiff(q)].push(q));
   [1, 2, 3].forEach(d => byD[d] = shuffleArr(byD[d]));
-  const want = { 1: Math.round(N * 0.4), 3: Math.round(N * 0.15) };
+  const want = { 1: Math.round(N * w[1]), 3: Math.round(N * w[3]) };
   want[2] = N - want[1] - want[3];
   let picked = [].concat(byD[1].slice(0, want[1]), byD[2].slice(0, want[2]), byD[3].slice(0, want[3]));
-  if (picked.length < N) { // thiếu ở mức nào đó → bù từ phần còn lại
+  if (picked.length < N) { // thiếu ở mức nào đó → bù từ phần còn lại, ƯU TIÊN mức mà `mix` cần nhiều nhất
     const used = new Set(picked.map(q => q.id));
-    picked = picked.concat(shuffleArr(pool.filter(q => !used.has(q.id))).slice(0, N - picked.length));
+    const rest = shuffleArr(pool.filter(q => !used.has(q.id))).sort((a, b) => (w[qDiff(b)] || 0) - (w[qDiff(a)] || 0));
+    picked = picked.concat(rest.slice(0, N - picked.length));
   }
   return picked.slice(0, N);
 }
 
-const IQ_FIG_SHARE = 0.3; // tỉ lệ câu NHÌN HÌNH tối thiểu trong một đề
-const isFigQ = q => !!(q.fig || q.optFig);
-
-/** Chọn N câu cho bài test: DÀNH SẴN ~30% cho câu nhìn hình (kho hình chỉ chiếm ~12%,
- *  bốc ngẫu nhiên thuần thì cả đề may ra được 3 câu), phần còn lại phối trộn độ khó. */
+/** Dựng đề NÂNG CAO: bỏ nhóm tính nhẩm, dành sẵn 50% cho DÃY SỐ và 30% cho hình học
+ *  (bốc ngẫu nhiên thuần thì hai mảng này loãng ra giữa logic/xác suất), phần còn lại lấy tự do.
+ *  Mọi phần đều nghiêng hẳn về câu KHÓ theo IQ_TEST_DIFF. */
 function pickIQTest(bank, N) {
-  const wantFig = Math.min(Math.round(N * IQ_FIG_SHARE), bank.filter(isFigQ).length);
-  const figs = pickByDiff(bank.filter(isFigQ), wantFig);
-  const used = new Set(figs.map(q => q.id));
-  const rest = pickByDiff(bank.filter(q => !used.has(q.id)), N - figs.length);
-  return shuffleArr([...figs, ...rest]).slice(0, N);
+  const clean = bank.filter(q => !IQ_SKIP_CATS.includes(q.category));
+  const pool = clean.length >= N ? clean : bank; // kho quá hẹp (vòng phỏng vấn đã lọc câu cũ) → dùng lại cả kho
+  const picked = [], used = new Set();
+  const grab = (ok, want) => {
+    const sub = pool.filter(q => ok(q) && !used.has(q.id));
+    for (const q of pickByDiff(sub, Math.min(want, sub.length), IQ_TEST_DIFF)) { used.add(q.id); picked.push(q); }
+  };
+  grab(isSeqQ, Math.round(N * IQ_SEQ_SHARE));
+  grab(isGeoQ, Math.round(N * IQ_FIG_SHARE));
+  grab(q => !isSeqQ(q) && !isGeoQ(q), N - picked.length); // chỗ còn lại nhường logic/xác suất/mã hoá
+  grab(() => true, N - picked.length);                    // kho hẹp quá thì lấy nốt bất kỳ câu nào
+  return shuffleArr(picked).slice(0, N);
 }
 
 // ---- Câu IQ dạng NHÌN HÌNH ----
@@ -7129,14 +7149,14 @@ const fmtMMSS = sec => `${String(Math.floor(sec / 60)).padStart(2, '0')}:${Strin
 
 function renderIQ() {
   clearInterval(iqTimerId);
-  const qs = window.IQ_QUESTIONS || [];
+  const qs = iqBank();
   const body = document.getElementById('iq-body');
   if (!body) return;
   if (!qs.length) { body.innerHTML = '<p style="color:var(--muted)">Chưa nạp được câu hỏi IQ.</p>'; return; }
   const hist = store.get('prep-iq-test-history', []);
   const bestIq = hist.length ? Math.max(...hist.map(h => h.iq)) : null;
   const testN = Math.min(IQ_TEST_N, qs.length);
-  const nFig = qs.filter(q => q.fig || q.optFig).length;
+  const nFig = qs.filter(isGeoQ).length, nSeq = qs.filter(isSeqQ).length;
 
   const histHtml = hist.length
     ? `<h3>🗂️ Lịch sử bài test (${hist.length})</h3>
@@ -7158,11 +7178,12 @@ function renderIQ() {
         <div><b>${qs.length}</b><small>câu trong kho</small></div>
       </div>
       <div class="iq-modes">
-        <button id="iq-test-btn" class="iq-start-btn">📝 Làm bài Test IQ<small>${testN} câu · ${IQ_TEST_SEC / 60} phút · có chấm điểm</small></button>
+        <button id="iq-test-btn" class="iq-start-btn">📝 Làm bài Test IQ<small>${testN} câu · ${IQ_TEST_SEC / 60} phút · phần lớn dãy số + hình</small></button>
         <button id="iq-prac-btn" class="iq-mini">🎮 Luyện tập tự do<small>cả ${qs.length} câu · xem giải thích ngay</small></button>
       </div>
-      <p class="iq-note" style="text-align:center">🖼️ Trong kho có <b>${nFig}</b> câu <b>nhìn hình chọn hình</b> (ma trận, xoay hình, chồng lưới, đếm hình) cùng dãy số – logic – toán nhanh.
-        Khi làm bài được <b>nhảy tới câu bất kỳ</b> và đổi đáp án trước khi nộp.</p>
+      <p class="iq-note" style="text-align:center">🔥 Đề <b>nâng cao</b>: một nửa là <b>🔢 dãy số</b> (kho ${nSeq} câu) — quy luật kép, truy hồi, hai dãy đan xen, tìm số sai;
+        ~30% là <b>🖼️ hình học</b> (kho ${nFig} câu: ma trận, xoay/lật, chồng lưới, khối 3D, hình khai triển, đồng hồ, trục đối xứng);
+        phần còn lại là logic – xác suất – mã hoá. <b>Đã bỏ hẳn nhóm toán tính nhanh.</b> Phần lớn là câu KHÓ, được <b>nhảy tới câu bất kỳ</b> và đổi đáp án trước khi nộp.</p>
     </div>
     ${histHtml}`;
   document.getElementById('iq-test-btn').onclick = () => startIQTest();
@@ -7171,7 +7192,7 @@ function renderIQ() {
 
 // ===== Bài Test IQ chính thức (đếm giờ, không hiện đáp án giữa chừng) =====
 function startIQTest() {
-  const all = window.IQ_QUESTIONS || [];
+  const all = iqBank();
   const qs = pickIQTest(all, Math.min(IQ_TEST_N, all.length));
   // ans[i] = chỉ số đáp án đã chọn (null = chưa làm) · ord[i] = thứ tự hiển thị lựa chọn,
   // trộn MỘT LẦN lúc bắt đầu để quay lại câu cũ không bị đảo chỗ.
@@ -7313,7 +7334,7 @@ function finishIQTest(timeout) {
 }
 
 function startIQ(shuffle) {
-  let qs = [...(window.IQ_QUESTIONS || [])];
+  let qs = iqBank();
   if (shuffle) qs = shuffleArr(qs);
   iqState = { qs, idx: 0, correct: 0, answered: false, scored: {} };
   showIQ();
@@ -7404,7 +7425,7 @@ const IV_PLANS = {
     label: '🏅 Buổi phỏng vấn', hint: 'Đúng 3 phần như phần lớn buổi phỏng vấn thật — IQ chiếm phần lớn.',
     rounds: [
       { key: 'english', type: 'mcq', label: '🇬🇧 Tiếng Anh', n: 8, desc: 'Giao tiếp công sở: sát nghĩa, sắc thái & cách phản hồi.' },
-      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 24, desc: 'Phần NẶNG KÝ nhất: nhìn hình, dãy số, logic, toán nhanh — tính giờ, được nhảy câu tự do.' },
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 24, desc: 'Phần NẶNG KÝ nhất: phần lớn là dãy số + hình học (khối 3D, khai triển, ma trận), thêm logic — tính giờ, được nhảy câu tự do.' },
       { key: 'readcode', type: 'readcode', label: '⌨️ Code', n: 8, desc: 'Đọc code đoán OUTPUT & đoán INPUT — chỉ kèm 1–2 câu Big-O.' },
     ],
   },
@@ -7414,7 +7435,7 @@ const IV_PLANS = {
       { key: 'intro', type: 'open', label: '🏷 Giới thiệu bản thân', n: 2, desc: 'Câu mở màn bằng tiếng Anh — trả lời rồi đối chiếu khung mẫu.' },
       { key: 'qa', type: 'open', label: '💬 Hỏi kiến thức', n: 5, desc: 'Câu hỏi MỞ từ kho 180 câu — trả lời như phỏng vấn thật rồi tự chấm.' },
       { key: 'english', type: 'mcq', label: '🇬🇧 Tiếng Anh', n: 8, desc: 'Giao tiếp công sở: sát nghĩa, sắc thái & cách phản hồi.' },
-      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 16, desc: 'Nhìn hình, dãy số, logic, toán nhanh — tính giờ, được nhảy câu tự do.' },
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 16, desc: 'Phần lớn là dãy số + hình học, thêm logic — tính giờ, được nhảy câu tự do.' },
       { key: 'readcode', type: 'readcode', label: '⌨️ Code', n: 8, desc: 'Đọc code đoán OUTPUT & đoán INPUT — chỉ kèm 1–2 câu Big-O.' },
     ],
   },
@@ -7422,7 +7443,7 @@ const IV_PLANS = {
     label: '⌨️ Thêm viết code', hint: 'Ba phần như trên, phần code có thêm bài tự giải & chạy test thật.',
     rounds: [
       { key: 'english', type: 'mcq', label: '🇬🇧 Tiếng Anh', n: 8, desc: 'Giao tiếp công sở: sát nghĩa, sắc thái & cách phản hồi.' },
-      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 20, desc: 'Phần NẶNG KÝ nhất: nhìn hình, dãy số, logic, toán nhanh — tính giờ, được nhảy câu tự do.' },
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 20, desc: 'Phần NẶNG KÝ nhất: phần lớn là dãy số + hình học (khối 3D, khai triển, ma trận), thêm logic — tính giờ, được nhảy câu tự do.' },
       { key: 'readcode', type: 'readcode', label: '⌨️ Code — đọc', n: 6, desc: 'Đọc code đoán OUTPUT & đoán INPUT — chỉ kèm 1 câu Big-O.' },
       { key: 'code', type: 'code', label: '⌨️ Code — viết', n: 2, desc: 'Giải 2 bài, chạy test thật trong trình duyệt.' },
     ],
@@ -7432,13 +7453,13 @@ const IV_PLANS = {
   iqonly: {
     label: '🧩 Chỉ test IQ', hint: 'Bỏ tiếng Anh & code — chỉ một vòng IQ 30 câu tính giờ (15 phút).',
     rounds: [
-      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 30, desc: 'Nhìn hình, dãy số, logic, toán nhanh — tính giờ, không hiện đáp án giữa chừng.' },
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 30, desc: 'Phần lớn là dãy số + hình học, thêm logic — tính giờ, không hiện đáp án giữa chừng.' },
     ],
   },
   iqcode: {
     label: '🧩 IQ + hỏi code', hint: 'Bỏ tiếng Anh — IQ 24 câu rồi 10 câu hỏi code (đoán output & Big-O).',
     rounds: [
-      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 24, desc: 'Nhìn hình, dãy số, logic, toán nhanh — tính giờ, được nhảy câu tự do.' },
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 24, desc: 'Phần lớn là dãy số + hình học, thêm logic — tính giờ, được nhảy câu tự do.' },
       { key: 'readcode', type: 'readcode', label: '⌨️ Hỏi code', n: 10, desc: 'Đọc code đoán OUTPUT & đoán INPUT — chỉ kèm 1–2 câu Big-O.' },
     ],
   },
@@ -7456,7 +7477,7 @@ const IV_PLANS = {
     rounds: [
       { key: 'english', type: 'mcq', label: '🇬🇧 Tiếng Anh', n: 8, desc: 'Giao tiếp công sở: sát nghĩa, sắc thái & cách phản hồi.' },
       { key: 'theory', type: 'mcq', label: '📖 Lý thuyết JS · Node · React', n: 10, desc: 'Vòng hỏi kiến thức nền — trộn đều ba mảng, ưu tiên câu chưa từng hỏi.' },
-      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 20, desc: 'Phần NẶNG KÝ nhất: nhìn hình, dãy số, logic, toán nhanh — tính giờ, được nhảy câu tự do.' },
+      { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 20, desc: 'Phần NẶNG KÝ nhất: phần lớn là dãy số + hình học (khối 3D, khai triển, ma trận), thêm logic — tính giờ, được nhảy câu tự do.' },
       { key: 'readcode', type: 'readcode', label: '⌨️ Code', n: 8, desc: 'Đọc code đoán OUTPUT & đoán INPUT — chỉ kèm 1–2 câu Big-O.' },
     ],
   },
@@ -7474,7 +7495,7 @@ function ivFreshLine(r) {
   const banks = {
     english: () => [['english', window.ENGLISH_QUESTIONS]],
     situational: () => [['situational', window.SITUATIONAL_QUESTIONS]],
-    iq: () => [['iq', window.IQ_QUESTIONS]],
+    iq: () => [['iq', iqBank()]],
     readcode: () => [['output', window.OUTPUT_QUIZ], ['bigo', window.COMPLEXITY_QUIZ]],
     theory: () => [['js', window.JS_QUIZ], ['node', window.NODE_QUIZ], ['react', window.REACT_QUIZ]],
     code: () => [['code', window.CODING_PROBLEMS]],
@@ -7932,7 +7953,7 @@ function answerMcq(i) {
 function startIvIq(r) {
   // Lọc câu ĐÃ HỎI trước, rồi mới cân độ khó trên phần còn lại.
   // Kho cạn: dùng NỐT câu mới còn lại rồi bù bằng câu hỏi LÂU NHẤT — không bỏ phí câu chưa hỏi.
-  const bank = window.IQ_QUESTIONS || [];
+  const bank = iqBank();
   const seenArr = (ivSeen().iq || []).map(String);
   const seen = new Set(seenArr);
   const fresh = bank.filter(q => !seen.has(String(q.id)));

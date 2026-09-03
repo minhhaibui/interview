@@ -133,6 +133,207 @@ function gOpQ(id, d, a, b, op, explain) {
   });
 }
 
+// ===========================================================================
+// BỘ VẼ HÌNH NÂNG CAO — khối 3D, hình khai triển, đồng hồ, ma trận hai quy luật
+// Thêm cho bản nâng độ khó: bài test cần hình học ĐA DẠNG chứ không chỉ lưới 3×3.
+// ===========================================================================
+
+/** Xoay vòng vị trí đáp án theo id (khi viết đề thì opts[0] LUÔN là đáp án đúng). */
+function mixOpts(id, opts) {
+  const n = opts.length, k = [...id].reduce((a, ch) => a + ch.charCodeAt(0), 0) % n;
+  return { options: opts.slice(n - k).concat(opts.slice(0, n - k)), answer: k }; // ⇒ options[k] === opts[0]
+}
+/** Chữ trong ô hình (nhãn mặt của hình khai triển…). */
+const txtAt = (s, x, y, cls = 'stxs') => `<text class="${cls}" x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central">${s}</text>`;
+
+// ---- Khối lập phương xếp chồng (phép chiếu trục đo) ----
+/** hs = ma trận 3×3 CHIỀU CAO (hs[y][x], 0–3). Quy ước: mọi cột đặc từ dưới lên, không có lỗ rỗng. */
+function isoSvg(hs) {
+  const cubes = [];
+  for (let y = 0; y < 3; y++) for (let x = 0; x < 3; x++) for (let z = 0; z < hs[y][x]; z++) cubes.push([x, y, z]);
+  cubes.sort((a, b) => (a[0] + a[1] + a[2]) - (b[0] + b[1] + b[2])); // vẽ từ khối XA tới khối GẦN
+  const face = (pts, sh) => `<polygon class="c3" points="${pts}"/>` + (sh ? `<polygon class="c3s" points="${pts}" opacity="${sh}"/>` : '');
+  let s = '';
+  for (const [x, y, z] of cubes) {
+    const bx = 30 + 9 * x - 9 * y, by = 21 + 4.5 * x + 4.5 * y - 9 * z; // đỉnh trên-sau của khối
+    s += face(`${bx},${by} ${bx + 9},${by + 4.5} ${bx},${by + 9} ${bx - 9},${by + 4.5}`, 0)
+      + face(`${bx - 9},${by + 4.5} ${bx},${by + 9} ${bx},${by + 18} ${bx - 9},${by + 13.5}`, .12)
+      + face(`${bx + 9},${by + 4.5} ${bx},${by + 9} ${bx},${by + 18} ${bx + 9},${by + 13.5}`, .26);
+  }
+  return iqSvg(s);
+}
+const isoSum = hs => hs.flat().reduce((a, b) => a + b, 0);          // tổng số khối nhỏ
+const isoFoot = hs => hs.flat().filter(v => v > 0).length;          // số ô nhìn từ trên xuống
+const isoMax = hs => Math.max(...hs.flat());                        // cột cao nhất
+
+/** Câu hỏi về khối 3D. kind: 'count' đếm khối · 'fill' còn thiếu mấy khối cho đầy 3×3×3 · 'foot' nhìn từ trên · 'max' cột cao nhất */
+function isoQ(id, d, hs, kind, wrongs) {
+  const val = { count: isoSum, fill: h => 27 - isoSum(h), foot: isoFoot, max: isoMax }[kind](hs);
+  const q = {
+    count: 'Khối dưới đây xếp bằng các hình lập phương nhỏ giống nhau (mọi cột đều ĐẶC từ dưới lên, không có lỗ rỗng). Có tất cả bao nhiêu khối nhỏ?',
+    fill: 'Khối dưới đây (mọi cột đều đặc từ dưới lên) cần thêm bao nhiêu khối nhỏ nữa để thành khối hộp đầy 3×3×3?',
+    foot: 'Nhìn khối dưới đây THẲNG TỪ TRÊN XUỐNG thì thấy bao nhiêu ô vuông nhỏ?',
+    max: 'Trong khối dưới đây, cột CAO NHẤT gồm mấy khối lập phương nhỏ?',
+  }[kind];
+  const ex = {
+    count: `Cộng chiều cao từng cột: ${hs.map(r => r.join('+')).join(' , ')} = ${val} khối (nhớ đếm cả các khối bị che phía sau).`,
+    fill: `Khối hộp 3×3×3 cần 27 khối nhỏ, hình đang có ${isoSum(hs)} ⇒ thiếu ${val}.`,
+    foot: `Nhìn từ trên chỉ thấy mặt trên của mỗi CỘT — có ${val} cột có khối (chiều cao không ảnh hưởng).`,
+    max: `Cột cao nhất trong hình có ${val} khối chồng lên nhau.`,
+  }[kind];
+  const { options, answer } = mixOpts(id, [String(val), ...wrongs.map(String)]);
+  return { id, category: '🧭 Hình & không gian', d, q, fig: figRow([isoSvg(hs)], 'lg'), options, answer, explain: ex };
+}
+
+// ---- Hình khai triển khối lập phương ----
+/** Dải 4 mặt ở hàng giữa + 1 mặt phía trên + 1 mặt phía dưới (dạng chữ thập/zíc-zắc). */
+function netSvg(band, top, bot) {
+  const W = 13, x0 = 30 - 2 * W, y0 = 30 - 1.5 * W;
+  const cell = (r, c, t) => `<rect class="gl" x="${x0 + c * W}" y="${y0 + r * W}" width="${W}" height="${W}"/>` +
+    txtAt(t, x0 + c * W + W / 2, y0 + r * W + W / 2);
+  return iqSvg(band.map((t, c) => cell(1, c, t)).join('') + cell(0, top[0], top[1]) + cell(2, bot[0], bot[1]));
+}
+/** Mặt đối diện: trong dải 4 mặt là hai mặt CÁCH NHAU 2 ô; mặt trên ↔ mặt dưới. */
+function netOpp(band, top, bot, f) {
+  const i = band.indexOf(f);
+  return i >= 0 ? band[(i + 2) % 4] : (f === top[1] ? bot[1] : top[1]);
+}
+function netQ(id, d, band, top, bot, f, wrongs) {
+  const ans = netOpp(band, top, bot, f);
+  const inBand = band.includes(f);
+  const { options, answer } = mixOpts(id, [ans, ...wrongs]);
+  return {
+    id, category: '🧭 Hình & không gian', d,
+    q: `Gấp hình khai triển dưới đây thành khối lập phương. Mặt nào ĐỐI DIỆN với mặt ${f}?`,
+    fig: figRow([netSvg(band, top, bot)], 'lg'), options, answer,
+    explain: inBand
+      ? `Bốn mặt của hàng giữa cuộn thành một vòng ⇒ hai mặt CÁCH NHAU ĐÚNG 2 ô mới đối diện nhau: ${f} ↔ ${ans}. (Hai mặt cạnh nhau luôn KỀ nhau, không bao giờ đối diện.)`
+      : `Mặt gắn phía trên dải là mặt TRÊN, mặt gắn phía dưới là mặt DƯỚI — hai mặt này luôn đối diện nhau ⇒ ${f} ↔ ${ans}.`,
+  };
+}
+
+// ---- Đồng hồ kim ----
+function clockSvg(h, m) {
+  const hand = (deg, len, w) => {
+    const a = (deg - 90) * Math.PI / 180;
+    return `<path class="so" stroke-width="${w}" d="M30 30 L${(30 + len * Math.cos(a)).toFixed(1)} ${(30 + len * Math.sin(a)).toFixed(1)}"/>`;
+  };
+  const ticks = Array.from({ length: 12 }, (_, i) => {
+    const a = (i * 30 - 90) * Math.PI / 180;
+    return `<circle class="sf" cx="${(30 + 22 * Math.cos(a)).toFixed(1)}" cy="${(30 + 22 * Math.sin(a)).toFixed(1)}" r="${i % 3 ? 1.2 : 2.2}"/>`;
+  }).join('');
+  return iqSvg(`<circle class="so" cx="30" cy="30" r="26"/>${ticks}` +
+    hand((h % 12) * 30 + m * 0.5, 12, 3) + hand(m * 6, 19, 1.8) + '<circle class="sf" cx="30" cy="30" r="2.4"/>');
+}
+/** Góc NHỎ giữa kim giờ và kim phút lúc h:m. */
+function clockAngle(h, m) {
+  const a = Math.abs((h % 12) * 30 + m * 0.5 - m * 6);
+  return Math.min(a, 360 - a);
+}
+function clockQ(id, d, h, m, wrongs) {
+  const ans = clockAngle(h, m);
+  const { options, answer } = mixOpts(id, [`${ans}°`, ...wrongs.map(w => `${w}°`)]);
+  return {
+    id, category: '🧭 Hình & không gian', d,
+    q: `Đồng hồ dưới đây chỉ ${h} giờ ${String(m).padStart(2, '0')}. Góc NHỎ giữa kim giờ và kim phút là bao nhiêu độ?`,
+    fig: figRow([clockSvg(h, m)], 'lg'), options, answer,
+    explain: `Kim phút: ${m} × 6° = ${m * 6}°. Kim giờ: ${h % 12} × 30° + ${m} × 0,5° = ${(h % 12) * 30 + m * 0.5}° (kim giờ CŨNG nhích theo phút). Chênh lệch ⇒ góc nhỏ ${ans}°.`,
+  };
+}
+
+// ---- Tương tự hình: A → B thì C → ? (phép biến đổi trên lưới 3×3) ----
+const G_OPS = {
+  rot90: gRot, rot180: p => gRot(gRot(p)), rot270: p => gRot(gRot(gRot(p))),
+  flip: gFlip, flipV: gFlipV, inv: gInv,
+};
+const G_OP_NAME = {
+  rot90: 'xoay 90° THUẬN chiều kim đồng hồ', rot180: 'xoay 180°', rot270: 'xoay 90° NGƯỢC chiều kim đồng hồ',
+  flip: 'lật gương TRÁI ↔ PHẢI', flipV: 'lật TRÊN ↔ DƯỚI', inv: 'ĐẢO ô tô ↔ ô trống',
+};
+/** Đáp án TÍNH RA từ phép biến đổi nên không thể sai; mồi nhử là các phép biến đổi KHÁC của C. */
+function gAnaQ(id, d, a, c, op, extra) {
+  const ans = G_OPS[op](c), opts = [ans];
+  for (const k of ['rot180', 'rot90', 'rot270', 'flip', 'flipV', 'inv']) {
+    if (opts.length >= 4) break;
+    const v = G_OPS[k](c);
+    if (!opts.includes(v)) opts.push(v);
+  }
+  for (const v of [gTog(ans, 4), gTog(ans, 0), gTog(ans, 8)]) { if (opts.length >= 4) break; if (!opts.includes(v)) opts.push(v); }
+  return figQ({
+    id, d, q: 'Hàng trên biến đổi theo một quy luật. Áp dụng ĐÚNG quy luật đó cho hàng dưới, ô ? là hình nào?',
+    fig: figGrid([gSvg(a), gSvg(G_OPS[op](a)), gSvg(c), '?'], 2), opts: opts.map(gSvg),
+    explain: `Hình 1 → hình 2 là phép ${G_OP_NAME[op]}${extra ? ' ' + extra : ''} ⇒ làm y hệt với hình thứ ba.`,
+  });
+}
+
+// ---- Ma trận HAI quy luật cùng lúc: hàng đổi HÌNH, cột đổi KIỂU TÔ ----
+function matSFQ(id, d, ks, fs, names) {
+  const cells = [];
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) cells.push(r === 2 && c === 2 ? '?' : sCell(ks[r], fs[c]));
+  const F = ['rỗng', 'có chấm giữa', 'tô đặc'];
+  return figQ({
+    id, d, q: 'Ô dấu ? là hình nào? (mỗi HÀNG một loại hình, mỗi CỘT một kiểu tô)',
+    fig: figGrid(cells, 3),
+    opts: [sCell(ks[2], fs[2]), sCell(ks[2], fs[1]), sCell(ks[1], fs[2]), sCell(ks[0], fs[2])],
+    explain: `Hàng 3 luôn là ${names[2]}, cột 3 luôn là kiểu "${F[fs[2]]}" ⇒ ô thiếu là ${names[2]} ${F[fs[2]]}.`,
+  });
+}
+
+// ---- Chuỗi xoay đều một góc cố định ----
+function rotSeqQ(id, d, inner, step, n, note) {
+  const at = k => iqSvg(rot(inner, k * step));
+  return figQ({
+    id, d, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([...Array.from({ length: n }, (_, i) => at(i)), '?']),
+    opts: [at(n), iqSvg(rot(inner, (n + 1) * step)), iqSvg(rot(inner, (n - 1) * step)), iqSvg(rot(inner, n * step + 180))],
+    explain: `Mỗi bước hình quay thêm ${step}° theo chiều kim đồng hồ${note ? ' ' + note : ''} ⇒ hình thứ ${n + 1} quay ${n * step % 360}° so với hình đầu.`,
+  });
+}
+
+// ---- Hai chấm chạy quanh viền lưới 3×3 với tốc độ khác nhau ----
+const RING = [0, 1, 2, 5, 8, 7, 6, 3]; // 8 ô viền, theo chiều kim đồng hồ
+/** Lưới 3×3 có chấm ở các ô cho trước. */
+function dotsGrid(idxs) {
+  let s = '';
+  for (let r = 0; r < 3; r++) for (let k = 0; k < 3; k++) s += `<rect class="gl" x="${3 + k * 18}" y="${3 + r * 18}" width="18" height="18"/>`;
+  for (const i of idxs) s += `<circle class="sf" cx="${12 + (i % 3) * 18}" cy="${12 + Math.floor(i / 3) * 18}" r="6"/>`;
+  return iqSvg(s);
+}
+/** Chấm A xuất phát ở ô góc trên-trái đi s1 bước/lượt, chấm B ở ô giữa-phải đi s2 bước/lượt. */
+function ringQ(id, d, s1, s2, n) {
+  const at = k => dotsGrid([...new Set([RING[(k * s1 % 8 + 8) % 8], RING[(3 + k * s2 % 8 + 8) % 8]])]);
+  const opts = [at(n), at(n + 1), at(n - 1), dotsGrid([RING[(n * s1 % 8 + 8) % 8], RING[(3 + (n + 1) * s2 % 8 + 8) % 8]])];
+  return figQ({
+    id, d, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([...Array.from({ length: n }, (_, i) => at(i)), '?']),
+    opts, explain: `Hai chấm cùng chạy quanh VIỀN lưới theo chiều kim đồng hồ nhưng khác tốc độ: một chấm ${Math.abs(s1)} ô mỗi bước, chấm kia ${Math.abs(s2)} ô mỗi bước${s2 < 0 ? ' (ngược chiều)' : ''}.`,
+  });
+}
+
+// ---- Đếm hình chữ nhật / hình vuông trong lưới m × n ----
+const C2 = n => n * (n + 1) / 2;
+const gridRects = (m, n) => C2(m) * C2(n);
+const gridSquares = (m, n) => { let s = 0; for (let k = 1; k <= Math.min(m, n); k++) s += (m - k + 1) * (n - k + 1); return s; };
+/** Lưới m cột × n hàng ô vuông (vẽ to để còn đếm được). */
+function boxGrid(m, n) {
+  const w = Math.min(52 / m, 52 / n), x0 = 30 - m * w / 2, y0 = 30 - n * w / 2;
+  let s = '';
+  for (let r = 0; r < n; r++) for (let c = 0; c < m; c++) s += `<rect class="so" x="${(x0 + c * w).toFixed(1)}" y="${(y0 + r * w).toFixed(1)}" width="${w.toFixed(1)}" height="${w.toFixed(1)}"/>`;
+  return iqSvg(s);
+}
+function boxCountQ(id, d, m, n, kind, wrongs) {
+  const val = kind === 'rect' ? gridRects(m, n) : gridSquares(m, n);
+  const { options, answer } = mixOpts(id, [String(val), ...wrongs.map(String)]);
+  return {
+    id, category: '🖼️ Suy luận hình', d,
+    q: `Lưới ${m}×${n} ô vuông nhỏ dưới đây có tất cả bao nhiêu ${kind === 'rect' ? 'HÌNH CHỮ NHẬT (tính cả hình vuông)' : 'HÌNH VUÔNG'}?`,
+    fig: figRow([boxGrid(m, n)], 'lg'), options, answer,
+    explain: kind === 'rect'
+      ? `Chọn 2 trong ${m + 1} đường dọc và 2 trong ${n + 1} đường ngang: C(${m + 1},2) × C(${n + 1},2) = ${C2(m)} × ${C2(n)} = ${val}.`
+      : `Đếm theo cạnh: ${Array.from({ length: Math.min(m, n) }, (_, k) => `${(m - k) * (n - k)} hình ${k + 1}×${k + 1}`).join(' + ')} = ${val}.`,
+  };
+}
+
 window.IQ_QUESTIONS = [
   // ---- Dãy số ----
   { id: 'seq1', category: '🔢 Dãy số', q: 'Số tiếp theo: 2, 4, 8, 16, ?', options: ['24', '30', '32', '64'], answer: 2,
@@ -2872,4 +3073,219 @@ window.IQ_QUESTIONS = [
     explain: '(3/4) × (1/3) = 1/4 — thực ra xác suất mở được ở BẤT KỲ lần thử nào cũng đều là 1/4.' },
   { id: 'n40-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 9, 28, 65, ?', options: ['96', '116', '126', '129'], answer: 2,
     explain: 'Quy luật n³ + 1: 1³+1, 2³+1, 3³+1, 4³+1, 5³+1 = 126.' },
+
+  // ===== ĐỢT #39 — HÌNH HỌC ĐA DẠNG: khối 3D · hình khai triển · đồng hồ · đối xứng =====
+  // 🧊 Khối lập phương xếp chồng (phải đếm cả khối bị che)
+  isoQ('iso1', 3, [[2, 2, 1], [1, 1, 0], [1, 0, 0]], 'count', [6, 7, 9]),
+  isoQ('iso2', 3, [[3, 2, 1], [2, 1, 0], [1, 0, 0]], 'count', [8, 9, 11]),
+  isoQ('iso3', 3, [[2, 2, 2], [2, 1, 1], [1, 1, 0]], 'count', [10, 11, 13]),
+  isoQ('iso4', 3, [[1, 2, 1], [2, 3, 1], [1, 1, 2]], 'count', [12, 13, 15]),
+  isoQ('iso5', 3, [[3, 3, 2], [3, 2, 1], [2, 1, 1]], 'fill', [7, 8, 11]),
+  isoQ('iso6', 2, [[3, 0, 2], [0, 1, 0], [2, 0, 3]], 'foot', [4, 6, 9]),
+  isoQ('iso7', 3, [[2, 1, 3], [1, 2, 1], [3, 1, 2]], 'count', [14, 15, 17]),
+
+  // 📦 Hình khai triển khối lập phương → mặt đối diện
+  netQ('net1', 3, ['A', 'B', 'C', 'D'], [0, 'E'], [2, 'F'], 'A', ['B', 'D', 'E']),
+  netQ('net2', 3, ['1', '2', '3', '4'], [1, '5'], [3, '6'], '2', ['1', '3', '5']),
+  netQ('net3', 2, ['A', 'B', 'C', 'D'], [1, 'E'], [3, 'F'], 'E', ['A', 'B', 'C']),
+  netQ('net4', 3, ['X', 'Y', 'Z', 'T'], [2, 'M'], [0, 'N'], 'Z', ['Y', 'T', 'M']),
+  netQ('net5', 3, ['P', 'Q', 'R', 'S'], [3, 'U'], [1, 'V'], 'S', ['P', 'R', 'U']),
+
+  // 🕒 Góc giữa hai kim đồng hồ (bẫy: kim giờ cũng nhích theo phút)
+  clockQ('clk1', 3, 3, 40, [120, 140, 150]),
+  clockQ('clk2', 3, 4, 20, [0, 20, 30]),
+  clockQ('clk3', 3, 9, 30, [90, 100, 115]),
+  clockQ('clk4', 2, 7, 0, [140, 180, 210]),
+  clockQ('clk5', 3, 2, 50, [130, 150, 155]),
+
+  // 🔁 Tương tự hình: hàng trên biến đổi thế nào thì hàng dưới y hệt
+  gAnaQ('ana1', 3, '110/010/000', '100/110/000', 'rot90'),
+  gAnaQ('ana2', 3, '110/010/001', '110/011/000', 'rot180'),
+  gAnaQ('ana3', 2, '100/110/010', '011/010/100', 'flip'),
+  gAnaQ('ana4', 3, '011/010/100', '010/011/001', 'flipV'),
+  gAnaQ('ana5', 2, '101/010/001', '110/001/010', 'inv'),
+  gAnaQ('ana6', 3, '100/100/110', '001/011/000', 'rot270'),
+
+  // 🎛 Ma trận HAI quy luật cùng lúc (hàng đổi hình, cột đổi kiểu tô)
+  matSFQ('msf1', 3, ['c', 's', 't'], [0, 1, 2], ['hình tròn', 'hình vuông', 'tam giác']),
+  matSFQ('msf2', 3, ['t', 'h', 'r'], [2, 0, 1], ['tam giác', 'lục giác', 'ngôi sao']),
+  matSFQ('msf3', 3, ['d', 'p', 'x'], [1, 2, 0], ['hình thoi', 'ngũ giác', 'chữ thập']),
+  matSFQ('msf4', 2, ['s', 'r', 'h'], [0, 2, 1], ['hình vuông', 'ngôi sao', 'lục giác']),
+
+  // 🔃 Chuỗi xoay đều một góc lẻ (không phải 90° cho dễ đoán)
+  rotSeqQ('rs1', 3, ARROW, 45, 4),
+  rotSeqQ('rs2', 3, FLAG, 60, 4),
+  rotSeqQ('rs3', 3, ELL, 135, 3),
+  rotSeqQ('rs4', 2, ARROW, 30, 5),
+
+  // 🔵 Hai chấm chạy quanh viền lưới với tốc độ khác nhau
+  ringQ('ring1', 3, 1, 2, 4),
+  ringQ('ring2', 3, 2, 3, 4),
+  ringQ('ring3', 3, 1, -1, 4),
+
+  // 🔲 Đếm hình chữ nhật / hình vuông trong lưới
+  boxCountQ('bc1', 3, 2, 3, 'rect', [12, 15, 20]),
+  boxCountQ('bc2', 3, 3, 3, 'square', [9, 10, 16]),
+  boxCountQ('bc3', 3, 4, 3, 'rect', [40, 48, 72]),
+  boxCountQ('bc4', 3, 5, 2, 'rect', [30, 36, 50]),
+
+  // ↔️ Trục đối xứng
+  figQ({
+    id: 'sym1', d: 2, q: 'Hình nào có ĐÚNG 2 trục đối xứng?',
+    opts: [iqSvg('<rect class="so" x="7" y="19" width="46" height="22"/>'), sCell('t'), sCell('p'),
+      iqSvg('<polygon class="so" points="14,42 26,18 52,18 40,42"/>')],
+    explain: 'Hình chữ nhật (không vuông) có đúng 2 trục: dọc và ngang. Tam giác đều có 3, ngũ giác đều có 5, hình bình hành KHÔNG có trục nào.',
+  }),
+  figQ({
+    id: 'sym2', d: 2, q: 'Hình nào KHÔNG có trục đối xứng nào?',
+    opts: [iqSvg('<polygon class="so" points="14,42 26,18 52,18 40,42"/>'),
+      iqSvg('<polygon class="so" points="30,5 49,30 30,55 11,30"/>'), sCell('h'), sCell('x')],
+    explain: 'Hình bình hành xiên chỉ có tâm đối xứng chứ không có TRỤC nào. Hình thoi có 2 trục, lục giác đều 6, chữ thập 4.',
+  }),
+  figQ({
+    id: 'sym3', d: 2, q: 'Hình nào có NHIỀU trục đối xứng nhất?',
+    opts: [sCell('h'), sCell('p'), sCell('s'), sCell('t')],
+    explain: 'Đa giác đều n cạnh có đúng n trục đối xứng: lục giác 6 > ngũ giác 5 > hình vuông 4 > tam giác đều 3.',
+  }),
+  figQ({
+    id: 'sym4', d: 3, q: 'Hình nào có ĐÚNG 1 trục đối xứng?',
+    opts: [iqSvg(ARROW), sCell('s'), iqSvg('<polygon class="so" points="30,5 49,30 30,55 11,30"/>'), sCell('x')],
+    explain: 'Mũi tên chỉ đối xứng qua trục DỌC — lật ngang thì khác ngay. Hình vuông có 4 trục, hình thoi 2, chữ thập 4.',
+  }),
+
+  // ===== ĐỢT #39 — DÃY SỐ NÂNG CAO (quy luật kép, truy hồi, đan xen, tìm số sai) =====
+  { id: 'q41-2', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 3, 11, 35, 107, ?', options: ['320', '322', '323', '329'], answer: 2,
+    explain: 'Mỗi số = số trước × 3 + 2: 107 × 3 + 2 = 323.' },
+  { id: 'q41-3', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 6, 14, 30, 62, ?', options: ['124', '126', '128', '130'], answer: 1,
+    explain: 'Mỗi số = số trước × 2 + 2: 62 × 2 + 2 = 126.' },
+  { id: 'q41-5', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 3, 11, 43, 171, ?', options: ['681', '683', '684', '687'], answer: 1,
+    explain: 'Mỗi số = số trước × 4 − 1: 171 × 4 − 1 = 683.' },
+  { id: 'q42-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 5, 12, 27, 58, ?', options: ['115', '118', '121', '124'], answer: 2,
+    explain: 'Số trước × 2 rồi cộng thêm số bước tăng dần: ×2+1, ×2+2, ×2+3, ×2+4, ×2+5 ⇒ 58 × 2 + 5 = 121.' },
+  { id: 'q42-2', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 5, 13, 36, 104, ?', options: ['297', '305', '307', '312'], answer: 2,
+    explain: 'Số trước × 3 rồi TRỪ số bước tăng dần: ×3−1, ×3−2, ×3−3, ×3−4, ×3−5 ⇒ 104 × 3 − 5 = 307.' },
+  { id: 'q42-5', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 5, 6, 9, 18, 45, ?', options: ['117', '120', '126', '135'], answer: 2,
+    explain: 'Cộng lũy thừa của 3: +1, +3, +9, +27, +81 ⇒ 45 + 81 = 126.' },
+  { id: 'q43-2', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 4, 6, 9, 14, 21, ?', options: ['30', '32', '33', '34'], answer: 1,
+    explain: 'Hiệu là dãy số nguyên tố: +2, +3, +5, +7, +11 ⇒ 21 + 11 = 32.' },
+  { id: 'q43-3', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 7, 12, 19, 28, 39, ?', options: ['50', '51', '52', '53'], answer: 2,
+    explain: 'Hiệu tăng đều 2: +5, +7, +9, +11, +13 ⇒ 39 + 13 = 52.' },
+  { id: 'q43-4', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 3, 6, 12, 22, ?', options: ['35', '37', '38', '42'], answer: 1,
+    explain: 'Hiệu là các số tam giác 1, 3, 6, 10, 15 ⇒ 22 + 15 = 37.' },
+  { id: 'q43-5', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 9, 16, 24, 33, 43, ?', options: ['52', '53', '54', '56'], answer: 2,
+    explain: 'Hiệu tăng 1 mỗi bước: +7, +8, +9, +10, +11 ⇒ 43 + 11 = 54.' },
+  { id: 'q43-7', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 100, 96, 88, 72, ?', options: ['8', '24', '40', '56'], answer: 2,
+    explain: 'Trừ lũy thừa của 2 tăng dần: −4, −8, −16, −32 ⇒ 72 − 32 = 40.' },
+  { id: 'q44-9', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 4, 12, 24, 40, 60, ?', options: ['78', '80', '84', '88'], answer: 2,
+    explain: 'Số thứ n = 2n(n+1): 2 × 6 × 7 = 84.' },
+  { id: 'q44-10', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 4, 27, 256, ?', options: ['1024', '2500', '3125', '4096'], answer: 2,
+    explain: 'Số thứ n = n^n: 5⁵ = 3125.' },
+  { id: 'q44-11', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 1, 9, 25, 49, 81, ?', options: ['100', '111', '121', '144'], answer: 2,
+    explain: 'Bình phương các số lẻ: 11² = 121.' },
+  { id: 'q44-15', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 3, 6, 11, 20, 37, ?', options: ['66', '68', '70', '72'], answer: 2,
+    explain: 'Số thứ n = 2ⁿ + n: 2⁶ + 6 = 64 + 6 = 70.' },
+  { id: 'q45-4', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 3, 7, 17, 41, ?', options: ['97', '99', '101', '105'], answer: 1,
+    explain: 'Mỗi số = số trước × 2 + số liền trước nữa: 41 × 2 + 17 = 99.' },
+  { id: 'q45-5', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 1, 2, 3, 7, ?', options: ['21', '22', '23', '43'], answer: 1,
+    explain: 'Mỗi số = tích hai số liền trước + 1: 3 × 7 + 1 = 22… (dãy 1, 1, 2, 3, 7, 22).' },
+  { id: 'q45-6', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 2, 5, 26, ?', options: ['576', '625', '677', '680'], answer: 2,
+    explain: 'Mỗi số = số trước bình phương + 1: 26² + 1 = 677.' },
+  { id: 'q46-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 100, 4, 90, 8, 80, 16, ?', options: ['32', '60', '70', '75'], answer: 2,
+    explain: 'Hai dãy đan xen: 2, 4, 8, 16 (nhân đôi) và 100, 90, 80, 70 (giảm 10) ⇒ tiếp theo là 70.' },
+  { id: 'q46-2', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 7, 2, 9, 5, 11, 8, 13, ?', options: ['10', '11', '12', '15'], answer: 1,
+    explain: 'Vị trí lẻ 7, 9, 11, 13 (+2); vị trí chẵn 2, 5, 8, ? (+3) ⇒ 8 + 3 = 11.' },
+  { id: 'q46-3', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 8, 9, 64, 25, 216, ?', options: ['36', '48', '49', '81'], answer: 2,
+    explain: 'Vị trí lẻ là bình phương số lẻ (1², 3², 5², 7²), vị trí chẵn là lập phương (2³, 4³, 6³) ⇒ 7² = 49.' },
+  { id: 'q46-6', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 5, 10, 8, 16, 14, 28, ?', options: ['24', '26', '30', '56'], answer: 1,
+    explain: 'Xen kẽ ×2 rồi −2: 5 × 2 = 10, 10 − 2 = 8, 8 × 2 = 16… ⇒ 28 − 2 = 26.' },
+  { id: 'q46-7', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 10, 9, 17, 16, 24, 23, ?', options: ['30', '31', '32', '39'], answer: 1,
+    explain: 'Xen kẽ −1 rồi +8: 10 − 1 = 9, 9 + 8 = 17, 17 − 1 = 16… ⇒ 23 + 8 = 31.' },
+  { id: 'q46-8', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 4, 7, 15, 29, 59, ?', options: ['113', '117', '118', '119'], answer: 1,
+    explain: 'Xen kẽ ×2 − 1 rồi ×2 + 1: 4×2−1 = 7, 7×2+1 = 15, 15×2−1 = 29, 29×2+1 = 59 ⇒ 59×2−1 = 117.' },
+  { id: 'q46-9', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 4, 8, 11, 22, 25, 50, ?', options: ['52', '53', '55', '100'], answer: 1,
+    explain: 'Xen kẽ ×2 rồi +3: 4×2 = 8, 8+3 = 11, 11×2 = 22, 22+3 = 25, 25×2 = 50 ⇒ 50 + 3 = 53.' },
+  { id: 'q47-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 12, 123, 1234, ?', options: ['1235', '12340', '12345', '123456'], answer: 2,
+    explain: 'Mỗi số nối thêm một chữ số tăng dần: 1, 12, 123, 1234 ⇒ 12345.' },
+  { id: 'q47-3', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 10, 11, 100, 101, ?', options: ['102', '110', '111', '1000'], answer: 1,
+    explain: 'Đây là 1, 2, 3, 4, 5 viết ở HỆ NHỊ PHÂN ⇒ số 6 là 110.' },
+  { id: 'q47-4', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 720, 120, 24, 6, ?', options: ['1', '2', '3', '4'], answer: 1,
+    explain: 'Giai thừa đi xuống: 6!, 5!, 4!, 3! ⇒ 2! = 2 (chia lần lượt cho 6, 5, 4, 3).' },
+  { id: 'q47-7', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 1, 4, 9, 25, 64, ?', options: ['121', '144', '169', '196'], answer: 2,
+    explain: 'Bình phương các số Fibonacci 1, 1, 2, 3, 5, 8, 13 ⇒ 13² = 169.' },
+  { id: 'q47-8', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 10, -20, 40, -80, ?', options: ['-160', '120', '160', '320'], answer: 2,
+    explain: 'Nhân −2 mỗi bước: −80 × (−2) = 160.' },
+  { id: 'q48-4', category: '🔢 Dãy số', d: 3, q: 'Số còn thiếu ở giữa: 4, 9, 20, ?, 90', options: ['40', '42', '43', '45'], answer: 2,
+    explain: 'Quy luật × 2 + 1, × 2 + 2, × 2 + 3, × 2 + 4: 20 × 2 + 3 = 43 (rồi 43 × 2 + 4 = 90).' },
+  { id: 'q49-1', category: '🔢 Dãy số', d: 3, q: 'Số nào PHÁ VỠ quy luật của dãy: 2, 6, 12, 20, 31, 42?', options: ['12', '20', '31', '42'], answer: 2,
+    explain: 'Quy luật n² + n: 2, 6, 12, 20, 30, 42 ⇒ 31 sai (phải là 30).' },
+  { id: 'q49-2', category: '🔢 Dãy số', d: 3, q: 'Số nào PHÁ VỠ quy luật của dãy: 3, 7, 15, 31, 62, 127?', options: ['7', '31', '62', '127'], answer: 2,
+    explain: 'Quy luật × 2 + 1: 3, 7, 15, 31, 63, 127 ⇒ 62 sai (phải là 63).' },
+  { id: 'q49-3', category: '🔢 Dãy số', d: 3, q: 'Số nào PHÁ VỠ quy luật của dãy: 1, 8, 27, 64, 124, 216?', options: ['8', '27', '124', '216'], answer: 2,
+    explain: 'Đây là các số lập phương 1³…6³ ⇒ 124 sai (5³ = 125).' },
+  { id: 'q49-4', category: '🔢 Dãy số', d: 3, q: 'Số nào PHÁ VỠ quy luật của dãy: 2, 3, 5, 7, 9, 13?', options: ['3', '7', '9', '13'], answer: 2,
+    explain: 'Dãy số nguyên tố 2, 3, 5, 7, 11, 13 ⇒ 9 = 3 × 3 không phải số nguyên tố.' },
+  { id: 'q49-5', category: '🔢 Dãy số', d: 3, q: 'Số nào PHÁ VỠ quy luật của dãy: 1, 2, 3, 5, 8, 12, 21?', options: ['3', '8', '12', '21'], answer: 2,
+    explain: 'Fibonacci 1, 2, 3, 5, 8, 13, 21 ⇒ 12 sai (5 + 8 = 13).' },
+  { id: 'q50-3', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 121, 144, 169, 196, ?', options: ['200', '221', '225', '256'], answer: 2,
+    explain: 'Bình phương các số 11, 12, 13, 14 ⇒ 15² = 225.' },
+  { id: 'q50-5', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 21, 23, 27, 35, 51, ?', options: ['67', '83', '99', '115'], answer: 1,
+    explain: 'Cộng lũy thừa của 2: +2, +4, +8, +16, +32 ⇒ 51 + 32 = 83.' },
+  { id: 'q51-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 47, 58, 71, 79, 95, ?', options: ['104', '107', '109', '110'], answer: 2,
+    explain: 'Mỗi số = số trước + TỔNG CHỮ SỐ của nó: 95 + (9+5) = 109.' },
+  { id: 'q51-2', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 4, 8, 5, 10, 7, 14, ?', options: ['10', '11', '12', '28'], answer: 1,
+    explain: 'Xen kẽ ×2 rồi −3: 4×2 = 8, 8−3 = 5, 5×2 = 10, 10−3 = 7, 7×2 = 14 ⇒ 14 − 3 = 11.' },
+  { id: 'q51-3', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 5, 13, 25, 41, ?', options: ['57', '59', '61', '65'], answer: 2,
+    explain: 'Hiệu là bội của 4 tăng dần: +4, +8, +12, +16, +20 ⇒ 41 + 20 = 61 (dãy số chính phương tâm).' },
+  { id: 'q51-4', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 6, 24, 60, 120, 210, ?', options: ['300', '320', '336', '360'], answer: 2,
+    explain: 'Tích ba số tự nhiên liên tiếp: 6 × 7 × 8 = 336.' },
+  { id: 'q51-5', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 3, 4, 6, 9, 14, ?', options: ['20', '21', '22', '23'], answer: 2,
+    explain: 'Mỗi số = tổng hai số liền trước TRỪ 1: 9 + 14 − 1 = 22.' },
+  { id: 'q51-6', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 3, 5, 10, 12, 24, 26, ?', options: ['48', '50', '52', '54'], answer: 2,
+    explain: 'Xen kẽ +2 rồi ×2: 3+2 = 5, 5×2 = 10, 10+2 = 12, 12×2 = 24, 24+2 = 26 ⇒ 26 × 2 = 52.' },
+  { id: 'q51-7', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 9, 36, 100, 225, ?', options: ['324', '400', '441', '484'], answer: 2,
+    explain: 'Bình phương các số tam giác (1, 3, 6, 10, 15, 21): 21² = 441.' },
+  { id: 'q51-8', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 2, 4, 3, 6, 12, 11, ?', options: ['10', '20', '22', '24'], answer: 2,
+    explain: 'Cụm ba bước lặp lại: ×2, ×2, −1 ⇒ sau 11 là 11 × 2 = 22.' },
+  { id: 'q51-9', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 3, 5, 9, 15, 25, ?', options: ['39', '40', '41', '42'], answer: 2,
+    explain: 'Mỗi số = tổng hai số liền trước CỘNG 1: 15 + 25 + 1 = 41.' },
+  { id: 'q51-10', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 3, 7, 13, 21, 31, ?', options: ['41', '43', '45', '47'], answer: 1,
+    explain: 'Số thứ n = n² + n + 1: 36 + 6 + 1 = 43 (hiệu tăng đều 2).' },
+  { id: 'q51-11', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 20, 31, 24, 35, 28, 39, ?', options: ['30', '32', '43', '46'], answer: 1,
+    explain: 'Xen kẽ +11 rồi −7: 20+11 = 31, 31−7 = 24, 24+11 = 35, 35−7 = 28 ⇒ 39 − 7 = 32.' },
+  { id: 'q51-12', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 5, 7, 12, 19, 31, ?', options: ['43', '48', '50', '62'], answer: 2,
+    explain: 'Mỗi số = tổng hai số liền trước: 19 + 31 = 50.' },
+  { id: 'q51-13', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 4, 10, 20, 35, ?', options: ['48', '50', '56', '70'], answer: 2,
+    explain: 'Dãy số TỨ DIỆN (tổng dồn các số tam giác 1, 3, 6, 10, 15, 21): 35 + 21 = 56.' },
+  { id: 'q51-14', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 6, 22, 86, ?', options: ['326', '342', '344', '350'], answer: 1,
+    explain: 'Mỗi số = số trước × 4 − 2: 86 × 4 − 2 = 342.' },
+  { id: 'q51-15', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 5, 21, 85, ?', options: ['336', '340', '341', '345'], answer: 2,
+    explain: 'Mỗi số = số trước × 4 + 1: 85 × 4 + 1 = 341.' },
+  { id: 'q51-16', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 7, 22, 67, 202, ?', options: ['604', '606', '607', '611'], answer: 2,
+    explain: 'Mỗi số = số trước × 3 + 1: 202 × 3 + 1 = 607.' },
+  { id: 'q51-17', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 1, 2, 5, 6, 9, 10, ?', options: ['11', '12', '13', '14'], answer: 2,
+    explain: 'Xen kẽ +1 rồi +3: 1+1 = 2, 2+3 = 5, 5+1 = 6, 6+3 = 9, 9+1 = 10 ⇒ 10 + 3 = 13.' },
+  { id: 'q51-18', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 100, 95, 85, 70, 50, ?', options: ['20', '25', '30', '35'], answer: 1,
+    explain: 'Trừ dần 5, 10, 15, 20, 25 ⇒ 50 − 25 = 25.' },
+  { id: 'q51-19', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 3, 30, 33, 330, 333, ?', options: ['336', '663', '3330', '3333'], answer: 2,
+    explain: 'Xen kẽ ×10 rồi +3: 3×10 = 30, 30+3 = 33, 33×10 = 330, 330+3 = 333 ⇒ 333 × 10 = 3330.' },
+  { id: 'q51-20', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 5, 14, 41, 122, ?', options: ['355', '365', '366', '368'], answer: 1,
+    explain: 'Mỗi số = số trước × 3 − 1: 122 × 3 − 1 = 365.' },
+  { id: 'q51-21', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 2, 4, 6, 9, 12, 16, ?', options: ['18', '20', '21', '25'], answer: 1,
+    explain: 'Hai dãy đan xen: vị trí lẻ là 1, 4, 9, 16 (số chính phương), vị trí chẵn là 2, 6, 12, ? = n² + n ⇒ 4² + 4 = 20.' },
+  { id: 'q51-22', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 11, 121, 1331, ?', options: ['13310', '14461', '14641', '14741'], answer: 2,
+    explain: 'Lũy thừa của 11: 11⁰, 11¹, 11², 11³ ⇒ 11⁴ = 14.641.' },
+  { id: 'q51-23', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 13, 21, 34, 55, ?', options: ['76', '88', '89', '99'], answer: 2,
+    explain: 'Fibonacci — mỗi số = tổng hai số liền trước: 34 + 55 = 89.' },
+  { id: 'q51-25', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 6, 8, 12, 20, 36, ?', options: ['64', '68', '70', '72'], answer: 1,
+    explain: 'Mỗi số = số trước × 2 − 4: 36 × 2 − 4 = 68.' },
+  { id: 'q51-26', category: '🔢 Dãy số', d: 3, q: 'Số còn thiếu ở giữa: 5, 12, ?, 54, 110', options: ['24', '25', '26', '27'], answer: 2,
+    explain: 'Quy luật × 2 + 2: 12 × 2 + 2 = 26 (rồi 26 × 2 + 2 = 54, 54 × 2 + 2 = 110).' },
+  { id: 'q51-27', category: '🔢 Dãy số', d: 3, q: 'Số còn thiếu ở giữa: 3, 10, ?, 94, 283', options: ['28', '30', '31', '33'], answer: 2,
+    explain: 'Quy luật × 3 + 1: 10 × 3 + 1 = 31 (rồi 31 × 3 + 1 = 94, 94 × 3 + 1 = 283).' },
+  { id: 'q51-28', category: '🔢 Dãy số', d: 2, q: 'Số nào PHÁ VỠ quy luật của dãy: 2, 4, 8, 16, 34, 64?', options: ['4', '16', '34', '64'], answer: 2,
+    explain: 'Dãy nhân đôi 2, 4, 8, 16, 32, 64 ⇒ 34 sai (phải là 32).' },
+  { id: 'q51-29', category: '🔢 Dãy số', d: 2, q: 'Số nào PHÁ VỠ quy luật của dãy: 1, 4, 9, 16, 26, 36, 49?', options: ['9', '16', '26', '36'], answer: 2,
+    explain: 'Các số chính phương 1, 4, 9, 16, 25, 36, 49 ⇒ 26 sai (5² = 25).' },
+  { id: 'q51-30', category: '🔢 Dãy số', d: 2, q: 'Số nào PHÁ VỠ quy luật của dãy: 3, 6, 12, 24, 46, 96?', options: ['6', '24', '46', '96'], answer: 2,
+    explain: 'Dãy nhân đôi 3, 6, 12, 24, 48, 96 ⇒ 46 sai (phải là 48).' },
 ];
