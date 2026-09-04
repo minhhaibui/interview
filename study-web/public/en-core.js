@@ -798,23 +798,29 @@ window.EN_IRREGULAR = [
 
 /** Phương pháp học — hiện ngay đầu chế độ 📐 và 📋 để người học biết PHẢI LÀM GÌ mỗi ngày. */
 window.EN_CORE_METHOD = {
-  title: '🎯 Cách học thuộc 500 từ + 4 thì trong 10 tuần',
-  intro: 'Không học dàn trải. Mỗi ngày 20–25 phút, đúng ba việc dưới đây, làm đủ 5 ngày/tuần là xong một chặng.',
+  title: '🎯 Cách học thuộc 500 từ + 4 thì trong 1 THÁNG',
+  intro: 'Mỗi buổi 30 phút, học 7 ngày/tuần, ~18 từ mới mỗi buổi. Đây là lịch NƯỚC RÚT: SRS không chờ '
+       + 'cuối tuần, nghỉ 2 ngày là thứ Hai tồn cả trăm từ tới hạn. Đổi lại, hết tháng bạn gõ ra được 500 từ '
+       + 'và dùng đúng 4 thì. Thấy đuối thì giảm còn 10 từ/buổi — mất 8 tuần nhưng chắc hơn, đừng bỏ buổi.',
   steps: [
-    { icon: '1️⃣', t: 'Gặp từ mới — 8 phút', d: 'Vào 🔤 Từ vựng, chọn mạch 500 từ lõi và chặng đang học, gõ hết 25 từ MỘT LƯỢT. Sai cũng kệ — lượt này chỉ để "gặp mặt".' },
-    { icon: '2️⃣', t: 'Gõ lại tới khi sạch lỗi — 7 phút', d: 'Tick 🔁 “Chỉ câu từng sai” rồi gõ lại. Lặp đến khi hết câu trong danh sách. Đây mới là lúc từ vào đầu.' },
-    { icon: '3️⃣', t: 'Ghép từ vào câu — 10 phút', d: 'Sang ✍️ Viết câu VI→EN, chọn thì đang học, viết 8–10 câu. Từ chỉ thật sự thuộc khi bạn dùng được nó trong câu.' },
+    { icon: '1️⃣', t: 'Nhận mặt chữ — 3 phút', d: 'Mở 📐 › 📋 Tra cả 500 từ, xem chặng đang học, đọc lướt ~18 từ sắp gõ và bấm 🔊 nghe. Bắt gõ một từ chưa từng nhìn thấy thì chỉ là đoán mò, học được rất ít.' },
+    { icon: '2️⃣', t: 'ÔN TRƯỚC — 10 phút', d: 'Vào 🔤 Từ vựng, phạm vi để "Tất cả (500)" — app tự đẩy mọi từ TỚI HẠN lên đầu hàng. Gõ tới khi bắt đầu gặp từ hoàn toàn lạ thì dừng. Ôn luôn đứng trước học mới; nợ ôn là thứ giết lịch 1 tháng.' },
+    { icon: '3️⃣', t: 'Gõ ~18 từ mới — 11 phút', d: 'Đổi phạm vi sang chặng đang học. Gõ hết một lượt, rồi tick 🔁 "Chỉ câu từng sai" gõ lại đến khi danh sách sạch. Lượt gõ lại này mới là lúc từ vào đầu.' },
+    { icon: '4️⃣', t: 'Ghép vào câu — 6 phút', d: 'Sang ✍️ Viết câu VI→EN, chọn thì đang học, viết 6 câu. Từ chỉ thật sự thuộc khi bạn dùng được nó trong câu.' },
   ],
   rules: [
-    'KHÔNG học 500 từ một lượt. Mỗi chặng 25 từ, xong chặng mới sang chặng sau.',
-    'Ngày hôm sau BAO GIỜ cũng mở lại chặng cũ 3 phút trước khi học chặng mới — app tự đẩy từ tới hạn lên đầu (SRS).',
+    'Lịch 1 tháng chỉ chạy được nếu học ĐỦ 7 NGÀY. Bỏ 1 buổi thì buổi sau gánh đôi phần ôn — bù ngay hôm sau, đừng dồn.',
+    'Ngày nào quá tải: cắt phần TỪ MỚI, ôn cho hết phần tới hạn rồi nghỉ. Ôn luôn được ưu tiên hơn học mới.',
+    '100 từ đầu (chặng 1–4) chiếm khoảng một nửa số từ trong câu tiếng Anh thông thường — 4 ngày đầu là 4 ngày lãi nhất, đừng học qua loa.',
     'Từ nào gõ sai 2 lần trở lên: chép tay ra giấy 1 câu ví dụ với từ đó. Viết tay ăn đứt đọc lại.',
-    'Mỗi tuần học 1 thì: tuần 1 hiện tại đơn → tuần 2 tiếp diễn → tuần 3 quá khứ đơn → tuần 4 hiện tại hoàn thành. Tuần 5 trộn cả bốn.',
-    'Bấm 📋 cuối buổi để chép bài làm rồi dán cho AI chấm — chỗ sai lặp lại chính là bài học tuần sau.',
+    '4 thì nén vào 2 tuần đầu: 3–4 ngày một thì (hiện tại đơn → tiếp diễn → quá khứ đơn → hiện tại hoàn thành). Hai tuần sau viết câu TRỘN cả bốn.',
+    'Bấm 📋 cuối buổi để chép bài làm rồi dán cho AI chấm — chỗ sai lặp lại chính là bài học ngày mai.',
+    'HẾT THÁNG CHƯA XONG: giữ thêm 2–3 tuần "bảo trì" 10 phút/ngày, chỉ ôn phần tới hạn. Nhồi 500 từ trong 30 ngày mà bỏ hẳn thì 2 tuần sau rơi mất 30–40%.',
   ],
   week: [
-    { w: '1–4', d: 'Chặng 1–8 (200 từ hay dùng nhất) + học lần lượt 4 thì, mỗi tuần một thì.' },
-    { w: '5–7', d: 'Chặng 9–14 (150 từ tiếp theo) + trộn 4 thì, mỗi buổi 10 câu ngẫu nhiên.' },
-    { w: '8–10', d: 'Chặng 15–20 (động từ, tính từ, trạng từ, đời sống, đi làm) + viết lại toàn bộ câu từng sai.' },
+    { w: '1', d: 'Chặng 1–5 (125 từ hay dùng nhất) · thì hiện tại đơn (ngày 1–4) → hiện tại tiếp diễn (ngày 5–7).' },
+    { w: '2', d: 'Chặng 6–10 (125 từ) · thì quá khứ đơn (ngày 8–11) → hiện tại hoàn thành (ngày 12–14). Hết tuần 2 là đủ 4 thì.' },
+    { w: '3', d: 'Chặng 11–15 (125 từ) · mỗi buổi 6 câu TRỘN cả 4 thì, không báo trước thì nào.' },
+    { w: '4', d: 'Chặng 16–20 (125 từ: tính từ, trạng từ, đời sống, đi làm) · 3 ngày cuối ngưng từ mới, viết lại toàn bộ câu từng sai.' },
   ],
 };

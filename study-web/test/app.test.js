@@ -2542,6 +2542,37 @@ test('en-core: bảng động từ bất quy tắc & phương pháp học', () =
     'phương pháp học phải có ≥3 bước mỗi buổi, ≥4 quy tắc và lịch theo tuần');
 });
 
+test('en-core: phương pháp học KHÔNG tự mâu thuẫn (phút, thứ tự ôn, số chặng)', () => {
+  const M = ESUP.EN_CORE_METHOD, G = ESUP.EN_CORE_VGROUPS;
+  // 1) Tổng phút các bước phải đúng bằng độ dài buổi ghi ở phần mở đầu — soạn lệch là người học
+  //    mở ra thấy "20 phút" nhưng cộng các bước ra 25, không biết tin cái nào.
+  const per = M.steps.map(st => {
+    const m = st.t.match(/(\d+)\s*phút/);
+    assert.ok(m, `bước "${st.t}" phải ghi rõ số phút`);
+    return +m[1];
+  });
+  const total = per.reduce((a, b) => a + b, 0);
+  const said = +(M.intro.match(/(\d+)\s*phút/) || [])[1];
+  assert.ok(said, 'phần mở đầu phải nói rõ mỗi buổi bao nhiêu phút');
+  assert.strictEqual(total, said, `các bước cộng lại ${total} phút nhưng mở đầu ghi ${said} phút`);
+
+  // 2) Ôn phải đứng TRƯỚC học từ mới (nợ ôn dồn lại là lý do số 1 khiến người học bỏ giữa chừng)
+  const iOn = M.steps.findIndex(st => /ÔN/.test(st.t) || /ÔN TRƯỚC/.test(st.d));
+  const iNew = M.steps.findIndex(st => /từ mới/.test(st.t));
+  assert.ok(iOn >= 0 && iNew >= 0, 'phương pháp phải có cả bước ÔN và bước học TỪ MỚI');
+  assert.ok(iOn < iNew, 'bước ÔN phải đứng trước bước học từ mới');
+
+  // 3) Lịch theo tuần phải phủ ĐÚNG các chặng đang có: không sót, không chồng, không vượt
+  const covered = [];
+  for (const w of M.week) {
+    const m = w.d.match(/Chặng (\d+)[–-](\d+)/);
+    assert.ok(m, `dòng "Tuần ${w.w}" phải ghi rõ khoảng chặng (vd "Chặng 1–4")`);
+    for (let k = +m[1]; k <= +m[2]; k++) covered.push(k);
+  }
+  assert.deepStrictEqual(covered, Array.from({ length: G.length }, (_, i) => i + 1),
+    `lịch tuần phủ ${covered.join(',')} nhưng kho có ${G.length} chặng`);
+});
+
 test('en-core: wiring — nạp script, chế độ 📐, sw cache, từ vựng mang theo phiên âm', () => {
   assert.ok(HTML.includes('<script src="en-core.js"></script>'), 'index.html chưa nạp en-core.js');
   assert.ok(SW.includes("'en-core.js'"), 'sw.js PRECACHE thiếu en-core.js');

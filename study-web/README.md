@@ -249,7 +249,7 @@ không cần biết mẹo hard-refresh.
 - **🇬🇧 Tiếng Anh** — tab luyện **VIẾT** (nhìn tiếng Việt → tự gõ ra tiếng Anh), cố ý **KHÔNG gợi ý**
   để bắt não TẠO RA câu chứ không chỉ nhận ra câu; cuối buổi bấm 📋 chép cả bài đi nhờ AI review.
   4 mạch nội dung: **🔤 500 từ lõi + 4 thì** (nền tảng — học trước) · 🎯 phỏng vấn · 💬 đời thường ·
-  💼 support khách hàng. Chế độ **📐 4 thì + cách học**: phương pháp học 10 tuần, bảng tra
+  💼 support khách hàng. Chế độ **📐 4 thì + cách học**: phương pháp học **nước rút 1 tháng** (30 phút × 7 ngày/tuần, ~18 từ mới/buổi, ôn trước – học mới sau), bảng tra
   4 thì hay dùng nhất (hiện tại đơn · tiếp diễn · quá khứ đơn · hiện tại hoàn thành — công thức,
   dấu hiệu, lỗi người Việt hay mắc), 59 động từ **bất quy tắc**, và bảng tra cả 500 từ.
   500 từ xếp theo **tần suất**, chia **20 chặng × 25 từ**, mỗi từ có phiên âm Việt-hoá + câu ví dụ;
