@@ -824,3 +824,115 @@ window.EN_CORE_METHOD = {
     { w: '4', d: 'Chặng 16–20 (125 từ: tính từ, trạng từ, đời sống, đi làm) · 3 ngày cuối ngưng từ mới, viết lại toàn bộ câu từng sai.' },
   ],
 };
+
+// ---------------------------------------------------------------------------
+// 90 CỤM TỪ HAY DÙNG — mỗi ngày học 3 cụm (tab 🔤 Tiếng Anh Core)
+//
+// Vì sao học CỤM chứ không học từ lẻ: người Việt bí nhất ở of/at/for/the/to —
+// những từ không dịch thẳng được. Nhét chúng vào cụm cố định thì bật ra được ngay,
+// còn học rời thì gõ mãi vẫn trống. Thứ tự cụm bám theo thì đang học từng tuần.
+// { id, en (đáp án), vi (đề bài), alt (cách viết khác cũng đúng), ex (câu mẫu) }
+// ---------------------------------------------------------------------------
+window.EN_CORE_PHRASES = [
+  // Ngày 1–5 · hiện tại đơn: thói quen, lịch làm việc
+  { id: 'ph1', en: 'a cup of coffee', vi: 'một tách cà phê', ex: 'I drink a cup of coffee every morning.' },
+  { id: 'ph2', en: 'at nine o\'clock', vi: 'lúc chín giờ', alt: ['at 9 o\'clock'], ex: 'The meeting starts at nine o\'clock.' },
+  { id: 'ph3', en: 'every day', vi: 'mỗi ngày', ex: 'I check my email every day.' },
+  { id: 'ph4', en: 'go to work', vi: 'đi làm', ex: 'I go to work by bus.' },
+  { id: 'ph5', en: 'work from home', vi: 'làm việc ở nhà', ex: 'We work from home on Friday.' },
+  { id: 'ph6', en: 'on Monday', vi: 'vào thứ Hai', ex: 'The report is due on Monday.' },
+  { id: 'ph7', en: 'in the morning', vi: 'vào buổi sáng', ex: 'I answer emails in the morning.' },
+  { id: 'ph8', en: 'a lot of work', vi: 'rất nhiều việc', ex: 'I have a lot of work today.' },
+  { id: 'ph9', en: 'look for', vi: 'tìm kiếm (cái gì)', ex: 'We are looking for a new manager.' },
+  { id: 'ph10', en: 'take care of', vi: 'lo liệu, chăm lo cho', ex: 'I will take care of this order.' },
+  { id: 'ph11', en: 'depend on', vi: 'phụ thuộc vào', ex: 'It depends on your plan.' },
+  { id: 'ph12', en: 'be good at', vi: 'giỏi về (việc gì)', ex: 'She is good at fixing bugs.' },
+  { id: 'ph13', en: 'talk to a customer', vi: 'nói chuyện với một khách hàng', ex: 'I talk to a customer every hour.' },
+  { id: 'ph14', en: 'answer the phone', vi: 'nghe điện thoại', ex: 'He cannot answer the phone now.' },
+  { id: 'ph15', en: 'check my email', vi: 'kiểm tra email của tôi', ex: 'I check my email twice a day.' },
+
+  // Ngày 6–10 · hiện tại tiếp diễn: báo tiến độ cho khách
+  { id: 'ph16', en: 'right now', vi: 'ngay bây giờ', ex: 'I am looking at it right now.' },
+  { id: 'ph17', en: 'at the moment', vi: 'lúc này, hiện tại', ex: 'He is busy at the moment.' },
+  { id: 'ph18', en: 'work on a project', vi: 'làm một dự án', ex: 'My team is working on a new project.' },
+  { id: 'ph19', en: 'wait for you', vi: 'đợi bạn', ex: 'I am waiting for your answer.' },
+  { id: 'ph20', en: 'look into it', vi: 'xem xét việc đó', ex: 'I am looking into it now.' },
+  { id: 'ph21', en: 'get back to you', vi: 'trả lời lại cho bạn', ex: 'I will get back to you today.' },
+  { id: 'ph22', en: 'hold on a second', vi: 'chờ một chút', alt: ['hold on a moment'], ex: 'Hold on a second, please.' },
+  { id: 'ph23', en: 'on the way', vi: 'đang trên đường tới', ex: 'The new update is on the way.' },
+  { id: 'ph24', en: 'in progress', vi: 'đang được xử lý', ex: 'Your request is in progress.' },
+  { id: 'ph25', en: 'as soon as possible', vi: 'sớm nhất có thể', ex: 'I will fix it as soon as possible.' },
+  { id: 'ph26', en: 'keep you updated', vi: 'báo bạn biết tiến độ', ex: 'I will keep you updated.' },
+  { id: 'ph27', en: 'take a look', vi: 'xem qua một chút', ex: 'Let me take a look at your account.' },
+  { id: 'ph28', en: 'run into a problem', vi: 'gặp phải một vấn đề', ex: 'We ran into a problem with the app.' },
+  { id: 'ph29', en: 'try again', vi: 'thử lại', ex: 'Please try again in five minutes.' },
+  { id: 'ph30', en: 'work well', vi: 'chạy tốt, hoạt động tốt', ex: 'The app is working well now.' },
+
+  // Ngày 11–15 · quá khứ đơn: kể lại việc đã làm
+  { id: 'ph31', en: 'last week', vi: 'tuần trước', ex: 'We fixed that issue last week.' },
+  { id: 'ph32', en: 'two days ago', vi: 'cách đây hai ngày', ex: 'I sent the file two days ago.' },
+  { id: 'ph33', en: 'by mistake', vi: 'do nhầm lẫn', ex: 'I deleted it by mistake.' },
+  { id: 'ph34', en: 'on time', vi: 'đúng giờ, đúng hạn', ex: 'We finished the task on time.' },
+  { id: 'ph35', en: 'at first', vi: 'lúc đầu', ex: 'At first, I could not log in.' },
+  { id: 'ph36', en: 'in the end', vi: 'cuối cùng thì', ex: 'In the end, we fixed it.' },
+  { id: 'ph37', en: 'find out', vi: 'phát hiện ra', ex: 'We found out the reason yesterday.' },
+  { id: 'ph38', en: 'turn out', vi: 'hoá ra là', ex: 'It turned out to be a small bug.' },
+  { id: 'ph39', en: 'sign up for', vi: 'đăng ký (dịch vụ)', ex: 'She signed up for the free plan.' },
+  { id: 'ph40', en: 'log in to', vi: 'đăng nhập vào', ex: 'I could not log in to my account.' },
+  { id: 'ph41', en: 'log out', vi: 'đăng xuất', alt: ['sign out'], ex: 'Please log out and log in again.' },
+  { id: 'ph42', en: 'set up', vi: 'cài đặt, thiết lập', ex: 'I set up the app for you.' },
+  { id: 'ph43', en: 'go down', vi: 'sập, ngừng chạy (hệ thống)', ex: 'The server went down last night.' },
+  { id: 'ph44', en: 'come back', vi: 'quay trở lại', ex: 'The error came back this morning.' },
+  { id: 'ph45', en: 'a few minutes', vi: 'vài phút', ex: 'It took only a few minutes.' },
+
+  // Ngày 16–20 · hiện tại hoàn thành: báo đã xong
+  { id: 'ph46', en: 'so far', vi: 'cho đến giờ', ex: 'So far, everything works.' },
+  { id: 'ph47', en: 'up to now', vi: 'tới thời điểm này', ex: 'Up to now, we have had no problem.' },
+  { id: 'ph48', en: 'for three years', vi: 'trong ba năm (kéo dài tới giờ)', ex: 'I have worked here for three years.' },
+  { id: 'ph49', en: 'since Monday', vi: 'kể từ thứ Hai', ex: 'It has been slow since Monday.' },
+  { id: 'ph50', en: 'not yet', vi: 'chưa (xong)', ex: 'I have not finished it yet.' },
+  { id: 'ph51', en: 'fix the issue', vi: 'sửa vấn đề đó', ex: 'I have fixed the issue.' },
+  { id: 'ph52', en: 'solve the problem', vi: 'giải quyết vấn đề', ex: 'We have solved the problem.' },
+  { id: 'ph53', en: 'make sure', vi: 'bảo đảm chắc chắn', ex: 'Please make sure your app is updated.' },
+  { id: 'ph54', en: 'double-check', vi: 'kiểm tra lại lần nữa', ex: 'I double-checked your order.' },
+  { id: 'ph55', en: 'follow up', vi: 'theo dõi tiếp, hỏi lại', ex: 'I will follow up tomorrow.' },
+  { id: 'ph56', en: 'sorry for the delay', vi: 'xin lỗi vì sự chậm trễ', ex: 'Sorry for the delay in my reply.' },
+  { id: 'ph57', en: 'thanks for your patience', vi: 'cảm ơn bạn đã kiên nhẫn', ex: 'Thanks for your patience!' },
+  { id: 'ph58', en: 'let me know', vi: 'cho tôi biết nhé', ex: 'Let me know if it works.' },
+  { id: 'ph59', en: 'happy to help', vi: 'sẵn lòng giúp', ex: 'I am happy to help.' },
+  { id: 'ph60', en: 'good news', vi: 'tin tốt', ex: 'Good news: your order is on the way.' },
+
+  // Ngày 21–25 · trộn: nối câu, hội thoại công việc
+  { id: 'ph61', en: 'by the way', vi: 'nhân tiện thì', ex: 'By the way, your plan expires soon.' },
+  { id: 'ph62', en: 'in fact', vi: 'thực tế là', ex: 'In fact, the app is working.' },
+  { id: 'ph63', en: 'for example', vi: 'ví dụ như', ex: 'For example, you can use the free plan.' },
+  { id: 'ph64', en: 'instead of', vi: 'thay vì', ex: 'Use Chrome instead of Safari.' },
+  { id: 'ph65', en: 'at least', vi: 'ít nhất là', ex: 'It takes at least two days.' },
+  { id: 'ph66', en: 'of course', vi: 'dĩ nhiên rồi', ex: 'Of course, I can help you.' },
+  { id: 'ph67', en: 'no problem', vi: 'không vấn đề gì', ex: 'No problem, I will do it now.' },
+  { id: 'ph68', en: 'never mind', vi: 'không sao đâu, bỏ qua đi', ex: 'Never mind, I found it.' },
+  { id: 'ph69', en: 'take your time', vi: 'cứ từ từ, không vội', ex: 'Take your time, there is no rush.' },
+  { id: 'ph70', en: 'feel free to ask', vi: 'cứ thoải mái hỏi', ex: 'Feel free to ask me anything.' },
+  { id: 'ph71', en: 'have a look at', vi: 'xem qua cái gì đó', ex: 'Please have a look at this photo.' },
+  { id: 'ph72', en: 'at the same time', vi: 'cùng lúc', ex: 'Do not open two tabs at the same time.' },
+  { id: 'ph73', en: 'in case', vi: 'phòng khi', ex: 'Save the file in case the app closes.' },
+  { id: 'ph74', en: 'from now on', vi: 'từ giờ trở đi', ex: 'From now on, it will update itself.' },
+  { id: 'ph75', en: 'more or less', vi: 'ít nhiều, đại khái là', ex: 'The report is more or less done.' },
+
+  // Ngày 26–30 · cụm dùng nhiều nhất khi hỗ trợ khách
+  { id: 'ph76', en: 'reach out to', vi: 'liên hệ với (ai)', ex: 'Please reach out to our team.' },
+  { id: 'ph77', en: 'get in touch', vi: 'liên lạc', ex: 'Get in touch if you need help.' },
+  { id: 'ph78', en: 'keep in mind', vi: 'ghi nhớ rằng', ex: 'Keep in mind that the plan is monthly.' },
+  { id: 'ph79', en: 'right away', vi: 'ngay lập tức', ex: 'I will check it right away.' },
+  { id: 'ph80', en: 'first of all', vi: 'trước hết', ex: 'First of all, please update the app.' },
+  { id: 'ph81', en: 'after that', vi: 'sau đó', ex: 'After that, open the Settings page.' },
+  { id: 'ph82', en: 'step by step', vi: 'từng bước một', ex: 'I will show you step by step.' },
+  { id: 'ph83', en: 'out of stock', vi: 'hết hàng', ex: 'This product is out of stock.' },
+  { id: 'ph84', en: 'free of charge', vi: 'miễn phí', ex: 'We will fix it free of charge.' },
+  { id: 'ph85', en: 'later today', vi: 'cuối ngày hôm nay', ex: 'I will send it later today.' },
+  { id: 'ph86', en: 'in a few minutes', vi: 'trong vài phút nữa', ex: 'It will be ready in a few minutes.' },
+  { id: 'ph87', en: 'thanks a lot', vi: 'cảm ơn nhiều', ex: 'Thanks a lot for your help!' },
+  { id: 'ph88', en: 'as you can see', vi: 'như bạn thấy đấy', ex: 'As you can see, the order is paid.' },
+  { id: 'ph89', en: 'is that OK', vi: 'như vậy có được không', alt: ['is that okay'], ex: 'I will call you at three. Is that OK?' },
+  { id: 'ph90', en: 'let me check', vi: 'để tôi kiểm tra', ex: 'Let me check and get back to you.' },
+];

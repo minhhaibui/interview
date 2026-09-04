@@ -247,6 +247,14 @@ không cần biết mẹo hard-refresh.
   **📉 chủ đề sai nhiều nhất**, và **🔍 xem lại từng câu** (bạn chọn gì · đáp án đúng · giải thích).
   Mỗi buổi được **lưu vào lịch sử** — bấm một dòng để mở lại đúng báo cáo đó (10 buổi
   gần nhất giữ chi tiết từng câu).
+- **🔤 Tiếng Anh Core (30 ngày)** — tab học **theo NGÀY**, mỗi ngày một màn chạy thẳng một mạch:
+  📖 xem trước 20 từ mới (có phiên âm + 🔊) → ⌨️ gõ từ mới → 🔁 ôn từ/cụm tới hạn (SRS tự chọn,
+  trần 30 mục/buổi) → 🧩 3 cụm hay dùng → ✍️ 6 câu theo thì đang học → 🏁 tổng kết + 📋 chép bài nhờ AI.
+  **Không phải đổi chế độ hay tự chọn phạm vi** — bấm "Bắt đầu Ngày N" là học. Gõ sai thì mục đó bị
+  **đẩy xuống cuối hàng** để hỏi lại, không cho đi tiếp. Giáo án được TÍNH RA từ dữ liệu (25 ngày × 20 từ
+  = 500 từ · 30 ngày × 3 = 90 cụm · 20 ngày × 6 = 120 câu, 5 ngày cuối chỉ ôn) nên không bao giờ lệch;
+  4 tuần đầu học lần lượt 4 thì, từ ngày 21 trộn cả bốn.
+
 - **🇬🇧 Tiếng Anh** — tab luyện **VIẾT** (nhìn tiếng Việt → tự gõ ra tiếng Anh), cố ý **KHÔNG gợi ý**
   để bắt não TẠO RA câu chứ không chỉ nhận ra câu; cuối buổi bấm 📋 chép cả bài đi nhờ AI review.
   4 mạch nội dung: **🔤 500 từ lõi + 4 thì** (nền tảng — học trước) · 🎯 phỏng vấn · 💬 đời thường ·

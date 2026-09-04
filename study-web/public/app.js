@@ -302,7 +302,7 @@ function updateNavActive(name) {
 
 // Các tab có LƯU TIẾN ĐỘ → cần đăng nhập (chỉ áp dụng khi đã cấu hình Firebase).
 // Tab 📚 Tài liệu để mở tự do cho người chưa đăng nhập còn đọc nội dung.
-const GATED_VIEWS = new Set(['today', 'flashcards', 'writing', 'english', 'code', 'coding', 'mock', 'star', 'design', 'plan', 'dashboard']);
+const GATED_VIEWS = new Set(['today', 'flashcards', 'writing', 'english', 'core', 'code', 'coding', 'mock', 'star', 'design', 'plan', 'dashboard']);
 let authResolved = false; // true sau lần onAuthStateChanged đầu tiên
 const viewGated = name => syncReady && GATED_VIEWS.has(name);
 
@@ -342,6 +342,7 @@ function switchView(name) {
   // setMkMode TRƯỚC khi await pool: initMock chờ mạng, để sau thì tab trống vài giây (hoặc mãi nếu fetch lỗi)
   if (name === 'mock') { setMkMode(mkMode); initMock().then(() => { if (mkInit) fillMockWeekSelect(); }); }
   if (name === 'english') renderEnglish();
+  if (name === 'core') renderCore();
   if (name === 'star') renderStar();
   if (name === 'design') renderDesign();
   if (name === 'plan') renderPlan();
@@ -8252,7 +8253,7 @@ function quizNextButton() {
 }
 
 function initShortcuts() {
-  const order = ['today', 'docs', 'flashcards', 'writing', 'english', 'code', 'coding', 'design', 'mock', 'star', 'plan', 'dashboard'];
+  const order = ['today', 'docs', 'flashcards', 'writing', 'core', 'english', 'code', 'coding', 'design', 'mock', 'star', 'plan', 'dashboard'];
   document.addEventListener('keydown', e => {
     if (onboardOpen() || shortcutsOpen() || gsearchOpen()) return; // hộp thoại đang mở → không nhảy tab phía sau
     if (e.repeat) return; // giữ phím (key-repeat) không spam chuyển tab / nhấp nháy bảng phím tắt
@@ -8939,6 +8940,320 @@ function toggleShortcuts() { shortcutsOpen() ? closeShortcuts() : openShortcuts(
   // Quay lại đúng tab đang dùng trước khi reload (trừ khi mở bằng link #doc=…)
   if (!hashDoc && lastView !== 'docs') switchView(lastView);
 })();
+
+
+// ===========================================================================
+// 🔤 TIẾNG ANH CORE — lộ trình 30 ngày, MỖI NGÀY MỘT MÀN chạy tuần tự
+//
+// Vì sao tách hẳn tab: ở tab 🇬🇧 người học phải tự đổi chế độ (từ vựng → viết câu),
+// tự chọn phạm vi, tự nhớ hôm nay tới chặng nào — ba thao tác thừa trước khi học
+// được chữ nào. Ở đây bấm "Ngày N" là chạy thẳng: xem trước → gõ từ mới → ôn từ cũ
+// → cụm từ → viết câu → tổng kết. Không có ô chọn nào cả.
+// ===========================================================================
+
+const CORE_DAYS = 30;            // trọn một tháng
+const CORE_WORDS_PER_DAY = 20;   // 25 ngày × 20 = đúng 500 từ; 5 ngày cuối chỉ ôn
+const CORE_NEW_DAYS = 25;
+const CORE_PHRASES_PER_DAY = 3;  // 30 ngày × 3 = đúng 90 cụm
+const CORE_REVIEW_CAP = 30;      // trần số từ ôn mỗi buổi, tránh ngày nghỉ về gánh 200 từ
+/** Mỗi thì học liền 5 ngày, 6 câu/ngày ⇒ vừa đúng 30 câu của thì đó. */
+const CORE_TENSE_BLOCKS = [['ps', 1, 5], ['pc', 6, 10], ['past', 11, 15], ['pp', 16, 20]];
+
+let coreState = null;
+const coreVocab = () => window.EN_CORE_VOCAB || [];
+const corePhrases = () => window.EN_CORE_PHRASES || [];
+const coreSents = () => window.EN_CORE_SENTENCES || [];
+const coreTenseName = k => (window.EN_TENSES || []).find(t => t.key === k) || null;
+const coreDoneDays = () => store.get('prep-core-done', []);
+const coreCurDay = () => Math.min(CORE_DAYS, (coreDoneDays().length || 0) + 1);
+
+/** Giáo án của một ngày — TÍNH RA từ dữ liệu, không chép tay 30 lần nên không lệch được. */
+function corePlan(day) {
+  const V = coreVocab(), S = coreSents(), P = corePhrases();
+  const newWords = day <= CORE_NEW_DAYS ? V.slice((day - 1) * CORE_WORDS_PER_DAY, day * CORE_WORDS_PER_DAY) : [];
+  const block = CORE_TENSE_BLOCKS.find(b => day >= b[1] && day <= b[2]);
+  let sents;
+  if (block) {
+    const off = (day - block[1]) * 6;
+    sents = S.filter(s => s.sit === block[0]).slice(off, off + 6);
+  } else {
+    // Ngày trộn: ưu tiên câu TỪNG SAI, thiếu thì bù bằng câu khác (xoay theo ngày để không lặp)
+    const fails = store.get('prep-fails', {});
+    const bad = S.filter(s => fails[s.id]);
+    const rest = S.filter(s => !fails[s.id]);
+    const n = day > CORE_NEW_DAYS ? 8 : 6;
+    const pick = bad.slice(0, n);
+    for (let i = 0; pick.length < n && i < rest.length; i++) pick.push(rest[(day * 7 + i * 13) % rest.length]);
+    sents = [...new Set(pick)].slice(0, n);
+  }
+  return {
+    day, newWords, sents,
+    phrases: P.slice((day - 1) * CORE_PHRASES_PER_DAY, day * CORE_PHRASES_PER_DAY),
+    tense: block ? block[0] : 'mix',
+  };
+}
+
+/** Từ + cụm ĐẾN HẠN ôn (SRS) — chỉ lấy trong phần đã học để không lòi từ chưa gặp. */
+function coreDueItems(day) {
+  const srs = store.get('prep-srs', {}), now = Date.now();
+  const learned = coreVocab().slice(0, Math.min(day, CORE_NEW_DAYS) * CORE_WORDS_PER_DAY);
+  const pool = [...learned, ...corePhrases().slice(0, day * CORE_PHRASES_PER_DAY)];
+  return shuffleArr(pool.filter(x => srs[x.id] && srsDue(srs[x.id]) <= now)).slice(0, CORE_REVIEW_CAP);
+}
+
+/** Chuẩn hoá mọi loại bài về cùng một hình dạng cho khung làm bài dùng chung. */
+const coreItemWord = w => ({ id: w.id, ask: w.vi, want: w.en, alts: w.alt || [], note: w.note || '', kind: 'từ' });
+const coreItemPhrase = p => ({ id: p.id, ask: p.vi, want: p.en, alts: p.alt || [], note: p.ex ? `Ví dụ: ${p.ex}` : '', kind: 'cụm' });
+const coreItemSent = s => ({ id: s.id, ask: s.vi, want: s.en, alts: s.alt || [], note: s.note || '', kind: 'câu' });
+
+/** Màn CHỌN NGÀY: tiến độ tổng, ngày hôm nay làm gì, danh sách 30 ngày. */
+function renderCore() {
+  const box = document.getElementById('core-body');
+  if (!box) return;
+  if (!coreVocab().length) { box.innerHTML = '<p class="es-sub">Chưa nạp được dữ liệu 500 từ.</p>'; return; }
+  const done = coreDoneDays(), cur = coreCurDay();
+  const srs = store.get('prep-srs', {});
+  const learned = coreVocab().filter(v => (srs[v.id]?.box || 0) >= 2).length;
+  const p = corePlan(cur), t = coreTenseName(p.tense);
+  const due = coreDueItems(cur).length;
+
+  box.innerHTML = `
+    <div class="core-head">
+      <div class="core-stat"><b>${done.length}/${CORE_DAYS}</b><small>ngày đã xong</small></div>
+      <div class="core-stat"><b>${learned}/${coreVocab().length}</b><small>từ đã thuộc</small></div>
+      <div class="core-stat"><b>${due}</b><small>mục tới hạn ôn</small></div>
+    </div>
+    <div class="core-today">
+      <div class="core-today-h">Hôm nay: <b>Ngày ${cur}</b>${done.includes(cur) ? ' <span class="core-ok">✅ đã xong</span>' : ''}</div>
+      <ul class="core-agenda">
+        ${p.newWords.length ? `<li>📖 Xem trước rồi <b>gõ ${p.newWords.length} từ mới</b> (từ số ${(cur - 1) * CORE_WORDS_PER_DAY + 1}–${(cur - 1) * CORE_WORDS_PER_DAY + p.newWords.length})</li>`
+      : '<li>📖 Không có từ mới — hôm nay chỉ ÔN cho chắc</li>'}
+        <li>🔁 Ôn <b>${due}</b> từ/cụm tới hạn (app tự chọn, không phải tự nhớ)</li>
+        <li>🧩 Học <b>${p.phrases.length} cụm hay dùng</b>: ${p.phrases.map(x => escHtml(x.en)).join(' · ') || '—'}</li>
+        <li>✍️ Viết <b>${p.sents.length} câu</b> ${t ? `thì <b>${escHtml(t.name)}</b>` : '<b>trộn cả 4 thì</b>'}</li>
+      </ul>
+      <button id="core-start" class="iq-start-btn">▶️ Bắt đầu Ngày ${cur}<small>khoảng 25–30 phút · chạy thẳng một mạch</small></button>
+    </div>
+    ${t ? `<details class="es-tense"><summary>📐 Nhắc lại thì hôm nay — ${t.icon} <b>${escHtml(t.name)}</b></summary>
+      <div class="es-form">
+        <div><span class="es-flabel">Khẳng định</span><code>${escHtml(t.form.aff)}</code></div>
+        <div><span class="es-flabel">Phủ định</span><code>${escHtml(t.form.neg)}</code></div>
+        <div><span class="es-flabel">Câu hỏi</span><code>${escHtml(t.form.ques)}</code></div>
+      </div>
+      <div class="es-key3">🔑 ${escHtml(t.key3)}</div></details>` : ''}
+    <h3 class="core-h3">🗓️ Cả tháng</h3>
+    <div class="core-grid">${Array.from({ length: CORE_DAYS }, (_, i) => {
+      const d = i + 1, pl = corePlan(d), tt = coreTenseName(pl.tense);
+      const st = done.includes(d) ? 'done' : d === cur ? 'cur' : d < cur ? 'skip' : '';
+      return `<button class="core-day ${st}" data-day="${d}">
+        <span class="core-dn">Ngày ${d}</span>
+        <span class="core-dt">${tt ? tt.icon + ' ' + escHtml(tt.name) : '🔀 Trộn 4 thì'}</span>
+        <span class="core-dw">${pl.newWords.length ? pl.newWords.length + ' từ mới' : 'chỉ ôn'} · ${pl.phrases.length} cụm · ${pl.sents.length} câu</span>
+      </button>`;
+    }).join('')}</div>`;
+  document.getElementById('core-start').onclick = () => coreStart(cur);
+  box.querySelectorAll('.core-day').forEach(b => { b.onclick = () => coreStart(+b.dataset.day); });
+}
+
+/** Vào buổi học: dựng sẵn CÁC BƯỚC của ngày rồi chạy tuần tự. */
+function coreStart(day) {
+  const p = corePlan(day);
+  const due = coreDueItems(day);
+  const steps = [];
+  if (p.newWords.length) steps.push({ key: 'preview', label: '📖 Xem trước', items: p.newWords });
+  if (p.newWords.length) steps.push({ key: 'new', label: '⌨️ Gõ từ mới', items: p.newWords.map(coreItemWord) });
+  if (due.length) steps.push({ key: 'review', label: '🔁 Ôn từ cũ', items: due.map(x => (x.g ? coreItemWord(x) : coreItemPhrase(x))) });
+  steps.push({ key: 'phrase', label: '🧩 Cụm từ', items: p.phrases.map(coreItemPhrase) });
+  steps.push({ key: 'write', label: '✍️ Viết câu', items: p.sents.map(coreItemSent) });
+  steps.push({ key: 'done', label: '🏁 Tổng kết', items: [] });
+  coreState = { day, plan: p, steps, si: 0, queue: [...steps[0].items], idx: 0, answered: false, revealed: false, log: [], again: 0 };
+  coreRender();
+}
+
+/** Một bước = một hàng đợi; gõ sai thì câu đó bị ĐẨY XUỐNG CUỐI hàng, không cho qua. */
+function coreRender() {
+  const s = coreState, box = document.getElementById('core-body');
+  if (!s || !box) return;
+  const step = s.steps[s.si];
+  const bar = `<div class="core-bar">
+      <button id="core-quit" class="iqt-quit" title="Thoát về danh sách ngày">✕ Thoát</button>
+      <span class="core-daylab">Ngày ${s.day}</span>
+      <div class="core-steps">${s.steps.map((st, i) =>
+        `<span class="core-step ${i === s.si ? 'cur' : i < s.si ? 'done' : ''}">${st.label}</span>`).join('')}</div>
+    </div>`;
+
+  if (step.key === 'preview') {
+    box.innerHTML = bar + `
+      <p class="es-tip">Đọc lướt một lượt, bấm 🔊 nghe từng từ. <b>Chưa cần thuộc</b> — bước sau mới gõ.</p>
+      <div class="core-words">${step.items.map(w => `
+        <div class="core-word">
+          <div class="core-w-en">${escHtml(w.en)} <button class="es-say" data-say="${escHtml(w.en)}">🔊</button></div>
+          <div class="core-w-ph">${escHtml(String(w.note || '').replace(/^🔊 /, '').split(' · ')[0])}</div>
+          <div class="core-w-vi">${escHtml(w.vi)}</div>
+        </div>`).join('')}</div>
+      <div class="iq-nav"><button id="core-next-step" class="iq-start-btn">Đã đọc xong → gõ thử</button></div>`;
+    document.getElementById('core-next-step').onclick = () => coreNextStep();
+    document.getElementById('core-quit').onclick = () => renderCore();
+    return;
+  }
+
+  if (step.key === 'done') return coreFinish();
+
+  const it = s.queue[s.idx];
+  if (!it) return coreNextStep();
+  const hint = { 'từ': 'Gõ TỪ tiếng Anh', 'cụm': 'Gõ CỤM tiếng Anh', 'câu': 'Viết CẢ CÂU tiếng Anh' }[it.kind];
+  const left = s.queue.length - s.idx;
+  box.innerHTML = bar + `
+    <div class="core-prog"><i style="width:${Math.round(s.idx / s.queue.length * 100)}%"></i></div>
+    <div class="es-card">
+      <div class="es-tagline">${step.label} · còn ${left} ${it.kind}${s.again ? ` · ${s.again} mục phải gõ lại` : ''}</div>
+      <div class="es-vi">${escHtml(it.ask)}</div>
+      <div class="es-sub">${hint}</div>
+      <textarea id="core-input" rows="${it.kind === 'câu' ? 2 : 1}" autocomplete="off" autocapitalize="off"
+        spellcheck="false" placeholder="Gõ rồi nhấn Enter…"></textarea>
+      <div id="core-fb" class="es-feedback"></div>
+      <div class="es-actions">
+        <button id="core-check">✅ Kiểm tra <kbd>Enter</kbd></button>
+        <button id="core-reveal">👁️ Xem đáp án</button>
+        <button id="core-skip">⏭️ Để sau</button>
+      </div>
+    </div>`;
+  const input = document.getElementById('core-input');
+  input.focus();
+  input.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || e.shiftKey) return;
+    e.preventDefault();
+    if (s.answered) coreAdvance(); else coreCheck();
+  });
+  document.getElementById('core-check').onclick = () => (s.answered ? coreAdvance() : coreCheck());
+  document.getElementById('core-reveal').onclick = () => coreReveal();
+  document.getElementById('core-skip').onclick = () => { coreRequeue(); coreAdvance(); };
+  document.getElementById('core-quit').onclick = () => { if (confirm('Thoát buổi học? Phần đã làm vẫn được ghi nhận.')) renderCore(); };
+}
+
+/** Đẩy mục đang làm xuống cuối hàng để buộc gõ lại (đây là lúc từ thật sự vào đầu). */
+function coreRequeue() {
+  const s = coreState, it = s.queue[s.idx];
+  if (!it || it._retry) return;               // mỗi mục chỉ bị đẩy lại một lần, tránh vòng lặp vô tận
+  s.queue.push({ ...it, _retry: true });
+  s.again++;
+}
+
+function coreCheck() {
+  const s = coreState, it = s.queue[s.idx];
+  const user = document.getElementById('core-input').value.trim();
+  if (!user) return;
+  const ok = esMatches(user, it);
+  const fb = document.getElementById('core-fb');
+  if (!ok) {
+    fb.innerHTML = '<div class="es-wrong">✗ Chưa khớp. Đọc lại đề rồi thử tiếp — hoặc bấm 👁️ để xem đáp án.</div>';
+    if (!it._missed) {
+      it._missed = true;
+      bumpSrs({ id: it.id }, false);
+      const fails = store.get('prep-fails', {});
+      fails[it.id] = (fails[it.id] || 0) + 1;
+      store.set('prep-fails', fails);
+      coreRequeue();
+    }
+    return;
+  }
+  s.answered = true;
+  const clean = !it._missed && !it._revealed;
+  bumpSrs({ id: it.id }, clean);
+  if (clean) {
+    const fails = store.get('prep-fails', {});
+    if (fails[it.id]) { delete fails[it.id]; store.set('prep-fails', fails); }
+  }
+  s.log.push({ ask: it.ask, user, want: it.want, ok: clean, kind: it.kind });
+  logActivity();
+  fb.innerHTML = `<div class="es-right">✅ Chính xác!</div>
+    <div class="es-answer">${escHtml(it.want)} <button class="es-say" data-say="${escHtml(it.want)}">🔊</button></div>
+    ${it.note ? `<div class="es-note">📌 ${escHtml(it.note)}</div>` : ''}
+    <div class="es-sub">Nhấn <kbd>Enter</kbd> để sang mục tiếp theo.</div>`;
+}
+
+function coreReveal() {
+  const s = coreState, it = s.queue[s.idx];
+  if (s.answered) return;
+  it._revealed = true;
+  s.answered = true;
+  bumpSrs({ id: it.id }, false);
+  coreRequeue();
+  s.log.push({ ask: it.ask, user: document.getElementById('core-input').value.trim() || '(bỏ trống)', want: it.want, ok: false, kind: it.kind });
+  document.getElementById('core-fb').innerHTML = `<div class="es-shown">👁️ Đáp án:</div>
+    <div class="es-answer">${escHtml(it.want)} <button class="es-say" data-say="${escHtml(it.want)}">🔊</button></div>
+    ${it.note ? `<div class="es-note">📌 ${escHtml(it.note)}</div>` : ''}
+    <div class="es-sub">Mục này sẽ được hỏi LẠI ở cuối hàng — đó mới là lúc bạn nhớ.</div>`;
+}
+
+function coreAdvance() {
+  const s = coreState;
+  s.answered = false;
+  s.idx++;
+  if (s.idx >= s.queue.length) return coreNextStep();
+  coreRender();
+}
+
+function coreNextStep() {
+  const s = coreState;
+  s.si++;
+  if (s.si >= s.steps.length) return coreFinish();
+  s.queue = [...s.steps[s.si].items];
+  s.idx = 0;
+  s.answered = false;
+  s.again = 0;
+  coreRender();
+}
+
+function coreFinish() {
+  const s = coreState;
+  const done = coreDoneDays();
+  if (!done.includes(s.day)) { done.push(s.day); store.set('prep-core-done', done.sort((a, b) => a - b)); }
+  const ok = s.log.filter(l => l.ok).length, tot = s.log.length;
+  const wrong = s.log.filter(l => !l.ok);
+  const byKind = k => s.log.filter(l => l.kind === k);
+  document.getElementById('core-body').innerHTML = `
+    <div class="iq-done">
+      <h2>🏁 Xong Ngày ${s.day}!</h2>
+      <div class="iq-score-ring" style="--p:${tot ? Math.round(ok / tot * 100) : 0}">
+        <div class="rd-center"><b>${tot ? Math.round(ok / tot * 100) : 0}%</b><small>đúng lần đầu</small></div></div>
+      <div class="iq-break">
+        <div class="iq-brow"><span>🎯 Tổng cộng</span><b>${ok}/${tot} mục</b></div>
+        ${['từ', 'cụm', 'câu'].map(k => {
+          const g = byKind(k);
+          return g.length ? `<div class="iq-brow"><span>${k === 'từ' ? '⌨️ Từ vựng' : k === 'cụm' ? '🧩 Cụm từ' : '✍️ Viết câu'}</span><b>${g.filter(l => l.ok).length}/${g.length}</b></div>` : '';
+        }).join('')}
+      </div>
+      ${wrong.length ? `<details class="iq-review" open><summary>Xem lại ${wrong.length} mục chưa chắc</summary>
+        ${wrong.map(l => `<div class="es-logrow no"><div class="es-logbody">
+          <div class="es-logq">${escHtml(l.ask)}</div>
+          <div class="es-logu"><b>Bạn viết:</b> ${escHtml(l.user)}</div>
+          <div class="es-logw"><b>Đáp án:</b> ${escHtml(l.want)}</div></div></div>`).join('')}
+        </details>` : '<p class="iq-allright">🎉 Không sai mục nào!</p>'}
+      <div class="es-actions" style="justify-content:center">
+        <button id="core-copy" title="Chép bài làm để dán sang AI nhờ review">📋 Chép bài làm</button>
+        <button id="core-back" class="iq-start-btn">${s.day < CORE_DAYS ? `Tiếp: Ngày ${s.day + 1} →` : '🗓️ Về danh sách ngày'}</button>
+      </div>
+      <p class="iq-note">Mai mở lại tab này là app tự nhảy sang ngày kế tiếp, và tự đẩy các mục hôm nay
+        vào phần ÔN đúng lúc bạn sắp quên (SRS). Nghỉ một hôm thì hôm sau phần ôn dày hơn — cứ ôn hết rồi hẵng học mới.</p>
+    </div>`;
+  document.getElementById('core-back').onclick = () => (s.day < CORE_DAYS ? coreStart(s.day + 1) : renderCore());
+  document.getElementById('core-copy').onclick = () => coreCopy(s);
+}
+
+/** Chép bài làm kèm sẵn câu nhờ AI review — giống nút 📋 ở tab 🇬🇧. */
+function coreCopy(s) {
+  if (!s.log.length) { esToast('Chưa làm mục nào để chép.'); return; }
+  const head = `Tôi đang học tiếng Anh cơ bản (A2) theo lộ trình 30 ngày, hôm nay là NGÀY ${s.day}. `
+    + 'Dưới đây là bài làm: nhìn tiếng Việt tự viết ra tiếng Anh (từ vựng, cụm từ và câu).\n\n'
+    + 'Với TỪNG mục sai, hãy: (1) chỉ ra lỗi cụ thể, (2) viết lại bản tự nhiên nhất, '
+    + '(3) giải thích ngắn gọn bằng tiếng Việt. Cuối cùng tổng kết tôi đang lặp nhóm lỗi nào nhiều nhất.\n\n';
+  const body = s.log.map((l, i) => `${i + 1}. [${l.kind}] Tiếng Việt: ${l.ask}\n   Tôi viết: ${l.user}\n   Đáp án: ${l.want}`).join('\n\n');
+  const text = head + body;
+  const okFn = () => esToast(`📋 Đã chép ${s.log.length} mục — dán vào AI để nhờ review.`);
+  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(okFn, () => esCopyFallback(text, okFn));
+  else esCopyFallback(text, okFn);
+}
 
 // ===========================================================================
 // 🇬🇧 TIẾNG ANH GIAO TIẾP CÔNG VIỆC — trọng tâm VIẾT câu Việt → Anh

@@ -2573,6 +2573,77 @@ test('en-core: phương pháp học KHÔNG tự mâu thuẫn (phút, thứ tự 
     `lịch tuần phủ ${covered.join(',')} nhưng kho có ${G.length} chặng`);
 });
 
+test('en-core: 90 cụm từ — id/nghĩa không trùng, cụm nào cũng có câu ví dụ', () => {
+  const P = ESUP.EN_CORE_PHRASES;
+  assert.strictEqual(P.length, 90, `phải đúng 90 cụm (30 ngày × 3), đang có ${P.length}`);
+  const ids = P.map(p => p.id), vis = P.map(p => p.vi), ens = P.map(p => p.en);
+  assert.strictEqual(new Set(ids).size, ids.length, 'id cụm từ trùng');
+  // vi là ĐỀ BÀI ⇒ trùng nghĩa là câu hỏi vô nghiệm, y như phần từ vựng
+  assert.deepStrictEqual(vis.filter((x, i) => vis.indexOf(x) !== i), [], 'có cụm trùng nghĩa tiếng Việt');
+  assert.deepStrictEqual(ens.filter((x, i) => ens.indexOf(x) !== i), [], 'có cụm trùng nhau');
+  for (const p of P) {
+    assert.ok(p.en && p.vi && p.ex, `${p.id} thiếu en/vi/ex`);
+    assert.ok(/[a-z]/.test(p.en), `${p.id}: cụm phải là tiếng Anh`);
+  }
+});
+
+test('core-tab: lộ trình 30 ngày phủ ĐÚNG 500 từ · 90 cụm · 120 câu, không ngày nào rỗng', () => {
+  // Dựng lại corePlan từ app.js để chạy thật — giáo án được TÍNH RA nên không thể lệch âm thầm
+  const i = APP.indexOf('const CORE_DAYS = 30;');
+  const consts = APP.slice(i, APP.indexOf('let coreState = null;'));
+  const grab = name => {
+    const j = APP.indexOf(`function ${name}`);
+    let depth = 0;
+    for (let k = APP.indexOf('{', j); k < APP.length; k++) {
+      if (APP[k] === '{') depth++;
+      else if (APP[k] === '}' && !--depth) return APP.slice(j, k + 1);
+    }
+    throw new Error(`không tìm thấy ${name}`);
+  };
+  const scope = { window: ESUP, store: { get: (k, d) => d }, shuffleArr: a => a };
+  const src = consts
+    + 'const coreVocab = () => window.EN_CORE_VOCAB;'
+    + 'const corePhrases = () => window.EN_CORE_PHRASES;'
+    + 'const coreSents = () => window.EN_CORE_SENTENCES;\n'
+    + grab('corePlan') + '\nreturn { corePlan, CORE_DAYS };';
+  const { corePlan, CORE_DAYS } = new Function(...Object.keys(scope), src)(...Object.values(scope));
+
+  let words = 0, phrases = 0;
+  const sentIds = new Set(), wordIds = new Set();
+  for (let d = 1; d <= CORE_DAYS; d++) {
+    const p = corePlan(d);
+    words += p.newWords.length;
+    phrases += p.phrases.length;
+    p.newWords.forEach(w => wordIds.add(w.id));
+    p.sents.forEach(x => sentIds.add(x.id));
+    assert.ok(p.phrases.length, `ngày ${d} không có cụm từ nào`);
+    assert.ok(p.sents.length, `ngày ${d} không có câu nào để viết`);
+    // 4 tuần đầu học lần lượt 4 thì, từ ngày 21 mới trộn
+    if (d <= 20) assert.ok(['ps', 'pc', 'past', 'pp'].includes(p.tense), `ngày ${d} phải gắn với một thì cụ thể`);
+    else assert.strictEqual(p.tense, 'mix', `ngày ${d} phải là ngày trộn thì`);
+  }
+  assert.strictEqual(words, ESUP.EN_CORE_VOCAB.length, `30 ngày phải phủ hết ${ESUP.EN_CORE_VOCAB.length} từ, đang là ${words}`);
+  assert.strictEqual(wordIds.size, words, 'có từ bị lặp giữa các ngày');
+  assert.strictEqual(phrases, ESUP.EN_CORE_PHRASES.length, `30 ngày phải phủ hết 90 cụm, đang là ${phrases}`);
+  assert.strictEqual(sentIds.size, ESUP.EN_CORE_SENTENCES.length, `20 ngày đầu phải dùng hết ${ESUP.EN_CORE_SENTENCES.length} câu`);
+});
+
+test('core-tab: wiring tab/view/phím tắt/gated', () => {
+  assert.ok(HTML.includes('data-view="core"'), 'index.html thiếu tab core');
+  assert.ok(HTML.includes('id="view-core"'), 'index.html thiếu <div id="view-core">');
+  assert.ok(HTML.includes('id="core-body"'), 'index.html thiếu #core-body');
+  assert.ok(/name === 'core'\) renderCore\(\)/.test(APP), "switchView thiếu nhánh 'core'");
+  assert.ok(/GATED_VIEWS = new Set\(\[[^\]]*'core'/.test(APP), "GATED_VIEWS thiếu 'core' (tab có lưu tiến độ)");
+  // buổi học phải chạy TUẦN TỰ trong một màn: không có ô chọn chế độ/phạm vi nào
+  const block = APP.slice(APP.indexOf('function coreStart'), APP.indexOf('function coreRender'));
+  for (const step of ['preview', 'new', 'review', 'phrase', 'write', 'done']) {
+    assert.ok(block.includes(`'${step}'`), `coreStart thiếu bước '${step}'`);
+  }
+  // gõ sai thì mục đó phải bị hỏi lại, nếu không thì học xong vẫn không nhớ
+  assert.ok(/function coreRequeue/.test(APP) && /s\.queue\.push\(\{ \.\.\.it, _retry: true \}\)/.test(APP),
+    'thiếu cơ chế đẩy mục gõ sai xuống cuối hàng');
+});
+
 test('en-core: wiring — nạp script, chế độ 📐, sw cache, từ vựng mang theo phiên âm', () => {
   assert.ok(HTML.includes('<script src="en-core.js"></script>'), 'index.html chưa nạp en-core.js');
   assert.ok(SW.includes("'en-core.js'"), 'sw.js PRECACHE thiếu en-core.js');
