@@ -226,9 +226,10 @@ không cần biết mẹo hard-refresh.
     skip link & landmark, khi nào Storybook đáng dùng, và combobox đúng chuẩn;
     dành cho buổi phỏng vấn thiên kiến thức nền.
 
-  Kho câu đủ lớn để ôn dài hơi mà **không lặp lại**: 🧩 IQ **914 câu** (dãy số 234 · suy luận hình 313 ·
-  logic 158 · toán nhanh 97 · xác suất 46 · hình & không gian 32 · chuyển động & công việc 20 ·
-  mã hoá 8 · khác loại 6 — **đã bỏ hẳn nhóm đố chữ cái**), 🇬🇧 tiếng Anh **125 câu** (82 câu giao tiếp),
+  Kho câu đủ lớn để ôn dài hơi mà **không lặp lại**: 🧩 IQ **1.065 câu** (dãy số 296 · suy luận hình 354 ·
+  logic 170 · toán nhanh 97 · xác suất 54 · hình & không gian 52 · chuyển động & công việc 25 ·
+  khác loại 9 · mã hoá 8 — **đã bỏ hẳn nhóm đố chữ cái**; đủ **32 buổi test 30 câu** không lặp),
+  🇬🇧 tiếng Anh **125 câu** (82 câu giao tiếp),
   ⌨️ code **110 câu** (đoán output 52 + Big-O 58), 📖 lý thuyết **477 câu**
   (JS 181 · Node 174 · React 170) — chạy được **~15 buổi liên tiếp** mà IQ, tiếng Anh và
   lý thuyết không lặp câu nào.

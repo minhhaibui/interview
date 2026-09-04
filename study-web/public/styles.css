@@ -1232,6 +1232,7 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 .iqfig .c3 { fill: var(--bg2); stroke: currentColor; stroke-width: 1.3; stroke-linejoin: round; }
 .iqfig .c3s { fill: currentColor; stroke: none; }                               /* lớp phủ tạo khối sáng/tối */
 .iqfig .stxs { fill: currentColor; font-size: 9px; font-weight: 700; }          /* nhãn mặt trong hình khai triển */
+.iqfig .gf2 { fill: var(--bg3); stroke: currentColor; stroke-width: 1.4; }      /* ô của hình khai triển không nhãn */
 
 .iq-frow, .iq-mtx { display: grid; gap: 8px; justify-content: center; margin: 0 0 18px; }
 .iq-frow { grid-auto-flow: column; }

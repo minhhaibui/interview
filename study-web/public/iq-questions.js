@@ -334,6 +334,42 @@ function boxCountQ(id, d, m, n, kind, wrongs) {
   };
 }
 
+
+/** Chuỗi lưới 3×3 XOAY 90° thuận mỗi bước — đáp án tính ra từ gRot nên không thể sai. */
+function gRotSeqQ(id, d, p) {
+  const rotN = k => { let x = p; for (let i = 0; i < k; i++) x = gRot(x); return x; };
+  const ans = rotN(3);
+  const opts = [ans];
+  for (const c of [rotN(1), rotN(2), rotN(0), gFlip(ans), gInv(ans), gTog(ans, 4)]) {
+    if (opts.length >= 4) break;
+    if (!opts.includes(c)) opts.push(c);
+  }
+  return figQ({
+    id, d, q: 'Hình tiếp theo của chuỗi là gì?',
+    fig: figRow([gSvg(rotN(0)), gSvg(rotN(1)), gSvg(rotN(2)), '?']),
+    opts: opts.map(gSvg),
+    explain: 'Cả lưới quay 90° THUẬN chiều kim đồng hồ mỗi bước ⇒ ô thứ tư là hình đầu tiên đã quay 270°.',
+  });
+}
+
+/** Ma trận SỐ 3×3: mỗi ô = f(hàng, cột) (đánh số từ 0), ô góc dưới-phải bị khuyết. */
+function numMatQ(id, d, f, rule, wrongs) {
+  const cells = [];
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) cells.push(r === 2 && c === 2 ? '?' : numCell(f(r, c)));
+  const { options, answer } = mixOpts(id, [String(f(2, 2)), ...wrongs.map(String)]);
+  return {
+    id, category: '🖼️ Suy luận hình', d, q: 'Số ở ô dấu ? là bao nhiêu?',
+    fig: figGrid(cells, 3), options, answer, explain: rule,
+  };
+}
+
+/** Hình khai triển TỰ DO: danh sách ô [hàng, cột] trong lưới 3×4 — dùng cho câu "gấp được hay không". */
+function netCellsSvg(cells) {
+  const W = 13, x0 = 30 - 2 * W, y0 = 30 - 1.5 * W;
+  return iqSvg(cells.map(([r, c]) =>
+    `<rect class="gf2" x="${x0 + c * W}" y="${y0 + r * W}" width="${W}" height="${W}"/>`).join(''));
+}
+
 window.IQ_QUESTIONS = [
   // ---- Dãy số ----
   { id: 'seq1', category: '🔢 Dãy số', q: 'Số tiếp theo: 2, 4, 8, 16, ?', options: ['24', '30', '32', '64'], answer: 2,
@@ -3224,4 +3260,282 @@ window.IQ_QUESTIONS = [
     explain: 'Các số chính phương 1, 4, 9, 16, 25, 36, 49 ⇒ 26 sai (5² = 25).' },
   { id: 'q51-30', category: '🔢 Dãy số', d: 2, q: 'Số nào PHÁ VỠ quy luật của dãy: 3, 6, 12, 24, 46, 96?', options: ['6', '24', '46', '96'], answer: 2,
     explain: 'Dãy nhân đôi 3, 6, 12, 24, 48, 96 ⇒ 46 sai (phải là 48).' },
+
+  // ===== ĐỢT #40 — HÌNH HỌC: thêm khối 3D · khai triển · đồng hồ · ma trận · xoay lưới =====
+  // 🧊 Khối lập phương xếp chồng
+  isoQ('iso8', 3, [[3, 1, 1], [1, 2, 1], [1, 1, 3]], 'count', [12, 13, 15]),
+  isoQ('iso9', 3, [[2, 3, 2], [1, 2, 1], [2, 1, 2]], 'count', [14, 15, 17]),
+  isoQ('iso10', 3, [[1, 1, 1], [2, 2, 2], [3, 3, 3]], 'count', [15, 16, 20]),
+  isoQ('iso11', 3, [[3, 2, 3], [2, 1, 2], [3, 2, 3]], 'count', [19, 20, 23]),
+  isoQ('iso12', 3, [[2, 2, 2], [2, 2, 2], [2, 2, 1]], 'fill', [8, 9, 11]),
+  isoQ('iso13', 3, [[3, 3, 3], [3, 3, 3], [3, 3, 2]], 'fill', [0, 2, 3]),
+  isoQ('iso14', 2, [[2, 0, 1], [0, 3, 0], [1, 0, 2]], 'foot', [4, 6, 7]),
+  isoQ('iso15', 2, [[1, 2, 0], [0, 1, 2], [2, 0, 1]], 'count', [8, 10, 11]),
+
+  // 📦 Hình khai triển → mặt đối diện
+  netQ('net6', 3, ['A', 'B', 'C', 'D'], [2, 'E'], [0, 'F'], 'B', ['A', 'C', 'E']),
+  netQ('net7', 3, ['1', '2', '3', '4'], [0, '5'], [2, '6'], '3', ['2', '4', '6']),
+  netQ('net8', 2, ['P', 'Q', 'R', 'S'], [1, 'T'], [3, 'U'], 'U', ['P', 'Q', 'S']),
+  netQ('net9', 3, ['X', 'Y', 'Z', 'W'], [3, 'M'], [1, 'N'], 'W', ['X', 'Z', 'M']),
+  netQ('net10', 3, ['A', 'B', 'C', 'D'], [1, 'E'], [2, 'F'], 'D', ['A', 'C', 'F']),
+  netQ('net11', 2, ['1', '2', '3', '4'], [3, '5'], [0, '6'], '5', ['1', '3', '4']),
+
+  // 🕒 Góc giữa hai kim đồng hồ
+  clockQ('clk6', 3, 1, 20, [70, 90, 100]),
+  clockQ('clk7', 3, 5, 10, [85, 90, 105]),
+  clockQ('clk8', 3, 6, 40, [30, 50, 60]),
+  clockQ('clk9', 3, 11, 50, [45, 60, 65]),
+  clockQ('clk10', 3, 8, 24, [96, 102, 120]),
+  clockQ('clk11', 3, 10, 10, [105, 110, 125]),
+
+  // 🔁 Tương tự hình A→B thì C→?
+  gAnaQ('ana7', 3, '100/110/000', '011/001/000', 'rot90'),
+  gAnaQ('ana8', 3, '110/001/010', '011/100/010', 'inv'),
+  gAnaQ('ana9', 2, '111/001/000', '100/111/000', 'flip'),
+  gAnaQ('ana10', 3, '010/011/100', '001/110/010', 'rot270'),
+  gAnaQ('ana11', 3, '100/011/010', '010/110/001', 'rot180'),
+  gAnaQ('ana12', 2, '110/001/100', '001/010/110', 'flipV'),
+
+  // 🎛 Ma trận hai quy luật (hàng đổi hình · cột đổi kiểu tô)
+  matSFQ('msf5', 3, ['p', 'c', 'd'], [1, 0, 2], ['ngũ giác', 'hình tròn', 'hình thoi']),
+  matSFQ('msf6', 3, ['x', 't', 's'], [2, 1, 0], ['chữ thập', 'tam giác', 'hình vuông']),
+  matSFQ('msf7', 3, ['h', 'd', 'r'], [0, 2, 1], ['lục giác', 'hình thoi', 'ngôi sao']),
+  matSFQ('msf8', 2, ['c', 'x', 'p'], [1, 2, 0], ['hình tròn', 'chữ thập', 'ngũ giác']),
+  matSFQ('msf9', 3, ['r', 's', 't'], [2, 0, 1], ['ngôi sao', 'hình vuông', 'tam giác']),
+
+  // 🔃 Chuỗi xoay đều
+  rotSeqQ('rs5', 3, FLAG, 45, 4),
+  rotSeqQ('rs6', 3, ELL, 90, 3),
+  rotSeqQ('rs7', 3, ARROW, 120, 3),
+  rotSeqQ('rs8', 2, FLAG, 30, 5),
+  rotSeqQ('rs9', 3, ELL, 60, 4),
+
+  // 🔵 Hai chấm chạy quanh viền
+  ringQ('ring4', 3, 2, 1, 4),
+  ringQ('ring5', 3, 3, 1, 4),
+  ringQ('ring6', 3, 2, -1, 4),
+  ringQ('ring7', 3, 3, -2, 4),
+
+  // ⊕ Chồng hai lưới
+  gOpQ('gx49', 3, '101/011/110', '011/110/101', 'xor', 'Chỉ giữ ô mà ĐÚNG MỘT trong hai lưới được tô.'),
+  gOpQ('gx50', 2, '110/011/001', '011/010/110', 'and', 'Giao hai lưới: chỉ giữ ô cả hai cùng tô.'),
+  gOpQ('gx51', 3, '100/111/010', '010/101/011', 'xor', 'Ô nào cả hai cùng tô thì BỎ, chỉ giữ ô lệch nhau.'),
+  gOpQ('gx52', 2, '101/010/101', '010/111/010', 'or', 'Hợp hai lưới: gộp mọi ô được tô của cả hai hình.'),
+  gOpQ('gx53', 3, '111/100/001', '001/110/100', 'and', 'Giao hai lưới — đếm từng ô một, đừng nhìn tổng thể.'),
+  gOpQ('gx54', 3, '011/101/110', '110/011/101', 'xor', 'Chỉ giữ ô mà đúng một bên được tô.'),
+
+  // 🔄 Lưới xoay 90° mỗi bước
+  gRotSeqQ('grs1', 3, '110/010/000'),
+  gRotSeqQ('grs2', 3, '100/110/010'),
+  gRotSeqQ('grs3', 2, '111/001/000'),
+  gRotSeqQ('grs4', 3, '010/011/001'),
+
+  // 🔢 Ma trận SỐ có quy luật
+  numMatQ('nm45', 3, (r, c) => (r + 1) * (c + 1) + (r + 1) + (c + 1), 'Mỗi ô = (hàng × cột) + hàng + cột (hàng/cột đánh số từ 1): 3 × 3 + 3 + 3 = 15.', [12, 13, 18]),
+  numMatQ('nm46', 3, (r, c) => (r + 1) ** 2 + (c + 1) ** 2, 'Mỗi ô = hàng² + cột²: 3² + 3² = 18.', [12, 15, 21]),
+  numMatQ('nm47', 3, (r, c) => (r + 1) * 10 - (c + 1) * 2, 'Mỗi ô = hàng × 10 − cột × 2: 30 − 6 = 24.', [22, 26, 28]),
+  numMatQ('nm48', 2, (r, c) => (r + 1) * (c + 1) * 2, 'Mỗi ô = hàng × cột × 2: 3 × 3 × 2 = 18.', [12, 15, 16]),
+  numMatQ('nm49', 3, (r, c) => (r + 1) ** 3 - (c + 1), 'Mỗi ô = hàng³ − cột: 27 − 3 = 24.', [18, 21, 26]),
+  numMatQ('nm50', 3, (r, c) => ((r + 1) + (c + 1)) ** 2, 'Mỗi ô = (hàng + cột)²: (3 + 3)² = 36.', [24, 30, 42]),
+
+  // 🔲 Đếm hình trong lưới
+  boxCountQ('bc5', 3, 4, 4, 'rect', [64, 80, 120]),
+  boxCountQ('bc6', 3, 5, 3, 'rect', [72, 84, 96]),
+  boxCountQ('bc7', 3, 4, 2, 'square', [8, 10, 14]),
+  boxCountQ('bc8', 3, 5, 5, 'square', [45, 50, 70]),
+
+  // 📦 Hình khai triển KHÔNG gấp được (dạng mới)
+  figQ({
+    id: 'netbad1', d: 3, q: 'Hình khai triển nào KHÔNG gấp được thành khối lập phương?',
+    opts: [netCellsSvg([[0, 0], [0, 1], [1, 0], [1, 1], [2, 0], [2, 1]]),
+      netCellsSvg([[1, 0], [1, 1], [1, 2], [1, 3], [0, 1], [2, 3]]),
+      netCellsSvg([[1, 0], [1, 1], [1, 2], [1, 3], [0, 2], [2, 0]]),
+      netCellsSvg([[1, 0], [1, 1], [1, 2], [1, 3], [0, 0], [2, 3]])],
+    explain: 'Khối 2×3 ô đặc gấp lại sẽ có hai mặt chồng lên nhau và hở hai mặt — không thành khối lập phương. '
+      + 'Ba hình còn lại đều là dải 4 mặt (cuộn thành vòng quanh) + 1 mặt trên + 1 mặt dưới nên gấp được.',
+  }),
+
+  // ===== ĐỢT #40 — DÃY SỐ (truy hồi mới, đan xen, phân số, Lucas/Padovan, tìm số sai) =====
+  { id: 'r1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 6, 10, 18, 34, 66, ?', options: ['128', '130', '132', '134'], answer: 1,
+    explain: 'Mỗi số = số trước × 2 − 2: 66 × 2 − 2 = 130.' },
+  { id: 'r2', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 7, 13, 25, 49, ?', options: ['97', '191', '194', '195'], answer: 0,
+    explain: 'Mỗi số = số trước × 2 − 1: 97 × 2 − 1 = 193.' },
+  { id: 'r3', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 5, 16, 49, 148, ?', options: ['441', '444', '445', '449'], answer: 2,
+    explain: 'Mỗi số = số trước × 3 + 1: 148 × 3 + 1 = 445.' },
+  { id: 'r4', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 8, 22, 50, 106, ?', options: ['212', '216', '218', '224'], answer: 2,
+    explain: 'Mỗi số = số trước × 2 + 6: 106 × 2 + 6 = 218.' },
+  { id: 'r5', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 11, 38, 119, ?', options: ['352', '357', '362', '366'], answer: 2,
+    explain: 'Mỗi số = số trước × 3 + 5: 119 × 3 + 5 = 362.' },
+  { id: 'r6', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 8, 13, 23, 43, 83, ?', options: ['125', '128', '131', '163'], answer: 3,
+    explain: 'Mỗi số = số trước × 2 − 3: 67 × 2 − 3 = 131… (dãy 8, 13, 23, 43, 83).' },
+  { id: 'r7', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 3, 10, 101, ?', options: ['1021', '10101', '10202', '10203'], answer: 2,
+    explain: 'Mỗi số = số trước bình phương + 1: 101² + 1 = 10.202.' },
+  { id: 'r8', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 3, 4, 12, 48, ?', options: ['576', '13824', '27000', '28648'], answer: 0,
+    explain: 'Mỗi số = TÍCH hai số liền trước: 48 × 576 = 27.648.' },
+  { id: 'r9', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 2, 2, 4, 8, ?', options: ['32', '128', '192', '264'], answer: 0,
+    explain: 'Mỗi số = tích hai số liền trước: 8 × 32 = 256.' },
+  { id: 'r10', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 8, 16, 13, 26, 23, 46, ?', options: ['40', '43', '49', '92'], answer: 1,
+    explain: 'Xen kẽ ×2 rồi −3: 8×2 = 16, 16−3 = 13, 13×2 = 26… ⇒ 46 − 3 = 43.' },
+  { id: 'r11', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 5, 25, 20, 100, 95, ?', options: ['190', '465', '475', '480'], answer: 2,
+    explain: 'Xen kẽ ×5 rồi −5: 5×5 = 25, 25−5 = 20, 20×5 = 100, 100−5 = 95 ⇒ 95 × 5 = 475.' },
+  { id: 'r12', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 6, 5, 15, 14, 42, ?', options: ['39', '41', '43', '126'], answer: 1,
+    explain: 'Xen kẽ ×3 rồi −1: 2×3 = 6, 6−1 = 5, 5×3 = 15, 15−1 = 14, 14×3 = 42 ⇒ 42 − 1 = 41.' },
+  { id: 'r13', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 7, 21, 18, 54, 51, ?', options: ['148', '150', '153', '156'], answer: 2,
+    explain: 'Xen kẽ ×3 rồi −3: 7×3 = 21, 21−3 = 18, 18×3 = 54, 54−3 = 51 ⇒ 51 × 3 = 153.' },
+  { id: 'r14', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 9, 3, 27, 9, 81, 27, ?', options: ['81', '216', '243', '729'], answer: 2,
+    explain: 'Xen kẽ ÷3 rồi ×9: 9÷3 = 3, 3×9 = 27, 27÷3 = 9, 9×9 = 81, 81÷3 = 27 ⇒ 27 × 9 = 243.' },
+  { id: 'r15', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 2, 10, 20, 100, 200, ?', options: ['400', '800', '1000', '2000'], answer: 2,
+    explain: 'Xen kẽ ×2 rồi ×5: 1×2 = 2, 2×5 = 10, 10×2 = 20, 20×5 = 100, 100×2 = 200 ⇒ 200 × 5 = 1000.' },
+  { id: 'r16', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 4, 8, 24, 96, ?', options: ['384', '400', '480', '576'], answer: 2,
+    explain: 'Nhân dần: ×2, ×3, ×4, ×5 ⇒ 96 × 5 = 480 (dãy 4, 8, 24, 96).' },
+  { id: 'r17', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 240, 120, 40, 10, ?', options: ['1', '2', '3', '5'], answer: 1,
+    explain: 'Chia dần: ÷2, ÷3, ÷4, ÷5 ⇒ 10 ÷ 5 = 2.' },
+  { id: 'r18', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 60, 30, 20, 15, ?', options: ['9', '11', '12', '14'], answer: 2,
+    explain: 'Dãy 60 chia lần lượt cho 1, 2, 3, 4, 5 ⇒ 60 ÷ 6 = 10.' },
+  { id: 'r19', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 1, 4, 10, 19, 31, ?', options: ['46', '61', '64', '70'], answer: 0,
+    explain: 'Hiệu là bội của 3: +3, +6, +9, +12, +15 ⇒ 31 + 15 = 46.' },
+  { id: 'r20', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 7, 15, 26, 40, ?', options: ['55', '56', '57', '60'], answer: 2,
+    explain: 'Hiệu tăng đều 3: +5, +8, +11, +14, +17 ⇒ 40 + 17 = 57.' },
+  { id: 'r21', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 5, 9, 17, 29, 45, ?', options: ['61', '63', '65', '69'], answer: 2,
+    explain: 'Hiệu là bội của 4: +4, +8, +12, +16, +20 ⇒ 45 + 20 = 65.' },
+  { id: 'r22', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 6, 16, 31, 51, ?', options: ['71', '74', '76', '80'], answer: 2,
+    explain: 'Hiệu là bội của 5: +5, +10, +15, +20, +25 ⇒ 51 + 25 = 76.' },
+  { id: 'r23', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 3, 7, 14, 26, 45, ?', options: ['70', '72', '73', '76'], answer: 2,
+    explain: 'Hiệu là 4, 7, 12, 19, 28 — chính nó lại tăng theo 3, 5, 7, 9 ⇒ 45 + 28 = 73.' },
+  { id: 'r24', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 3, 6, 11, 19, 32, ?', options: ['50', '51', '53', '55'], answer: 2,
+    explain: 'Hiệu chính là dãy Fibonacci 2, 3, 5, 8, 13 ⇒ 32 + 21 = 53.' },
+  { id: 'r25', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 50, 45, 36, 23, ?', options: ['4', '6', '8', '10'], answer: 1,
+    explain: 'Trừ dần 5, 9, 13, 17 ⇒ 23 − 17 = 6.' },
+  { id: 'r26', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: -5, -2, 3, 10, 19, ?', options: ['28', '29', '30', '32'], answer: 2,
+    explain: 'Hiệu là các số lẻ tăng dần: +3, +5, +7, +9, +11 ⇒ 19 + 11 = 30.' },
+  { id: 'r27', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 10, 12, 9, 13, 8, 14, 7, ?', options: ['6', '15', '16', '21'], answer: 1,
+    explain: 'Cộng trừ xen kẽ với bước lớn dần: +2, −3, +4, −5, +6, −7 ⇒ 7 + 8 = 15.' },
+  { id: 'r28', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 3, 15, 63, 255, ?', options: ['511', '1020', '1023', '1024'], answer: 2,
+    explain: 'Số thứ n = 4ⁿ − 1: 4⁵ − 1 = 1023.' },
+  { id: 'r29', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 3, 12, 33, 72, 135, ?', options: ['216', '222', '228', '234'], answer: 2,
+    explain: 'Số thứ n = n³ + 2n: 216 + 12 = 228.' },
+  { id: 'r30', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 2, 5, 12, 27, ?', options: ['56', '57', '58', '60'], answer: 2,
+    explain: 'Số thứ n = 2ⁿ − n: 64 − 6 = 58.' },
+  { id: 'r31', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 4, 10, 18, 28, 40, ?', options: ['50', '52', '54', '56'], answer: 2,
+    explain: 'Số thứ n = n² + 3n: 36 + 18 = 54.' },
+  { id: 'r32', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 6, 9, 15, 21, 33, 39, ?', options: ['45', '48', '51', '57'], answer: 2,
+    explain: 'Các số nguyên tố nhân 3: 2, 3, 5, 7, 11, 13, 17 → 6, 9, 15, 21, 33, 39 ⇒ 17 × 3 = 51.' },
+  { id: 'r33', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 4, 6, 10, 14, 22, ?', options: ['22', '24', '26', '30'], answer: 2,
+    explain: 'Các số nguyên tố nhân đôi: 2, 3, 5, 7, 11, 13 → 4, 6, 10, 14, 22 ⇒ 13 × 2 = 26.' },
+  { id: 'r34', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 5, 12, 21, 32, 45, ?', options: ['54', '56', '60', '66'], answer: 2,
+    explain: 'Số thứ n = n × (n + 4): 6 × 10 = 60.' },
+  { id: 'r35', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 1, 3, 4, 7, 11, 18, ?', options: ['25', '27', '29', '32'], answer: 2,
+    explain: 'Dãy Lucas — như Fibonacci nhưng khởi đầu 2, 1: mỗi số = tổng hai số liền trước ⇒ 11 + 18 = 29.' },
+  { id: 'r36', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 3, 5, 11, 21, 43, ?', options: ['64', '85', '86', '87'], answer: 1,
+    explain: 'Mỗi số = số trước + 2 lần số trước nữa: 43 + 2×21 = 85.' },
+  { id: 'r37', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 1, 1, 2, 2, 3, 4, 5, 7, ?', options: ['8', '9', '11', '12'], answer: 1,
+    explain: 'Dãy Padovan: mỗi số = tổng của số cách nó 2 và 3 bậc ⇒ 4 + 5 = 9.' },
+  { id: 'r38', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 2, 5, 13, 34, ?', options: ['68', '76', '89', '91'], answer: 2,
+    explain: 'Lấy cách một số của dãy Fibonacci (1, 2, 5, 13, 34, 89): mỗi số = 3 lần số trước − số trước nữa ⇒ 3×34 − 13 = 89.' },
+  { id: 'r39', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 0, 1, 2, 4, 7, 12, 20, ?', options: ['32', '33', '34', '40'], answer: 1,
+    explain: 'Mỗi số = tổng hai số liền trước + 1: 12 + 20 + 1 = 33.' },
+  { id: 'r40', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 5, 8, 14, 23, 38, ?', options: ['60', '61', '62', '64'], answer: 2,
+    explain: 'Mỗi số = tổng hai số liền trước + 1: 23 + 38 + 1 = 62.' },
+  { id: 'r41', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 10, 100, 2, 20, 200, 3, 30, ?', options: ['30', '300', '400', '3000'], answer: 1,
+    explain: 'Ba dãy đan xen 1-2-3, 10-20-30, 100-200-300 ⇒ sau 3, 30 là 300.' },
+  { id: 'r42', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 3, 9, 4, 16, 5, 25, 6, ?', options: ['30', '35', '36', '49'], answer: 2,
+    explain: 'Cứ một số rồi tới BÌNH PHƯƠNG của nó: 3→9, 4→16, 5→25 ⇒ 6 → 36.' },
+  { id: 'r43', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 100, 1, 90, 4, 80, 9, 70, ?', options: ['12', '16', '20', '60'], answer: 1,
+    explain: 'Hai dãy đan xen: 100, 90, 80, 70 (giảm 10) và 1, 4, 9, ? = các số chính phương ⇒ 4² = 16.' },
+  { id: 'r44', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 2, 3, 4, 9, 8, 27, 16, ?', options: ['32', '64', '81', '243'], answer: 2,
+    explain: 'Vị trí lẻ là luỹ thừa của 2 (2, 4, 8, 16), vị trí chẵn là luỹ thừa của 3 (3, 9, 27, ?) ⇒ 3⁴ = 81.' },
+  { id: 'r45', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 1/2, 2/3, 3/4, 4/5, ?', options: ['5/6', '5/7', '6/7', '4/6'], answer: 0,
+    explain: 'Tử và mẫu đều tăng 1: tử 1,2,3,4,5 · mẫu 2,3,4,5,6 ⇒ 5/6.' },
+  { id: 'r46', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1/2, 1/6, 1/12, 1/20, ?', options: ['1/30', '1/24', '1/28', '1/32'], answer: 0,
+    explain: 'Mẫu số là 1×2, 2×3, 3×4, 4×5 ⇒ 5×6 = 30, tức 1/30.' },
+  { id: 'r47', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1/3, 2/9, 4/27, 8/81, ?', options: ['16/243', '16/162', '16/324', '8/243'], answer: 0,
+    explain: 'Tử nhân 2, mẫu nhân 3 mỗi bước ⇒ 16/243.' },
+  { id: 'r48', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1,5, 2,5, 4,5, 8,5, ?', options: ['16,5', '12,5', '14,5', '17,5'], answer: 0,
+    explain: 'Hiệu nhân đôi mỗi bước: +1 · +2 · +4 · +8 ⇒ 8,5 + 8 = 16,5.' },
+  { id: 'r49', category: '🔢 Dãy số', d: 3, q: 'Số còn thiếu ở giữa: 4, 9, ?, 39, 79', options: ['18', '19', '20', '24'], answer: 1,
+    explain: 'Quy luật × 2 + 1: 9 × 2 + 1 = 19 (rồi 39, 79).' },
+  { id: 'r50', category: '🔢 Dãy số', d: 3, q: 'Số còn thiếu ở giữa: 2, 6, ?, 30, 62', options: ['12', '14', '15', '18'], answer: 1,
+    explain: 'Quy luật × 2 + 2: 6 × 2 + 2 = 14 (rồi 30, 62).' },
+  { id: 'r51', category: '🔢 Dãy số', d: 3, q: 'Số còn thiếu ở giữa: 7, 12, 20, ?, 53', options: ['30', '32', '33', '35'], answer: 2,
+    explain: 'Hiệu chính là dãy Fibonacci 5, 8, 13, 20 ⇒ 20 + 13 = 33.' },
+  { id: 'r52', category: '🔢 Dãy số', d: 3, q: 'Số còn thiếu ở giữa: 3, 12, ?, 192, 768', options: ['36', '48', '60', '96'], answer: 1,
+    explain: 'Mỗi số gấp 4 lần số trước: 12 × 4 = 48.' },
+  { id: 'r53', category: '🔢 Dãy số', d: 3, q: 'Số còn thiếu ở giữa: 1, 4, 9, ?, 25, 36', options: ['12', '14', '16', '18'], answer: 2,
+    explain: 'Dãy số chính phương 1², 2², 3², 4², 5², 6² ⇒ 4² = 16.' },
+  { id: 'r54', category: '🔢 Dãy số', d: 3, q: 'Số nào PHÁ VỠ quy luật của dãy: 2, 6, 12, 20, 30, 44?', options: ['6', '20', '30', '44'], answer: 3,
+    explain: 'Quy luật n² + n: 2, 6, 12, 20, 30, 42 ⇒ 44 sai (phải là 42).' },
+  { id: 'r55', category: '🔢 Dãy số', d: 3, q: 'Số nào PHÁ VỠ quy luật của dãy: 1, 4, 10, 22, 45, 94?', options: ['4', '22', '45', '94'], answer: 2,
+    explain: 'Quy luật × 2 + 2: 1, 4, 10, 22, 46, 94 ⇒ 45 sai (22 × 2 + 2 = 46).' },
+  { id: 'r56', category: '🔢 Dãy số', d: 3, q: 'Số nào PHÁ VỠ quy luật của dãy: 3, 6, 11, 18, 28, 38?', options: ['6', '18', '28', '38'], answer: 2,
+    explain: 'Hiệu là các số lẻ 3, 5, 7, 9, 11 ⇒ 3, 6, 11, 18, 27, 38 — số 28 sai.' },
+  { id: 'r57', category: '🔢 Dãy số', d: 2, q: 'Số nào PHÁ VỠ quy luật của dãy: 5, 10, 20, 40, 75, 160?', options: ['10', '40', '75', '160'], answer: 2,
+    explain: 'Dãy nhân đôi 5, 10, 20, 40, 80, 160 ⇒ 75 sai (phải là 80).' },
+  { id: 'r58', category: '🔢 Dãy số', d: 3, q: 'Số nào PHÁ VỠ quy luật của dãy: 1, 1, 2, 3, 5, 9, 13?', options: ['2', '5', '9', '13'], answer: 2,
+    explain: 'Fibonacci 1, 1, 2, 3, 5, 8, 13 ⇒ 9 sai (3 + 5 = 8).' },
+  { id: 'r59', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 5, 15, 45, 135, ?', options: ['270', '400', '405', '420'], answer: 2,
+    explain: 'Mỗi số gấp 3 lần số trước: 135 × 3 = 405.' },
+  { id: 'r60', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 7, 14, 21, 28, 35, ?', options: ['40', '42', '45', '49'], answer: 1,
+    explain: 'Bảng nhân 7: 7, 14, 21, 28, 35 ⇒ 42.' },
+  { id: 'r61', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 90, 81, 73, 66, 60, ?', options: ['54', '55', '57', '60'], answer: 1,
+    explain: 'Trừ dần 9, 8, 7, 6, 5 ⇒ 63 − 5 = 58.' },
+  { id: 'r62', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 8, 27, 64, 125, ?', options: ['180', '200', '216', '225'], answer: 2,
+    explain: 'Các số lập phương 2³, 3³, 4³, 5³ ⇒ 6³ = 216.' },
+
+  // ===== ĐỢT #40 — LOGIC · XÁC SUẤT · CHUYỂN ĐỘNG · KHÁC LOẠI =====
+  { id: 'xs40-1', category: '🎲 Xác suất', d: 3, q: 'Túi có 5 bi đỏ và 3 bi xanh. Bốc liên tiếp 2 bi (không trả lại). Xác suất CẢ HAI đều đỏ là bao nhiêu?', options: ['5/14', '5/16', '25/64', '1/2'], answer: 0,
+    explain: 'Lần 1: 5/8. Lần 2 chỉ còn 4 bi đỏ trên 7 bi: 4/7. Nhân lại: 5/8 × 4/7 = 20/56 = 5/14.' },
+  { id: 'xs40-2', category: '🎲 Xác suất', d: 2, q: 'Tung 3 đồng xu. Xác suất được ĐÚNG 2 mặt ngửa là bao nhiêu?', options: ['2/3', '1/4', '3/8', '1/2'], answer: 2,
+    explain: '8 khả năng, trong đó 3 khả năng có đúng 2 ngửa (NNS, NSN, SNN) ⇒ 3/8.' },
+  { id: 'xs40-3', category: '🎲 Xác suất', d: 3, q: 'Tung 2 xúc xắc. Xác suất TỔNG hai mặt bằng 8 là bao nhiêu?', options: ['1/9', '7/36', '5/36', '1/6'], answer: 2,
+    explain: 'Các cặp cho tổng 8: (2,6), (3,5), (4,4), (5,3), (6,2) — 5 cách trên 36 ⇒ 5/36.' },
+  { id: 'xs40-4', category: '🎲 Xác suất', d: 2, q: 'Tung 3 đồng xu. Xác suất có ÍT NHẤT một mặt ngửa là bao nhiêu?', options: ['3/4', '5/8', '1/2', '7/8'], answer: 3,
+    explain: 'Dễ nhất là tính ngược: xác suất KHÔNG có ngửa nào = 1/8 ⇒ 1 − 1/8 = 7/8.' },
+  { id: 'xs40-5', category: '🎲 Xác suất', d: 3, q: 'Hộp có 10 sản phẩm, trong đó 2 sản phẩm lỗi. Lấy ngẫu nhiên 2 sản phẩm. Xác suất KHÔNG lấy phải sản phẩm lỗi nào là bao nhiêu?', options: ['28/45', '4/5', '16/25', '2/3'], answer: 0,
+    explain: 'Chọn 2 trong 8 sản phẩm tốt trên tổng số cách chọn 2 trong 10: C(8,2)/C(10,2) = 28/45.' },
+  { id: 'xs40-6', category: '🎲 Xác suất', d: 3, q: 'Rút 1 lá từ bộ bài 52 lá. Xác suất rút được lá chất CƠ HOẶC lá K là bao nhiêu?', options: ['5/13', '4/13', '17/52', '1/4'], answer: 1,
+    explain: '13 lá cơ + 4 lá K, nhưng K cơ bị đếm hai lần ⇒ 13 + 4 − 1 = 16 lá trên 52 = 4/13.' },
+  { id: 'xs40-7', category: '🎲 Xác suất', d: 3, q: 'Một lớp 23 người. Xác suất có ÍT NHẤT hai người trùng ngày sinh (bỏ qua năm nhuận) gần nhất với con số nào?', options: ['23%', '99%', '50%', '6%'], answer: 2,
+    explain: 'Nghịch lý ngày sinh: chỉ cần 23 người là xác suất trùng đã vượt 50% — vì phải so TỪNG CẶP (253 cặp), không phải so với riêng mình.' },
+  { id: 'xs40-8', category: '🎲 Xác suất', d: 2, q: 'Bốn người ngồi ngẫu nhiên vào 4 ghế đánh số. Xác suất người A ngồi đúng ghế số 1 là bao nhiêu?', options: ['1/8', '1/16', '1/24', '1/4'], answer: 3,
+    explain: 'A có 4 ghế như nhau để ngồi ⇒ xác suất trúng ghế số 1 là 1/4 (không phụ thuộc ba người kia).' },
+  { id: 'dl143', category: '🧠 Logic', d: 3, q: 'Ba hộp: một đựng toàn táo, một toàn cam, một lẫn cả hai. CẢ BA nhãn đều dán SAI. Cần lấy ít nhất mấy quả (không nhìn vào trong) để biết chắc hộp nào đựng gì?', options: ['1 quả', '2 quả', '3 quả', 'Không thể biết chắc'], answer: 0,
+    explain: 'Lấy 1 quả từ hộp dán nhãn "lẫn". Vì nhãn sai nên hộp đó thuần một loại — ra quả gì thì hộp đó là loại ấy, hai hộp còn lại suy ra được ngay (cũng vì nhãn của chúng sai).' },
+  { id: 'dl144', category: '🧠 Logic', d: 3, q: 'Có 8 đồng xu giống hệt nhau, 1 đồng NHẸ hơn. Dùng cân thăng bằng, ít nhất bao nhiêu lần cân là chắc chắn tìm ra đồng nhẹ?', options: ['7 lần', '2 lần', '3 lần', '4 lần'], answer: 1,
+    explain: 'Chia 3-3-2. Cân 3 với 3: nếu lệch thì đồng nhẹ nằm trong nhóm 3 nhẹ hơn, cân tiếp 1 với 1 là ra. Nếu thăng bằng thì nó nằm trong 2 đồng còn lại, cân 1 với 1. Tổng 2 lần.' },
+  { id: 'dl145', category: '🧠 Logic', d: 2, q: 'Trong một buổi gặp mặt 100 người, mỗi cặp bắt tay nhau đúng một lần. Có tất cả bao nhiêu cái bắt tay?', options: ['9.900', '10.000', '4.950', '5.000'], answer: 2,
+    explain: 'Chọn 2 người trong 100: C(100,2) = 100 × 99 / 2 = 4.950 (chia 2 vì A bắt tay B cũng là B bắt tay A).' },
+  { id: 'dl146', category: '🧠 Logic', d: 2, q: 'Hôm nay là thứ Ba. 100 ngày nữa là thứ mấy?', options: ['Thứ Tư', 'Thứ Sáu', 'Thứ Bảy', 'Thứ Năm'], answer: 3,
+    explain: '100 chia 7 dư 2 ⇒ lùi 2 ngày từ thứ Ba là thứ Năm (chỉ phần dư mới quyết định).' },
+  { id: 'dl147', category: '🧠 Logic', d: 3, q: 'A nói: "B nói dối". B nói: "C nói dối". C nói: "Cả A và B đều nói dối". Ai nói thật?', options: ['Chỉ B', 'Chỉ A', 'Chỉ C', 'Cả A và C'], answer: 0,
+    explain: 'Nếu C thật thì B nói dối ⇒ C nói dối (mâu thuẫn). Vậy C nói dối ⇒ B nói thật ⇒ A nói dối. Kiểm lại: C bảo "A và B đều dối" — sai vì B thật ⇒ C dối, khớp.' },
+  { id: 'dl148', category: '🧠 Logic', d: 3, q: 'Nếu 5 cái máy làm 5 sản phẩm mất 5 phút thì 100 cái máy làm 100 sản phẩm mất bao lâu?', options: ['500 phút', '5 phút', '20 phút', '100 phút'], answer: 1,
+    explain: 'Mỗi máy làm 1 sản phẩm mất 5 phút. 100 máy chạy song song làm 100 sản phẩm vẫn chỉ mất 5 phút.' },
+  { id: 'dl149', category: '🧠 Logic', d: 3, q: 'Bèo trong hồ mỗi ngày tăng GẤP ĐÔI diện tích, ngày thứ 48 thì phủ kín hồ. Ngày thứ mấy bèo phủ đúng NỬA hồ?', options: ['Ngày 46', 'Ngày 12', 'Ngày 47', 'Ngày 24'], answer: 2,
+    explain: 'Đi ngược: kín hồ ở ngày 48, mà mỗi ngày gấp đôi ⇒ hôm trước đó (ngày 47) mới là một nửa.' },
+  { id: 'dl150', category: '🧠 Logic', d: 2, q: 'Ngăn kéo tối có tất đen và tất trắng lẫn lộn. Phải lấy ra ít nhất mấy chiếc để CHẮC CHẮN có một đôi cùng màu?', options: ['4 chiếc', '5 chiếc', '3 chiếc', '2 chiếc'], answer: 2,
+    explain: 'Hai chiếc đầu có thể mỗi màu một chiếc; chiếc thứ ba buộc phải trùng màu với một trong hai ⇒ 3 chiếc.' },
+  { id: 'dl151', category: '🧠 Logic', d: 3, q: 'Có 3 công tắc ngoài hành lang, chỉ 1 công tắc nối với bóng đèn trong phòng kín. Bạn chỉ được vào phòng ĐÚNG MỘT LẦN. Làm sao xác định được công tắc nào?', options: ['Bật cả ba công tắc cùng lúc rồi vào phòng xem bóng đèn có sáng không', 'Bật lần lượt từng công tắc rồi mỗi lần lại vào phòng kiểm tra một lượt', 'Bật số 1 vài phút rồi tắt, bật số 2 rồi vào — sờ xem bóng còn nóng không', 'Không thể xác định được nếu chỉ được phép vào phòng đúng một lần'], answer: 2,
+    explain: 'Mẹo nằm ở chỗ dùng thêm dấu hiệu ngoài ánh sáng: NHIỆT ĐỘ bóng đèn. Ba trạng thái (đang sáng · tắt nhưng còn nóng · tắt và nguội) đủ phân biệt ba công tắc chỉ trong một lần vào.' },
+  { id: 'dl152', category: '🧠 Logic', d: 3, q: 'Một cái ao có 10 hàng cọc, mỗi hàng 10 cọc, hai hàng cạnh nhau cách nhau 1 m. Cạnh ngoài cùng của lưới cọc dài bao nhiêu mét?', options: ['9 m', '10 m', '11 m', '100 m'], answer: 0,
+    explain: '10 cọc chỉ tạo ra 9 khoảng cách ⇒ 9 × 1 = 9 m. Đây là bẫy "cột và khoảng" kinh điển.' },
+  { id: 'dl153', category: '🧠 Logic', d: 2, q: 'Một cuốn sách đánh số trang từ 1. Muốn đánh hết trang số 100 thì cần viết bao nhiêu CHỮ SỐ?', options: ['200', '192', '100', '190'], answer: 1,
+    explain: 'Trang 1–9: 9 chữ số. Trang 10–99: 90 × 2 = 180. Trang 100: 3. Tổng 9 + 180 + 3 = 192.' },
+  { id: 'dl154', category: '🧠 Logic', d: 3, q: 'Bốn người qua cầu ban đêm, chỉ có 1 đèn pin, mỗi lần tối đa 2 người đi cùng (đi theo người chậm hơn). Thời gian lần lượt là 1, 2, 5, 10 phút. Thời gian NHANH NHẤT để cả bốn qua cầu là bao nhiêu?', options: ['21 phút', '15 phút', '17 phút', '19 phút'], answer: 2,
+    explain: 'Mẹo: cho hai người CHẬM đi cùng nhau. 1&2 qua (2), 1 quay lại (1), 5&10 qua (10), 2 quay lại (2), 1&2 qua (2) ⇒ 2+1+10+2+2 = 17 phút.' },
+  { id: 'mv21', category: '⏱️ Chuyển động & công việc', d: 2, q: 'A làm xong một việc trong 6 giờ, B làm xong việc đó trong 3 giờ. Làm CHUNG thì mất bao lâu?', options: ['4,5 giờ', '9 giờ', '2 giờ', '2,5 giờ'], answer: 2,
+    explain: 'Mỗi giờ A làm 1/6 việc, B làm 1/3 việc ⇒ chung 1/6 + 1/3 = 1/2 việc mỗi giờ ⇒ 2 giờ xong.' },
+  { id: 'mv22', category: '⏱️ Chuyển động & công việc', d: 3, q: 'Vòi 1 chảy đầy bể trong 4 giờ, vòi 2 trong 6 giờ. Mở CẢ HAI thì bao lâu đầy bể?', options: ['2 giờ 30 phút', '3 giờ', '5 giờ', '2 giờ 24 phút'], answer: 3,
+    explain: 'Mỗi giờ chảy 1/4 + 1/6 = 5/12 bể ⇒ 12/5 giờ = 2,4 giờ = 2 giờ 24 phút.' },
+  { id: 'mv23', category: '⏱️ Chuyển động & công việc', d: 3, q: 'Hai xe cách nhau 240 km, đi NGƯỢC chiều về phía nhau với tốc độ 60 km/h và 40 km/h. Sau bao lâu thì gặp nhau?', options: ['2,4 giờ', '2 giờ', '3 giờ', '4 giờ'], answer: 0,
+    explain: 'Khoảng cách rút ngắn 60 + 40 = 100 km mỗi giờ ⇒ 240 / 100 = 2,4 giờ.' },
+  { id: 'mv24', category: '⏱️ Chuyển động & công việc', d: 3, q: 'Một xe đi 120 km với tốc độ 60 km/h rồi quay về đúng đường đó với tốc độ 40 km/h. Tốc độ TRUNG BÌNH cả đi lẫn về là bao nhiêu?', options: ['45 km/h', '48 km/h', '50 km/h', '52 km/h'], answer: 1,
+    explain: 'Đi mất 2 giờ, về mất 3 giờ ⇒ 240 km / 5 giờ = 48 km/h. KHÔNG phải trung bình cộng (50) vì thời gian hai chặng khác nhau.' },
+  { id: 'mv25', category: '⏱️ Chuyển động & công việc', d: 2, q: 'Một người đi bộ 5 km/h trong 1 giờ rồi chạy 10 km/h trong 1 giờ. Tổng quãng đường là bao nhiêu?', options: ['10 km', '20 km', '15 km', '7,5 km'], answer: 2,
+    explain: '5 × 1 + 10 × 1 = 15 km. (Ở đây chia đều THỜI GIAN nên trung bình cộng tốc độ mới đúng: 7,5 km/h.)' },
+  { id: 'kl7', category: '❌ Khác loại', d: 2, q: 'Số nào KHÁC NHÓM: 2, 3, 5, 9, 11?', options: ['5', '11', '9', '2'], answer: 2,
+    explain: 'Tất cả đều là số nguyên tố, riêng 9 = 3 × 3 thì không.' },
+  { id: 'kl8', category: '❌ Khác loại', d: 2, q: 'Số nào KHÁC NHÓM: 8, 27, 36, 64?', options: ['8', '27', '64', '36'], answer: 3,
+    explain: '8 = 2³, 27 = 3³, 64 = 4³ đều là số lập phương; 36 là số chính phương (6²) chứ không phải lập phương.' },
+  { id: 'kl9', category: '❌ Khác loại', d: 3, q: 'Số nào KHÁC NHÓM: 16, 25, 36, 48, 49?', options: ['48', '16', '36', '49'], answer: 0,
+    explain: 'Bốn số kia là số chính phương (4², 5², 6², 7²); 48 không phải.' },
 ];
