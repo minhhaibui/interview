@@ -2478,7 +2478,83 @@ test('enFillerCount: đếm đúng tiếng ậm ừ, KHÔNG chê oan "like/you k
 // ---------------------------------------------------------------------------
 // 🇬🇧 TIẾNG ANH GIAO TIẾP CÔNG VIỆC (english-support.js + tab english)
 // ---------------------------------------------------------------------------
-const ESUP = loadWindow('english-support.js');
+// Kho tiếng Anh nằm ở HAI file (english-support.js + en-core.js) nhưng dùng chung một
+// window: nạp cả hai vào cùng object để test đi qua track được đúng như lúc chạy thật.
+const ESUP = (() => {
+  const w = {};
+  new Function('window', read('english-support.js'))(w);
+  new Function('window', read('en-core.js'))(w);
+  return w;
+})();
+
+test('en-core: 500 từ lõi — đủ 20 chặng × 25 từ, NGHĨA không trùng, có phiên âm + ví dụ', () => {
+  const V = ESUP.EN_CORE_VOCAB, G = ESUP.EN_CORE_VGROUPS;
+  assert.strictEqual(V.length, 500, `phải đúng 500 từ, đang có ${V.length}`);
+  assert.strictEqual(G.length, 20, `phải đúng 20 chặng, đang có ${G.length}`);
+  const ids = V.map(v => v.id);
+  assert.strictEqual(new Set(ids).size, ids.length, 'id từ vựng trùng');
+  // Đề bài là NGHĨA TIẾNG VIỆT ⇒ hai từ trùng nghĩa là câu hỏi vô nghiệm: gõ đúng vẫn bị báo sai.
+  const vis = V.map(v => v.vi);
+  const dupVi = vis.filter((x, i) => vis.indexOf(x) !== i);
+  assert.deepStrictEqual(dupVi, [], 'có nghĩa tiếng Việt trùng nhau: ' + dupVi.join(' | '));
+  const words = V.map(v => v.en.toLowerCase());
+  const dupW = words.filter((x, i) => words.indexOf(x) !== i);
+  assert.deepStrictEqual(dupW, [], 'từ bị lặp trong bộ 500: ' + dupW.join(' | '));
+  const keys = new Set(G.map(g => g.key));
+  for (const v of V) {
+    assert.ok(keys.has(v.g), `${v.id}: chặng lạ ${v.g}`);
+    assert.ok(v.en && v.vi, `${v.id} thiếu en/vi`);
+    assert.ok(/^🔊 .+ · .+[.!?]$/.test(v.note), `${v.id}: note phải là "🔊 phiên âm · câu ví dụ." (đang là "${v.note}")`);
+    assert.ok(Array.isArray(v.alt || []), `${v.id}: alt phải là mảng`);
+  }
+  // mỗi chặng đúng 25 từ để lộ trình "mỗi buổi một chặng" không bị lệch
+  for (const g of G) {
+    const n = V.filter(v => v.g === g.key).length;
+    assert.strictEqual(n, 25, `chặng ${g.key} có ${n} từ (phải là 25)`);
+  }
+});
+
+test('en-core: 4 thì — đủ công thức/dấu hiệu/lỗi và mỗi thì ≥25 câu luyện', () => {
+  const T = ESUP.EN_TENSES, S = ESUP.EN_CORE_SENTENCES;
+  assert.deepStrictEqual(T.map(t => t.key), ['ps', 'pc', 'past', 'pp'],
+    'phải đúng 4 thì: hiện tại đơn → tiếp diễn → quá khứ đơn → hiện tại hoàn thành');
+  const sits = new Set(ESUP.EN_CORE_SITS.map(x => x.key));
+  for (const t of T) {
+    assert.ok(sits.has(t.key), `thì ${t.key} không có tình huống tương ứng để lọc bài`);
+    for (const f of ['aff', 'neg', 'ques']) assert.ok(t.form[f], `thì ${t.key} thiếu công thức ${f}`);
+    assert.ok(t.key3 && t.when.length >= 2 && t.ex.length >= 3, `thì ${t.key} thiếu phần dùng-khi-nào/ví dụ`);
+    assert.ok(t.signals.length >= 5, `thì ${t.key} thiếu dấu hiệu nhận biết`);
+    assert.ok(t.mistakes.length >= 3, `thì ${t.key} phải nêu ≥3 lỗi hay gặp`);
+    for (const m of t.mistakes) assert.ok(m.bad && m.good && m.why, `thì ${t.key}: lỗi thiếu bad/good/why`);
+    const n = S.filter(x => x.sit === t.key).length;
+    assert.ok(n >= 25, `thì ${t.key} chỉ có ${n} câu luyện — cần ≥25`);
+  }
+});
+
+test('en-core: bảng động từ bất quy tắc & phương pháp học', () => {
+  const IRR = ESUP.EN_IRREGULAR, M = ESUP.EN_CORE_METHOD;
+  assert.ok(IRR.length >= 50, `bảng bất quy tắc chỉ có ${IRR.length} động từ — cần ≥50`);
+  for (const r of IRR) assert.strictEqual(r.length, 4, `dòng bất quy tắc phải đủ V1/V2/V3/nghĩa: ${r[0]}`);
+  for (const must of ['go', 'be', 'have', 'see', 'send']) {
+    assert.ok(IRR.some(r => r[0] === must), `bảng bất quy tắc thiếu "${must}"`);
+  }
+  assert.ok(M && M.steps.length >= 3 && M.rules.length >= 4 && M.week.length >= 3,
+    'phương pháp học phải có ≥3 bước mỗi buổi, ≥4 quy tắc và lịch theo tuần');
+});
+
+test('en-core: wiring — nạp script, chế độ 📐, sw cache, từ vựng mang theo phiên âm', () => {
+  assert.ok(HTML.includes('<script src="en-core.js"></script>'), 'index.html chưa nạp en-core.js');
+  assert.ok(SW.includes("'en-core.js'"), 'sw.js PRECACHE thiếu en-core.js');
+  assert.ok(/data-mode="tense"/.test(HTML), 'index.html thiếu nút chế độ 📐 4 thì');
+  assert.ok(/function esRenderTenses\(/.test(APP), 'app.js thiếu hàm esRenderTenses');
+  assert.ok(/mode === 'tense' \? esRenderTenses\(\)/.test(APP), 'esSetMode chưa gọi esRenderTenses');
+  // chế độ 📐 là màn CHỈ ĐỌC, không được rơi vào khung làm bài
+  assert.ok(/mode === 'plan' \|\| mode === 'tpl' \|\| mode === 'tense'/.test(APP),
+    "chế độ 'tense' phải nằm trong nhóm chỉ đọc");
+  // từ vựng phải mang theo alt + note, nếu không thì phiên âm/ví dụ soạn ra không ai thấy
+  assert.ok(/alts: v\.alt \|\| \[\], note: v\.note \|\| ''/.test(APP),
+    'esItemsFor(vocab) phải truyền alt + note của từ');
+});
 
 test('english-support: wiring tab/view/script/sw', () => {
   assert.ok(HTML.includes('data-view="english"'), 'index.html thiếu tab english');
@@ -2598,10 +2674,10 @@ test('english-support: mẫu thư đủ cả hai mạch & có nội dung', () =>
 // ---------------------------------------------------------------------------
 // 3 MẠCH NỘI DUNG: 🎯 phỏng vấn · 💬 đời thường · 💼 support
 // ---------------------------------------------------------------------------
-test('english-support: 3 track khai báo đúng & bank/sits tồn tại', () => {
+test('english-support: 4 track khai báo đúng & bank/sits tồn tại', () => {
   const T = ESUP.EN_SUP_TRACKS;
-  assert.deepStrictEqual(T.map(t => t.key), ['itv', 'life', 'sup'],
-    'thứ tự track phải là phỏng vấn → đời thường → support (ưu tiên của người học)');
+  assert.deepStrictEqual(T.map(t => t.key), ['core', 'itv', 'life', 'sup'],
+    'thứ tự track: nền tảng (500 từ + 4 thì) → phỏng vấn → đời thường → support');
   for (const t of T) {
     assert.ok(Array.isArray(ESUP[t.bank]) && ESUP[t.bank].length, `track ${t.key}: bank ${t.bank} rỗng`);
     assert.ok(Array.isArray(ESUP[t.sits]) && ESUP[t.sits].length, `track ${t.key}: sits ${t.sits} rỗng`);

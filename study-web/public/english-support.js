@@ -1388,6 +1388,7 @@ window.EN_SUP_LIFE_SENTENCES = [
 // Thứ tự ưu tiên theo mục tiêu người học: phỏng vấn → đời thường → support.
 // ===========================================================================
 window.EN_SUP_TRACKS = [
+  { key: 'core', icon: '🔤', label: '500 từ lõi + 4 thì', sits: 'EN_CORE_SITS', bank: 'EN_CORE_SENTENCES' },
   { key: 'itv',  icon: '🎯', label: 'Phỏng vấn',  sits: 'EN_SUP_ITV_SITS',  bank: 'EN_SUP_ITV_SENTENCES' },
   { key: 'life', icon: '💬', label: 'Đời thường', sits: 'EN_SUP_LIFE_SITS', bank: 'EN_SUP_LIFE_SENTENCES' },
   { key: 'sup',  icon: '💼', label: 'Support khách hàng', sits: 'EN_SUP_SITS', bank: 'EN_SUP_SENTENCES' },
@@ -1396,6 +1397,17 @@ window.EN_SUP_TRACKS = [
 // Lộ trình riêng từng track: học nhóm nào TRƯỚC. Khác EN_SUP_PLAN (nền ngữ pháp
 // 12 tuần, dùng chung cho cả ba track) — cái này là thứ tự ưu tiên nội dung.
 window.EN_SUP_TRACK_PLANS = {
+  core: {
+    title: 'Nền tảng — 500 từ thông dụng nhất & 4 thì',
+    intro: 'Học TRƯỚC hai mạch kia. Không có 500 từ này thì câu nào cũng phải tra từ điển, '
+         + 'và sai thì thì người nghe hiểu lệch thời gian ngay. Mỗi tuần một thì, mỗi buổi một chặng 25 từ.',
+    steps: [
+      { sit: 'ps',   why: 'TUẦN 1. Thì dùng nhiều nhất (~50% số câu): thói quen, sự thật. Chỉ cần nhớ đúng một luật: he/she/it thêm -s.' },
+      { sit: 'pc',   why: 'TUẦN 2. Thì để báo tiến độ "đang làm" — dev/support dùng hằng ngày. Luôn phải có am/is/are.' },
+      { sit: 'past', why: 'TUẦN 3. Thì kể chuyện — mọi câu trả lời phỏng vấn theo STAR đều nằm ở đây. Nhớ: có DID thì động từ về nguyên mẫu.' },
+      { sit: 'pp',   why: 'TUẦN 4. Thì người Việt sai nhiều nhất nhưng lại hay phải dùng để báo "đã xong". Học kỹ SINCE vs FOR.' },
+    ],
+  },
   itv: {
     title: 'Ôn phỏng vấn — thứ tự nên học',
     intro: 'Nếu sắp phỏng vấn gấp, học từ trên xuống và dừng ở đâu cũng vẫn dùng được: '
@@ -1650,6 +1662,7 @@ window.EN_SUP_LIFE_VGROUPS = [
 // Nối bank/nhóm từ vựng vào khai báo track (giữ EN_SUP_TRACKS là nguồn duy nhất).
 for (const t of window.EN_SUP_TRACKS) {
   const map = {
+    core: { vocab: 'EN_CORE_VOCAB',     vgroups: 'EN_CORE_VGROUPS' },
     itv:  { vocab: 'EN_SUP_ITV_VOCAB',  vgroups: 'EN_SUP_ITV_VGROUPS' },
     life: { vocab: 'EN_SUP_LIFE_VOCAB', vgroups: 'EN_SUP_LIFE_VGROUPS' },
     sup:  { vocab: 'EN_SUP_VOCAB',      vgroups: 'EN_SUP_VGROUPS' },

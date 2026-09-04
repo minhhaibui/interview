@@ -226,9 +226,9 @@ không cần biết mẹo hard-refresh.
     skip link & landmark, khi nào Storybook đáng dùng, và combobox đúng chuẩn;
     dành cho buổi phỏng vấn thiên kiến thức nền.
 
-  Kho câu đủ lớn để ôn dài hơi mà **không lặp lại**: 🧩 IQ **363 câu** (10 nhóm: dãy số ·
-  chữ cái · logic · toán nhanh · tương tự · xác suất · mã hoá · hình & không gian ·
-  chuyển động & công việc · chọn từ khác loại), 🇬🇧 tiếng Anh **125 câu** (82 câu giao tiếp),
+  Kho câu đủ lớn để ôn dài hơi mà **không lặp lại**: 🧩 IQ **914 câu** (dãy số 234 · suy luận hình 313 ·
+  logic 158 · toán nhanh 97 · xác suất 46 · hình & không gian 32 · chuyển động & công việc 20 ·
+  mã hoá 8 · khác loại 6 — **đã bỏ hẳn nhóm đố chữ cái**), 🇬🇧 tiếng Anh **125 câu** (82 câu giao tiếp),
   ⌨️ code **110 câu** (đoán output 52 + Big-O 58), 📖 lý thuyết **477 câu**
   (JS 181 · Node 174 · React 170) — chạy được **~15 buổi liên tiếp** mà IQ, tiếng Anh và
   lý thuyết không lặp câu nào.
@@ -246,6 +246,15 @@ không cần biết mẹo hard-refresh.
   **📉 chủ đề sai nhiều nhất**, và **🔍 xem lại từng câu** (bạn chọn gì · đáp án đúng · giải thích).
   Mỗi buổi được **lưu vào lịch sử** — bấm một dòng để mở lại đúng báo cáo đó (10 buổi
   gần nhất giữ chi tiết từng câu).
+- **🇬🇧 Tiếng Anh** — tab luyện **VIẾT** (nhìn tiếng Việt → tự gõ ra tiếng Anh), cố ý **KHÔNG gợi ý**
+  để bắt não TẠO RA câu chứ không chỉ nhận ra câu; cuối buổi bấm 📋 chép cả bài đi nhờ AI review.
+  4 mạch nội dung: **🔤 500 từ lõi + 4 thì** (nền tảng — học trước) · 🎯 phỏng vấn · 💬 đời thường ·
+  💼 support khách hàng. Chế độ **📐 4 thì + cách học**: phương pháp học 10 tuần, bảng tra
+  4 thì hay dùng nhất (hiện tại đơn · tiếp diễn · quá khứ đơn · hiện tại hoàn thành — công thức,
+  dấu hiệu, lỗi người Việt hay mắc), 59 động từ **bất quy tắc**, và bảng tra cả 500 từ.
+  500 từ xếp theo **tần suất**, chia **20 chặng × 25 từ**, mỗi từ có phiên âm Việt-hoá + câu ví dụ;
+  120 câu VI→EN chia đúng 4 thì (30 câu/thì). Tất cả đi qua **SRS** chung với flashcards.
+
 - **🌟 STAR Builder** — 19 câu behavioral (kể cả sự cố production, technical debt,
   bất đồng với sếp…): soạn theo khung STAR, tự chấm checklist + AI góp ý; kèm
   **🇬🇧 mẫu câu tiếng Anh khi phỏng vấn** (9 nhóm, có **nút 🔊 nghe & ▶️ shadowing**).

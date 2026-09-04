@@ -354,10 +354,6 @@ window.IQ_QUESTIONS = [
     explain: 'Dãy các số nguyên tố. Sau 11 là 13.' },
 
   // ---- Chữ cái / quy luật ----
-  { id: 'let1', category: '🔠 Chữ cái', q: 'Chữ tiếp theo: A, C, E, G, ?', options: ['H', 'I', 'J', 'K'], answer: 1,
-    explain: 'Cách một chữ một (bỏ B, D, F, H). Sau G là I.' },
-  { id: 'let2', category: '🔠 Chữ cái', q: 'Chữ tiếp theo: A, B, D, G, K, ?', options: ['N', 'O', 'P', 'Q'], answer: 2,
-    explain: 'Khoảng cách tăng dần +1, +2, +3, +4, +5. Từ K (vị trí 11) + 5 = vị trí 16 = P.' },
   { id: 'odd1', category: '🧠 Logic', q: 'Số nào KHÔNG cùng nhóm: 9, 16, 24, 36?', options: ['9', '16', '24', '36'], answer: 2,
     explain: '9, 16, 36 đều là số chính phương (3², 4², 6²); 24 thì không.' },
 
@@ -405,8 +401,6 @@ window.IQ_QUESTIONS = [
     explain: 'Hai dãy xen kẽ: 1,2,3,4 và 4,8,12,16. Số kế tiếp thuộc dãy thứ hai → 16.' },
 
   // ---- Chữ cái ----
-  { id: 'let3', category: '🔠 Chữ cái', q: 'Chữ tiếp theo: Z, X, V, T, ?', options: ['S', 'R', 'Q', 'P'], answer: 1,
-    explain: 'Lùi 2 chữ mỗi bước (Z, X, V, T...). Sau T là R.' },
 
   // ---- Toán nhanh ----
   { id: 'math6', category: '➗ Toán nhanh', q: '3 quả cam giá 12.000đ. Vậy 7 quả giá bao nhiêu?', options: ['21.000đ', '24.000đ', '28.000đ', '30.000đ'], answer: 2,
@@ -488,12 +482,6 @@ window.IQ_QUESTIONS = [
   // ---- Tương tự ----
 
   // ---- Chữ cái ----
-  { id: 'lt5', category: '🔠 Chữ cái', d: 1, q: 'Chữ tiếp theo: B, D, F, H, ?', options: ['I', 'J', 'K', 'L'], answer: 1, explain: 'Cách 1 chữ một. Sau H là J.' },
-  { id: 'lt6', category: '🔠 Chữ cái', d: 2, q: 'Chữ tiếp theo: A, Z, B, Y, C, X, ?', options: ['D', 'E', 'W', 'V'], answer: 0, explain: 'Hai dãy xen kẽ: A,B,C,D (từ đầu) và Z,Y,X (từ cuối). Tiếp theo là D.' },
-  { id: 'lt7', category: '🔠 Chữ cái', d: 2, q: 'Cặp tiếp theo: AB, CD, EF, GH, ?', options: ['HI', 'IJ', 'JK', 'IK'], answer: 1, explain: 'Mỗi cặp gồm 2 chữ liền nhau, nối tiếp bảng chữ: sau GH là IJ.' },
-  { id: 'lt8', category: '🔠 Chữ cái', d: 1, q: 'Chữ tiếp theo: Z, Y, X, W, ?', options: ['U', 'V', 'T', 'S'], answer: 1, explain: 'Đếm ngược bảng chữ cái. Sau W là V.' },
-  { id: 'lt9', category: '🔠 Chữ cái', d: 3, q: 'Chữ tiếp theo: A, C, F, J, ?', options: ['N', 'O', 'P', 'M'], answer: 1, explain: 'Khoảng cách tăng +2,+3,+4,+5: A(1)→C(3)→F(6)→J(10)→O(15).' },
-  { id: 'lt10', category: '🔠 Chữ cái', d: 2, q: 'Chữ tiếp theo: M, K, I, G, ?', options: ['F', 'E', 'H', 'D'], answer: 1, explain: 'Lùi 2 chữ mỗi bước: M,K,I,G,E.' },
 
   // ---- Bổ sung đợt mới ----
 { id: 'nx3', category: '🔢 Dãy số', d: 2, q: 'Số tiếp theo: 81, 27, 9, 3, ?', options: ['0', '1', '2', '3'], answer: 1, explain: 'Chia 3 mỗi bước: 3 ÷ 3 = 1.' },
@@ -579,42 +567,6 @@ window.IQ_QUESTIONS = [
     explain: 'Hai bước một: −2 rồi +3. Sau 8 là 8 + 3 = 11.' },
 
   // ---- 🔠 Chữ cái ----
-  { id: 'l2-2', category: '🔠 Chữ cái', d: 2, q: 'Chữ tiếp theo: B, D, G, K, ?', options: ['N', 'O', 'P', 'Q'], answer: 2,
-    explain: 'Vị trí 2, 4, 7, 11 — bước tăng 2, 3, 4 ⇒ +5 = 16 = P.' },
-  { id: 'l2-4', category: '🔠 Chữ cái', d: 2, q: 'Chữ tiếp theo: A, B, D, H, ?', options: ['L', 'N', 'P', 'R'], answer: 2,
-    explain: 'Vị trí gấp đôi mỗi bước: 1, 2, 4, 8 ⇒ 16 = P.' },
-  { id: 'l2-5', category: '🔠 Chữ cái', d: 1, q: 'Chữ tiếp theo: C, F, I, L, ?', options: ['M', 'N', 'O', 'P'], answer: 2,
-    explain: 'Cách 3 chữ: C(3), F(6), I(9), L(12) ⇒ O(15).' },
-  { id: 'l2-6', category: '🔠 Chữ cái', d: 2, q: 'Cặp tiếp theo: AZ, BY, CX, ?', options: ['DV', 'DW', 'EW', 'DX'], answer: 1,
-    explain: 'Chữ đầu tiến A→B→C→D, chữ sau lùi Z→Y→X→W ⇒ DW.' },
-  { id: 'l2-7', category: '🔠 Chữ cái', d: 1, q: 'Tiếp theo: A1, C3, E5, ?', options: ['F6', 'G6', 'G7', 'H8'], answer: 2,
-    explain: 'Chữ cách một (A, C, E, G) và số bằng đúng vị trí chữ (1, 3, 5, 7) ⇒ G7.' },
-  { id: 'l2-8', category: '🔠 Chữ cái', d: 3, q: 'Chữ tiếp theo: A, B, D, G, K, P, ?', options: ['T', 'U', 'V', 'W'], answer: 2,
-    explain: 'Vị trí 1, 2, 4, 7, 11, 16 — bước tăng đều 1, 2, 3, 4, 5 ⇒ +6 = 22 = V.' },
-  { id: 'l2-9', category: '🔠 Chữ cái', d: 1, q: 'Tiếp theo: JAN, MAR, MAY, ?', options: ['JUN', 'JUL', 'AUG', 'SEP'], answer: 1,
-    explain: 'Các tháng cách nhau 2: tháng 1, 3, 5 ⇒ tháng 7 = JUL.' },
-  { id: 'l2-10', category: '🔠 Chữ cái', d: 1, q: 'Tiếp theo: MON, WED, FRI, ?', options: ['SAT', 'SUN', 'TUE', 'THU'], answer: 1,
-    explain: 'Cách 2 ngày: thứ Hai, thứ Tư, thứ Sáu ⇒ Chủ nhật (SUN).' },
-  { id: 'l2-11', category: '🔠 Chữ cái', d: 1, q: 'Viết ngược chuỗi "CODE" được?', options: ['ECOD', 'EDOC', 'DEOC', 'ODEC'], answer: 1,
-    explain: 'Đọc từ phải sang trái: E, D, O, C ⇒ EDOC.' },
-  { id: 'l2-12', category: '🔠 Chữ cái', d: 1, q: 'Nếu A=1, B=2, C=3… thì "CAB" viết thành số là?', options: ['132', '213', '312', '321'], answer: 2,
-    explain: 'C=3, A=1, B=2 ⇒ 312.' },
-  { id: 'l2-13', category: '🔠 Chữ cái', d: 2, q: 'Bỏ hết nguyên âm khỏi "INTERVIEW" còn lại?', options: ['NTRVW', 'INTRVW', 'NTERVW', 'NTRVWS'], answer: 0,
-    explain: 'INTERVIEW gồm I-N-T-E-R-V-I-E-W; bỏ 4 nguyên âm I, E, I, E ⇒ còn N, T, R, V, W.' },
-  { id: 'l2-14', category: '🔠 Chữ cái', d: 1, q: 'Chữ cái thứ 5 tính từ CUỐI bảng chữ cái tiếng Anh là?', options: ['U', 'V', 'W', 'X'], answer: 1,
-    explain: 'Đếm ngược: Z(1), Y(2), X(3), W(4), V(5) ⇒ V.' },
-  { id: 'l2-15', category: '🔠 Chữ cái', d: 1, q: 'Chữ cái nằm CHÍNH GIỮA H và P là?', options: ['J', 'K', 'L', 'M'], answer: 2,
-    explain: 'H(8) và P(16), giữa là (8+16)/2 = 12 ⇒ L.' },
-  { id: 'l2-16', category: '🔠 Chữ cái', d: 2, q: 'Chữ tiếp theo: A, D, I, P, ?', options: ['U', 'W', 'Y', 'Z'], answer: 2,
-    explain: 'Vị trí là bình phương: 1, 4, 9, 16 ⇒ 25 = Y.' },
-  { id: 'l2-17', category: '🔠 Chữ cái', d: 2, q: 'Chữ tiếp theo: E, G, J, N, ?', options: ['Q', 'R', 'S', 'T'], answer: 2,
-    explain: 'Vị trí 5, 7, 10, 14 — bước tăng 2, 3, 4 ⇒ +5 = 19 = S.' },
-  { id: 'l2-18', category: '🔠 Chữ cái', d: 2, q: 'Nếu "MOUSE" mã hoá thành "NPVTF" thì "CAT" mã hoá thành?', options: ['CBU', 'DBT', 'DBU', 'EBV'], answer: 2,
-    explain: 'Mỗi chữ tiến 1 bậc: C→D, A→B, T→U ⇒ DBU.' },
-  { id: 'l2-19', category: '🔠 Chữ cái', d: 1, q: 'Chữ tiếp theo: X, U, R, O, ?', options: ['K', 'L', 'M', 'N'], answer: 1,
-    explain: 'Lùi 3 chữ mỗi bước: X(24), U(21), R(18), O(15) ⇒ L(12).' },
-  { id: 'l2-20', category: '🔠 Chữ cái', d: 3, q: 'Tiếp theo: B2, D4, H8, ?', options: ['J10', 'L12', 'N14', 'P16'], answer: 3,
-    explain: 'Vị trí chữ = số đi kèm và cả hai gấp đôi mỗi bước: 2, 4, 8 ⇒ 16 = P ⇒ P16.' },
 
   // ---- 🧠 Logic ----
   { id: 'g2-1', category: '🧠 Logic', d: 1, q: 'Mọi lập trình viên đều biết gõ phím. Nam biết gõ phím. Kết luận nào ĐÚNG?', options: ['Nam là lập trình viên', 'Nam không phải lập trình viên', 'Chưa đủ dữ kiện để kết luận', 'Mọi người biết gõ đều là lập trình viên'], answer: 2,
@@ -731,24 +683,16 @@ window.IQ_QUESTIONS = [
     explain: '4/10 × 3/9 = 12/90 = 2/15.' },
 
   // ---- 🔀 Mã hoá & quy luật (dạng coding-decoding kinh điển của test IQ) ----
-  { id: 'c2-1', category: '🔀 Mã hoá', d: 2, q: 'Nếu "BOOK" = "CPPL" thì "WORD" = ?', options: ['XPSD', 'XPSE', 'VNQC', 'XQSE'], answer: 1,
-    explain: 'Mỗi chữ tiến 1 bậc: W→X, O→P, R→S, D→E ⇒ XPSE.' },
-  { id: 'c2-2', category: '🔀 Mã hoá', d: 2, q: 'Nếu "CAT" = "XZG" thì quy luật mã hoá là gì?', options: ['Tiến 3 bậc trong bảng chữ cái', 'Lùi 3 bậc trong bảng chữ cái', 'Lấy chữ đối xứng qua giữa bảng chữ cái', 'Đảo ngược thứ tự các chữ trong từ'], answer: 2,
-    explain: 'A↔Z, B↔Y, C↔X (mã Atbash): C→X, A→Z, T→G.' },
   { id: 'c2-3', category: '🔀 Mã hoá', d: 1, q: 'Nếu 2 = 4, 3 = 9, 4 = 16 thì 7 = ?', options: ['28', '42', '49', '56'], answer: 2,
     explain: 'Quy luật bình phương: 7² = 49.' },
   { id: 'c2-4', category: '🔀 Mã hoá', d: 2, q: 'Nếu 1 = 3, 2 = 5, 3 = 7 thì 10 = ?', options: ['17', '19', '21', '23'], answer: 2,
     explain: 'Quy luật 2n + 1: 2 × 10 + 1 = 21.' },
-  { id: 'c2-5', category: '🔀 Mã hoá', d: 3, q: 'Nếu "GO" = 22 và "CAT" = 24 thì "CODE" = ? (mỗi chữ tính bằng vị trí trong bảng chữ cái)', options: ['24', '27', '30', '33'], answer: 1,
-    explain: 'G7+O15 = 22 ✓, C3+A1+T20 = 24 ✓ ⇒ CODE = C3+O15+D4+E5 = 27.' },
   { id: 'c2-6', category: '🔀 Mã hoá', d: 2, q: 'Nếu "123" nghĩa là "tôi thích code" và "345" nghĩa là "code rất vui", thì số nào là "code"?', options: ['1', '2', '3', '5'], answer: 2,
     explain: 'Chỉ số 3 xuất hiện ở cả hai câu, và "code" là từ chung duy nhất ⇒ 3 = code.' },
   { id: 'c2-7', category: '🔀 Mã hoá', d: 2, q: 'Nếu ROSE mã thành 6821, CHAIR thành 73456 thì PREACH mã thành?', options: ['961473', '961472', '961437', '964173'], answer: 0,
     explain: 'Ghép bảng: R=6, O=8, S=2, E=1, C=7, H=3, A=4, I=5. P chưa có ⇒ chọn mã bắt đầu bằng 9 và khớp R6-E1-A4-C7-H3 ⇒ 961473.' },
   { id: 'c2-8', category: '🔀 Mã hoá', d: 1, q: 'Nếu 5 + 3 = 28, 9 + 1 = 810, thì 8 + 2 = ?', options: ['610', '106', '1610', '164'], answer: 0,
     explain: 'Quy luật: (a−b) ghép (a+b). 8−2=6 và 8+2=10 ⇒ "610".' },
-  { id: 'c2-9', category: '🔀 Mã hoá', d: 2, q: 'Nếu MONDAY viết là NPOEBZ thì TUESDAY viết là?', options: ['UVFTEBZ', 'UVFTFBZ', 'UWFTEBZ', 'UVETEBZ'], answer: 0,
-    explain: 'Mỗi chữ tiến 1 bậc: T→U, U→V, E→F, S→T, D→E, A→B, Y→Z ⇒ UVFTEBZ.' },
   { id: 'c2-10', category: '🔀 Mã hoá', d: 3, q: 'Dãy 1, 11, 21, 1211, 111221, ? (đọc số ở dòng trước)', options: ['312211', '122111', '111222', '221121'], answer: 0,
     explain: 'Dãy "look-and-say": 111221 đọc là "ba số 1, hai số 2, một số 1" ⇒ 312211.' },
 
@@ -879,14 +823,8 @@ window.IQ_QUESTIONS = [
     explain: '8 = 2³, 27 = 3³, 64 = 4³ là lập phương; 100 chỉ là bình phương của 10.' },
 
   // ---- 🔀 Mã hoá (lô 2) ----
-  { id: 'c2-11', category: '🔀 Mã hoá', d: 3, q: 'Nếu "SUN" = 54 và "MOON" = 57 (cộng vị trí chữ cái) thì "STAR" = ?', options: ['54', '56', '58', '60'], answer: 2,
-    explain: 'S19+U21+N14 = 54 ✓, M13+O15+O15+N14 = 57 ✓ ⇒ S19+T20+A1+R18 = 58.' },
-  { id: 'c2-12', category: '🔀 Mã hoá', d: 2, q: 'Nếu "FROG" = "COLD" (mỗi chữ lùi 3 bậc) thì "PLUM" = ?', options: ['MIRJ', 'MIRK', 'NIRJ', 'MISJ'], answer: 0,
-    explain: 'P→M, L→I, U→R, M→J ⇒ MIRJ.' },
   { id: 'c2-13', category: '🔀 Mã hoá', d: 1, q: 'Nếu 123 = 6 và 234 = 9 thì 456 = ?', options: ['12', '15', '18', '20'], answer: 1,
     explain: 'Quy luật cộng các chữ số: 4 + 5 + 6 = 15.' },
-  { id: 'c2-14', category: '🔀 Mã hoá', d: 2, q: 'Nếu AB = 3 và CD = 7 thì EF = ?', options: ['9', '10', '11', '13'], answer: 2,
-    explain: 'Cộng vị trí chữ: A1+B2 = 3, C3+D4 = 7 ⇒ E5+F6 = 11.' },
   { id: 'c2-15', category: '🔀 Mã hoá', d: 1, q: 'Số nhị phân 1010 đổi sang thập phân là?', options: ['5', '8', '10', '12'], answer: 2,
     explain: '8 + 0 + 2 + 0 = 10 (bit từ trái: 8, 4, 2, 1).' },
 
@@ -1537,8 +1475,6 @@ window.IQ_QUESTIONS = [
     explain: 'Số đó là 12 × 3 = 36; 3/4 của 36 = 27.' },
   { id: 'sq5-1', category: '🔢 Dãy số', d: 3, q: 'Số tiếp theo: 1, 11, 21, 1211, 111221, ?', options: ['122112', '312211', '1112221', '211231'], answer: 1,
     explain: 'Dãy "đọc số" (look-and-say): mỗi số MÔ TẢ số trước. 111221 đọc là "ba số 1, hai số 2, một số 1" ⇒ 312211.' },
-  { id: 'sq5-2', category: '🔀 Mã hoá', d: 2, q: 'Nếu CODE được mã hoá là 3-15-4-5 thì BAT là gì?', options: ['2-1-20', '2-1-19', '3-1-20', '2-2-20'], answer: 0,
-    explain: 'Mỗi chữ cái đổi thành THỨ TỰ trong bảng chữ cái: B = 2, A = 1, T = 20.' },
 
   // =========================================================================
   // 🔢 ĐOÁN SỐ — bộ quy luật ĐA DẠNG (nhân/chia biến thiên, đan xen hai dãy,

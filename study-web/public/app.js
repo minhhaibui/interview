@@ -8951,7 +8951,7 @@ function toggleShortcuts() { shortcutsOpen() ? closeShortcuts() : openShortcuts(
 // (dễ) thay vì TẠO RA (khó) — mất đúng cái kỹ năng đang cần luyện.
 // ===========================================================================
 
-const ES_MODES = ['write', 'errors', 'vocab', 'plan', 'tpl'];
+const ES_MODES = ['write', 'errors', 'vocab', 'tense', 'plan', 'tpl'];
 let esMode = 'write';
 let esTrack = 'itv';         // 🎯 phỏng vấn | 💬 đời thường | 💼 support — mặc định phỏng vấn
 let esQueue = [];
@@ -9024,7 +9024,7 @@ function esItemsFor(mode) {
   if (mode === 'vocab') {
     const { vocab, vgroups } = esTrackData(esTrack);
     return vocab.map(v => ({
-      id: v.id, ask: v.vi, want: v.en, alts: [], note: '',
+      id: v.id, ask: v.vi, want: v.en, alts: v.alt || [], note: v.note || '',
       tag: (vgroups.find(x => x.key === v.g) || {}).label || '', scope: v.g,
     }));
   }
@@ -9312,6 +9312,87 @@ function esRenderPlan() {
   </div>`;
 }
 
+/** 📐 Chế độ chỉ đọc: cách học + bảng tra 4 thì + động từ bất quy tắc.
+ *  Đặt PHƯƠNG PHÁP lên trên cùng vì người học thường bí ở chỗ "mỗi ngày phải làm gì",
+ *  chứ không phải thiếu bảng công thức. */
+function esRenderTenses() {
+  const m = window.EN_CORE_METHOD || null;
+  const ts = window.EN_TENSES || [];
+  const fut = window.EN_FUTURE_NOTE || null;
+  const irr = window.EN_IRREGULAR || [];
+  const vocab = window.EN_CORE_VOCAB || [];
+  const srs = store.get('prep-srs', {});
+  const learned = vocab.filter(v => (srs[v.id]?.box || 0) >= 2).length;
+
+  const method = m ? `<div class="es-method">
+    <h2 class="es-h2">${escHtml(m.title)}</h2>
+    <p class="es-tip">${escHtml(m.intro)}</p>
+    <div class="es-mgrid">${m.steps.map(st => `
+      <div class="es-mstep"><div class="es-mstep-h">${st.icon} <b>${escHtml(st.t)}</b></div>
+        <div class="es-sub">${escHtml(st.d)}</div></div>`).join('')}</div>
+    <ul class="es-mrules">${m.rules.map(r => `<li>${escHtml(r)}</li>`).join('')}</ul>
+    <div class="es-mweeks">${m.week.map(w => `<div><b>Tuần ${escHtml(w.w)}</b> — ${escHtml(w.d)}</div>`).join('')}</div>
+    <div class="es-mprog">📚 Đã thuộc <b>${learned}/${vocab.length}</b> từ lõi
+      <span class="es-sub">(thuộc = gõ đúng vài lần CÁCH QUÃNG, tới hộp SRS ≥2)</span></div>
+  </div>` : '';
+
+  const tenses = ts.map(t => `
+    <details class="es-tense" ${t.key === 'ps' ? 'open' : ''}>
+      <summary>${t.icon} <b>${escHtml(t.name)}</b> <span class="es-sub">— ${escHtml(t.en)}</span></summary>
+      <p class="es-why">${escHtml(t.share)}</p>
+      <div class="es-form">
+        <div><span class="es-flabel">Khẳng định</span><code>${escHtml(t.form.aff)}</code></div>
+        <div><span class="es-flabel">Phủ định</span><code>${escHtml(t.form.neg)}</code></div>
+        <div><span class="es-flabel">Câu hỏi</span><code>${escHtml(t.form.ques)}</code></div>
+      </div>
+      <div class="es-key3">🔑 ${escHtml(t.key3)}</div>
+      <h4>Dùng khi nào</h4>
+      <ul>${t.when.map(w => `<li>${escHtml(w)}</li>`).join('')}</ul>
+      <h4>Ví dụ</h4>
+      <div class="es-exlist">${t.ex.map(e => `
+        <div class="es-exrow"><span class="es-exen">${escHtml(e.en)}
+          <button class="es-say" data-say="${escHtml(e.en)}">🔊</button></span>
+          <span class="es-sub">${escHtml(e.vi)}</span></div>`).join('')}</div>
+      <h4>Dấu hiệu nhận ra</h4>
+      <div class="es-signals">${t.signals.map(x => `<span>${escHtml(x)}</span>`).join('')}</div>
+      <h4>Lỗi hay gặp</h4>
+      <div class="es-mistakes">${t.mistakes.map(x => `
+        <div class="es-mrow"><div><s>${escHtml(x.bad)}</s> → <b>${escHtml(x.good)}</b></div>
+          <div class="es-sub">${escHtml(x.why)}</div></div>`).join('')}</div>
+    </details>`).join('');
+
+  const future = fut ? `<h2 class="es-h2">${fut.icon} ${escHtml(fut.title)}</h2>
+    <table class="es-irr"><thead><tr><th>Cấu trúc</th><th>Dùng khi</th><th>Ví dụ</th></tr></thead>
+    <tbody>${fut.rows.map(r => `<tr><td><code>${escHtml(r.form)}</code></td><td>${escHtml(r.use)}</td><td>${escHtml(r.ex)}</td></tr>`).join('')}</tbody></table>` : '';
+
+  const irregular = irr.length ? `<h2 class="es-h2">📕 ${irr.length} động từ bất quy tắc hay gặp nhất</h2>
+    <p class="es-tip">V2 dùng cho quá khứ đơn, V3 dùng cho hiện tại hoàn thành. Thuộc bảng này là qua được phần lớn câu kể chuyện.</p>
+    <table class="es-irr"><thead><tr><th>V1</th><th>V2 (quá khứ)</th><th>V3 (hoàn thành)</th><th>Nghĩa</th></tr></thead>
+    <tbody>${irr.map(r => `<tr><td><b>${escHtml(r[0])}</b></td><td>${escHtml(r[1])}</td><td>${escHtml(r[2])}</td><td class="es-sub">${escHtml(r[3])}</td></tr>`).join('')}</tbody></table>` : '';
+
+  // Bảng tra CẢ 500 từ — để đọc/ôn nhanh ngoài lúc gõ bài (mỗi chặng gập riêng cho đỡ dài).
+  const list = vocab.length ? `<h2 class="es-h2">📋 Tra cả ${vocab.length} từ lõi</h2>
+    <p class="es-tip">Chỉ để TRA và đọc lướt. Muốn thuộc thì phải gõ ở chế độ 🔤 Từ vựng — đọc lại không đủ.</p>
+    ${(window.EN_CORE_VGROUPS || []).map(g => {
+      const ws = vocab.filter(v => v.g === g.key);
+      const nOk = ws.filter(v => (srs[v.id]?.box || 0) >= 2).length;
+      return `<details class="es-tense">
+        <summary>${g.icon} <b>${escHtml(g.label)}</b> <span class="es-sub">— thuộc ${nOk}/${ws.length}</span></summary>
+        <table class="es-irr"><thead><tr><th>Từ</th><th>Đọc</th><th>Nghĩa</th></tr></thead><tbody>
+        ${ws.map(v => {
+          const parts = String(v.note || '').replace(/^🔊 /, '').split(' · ');
+          return `<tr><td><b>${escHtml(v.en)}</b></td><td>${escHtml(parts[0] || '')}</td><td class="es-sub">${escHtml(v.vi)}</td></tr>`;
+        }).join('')}</tbody></table>
+      </details>`;
+    }).join('')}` : '';
+
+  return `<div class="es-plan">${method}
+    <h2 class="es-h2">📐 4 thì hay dùng nhất</h2>
+    <p class="es-tip">Bốn thì này phủ gần hết tiếng Anh đi làm. Đọc bảng rồi sang ✍️ Viết câu VI→EN
+      (mạch 🔤 500 từ lõi) để luyện đúng thì vừa học — mỗi thì có 30 câu.</p>
+    ${tenses}${future}${irregular}${list}</div>`;
+}
+
 function esRenderTemplates() {
   const itv = esTemplates().filter(t => t.track === 'itv');
   const sup = esTemplates().filter(t => t.track !== 'itv');
@@ -9353,12 +9434,15 @@ function esSetMode(mode) {
   document.querySelectorAll('.es-mode').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   const drill = document.getElementById('es-drill');
   const read = document.getElementById('es-read');
-  const isRead = mode === 'plan' || mode === 'tpl';
+  const isRead = mode === 'plan' || mode === 'tpl' || mode === 'tense';
   drill.hidden = isRead;
   read.hidden = !isRead;
   const trackRow = document.getElementById('es-tracks');
   if (trackRow) trackRow.hidden = !(mode === 'write' || mode === 'vocab');
-  if (isRead) { read.innerHTML = mode === 'plan' ? esRenderPlan() : esRenderTemplates(); return; }
+  if (isRead) {
+    read.innerHTML = mode === 'plan' ? esRenderPlan() : mode === 'tense' ? esRenderTenses() : esRenderTemplates();
+    return;
+  }
   // Luật 4 lỗi hiện ngay trên khung làm bài của chế độ 🧯
   const holder = document.getElementById('es-rules-holder');
   if (holder) holder.innerHTML = mode === 'errors' ? esRenderErrorRules() : '';
