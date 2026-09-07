@@ -1144,6 +1144,34 @@ test('wiring: 🎯 phỏng vấn — 3 phần (Anh · IQ · Code), IQ chiếm ph
     'vòng viết code chưa cộng dồn điểm qua nhiều bài');
 });
 
+test('wiring: ⏱ chỉnh được thời gian bài test phỏng vấn (giây/câu IQ, nhớ qua reload)', () => {
+  assert.ok(/const IV_SEC_KEY = 'prep-iv-secq';/.test(APP), 'thiếu khoá lưu giờ prep-iv-secq');
+  assert.ok(/IV_SEC_DEF = 30, IV_SEC_MIN = 10, IV_SEC_MAX = 90, IV_SEC_STEP = 5/.test(APP),
+    'giới hạn giờ phải là 10–90 giây/câu, bước 5, mặc định 30');
+  const keys = APP.slice(APP.indexOf('const PREP_KEYS'), APP.indexOf('const PREP_KEYS') + 2400);
+  assert.ok(/'prep-iv-secq'/.test(keys), "PREP_KEYS thiếu 'prep-iv-secq' (chỉnh giờ xong không sync/backup)");
+  // Giá trị rác trong store không được làm treo đồng hồ → luôn kẹp về [MIN, MAX]
+  const fn = APP.slice(APP.indexOf('function ivSecPerQ'), APP.indexOf('const ivOpenSec'));
+  assert.ok(/Math\.max\(IV_SEC_MIN, Math\.min\(IV_SEC_MAX/.test(fn) && /Number\.isFinite/.test(fn),
+    'ivSecPerQ chưa kẹp giá trị & chưa chặn NaN');
+  // Vòng IQ và vòng hỏi miệng đều ăn theo cấu hình, KHÔNG còn số cứng
+  assert.ok(/sec: ivRoundSec\(r\), roundKey: r\.key/.test(APP), 'vòng IQ vẫn dùng giờ cứng r.n * 30');
+  assert.ok(/label: r\.label, sec: ivOpenSec\(\)/.test(APP), 'vòng hỏi miệng vẫn dùng giờ cứng 150s');
+  assert.ok(/if \(r\.type === 'iq'\) return r\.n \* secq;/.test(APP),
+    'ivRoundSec phải nhân theo SỐ CÂU (đổi kiểu bài là giờ tự co giãn)');
+  // Màn setup: có stepper −/+, hiện giờ từng vòng và tổng thời gian của kiểu đang chọn
+  for (const id of ['iv-sec-dec', 'iv-sec-inc', 'iv-sec-note'])
+    assert.ok(APP.includes(`id="${id}"`), `màn setup thiếu #${id}`);
+  assert.ok(/document\.getElementById\('iv-sec-dec'\)\.onclick/.test(APP) && /document\.getElementById\('iv-sec-inc'\)\.onclick/.test(APP),
+    'nút tăng/giảm giờ chưa được nối sự kiện');
+  assert.ok(/store\.set\(IV_SEC_KEY,/.test(APP), 'chỉnh giờ chưa được lưu lại');
+  assert.ok(/iv-rtime">⏱ \$\{fmtMMSS\(sec\)\}/.test(APP), 'thẻ vòng chưa hiện thời gian bấm giờ');
+  assert.ok(read('styles.css').includes('.iv-rtime'), 'styles.css thiếu .iv-rtime');
+  // Hint kiểu "chỉ IQ" không được ghi cứng "15 phút" nữa (giờ chỉnh được → sẽ nói dối)
+  const iqonly = APP.slice(APP.indexOf("  iqonly: {"), APP.indexOf("  iqcode: {"));
+  assert.ok(!/15 phút/.test(iqonly), 'hint "Chỉ test IQ" vẫn ghi cứng 15 phút');
+});
+
 test('wiring: 🎯 tab Phỏng vấn gộp Mock + Tổng hợp — 3 chế độ trong một tab', () => {
   assert.ok(!/data-view="company"/.test(HTML), 'vẫn còn tab "company" sau khi gộp');
   assert.ok(!/id="view-company"/.test(HTML), 'vẫn còn <div id="view-company">');

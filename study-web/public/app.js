@@ -4558,7 +4558,7 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-js-done', 'prep-js-best', 'prep-node-done', 'prep-node-best', 'prep-react-done', 'prep-react-best',
   'prep-en-done', 'prep-sit-done', 'prep-readiness-log',
   'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date',
-  'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned', 'prep-exam-history', 'prep-fc-lang', 'prep-iv-plan', 'prep-iv-seen',
+  'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned', 'prep-exam-history', 'prep-fc-lang', 'prep-iv-plan', 'prep-iv-secq', 'prep-iv-seen',
   'prep-doc-notes', 'prep-remind-time',
   'prep-en-iv-history', 'prep-en-iv-cfg', 'prep-en-iv-seen'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
@@ -7452,7 +7452,7 @@ const IV_PLANS = {
   // Hai kiểu BỎ TIẾNG ANH dưới đây đặt SAU 'code' trong object (test soi lát cắt full→open),
   // nhưng hiện ngay sau 'full' ở IV_PLAN_KEYS vì hay dùng.
   iqonly: {
-    label: '🧩 Chỉ test IQ', hint: 'Bỏ tiếng Anh & code — chỉ một vòng IQ 30 câu tính giờ (15 phút).',
+    label: '🧩 Chỉ test IQ', hint: 'Bỏ tiếng Anh & code — chỉ một vòng IQ 30 câu tính giờ (thời gian chỉnh được).',
     rounds: [
       { key: 'iq', type: 'iq', label: '🧩 IQ / Tư duy', n: 30, desc: 'Phần lớn là dãy số + hình học, thêm logic — tính giờ, không hiện đáp án giữa chừng.' },
     ],
@@ -7483,6 +7483,25 @@ const IV_PLANS = {
     ],
   },
 };
+/** ⏱ THỜI GIAN LÀM BÀI — chỉnh ở màn setup cho hợp nhiều tốc độ (người mới cần nhiều giờ hơn).
+ *  Lưu dạng GIÂY MỖI CÂU IQ chứ không phải tổng phút: đổi kiểu bài (16/20/24/30 câu) là
+ *  giờ tự co giãn theo số câu, không phải chỉnh lại. Vòng hỏi miệng ăn theo cùng hệ số
+ *  (secq / mặc định) để cả buổi nhanh–chậm đồng bộ. */
+const IV_SEC_KEY = 'prep-iv-secq';
+const IV_SEC_DEF = 30, IV_SEC_MIN = 10, IV_SEC_MAX = 90, IV_SEC_STEP = 5;
+const IV_OPEN_SEC = 150; // giây/câu vòng hỏi miệng ở tốc độ chuẩn
+/** Giây/câu IQ đang đặt — luôn kẹp về [10, 90] và bội của 5 (giá trị rác trong store → mặc định). */
+function ivSecPerQ() {
+  const v = Math.round(+store.get(IV_SEC_KEY, IV_SEC_DEF) / IV_SEC_STEP) * IV_SEC_STEP;
+  return Number.isFinite(v) ? Math.max(IV_SEC_MIN, Math.min(IV_SEC_MAX, v)) : IV_SEC_DEF;
+}
+const ivOpenSec = (secq = ivSecPerQ()) => Math.max(30, Math.round(IV_OPEN_SEC * secq / IV_SEC_DEF));
+/** Số giây bấm giờ của một vòng — 0 nghĩa là vòng đó không tính giờ (trắc nghiệm, đọc/viết code). */
+function ivRoundSec(r, secq = ivSecPerQ()) {
+  if (r.type === 'iq') return r.n * secq;
+  if (r.type === 'open') return r.n * ivOpenSec(secq);
+  return 0;
+}
 const IV_PLAN_KEYS = ['full', 'fulltheory', 'theory', 'iqonly', 'iqcode', 'open', 'code'];
 const ivPlanOf = k => IV_PLANS[k] || IV_PLANS.full;
 const ivRounds = () => ivPlanOf(ivState.plan).rounds;
@@ -7546,6 +7565,17 @@ function renderCompany() {
           <span class="iv-plan-rounds">${p.rounds.map(r => `${r.label.split(' ')[0]} ${r.n}`).join(' · ')}</span>
         </button>`;
       }).join('')}</div>
+      <div class="en-cfg iv-timecfg">
+        <div class="en-cfg-row">
+          <span class="en-cfg-label">⏱️ Thời gian mỗi câu IQ</span>
+          <span class="stepper">
+            <button type="button" id="iv-sec-dec" class="st-btn" title="Giảm 5 giây">−</button>
+            <b id="iv-sec" class="st-val">30 giây</b>
+            <button type="button" id="iv-sec-inc" class="st-btn" title="Tăng 5 giây">+</button>
+          </span>
+          <small class="en-cfg-note" id="iv-sec-note"></small>
+        </div>
+      </div>
       <div class="iv-rounds" id="iv-round-cards"></div>
       <div class="iq-stat">${best != null ? `<div><b>${best}</b><small>điểm cao nhất</small></div>` : ''}<div><b>${hist.length}</b><small>lần phỏng vấn</small></div></div>
       <p class="iq-note">🚫 Câu đã hỏi ở buổi trước sẽ <b>không hỏi lại</b> (nhất là câu IQ) — hết kho mới quay vòng.
@@ -7554,10 +7584,33 @@ function renderCompany() {
     </div>
     ${reverseQuestionsHtml()}
     ${histHtml}`;
+  // Vẽ lại danh sách vòng + dòng chú thích giờ. Gọi cả khi ĐỔI KIỂU BÀI lẫn khi CHỈNH GIỜ
+  // nên thời gian hiện trên thẻ luôn khớp với thứ sắp chạy.
   const drawRounds = plan => {
-    document.getElementById('iv-round-cards').innerHTML = ivPlanOf(plan).rounds
-      .map((r, i) => `<div class="iv-rcard"><span class="iv-rnum">${i + 1}</span><div><b>${r.label} <span class="iv-rn">${r.n} ${r.type === 'code' ? 'bài' : 'câu'}</span></b><small>${escHtml(r.desc)}</small>${ivFreshLine(r)}</div></div>`).join('');
+    const secq = ivSecPerQ();
+    document.getElementById('iv-round-cards').innerHTML = ivPlanOf(plan).rounds.map((r, i) => {
+      const sec = ivRoundSec(r, secq);
+      const time = sec ? `<span class="iv-rtime">⏱ ${fmtMMSS(sec)}</span>` : '';
+      return `<div class="iv-rcard"><span class="iv-rnum">${i + 1}</span><div><b>${r.label} <span class="iv-rn">${r.n} ${r.type === 'code' ? 'bài' : 'câu'}</span>${time}</b><small>${escHtml(r.desc)}</small>${ivFreshLine(r)}</div></div>`;
+    }).join('');
+    document.getElementById('iv-sec').textContent = `${secq} giây`;
+    document.getElementById('iv-sec-dec').disabled = secq <= IV_SEC_MIN;
+    document.getElementById('iv-sec-inc').disabled = secq >= IV_SEC_MAX;
+    const tot = ivPlanOf(plan).rounds.reduce((a, r) => a + ivRoundSec(r, secq), 0);
+    document.getElementById('iv-sec-note').innerHTML =
+      `${IV_SEC_MIN}–${IV_SEC_MAX} giây · vòng hỏi miệng co giãn theo (${ivOpenSec(secq)}s/câu) · `
+      + (tot ? `kiểu đang chọn bấm giờ <b>≈ ${Math.round(tot / 60)} phút</b>` : 'kiểu đang chọn không bấm giờ')
+      + (secq === IV_SEC_DEF ? '' : ' · <button type="button" id="iv-sec-reset" class="iv-linkbtn">↺ về mặc định 30 giây</button>');
+    const rs = document.getElementById('iv-sec-reset');
+    if (rs) rs.onclick = () => setSec(IV_SEC_DEF);
   };
+  const curPlan = () => store.get('prep-iv-plan', 'full');
+  const setSec = v => {
+    store.set(IV_SEC_KEY, Math.max(IV_SEC_MIN, Math.min(IV_SEC_MAX, v)));
+    drawRounds(curPlan());
+  };
+  document.getElementById('iv-sec-dec').onclick = () => setSec(ivSecPerQ() - IV_SEC_STEP);
+  document.getElementById('iv-sec-inc').onclick = () => setSec(ivSecPerQ() + IV_SEC_STEP);
   drawRounds(pick);
   body.querySelectorAll('.iv-plan').forEach(b => b.onclick = () => {
     store.set('prep-iv-plan', b.dataset.plan);
@@ -7734,7 +7787,7 @@ async function startOpenRound(r) {
   // Đang dở vòng mà người dùng bỏ ra tab khác rồi quay lại buổi mới → state đã đổi, đừng vẽ đè
   if (!ivState || ivRounds()[ivState.idx] !== r) return;
   if (!qs.length) return roundSkipped(r, 'Không tải được kho câu hỏi (có thể đang offline) — bỏ qua vòng này, điểm tổng chỉ tính các vòng đã làm.');
-  ivState.open = { qs, idx: 0, scores: [], roundKey: r.key, label: r.label, sec: 150 };
+  ivState.open = { qs, idx: 0, scores: [], roundKey: r.key, label: r.label, sec: ivOpenSec() };
   showOpenQ();
 }
 
@@ -7972,7 +8025,7 @@ function startIvIq(r) {
   ivState.iq = {
     qs, idx: 0, wGot: 0, wMax: qs.reduce((a, q) => a + qDiff(q), 0),
     ans: qs.map(() => null), ord: qs.map(q => shuffleIdx(q.options.length)),
-    startMs: Date.now(), sec: r.n * 30, roundKey: r.key,
+    startMs: Date.now(), sec: ivRoundSec(r), roundKey: r.key,
   };
   clearInterval(iqTimerId);
   iqTimerId = setInterval(tickIvIq, 1000);
