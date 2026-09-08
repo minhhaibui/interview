@@ -458,7 +458,7 @@ test('wiring: 📖 Gần đây trong sidebar — openDoc ghi prep-recent-docs (d
   // token chống race: nhiều lượt mở song song → chỉ lượt mới nhất render
   assert.ok(/const seq = openDoc\._seq = \(openDoc\._seq \|\| 0\) \+ 1;[\s\S]{0,700}await apiFile\(relPath\);[\s\S]{0,120}if \(seq !== openDoc\._seq\) return;/.test(APP),
     'openDoc thiếu sequence token chống race');
-  assert.ok(/function applyPrepData[\s\S]{0,300}renderRecentDocs\(\)/.test(APP),
+  assert.ok(/function applyPrepData[\s\S]{0,900}renderRecentDocs\(\)/.test(APP),
     'applyPrepData phải vẽ lại 📖 Gần đây (sidebar ngoài view, reapplyView không đụng)');
   // task 📖 Đọc tiếp ở tab Hôm nay: bài dở → mở lại; đã đọc xong → gợi ý bài KẾ TIẾP chưa đọc
   assert.ok(/Đọc tiếp: \$\{docLabelOf\(lastDoc\)\}/.test(APP), 'td-read thiếu nhánh đọc tiếp bài dở');
@@ -487,7 +487,7 @@ test('wiring: 📗 đánh dấu bài đã đọc — cuộn ≥90% hoặc bài n
   assert.ok(/livePaths[\s\S]{0,220}filter\(p => livePaths\.has\(p\)\)/.test(APP),
     'dash-docs-read phải lọc path chết bằng livePaths');
   assert.ok(/PREP_KEYS = \[[^\]]*'prep-docs-read'/.test(APP), 'PREP_KEYS thiếu prep-docs-read');
-  assert.ok(/function applyPrepData[\s\S]{0,400}refreshReadMarks\(\)/.test(APP), 'applyPrepData phải refresh ✓ đã đọc');
+  assert.ok(/function applyPrepData[\s\S]{0,1000}refreshReadMarks\(\)/.test(APP), 'applyPrepData phải refresh ✓ đã đọc');
   const CSS = read('styles.css');
   assert.ok(CSS.includes('.sb-item.read'), 'styles.css thiếu .sb-item.read');
   // đếm x/y đã đọc theo nhóm (bỏ nhóm ảo Gần đây), đủ 100% đổi màu
@@ -1142,6 +1142,39 @@ test('wiring: 🎯 phỏng vấn — 3 phần (Anh · IQ · Code), IQ chiếm ph
   // Vòng code chạy nhiều bài, cộng dồn điểm
   assert.ok(/function showIvCode/.test(APP) && /s\.passed \+= s\.cur\.passed; s\.total \+= s\.cur\.total;/.test(APP),
     'vòng viết code chưa cộng dồn điểm qua nhiều bài');
+});
+
+test('☁️ sync: push hỏng KHÔNG được tự nhận là "mới nhất" (nếu không máy này câm luôn)', () => {
+  const fn = APP.slice(APP.indexOf('async function pushRemote'), APP.indexOf('function schedulePush'));
+  // Cơ chế: handleRemoteSnapshot bỏ qua cloud khi remote.updatedAt <= localUpdatedAt(). Nên một lần
+  // ghi hỏng mà vẫn giữ mốc mới là tự khoá mình khỏi MỌI cập nhật từ máy khác — vĩnh viễn.
+  assert.ok(/const prev = localUpdatedAt\(\);/.test(fn), 'pushRemote chưa nhớ mốc cũ để trả lại khi ghi hỏng');
+  assert.ok(/catch \(e\) \{[\s\S]*?setLocalUpdatedAt\(prev\);/.test(fn), 'push hỏng nhưng không trả lại mốc thời gian cũ');
+  assert.ok(/toast\('⚠️ Đẩy lên cloud lỗi/.test(fn), 'push hỏng vẫn im lặng — phải báo cho người dùng thấy');
+  assert.ok(/syncLastErr = /.test(fn), 'chưa nhớ lỗi gần nhất để hiện trong bảng ☁️');
+  // Trần 1 MiB của Firestore: chặn TRƯỚC khi ghi, và cũng không được đụng vào mốc thời gian
+  assert.ok(/const FS_DOC_LIMIT = 1048576;/.test(APP), 'thiếu trần dung lượng document Firestore');
+  const guard = fn.slice(0, fn.indexOf('const prev ='));
+  assert.ok(/blob\.length > FS_DOC_LIMIT/.test(guard), 'chưa chặn blob quá cỡ TRƯỚC khi setLocalUpdatedAt');
+  assert.ok(!/setLocalUpdatedAt/.test(guard), 'nhánh quá cỡ không được đụng vào mốc thời gian cục bộ');
+  // Bảng ☁️ phải soi được: dung lượng, số ngày đã học, lỗi gần nhất
+  assert.ok(/Dữ liệu: \$\{fmtKb\(size\)\}\/1 MB/.test(APP), 'bảng ☁️ chưa hiện dung lượng dữ liệu');
+  assert.ok(/syncLastErr \? `<div class="sp-err">/.test(APP), 'bảng ☁️ chưa hiện lỗi đồng bộ gần nhất');
+  assert.ok(read('styles.css').includes('.sp-err'), 'styles.css thiếu .sp-err');
+  assert.ok(/if \(await pushRemote\(\)\) toast\('⬆️ Đã đẩy lên cloud'\)/.test(APP),
+    'nút ⬆️ vẫn báo "đã đẩy" kể cả khi đẩy hỏng');
+});
+
+test('☁️ sync: ngày đã học của lộ trình 30 ngày được HỢP hai máy, không ghi đè mất', () => {
+  assert.ok(/const SYNC_UNION_KEYS = \['prep-core-done'\];/.test(APP), 'thiếu danh sách khoá hợp nhất');
+  const fn = APP.slice(APP.indexOf('function applyPrepData'), APP.indexOf('function localUpdatedAt'));
+  assert.ok(/v = unionNums\(local, v\)/.test(fn), 'kéo về vẫn ghi đè thẳng prep-core-done');
+  assert.ok(/if \(merged\) schedulePush\(\);/.test(fn),
+    'hợp nhất xong phải đẩy ngược lên, không thì ngày chỉ có ở máy này sẽ mất ở lần kéo sau');
+  // unionNums: bỏ trùng, lọc rác, sắp tăng dần
+  const u = APP.slice(APP.indexOf('const unionNums'), APP.indexOf('function applyPrepData'));
+  assert.ok(/new Set\(/.test(u) && /Number\.isFinite/.test(u) && /sort\(\(x, y\) => x - y\)/.test(u),
+    'unionNums phải bỏ trùng + lọc giá trị rác + sắp tăng dần');
 });
 
 test('☁️ sync: mọi khoá prep-* đang dùng phải nằm trong PREP_KEYS (hoặc được MIỄN có lý do)', () => {

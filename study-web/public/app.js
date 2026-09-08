@@ -8538,9 +8538,27 @@ function gatherPrepData() {
   });
   return data;
 }
+/** Khoá chỉ TÍCH LŨY — kéo về phải HỢP hai bên chứ không ghi đè.
+ *  prep-core-done là danh sách ngày đã học của lộ trình 30 ngày: học Ngày 1–3 ở nhà, Ngày 4–5 ở cơ quan,
+ *  mà last-write-wins theo cả gói thì một bên bay sạch. Hợp nhất thì bên nào cũng giữ được công học. */
+const SYNC_UNION_KEYS = ['prep-core-done'];
+const unionNums = (a, b) => [...new Set([...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])])]
+  .map(Number).filter(Number.isFinite).sort((x, y) => x - y);
+
 function applyPrepData(data) {
   if (!data) return;
-  PREP_KEYS.forEach(k => { if (k in data) localStorage.setItem(k, JSON.stringify(data[k])); });
+  let merged = false; // có ngày local mà cloud CHƯA có → phải đẩy ngược lên, không thì lần sau mất
+  PREP_KEYS.forEach(k => {
+    if (!(k in data)) return;
+    let v = data[k];
+    if (SYNC_UNION_KEYS.includes(k)) {
+      const local = store.get(k, []);
+      v = unionNums(local, v);
+      if (v.length > (Array.isArray(data[k]) ? data[k].length : 0)) merged = true;
+    }
+    localStorage.setItem(k, JSON.stringify(v));
+  });
+  if (merged) schedulePush(); // union là idempotent nên hai máy hội tụ sau đúng một vòng, không ping-pong
   renderRecentDocs(); // 📖 Gần đây nằm ở sidebar (ngoài view) — reapplyView không vẽ lại nó
   refreshReadMarks(); // 📗 ✓ đã đọc cũng vậy
   openDoc._noteSync?.(); // 📝 textarea note của bài đang mở cũng ngoài tầm reapplyView
@@ -8695,18 +8713,37 @@ function pullApply(remote) {
   } catch (e) { alert('Kéo dữ liệu lỗi: ' + e.message); }
 }
 
+/** Firestore chặn 1 MiB/document. Vượt là set() NÉM LỖI — phải chặn trước để báo cho ra hồn. */
+const FS_DOC_LIMIT = 1048576;
+let syncLastErr = null; // lỗi đẩy lên gần nhất, hiện trong bảng ☁️ (đừng hỏng im lặng nữa)
+
 async function pushRemote() {
-  if (!syncReady || !fbUser) return;
+  if (!syncReady || !fbUser) return false;
   const at = Date.now();
-  setLocalUpdatedAt(at);
+  const blob = JSON.stringify(gatherPrepData());
+  // Quá cỡ: KHÔNG đụng vào mốc thời gian cục bộ. Nếu nhận bừa là "mới nhất" thì handleRemoteSnapshot
+  // sẽ bỏ qua mọi cập nhật từ máy khác (remote.updatedAt <= localUpdatedAt) ⇒ máy này câm luôn.
+  if (blob.length > FS_DOC_LIMIT - 8192) {
+    syncLastErr = `Dữ liệu ${fmtKb(blob.length)} vượt trần 1 MB của Firestore — chưa đẩy lên được`;
+    toast('⚠️ Dữ liệu quá lớn, chưa đồng bộ được — mở ☁️ để xem');
+    return false;
+  }
+  const prev = localUpdatedAt();
+  setLocalUpdatedAt(at); // đặt trước để bản snapshot dội về của CHÍNH MÌNH không bị coi là "máy khác"
   try {
-    await fbDb.collection('users').doc(fbUser.uid).set({
-      blob: JSON.stringify(gatherPrepData()),
-      updatedAt: at,
-      email: fbUser.email || '',
-    });
-  } catch (e) { console.warn('push lỗi', e); }
+    await fbDb.collection('users').doc(fbUser.uid).set({ blob, updatedAt: at, email: fbUser.email || '' });
+    syncLastErr = null;
+    return true;
+  } catch (e) {
+    // Ghi hỏng mà vẫn giữ mốc mới = tự khoá mình khỏi mọi lần kéo về sau đó. Trả lại mốc cũ.
+    setLocalUpdatedAt(prev);
+    syncLastErr = e && e.message ? e.message : String(e);
+    console.warn('push lỗi', e);
+    toast('⚠️ Đẩy lên cloud lỗi — mở ☁️ để xem chi tiết');
+    return false;
+  }
 }
+const fmtKb = n => n >= 1048576 ? `${(n / 1048576).toFixed(2)} MB` : `${Math.round(n / 1024)} KB`;
 
 function schedulePush() {
   if (!syncReady || !fbUser) return;
@@ -8720,9 +8757,13 @@ function toggleSyncPanel() {
   const p = document.createElement('div');
   p.id = 'sync-panel';
   const at = localUpdatedAt();
+  const size = JSON.stringify(gatherPrepData()).length;
+  const days = (store.get('prep-core-done', []) || []).length;
   p.innerHTML = `
     <div class="sp-email">${escHtml(fbUser.email || '')}</div>
     <div class="sp-when">Đồng bộ lần cuối: ${at ? new Date(at).toLocaleString('vi-VN') : '—'}</div>
+    <div class="sp-when">Dữ liệu: ${fmtKb(size)}/1 MB · 🔤 đã học ${days}/${CORE_DAYS} ngày</div>
+    ${syncLastErr ? `<div class="sp-err">⚠️ Lỗi lần cuối: ${escHtml(syncLastErr)}</div>` : ''}
     <button class="sp-act" data-act="push">⬆️ Đẩy lên cloud</button>
     <button class="sp-act" data-act="pull">⬇️ Kéo về từ cloud</button>
     <button class="sp-act" data-act="out">🚪 Đăng xuất</button>`;
@@ -8733,7 +8774,7 @@ function toggleSyncPanel() {
   p.querySelectorAll('.sp-act').forEach(b => b.onclick = async () => {
     const act = b.dataset.act;
     p.remove();
-    if (act === 'push') { await pushRemote(); toast('⬆️ Đã đẩy lên cloud'); }
+    if (act === 'push') { if (await pushRemote()) toast('⬆️ Đã đẩy lên cloud'); } // hỏng thì pushRemote tự báo
     else if (act === 'pull') {
       const snap = await fbDb.collection('users').doc(fbUser.uid).get();
       if (snap.exists) pullApply(snap.data()); else toast('Cloud chưa có dữ liệu');

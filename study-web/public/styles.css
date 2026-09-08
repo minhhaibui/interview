@@ -876,6 +876,10 @@ body.light .plan-config input[type=date] { color-scheme: light; }
 }
 #sync-panel .sp-email { font-weight: 600; font-size: 14px; word-break: break-all; }
 #sync-panel .sp-when { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+#sync-panel .sp-err {
+  font-size: 12px; color: var(--red, #ef4444); margin: 4px 0 6px; line-height: 1.35;
+  background: rgba(239, 68, 68, .1); border-radius: 6px; padding: 5px 7px; word-break: break-word;
+}
 #sync-panel .sp-act {
   text-align: left; background: var(--bg3); color: var(--text);
   border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px;
