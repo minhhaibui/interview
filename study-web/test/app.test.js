@@ -1144,6 +1144,31 @@ test('wiring: 🎯 phỏng vấn — 3 phần (Anh · IQ · Code), IQ chiếm ph
     'vòng viết code chưa cộng dồn điểm qua nhiều bài');
 });
 
+test('☁️ sync: mọi khoá prep-* đang dùng phải nằm trong PREP_KEYS (hoặc được MIỄN có lý do)', () => {
+  // Lỗi kinh điển: thêm tính năng, lưu vào localStorage rồi QUÊN khai báo ở PREP_KEYS ⇒ máy khác
+  // không thấy tiến độ, backup cũng không có. Test này bắt ngay lúc thêm khoá mới.
+  const used = new Set([...APP.matchAll(/store\.(?:get|set)\(\s*'(prep-[a-z0-9-]+)'/g)].map(m => m[1]));
+  const pk = APP.slice(APP.indexOf('const PREP_KEYS'), APP.indexOf("'prep-core-done'];") + 20);
+  const declared = new Set([...pk.matchAll(/'(prep-[a-z0-9-]+)'/g)].map(m => m[1]));
+  // Miễn CÓ CHỦ Ý — mỗi khoá kèm lý do; muốn thêm vào đây thì phải ghi lý do trong app.js.
+  const localOnly = new Set([
+    'prep-ai-key',      // bí mật: không xuất ra file backup
+    'prep-sync-meta',   // nội bộ cơ chế sync
+    'prep-last-view',   // tab đang mở: sở thích từng máy, sync vào là ping-pong
+    'prep-es-mode',     // ghi trong lúc render (esSetMode) → sync vào là ping-pong
+    'prep-es-track',    // như trên (esSetTrack)
+    'prep-onboarded',   // máy mới vẫn nên được xem hướng dẫn lần đầu
+  ]);
+  const missing = [...used].filter(k => !declared.has(k) && !localOnly.has(k)).sort();
+  assert.deepStrictEqual(missing, [],
+    `Khoá lưu tiến độ chưa được đồng bộ:\n  ${missing.join('\n  ')}\n→ thêm vào PREP_KEYS, hoặc vào danh sách miễn kèm lý do.`);
+  // Khoá của lộ trình 30 ngày Tiếng Anh Core PHẢI được sync (bug đã từng gặp)
+  assert.ok(declared.has('prep-core-done'), "PREP_KEYS thiếu 'prep-core-done' — lịch ngày học không đồng bộ");
+  // Và nó phải được ghi ngoài render (không thì lại ping-pong như prep-es-mode)
+  assert.ok(/if \(!done\.includes\(s\.day\)\) \{ done\.push\(s\.day\); store\.set\('prep-core-done'/.test(APP),
+    'prep-core-done phải chỉ được ghi khi HỌC XONG một ngày');
+});
+
 test('wiring: ⏱ chỉnh được thời gian bài test phỏng vấn (giây/câu IQ, nhớ qua reload)', () => {
   assert.ok(/const IV_SEC_KEY = 'prep-iv-secq';/.test(APP), 'thiếu khoá lưu giờ prep-iv-secq');
   assert.ok(/IV_SEC_DEF = 30, IV_SEC_MIN = 10, IV_SEC_MAX = 90, IV_SEC_STEP = 5/.test(APP),

@@ -4560,8 +4560,14 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date',
   'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned', 'prep-exam-history', 'prep-fc-lang', 'prep-iv-plan', 'prep-iv-secq', 'prep-iv-seen',
   'prep-doc-notes', 'prep-remind-time',
-  'prep-en-iv-history', 'prep-en-iv-cfg', 'prep-en-iv-seen'];
+  'prep-en-iv-history', 'prep-en-iv-cfg', 'prep-en-iv-seen',
+  // 🔤 Tiếng Anh Core: những NGÀY đã học xong của lộ trình 30 ngày. Thiếu key này thì máy khác
+  // vẫn thấy "Ngày 1" dù đã học mấy hôm — lịch cả tháng là tiến độ thật, phải sync.
+  'prep-core-done'];
 // Lưu ý: KHÔNG đưa 'prep-ai-key' vào PREP_KEYS — không xuất/nhập key API ra file backup.
+// Cũng KHÔNG đưa 'prep-es-mode'/'prep-es-track' (tab 🧯 Sửa lỗi): esSetMode/esSetTrack ghi NGAY
+// TRONG lúc render, sync vào sẽ ping-pong vô hạn y như prep-last-view. Chúng chỉ là lựa chọn
+// hiển thị của từng máy — tiến độ thật vẫn nằm ở prep-srs/prep-fails (đã sync).
 
 /** Banner "X từ đến hạn ôn hôm nay" — cần deck nên load lazy */
 async function renderDueBanner() {
