@@ -1,0 +1,11 @@
+{
+ "48c159c18701": "Bộ máy lập trình AI",
+ "5a9834df8a35": "DeepMind nói bộ máy lập trình AI mới của họ (AlphaCode) giỏi ngang một lập trình viên trung bình.",
+ "ff351f426371": "Bot AI này tham gia 10 cuộc thi lập trình Codeforces và xếp hạng 54,3%. Nghĩa là điểm của nó vượt qua một nửa số thí sinh là người. Nếu nhìn vào điểm của nó trong 6 tháng gần nhất, AlphaCode xếp ở mức 28%.",
+ "f5e64390dab0": "Sơ đồ dưới đây giải thích cách bot AI hoạt động:",
+ "fa87214cbbd6": "Huấn luyện trước các mô hình transformer trên mã nguồn GitHub.",
+ "fb204e265017": "Tinh chỉnh các mô hình trên tập dữ liệu lập trình thi đấu tương đối nhỏ.",
+ "76d1bc6d1dcf": "Lúc đánh giá, tạo ra một lượng lớn lời giải cho mỗi bài toán.",
+ "a06c34061d04": "Lọc, gom cụm và xếp hạng lại các lời giải xuống còn một tập nhỏ chương trình ứng viên (nhiều nhất 10), rồi nộp để đánh giá tiếp.",
+ "ee5f79fcb3f8": "Chạy các chương trình ứng viên với những ca kiểm thử, đánh giá hiệu năng, và chọn ra cái tốt nhất. Bạn có nghĩ năm năm nữa bot AI sẽ giỏi Leetcode hay lập trình thi đấu hơn kỹ sư phần mềm không?"
+}

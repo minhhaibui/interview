@@ -1,0 +1,18 @@
+{
+ "d97b97f01f7a": "Mẫu bản sao chỉ đọc (Read replica pattern)",
+ "a305eb303131": "Có hai cách phổ biến để hiện thực mẫu bản sao chỉ đọc:",
+ "8375981d686f": "Nhúng logic định tuyến vào mã ứng dụng (đã giải thích ở bài trước).",
+ "dc304a66cd51": "Dùng middleware cơ sở dữ liệu.",
+ "2f42b2459f8a": "Ở đây ta tập trung vào lựa chọn 2. Middleware cung cấp việc định tuyến trong suốt giữa ứng dụng và các server cơ sở dữ liệu. Ta tuỳ chỉnh được logic định tuyến dựa trên những quy tắc phức tạp như người dùng, lược đồ, câu lệnh, v.v.",
+ "3fdb77f4270c": "Sơ đồ dưới đây minh hoạ thiết lập:",
+ "047312ce1b3e": "Khi Alice đặt hàng trên Amazon, request được gửi tới Order Service.",
+ "cc66ba9f808d": "Order Service không tương tác trực tiếp với cơ sở dữ liệu. Thay vào đó, nó gửi truy vấn tới middleware cơ sở dữ liệu.",
+ "8eee65616c47": "Middleware cơ sở dữ liệu định tuyến các lệnh ghi tới cơ sở dữ liệu chính.",
+ "b4a87bc25caa": "Dữ liệu được nhân bản sang hai bản sao.",
+ "428e3b9c1c45": "Alice xem chi tiết đơn hàng (đọc). Request được gửi qua middleware.",
+ "3632b90b7c99": "Alice xem lịch sử đơn hàng gần đây (đọc). Request được gửi qua middleware.",
+ "e692ad064365": "Middleware cơ sở dữ liệu đóng vai proxy giữa ứng dụng và các cơ sở dữ liệu. Nó dùng giao thức mạng MySQL chuẩn để liên lạc.",
+ "4b616439acaa": "Ưu điểm: - Mã ứng dụng đơn giản hơn. Ứng dụng không cần biết cấu trúc cơ sở dữ liệu và không cần tự quản lý việc truy cập. - Tương thích tốt hơn. Middleware dùng giao thức mạng MySQL. Mọi client tương thích MySQL đều kết nối tới middleware dễ dàng. Điều này giúp việc di trú cơ sở dữ liệu dễ hơn.",
+ "809ba8e0a107": "Nhược điểm: - Hệ thống phức tạp hơn. Middleware cơ sở dữ liệu là hệ thống phức tạp. Vì mọi truy vấn đều đi qua middleware, nó thường đòi hỏi thiết lập sẵn sàng cao để tránh điểm hỏng đơn lẻ. - Thêm một tầng middleware nghĩa là thêm độ trễ mạng.",
+ "b8402fabbc68": "Vì vậy, tầng này đòi hỏi hiệu năng xuất sắc."
+}

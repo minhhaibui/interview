@@ -1,0 +1,18 @@
+{
+ "9caed18b3958": "CDN",
+ "6e3b6c6d71df": "Mạng phân phối nội dung (CDN) là tập server phân tán về mặt địa lý (còn gọi là server biên), giúp phân phối nhanh nội dung tĩnh và động. Hãy xem nó hoạt động ra sao.",
+ "55e702c2c69b": "Giả sử Bob sống ở New York muốn vào một website thương mại điện tử được triển khai ở London. Nếu request đi tới server đặt ở London, phản hồi sẽ khá chậm. Vậy nên ta triển khai server CDN gần nơi Bob sống, và nội dung sẽ được nạp từ server CDN gần đó.",
+ "1fa3b5c4950d": "Sơ đồ dưới đây minh hoạ quá trình:",
+ "026e9be2a688": "Bob gõ www.myshop.com vào trình duyệt. Trình duyệt tra tên miền trong cache DNS cục bộ.",
+ "4162f70b7ba1": "Nếu tên miền không có trong cache DNS cục bộ, trình duyệt tìm tới DNS resolver để phân giải tên. DNS resolver thường nằm ở nhà cung cấp dịch vụ Internet (ISP).",
+ "a76581595981": "DNS resolver phân giải tên miền theo kiểu đệ quy (xem bài trước của tôi để biết chi tiết). Cuối cùng, nó hỏi authoritative name server để phân giải tên miền.",
+ "7a672694eaf3": "Nếu ta không dùng CDN, authoritative name server trả về địa chỉ IP của www.myshop.com. Nhưng với CDN, authoritative name server có một bí danh trỏ tới www.myshop.cdn.com (tên miền của server CDN).",
+ "bc27ac6ad148": "DNS resolver hỏi authoritative name server để phân giải www.myshop.cdn.com.",
+ "940d9bb1ae22": "Authoritative name server trả về tên miền của bộ cân bằng tải CDN là www.myshop.lb.com.",
+ "64e17479ea63": "DNS resolver hỏi bộ cân bằng tải CDN để phân giải www.myshop.lb.com. Bộ cân bằng tải chọn server biên CDN tối ưu dựa trên địa chỉ IP của người dùng, ISP của người dùng, nội dung được yêu cầu, và tải của server.",
+ "6fd6e27aa1fd": "Bộ cân bằng tải CDN trả về địa chỉ IP của server biên CDN cho www.myshop.lb.com.",
+ "bcf58143c6ca": "Giờ ta mới có địa chỉ IP thật để truy cập. DNS resolver trả địa chỉ IP về cho trình duyệt.",
+ "c11d29db6a9b": "Trình duyệt truy cập server biên CDN để nạp nội dung. Có hai loại nội dung được cache trên server CDN: nội dung tĩnh và nội dung động. Loại đầu gồm trang tĩnh, ảnh và video; loại sau gồm kết quả của tính toán ở biên.",
+ "8de58b2d5f19": "Nếu cache của server biên CDN không chứa nội dung, nó đi ngược lên server CDN vùng. Nếu vẫn không tìm thấy, nó sẽ đi tiếp lên server CDN trung tâm, hoặc thậm chí đi tới nguồn gốc — web server ở London. Đây gọi là mạng phân phối CDN, nơi các server được triển khai theo địa lý.",
+ "0c89c3e317a6": "Tới lượt bạn: bạn ngăn video đã cache trên CDN bị lấy trộm bằng cách nào?"
+}

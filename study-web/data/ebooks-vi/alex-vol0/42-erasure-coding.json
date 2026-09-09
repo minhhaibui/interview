@@ -1,0 +1,8 @@
+{
+ "bcc411ba5de5": "Erasure coding (mã xoá)",
+ "99dee5598724": "Một kỹ thuật rất hay, thường được dùng trong lưu trữ đối tượng như S3 để tăng độ bền, gọi là 𝐄𝐫𝐚𝐬𝐮𝐫𝐞 𝐂𝐨𝐝𝐢𝐧𝐠. Hãy xem nó hoạt động ra sao. Erasure coding xử lý độ bền dữ liệu khác với nhân bản. Nó cắt dữ liệu thành những mảnh nhỏ hơn (đặt trên các server khác nhau) và tạo ra các khối chẵn lẻ (parity) để dự phòng. Khi có sự cố, ta dùng các mảnh dữ liệu và parity để dựng lại dữ liệu. Hãy xem một ví dụ cụ thể (erasure coding 4 + 2) như Hình 1. 1⃣ Dữ liệu được cắt thành bốn mảnh dữ liệu bằng nhau: d1, d2, d3 và d4. 2⃣ Công thức toán học được dùng để tính parity p1 và p2.",
+ "ecab7e1a0eba": "Lấy một ví dụ đã đơn giản hoá rất nhiều: p1 = d1 + 2*d2 - d3 + 4*d4 và p2 = -d1 + 5*d2 + d3 - 3*d4. 3⃣ Dữ liệu d3 và d4 bị mất do node sập. 4⃣ Công thức toán học được dùng để dựng lại dữ liệu đã mất d3 và d4, dựa trên các giá trị đã biết d1, d2, p1 và p2.",
+ "470358ea7bac": "Erasure coding cần thêm bao nhiêu không gian? Cứ mỗi hai mảnh dữ liệu, ta cần một khối parity, nên chi phí lưu trữ phụ trội là 50% (Hình 2). Trong khi đó, với nhân bản 3 bản sao, chi phí phụ trội là 200% (Hình 2).",
+ "bbde555a2f9c": "Erasure coding có tăng độ bền dữ liệu không? Hãy giả sử một node có tỉ lệ hỏng hằng năm là 0,81%. Theo tính toán của Backblaze, erasure coding đạt độ bền 11 số 9, còn nhân bản 3 bản sao chỉ đạt 6 số 9.",
+ "afb9f3f50d47": "Bạn nghĩ còn kỹ thuật nào khác quan trọng để cải thiện khả năng mở rộng và độ bền của kho đối tượng như S3?"
+}

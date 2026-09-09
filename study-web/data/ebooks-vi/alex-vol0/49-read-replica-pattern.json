@@ -1,0 +1,14 @@
+{
+ "d97b97f01f7a": "Mẫu bản sao chỉ đọc (Read replica pattern)",
+ "ba196ae24ad2": "Trong bài này, ta nói về một mẫu (thiết lập) thiết kế cơ sở dữ liệu đơn giản nhưng rất hay dùng: 𝐦𝐚̂̃𝐮 𝐛𝐚̉𝐧 𝐬𝐚𝐨 𝐜𝐡𝐢̉ đ𝐨̣𝐜.",
+ "11e69d339e5d": "Trong thiết lập này, mọi lệnh làm thay đổi dữ liệu như insert, delete hay update đều được gửi tới cơ sở dữ liệu chính, còn các lệnh đọc được gửi tới bản sao chỉ đọc.",
+ "42c7de667346": "Sơ đồ dưới đây minh hoạ thiết lập:",
+ "e8cf84cf215b": "Khi Alice đặt hàng trên amazon.com, request được gửi tới Order Service.",
+ "c4e3eadf5884": "Order Service tạo một bản ghi về đơn hàng trong cơ sở dữ liệu chính (ghi). Dữ liệu được nhân bản sang hai bản sao.",
+ "9316f98207ed": "Alice xem chi tiết đơn hàng. Dữ liệu được phục vụ từ một bản sao (đọc).",
+ "6a46a1269707": "Alice xem lịch sử đơn hàng gần đây. Dữ liệu được phục vụ từ một bản sao (đọc).",
+ "0b9c0cbd25f6": "Có một vấn đề lớn trong thiết lập này: 𝐭𝐫𝐞̂̃ 𝐧𝐡𝐚̂𝐧 𝐛𝐚̉𝐧. Trong một số hoàn cảnh (mạng trễ, server quá tải, v.v.), dữ liệu ở bản sao có thể chậm hơn vài giây, thậm chí vài phút. Khi đó, nếu Alice kiểm tra trạng thái đơn hàng ngay lập tức (truy vấn được bản sao phục vụ) sau khi vừa đặt, cô ấy có thể không thấy đơn hàng đâu cả.",
+ "2f1ab9df4cd4": "Điều này khiến Alice bối rối. Trong trường hợp này, ta cần tính nhất quán \"đọc-sau-ghi\".",
+ "8b0aa7b3ffff": "Những giải pháp khả dĩ để giảm nhẹ vấn đề này: 1⃣ Những lệnh đọc nhạy cảm với độ trễ được gửi tới cơ sở dữ liệu chính. 2⃣ Những lệnh đọc ngay sau lệnh ghi được định tuyến tới cơ sở dữ liệu chính. 3⃣ Cơ sở dữ liệu quan hệ nhìn chung có cách kiểm tra xem một bản sao đã bắt kịp bản chính chưa. Nếu dữ liệu đã mới, hãy truy vấn bản sao.",
+ "88fa48470ef8": "Ngược lại, hãy để request đọc thất bại hoặc đọc từ bản chính."
+}

@@ -1,0 +1,19 @@
+{
+ "17bc793cdf3c": "Tra cứu Hệ thống tên miền (DNS)",
+ "8071a7d033ea": "DNS đóng vai một cuốn sổ địa chỉ. Nó dịch tên miền con người đọc được (google.com) thành địa chỉ IP máy đọc được (142.251.46.238).",
+ "bd317112c7c2": "Để mở rộng tốt hơn, các server DNS được tổ chức theo cấu trúc cây phân cấp.",
+ "3937426beca5": "Có 3 cấp server DNS cơ bản:",
+ "450eb9723cb8": "Root name server (.). Nó lưu địa chỉ IP của các Top Level Domain (TLD) name server. Có 13 root name server logic trên toàn cầu.",
+ "397991d12988": "TLD name server. Nó lưu địa chỉ IP của các authoritative name server. Có vài loại tên TLD. Chẳng hạn, TLD chung (.com, .org), TLD theo mã quốc gia (.us), TLD thử nghiệm (.test).",
+ "af498de0fbae": "Authoritative name server. Nó đưa ra câu trả lời thực sự cho truy vấn DNS. Bạn đăng ký được authoritative name server với các nhà đăng ký tên miền như GoDaddy, Namecheap, v.v.",
+ "0d6032be93bd": "Sơ đồ dưới đây minh hoạ cách tra cứu DNS hoạt động bên dưới:",
+ "c31af3cf49b6": "google.com được gõ vào trình duyệt, và trình duyệt gửi tên miền tới DNS resolver.",
+ "9963a95a24e0": "Resolver truy vấn một DNS root name server.",
+ "45d3c88fe5e5": "Root server phản hồi resolver bằng địa chỉ của một server DNS TLD. Trong trường hợp này là .com.",
+ "72acde40e31a": "Resolver sau đó gửi request tới TLD .com.",
+ "aa1016b19f10": "Server TLD phản hồi bằng địa chỉ IP của name server thuộc tên miền đó, google.com (authoritative name server).",
+ "4412f22b66e1": "DNS resolver gửi truy vấn tới name server của tên miền.",
+ "cd469defe28c": "Địa chỉ IP của google.com sau đó được name server trả về cho resolver.",
+ "e9505a41c2b9": "DNS resolver phản hồi trình duyệt web bằng địa chỉ IP (142.251.46.238) của tên miền được yêu cầu ban đầu.",
+ "065391be55f2": "Việc tra cứu DNS trung bình mất từ 20-120 mili giây để hoàn tất (theo YSlow)."
+}

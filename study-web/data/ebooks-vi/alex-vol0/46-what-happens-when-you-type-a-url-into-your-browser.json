@@ -1,0 +1,13 @@
+{
+ "50d73a7826bc": "Điều gì xảy ra khi bạn gõ một URL vào trình duyệt?",
+ "ac3176249d9e": "Sơ đồ dưới đây minh hoạ các bước.",
+ "9d036769d04a": "Bob nhập một URL vào trình duyệt rồi nhấn Enter. Trong ví dụ này, URL gồm 4 phần: 🔹 lược đồ - 𝒉𝒕𝒕𝒑𝒔://. Nó bảo trình duyệt gửi kết nối tới server bằng HTTPS. 🔹 tên miền - 𝒆𝒙𝒂𝒎𝒑𝒍𝒆.𝒄𝒐𝒎. Đây là tên miền của site. 🔹 đường dẫn - 𝒑𝒓𝒐𝒅𝒖𝒄𝒕/𝒆𝒍𝒆𝒄𝒕𝒓𝒊𝒄. Đó là đường dẫn trên server tới tài nguyên được yêu cầu: phone. 🔹 tài nguyên - 𝒑𝒉𝒐𝒏𝒆. Đó là tên tài nguyên Bob muốn truy cập.",
+ "75e571b95762": "Trình duyệt tra địa chỉ IP của tên miền bằng cách tra cứu hệ thống tên miền (DNS). Để quá trình tra cứu nhanh, dữ liệu được cache ở nhiều tầng: cache trình duyệt, cache hệ điều hành, cache mạng cục bộ và cache ISP.",
+ "66d8263f5854": "Nếu không tìm thấy địa chỉ IP ở bất kỳ cache nào, trình duyệt tìm tới các server DNS để tra cứu đệ quy cho tới khi tìm được địa chỉ IP (việc này sẽ được nói ở một bài khác).",
+ "15fa496978bc": "Giờ khi đã có địa chỉ IP của server, trình duyệt thiết lập kết nối TCP với server.",
+ "97f349a009c8": "Trình duyệt gửi một request HTTP tới server. Request trông như sau:",
+ "0181b4c3ba42": "𝘎𝘌𝘛 /𝘱𝘩𝘰𝘯𝘦 𝘏𝘛𝘛𝘗/1.1 𝘏𝘰𝘴𝘵: 𝘦𝘹𝘢𝘮𝘱𝘭𝘦.𝘤𝘰𝘮",
+ "5e7d33aa3326": "Server xử lý request rồi gửi phản hồi về. Với phản hồi thành công (mã trạng thái là 200), phản hồi HTML có thể trông như sau:",
+ "51d34d75199b": "𝘏𝘛𝘛𝘗/1.1 200 𝘖𝘒 𝘋𝘢𝘵𝘦: 𝘚𝘶𝘯, 30 𝘑𝘢𝘯 2022 00:01:01 𝘎𝘔𝘛 𝘚𝘦𝘳𝘷𝘦𝘳: 𝘈𝘱𝘢𝘤𝘩𝘦 𝘊𝘰𝘯𝘵𝘦𝘯𝘵-𝘛𝘺𝘱𝘦: 𝘵𝘦𝘹𝘵/𝘩𝘵𝘮𝘭; 𝘤𝘩𝘢𝘳𝘴𝘦𝘵=𝘶𝘵𝘧-8 <!𝘋𝘖𝘊𝘛𝘠𝘗𝘌 𝘩𝘵𝘮𝘭> <𝘩𝘵𝘮𝘭 𝘭𝘢𝘯𝘨=\"𝘦𝘯\"> 𝘏𝘦𝘭𝘭𝘰 𝘸𝘰𝘳𝘭𝘥 </𝘩𝘵𝘮𝘭>",
+ "8698b1f5b77c": "Trình duyệt kết xuất nội dung HTML."
+}
