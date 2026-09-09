@@ -16,14 +16,19 @@ VI = Path(__file__).resolve().parent.parent / 'data' / 'ebooks-vi'
 
 
 def todo():
+    """Đếm theo KHOÁ CÒN THIẾU, không theo số dòng — nhiều block trùng nội dung
+    dùng chung một khoá băm, đếm thô sẽ báo nhầm là chưa dịch xong."""
     index = json.loads((EN / 'index.json').read_text())
     for book in index['books']:
         rows = []
         for ch in book['chapters']:
             f = VI / book['id'] / f'{ch["id"]}.json'
-            done = len(json.loads(f.read_text())) if f.exists() else 0
-            if done < ch['blocks'] + 1:
-                rows.append(f'{ch["chars"]:6d}ch {done:4d}/{ch["blocks"]:4d}  {ch["id"]}')
+            vi = json.loads(f.read_text()) if f.exists() else {}
+            data = json.loads((EN / book['id'] / f'{ch["id"]}.json').read_text())
+            keys = {data['titleKey']} | {b['k'] for b in data['blocks']}
+            missing = len(keys - set(vi))
+            if missing:
+                rows.append(f'{ch["chars"]:6d}ch thiếu {missing:4d}/{len(keys):4d}  {ch["id"]}')
         print(f'== {book["id"]}  ({len(rows)}/{len(book["chapters"])} chương chưa xong)')
         for r in rows:
             print('   ' + r)
