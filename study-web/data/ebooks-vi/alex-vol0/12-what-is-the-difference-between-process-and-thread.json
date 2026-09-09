@@ -1,0 +1,14 @@
+{
+ "0ef2ce8438cc": "Khác biệt giữa tiến trình (Process) và luồng (Thread) là gì?",
+ "c6efe62fc707": "Để hiểu câu hỏi này rõ hơn, trước hết hãy xem chương trình (Program) là gì. 𝐂𝐡𝐮̛𝐨̛𝐧𝐠 𝐭𝐫𝐢̀𝐧𝐡 là một tệp thực thi chứa một tập chỉ thị và nằm thụ động trên đĩa. Một chương trình có thể có nhiều tiến trình. Chẳng hạn, trình duyệt Chrome tạo một tiến trình riêng cho mỗi tab.",
+ "ce17525c768b": "𝐓𝐢𝐞̂́𝐧 𝐭𝐫𝐢̀𝐧𝐡 nghĩa là một chương trình đang được thực thi. Khi chương trình được nạp vào bộ nhớ và trở nên hoạt động, nó trở thành một tiến trình. Tiến trình cần vài tài nguyên thiết yếu như thanh ghi, con trỏ lệnh và ngăn xếp. 𝐋𝐮𝐨̂̀𝐧𝐠 là đơn vị thực thi nhỏ nhất bên trong một tiến trình.",
+ "30b5064296c2": "Quá trình sau giải thích quan hệ giữa chương trình, tiến trình và luồng.",
+ "d19e72d3e6ca": "Chương trình chứa một tập chỉ thị.",
+ "e2e89de72d39": "Chương trình được nạp vào bộ nhớ. Nó trở thành một hoặc nhiều tiến trình đang chạy.",
+ "e1fa7f8c6809": "Khi một tiến trình khởi động, nó được cấp bộ nhớ và tài nguyên. Một tiến trình có thể có một hoặc nhiều luồng. Chẳng hạn, trong ứng dụng Microsoft Word, một luồng có thể lo việc kiểm tra chính tả còn luồng kia lo việc chèn văn bản vào tài liệu.",
+ "13cc1fcbd9aa": "Những khác biệt chính giữa tiến trình và luồng: 🔹 Tiến trình thường độc lập, còn luồng tồn tại như tập con của một tiến trình. 🔹 Mỗi tiến trình có không gian bộ nhớ riêng. Các luồng thuộc cùng một tiến trình dùng chung bộ nhớ. 🔹 Tiến trình là thao tác nặng. Tạo và kết thúc nó tốn nhiều thời gian hơn. 🔹 Chuyển ngữ cảnh giữa các tiến trình tốn kém hơn. 🔹 Việc liên lạc giữa các luồng thì nhanh hơn.",
+ "5bf691a3a3b5": "Tới lượt bạn:",
+ "58c04684fc5b": "1. Vài ngôn ngữ lập trình hỗ trợ coroutine. Khác biệt giữa coroutine và luồng là gì?",
+ "673fb0da62f0": "2. Liệt kê các tiến trình đang chạy trong Linux bằng cách nào? — Xem những cuốn sách thiết kế hệ thống bán chạy nhất của chúng tôi.",
+ "47e0176ebf39": "Bản in: Amazon. Bản số: ByteByteGo."
+}

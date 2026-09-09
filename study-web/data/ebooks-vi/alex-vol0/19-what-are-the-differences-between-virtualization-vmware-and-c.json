@@ -1,0 +1,7 @@
+{
+ "3b355543b8db": "Khác biệt giữa ảo hoá (VMware) và container hoá (Docker) là gì?",
+ "fd73bdca0ab5": "Sơ đồ dưới đây minh hoạ kiến trúc phân tầng của ảo hoá và container hoá. \"Ảo hoá là công nghệ cho phép bạn tạo nhiều môi trường mô phỏng hoặc tài nguyên riêng biệt từ một hệ thống phần cứng vật lý duy nhất\" [1]. \"Container hoá là việc đóng gói mã phần mềm cùng mọi thành phần cần thiết như thư viện, framework và các phụ thuộc khác, để chúng được cô lập trong \"container\" riêng của mình\" [2].",
+ "ccf6c0c45765": "Những khác biệt chính là: 🔹 Trong ảo hoá, hypervisor tạo một lớp trừu tượng trên phần cứng, để nhiều hệ điều hành chạy song song được với nhau. Kỹ thuật này được coi là thế hệ đầu của điện toán đám mây. 🔹 Container hoá được coi là phiên bản nhẹ của ảo hoá, thứ ảo hoá hệ điều hành thay vì phần cứng. Không có hypervisor, các container được cấp phát tài nguyên nhanh hơn. Mọi tài nguyên (gồm mã, phụ thuộc) cần để chạy ứng dụng hay microservice đều được đóng gói cùng nhau, nên ứng dụng chạy được ở bất kỳ đâu.",
+ "1cc829979d64": "Câu hỏi: bạn đã quan sát thấy chênh lệch hiệu năng bao nhiêu trên production giữa ảo hoá, container hoá và chạy trực tiếp trên phần cứng (bare-metal)?",
+ "138b517c36e5": "Nguồn ảnh: https://lnkd.in/gaPYcGTz. Nguồn: [1] Understanding virtualization: https://lnkd.in/gtQY9gkx [2] What is containerization?: https://lnkd.in/gm4Qv_x2"
+}

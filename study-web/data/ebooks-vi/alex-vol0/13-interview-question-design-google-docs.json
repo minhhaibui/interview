@@ -1,0 +1,8 @@
+{
+ "ea0b1ba231b7": "Câu hỏi phỏng vấn: thiết kế Google Docs",
+ "d2f4c7952048": "1⃣ Client gửi các thao tác chỉnh sửa tài liệu tới WebSocket Server. 2⃣ Việc liên lạc thời gian thực do WebSocket Server đảm nhiệm. 3⃣ Các thao tác trên tài liệu được lưu bền trong Message Queue. 4⃣ File Operation Server tiêu thụ những thao tác mà client tạo ra và sinh ra các thao tác đã biến đổi bằng thuật toán cộng tác. 5⃣ Ba loại dữ liệu được lưu: siêu dữ liệu tệp, nội dung tệp, và các thao tác.",
+ "4d335d068112": "Một trong những thách thức lớn nhất là giải quyết xung đột theo thời gian thực. Những thuật toán phổ biến gồm: 🔹 Operational transformation (OT) 🔹 Differential Synchronization (DS) 🔹 Conflict-free replicated data type (CRDT)",
+ "7229dc9aae04": "Google Docs dùng OT theo trang Wikipedia của nó, còn CRDT là mảng nghiên cứu sôi động cho việc chỉnh sửa đồng thời theo thời gian thực.",
+ "e238e2cfa086": "Tới lượt bạn — bạn đã gặp vấn đề nào khi dùng Google Docs chưa? Nếu có, bạn nghĩ nguyên nhân là gì? — Xem những cuốn sách thiết kế hệ thống bán chạy nhất của chúng tôi.",
+ "bac5b495c928": "Bản in: Amazon. Bản số: ByteByteGo."
+}

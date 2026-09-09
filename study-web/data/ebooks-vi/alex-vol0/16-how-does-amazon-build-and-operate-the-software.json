@@ -1,0 +1,6 @@
+{
+ "167e1a09b771": "Amazon xây dựng và vận hành phần mềm ra sao?",
+ "46e08191c0a9": "Năm 2019, Amazon phát hành The Amazon Builders' Library. Nó chứa những bài viết dựa trên kiến trúc, mô tả cách Amazon thiết kế kiến trúc, phát hành và vận hành công nghệ.",
+ "cce96444e2a2": "Tính tới hôm nay, thư viện đã đăng 26 bài. Tôi mất hai cuối tuần để đọc hết. Tôi thấy rất thú vị và học được nhiều điều. Đây là vài bài tôi thích: 🔹 Making retries safe with idempotent APIs 🔹 Timeouts, retries, and backoff with jitter 🔹 Beyond five 9s: Lessons from our highest available data planes 🔹 Caching challenges and strategies 🔹 Ensuring rollback safety during deployments 🔹 Going faster with continuous delivery 🔹 Challenges with distributed systems 🔹 Amazon's approach to high-availability deployment. Tới lượt bạn: nơi bạn thích nhất để học thiết kế hệ thống và các nguyên tắc thiết kế là đâu?",
+ "5661b72faee9": "Liên kết tới The Amazon Builders' Library: aws.amazon.com/builders-library"
+}

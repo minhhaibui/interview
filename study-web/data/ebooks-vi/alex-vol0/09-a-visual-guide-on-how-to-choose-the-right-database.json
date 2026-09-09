@@ -1,0 +1,5 @@
+{
+ "c279533191a8": "Hướng dẫn trực quan về cách chọn đúng cơ sở dữ liệu",
+ "ff75fb60ce07": "Chọn một cơ sở dữ liệu là cam kết dài hạn nên đừng quyết định qua loa. Điều quan trọng cần nhớ là chọn đúng cơ sở dữ liệu cho đúng công việc. Dữ liệu có thể có cấu trúc (lược đồ bảng SQL), bán cấu trúc (JSON, XML, v.v.), và phi cấu trúc (Blob).",
+ "a690275c5fd1": "Những nhóm cơ sở dữ liệu phổ biến gồm: 🔹 Quan hệ 🔹 Theo cột 🔹 Khoá-giá trị 🔹 Trong bộ nhớ 🔹 Wide column 🔹 Chuỗi thời gian 🔹 Sổ cái bất biến 🔹 Không gian địa lý 🔹 Đồ thị 🔹 Tài liệu 🔹 Tìm kiếm toàn văn 🔹 Blob. Cảm ơn Satish Chandra Gupta. Tới lượt bạn — bạn đã dùng cơ sở dữ liệu nào cho khối công việc nào?"
+}

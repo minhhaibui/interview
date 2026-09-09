@@ -1,0 +1,17 @@
+{
+ "3c06012dbce4": "Các microservice cộng tác và tương tác với nhau ra sao?",
+ "941400602d24": "Có hai cách: 𝐨𝐫𝐜𝐡𝐞𝐬𝐭𝐫𝐚𝐭𝐢𝐨𝐧 (điều phối tập trung) và 𝐜𝐡𝐨𝐫𝐞𝐨𝐠𝐫𝐚𝐩𝐡𝐲 (dàn dựng phân tán).",
+ "9f98bbe9c605": "Sơ đồ dưới đây minh hoạ sự cộng tác giữa các microservice.",
+ "b2330ace0efa": "Choreography giống như có một biên đạo múa đặt ra mọi quy tắc. Rồi các vũ công trên sân khấu (các microservice) tương tác theo những quy tắc đó.",
+ "8a9bbadeb331": "Choreography của dịch vụ mô tả việc trao đổi thông điệp này cùng những quy tắc mà các microservice tương tác theo.",
+ "dec2b2e2a2e2": "Orchestration thì khác. Bộ điều phối đóng vai trung tâm quyền lực. Nó chịu trách nhiệm gọi và kết hợp các dịch vụ. Nó mô tả những tương tác giữa mọi dịch vụ tham gia. Giống như nhạc trưởng dẫn dắt các nhạc công trong một bản giao hưởng. Mẫu orchestration cũng bao gồm cả việc quản lý giao dịch giữa các dịch vụ khác nhau.",
+ "bab1432322d5": "Lợi ích của orchestration:",
+ "329ed4a8a933": "Độ tin cậy - orchestration có sẵn cơ chế quản lý giao dịch và xử lý lỗi, trong khi choreography là liên lạc điểm-tới-điểm và các tình huống chịu lỗi phức tạp hơn nhiều.",
+ "92a7126d77aa": "Khả năng mở rộng - khi thêm một dịch vụ mới vào orchestration, chỉ bộ điều phối cần sửa quy tắc tương tác, còn ở choreography thì mọi dịch vụ đang tương tác đều phải sửa.",
+ "79d35b06d104": "Vài hạn chế của orchestration:",
+ "35edcb505f96": "Hiệu năng - mọi dịch vụ đều nói chuyện qua một bộ điều phối tập trung, nên độ trễ cao hơn so với choreography. Ngoài ra, thông lượng bị giới hạn bởi sức chứa của bộ điều phối.",
+ "4e99690c881d": "Điểm hỏng đơn lẻ - nếu bộ điều phối chết, không dịch vụ nào nói chuyện được với nhau. Để giảm nhẹ điều này, bộ điều phối phải có tính sẵn sàng cao.",
+ "8016b08f9096": "Trường hợp thực tế: Netflix Conductor là một bộ điều phối microservice và bạn đọc thêm được chi tiết về thiết kế của nó.",
+ "eeeda1e4b5e2": "Câu hỏi - bạn đã dùng sản phẩm điều phối nào trên production chưa? Ưu và nhược điểm của chúng là gì? — Xem những cuốn sách thiết kế hệ thống bán chạy nhất của chúng tôi.",
+ "92cba5f93424": "Bản in: Amazon. Bản số: ByteByteGo."
+}

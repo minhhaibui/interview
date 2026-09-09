@@ -1,0 +1,7 @@
+{
+ "9ef88d50eb57": "Bạn có biết cách sinh ID duy nhất toàn cầu không?",
+ "803a86bdc0f0": "Trong bài này, ta sẽ khám phá những yêu cầu phổ biến với ID dùng trong mạng xã hội như Facebook, Twitter và LinkedIn.",
+ "ce32f2c24437": "Yêu cầu: 🔹 Duy nhất toàn cầu 🔹 Sắp xếp đại khái theo thời gian 🔹 Chỉ gồm giá trị số 🔹 64 bit 🔹 Mở rộng cao, độ trễ thấp. Chi tiết hiện thực của các thuật toán tìm được trên mạng nên ta sẽ không đi sâu ở đây.",
+ "cffa5f743b05": "Tới lượt bạn: bạn đã dùng những loại bộ sinh ID nào? — Xem những cuốn sách thiết kế hệ thống bán chạy nhất của chúng tôi.",
+ "ada887bbb14d": "Bản in: Amazon. Bản số: ByteByteGo."
+}

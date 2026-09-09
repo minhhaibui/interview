@@ -1,0 +1,14 @@
+{
+ "363a9bfd3def": "HTTPS hoạt động thế nào?",
+ "20857af61fd0": "Hypertext Transfer Protocol Secure (HTTPS) là phần mở rộng của Hypertext Transfer Protocol (HTTP). HTTPS truyền dữ liệu đã mã hoá bằng Transport Layer Security (TLS). Nếu dữ liệu bị chặn bắt trên đường truyền, tất cả những gì kẻ tấn công lấy được chỉ là mã nhị phân.",
+ "31b9a9d16fc8": "Dữ liệu được mã hoá và giải mã ra sao?",
+ "ab238a9ab9bb": "Bước 1 - Client (trình duyệt) và server thiết lập kết nối TCP.",
+ "015993d1069e": "Bước 2 - Client gửi \"client hello\" tới server. Thông điệp này chứa một tập thuật toán mã hoá cần thiết (bộ mã, cipher suite) và phiên bản TLS mới nhất mà nó hỗ trợ. Server đáp lại bằng \"server hello\" để trình duyệt biết server có hỗ trợ được các thuật toán và phiên bản TLS đó không. Server sau đó gửi chứng chỉ SSL cho client. Chứng chỉ chứa khoá công khai, tên máy chủ, ngày hết hạn, v.v. Client kiểm chứng chứng chỉ.",
+ "969d5006c984": "Bước 3 - Sau khi kiểm chứng chứng chỉ SSL, client sinh một khoá phiên và mã hoá nó bằng khoá công khai. Server nhận khoá phiên đã mã hoá và giải mã nó bằng khoá bí mật.",
+ "0260b3640961": "Bước 4 - Giờ khi cả client và server đều giữ cùng khoá phiên (mã hoá đối xứng), dữ liệu đã mã hoá được truyền trong một kênh hai chiều an toàn.",
+ "0440f76180c9": "Vì sao HTTPS chuyển sang mã hoá đối xứng trong lúc truyền dữ liệu? Có hai lý do chính:",
+ "86f639a4bbd1": "Bảo mật: Mã hoá bất đối xứng chỉ đi một chiều. Nghĩa là nếu server cố gửi dữ liệu đã mã hoá ngược về client, bất kỳ ai cũng giải mã được dữ liệu đó bằng khoá công khai.",
+ "4fbb6f929526": "Tài nguyên server: Mã hoá bất đối xứng thêm khá nhiều chi phí tính toán. Nó không phù hợp cho việc truyền dữ liệu trong những phiên dài.",
+ "3b1cdca14be5": "Tới lượt bạn: HTTPS thêm bao nhiêu chi phí hiệu năng so với HTTP? — Xem những cuốn sách thiết kế hệ thống bán chạy nhất của chúng tôi.",
+ "1907da068c28": "Bản in: Amazon. Bản số: ByteByteGo."
+}

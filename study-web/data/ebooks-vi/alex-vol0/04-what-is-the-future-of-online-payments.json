@@ -1,0 +1,11 @@
+{
+ "85ba60102b6b": "Tương lai của thanh toán trực tuyến là gì?",
+ "3a713ebed506": "Tôi không biết câu trả lời, nhưng tôi biết một trong những ứng viên là blockchain.",
+ "a804664e2772": "Là người hâm mộ công nghệ, tôi luôn tìm những giải pháp mới cho các thách thức cũ.",
+ "3ae2a941b9f8": "Một cuốn sách giải thích rất nhiều về một hệ thanh toán mới nổi là 'Mastering Bitcoin' của Andreas M. Antonopoulos. Tôi muốn chia sẻ phát hiện về cuốn sách này với bạn vì nó giải thích rất rõ về bitcoin và blockchain nền bên dưới. Cuốn sách khiến tôi nghĩ lại về việc cải tổ các hệ thống thanh toán.",
+ "6e0dd162e8a3": "Đây là những điều rút ra:",
+ "b190972052cf": "Số dư ví bitcoin được tính ngay lúc cần, trong khi số dư ví truyền thống được lưu trong cơ sở dữ liệu. Bạn xem được chương 12 của System Design Interview Volume 2 về cách hiện thực một ví truyền thống (https://amzn.to/34G2vmC).",
+ "454ba2de73b3": "Nguồn chân lý vàng của bitcoin là blockchain, thứ cũng chính là sổ nhật ký. Điều đó cũng tương tự nếu ta dùng kiến trúc Event Sourcing để dựng một ví truyền thống, dù còn những lựa chọn khác.",
+ "e0535d4a66e3": "Có một máy ảo nhỏ dành cho bitcoin — và cả Ethereum. Máy ảo này định nghĩa một tập bytecode để làm những tác vụ cơ bản như kiểm chứng.",
+ "02c988f2ded9": "Tới lượt bạn: nếu Elon Musk lập căn cứ trên sao Hoả, bạn sẽ đề xuất giải pháp thanh toán nào?"
+}

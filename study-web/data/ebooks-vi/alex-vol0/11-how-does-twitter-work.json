@@ -1,0 +1,10 @@
+{
+ "2d65afc8c98e": "Twitter hoạt động thế nào?",
+ "d945909a43e9": "Bài này tóm tắt một buổi nói chuyện kỹ thuật mà Twitter trình bày năm 2013. Hãy cùng xem.",
+ "8cd588f06679": "𝐕𝐨̀𝐧𝐠 đ𝐨̛̀𝐢 𝐜𝐮̉𝐚 𝐦𝐨̣̂𝐭 𝐓𝐰𝐞𝐞𝐭: 1⃣ Một tweet đi vào qua Write API. 2⃣ Write API định tuyến request tới dịch vụ Fanout. 3⃣ Dịch vụ Fanout xử lý rất nhiều thứ rồi lưu chúng vào cache Redis. 4⃣ Dịch vụ Timeline được dùng để tìm ra server Redis đang chứa home timeline. 5⃣ Người dùng kéo home timeline của mình về qua dịch vụ Timeline.",
+ "982c5544b962": "𝐓𝐢̀𝐦 𝐤𝐢𝐞̂́𝐦 & 𝐊𝐡𝐚́𝐦 𝐩𝐡𝐚́ 🔹 Ingester: chú giải và tách token cho các Tweet để dữ liệu đánh chỉ mục được. 🔹 Earlybird: lưu chỉ mục tìm kiếm. 🔹 Blender: tạo ra timeline tìm kiếm và khám phá.",
+ "7ac6bcaf4d0f": "𝐏𝐮𝐬𝐡 𝐂𝐨𝐦𝐩𝐮𝐭𝐞 🔹 HTTP push 🔹 Mobile push. Tuyên bố miễn trừ: Bài viết này dựa trên buổi nói chuyện kỹ thuật của Twitter năm 2013 (https://bit.ly/3vNfjRp). Dù nhiều năm đã trôi qua, nó vẫn khá liên quan. Tôi vẽ lại sơ đồ vì sơ đồ gốc khó đọc.",
+ "5bf691a3a3b5": "Tới lượt bạn:",
+ "3758559c12bc": "Bạn có dùng Twitter không? Đâu là những khác biệt lớn nhất giữa LinkedIn và Twitter có thể định hình kiến trúc hệ thống của họ? — Xem những cuốn sách thiết kế hệ thống bán chạy nhất của chúng tôi.",
+ "191884590286": "Bản in: Amazon. Bản số: ByteByteGo."
+}

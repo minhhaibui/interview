@@ -1,0 +1,10 @@
+{
+ "7a5fcd933326": "Các chiến lược triển khai",
+ "00d91ab9d822": "Triển khai hay nâng cấp dịch vụ là việc đầy rủi ro. Trong bài này, ta khám phá các chiến lược giảm nhẹ rủi ro.",
+ "445b31ffe795": "Sơ đồ dưới đây minh hoạ những chiến lược phổ biến.",
+ "499124a37f57": "𝐓𝐫𝐢𝐞̂̉𝐧 𝐤𝐡𝐚𝐢 đ𝐚 𝐝𝐢̣𝐜𝐡 𝐯𝐮̣ (Multi-Service Deployment): Trong mô hình này, ta triển khai thay đổi mới cho nhiều dịch vụ cùng lúc. Cách này dễ thực hiện. Nhưng vì mọi dịch vụ đều được nâng cấp cùng lúc, việc quản lý và kiểm thử các phụ thuộc rất khó. Việc quay lui an toàn cũng khó. 𝐁𝐥𝐮𝐞-𝐆𝐫𝐞𝐞𝐧 𝐃𝐞𝐩𝐥𝐨𝐲𝐦𝐞𝐧𝐭: Với triển khai xanh dương–xanh lá, ta có hai môi trường giống hệt nhau: một là staging (xanh dương) và một là production (xanh lá). Môi trường staging đi trước production một phiên bản. Khi kiểm thử ở staging xong, lưu lượng người dùng được chuyển sang môi trường staging, và staging trở thành production. Chiến lược này quay lui rất đơn giản, nhưng duy trì hai môi trường chất lượng production giống hệt nhau có thể tốn kém.",
+ "ec05e816db4e": "𝐂𝐚𝐧𝐚𝐫𝐲 𝐃𝐞𝐩𝐥𝐨𝐲𝐦𝐞𝐧𝐭: Triển khai canary nâng cấp dịch vụ dần dần, mỗi lần cho một nhóm nhỏ người dùng. Nó rẻ hơn triển khai xanh dương–xanh lá và dễ quay lui. Tuy nhiên, vì không có môi trường staging, ta phải kiểm thử ngay trên production. Quy trình này phức tạp hơn vì ta phải giám sát bản canary trong lúc dần chuyển ngày càng nhiều người dùng ra khỏi phiên bản cũ.",
+ "1bf17565f01f": "𝐊𝐢𝐞̂̉𝐦 𝐭𝐡𝐮̛̉ 𝐀/𝐁: Trong kiểm thử A/B, những phiên bản dịch vụ khác nhau chạy đồng thời trên production. Mỗi phiên bản chạy một \"thí nghiệm\" cho một nhóm người dùng. Kiểm thử A/B là cách rẻ để thử tính năng mới trên production.",
+ "8f29dcf13c9e": "Ta cần kiểm soát quy trình triển khai phòng khi vài tính năng bị đẩy tới người dùng do nhầm lẫn.",
+ "e8de6663adf2": "Tới lượt bạn — bạn đã dùng chiến lược triển khai nào? Bạn có chứng kiến sự cố production nào liên quan tới triển khai không và vì sao chúng xảy ra?"
+}

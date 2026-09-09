@@ -1,0 +1,13 @@
+{
+ "b6111a485fea": "Nên dùng nhà cung cấp đám mây nào khi xây giải pháp dữ liệu lớn?",
+ "d1a7e371777a": "Sơ đồ dưới đây minh hoạ so sánh chi tiết giữa AWS, Google Cloud và Microsoft Azure. Những phần chung của các giải pháp:",
+ "9cbff066c7dc": "Thu nạp dữ liệu có cấu trúc hoặc phi cấu trúc.",
+ "9f543278877a": "Lưu trữ dữ liệu thô.",
+ "632ce2327ed9": "Xử lý dữ liệu, gồm lọc, biến đổi, chuẩn hoá, v.v.",
+ "36e0364c8ed8": "Kho dữ liệu (data warehouse), gồm lưu trữ khoá-giá trị, cơ sở dữ liệu quan hệ, cơ sở dữ liệu OLAP, v.v.",
+ "7a8fc7fb24a6": "Tầng trình bày với bảng điều khiển và thông báo thời gian thực.",
+ "96baf344a99e": "Thú vị là các nhà cung cấp đám mây khác nhau lại đặt tên khác nhau cho cùng một loại sản phẩm.",
+ "87440c50380a": "Chẳng hạn, bước đầu tiên và bước cuối cùng đều dùng sản phẩm serverless. Sản phẩm đó gọi là \"lambda\" ở AWS, và \"function\" ở Azure lẫn Google Cloud.",
+ "4a11e85024b4": "Câu hỏi - bạn đã dùng những sản phẩm nào trên production? Bạn dùng chúng cho loại ứng dụng nào?",
+ "258b9fa40313": "Nguồn: bài viết của S.C. Gupta"
+}

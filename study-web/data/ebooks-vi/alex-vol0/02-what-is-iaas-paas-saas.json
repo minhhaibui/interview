@@ -1,0 +1,11 @@
+{
+ "5fe507fc1b4c": "IaaS/PaaS/SaaS là gì?",
+ "80c37358f1ac": "Sơ đồ dưới đây minh hoạ khác biệt giữa IaaS (Hạ tầng như một dịch vụ), PaaS (Nền tảng như một dịch vụ) và SaaS (Phần mềm như một dịch vụ).",
+ "83c0ef43da8d": "Với ứng dụng không chạy trên đám mây, ta sở hữu và quản lý toàn bộ phần cứng lẫn phần mềm. Ta nói ứng dụng đó chạy tại chỗ (on-premises).",
+ "34410179d4a8": "Với điện toán đám mây, các nhà cung cấp dịch vụ đám mây đưa ra ba mô hình cho ta dùng: IaaS, PaaS và SaaS.",
+ "90473d2e1864": "𝐈𝐚𝐚𝐒 cho ta truy cập hạ tầng của nhà cung cấp đám mây, như server, lưu trữ và mạng. Ta trả tiền cho dịch vụ hạ tầng rồi tự cài và quản lý phần mềm hỗ trợ trên đó cho ứng dụng của mình.",
+ "56128be45d46": "𝐏𝐚𝐚𝐒 đi xa hơn. Nó cung cấp một nền tảng với nhiều middleware, framework và công cụ để xây ứng dụng. Ta chỉ tập trung vào việc phát triển ứng dụng và dữ liệu.",
+ "cd9c70a41a6f": "𝐒𝐚𝐚𝐒 cho phép ứng dụng chạy trên đám mây. Ta trả phí theo tháng hoặc theo năm để dùng sản phẩm SaaS.",
+ "3e82e65c1e31": "Tới lượt bạn: bạn đã dùng những sản phẩm IaaS/PaaS/SaaS nào? Bạn quyết định dùng kiến trúc nào ra sao?",
+ "83934cdc41af": "Nguồn ảnh: https://www.ibm.com/cloud/learn/iaas-paas-saas"
+}

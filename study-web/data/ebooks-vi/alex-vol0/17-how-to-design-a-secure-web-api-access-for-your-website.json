@@ -1,0 +1,16 @@
+{
+ "8483d2a7bd7c": "Thiết kế truy cập web API an toàn cho website của bạn ra sao?",
+ "bf7b16f1cd84": "Khi mở quyền truy cập web API cho người dùng, ta cần đảm bảo mỗi lời gọi API đều được xác thực. Nghĩa là người dùng phải đúng là người họ tự nhận.",
+ "a0c913f1f1c3": "Trong bài này, ta khám phá hai cách phổ biến:",
+ "c217c2f10d9f": "Xác thực dựa trên token",
+ "495bcf32218f": "Xác thực HMAC (Hash-based Message Authentication Code). Sơ đồ dưới đây minh hoạ cách chúng hoạt động. 𝐃𝐮̛̣𝐚 𝐭𝐫𝐞̂𝐧 𝐭𝐨𝐤𝐞𝐧: Bước 1 - người dùng nhập mật khẩu vào client, và client gửi mật khẩu tới Server Xác thực. Bước 2 - Server Xác thực kiểm chứng thông tin đăng nhập và sinh một token có thời hạn.",
+ "b584b9284ada": "Bước 3 và 4 - giờ client gửi được request truy cập tài nguyên server kèm token trong phần đầu HTTP. Quyền truy cập này có hiệu lực tới khi token hết hạn.",
+ "9713fc2e161e": "𝐃𝐮̛̣𝐚 𝐭𝐫𝐞̂𝐧 𝐇𝐌𝐀𝐂: Cơ chế này sinh ra Mã xác thực thông điệp (chữ ký) bằng một hàm băm (SHA256 hoặc MD5).",
+ "4163ae4f4639": "Bước 1 và 2 - server sinh hai khoá, một là Public APP ID (khoá công khai) và một là API Key (khoá bí mật).",
+ "32b430730769": "Bước 3 - giờ ta sinh một chữ ký HMAC ở phía client (hmac A). Chữ ký này được sinh từ tập thuộc tính liệt kê trong sơ đồ.",
+ "5fd6148073a1": "Bước 4 - client gửi request truy cập tài nguyên server kèm hmac A trong phần đầu HTTP.",
+ "2e713488b317": "Bước 5 - server nhận request chứa dữ liệu request và phần đầu xác thực. Nó trích ra những thuộc tính cần thiết từ request rồi dùng API key đang lưu ở phía server để sinh một chữ ký (hmac B).",
+ "4bf45d78488d": "Bước 6 và 7 - server so hmac A (sinh ở phía client) với hmac B (sinh ở phía server). Nếu chúng khớp nhau, tài nguyên được yêu cầu sẽ được trả về cho client.",
+ "2f9a3ca0b265": "Câu hỏi - HMAC đảm bảo tính toàn vẹn dữ liệu bằng cách nào? Vì sao ta đưa \"dấu thời gian của request\" vào việc sinh chữ ký HMAC? — Xem những cuốn sách thiết kế hệ thống bán chạy nhất của chúng tôi.",
+ "ff9d1d18c1be": "Bản in: Amazon. Bản số: ByteByteGo."
+}

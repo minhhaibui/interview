@@ -1,0 +1,13 @@
+{
+ "b13e4c765794": "Các mức cô lập của cơ sở dữ liệu là gì? Chúng dùng để làm gì?",
+ "4188dddc8750": "Cô lập trong cơ sở dữ liệu cho phép một giao dịch thực thi như thể không có giao dịch nào khác đang chạy đồng thời.",
+ "4d10427c86c2": "Sơ đồ dưới đây minh hoạ bốn mức cô lập. 🔹 Serializable: Đây là mức cô lập cao nhất. Các giao dịch đồng thời được đảm bảo thực thi tuần tự. 🔹 Repeatable Read: Dữ liệu đọc trong giao dịch giữ nguyên như lúc giao dịch bắt đầu. 🔹 Read Committed: Thay đổi dữ liệu chỉ đọc được sau khi giao dịch đã commit. 🔹 Read Uncommitted: Thay đổi dữ liệu đọc được bởi các giao dịch khác ngay cả trước khi giao dịch commit.",
+ "f231eb33aad1": "Tính cô lập được đảm bảo bởi MVCC (Multi-Version Consistency Control) và khoá.",
+ "1dba12914992": "Sơ đồ dưới đây lấy Repeatable Read làm ví dụ để minh hoạ MVCC hoạt động ra sao:",
+ "e63cc58ff091": "Mỗi hàng có hai cột ẩn: transaction_id và roll_pointer. Khi giao dịch A bắt đầu, một Read View mới với transaction_id=201 được tạo. Ngay sau đó, giao dịch B bắt đầu, và một Read View mới với transaction_id=202 được tạo.",
+ "9940a8638b2b": "Giờ giao dịch A sửa số dư thành 200, một hàng log mới được tạo, và roll_pointer trỏ về hàng cũ. Trước khi giao dịch A commit, giao dịch B đọc dữ liệu số dư. Giao dịch B thấy transaction_id 201 chưa commit nên nó đọc bản ghi đã commit kế tiếp (transaction_id=200).",
+ "0add120d462f": "Ngay cả khi giao dịch A commit, giao dịch B vẫn đọc dữ liệu dựa trên Read View được tạo lúc giao dịch B bắt đầu. Vậy nên giao dịch B luôn đọc được dữ liệu với balance=100.",
+ "fb0fa754d89b": "Tới lượt bạn: bạn đã từng thấy các mức cô lập bị dùng sai chưa?",
+ "a745ec698a32": "Nó có gây sự cố nghiêm trọng không? — Xem những cuốn sách thiết kế hệ thống bán chạy nhất của chúng tôi.",
+ "9ab52f3e43bc": "Bản in: Amazon. Bản số: ByteByteGo."
+}

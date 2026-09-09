@@ -1,0 +1,18 @@
+{
+ "04ec9475ebf1": "SSO (Đăng nhập một lần) là gì?",
+ "50119341ef8b": "Một người bạn của tôi vừa trải qua chuyện bực mình khi bị đăng xuất khỏi hàng loạt website mà họ dùng hằng ngày. Chuyện này quen thuộc với hàng triệu người dùng web, và việc khắc phục thì rất nhọc. Nó có thể gồm việc cố nhớ lại nhiều mật khẩu đã quên từ lâu, hoặc gõ tên thú cưng thời thơ ấu để trả lời câu hỏi bảo mật. SSO loại bỏ sự bất tiện đó và làm cuộc sống trực tuyến dễ chịu hơn. Nhưng nó hoạt động ra sao?",
+ "083f78cb1283": "Về cơ bản, Đăng nhập một lần (SSO) là một cơ chế xác thực. Nó cho phép người dùng đăng nhập vào nhiều hệ thống khác nhau bằng một ID duy nhất.",
+ "8cbd7be1933e": "Sơ đồ dưới đây minh hoạ cách SSO hoạt động.",
+ "876eccb59080": "Bước 1: Người dùng vào Gmail, hoặc bất kỳ dịch vụ email nào. Gmail thấy người dùng chưa đăng nhập nên chuyển hướng họ tới server xác thực SSO, server này cũng thấy người dùng chưa đăng nhập. Kết quả là người dùng bị chuyển hướng tới trang đăng nhập SSO, nơi họ nhập thông tin đăng nhập.",
+ "e45926d856d2": "Bước 2-3: Server xác thực SSO kiểm chứng thông tin đăng nhập, tạo phiên toàn cục cho người dùng, và tạo một token.",
+ "b6ca964de11c": "Bước 4-7: Gmail kiểm chứng token với server xác thực SSO.",
+ "1069e82c683d": "Server xác thực đăng ký hệ thống Gmail, và trả về \"hợp lệ.\" Gmail trả tài nguyên được bảo vệ về cho người dùng.",
+ "accdae753552": "Bước 8: Từ Gmail, người dùng chuyển sang một website khác của Google, chẳng hạn YouTube.",
+ "6b546139b4dc": "Bước 9-10: YouTube thấy người dùng chưa đăng nhập nên yêu cầu xác thực. Server xác thực SSO thấy người dùng đã đăng nhập rồi nên trả về token.",
+ "8792be45eb8e": "Bước 11-14: YouTube kiểm chứng token với server xác thực SSO. Server xác thực đăng ký hệ thống YouTube, và trả về \"hợp lệ.\" YouTube trả tài nguyên được bảo vệ về cho người dùng.",
+ "edbeca45eda6": "Quá trình hoàn tất và người dùng truy cập lại được tài khoản của mình.",
+ "5bf691a3a3b5": "Tới lượt bạn:",
+ "d11cbd39baae": "Câu hỏi 1: bạn đã hiện thực SSO trong dự án của mình chưa? Phần khó nhất là gì?",
+ "0f507a035876": "Câu hỏi 2: cách đăng nhập bạn thích nhất là gì và vì sao? — Xem những cuốn sách thiết kế hệ thống bán chạy nhất của chúng tôi.",
+ "ffad8e1d6dec": "Bản in: Amazon. Bản số: ByteByteGo."
+}
