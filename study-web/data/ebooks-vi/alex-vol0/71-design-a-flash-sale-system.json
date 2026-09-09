@@ -1,0 +1,11 @@
+{
+ "166e3fff57cb": "Thiết kế hệ thống bán hàng chớp nhoáng (flash sale)",
+ "48ec31faa44b": "Black Friday đang tới. Thiết kế một hệ thống có mức đồng thời cực cao, tính sẵn sàng cao và phản hồi nhanh đòi hỏi cân nhắc nhiều khía cạnh 𝐭𝐮̛̀ 𝐟𝐫𝐨𝐧𝐭𝐞𝐧𝐝 𝐜𝐡𝐨 𝐭𝐨̛́𝐢 𝐛𝐚𝐜𝐤𝐞𝐧𝐝. Xem hình dưới để biết chi tiết:",
+ "2faf3fe7d858": "𝐍𝐠𝐮𝐲𝐞̂𝐧 𝐭𝐚̆́𝐜 𝐭𝐡𝐢𝐞̂́𝐭 𝐤𝐞̂́:",
+ "dbd4c7089e2e": "Ít mà hơn - ít phần tử trên trang web hơn, ít truy vấn dữ liệu xuống cơ sở dữ liệu hơn, ít request web hơn, ít phụ thuộc hệ thống hơn",
+ "2ee86066907d": "Đường đi then chốt ngắn - ít chặng nhảy giữa các dịch vụ hơn, hoặc gộp lại thành một dịch vụ",
+ "36e32b4b76d5": "Bất đồng bộ - dùng hàng đợi tin nhắn để gánh TPS cao",
+ "01f5f623dcc5": "Cô lập - tách nội dung tĩnh khỏi nội dung động, tách riêng tiến trình và cơ sở dữ liệu cho những mặt hàng hiếm",
+ "e2389c5eda3a": "Bán vượt kho là điều tệ. Việc trừ tồn kho là rất quan trọng",
+ "aa246b08bfa0": "Trải nghiệm người dùng là quan trọng. Ta chắc chắn không muốn báo với người dùng rằng họ đã đặt hàng thành công rồi sau đó lại nói không còn hàng."
+}

@@ -1,0 +1,19 @@
+{
+ "fa9365f6fb1b": "Dòng chảy của tiền",
+ "83a82ebcde27": "Một bức tranh đáng giá hơn ngàn lời nói. Đây là điều diễn ra bên dưới khi bạn mua một sản phẩm bằng Paypal/thẻ ngân hàng.",
+ "58322331fc76": "Để hiểu điều này, ta cần tiêu hoá hai khái niệm: 𝐛𝐮̀ 𝐭𝐫𝐮̛̀ (clearing) & 𝐭𝐡𝐚𝐧𝐡 𝐭𝐨𝐚́𝐧 𝐛𝐮̀ 𝐭𝐫𝐮̛̀ (settlement). Bù trừ là quá trình tính xem ai phải trả cho ai bao nhiêu tiền; còn thanh toán bù trừ là quá trình tiền thật di chuyển giữa các tài khoản dự trữ ở ngân hàng thanh toán. Giả sử Bob muốn mua một cuốn sách SDI từ cửa hàng của Claire trên Amazon. - Luồng tiền vào (Bob trả tiền cho Amazon):",
+ "829d1ac8e75f": "1 Bob mua một cuốn sách trên Amazon bằng Paypal.",
+ "061c12d4defe": "2 Amazon phát lệnh chuyển tiền tới Paypal.",
+ "4abafcc095d1": "3 Vì token thanh toán của thẻ ghi nợ của Bob được lưu ở Paypal, Paypal chuyển được tiền thay mặt Bob tới tài khoản ngân hàng của Amazon ở Ngân hàng A.",
+ "3d9579322a69": "4 Cả Ngân hàng A lẫn Ngân hàng B đều gửi sao kê giao dịch tới tổ chức bù trừ. Việc này giảm bớt số giao dịch cần thanh toán bù trừ.",
+ "6c3526a229c1": "Hãy giả sử cuối ngày Ngân hàng A nợ Ngân hàng B 100 đô và Ngân hàng B nợ Ngân hàng A 500 đô. Khi thanh toán bù trừ, vị thế ròng là Ngân hàng B trả cho Ngân hàng A 400 đô.",
+ "7dff9b8f1de8": "5 & 1.6 Tổ chức bù trừ gửi thông tin bù trừ và thanh toán tới ngân hàng thanh toán. Cả Ngân hàng A lẫn Ngân hàng B đều đã ký quỹ trước ở ngân hàng thanh toán làm quỹ dự trữ, nên việc di chuyển tiền thật diễn ra giữa hai tài khoản dự trữ tại ngân hàng thanh toán. - Luồng tiền ra (Amazon trả tiền cho người bán: Claire):",
+ "11f18a4751ed": "1 Amazon báo cho người bán (Claire) rằng cô sẽ sớm được thanh toán.",
+ "edec4586586c": "2 Amazon phát lệnh chuyển tiền từ ngân hàng của mình (Ngân hàng A) tới ngân hàng của người bán (Ngân hàng C). Ở đây cả hai ngân hàng đều ghi nhận giao dịch, nhưng chưa có tiền thật di chuyển.",
+ "3de499c40494": "3 Cả Ngân hàng A lẫn Ngân hàng C đều gửi sao kê giao dịch tới tổ chức bù trừ.",
+ "f0f2be64f98d": "4 & 2.5 Tổ chức bù trừ gửi thông tin bù trừ và thanh toán tới ngân hàng thanh toán. Tiền được chuyển từ quỹ dự trữ của Ngân hàng A sang quỹ dự trữ của Ngân hàng C.",
+ "6cf82b0c03ef": "Lưu ý rằng ta có ba tầng: - Tầng giao dịch: nơi việc mua bán trực tuyến diễn ra - Tầng thanh toán và bù trừ: nơi các chỉ thị thanh toán và việc bù trừ ròng giao dịch diễn ra - Tầng thanh toán bù trừ: nơi tiền thật di chuyển. Hai tầng đầu gọi là luồng thông tin, còn tầng thanh toán bù trừ gọi là luồng vốn.",
+ "33084de49842": "Bạn thấy 𝐥𝐮𝐨̂̀𝐧𝐠 𝐭𝐡𝐨̂𝐧𝐠 𝐭𝐢𝐧 𝐯𝐚̀ 𝐥𝐮𝐨̂̀𝐧𝐠 𝐯𝐨̂́𝐧 𝐥𝐚̀ 𝐭𝐚́𝐜𝐡 𝐛𝐢𝐞̣̂𝐭. Trong luồng thông tin, tiền có vẻ như bị trừ khỏi tài khoản ngân hàng này và cộng vào tài khoản ngân hàng kia, nhưng việc di chuyển tiền thật diễn ra ở ngân hàng thanh toán vào cuối ngày.",
+ "b8d489ae80a2": "Vì bản chất bất đồng bộ của luồng thông tin và luồng vốn, việc đối soát là rất quan trọng để giữ nhất quán dữ liệu trong các hệ thống dọc theo luồng.",
+ "28e8af6345f1": "Mọi thứ còn thú vị hơn khi Bob muốn mua một cuốn sách ở thị trường Ấn Độ, nơi Bob trả bằng USD nhưng người bán chỉ nhận được INR."
+}

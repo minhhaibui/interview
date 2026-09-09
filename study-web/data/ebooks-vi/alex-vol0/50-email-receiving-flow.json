@@ -1,0 +1,14 @@
+{
+ "2d6781e588bd": "Luồng nhận email",
+ "ebe7eecf18db": "Sơ đồ sau minh hoạ luồng nhận email.",
+ "d0d75d9b3c03": "Email đi vào tới bộ cân bằng tải SMTP.",
+ "4c99edf2d314": "Bộ cân bằng tải phân phối lưu lượng giữa các server SMTP. Chính sách chấp nhận email cấu hình và áp dụng được ở mức kết nối SMTP. Chẳng hạn, những email không hợp lệ bị trả lại để tránh xử lý email không cần thiết.",
+ "0a5e5c415dfb": "Nếu tệp đính kèm của một email quá lớn để đưa vào hàng đợi, ta đặt nó vào kho tệp đính kèm (S3).",
+ "877909db33f5": "Email được đưa vào hàng đợi email đến. Hàng đợi tách rời các worker xử lý thư khỏi server SMTP để chúng mở rộng độc lập được. Hơn nữa, hàng đợi đóng vai vùng đệm phòng khi lượng email tăng vọt.",
+ "9f9c42cadf46": "Worker xử lý thư chịu trách nhiệm rất nhiều tác vụ, gồm lọc thư rác, chặn virus, v.v. Các bước sau giả định email đã qua được khâu kiểm chứng.",
+ "c932b9f9ab47": "Email được lưu vào kho thư, cache và kho dữ liệu đối tượng.",
+ "684a3904e8f1": "Nếu người nhận đang trực tuyến, email được đẩy tới các server thời gian thực.",
+ "223d503889be": "Server thời gian thực là server WebSocket, cho phép client nhận email mới theo thời gian thực.",
+ "a4f7082105fc": "Với người dùng ngoại tuyến, email được lưu ở tầng lưu trữ. Khi người dùng trực tuyến trở lại, client webmail kết nối tới web server qua RESTful API.",
+ "a1c0ea000ffe": "Web server kéo email mới từ tầng lưu trữ và trả về cho client."
+}

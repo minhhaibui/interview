@@ -1,0 +1,13 @@
+{
+ "e3ca7c1328f4": "Thiết kế sàn giao dịch chứng khoán",
+ "8ce84b8ab494": "Thị trường chứng khoán gần đây khá biến động.",
+ "123314e5de80": "Trùng hợp là chúng tôi vừa hoàn thành chương mới \"Thiết kế sàn giao dịch chứng khoán\". Tôi sẽ dùng lời lẽ đơn giản để giải thích điều gì xảy ra khi bạn đặt lệnh mua cổ phiếu. Trọng tâm là ở phía sàn giao dịch.",
+ "bdff87c1c934": "Bước 1: khách hàng đặt lệnh qua web hoặc ứng dụng di động của công ty môi giới.",
+ "edfb0409adf8": "Bước 2: công ty môi giới gửi lệnh tới sàn. Bước 3: cổng client của sàn thực hiện những thao tác như kiểm chứng, giới hạn tốc độ, xác thực, chuẩn hoá, v.v., rồi gửi lệnh tới order manager.",
+ "b6ac984151f5": "Bước 4: order manager thực hiện các kiểm tra rủi ro dựa trên quy tắc do bộ phận quản trị rủi ro đặt ra.",
+ "8d6cb4f59c64": "Bước 5: khi kiểm tra rủi ro qua được, order manager kiểm tra xem ví có đủ số dư không.",
+ "3b99176c2378": "Bước 6-7: lệnh được gửi tới matching engine. Matching engine gửi lại kết quả khớp nếu tìm được lệnh đối ứng. Cả lệnh lẫn kết quả khớp đều phải được đánh số thứ tự trước ở sequencer để đảm bảo tính tất định của việc khớp lệnh.",
+ "f3d0a5b452ad": "Bước 8 - 10: kết quả khớp được chuyển ngược suốt đường về cho khách hàng.",
+ "3e90d2f7feae": "Bước 11-12: dữ liệu thị trường (gồm biểu đồ nến và sổ lệnh) được gửi tới dịch vụ dữ liệu để hợp nhất. Các công ty môi giới truy vấn dịch vụ dữ liệu để lấy dữ liệu thị trường.",
+ "7b0a03b05bef": "Bước 13: bộ phận báo cáo soạn mọi trường báo cáo cần thiết (ví dụ client_id, giá, khối lượng, loại lệnh, khối lượng đã khớp, khối lượng còn lại) rồi ghi dữ liệu vào cơ sở dữ liệu để lưu bền. Sàn giao dịch chứng khoán đòi hỏi 𝐝𝐨̣̂ 𝐭𝐫𝐞̂̃ 𝐜𝐮̛̣𝐜 𝐭𝐡𝐚̂́𝐩. Trong khi phần lớn ứng dụng web ổn với độ trễ vài trăm mili giây, sàn giao dịch chứng khoán đòi hỏi 𝐝𝐨̣̂ 𝐭𝐫𝐞̂̃ 𝐨̛̉ 𝐦𝐮̛́𝐜 𝐦𝐢𝐜𝐫𝐨 𝐠𝐢𝐚̂𝐲. Tôi sẽ để phần bàn về độ trễ cho một bài riêng vì bài này đã dài rồi."
+}

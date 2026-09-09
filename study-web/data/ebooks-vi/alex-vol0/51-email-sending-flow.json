@@ -1,0 +1,16 @@
+{
+ "18491626ea1b": "Luồng gửi email",
+ "bdb37d76ed56": "Trong bài này, ta sẽ xem kỹ hơn luồng gửi email.",
+ "c0cb6e2f52eb": "Người dùng soạn email trên webmail rồi bấm nút \"gửi\".",
+ "5d8658448ac7": "Request được gửi tới bộ cân bằng tải.",
+ "26811808649d": "Bộ cân bằng tải đảm bảo không vượt giới hạn tốc độ rồi định tuyến lưu lượng tới các web server.",
+ "68279f3e5899": "Web server chịu trách nhiệm: - Kiểm chứng email cơ bản. Mỗi email đi vào đều được kiểm tra theo những quy tắc định trước như giới hạn kích thước email. - Kiểm tra xem tên miền trong địa chỉ email của người nhận có trùng với người gửi không. Nếu trùng, dữ liệu email được ghi thẳng vào kho lưu trữ, cache và kho đối tượng. Người nhận lấy email trực tiếp được qua RESTful API. Không cần đi tới bước 4.",
+ "fbecaf087fb7": "Hàng đợi tin nhắn.",
+ "c4bdc827dc6e": "a. Nếu kiểm chứng email cơ bản thành công, dữ liệu email được chuyển vào hàng đợi đi ra.",
+ "0557b6d87be2": "b. Nếu kiểm chứng email cơ bản thất bại, email được đưa vào hàng đợi lỗi.",
+ "ab0e7260dbc4": "Worker SMTP đi ra kéo sự kiện từ hàng đợi đi ra và đảm bảo email không chứa thư rác lẫn virus.",
+ "5ecf0c4ff77d": "Email đi ra được lưu vào \"Thư mục Đã gửi\" của tầng lưu trữ.",
+ "c61729244195": "Worker SMTP đi ra gửi email tới server thư của người nhận.",
+ "b6218edd3df9": "Mỗi thông điệp trong hàng đợi đi ra chứa toàn bộ siêu dữ liệu cần thiết để tạo một email. Hàng đợi tin nhắn phân tán là thành phần then chốt cho phép xử lý thư bất đồng bộ. Bằng cách tách worker SMTP đi ra khỏi web server, ta mở rộng được worker SMTP một cách độc lập.",
+ "6728547c7fc5": "Ta giám sát rất sát kích thước hàng đợi đi ra. Nếu có nhiều email kẹt trong hàng đợi, ta cần phân tích nguyên nhân. Đây là vài khả năng: - Server thư của người nhận không khả dụng. Trong trường hợp này, ta cần thử gửi lại email vào lúc khác. Lùi theo hàm mũ có thể là chiến lược thử lại tốt. - Không đủ consumer để gửi email. Trong trường hợp này, ta có thể cần thêm consumer để giảm thời gian xử lý."
+}

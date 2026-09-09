@@ -1,0 +1,10 @@
+{
+ "46018c86cd4c": "Kết xuất bản đồ",
+ "80a658d70b6e": "Tiếp nối về Google Maps. Hãy xem 𝐊𝐞̂́𝐭 𝐱𝐮𝐚̂́𝐭 𝐁𝐚̉𝐧 đ𝐨̂̀ trong bài này.",
+ "4461ccd1879f": "𝐎̂ 𝐛𝐚̉𝐧 đ𝐨̂̀ 𝐭𝐢́𝐧𝐡 𝐭𝐫𝐮̛𝐨̛́𝐜 (Pre-Computed Tiles): Một khái niệm nền tảng trong kết xuất bản đồ là chia ô (tiling). Thay vì kết xuất cả bản đồ thành một ảnh tuỳ chỉnh khổng lồ, thế giới được chia thành những ô nhỏ hơn. Client chỉ tải về những ô liên quan tới khu vực người dùng đang ở rồi ghép chúng lại như một bức khảm để hiển thị. Các ô được tính trước ở nhiều mức phóng to khác nhau. Google Maps dùng 21 mức phóng.",
+ "a25cdba40537": "Chẳng hạn, ở mức phóng 0, cả bản đồ được biểu diễn bằng một ô duy nhất kích thước 256 * 256 pixel. Rồi ở mức phóng 1, số ô bản đồ tăng gấp đôi theo cả hướng bắc-nam lẫn đông-tây, trong khi mỗi ô vẫn giữ 256 * 256 pixel. Vậy ta có 4 ô ở mức phóng 1, và ảnh toàn bộ của mức phóng 1 là 512 * 512 pixel. Mỗi lần tăng một mức, toàn bộ tập ô có số pixel gấp 4 lần mức trước. Số pixel tăng lên mang lại mức chi tiết ngày càng cao cho người dùng.",
+ "71532f2ee73e": "Điều này cho phép client kết xuất bản đồ ở mức chi tiết tốt nhất tuỳ theo mức phóng của client mà không tiêu tốn băng thông quá mức để tải những ô quá chi tiết. Điều này đặc biệt quan trọng khi ta nạp ảnh từ client di động.",
+ "e2891def608e": "𝐄𝐨 đ𝐨𝐚̣𝐧 đ𝐮̛𝐨̛̀𝐧𝐠 (Road Segments): Giờ khi đã biến bản đồ khổng lồ thành các ô, ta cũng cần định nghĩa một cấu trúc dữ liệu cho đường sá. Ta chia thế giới đường sá thành những khối nhỏ. Ta gọi những khối này là đoạn đường. Mỗi đoạn đường chứa nhiều con đường, nút giao và siêu dữ liệu khác.",
+ "9be719d5c4ac": "Ta gom những đoạn gần nhau thành siêu đoạn. Quá trình này lặp lại được để đạt mức bao phủ cần thiết.",
+ "2f5e684628a6": "Rồi ta biến các đoạn đường thành một cấu trúc dữ liệu mà thuật toán dẫn đường dùng được. Cách điển hình là chuyển bản đồ thành một 𝒅𝒐̂̀ 𝒕𝒉𝒊̣, trong đó node là các đoạn đường, và hai node được nối với nhau nếu những đoạn đường tương ứng là hàng xóm đi tới được. Theo cách này, việc tìm đường giữa hai vị trí trở thành bài toán đường đi ngắn nhất, nơi ta tận dụng được thuật toán Dijkstra hoặc A*."
+}

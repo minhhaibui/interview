@@ -1,0 +1,9 @@
+{
+ "3ce90a7288fa": "Những bài báo về dữ liệu lớn",
+ "80c38a96836c": "Dưới đây là dòng thời gian của những bài báo quan trọng về dữ liệu lớn và cách các kỹ thuật tiến hoá theo thời gian.",
+ "f4d255658218": "Những ô tô xanh lá là 3 bài báo nổi tiếng của Google, thứ đã đặt nền móng cho khung dữ liệu lớn. Ở mức cao:",
+ "f6d4d8853703": "𝘒𝘺̃ 𝘵𝘩𝘶𝘢̣̂𝘵 𝘋𝘶̛̃ 𝘭𝘪𝘦̣̂𝘶 𝘭𝘰̛́𝘯 = 𝘋𝘶̛̃ 𝘭𝘪𝘦̣̂𝘶 𝘬𝘩𝘰̂̉𝘯𝘨 𝘭𝘰̂̀ + 𝘛𝘪́𝘯𝘩 𝘵𝘰𝘢́𝘯 𝘬𝘩𝘰̂̉𝘯𝘨 𝘭𝘰̂̀. Hãy xem sự tiến hoá của 𝐎𝐋𝐓𝐏. BigTable cung cấp hệ lưu trữ phân tán cho dữ liệu có cấu trúc nhưng bỏ đi vài đặc tính của cơ sở dữ liệu quan hệ. Rồi Megastore mang lược đồ và giao dịch đơn giản trở lại; Spanner mang tính nhất quán dữ liệu trở lại.",
+ "7a369183e49e": "Giờ hãy xem sự tiến hoá của 𝐎𝐋𝐀𝐏. MapReduce không dễ lập trình, nên Hive giải quyết điều đó bằng cách đưa vào một ngôn ngữ truy vấn giống SQL. Nhưng Hive vẫn dùng MapReduce bên dưới, nên nó không phản hồi nhanh lắm. Năm 2010, Dremel cung cấp một bộ máy truy vấn tương tác.",
+ "b39881fc0ec9": "𝐗𝐮̛̉ 𝐥𝐲́ 𝐥𝐮𝐨̂̀𝐧𝐠 ra đời để giải quyết tiếp vấn đề độ trễ trong OLAP. Kiến trúc 𝒍𝒂𝒎𝒃𝒅𝒂 nổi tiếng dựa trên Storm và MapReduce, nơi xử lý luồng và xử lý theo lô có luồng xử lý khác nhau. Rồi người ta bắt đầu dựng xử lý luồng bằng Apache Kafka. Kiến trúc 𝑲𝒂𝒑𝒑𝒂 được đề xuất năm 2014, nơi xử lý luồng và xử lý lô được gộp thành một luồng. Google công bố The Dataflow Model năm 2015, một chuẩn trừu tượng cho xử lý luồng, và Flink đã hiện thực mô hình này.",
+ "160f2703b60b": "Để quản lý một đám đông tài nguyên server phổ thông, ta cần công cụ quản lý tài nguyên Kubernetes."
+}

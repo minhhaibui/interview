@@ -1,0 +1,9 @@
+{
+ "33058c85a0ef": "Câu hỏi phỏng vấn: Thiết kế Gmail",
+ "b80f33d6d47c": "Một bức tranh đáng giá hơn ngàn lời nói. Trong bài này, ta sẽ xem điều gì xảy ra khi Alice gửi email cho Bob.",
+ "f7a005a5d310": "Alice đăng nhập vào client Outlook, soạn email, rồi bấm \"gửi\". Email được gửi tới server thư Outlook. Giao thức liên lạc giữa client Outlook và server thư là SMTP.",
+ "f7f571fe02f2": "Server thư Outlook truy vấn DNS (không thể hiện trong sơ đồ) để tìm địa chỉ server SMTP của người nhận. Trong trường hợp này là server SMTP của Gmail. Tiếp theo, nó chuyển email tới server thư Gmail. Giao thức liên lạc giữa các server thư là SMTP.",
+ "8dd950f69c70": "Server Gmail lưu email và làm cho nó khả dụng với Bob, người nhận.",
+ "8617b2e40457": "Client Gmail lấy email mới qua server IMAP/POP khi Bob đăng nhập vào Gmail.",
+ "38a5bf7cd3aa": "Xin nhớ đây là thiết kế đã đơn giản hoá rất nhiều. Hy vọng nó khơi gợi sự quan tâm và tò mò của bạn :) Tôi sẽ giải thích từng thành phần sâu hơn trong tương lai."
+}

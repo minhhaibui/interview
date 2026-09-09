@@ -1,0 +1,12 @@
+{
+ "8005530230f6": "Ta tìm nhà hàng gần đó trên Yelp bằng cách nào?",
+ "d499008a90b8": "Đây là vài chi tiết thiết kế ở hậu trường.",
+ "d6fc61c5eef2": "Có hai dịch vụ then chốt (xem sơ đồ dưới): - 𝐁𝐮𝐬𝐢𝐧𝐞𝐬𝐬 𝐒𝐞𝐫𝐯𝐢𝐜𝐞 - Thêm/xoá/cập nhật thông tin nhà hàng - Khách xem chi tiết nhà hàng - 𝐋𝐨𝐜𝐚𝐥-𝐛𝐚𝐬𝐞𝐝 𝐒𝐞𝐫𝐯𝐢𝐜𝐞 (𝐋𝐁𝐒) - Cho một bán kính và vị trí, trả về danh sách nhà hàng gần đó. Vị trí nhà hàng được lưu trong cơ sở dữ liệu ra sao để LBS trả về nhà hàng gần đó một cách hiệu quả?",
+ "cf8c9981b256": "Lưu vĩ độ và kinh độ của nhà hàng trong cơ sở dữ liệu? Truy vấn sẽ rất kém hiệu quả khi bạn phải tính khoảng cách giữa bạn và từng nhà hàng một.",
+ "863a7ef50d08": "Một cách tăng tốc tìm kiếm là dùng 𝐭𝐡𝐮𝐚̣̂𝐭 𝐭𝐨𝐚́𝐧 𝐠𝐞𝐨𝐡𝐚𝐬𝐡.",
+ "760f0e613f05": "Trước hết, chia hành tinh thành bốn góc phần tư theo kinh tuyến gốc và xích đạo: - Dải vĩ độ [-90, 0] được biểu diễn bằng 0 - Dải vĩ độ [0, 90] được biểu diễn bằng 1 - Dải kinh độ [-180, 0] được biểu diễn bằng 0 - Dải kinh độ [0, 180] được biểu diễn bằng 1. Thứ hai, chia mỗi ô lưới thành bốn ô nhỏ hơn. Mỗi ô được biểu diễn bằng cách xen kẽ bit kinh độ và bit vĩ độ.",
+ "74751a5637c6": "Vậy nên khi bạn muốn tìm nhà hàng gần đó trong ô được tô đỏ, bạn viết được câu SQL kiểu:",
+ "bbe8bfe16586": "SELECT * FROM geohash_index WHERE geohash LIKE `01%`. Geohash có vài hạn chế. Có thể có rất nhiều nhà hàng trong một ô (trung tâm New York), nhưng chẳng có cái nào ở ô khác (đại dương). Vì vậy còn những thuật toán phức tạp hơn để tối ưu quá trình này.",
+ "a0cbc0cf7361": "Cho tôi biết nếu bạn quan tâm tới chi tiết. Một bức tranh đáng giá hơn ngàn lời nói. Log4j từ lúc bị tấn công tới lúc phòng ngừa, gói gọn trong một minh hoạ.",
+ "7f012e65f415": "Ghi công GovCERT. Liên kết: https://www.govcert.ch/blog/zero-day-exploit-targeting-popular-java-library-log4j/"
+}

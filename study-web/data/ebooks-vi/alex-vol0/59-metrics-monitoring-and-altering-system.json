@@ -1,0 +1,11 @@
+{
+ "e3da72ffdc91": "Hệ thống giám sát số liệu và cảnh báo",
+ "5a4ef28efefe": "Một 𝐡𝐞̣̂ 𝐭𝐡𝐨̂́𝐧𝐠 𝐠𝐢𝐚́𝐦 𝐬𝐚́𝐭 𝐬𝐨̂́ 𝐥𝐢𝐞̣̂𝐮 và cảnh báo được thiết kế tốt đóng vai trò then chốt trong việc mang lại cái nhìn rõ ràng về sức khoẻ hạ tầng, nhằm đảm bảo tính sẵn sàng và độ tin cậy cao. Sơ đồ dưới đây giải thích cách nó hoạt động ở mức cao.",
+ "bff7def88485": "Nguồn số liệu: Có thể là server ứng dụng, cơ sở dữ liệu SQL, hàng đợi tin nhắn, v.v.",
+ "1080cf4c4555": "Bộ thu thập số liệu: Nó gom dữ liệu số liệu và ghi vào cơ sở dữ liệu chuỗi thời gian.",
+ "7453a9d0338c": "Cơ sở dữ liệu chuỗi thời gian: Nó lưu dữ liệu số liệu dưới dạng chuỗi thời gian. Nó thường cung cấp giao diện truy vấn riêng để phân tích và tóm tắt lượng lớn dữ liệu chuỗi thời gian. Nó duy trì chỉ mục trên nhãn để tra cứu nhanh dữ liệu chuỗi thời gian theo nhãn.",
+ "5a1e3dd56165": "Kafka: Kafka được dùng như một nền tảng nhắn tin phân tán rất đáng tin cậy và mở rộng được. Nó tách rời dịch vụ thu thập dữ liệu khỏi dịch vụ xử lý dữ liệu. Consumer: Consumer hoặc các dịch vụ xử lý luồng như Apache Storm, Flink và Spark xử lý rồi đẩy dữ liệu vào cơ sở dữ liệu chuỗi thời gian.",
+ "003da01cb045": "Dịch vụ truy vấn: Dịch vụ truy vấn giúp việc truy vấn và lấy dữ liệu từ cơ sở dữ liệu chuỗi thời gian trở nên dễ dàng. Đây nên là lớp bọc rất mỏng nếu ta chọn được cơ sở dữ liệu chuỗi thời gian tốt. Nó thậm chí thay thế hoàn toàn được bằng chính giao diện truy vấn của cơ sở dữ liệu đó.",
+ "a9e177db74e4": "Hệ thống cảnh báo: Nó gửi thông báo cảnh báo tới nhiều đích cảnh báo khác nhau.",
+ "d7f38d157774": "Hệ thống trực quan hoá: Nó hiển thị số liệu dưới dạng nhiều loại đồ thị/biểu đồ."
+}

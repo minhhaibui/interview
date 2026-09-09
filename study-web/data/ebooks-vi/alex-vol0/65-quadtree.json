@@ -1,0 +1,8 @@
+{
+ "06b2ab95d213": "Quadtree (cây tứ phân)",
+ "e07f7f73e0a6": "Trong bài này, hãy khám phá một cấu trúc dữ liệu khác để tìm nhà hàng gần đó trên Yelp hay Google Maps.",
+ "3e33826c07e8": "Quadtree là cấu trúc dữ liệu hay được dùng để phân vùng một không gian hai chiều, bằng cách chia đệ quy nó thành bốn góc phần tư (ô lưới) cho tới khi nội dung của các ô đáp ứng những tiêu chí nhất định (xem sơ đồ đầu tiên). Quadtree là 𝐜𝐚̂́𝐮 𝐭𝐫𝐮́𝐜 𝐝𝐮̛̃ 𝐥𝐢𝐞̣̂𝐮 𝐭𝐫𝐨𝐧𝐠 𝐛𝐨̣̂ 𝐧𝐡𝐨̛́ chứ không phải giải pháp cơ sở dữ liệu. Nó chạy trên mỗi server LBS (Dịch vụ dựa trên vị trí, xem bài tuần trước), và cấu trúc dữ liệu được dựng lúc server khởi động.",
+ "eac18a7bc8c9": "Sơ đồ thứ hai giải thích chi tiết hơn quá trình dựng quadtree. Node gốc đại diện cho toàn bộ bản đồ thế giới. Node gốc được chia 𝐝𝐞̣̂ 𝐪𝐮𝐲 thành 4 góc phần tư cho tới khi không còn node nào có hơn 100 địa điểm kinh doanh.",
+ "b1daf09e4da3": "𝐋𝐚̂́𝐲 𝐜𝐚́𝐜 đ𝐢̣𝐚 đ𝐢𝐞̂̉𝐦 𝐠𝐚̂̀𝐧 đ𝐨́ 𝐛𝐚̆̀𝐧𝐠 𝐪𝐮𝐚𝐝𝐭𝐫𝐞𝐞 𝐫𝐚 𝐬𝐚𝐨? - Dựng quadtree trong bộ nhớ. - Sau khi quadtree được dựng, bắt đầu tìm từ gốc và duyệt cây cho tới khi tìm được node lá chứa điểm xuất phát của lượt tìm. - Nếu node lá đó có 100 địa điểm, trả về node đó. Ngược lại, thêm địa điểm từ các node lân cận cho tới khi trả về đủ.",
+ "59b7590dd776": "𝐂𝐚̣̂𝐩 𝐧𝐡𝐚̣̂𝐭 𝐬𝐞𝐫𝐯𝐞𝐫 𝐋𝐁𝐒 𝐯𝐚̀ 𝐝𝐮̛̣𝐧𝐠 𝐥𝐚̣𝐢 𝐪𝐮𝐚𝐝𝐭𝐫𝐞𝐞 - Có thể mất vài phút để dựng một quadtree trong bộ nhớ với 200 triệu địa điểm lúc server khởi động. - Trong lúc quadtree đang được dựng, server không phục vụ lưu lượng được. - Vì vậy, ta nên phát hành phiên bản server mới theo kiểu tăng dần cho 𝐦𝐨̣̂𝐭 𝐭𝐚̣̂𝐩 𝐧𝐡𝐨̉ server mỗi lần. Việc này tránh đưa cả một mảng lớn của cụm server offline và gây gián đoạn dịch vụ."
+}

@@ -1,0 +1,9 @@
+{
+ "17917e123f2e": "Sự tiến hoá của dữ liệu lớn",
+ "2712b078f23b": "Tôi hy vọng mọi người có khoảng thời gian tuyệt vời bên bạn bè và gia đình trong kỳ nghỉ. Nếu bạn đang tìm gì đó để đọc, những bài báo kỹ thuật kinh điển là khởi đầu tốt.",
+ "f0a83137cbc0": "Rất nhiều lúc khi bận rộn với công việc, ta chỉ tập trung vào những mẩu thông tin rời rạc, cho ta biết \"làm thế nào\" và \"làm cái gì\" để đáp ứng nhu cầu trước mắt là hoàn thành công việc.",
+ "e0781297d5c4": "Tuy nhiên, đọc những tác phẩm kinh điển giúp ta biết \"vì sao\" ở đằng sau, và dạy ta cách giải quyết vấn đề, ra quyết định tốt hơn, hoặc thậm chí đóng góp cho các dự án mã nguồn mở.",
+ "e737f5b31737": "Hãy lấy dữ liệu lớn làm ví dụ.",
+ "47e23d096e6b": "Lĩnh vực dữ liệu lớn đã tiến rất xa trong 20 năm qua. Nó khởi đầu từ 3 bài báo của Google (xem liên kết ở phần bình luận), những bài đã xử lý các thách thức kỹ thuật thật ở quy mô Google: - GFS (2003) - lưu trữ dữ liệu lớn - MapReduce (2004) - mô hình tính toán - BigTable (2006) - dịch vụ trực tuyến. Sơ đồ dưới đây cho thấy chức năng và hạn chế của 3 kỹ thuật đó, cùng cách chúng tiến hoá theo thời gian thành hai nhánh: OLTP và OLAP. Mỗi sản phẩm tiến hoá đều cố giải quyết những hạn chế của thế hệ trước. Chẳng hạn, \"Hive - hỗ trợ SQL\" nghĩa là Hive cố giải quyết việc MapReduce thiếu SQL.",
+ "a5a26049a4f4": "Nếu bạn muốn tìm hiểu thêm, hãy xem các bài báo để biết chi tiết. Bạn còn muốn giới thiệu tác phẩm kinh điển nào nữa?"
+}

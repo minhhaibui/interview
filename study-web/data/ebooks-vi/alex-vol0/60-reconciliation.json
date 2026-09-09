@@ -1,0 +1,13 @@
+{
+ "4f7525e28a45": "Đối soát (Reconciliation)",
+ "0305ff6e36cb": "Đối soát có lẽ là quá trình đau đầu nhất trong một hệ thống thanh toán.",
+ "d98959f8722b": "Đó là quá trình so sánh bản ghi ở những hệ thống khác nhau để đảm bảo số tiền khớp nhau.",
+ "f3f614c5e183": "Chẳng hạn, nếu bạn trả 200 đô để mua một chiếc đồng hồ bằng Paypal: - Website thương mại điện tử phải có bản ghi về đơn hàng 200 đô. - Phải có bản ghi giao dịch 200 đô ở Paypal (đánh dấu số 2 trong sơ đồ). - Sổ cái phải ghi nhận một khoản nợ 200 đô cho người mua, và một khoản có 200 đô cho người bán. Đây gọi là ghi sổ kép (xem bảng dưới).",
+ "8a9a7481a240": "Hãy xem vài điểm đau và cách ta xử lý chúng: 𝐕𝐚̂́𝐧 đ𝐞̂̀ 1: Chuẩn hoá dữ liệu. Khi so sánh bản ghi ở những hệ thống khác nhau, chúng có định dạng khác nhau. Chẳng hạn, dấu thời gian có thể là \"2022/01/01\" ở hệ này và \"Jan 1, 2022\" ở hệ khác.",
+ "f6c690a7bd4c": "𝐆𝐢𝐚̉𝐢 𝐩𝐡𝐚́𝐩 𝐤𝐡𝐚̉ 𝐝𝐢̃: ta thêm một tầng để biến những định dạng khác nhau về cùng một định dạng.",
+ "8206674c4a1c": "𝐕𝐚̂́𝐧 đ𝐞̂̀ 2: Khối lượng dữ liệu khổng lồ. 𝐆𝐢𝐚̉𝐢 𝐩𝐡𝐚́𝐩 𝐤𝐡𝐚̉ 𝐝𝐢̃: ta dùng kỹ thuật xử lý dữ liệu lớn để tăng tốc việc so sánh dữ liệu. Nếu cần đối soát gần thời gian thực, dùng nền tảng luồng như Flink; ngược lại, xử lý theo lô cuối ngày như Hadoop là đủ.",
+ "5f4181f2ad03": "𝐕𝐚̂́𝐧 đ𝐞̂̀ 3: Vấn đề mốc cắt thời gian. Chẳng hạn, nếu ta chọn 00:00:00 làm mốc cắt hằng ngày, một bản ghi được đóng dấu 23:59:55 ở hệ thống nội bộ, nhưng có thể bị đóng dấu 00:00:30 ở hệ thống bên ngoài (Paypal), tức là ngày hôm sau. Trong trường hợp này, ta không tìm thấy bản ghi đó trong dữ liệu Paypal của hôm nay. Điều đó gây ra chênh lệch.",
+ "d4711e20ec82": "𝐆𝐢𝐚̉𝐢 𝐩𝐡𝐚́𝐩 𝐤𝐡𝐚̉ 𝐝𝐢̃: ta cần phân loại chênh lệch này là \"chênh lệch tạm thời\" rồi chạy lại nó với dữ liệu Paypal của ngày hôm sau. Nếu tìm được bản khớp trong dữ liệu Paypal hôm sau, chênh lệch được xoá và không cần làm gì thêm.",
+ "6ab8a2b687ef": "Bạn có thể lập luận rằng nếu hệ thống có ngữ nghĩa exactly-once thì đâu có chênh lệch nào. Nhưng sự thật là có quá nhiều chỗ có thể sai. Có một hệ thống đối soát luôn là điều cần thiết. Nó như một tấm lưới an toàn giúp bạn ngủ ngon ban đêm. Tôi nên dùng cơ sở dữ liệu nào? Đây là một trong những câu hỏi quan trọng nhất ta thường phải giải quyết trong buổi phỏng vấn.",
+ "a408a8753f6e": "Chọn đúng cơ sở dữ liệu là việc khó. Google Cloud gần đây đăng một bài viết rất hay tóm tắt những lựa chọn cơ sở dữ liệu có trên Google Cloud và giải thích tình huống nào hợp nhất với từng lựa chọn."
+}

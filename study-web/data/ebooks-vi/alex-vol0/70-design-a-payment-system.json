@@ -1,0 +1,16 @@
+{
+ "a03125511baf": "Thiết kế hệ thống thanh toán",
+ "54d182ecabaa": "Hôm nay là Cyber Monday. Đây là cách tiền di chuyển khi bạn bấm nút Mua trên Amazon hay bất kỳ website mua sắm ưa thích nào của bạn.",
+ "7e03efd7f45c": "Tôi đã đăng chính sơ đồ này tuần trước để giới thiệu tổng quan và vài người hỏi tôi về các bước chi tiết, nên đây:",
+ "0f25ec4a7139": "Khi người dùng bấm nút \"Mua\", một sự kiện thanh toán được sinh ra và gửi tới dịch vụ thanh toán.",
+ "8e8b07c71283": "Dịch vụ thanh toán lưu sự kiện thanh toán vào cơ sở dữ liệu.",
+ "d08d659cfbc4": "Đôi khi một sự kiện thanh toán chứa vài lệnh thanh toán. Chẳng hạn, bạn có thể chọn sản phẩm từ nhiều người bán trong cùng một lần thanh toán. Dịch vụ thanh toán sẽ gọi payment executor cho từng lệnh thanh toán.",
+ "6dd36bec6aec": "Payment executor lưu lệnh thanh toán vào cơ sở dữ liệu.",
+ "ed422d28f452": "Payment executor gọi một PSP bên ngoài để hoàn tất việc thanh toán bằng thẻ tín dụng.",
+ "4bb2a66f022d": "Sau khi payment executor thực hiện thanh toán thành công, dịch vụ thanh toán sẽ cập nhật ví để ghi nhận người bán đó có bao nhiêu tiền.",
+ "611a67ba2540": "Server ví lưu thông tin số dư đã cập nhật vào cơ sở dữ liệu.",
+ "e1463b737dd6": "Sau khi dịch vụ ví cập nhật thành công thông tin số dư của người bán, dịch vụ thanh toán sẽ gọi sổ cái để cập nhật nó.",
+ "2da96d554017": "Dịch vụ sổ cái ghi nối thông tin sổ cái mới vào cơ sở dữ liệu.",
+ "9a0f11cb5bf5": "Mỗi đêm, PSP hoặc các ngân hàng gửi tệp thanh toán bù trừ cho khách hàng của họ.",
+ "6ea71c2443de": "Tệp thanh toán bù trừ chứa số dư tài khoản ngân hàng, cùng mọi giao dịch diễn ra trên tài khoản đó trong ngày."
+}

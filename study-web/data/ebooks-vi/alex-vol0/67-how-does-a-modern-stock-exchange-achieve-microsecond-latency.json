@@ -1,0 +1,6 @@
+{
+ "722a65b7c2c8": "Sàn giao dịch chứng khoán hiện đại đạt được độ trễ micro giây bằng cách nào?",
+ "9732ec7e5bca": "Nguyên tắc là:",
+ "3efb03f3b777": "𝐋𝐚̀𝐦 𝐢́𝐭 đ𝐢 𝐭𝐫𝐞̂𝐧 đ𝐮̛𝐨̛̀𝐧𝐠 đ𝐢 𝐭𝐡𝐞𝐧 𝐜𝐡𝐨̂́𝐭! - Ít tác vụ hơn trên đường đi then chốt - Ít thời gian hơn cho mỗi tác vụ - Ít chặng mạng hơn - Ít dùng đĩa hơn. Với sàn giao dịch chứng khoán, đường đi then chốt là: - 𝐛𝐚̆́𝐭 đ𝐚̂̀𝐮: một lệnh đi vào order manager - các kiểm tra rủi ro bắt buộc - lệnh được khớp và kết quả khớp được gửi trả về - 𝐤𝐞̂́𝐭 𝐭𝐡𝐮́𝐜: kết quả khớp đi ra khỏi order manager. Những tác vụ không then chốt khác nên được gỡ khỏi đường đi then chốt.",
+ "4b744c6d049f": "Ta dựng một thiết kế như sơ đồ cho thấy: - triển khai mọi thành phần trong một server khổng lồ duy nhất (không dùng container) - dùng bộ nhớ chung làm bus sự kiện để các thành phần liên lạc, không dùng đĩa cứng - những thành phần then chốt như Order Manager và Matching Engine là đơn luồng trên đường đi then chốt, và mỗi cái được ghim vào một CPU để 𝐤𝐡𝐨̂𝐧𝐠 𝐜𝐨́ 𝐜𝐡𝐮𝐲𝐞̂̉𝐧 𝐧𝐠𝐮̛̃ 𝐜𝐚̉𝐧𝐡 và 𝐤𝐡𝐨̂𝐧𝐠 𝐜𝐨́ 𝐤𝐡𝐨𝐚́ - vòng lặp ứng dụng đơn luồng thực thi các tác vụ lần lượt theo trình tự - các thành phần khác lắng nghe trên bus sự kiện và phản ứng tương ứng."
+}

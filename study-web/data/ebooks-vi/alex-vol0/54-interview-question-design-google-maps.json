@@ -1,0 +1,9 @@
+{
+ "ff987181ff64": "Câu hỏi phỏng vấn: Thiết kế Google Maps",
+ "a4281a032494": "Google khởi động dự án G𝐨𝐨𝐠𝐥𝐞 M𝐚𝐩𝐬 năm 2005. Tính tới tháng 3/2021, Google Maps có một tỉ người dùng hoạt động hằng ngày, bao phủ 99% thế giới ở 200 quốc gia.",
+ "393e44455c3b": "Dù Google Maps là hệ thống rất phức tạp, ta chia nó thành 3 thành phần mức cao được. Trong bài này, hãy xem cách thiết kế một Google Maps đơn giản hoá. 𝐃𝐢̣𝐜𝐡 𝐯𝐮̣ 𝐕𝐢̣ 𝐭𝐫𝐢́: Dịch vụ vị trí chịu trách nhiệm ghi lại cập nhật vị trí của người dùng. Client Google Maps gửi cập nhật vị trí sau mỗi vài giây. Dữ liệu vị trí người dùng được dùng cho nhiều việc: - phát hiện đường mới mở và đường vừa đóng - cải thiện độ chính xác của bản đồ theo thời gian - làm đầu vào cho dữ liệu giao thông trực tiếp.",
+ "d83f4808da13": "𝐊𝐞̂́𝐭 𝐱𝐮𝐚̂́𝐭 𝐁𝐚̉𝐧 đ𝐨̂̀: Bản đồ thế giới được chiếu thành một ảnh bản đồ 2D khổng lồ. Nó được chia thành những khối ảnh nhỏ gọi là \"ô\" (xem dưới). Các ô là tĩnh. Chúng không thay đổi thường xuyên. Cách hiệu quả để phục vụ các tệp ô tĩnh là dùng CDN có kho lưu trữ đám mây như S3 phía sau. Người dùng nạp được những ô cần thiết để ghép thành bản đồ từ CDN gần đó.",
+ "9f74ad0e7281": "Chuyện gì xảy ra nếu người dùng phóng to và kéo khung nhìn bản đồ trên client để khám phá xung quanh?",
+ "190f5080c2e5": "Cách hiệu quả là tính trước những khối bản đồ ở các mức phóng khác nhau rồi nạp ảnh khi cần.",
+ "9d43493aaf05": "𝐃𝐢̣𝐜𝐡 𝐯𝐮̣ 𝐃𝐚̂̃𝐧 đ𝐮̛𝐨̛̀𝐧𝐠: Thành phần này chịu trách nhiệm tìm một tuyến đường đủ nhanh từ điểm A tới điểm B. Nó gọi hai dịch vụ để hỗ trợ việc tính đường: 1⃣ Dịch vụ Geocoding: phân giải địa chỉ cho trước thành cặp vĩ độ/kinh độ. 2⃣ Dịch vụ Route Planner: dịch vụ này làm ba việc theo thứ tự: - Tính top-K đường đi ngắn nhất giữa A và B - Tính ước lượng thời gian cho từng tuyến dựa trên giao thông hiện tại và dữ liệu lịch sử - Xếp hạng các tuyến theo dự đoán thời gian và bộ lọc của người dùng. Chẳng hạn, người dùng không muốn tránh trạm thu phí."
+}

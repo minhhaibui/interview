@@ -1,0 +1,8 @@
+{
+ "2a997a888033": "Khớp lệnh mua và lệnh bán",
+ "57d3eb9be4a2": "Cổ phiếu lên rồi xuống. Bạn có biết cấu trúc dữ liệu nào được dùng để khớp lệnh mua và lệnh bán một cách hiệu quả không?",
+ "e275a1b92e68": "Sàn giao dịch chứng khoán dùng cấu trúc dữ liệu gọi là 𝐬𝐨̂̉ 𝐥𝐞̣̂𝐧𝐡 (order book). Sổ lệnh là danh sách điện tử các lệnh mua và bán, sắp xếp theo các mức giá. Nó có sổ mua và sổ bán, mỗi bên chứa một loạt mức giá, và mỗi mức giá chứa một danh sách lệnh (vào trước ra trước).",
+ "87eedc2a6260": "Hình là ví dụ về các mức giá và khối lượng đang xếp hàng ở từng mức.",
+ "005f6fb8b43f": "Vậy chuyện gì xảy ra khi bạn đặt lệnh thị trường mua 2700 cổ phiếu trong sơ đồ? - Lệnh mua được khớp với toàn bộ lệnh bán ở giá 100,10, và lệnh đầu tiên ở giá 100,11 (minh hoạ bằng màu đỏ nhạt). - Giờ vì lệnh mua lớn đã \"ăn sạch\" mức giá đầu tiên ở sổ bán, giá chào bán tốt nhất tăng từ 100,10 lên 100,11. - Vậy nên khi thị trường tăng giá, người ta có xu hướng mua cổ phiếu, và giá cứ thế đi lên.",
+ "b31aae930f43": "Một cấu trúc dữ liệu hiệu quả cho sổ lệnh phải thoả mãn: - Thời gian tra cứu hằng số. Các thao tác gồm: lấy khối lượng ở một mức giá hoặc giữa các mức giá, truy vấn giá mua/bán tốt nhất. - Thao tác thêm/huỷ/khớp/cập nhật nhanh, tốt nhất là độ phức tạp O(1). Các thao tác gồm: đặt lệnh mới, huỷ lệnh, và khớp lệnh."
+}

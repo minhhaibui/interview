@@ -1,0 +1,11 @@
+{
+ "c8f5caed6bde": "Tránh tính tiền hai lần",
+ "d1f52c089f4b": "Một trong những vấn đề nghiêm trọng nhất mà hệ thống thanh toán có thể gặp là 𝐭𝐢́𝐧𝐡 𝐭𝐢𝐞̂̀𝐧 𝐤𝐡𝐚́𝐜𝐡 𝐡𝐚̀𝐧𝐠 𝐡𝐚𝐢 𝐥𝐚̂̀𝐧. Khi thiết kế hệ thống thanh toán, việc đảm bảo hệ thống thực thi một lệnh thanh toán đúng một lần là rất quan trọng. Thoạt nhìn, việc giao đúng một lần có vẻ rất khó xử lý, nhưng nếu ta chia bài toán làm hai phần thì dễ giải hơn nhiều.",
+ "dfb240e3864c": "Về mặt toán học, một thao tác được thực thi đúng một lần nếu:",
+ "713fa10ac614": "Nó được thực thi ít nhất một lần.",
+ "f2eeedec7355": "Đồng thời, nó được thực thi nhiều nhất một lần.",
+ "70bbfe814dd8": "Giờ ta giải thích cách hiện thực \"ít nhất một lần\" bằng thử lại và \"nhiều nhất một lần\" bằng kiểm tra tính luỹ đẳng.",
+ "4cf7594df253": "𝐓𝐡𝐮̛̉ 𝐥𝐚̣𝐢: Thỉnh thoảng, ta cần thử lại một giao dịch thanh toán do lỗi mạng hoặc hết giờ. Thử lại mang lại đảm bảo ít nhất một lần. Chẳng hạn, như Hình 10 cho thấy, client cố thực hiện thanh toán 10 đô, nhưng việc thanh toán cứ thất bại do kết nối mạng kém. Xét việc điều kiện mạng có thể tốt lên, client thử lại request và lần thanh toán này cuối cùng thành công ở lần thứ tư.",
+ "0e8cfb5e58ac": "𝐓𝐢́𝐧𝐡 𝐥𝐮𝐲̃ đ𝐚̆̉𝐧𝐠: Từ góc nhìn API, tính luỹ đẳng nghĩa là client gọi cùng một lời gọi lặp đi lặp lại mà vẫn cho ra cùng kết quả.",
+ "862d0663f3c8": "Với việc liên lạc giữa client (ứng dụng web và di động) và server, khoá luỹ đẳng thường là một giá trị duy nhất do client sinh ra và hết hạn sau một khoảng thời gian nhất định. UUID hay được dùng làm khoá luỹ đẳng và được nhiều công ty công nghệ như Stripe và PayPal khuyến nghị. Để thực hiện một request thanh toán luỹ đẳng, khoá luỹ đẳng được thêm vào phần đầu HTTP: <idempotency-key: key_value>."
+}
