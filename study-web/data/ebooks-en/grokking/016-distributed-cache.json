@@ -1,0 +1,1497 @@
+{
+ "id": "016-distributed-cache",
+ "title": "Distributed Cache",
+ "titleKey": "13d19b62c770",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "6b7a8eb92b3f",
+   "en": "System Design: The Distributed Cache"
+  },
+  {
+   "t": "p",
+   "k": "e56273faf5f1",
+   "en": "Learn the basics of a distributed cache."
+  },
+  {
+   "t": "h2",
+   "k": "e1cad14b3808",
+   "en": "Problem statement"
+  },
+  {
+   "t": "p",
+   "k": "5e164afe4610",
+   "en": "A typical system consists of the following components:"
+  },
+  {
+   "t": "p",
+   "k": "cdf14ab0b7a1",
+   "en": "It has a client that requests the service."
+  },
+  {
+   "t": "p",
+   "k": "17a18bf812b6",
+   "en": "It has one or more service hosts that entertain client requests."
+  },
+  {
+   "t": "p",
+   "k": "3ecae4b88dda",
+   "en": "It has a database used by the service for data storage."
+  },
+  {
+   "t": "p",
+   "k": "4a7f27fc7fab",
+   "en": "Under normal circumstances, this abstraction performs fine. However, as the number of users increases, the database queries also increase. And as a result, the service providers are overburdened, resulting in slow performance."
+  },
+  {
+   "t": "p",
+   "k": "729074d99e40",
+   "en": "In such cases, a cache is added to the system to deal with performance deterioration. A cache is a temporary data storage that can serve data faster by keeping data entries in memory. Caches store only the most frequently accessed data. When a request reaches the serving host, it retrieves data from the cache (cache hit) and serves the user. However, if the data is unavailable in the cache (cache miss), the data will be queried from the database. Also, the cache is populated with the new value to avoid cache misses for the next time."
+  },
+  {
+   "t": "p",
+   "k": "f223d3d2b931",
+   "en": "A cache is a nonpersistent storage area used to keep repeatedly read and written data, which provides the end user with lower latency. Therefore, a cache must serve data from a storage component that is fast, has enough storage, and is affordable in terms of dollar cost as we scale the caching service. The following illustration highlights the suitability of RAM as the raw building block for caching:"
+  },
+  {
+   "t": "p",
+   "k": "d689517cfef7",
+   "en": "We understand the need for a cache and suitable storage hardware, but what is distributed cache? Let’s discuss this next."
+  },
+  {
+   "t": "h2",
+   "k": "24c7212b2400",
+   "en": "What is a distributed cache?"
+  },
+  {
+   "t": "p",
+   "k": "d0eb4236050f",
+   "en": "A distributed cache is a caching system where multiple cache servers coordinate to store frequently accessed data. Distributed caches are needed in environments where a single cache server isn’t enough to store all the data. At the same time, it’s scalable and guarantees a higher degree of availability."
+  },
+  {
+   "t": "p",
+   "k": "c2ed3d462f0e",
+   "en": "Caches are generally small, frequently accessed, short-term storage with fast read time. Caches use the locality of reference principle."
+  },
+  {
+   "t": "p",
+   "k": "83183774ba64",
+   "en": "Generally, distributed caches are beneficial in the following ways:"
+  },
+  {
+   "t": "p",
+   "k": "614a438205b6",
+   "en": "They minimize user-perceived latency by precalculating results and storing frequently accessed data."
+  },
+  {
+   "t": "p",
+   "k": "d780c220412c",
+   "en": "They pre-generate expensive queries from the database."
+  },
+  {
+   "t": "p",
+   "k": "836583516009",
+   "en": "They store user session data temporarily."
+  },
+  {
+   "t": "p",
+   "k": "fbb6e27e692b",
+   "en": "They serve data from temporary storage even if the data store is down temporarily."
+  },
+  {
+   "t": "p",
+   "k": "f02ae75246b3",
+   "en": "Finally, they reduce network costs by serving data from local resources."
+  },
+  {
+   "t": "h2",
+   "k": "9660a385fbba",
+   "en": "Why distributed cache?"
+  },
+  {
+   "t": "p",
+   "k": "58bf40bb4487",
+   "en": "When the size of data required in the cache increases, storing the entire data in one system is impractical. This is because of the following three reasons:"
+  },
+  {
+   "t": "p",
+   "k": "c401141f1a1b",
+   "en": "It can be a potential single point of failure (SPOF)."
+  },
+  {
+   "t": "p",
+   "k": "f5eee574c554",
+   "en": "A system is designed in layers, and each layer should have its caching mechanism to ensure the decoupling of sensitive data from different layers."
+  },
+  {
+   "t": "p",
+   "k": "ca56d31baec3",
+   "en": "Caching at different locations helps reduce the serving latency at that layer."
+  },
+  {
+   "t": "p",
+   "k": "4cdb5b7957ff",
+   "en": "In the table below, we describe how caching at different layers is performed through the use of various technologies. It’s important to note that key-value store components are used in various layers."
+  },
+  {
+   "t": "h2",
+   "k": "2e1ad666607a",
+   "en": "Caching at Different Layers of a System"
+  },
+  {
+   "t": "p",
+   "k": "e71351281e6c",
+   "en": "System Technology in Use Usage Layer Web HTTP cache headers, web accelerators, key-Accelerate retrieval of static web value store, CDNs, and so oncontent, and manage sessions Application Local cache and key-value data store Accelerate application-level computations and data retrieval Database Database cache, buffers, and key-value data Reduce data retrieval latency and storeI/O load from database Apart from the three system layers above, caching is also performed at DNS and client-side technologies like browsers or end-devices."
+  },
+  {
+   "t": "h2",
+   "k": "562b7a84802f",
+   "en": "How will we design distributed cache?"
+  },
+  {
+   "t": "p",
+   "k": "59163b0f637d",
+   "en": "We’ll divide the task of designing and reinforcing learning major concepts of distributed cache into five lessons:"
+  },
+  {
+   "t": "li",
+   "k": "0b2325e787c6",
+   "en": "Background of Distributed Cache: It’s imperative to build the background knowledge necessary to make critical decisions when designing distributed caches. This lesson will revisit some basic but important concepts."
+  },
+  {
+   "t": "li",
+   "k": "4fb962703a0e",
+   "en": "High-level Design of a Distributed Cache: We’ll build a high-level design of a distributed cache in this lesson."
+  },
+  {
+   "t": "li",
+   "k": "1d7b76b668bb",
+   "en": "Detailed Design of a Distributed Cache: We’ll identify some limitations of our high-level design and work toward a scalable, affordable, and performant solution."
+  },
+  {
+   "t": "li",
+   "k": "ddab6f6f6ee9",
+   "en": "Evaluation of a Distributed Cache Design: This lesson will evaluate our design for various non-functional requirements, such as scalability, consistency, availability, and so on."
+  },
+  {
+   "t": "li",
+   "k": "1e8b42774b62",
+   "en": "Memcached versus Redis: We’ll discuss well-known industrial solutions, namely Memcached and Redis. We’ll also go through their details and compare their features to help us understand their potential use cases and how they relate to our design."
+  },
+  {
+   "t": "p",
+   "k": "5c741f27ab29",
+   "en": "Let’s begin by exploring the background of the distributed cache in the next lesson."
+  },
+  {
+   "t": "h1",
+   "k": "67b5a983e502",
+   "en": "Background of Distributed Cache"
+  },
+  {
+   "t": "p",
+   "k": "b361aa5e22a0",
+   "en": "Learn the fundamentals for designing a distributed cache."
+  },
+  {
+   "t": "h2",
+   "k": "f8a68f2bbc8b",
+   "en": "Structure of This Lesson"
+  },
+  {
+   "t": "p",
+   "k": "9b20d6ff35e5",
+   "en": "Eviction policiesSince the cache is built on limited storage (RAM), we ideally want to keep the most frequently accessed data in the cache. Therefore, we’ll discuss different eviction policies to replace less frequently accessed data with most frequently accessed data."
+  },
+  {
+   "t": "p",
+   "k": "00e6808bdf65",
+   "en": "Cache invalidationCertain cached data may get outdated. We’ll discuss different invalidation methods to remove stale or outdated entries from the cache in this section."
+  },
+  {
+   "t": "p",
+   "k": "58fff7496478",
+   "en": "Cache clientA cache server stores cache entries, but a cache client calls the cache server to request data. We’ll discuss the details of a cache client library in this section."
+  },
+  {
+   "t": "h2",
+   "k": "425607aaf994",
+   "en": "Writing policies"
+  },
+  {
+   "t": "p",
+   "k": "c1b329736169",
+   "en": "Often, cache stores a copy (or part) of data, which is persistently stored in a data store. When we store data to the data store, some important questions arise:"
+  },
+  {
+   "t": "p",
+   "k": "73ee09314395",
+   "en": "Where do we store the data first? Database or cache?"
+  },
+  {
+   "t": "p",
+   "k": "37290bb82f6f",
+   "en": "What will be the implication of each strategy for consistency models?"
+  },
+  {
+   "t": "p",
+   "k": "404a01a98548",
+   "en": "Write-through cache: The write-through mechanism writes on the cache as well as on the database. Writing on both storages can happen concurrently or one after the other. This increases the write latency but ensures strong consistency between the database and the cache."
+  },
+  {
+   "t": "p",
+   "k": "5e58195a1e86",
+   "en": "Write-back cache: In the write-back cache mechanism, the data is first written to the cache and asynchronously written to the database. Although the cache has updated data, inconsistency is inevitable in scenarios where a client reads stale data from the database. However, systems using this strategy will have small writing latency."
+  },
+  {
+   "t": "p",
+   "k": "8d1a9bd578e9",
+   "en": "Write-around cache: This strategy involves writing data to the database only. Later, when a read is triggered for the data, it’s written to cache after a cache miss. The database will have updated data, but such a strategy isn’t favorable for reading recently updated data."
+  },
+  {
+   "t": "p",
+   "k": "168d9a16a1df",
+   "en": "Quiz A system wants to write data and promptly read it back. At the same time, we want consistency between the cache and database."
+  },
+  {
+   "t": "p",
+   "k": "e6c39ff9b5cc",
+   "en": "Which writing policy is the optimal choice?"
+  },
+  {
+   "t": "h2",
+   "k": "6b9aa7cf8977",
+   "en": "Eviction policies"
+  },
+  {
+   "t": "p",
+   "k": "7a4fd1f089c6",
+   "en": "One of the main reasons caches perform fast is that they’re small. Small caches mean limited storage capacity. Therefore, we need an eviction mechanism to remove less frequently accessed data from the cache."
+  },
+  {
+   "t": "p",
+   "k": "4ff1c1b69a66",
+   "en": "Several well-known strategies are used to evict data from the cache. The most well-known strategies include the following:"
+  },
+  {
+   "t": "p",
+   "k": "2bd0bb3fe750",
+   "en": "Least recently used (LRU)"
+  },
+  {
+   "t": "p",
+   "k": "b5ef82dd12d7",
+   "en": "Most recently used (MRU)"
+  },
+  {
+   "t": "p",
+   "k": "8d2485990ca3",
+   "en": "Least frequently used (LFU)"
+  },
+  {
+   "t": "p",
+   "k": "38c380f1531f",
+   "en": "Most frequently used (MFU)"
+  },
+  {
+   "t": "p",
+   "k": "06bf1a1e2a7f",
+   "en": "Other strategies like first in, first out (FIFO) also exist. The choice of each of these algorithms depends on the system the cache is being developed for."
+  },
+  {
+   "t": "p",
+   "k": "3d64309598c3",
+   "en": "Data can be classified into three temperature regions depending on the access frequency:"
+  },
+  {
+   "t": "p",
+   "k": "48725571ad33",
+   "en": "Hot: This is highly accessed data."
+  },
+  {
+   "t": "p",
+   "k": "5e17eb9e2482",
+   "en": "Warm: This is less frequently accessed data."
+  },
+  {
+   "t": "p",
+   "k": "019139590fc9",
+   "en": "Cold: This is rarely accessed data."
+  },
+  {
+   "t": "p",
+   "k": "2e7900b1364c",
+   "en": "Cold data frequently gets evicted from the cache and gets replaced with hot or warm data. The following image shows the spectrum of data temperatures:"
+  },
+  {
+   "t": "h2",
+   "k": "14daba472140",
+   "en": "Cache invalidation"
+  },
+  {
+   "t": "p",
+   "k": "5d9c87cf710f",
+   "en": "Apart from the eviction of less frequently accessed data, some data residing in the cache may become stale or outdated over time. Such cache entries are invalid and must be marked for deletion."
+  },
+  {
+   "t": "p",
+   "k": "beee46ca7d45",
+   "en": "The situation demands a question: How do we identify stale entries?"
+  },
+  {
+   "t": "p",
+   "k": "3ad8f5a52557",
+   "en": "Resolution of the problem requires storing metadata corresponding to each cache entry. Specifically, maintaining a time-to-live (TTL) value to deal with outdated cache items."
+  },
+  {
+   "t": "p",
+   "k": "411f19e8ab02",
+   "en": "We can use two different approaches to deal with outdated items using TTL:"
+  },
+  {
+   "t": "p",
+   "k": "91430ce4122d",
+   "en": "Active expiration: This method actively checks the TTL of cache entries through a daemon process or thread."
+  },
+  {
+   "t": "p",
+   "k": "1b1351438167",
+   "en": "Passive expiration: This method checks the TTL of a cache entry at the time of access."
+  },
+  {
+   "t": "p",
+   "k": "a8094cec9b0c",
+   "en": "Each expired item is removed from the cache upon discovery."
+  },
+  {
+   "t": "h2",
+   "k": "53b4e45bf7a7",
+   "en": "Storage mechanism"
+  },
+  {
+   "t": "p",
+   "k": "7c3afed94f9e",
+   "en": "Storing data in the cache isn’t as trivial as it seems because the distributed cache has multiple cache servers. When we use multiple cache servers, the following design questions need to be answered:"
+  },
+  {
+   "t": "p",
+   "k": "66916c3f3e01",
+   "en": "Which data should we store in which cache servers?"
+  },
+  {
+   "t": "p",
+   "k": "fd9a2ea52c73",
+   "en": "What data structure should we use to store the data?"
+  },
+  {
+   "t": "p",
+   "k": "49d7a1a0da78",
+   "en": "The above two questions are important design issues because they’ll decide the performance of our distributed cache, which is the most important requirement for us. We’ll use the following techniques to answer the questions above."
+  },
+  {
+   "t": "h3",
+   "k": "9081d1399d06",
+   "en": "Hash function"
+  },
+  {
+   "t": "p",
+   "k": "d39a51a678f3",
+   "en": "It’s possible to use hashing in two different scenarios:"
+  },
+  {
+   "t": "p",
+   "k": "bf0a0d2f62d9",
+   "en": "Identify the cache server in a distributed cache to store and retrieve data."
+  },
+  {
+   "t": "p",
+   "k": "59c0add6f79c",
+   "en": "Locate cache entries inside each cache server."
+  },
+  {
+   "t": "p",
+   "k": "501f4616eae8",
+   "en": "For the first scenario, we can use different hashing algorithms. However, consistent hashing or its flavors usually perform well in distributed systems because simple hashing won’t be ideal in case of crashes or scaling."
+  },
+  {
+   "t": "p",
+   "k": "7fd9065cc8dd",
+   "en": "In the second scenario, we can use typical hash functions to locate a cache entry to read or write inside a cache server. However, a hash function alone can only locate a cache entry. It doesn’t say anything about managing data within the cache server. That is, it doesn’t say anything about how to implement a strategy to evict less frequently accessed data from the cache server. It also doesn’t say anything about what data structures are used to store the data within the cache servers. This is exactly the second design question of the storage mechanism."
+  },
+  {
+   "t": "p",
+   "k": "fc5015b0ebe4",
+   "en": "Let’s take a look at the data structure next."
+  },
+  {
+   "t": "h3",
+   "k": "7ab9294c913a",
+   "en": "Linked list"
+  },
+  {
+   "t": "p",
+   "k": "2d0202a86452",
+   "en": "We’ll use a doubly linked list. The main reason is its widespread usage and simplicity. Furthermore, adding and removing data from the doubly linked list in our case will be a constant time operation. This is because we either evict a specific entry from the tail of the linked list or relocate an entry to the head of the doubly linked list. Therefore, no iterations are required."
+  },
+  {
+   "t": "li",
+   "k": "856a544219d9",
+   "en": "Note: Bloom filters are an interesting choice for quickly finding if a cache entry doesn’t exist in the cache servers. We can use bloom filters to determine that a cache entry is definitely not present in the cache server, but the possibility of its presence is probabilistic. Bloom filters are quite useful in large caching or database systems.",
+   "lead": "Note"
+  },
+  {
+   "t": "h3",
+   "k": "7c28d8ff9adf",
+   "en": "Sharding in cache clusters"
+  },
+  {
+   "t": "p",
+   "k": "42f4219000a1",
+   "en": "To avoid SPOF and high load on a single cache instance, we introduce sharding."
+  },
+  {
+   "t": "p",
+   "k": "64448dfff4e6",
+   "en": "Sharding involves splitting up cache data among multiple cache servers. It can be performed in the following two ways."
+  },
+  {
+   "t": "h3",
+   "k": "9e437031fe63",
+   "en": "Dedicated cache servers"
+  },
+  {
+   "t": "p",
+   "k": "6740cac87e4d",
+   "en": "In the dedicated cache servers method, we separate the application and web servers from the cache servers."
+  },
+  {
+   "t": "p",
+   "k": "3089e1b9abbe",
+   "en": "The advantages of using dedicated cache servers are the following:"
+  },
+  {
+   "t": "p",
+   "k": "20e1fc58725a",
+   "en": "There’s flexibility in terms of hardware choices for each functionality."
+  },
+  {
+   "t": "p",
+   "k": "fec79476520c",
+   "en": "It’s possible to scale web/application servers and cache servers separately."
+  },
+  {
+   "t": "p",
+   "k": "ba00c86b97cf",
+   "en": "Apart from the advantages above, working as a standalone caching service enables other microservices to benefit from them—for example, Cache as a Service. In that case, the caching system will have to be aware of different applications so that their data doesn’t collide."
+  },
+  {
+   "t": "h3",
+   "k": "811bd74ce2a4",
+   "en": "Co-located cache"
+  },
+  {
+   "t": "p",
+   "k": "4d9d05aafb00",
+   "en": "The main advantage of this strategy is the reduction in CAPEX and OPEX of extra hardware. Furthermore, with the scaling of one service, automatic scaling of the other service is obtained. However, the failure of one machine will result in the loss of both services simultaneously."
+  },
+  {
+   "t": "h2",
+   "k": "7c367ab28ee2",
+   "en": "Cache client"
+  },
+  {
+   "t": "p",
+   "k": "f0567011a06c",
+   "en": "We discussed that the hash functions should be used for the selection of cache servers. But what entity performs these hash calculations?"
+  },
+  {
+   "t": "p",
+   "k": "b121014b6414",
+   "en": "A cache client is a piece of code residing in hosting servers that do (hash) computations to store and retrieve data in the cache servers. Also, cache clients may coordinate with other system components like monitoring and configuration services. All cache clients are programmed in the same way so that the same PUT, and GET operations from different clients return the same results."
+  },
+  {
+   "t": "p",
+   "k": "b2d1a16a3d3c",
+   "en": "Some of the characteristics of cache clients are the following:"
+  },
+  {
+   "t": "p",
+   "k": "f0b26b7dcdbd",
+   "en": "Each cache client will know about all the cache servers."
+  },
+  {
+   "t": "p",
+   "k": "3fdb0692e566",
+   "en": "All clients can use well-known transport protocols like TCP or UDP to talk to the cache servers."
+  },
+  {
+   "t": "p",
+   "k": "e8be0845f745",
+   "en": "Point to Ponder What will be the behavior of cache clients to an access request if one of the cache servers is dead?"
+  },
+  {
+   "t": "p",
+   "k": "04beee5be6e7",
+   "en": "Hide Answer Since the data within the cache servers will no longer be available, cache clients will mark that access request as a cache miss."
+  },
+  {
+   "t": "h2",
+   "k": "6a38a38f03e4",
+   "en": "Conclusion"
+  },
+  {
+   "t": "p",
+   "k": "692bd09c7050",
+   "en": "In this lesson, we learned what distributed caches are and highlighted their significance in distributed systems. We also discussed different storage and eviction mechanisms for caches. Caches are vital for any distributed system and are located at different points within the design of a system. It’s important to understand how distributed caches can be designed as part of a large system."
+  },
+  {
+   "t": "h1",
+   "k": "ad3066f28cbf",
+   "en": "High-level Design of a Distributed Cache"
+  },
+  {
+   "t": "p",
+   "k": "78906f28feeb",
+   "en": "Learn how we can develop a high-level design of a distributed cache."
+  },
+  {
+   "t": "h2",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "p",
+   "k": "ca1e9d358d37",
+   "en": "Let us start by understanding the requirements of our solution."
+  },
+  {
+   "t": "h3",
+   "k": "f3605082b0a1",
+   "en": "Functional"
+  },
+  {
+   "t": "li",
+   "k": "5e3fca42b763",
+   "en": "Insert data: The user of a distributed cache system must be able to insert an entry to the cache.",
+   "lead": "Insert data"
+  },
+  {
+   "t": "li",
+   "k": "71b72e3bb61d",
+   "en": "Retrieve data: The user should be able to retrieve data corresponding to a specific key.",
+   "lead": "Retrieve data"
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "li",
+   "k": "21c0f5a6b786",
+   "en": "Scalability: The cache system should scale horizontally with no bottlenecks on an increasing number of requests.",
+   "lead": "Scalability"
+  },
+  {
+   "t": "p",
+   "k": "8f0ca73c6fea",
+   "en": "High availability: The unavailability of the cache will put an extra burden on the database servers, which can also go down at peak load intervals. We also require our system to survive occasional failures of components and network, as well as power outages."
+  },
+  {
+   "t": "li",
+   "k": "ab8a45da9dc4",
+   "en": "Consistency: Data stored on the cache servers should be consistent. For example, different cache clients retrieving the same data from different cache servers (primary or secondary) should be up to date.",
+   "lead": "Consistency"
+  },
+  {
+   "t": "li",
+   "k": "10de8c27c301",
+   "en": "Affordability: Ideally, the caching system should be designed from commodity hardware instead of an expensive supporting component within the design of a system.",
+   "lead": "Affordability"
+  },
+  {
+   "t": "h2",
+   "k": "58dbf879b581",
+   "en": "API design"
+  },
+  {
+   "t": "p",
+   "k": "04380e442cca",
+   "en": "The API design for this problem is sufficiently easy since there are only two basic operations."
+  },
+  {
+   "t": "h3",
+   "k": "af556bb0ec54",
+   "en": "Insertion"
+  },
+  {
+   "t": "p",
+   "k": "a7ecb9378b01",
+   "en": "The API call to perform insertion should look like this:"
+  },
+  {
+   "t": "code",
+   "k": "d5dd950cefa4",
+   "en": "insert(key, value)"
+  },
+  {
+   "t": "p",
+   "k": "910ea1bbb6d6",
+   "en": "ParameterDescription keyThis is a unique identifier. valueThis is the data stored against a unique key."
+  },
+  {
+   "t": "p",
+   "k": "9a4c56fd45ef",
+   "en": "This function returns an acknowledgment or an error depicting the problem at the server end."
+  },
+  {
+   "t": "h3",
+   "k": "3a93bc3e5a21",
+   "en": "Retrieval"
+  },
+  {
+   "t": "p",
+   "k": "2be9b6f9427d",
+   "en": "The API call to retrieve data from the cache should look like this:"
+  },
+  {
+   "t": "code",
+   "k": "a34dbf3254fd",
+   "en": "retrieve(key)"
+  },
+  {
+   "t": "p",
+   "k": "f56dd2e9c61a",
+   "en": "ParameterDescription keyThis returns the data stored against the key."
+  },
+  {
+   "t": "p",
+   "k": "47ad39c728bf",
+   "en": "This call returns an object to the caller."
+  },
+  {
+   "t": "p",
+   "k": "be45ba308ba9",
+   "en": "Point to Ponder The API design of the distributed cache looks exactly like the key-value store. What are the possible differences between a key-value store and a distributed cache?"
+  },
+  {
+   "t": "p",
+   "k": "b2041c9dde5e",
+   "en": "Hide Answer Some of the key differences are the following:"
+  },
+  {
+   "t": "p",
+   "k": "fae4c81dfe15",
+   "en": "Key-value stores need to durably store data (persistence). A cache is used in addition to persistent storage to increase reading performance."
+  },
+  {
+   "t": "p",
+   "k": "ff11597ef803",
+   "en": "A cache serves data from the RAM. A key-value store writes data to non-volatile storage."
+  },
+  {
+   "t": "p",
+   "k": "cddec4293a77",
+   "en": "Key-value stores are robust and should survive failures. However, caches can crash and be populated from scratch after recovery."
+  },
+  {
+   "t": "h2",
+   "k": "fb8807f62810",
+   "en": "Design considerations"
+  },
+  {
+   "t": "p",
+   "k": "f40afad07efc",
+   "en": "Before designing the distributed cache system, it’s important to consider some design choices. Each of these choices will be purely based on our application requirements. However, we can highlight some key differences here:"
+  },
+  {
+   "t": "h3",
+   "k": "576ecb9679a7",
+   "en": "Storage hardware"
+  },
+  {
+   "t": "p",
+   "k": "07920b788ff4",
+   "en": "If our data is large, we may require sharding and therefore use shard servers for cache partitions. Should these shard servers be specialized or commodity hardware? Specialized hardware will have good performance and storage capacity, but it will cost more. We can build a large cache from commodity servers. In general, the number of shard servers will depend on the cache’s size and access frequency."
+  },
+  {
+   "t": "p",
+   "k": "9d15548f6165",
+   "en": "Furthermore, we can consider storing our data on the secondary storage of these servers for persistence while we still serve data from RAM. Secondary storage may be used in cases where a reboot happens, and cache rebuilding takes a long time. Persistence, however, may not be a requirement in a cache system if there’s a dedicated persistence layer, such as a database."
+  },
+  {
+   "t": "h3",
+   "k": "cb878abb9136",
+   "en": "Data structures"
+  },
+  {
+   "t": "p",
+   "k": "27d6f4f09225",
+   "en": "A vital part of the design has to be the speed of accessing data. Hash tables are data structures that take a constant time on average to store and retrieve data."
+  },
+  {
+   "t": "p",
+   "k": "730fd8ce7e2b",
+   "en": "Furthermore, we need another data structure to enforce an eviction algorithm on the cached data. In particular, linked lists are a good option (as discussed in the previous lesson)."
+  },
+  {
+   "t": "h3",
+   "k": "7c367ab28ee2",
+   "en": "Cache client"
+  },
+  {
+   "t": "p",
+   "k": "c7c44eeb0a63",
+   "en": "It’s the client process or library that places the insert and retrieve calls. The location of the client process is a design issue. For example, it’s possible to place the client process within a serving host if the cache is for internal use only."
+  },
+  {
+   "t": "p",
+   "k": "0038ba463842",
+   "en": "Otherwise, in the case where the caching system is provided as a service for external use, a dedicated cache client can send users’ requests to the cache servers."
+  },
+  {
+   "t": "h3",
+   "k": "190bf62fe44d",
+   "en": "Writing policy"
+  },
+  {
+   "t": "p",
+   "k": "913b3d4022b2",
+   "en": "The writing strategy over the cache and database has consistency implications."
+  },
+  {
+   "t": "p",
+   "k": "518fc0676f6b",
+   "en": "In general, there’s no optimal choice, but depending on our application, the preference of writing policy is significantly important."
+  },
+  {
+   "t": "h3",
+   "k": "e7a6455a11a2",
+   "en": "Eviction policy"
+  },
+  {
+   "t": "p",
+   "k": "092f2f73d34b",
+   "en": "By design, the cache provides low-latency reads and writes. To achieve this, data is often served from RAM memory. Usually, we can’t put all the data in the cache due to the limited size of the cache as compared to the full dataset. So, we need to carefully decide what stays in the cache and how to make room for new entries."
+  },
+  {
+   "t": "p",
+   "k": "a8312145626a",
+   "en": "With the addition of new data, some of the existing data may have to be evicted from the cache. However, choosing a victim entry depends on the eviction policy. Numerous eviction policies exist, but the choice again depends on the application using it. For instance, least recently used (LRU) can be a good choice for social media services where recently uploaded content will likely get the most views."
+  },
+  {
+   "t": "p",
+   "k": "e0c28009c672",
+   "en": "Apart from the details in the sections above, optimizing the time-to-live (TTL) value can play an essential role in reducing the number of cache misses."
+  },
+  {
+   "t": "h2",
+   "k": "f0e860766605",
+   "en": "High-level design"
+  },
+  {
+   "t": "p",
+   "k": "f9bf1238ebd2",
+   "en": "The following figure depicts our high-level design:"
+  },
+  {
+   "t": "p",
+   "k": "f7d0609a18b3",
+   "en": "The main components in this high-level design are the following:"
+  },
+  {
+   "t": "p",
+   "k": "ebdb1002fa35",
+   "en": "Cache client: This library resides in the service application servers. It holds all the information regarding cache servers. The cache client will choose one of the cache servers using a hash and search algorithm for each incoming insert and retrieve request. All the cache clients should have a consistent view of all the cache servers. Also, the resolution technique to move data to and from the cache servers should be the same. Otherwise, different clients will request different servers for the same data."
+  },
+  {
+   "t": "p",
+   "k": "682d6f48d1dc",
+   "en": "Cache servers: These servers maintain the cache of the data. Each cache server is accessible by all the cache clients. Each server is connected to the database to store or retrieve data. Cache clients use TCP or UDP protocol to perform data transfer to or from the cache servers. However, if any cache server is down, requests to those servers are resolved as a missed cache by the cache clients."
+  },
+  {
+   "t": "h1",
+   "k": "12bb35dc4e55",
+   "en": "Detailed Design of a Distributed Cache"
+  },
+  {
+   "t": "p",
+   "k": "f59ab964f7b2",
+   "en": "Let's understand the detailed design of a distributed cache."
+  },
+  {
+   "t": "h2",
+   "k": "7403340097fb",
+   "en": "Find and remove limitations"
+  },
+  {
+   "t": "p",
+   "k": "ae4279741b5a",
+   "en": "Before we get to the detailed design, we need to understand and overcome some challenges:"
+  },
+  {
+   "t": "p",
+   "k": "a131232ef073",
+   "en": "There’s no way for the cache client to realize the addition or failure of a cache server."
+  },
+  {
+   "t": "p",
+   "k": "78448858344d",
+   "en": "The solution will suffer from the problem of single point of failure (SPOF) because we have a single cache server for each set of cache data. Not only that, if some of the data on any of the cache servers is frequently accessed (generally referred to as a hotkey problem), then our performance will also be slow."
+  },
+  {
+   "t": "h3",
+   "k": "3e842fbe4852",
+   "en": "Maintain cache servers list"
+  },
+  {
+   "t": "p",
+   "k": "27993df9f629",
+   "en": "Let’s start by resolving the first problem. We’ll take incremental steps toward the best possible solution. Let’s look at the following slides to get an idea of each of the solutions described below:"
+  },
+  {
+   "t": "p",
+   "k": "5d2f80343808",
+   "en": "Solution 1: It’s possible to have a configuration file in each of the service hosts where the cache clients reside. The configuration file will contain the updated health and metadata required for the cache clients to utilize the cache servers efficiently. Each copy of the configuration file can be updated through a push service by any DevOps tool. The main problem with this strategy is that the configuration file will have to be manually updated and deployed through some DevOps tools."
+  },
+  {
+   "t": "p",
+   "k": "87f914f79c72",
+   "en": "Solution 2: We can store the configuration file in a centralized location that the cache clients can use to get updated information about cache servers."
+  },
+  {
+   "t": "p",
+   "k": "e5db4568020d",
+   "en": "This solves the deployment issue, but we still need to manually update the configuration file and monitor the health of each server."
+  },
+  {
+   "t": "p",
+   "k": "1e52a5fc6870",
+   "en": "Solution 3: An automatic way of handling the issue is to use a configuration service that continuously monitors the health of the cache servers. In addition to that, the cache clients will get notified when a new cache server is added to the cluster. When we use this strategy, no human intervention or monitoring will be required in case of failures or the addition of new nodes. Finally, the cache clients obtain the list of cache servers from the configuration service."
+  },
+  {
+   "t": "p",
+   "k": "75299cdf6d02",
+   "en": "The configuration service has the highest operational cost. At the same time, it’s a complex solution. However, it’s the most robust among all the solutions we presented."
+  },
+  {
+   "t": "h3",
+   "k": "0aa7b12b7071",
+   "en": "Improve availability"
+  },
+  {
+   "t": "p",
+   "k": "b253dd717b7f",
+   "en": "The second problem relates to cache unavailability if the cache servers fail. A simple solution is the addition of replica nodes. We can start by adding one primary and two backup nodes in a cache shard. With replicas, there’s always a possibility of inconsistency. If our replicas are in close proximity, writing over replicas is performed synchronously to avoid inconsistencies between shard replicas. It’s crucial to divide cache data among shards so that neither the problem of unavailability arises nor any hardware is wasted."
+  },
+  {
+   "t": "p",
+   "k": "b95a43b024ae",
+   "en": "This solution has two main advantages:"
+  },
+  {
+   "t": "p",
+   "k": "42c04a506f5d",
+   "en": "There’s improved availability in case of failures."
+  },
+  {
+   "t": "p",
+   "k": "411fee3d4bc3",
+   "en": "Hot shards can have multiple nodes (primary-secondary) for reads."
+  },
+  {
+   "t": "p",
+   "k": "2310d6f852cd",
+   "en": "Not only will such a solution improve availability, but it will also add to the performance."
+  },
+  {
+   "t": "h3",
+   "k": "78efd95d5e96",
+   "en": "Internals of cache server"
+  },
+  {
+   "t": "p",
+   "k": "f6109ca934e0",
+   "en": "Each cache client should use three mechanisms to store and evict entries from the cache servers:"
+  },
+  {
+   "t": "p",
+   "k": "73fbb3ad4827",
+   "en": "Hash map: The cache server uses a hash map to store or locate different entries inside the RAM of cache servers. The illustration below shows that the map contains pointers to each cache value."
+  },
+  {
+   "t": "p",
+   "k": "6cf2a5be1dd1",
+   "en": "Doubly linked list: If we have to evict data from the cache, we require a linked list so that we can order entries according to their frequency of access. The illustration below depicts how entries are connected using a doubly linked list."
+  },
+  {
+   "t": "p",
+   "k": "a4437cc6015e",
+   "en": "A depiction of a sharded cluster along with a node’s data structure is provided below:"
+  },
+  {
+   "t": "p",
+   "k": "2e4887c635b8",
+   "en": "It’s evident from the explanation above that we don’t provide a delete API. This is because the eviction (through eviction algorithm) and deletion (of expired entries through TTL) is done locally at cache servers."
+  },
+  {
+   "t": "p",
+   "k": "7a12c0d4c6a9",
+   "en": "Nevertheless, situations can arise where the delete API may be required."
+  },
+  {
+   "t": "p",
+   "k": "b6209c96919d",
+   "en": "For example, when we delete a recently added entry from the database, it should result in the removal of items from the cache for the sake of consistency."
+  },
+  {
+   "t": "h2",
+   "k": "674535ec930b",
+   "en": "Detailed design"
+  },
+  {
+   "t": "p",
+   "k": "e8131312087f",
+   "en": "We’re now ready to formalize the detailed design after resolving each of the three previously highlighted problems. Look at the detailed design below:"
+  },
+  {
+   "t": "p",
+   "k": "80314789b783",
+   "en": "Let’s summarize the proposed detailed design in a few points:"
+  },
+  {
+   "t": "p",
+   "k": "b7ea288793fd",
+   "en": "The client’s requests reach the service hosts through the load balancers where the cache clients reside."
+  },
+  {
+   "t": "p",
+   "k": "7f411d0e38b5",
+   "en": "Each cache client uses consistent hashing to identify the cache server. Next, the cache client forwards the request to the cache server maintaining a specific shard."
+  },
+  {
+   "t": "p",
+   "k": "a151db5a1d9f",
+   "en": "Each cache server has primary and replica servers. Internally, every server uses the same mechanisms to store and evict cache entries."
+  },
+  {
+   "t": "p",
+   "k": "662052e31cb6",
+   "en": "Configuration service ensures that all the clients see an updated and consistent view of the cache servers."
+  },
+  {
+   "t": "p",
+   "k": "f705f6ba774d",
+   "en": "Monitoring services can be additionally used to log and report different metrics of the caching service."
+  },
+  {
+   "t": "li",
+   "k": "bbe4731b488d",
+   "en": "Note: An important aspect of the design is that cache entries are stored and retrieved from RAM. We discussed the suitability of RAM for designing a caching system in the previous lesson.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "693d6a49035c",
+   "en": "Point to Ponder While consistent hashing is a good choice, it may result in unequal distribution of data, and certain servers may get overloaded. How do we resolve this problem?"
+  },
+  {
+   "t": "p",
+   "k": "915f6f22e600",
+   "en": "Hide Answer A number of consistent hashing algorithms’ flavors have been suggested over time. We can use one such flavor (used here) that distributes load uniformly and even makes multiple copies of the same data on different cache servers. Each cache server can have virtual servers inside it, and the number of virtual servers in a machine depends on the machine’s capability. This results in a finer control on the amount of load on a cache server. At the same time, it improves availability."
+  },
+  {
+   "t": "h1",
+   "k": "10ff0220a2c3",
+   "en": "Evaluation of a Distributed Cache's Design"
+  },
+  {
+   "t": "p",
+   "k": "205c53a37925",
+   "en": "Let's evaluate our design in the context of our requirements."
+  },
+  {
+   "t": "h2",
+   "k": "d2e8a4f2ee93",
+   "en": "High performance"
+  },
+  {
+   "t": "p",
+   "k": "a998566d0be5",
+   "en": "Here are some design choices we made that will contribute to overall good performance:"
+  },
+  {
+   "t": "p",
+   "k": "d08e6393f8fd",
+   "en": "We used consistent hashing. Finding a key under this algorithm requires a time complexity of O(log(N)), where N represents the number of cache shards."
+  },
+  {
+   "t": "p",
+   "k": "ccc236810862",
+   "en": "Inside a cache server, keys are located using hash tables that require constant time on average."
+  },
+  {
+   "t": "p",
+   "k": "e43a3dca4775",
+   "en": "The LRU eviction approach uses a constant time to access and update cache entries in a doubly linked list."
+  },
+  {
+   "t": "p",
+   "k": "f46be9541de6",
+   "en": "The communication between cache clients and servers is done through TCP and UDP protocols, which is also very fast."
+  },
+  {
+   "t": "p",
+   "k": "0ecbe2e6471d",
+   "en": "Since we added more replicas, these can reduce the performance penalties that we have to face if there’s a high request load on a single machine."
+  },
+  {
+   "t": "p",
+   "k": "cde86fdda6d1",
+   "en": "An important feature of the design is adding, retrieving, and serving data from the RAM. Therefore, the latency to perform these operations is quite low."
+  },
+  {
+   "t": "li",
+   "k": "3b672863fdcb",
+   "en": "Note: A critical parameter for high performance is the selection of the eviction algorithm because the number of cache hits and misses depends on it. The higher the cache hit rate, the better the performance.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "885b7dc15d58",
+   "en": "To get an idea of how important the eviction algorithm is, let’s assume the following: th Cache hit service time (99.9 percentile): 5 ms th Cach miss service time (99.9 percentile): 30 ms (this includes time to get the data from the database and set the cache)"
+  },
+  {
+   "t": "p",
+   "k": "be02f9362027",
+   "en": "Let’s assume we have a 10% cache miss rate using the most frequently used (MFU) algorithm, whereas we have a 5% cache miss rate using the LRU algorithm. Then, we use the following formula:"
+  },
+  {
+   "t": "p",
+   "k": "de285fec082c",
+   "en": "EAT = Ratiohit x Timehit + Ratiomiss x Timemiss Here, this means the following:"
+  },
+  {
+   "t": "p",
+   "k": "5ecedf4acc2f",
+   "en": "EAT: Effective access time."
+  },
+  {
+   "t": "p",
+   "k": "cf164b1cd755",
+   "en": "Ratiohit: The percentage of times a cache hit will occur."
+  },
+  {
+   "t": "p",
+   "k": "6c21ed097f9d",
+   "en": "Ratiomiss: The percentage of times a cache miss will occur."
+  },
+  {
+   "t": "p",
+   "k": "08935b9cbcd6",
+   "en": "Timehit: Time required to serve a cache hit."
+  },
+  {
+   "t": "p",
+   "k": "3805a0e31178",
+   "en": "Timemiss: Time required to serve a cache miss."
+  },
+  {
+   "t": "p",
+   "k": "a9c56e64046d",
+   "en": "For MFU, we see the following:"
+  },
+  {
+   "t": "code",
+   "k": "5f530313a6d4",
+   "en": "EAT = 0.90 x 5 milliseconds + 0.10 x 30 milliseconds = 0.0045 + 0.003 = 0.0075 = 7.5 milliseconds"
+  },
+  {
+   "t": "p",
+   "k": "20e74b68a684",
+   "en": "For LRU, we see the following:"
+  },
+  {
+   "t": "code",
+   "k": "79dc39a605e7",
+   "en": "EAT = 0.95 x 5 milliseconds + 0.05 x 30 milliseconds = 0.00475 + 0.00 15 = 0.00625 = 6.25 milliseconds."
+  },
+  {
+   "t": "p",
+   "k": "2f63abc37ef4",
+   "en": "The numbers above highlight the importance of the eviction algorithm to increase the cache hit rate. Each application should conduct an empirical study to determine the eviction algorithm that gives better results for a specific workload."
+  },
+  {
+   "t": "h2",
+   "k": "b06273ade235",
+   "en": "Scalability"
+  },
+  {
+   "t": "p",
+   "k": "524bc72c6133",
+   "en": "We can create shards based on requirements and changing server loads. While we add new cache servers to the cluster, we also have to do a limited number of rehash computations, thanks to consistent hashing."
+  },
+  {
+   "t": "p",
+   "k": "24e5c24d7efb",
+   "en": "Adding replicas reduces the load on hot shards. Another way to handle the hotkeys problem is to do further sharding within the range of those keys."
+  },
+  {
+   "t": "p",
+   "k": "77aa1946d7ce",
+   "en": "Although the scenario where a single key will become hot is rare, it’s possible for the cache client to devise solutions to avoid the single hotkey contention issue."
+  },
+  {
+   "t": "p",
+   "k": "4d6244ef16cc",
+   "en": "For example, cache clients can intelligently avoid such a situation that a single key becomes a bottleneck, or we can use dynamic replication for specific keys, and so on. Nonetheless, the solutions are complex and beyond the scope of this lesson."
+  },
+  {
+   "t": "h2",
+   "k": "530f76d00e6b",
+   "en": "High availability"
+  },
+  {
+   "t": "p",
+   "k": "861406c19059",
+   "en": "We have improved the availability through redundant cache servers."
+  },
+  {
+   "t": "p",
+   "k": "6837f4467054",
+   "en": "Redundancy adds a layer of reliability and fault tolerance to our design. We also used the leader-follower algorithm to conveniently manage a cluster shard."
+  },
+  {
+   "t": "p",
+   "k": "8f5de77387d5",
+   "en": "However, we haven’t achieved high availability because we have two shard replicas, and at the moment, we assume that the replicas are within a data center."
+  },
+  {
+   "t": "p",
+   "k": "a2c6222be734",
+   "en": "It’s possible to achieve higher availability by splitting the leader and follower servers among different data centers. But such high availability comes at a price of consistency. We assumed synchronous writes within the same data center. But synchronous writing for strong consistency in different data centers has a serious performance implication that isn’t welcomed in caching systems. We usually use asynchronous replication across data centers."
+  },
+  {
+   "t": "p",
+   "k": "13f4d4bfe323",
+   "en": "For replication within the data center, we can get strong consistency with good performance. We can compromise strong consistency across data center replication to achieve better availability (see CAP and PACELC theorems)."
+  },
+  {
+   "t": "h2",
+   "k": "028944e40958",
+   "en": "Consistency"
+  },
+  {
+   "t": "p",
+   "k": "ca7014b64e3d",
+   "en": "It’s possible to write data to cache servers in a synchronous or asynchronous mode. In the case of caching, the asynchronous mode is favored for improved performance. Consequently, our caching system suffers from inconsistencies."
+  },
+  {
+   "t": "p",
+   "k": "5255add0244e",
+   "en": "Alternatively, strong consistency comes from synchronous writing, but this increases the overall latency, and the performance takes a hit."
+  },
+  {
+   "t": "p",
+   "k": "9c6dfa167ec9",
+   "en": "Inconsistency can also arise from faulty configuration files and services. Imagine a scenario where a cache server is down during a write operation, and a read operation is performed on it just after its recovery. We can avoid such scenarios for any joining or rejoining server by not allowing it to serve requests until it’s reasonably sure that it’s up to date."
+  },
+  {
+   "t": "h2",
+   "k": "2b1af727bf18",
+   "en": "Affordability"
+  },
+  {
+   "t": "p",
+   "k": "23eb684bb5c7",
+   "en": "Our proposed design has a low cost because it’s feasible and practical to create such a system using commodity hardware."
+  },
+  {
+   "t": "p",
+   "k": "4e7cfb7c9ca3",
+   "en": "Points to Ponder What happens if the leader node fails in the leader-follower protocol?"
+  },
+  {
+   "t": "p",
+   "k": "5d3cc9bd6ad2",
+   "en": "Hide Answer Two possible solutions can be used in that case:"
+  },
+  {
+   "t": "p",
+   "k": "76ab20709a73",
+   "en": "Use the leader election algorithm to elect a new leader among the set of available followers."
+  },
+  {
+   "t": "p",
+   "k": "3fae241173f2",
+   "en": "Use a separate distributed configuration management service to monitor and select leaders. 1 of 3"
+  },
+  {
+   "t": "h2",
+   "k": "05535ecff78e",
+   "en": "Summary"
+  },
+  {
+   "t": "p",
+   "k": "b50e36a98ea7",
+   "en": "We studied the basics of the cache and designed a distributed cache that has a good level of availability, high performance, high scalability, and low cost. Our mechanism maintains high availability using replicas, though if all replicas are in one data center, such a scheme won’t tackle full data center failures. Now that we’ve learned about the basics of design, let’s explore popular open-source frameworks like Memcached and Redis."
+  },
+  {
+   "t": "h1",
+   "k": "4c4402790107",
+   "en": "Memcached versus Redis"
+  },
+  {
+   "t": "p",
+   "k": "79f50075a477",
+   "en": "Let's compare Memcached and Redis."
+  },
+  {
+   "t": "h2",
+   "k": "26aca7941a99",
+   "en": "Introduction"
+  },
+  {
+   "t": "p",
+   "k": "ba02276d3894",
+   "en": "This lesson will discuss some of the widely adopted real-world implementations of a distributed cache. Our focus will be on two well-known open-source frameworks: Memcached and Redis. They’re highly scalable, highly performant, and robust caching tools. Both of these techniques follow the client-server model and achieve a latency of sub-millisecond. Let’s discuss each one of them and then compare their usefulness."
+  },
+  {
+   "t": "h2",
+   "k": "ebf4a2fb4c21",
+   "en": "Memcached"
+  },
+  {
+   "t": "p",
+   "k": "06888c19af70",
+   "en": "Memcached has a client and server component, each of which is necessary to run the system. The system is designed in a way that half the logic is encompassed in the server, whereas the other half is in the client. However, each server follows the shared-nothing architecture. In this architecture, servers are unaware of each other, and there’s no synchronization, data sharing, and communication between the servers."
+  },
+  {
+   "t": "p",
+   "k": "d258bb4cf102",
+   "en": "Due to the disconnected design, Memcached is able to achieve almost a deterministic query speed (O(1)) serving millions of keys per second using a high-end system. Therefore, Memcached offers a high throughput and low latency."
+  },
+  {
+   "t": "p",
+   "k": "11883b2344e1",
+   "en": "As evident from the design of a typical Memcached cluster, Memcached scales well horizontally. The client process is usually maintained with the service host that also interacts with the authoritative storage (back-end database)."
+  },
+  {
+   "t": "h3",
+   "k": "929fbcfa74ce",
+   "en": "Facebook and Memcached"
+  },
+  {
+   "t": "p",
+   "k": "be0be22450d3",
+   "en": "The data access pattern in Facebook requires frequent reads and updates because views are presented to the users on the fly instead of being generated ahead of time. Because Memcached is simple, it was an easy choice for the solution because Memcached started developing in 2003 whereas Facebook was developed in 2004. In fact, in some cases, Facebook and Memcached teams worked together to find solutions."
+  },
+  {
+   "t": "p",
+   "k": "a1fcba9893a9",
+   "en": "Redis was developed in 2009. So, using Redis wasn’t a possibility at Facebook by then."
+  },
+  {
+   "t": "p",
+   "k": "cdddf3faee51",
+   "en": "Some of the simple commands of Memcached include the following:"
+  },
+  {
+   "t": "code",
+   "k": "1e318496a48a",
+   "en": "get <key_1> <key_2> <key_3> ... set <key> <value> ... delete <key>[<time>] ..."
+  },
+  {
+   "t": "p",
+   "k": "a3c1321cef9d",
+   "en": "The following illustration shows the high-level design of caching architecture at Facebook. As we can see, out of a total of 50 million requests made by the web layer, only 2.5 million requests reach the persistence layer."
+  },
+  {
+   "t": "h2",
+   "k": "b840fc02d524",
+   "en": "Redis"
+  },
+  {
+   "t": "p",
+   "k": "6f5043b59209",
+   "en": "Redis is a data structure store that can be used as a cache, database, and message broker. It offers rich features at the cost of additional complexity. It has the following features:"
+  },
+  {
+   "t": "p",
+   "k": "62eaba6e8c64",
+   "en": "Data structure store: Redis understands the different data structures it stores. We don’t have to retrieve data structures from it, manipulate them, and then store them back. We can make in-house changes that save both time and effort."
+  },
+  {
+   "t": "p",
+   "k": "96db38493535",
+   "en": "Database: It can persist all the in-memory blobs on the secondary storage."
+  },
+  {
+   "t": "p",
+   "k": "744352de2e4e",
+   "en": "Message broker: Asynchronous communication is a vital requirement in distributed systems. Redis can translate millions of messages per second from one component to another in a system."
+  },
+  {
+   "t": "p",
+   "k": "69df79ed3ce1",
+   "en": "Redis provides a built-in replication mechanism, automatic failover, and different levels of persistence. Apart from that, Redis understands Memcached protocols, and therefore, solutions using Memcached can translate to Redis. A particularly good aspect of Redis is that it separates data access from cluster management. It decouples data and controls the plane. This results in increased reliability and performance. Finally, Redis doesn’t provide strong consistency due to the use of asynchronous replication."
+  },
+  {
+   "t": "h3",
+   "k": "ab24ae686a95",
+   "en": "Redis cluster"
+  },
+  {
+   "t": "p",
+   "k": "855d1690a8ef",
+   "en": "Redis has built-in cluster support that provides high availability. This is called Redis Sentinel. A cluster has one or more Redis databases that are queried using multithreaded proxies. Redis clusters perform automatic sharding where each shard has primary and secondary nodes. However, the number of shards in a database or node is configurable to meet the expectations and requirements of an application."
+  },
+  {
+   "t": "p",
+   "k": "bc314321cbe5",
+   "en": "Each Redis cluster is maintained by a cluster manager whose job is to detect failures and perform automatic failovers. The management layer consists of monitoring and configuration software components."
+  },
+  {
+   "t": "h3",
+   "k": "1f0a0fda721c",
+   "en": "Pipelining in Redis"
+  },
+  {
+   "t": "p",
+   "k": "5cc0a5fbd434",
+   "en": "Since Redis uses a client-server model, each request blocks the client until the server receives the result. A Redis client looking to send subsequent requests will have to wait for the server to respond to the first request. So, the overall latency will be higher."
+  },
+  {
+   "t": "p",
+   "k": "945921fc531c",
+   "en": "Redis uses pipelining to speed up the process. Pipelining is the process of combining multiple requests from the client side without waiting for a response from the server. As a result, it reduces the number of RTT spans for multiple requests."
+  },
+  {
+   "t": "p",
+   "k": "0d659d505401",
+   "en": "The process of pipelining reduces the latency through RTT and the time to do socket level I/O. Also, mode switching through system calls in the operating system is an expensive operation that’s reduced significantly via pipelining."
+  },
+  {
+   "t": "p",
+   "k": "e56f5de2726c",
+   "en": "Pipelining the commands from the client side has no impact on how the server processes these requests."
+  },
+  {
+   "t": "p",
+   "k": "11c6b2b2eded",
+   "en": "For example, two requests pipelined by the client reach the server, and the server can’t entertain the second. The server provides a result for the first and returns an error for the second. The client is independent in batching similar commands together to achieve maximum throughput."
+  },
+  {
+   "t": "li",
+   "k": "59c05cd5ba9c",
+   "en": "Note: Pipelining improves the latency to a minimum of five folds if both the client and server are on the same machine. The request is sent on a loopback address (127.0.0.1). The true power of pipelining is highlighted in systems where requests are sent to distant machines.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "4c4402790107",
+   "en": "Memcached versus Redis"
+  },
+  {
+   "t": "p",
+   "k": "0755ef5abbee",
+   "en": "Even though Memcached and Redis both belong to the NoSQL family, there are subtle aspects that set them apart:"
+  },
+  {
+   "t": "li",
+   "k": "f1c7ef79b3fe",
+   "en": "Simplicity: Memcached is simple, but it leaves most of the effort for managing clusters left to the developers of the cluster. This, however, means finer control using Memcached. Redis, on the other hand, automates most of the scalability and data division tasks.",
+   "lead": "Simplicity"
+  },
+  {
+   "t": "li",
+   "k": "85f8b530989e",
+   "en": "Persistence: Redis provides persistence by properties like append only file (AOF) and Redis database (RDB) snapshot. There’s no persistence support in Memcached. But this limitation can be catered to by using third-party tools.",
+   "lead": "Persistence"
+  },
+  {
+   "t": "p",
+   "k": "fba85cd78344",
+   "en": "Data types: Memcached stores objects, whereas Redis supports strings, sorted sets, hash maps, bitmaps, and hyper logs. However, the maximum key or value size is configurable."
+  },
+  {
+   "t": "li",
+   "k": "44be41d83fd2",
+   "en": "Memory usage: Both tools allow us to set a maximum memory size for caching. Memcached uses the slab allocation method for reducing fragmentation. However, when we update the existing entries’ size or store many small objects, there may be a wastage of memory. Nonetheless, there are configuration workarounds to resolve such issues.",
+   "lead": "Memory usage"
+  },
+  {
+   "t": "li",
+   "k": "2dfbfa5c3b71",
+   "en": "Multithreading: Redis runs as a single process using one core, whereas Memcached can efficiently use multicore systems with multithreading technology. We could argue that Redis was designed to be a single-threaded process that reduces the complexity of multithreaded systems. Nonetheless, multiple Redis processes can be executed for concurrency. At the same time, Redis has improved over the years by tweaking its performance.",
+   "lead": "Multithreading"
+  },
+  {
+   "t": "p",
+   "k": "d967ab89edac",
+   "en": "Therefore, Redis can store small data items efficiently. Memcached can be the right choice for file sizes above 100 K."
+  },
+  {
+   "t": "li",
+   "k": "468c0c7141be",
+   "en": "Replication: As stated before, Redis automates the replication process via few commands, whereas replication in Memcached is again subject to the usage of third-party tools. Architecturally, Memcached can scale well horizontally due to its simplicity. Redis provides scalability through clustering that’s considerably complex.",
+   "lead": "Replication"
+  },
+  {
+   "t": "p",
+   "k": "ce1111eedd27",
+   "en": "The table below summarizes some of the main differences and common features between Memcached and Redis:"
+  },
+  {
+   "t": "h2",
+   "k": "d57e1463b84f",
+   "en": "Features Offered by Memcached and Redis"
+  },
+  {
+   "t": "p",
+   "k": "60d3e79862ab",
+   "en": "FeatureMemcached Low latencyYes PersistencePossible via third-party toolsMultiple options Multilanguage supportYes Data shardingPossible via third-party toolsBuilt-in solution Ease of useYes Multithreading supportYes Support for data structureObjectsMultiple data structures Support for transactionNo Eviction policyLRUMultiple algorithms Lua scripting supportNo Geospatial supportNo To summarize, Memcached is preferred for smaller, simpler read-heavy systems, whereas Redis is useful for systems that are complex and are both read- and write-heavy."
+  },
+  {
+   "t": "p",
+   "k": "9af2da411387",
+   "en": "Points to Ponder Based on the implementation details, which of the two frameworks (Memcached or Redis) has a striking similarity with the distributed cache that we designed in the previous lesson?"
+  },
+  {
+   "t": "p",
+   "k": "66fdcaab4737",
+   "en": "Hide Answer The answer is Memcached. The reasons are as follows:"
+  },
+  {
+   "t": "p",
+   "k": "81f9d682c95d",
+   "en": "Client software chooses which cache server to use with a hashing algorithm."
+  },
+  {
+   "t": "p",
+   "k": "438a67dab2eb",
+   "en": "Server software stores the values against each key using an internal hash table."
+  },
+  {
+   "t": "p",
+   "k": "09abf51da94c",
+   "en": "Least recently used (LRU) is used as the eviction policy."
+  },
+  {
+   "t": "p",
+   "k": "c8db27d61816",
+   "en": "There’s no communication between different cache servers. 1 of 3"
+  },
+  {
+   "t": "h2",
+   "k": "6a38a38f03e4",
+   "en": "Conclusion"
+  },
+  {
+   "t": "p",
+   "k": "5de528ddd8da",
+   "en": "It’s impossible to imagine high-speed large-scale solutions without the use of a caching system. In this chapter, we covered the need for a caching system and its fundamental details, and we orchestrated a basic distributed cache system. We also familiarized ourselves with the design and features of two of the most well-known caching frameworks."
+  }
+ ]
+}

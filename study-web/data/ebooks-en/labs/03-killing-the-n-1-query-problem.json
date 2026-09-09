@@ -1,0 +1,97 @@
+{
+ "id": "03-killing-the-n-1-query-problem",
+ "title": "Killing the N+1 Query Problem",
+ "titleKey": "15e8d1768fba",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "8ed20f4a46cf",
+   "en": "Your /orders endpoint loads 50 orders on a page."
+  },
+  {
+   "t": "p",
+   "k": "f67752fdae9c",
+   "en": "P95 is 2.4s. The DB's fine. The app server's fine. Nothing's on fire."
+  },
+  {
+   "t": "p",
+   "k": "6bad300f8d2f",
+   "en": "Then you open the query log. 51 queries per request. One SELECT for the orders list. Then 50 more — one per order — to fetch the customer. The ORM is doing lazy-load on order.customer inside your map."
+  },
+  {
+   "t": "p",
+   "k": "a9e0eaf30e44",
+   "en": "Classic N+1. You've seen it before. The fix is \"obvious\" — until the team meeting, where three engineers propose three different things and everyone thinks they're right."
+  },
+  {
+   "t": "p",
+   "k": "9d821cb63a07",
+   "en": "Here's what's on the table: (...) behind the scenes."
+  },
+  {
+   "t": "p",
+   "k": "ae5fbf34cc44",
+   "en": "Denormalize customer_name onto the orders table — read it straight from the orders row, no join, no second query."
+  },
+  {
+   "t": "h3",
+   "k": "110cf188b446",
+   "en": "DAY 02 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "li",
+   "k": "305025b0321e",
+   "en": "Why A wins: One LEFT JOIN customers ON orders.customer_id = customers.id returns the whole page in a single round trip. P95 drops from 2.4s to ~80ms. No new infrastructure. No new failure modes. The N+1 problem in an ORM almost always has the same root cause: a lazy relation the developer didn't realize was lazy. Prisma's include, Sequelize's include, TypeORM's relations — every ORM has this. Reach for fancier patterns only when JOIN genuinely can't solve it.",
+   "lead": "Why A wins"
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "6bb2749bc9b2",
+   "en": "Why B is the trap (DataLoader): Beautiful pattern — but earns its keep in GraphQL where the resolver graph fans out in ways a single JOIN can't express. Here you have one list endpoint with one relation. A JOIN is strictly simpler and strictly faster. You're solving a problem you don't have and paying the complexity tax forever.",
+   "lead": "Why B is the trap (DataLoader)"
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "37e1a1976097",
+   "en": "Why C is wrong (Redis): Cache-first fixes the symptom, not the query pattern. You still issue 50 cache GETs per request, now own a cache invalidation problem every time a customer updates, and cold-hit every ID after a deploy. Cache is a scaling tool, not an N+1 tool.",
+   "lead": "Why C is wrong (Redis)"
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "8e81cfd34a9c",
+   "en": "Why D is the career-long argument (denormalize): Legitimate at Instagram scale. Also how you end up with a customer's maiden name three years after they got married because nobody wrote the update path. Denormalization is a write-amplification decision masquerading as a read-optimization.",
+   "lead": "Why D is the career-long argument (denormalize)"
+  },
+  {
+   "t": "p",
+   "k": "94e6a07fb7ae",
+   "en": "Do it when the JOIN genuinely can't hit your latency SLO at your scale — not before."
+  },
+  {
+   "t": "p",
+   "k": "310399c680c2",
+   "en": "Fixed Window — bucket per (api_key, minute). Increment, check, reject. Simple, fast, one Redis"
+  },
+  {
+   "t": "h3",
+   "k": "5a0289615926",
+   "en": "DAY 03 · SYSTEM DESIGN"
+  }
+ ]
+}

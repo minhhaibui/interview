@@ -1,0 +1,172 @@
+{
+ "id": "58-consistency-for-payment-confirmation-reads",
+ "title": "Consistency for Payment-Confirmation Reads",
+ "titleKey": "82be0f38553d",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "f12b7df31182",
+   "en": "Your write traffic just hit 50k writes/sec. Reads are 10x that."
+  },
+  {
+   "t": "p",
+   "k": "a89bcf38478f",
+   "en": "You split your Postgres into one primary + two replicas. Reads go to replicas. Now you're shipping a payment confirmation flow — and a replica returned stale data 200ms after a write. The user saw \"payment pending\" when it already succeeded."
+  },
+  {
+   "t": "p",
+   "k": "252024af7cd7",
+   "en": "Here's the setup: → Primary handles all writes → Two read replicas, async replication → Payment confirmation reads from a replica → Replication lag: 80–300ms under load You need reads-after-write consistency on payment flows without tanking write throughput. What do you do? ack'ing the write."
+  },
+  {
+   "t": "p",
+   "k": "d44f3a0b8914",
+   "en": "Use semi-sync replication — primary waits for exactly one replica to write to its relay log, but not Route payment confirmation reads back to the primary, keep everything else on replicas. Add a short sleep (500ms) after every payment write before reading — wait out the lag. flush to disk."
+  },
+  {
+   "t": "h3",
+   "k": "5fd6a3ff7e0f",
+   "en": "DAY 57 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "li",
+   "k": "0da015e014c6",
+   "en": "Why C wins (primary reads for critical paths):",
+   "lead": "Why C wins (primary reads for critical paths)"
+  },
+  {
+   "t": "p",
+   "k": "f93cb0b00287",
+   "en": "Payment confirmations are a tiny slice of your read traffic. You're not routing ALL reads to primary — just the reads where stale data causes visible user harm."
+  },
+  {
+   "t": "p",
+   "k": "893274503741",
+   "en": "This pattern is called read-your-writes consistency. Stripe, Shopify, every serious fintech does this."
+  },
+  {
+   "t": "p",
+   "k": "b757db87a25d",
+   "en": "You add a flag or middleware: \"if this is a consistency-sensitive flow, read from primary.\" Everything else keeps hitting replicas."
+  },
+  {
+   "t": "p",
+   "k": "71e5b731426c",
+   "en": "Primary read traffic increases slightly — but a \"just confirmed payment\" flow is maybe 0.1% of your reads. Negligible. No topology change, no new failure modes, surgical precision."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "e4ff9073f4a4",
+   "en": "Why A is tempting but the wrong trade (synchronous replication):",
+   "lead": "Why A is tempting but the wrong trade (synchronous replication)"
+  },
+  {
+   "t": "p",
+   "k": "817e89393a87",
+   "en": "Postgres synchronous_commit = on — primary waits for a replica to confirm before ack'ing the write."
+  },
+  {
+   "t": "p",
+   "k": "1890f05afb2c",
+   "en": "Zero lag. Reads always consistent."
+  },
+  {
+   "t": "p",
+   "k": "4b293c2600d4",
+   "en": "The cost: every write now takes primary_write_time + network roundtrip to replica. 1–5ms normally."
+  },
+  {
+   "t": "p",
+   "k": "ad04ffd2fc6e",
+   "en": "Under load with a flaky replica? Your write latency is hostage to your slowest replica."
+  },
+  {
+   "t": "p",
+   "k": "3fa38b4951f9",
+   "en": "If that sync replica goes down you either halt writes or fall back to async and break your guarantee.→ That choice gets made at 3am under pressure."
+  },
+  {
+   "t": "p",
+   "k": "d93d7552290e",
+   "en": "Sync replication is a serious architectural commitment for the whole DB. Routing payment reads to primary solves the same problem, surgically."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "ad51b3a167f5",
+   "en": "Why B is the sneaky wrong answer (semi-sync replication):",
+   "lead": "Why B is the sneaky wrong answer (semi-sync replication)"
+  },
+  {
+   "t": "p",
+   "k": "7ef20de12a5b",
+   "en": "Semi-sync (rpl_semi_sync in MySQL) — primary waits for one replica to write to its relay log. Sounds like a middle ground. It's not."
+  },
+  {
+   "t": "p",
+   "k": "227d5cc8e7bf",
+   "en": "The replica acknowledged receipt of the bytes — not that the data is applied and readable. The relay log is the incoming queue, not the applied state. You can still read stale data immediately after a write."
+  },
+  {
+   "t": "p",
+   "k": "f1ab4a6d63c5",
+   "en": "Semi-sync protects you from data loss on primary failure. It does NOT protect you from replication lag on reads. Different problem entirely."
+  },
+  {
+   "t": "p",
+   "k": "b739381f1b32",
+   "en": "Senior engineers conflate \"replica has the data\" with \"replica has applied the data.\" They're not the same thing."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "524837c2a7bb",
+   "en": "Why D will destroy you at scale (sleep-based lag compensation):",
+   "lead": "Why D will destroy you at scale (sleep-based lag compensation)"
+  },
+  {
+   "t": "p",
+   "k": "a585d030b193",
+   "en": "Sounds pragmatic. Works for about 2 weeks."
+  },
+  {
+   "t": "p",
+   "k": "89586482176b",
+   "en": "Replication lag isn't a fixed constant. It's 50ms now, 300ms during a write spike, 2s during a vacuum."
+  },
+  {
+   "t": "p",
+   "k": "b9df2d938d68",
+   "en": "Hardcode a sleep and you've built a system that's either too slow (sleep > lag) or still broken (lag > sleep)."
+  },
+  {
+   "t": "p",
+   "k": "e8d80fa2f373",
+   "en": "Every payment confirmation path is now artificially 500ms slower. And when the sleep isn't enough during a spike — you're back to the original bug, with worse latency."
+  },
+  {
+   "t": "p",
+   "k": "8f34fd72f707",
+   "en": "Sleep-based consistency is always a smell."
+  },
+  {
+   "t": "h3",
+   "k": "8f82abdf4faa",
+   "en": "DAY 58 · SYSTEM DESIGN"
+  }
+ ]
+}

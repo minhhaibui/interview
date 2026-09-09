@@ -1,0 +1,123 @@
+{
+ "id": "37-choosing-http-3-vs-http-2-at-the-edge",
+ "title": "Choosing HTTP/3 vs HTTP/2 at the Edge",
+ "titleKey": "c1f96d76c10a",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "13185cf6ada8",
+   "en": "Your API response went from 320ms to 95ms after a CDN switch."
+  },
+  {
+   "t": "p",
+   "k": "aeee08cbc924",
+   "en": "Nothing changed on the server. Same origin. Same payload."
+  },
+  {
+   "t": "p",
+   "k": "7d3ccaa926d9",
+   "en": "The only difference: the CDN started speaking HTTP/3 to your clients."
+  },
+  {
+   "t": "p",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:"
+  },
+  {
+   "t": "p",
+   "k": "dab1977102f2",
+   "en": "Mobile app Load Balancer Origin (NestJS) DB→→→ Every request goes through the CDN first. Latency is acceptable — until high packet-loss environments (mobile 4G 5G transitions, flaky WiFi, Asia-Pacific routes). You're seeing 800ms+ tail latency for the→ p99. The CDN supports HTTP/2 and HTTP/3. What do you enable? line problem. Proven, widely supported. connection resumption. Modern clients handle it fine."
+  },
+  {
+   "t": "p",
+   "k": "c62b4992277a",
+   "en": "HTTP/2 to origin, HTTP/2 to clients — maximize multiplexing end-to-end, avoid QUIC instability HTTP/3 to clients, HTTP/2 to origin — QUIC handles the lossy last mile, HTTP/2 handles the in enterprise firewalls. stable datacenter leg."
+  },
+  {
+   "t": "h3",
+   "k": "b94cd5db8326",
+   "en": "DAY 36 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "195755e157d8",
+   "en": "Answer: D — HTTP/3 to clients, HTTP/2 to origin The problem is the last mile. Mobile clients on lossy connections are where TCP falls apart."
+  },
+  {
+   "t": "p",
+   "k": "2d50b52ce9ff",
+   "en": "HTTP/2 fixed HTTP/1.1's application-layer head-of-line blocking by multiplexing streams over one TCP connection. But TCP itself still has head-of-line blocking at the transport layer. A single lost packet stalls ALL streams until it's retransmitted. On a 4G connection dropping 2% of packets, your 20-stream HTTP/2 connection grinds to a halt."
+  },
+  {
+   "t": "p",
+   "k": "852a208e93ad",
+   "en": "HTTP/3 runs on QUIC (UDP). Each stream is independent. A dropped packet stalls only that stream, the other 19 keep flowing. Add 0-RTT resumption (subsequent connections skip the handshake entirely) and you shave 1-2 round trips on every reconnect. That's where the latency gains come from."
+  },
+  {
+   "t": "p",
+   "k": "e59d5cc661ab",
+   "en": "But your datacenter leg (CDN to origin) is a different story. It's a stable, low-loss private network."
+  },
+  {
+   "t": "p",
+   "k": "49ed858654a7",
+   "en": "QUIC's benefits disappear on reliable connections. HTTP/2 multiplexing is mature, well-optimized, and doesn't carry QUIC's CPU overhead for cryptography (QUIC encrypts everything at the transport layer, no cleartext, ever)."
+  },
+  {
+   "t": "p",
+   "k": "dceb5e813ef3",
+   "en": "This is exactly how Cloudflare, Fastly, and Akamai operate: HTTP/3 on the edge-facing side, HTTP/2 (or even HTTP/1.1 with keepalive) on the origin-facing side."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "ad882492a903",
+   "en": "Why A falls short (HTTP/2 only):"
+  },
+  {
+   "t": "p",
+   "k": "d025bb5bbba5",
+   "en": "HTTP/2 multiplexing is a genuine improvement over HTTP/1.1, but it doesn't solve TCP head-of-line blocking. On lossy mobile connections, you're still at the mercy of the TCP retransmission window. For p99 tail latency on bad networks, HTTP/2 won't move the needle."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "p",
+   "k": "130ea8584202",
+   "en": "Why B is wrong (HTTP/3 only):"
+  },
+  {
+   "t": "p",
+   "k": "dd4df9912dba",
+   "en": "HTTP/3 to origin introduces real operational risk. Enterprise firewalls and some cloud load balancers block UDP port 443 or rate-limit it. Your origin infra isn't the bottleneck, the last mile is. Fixing the origin leg with QUIC doesn't help the problem; it just adds complexity and potential breakage."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "p",
+   "k": "52340cc421e3",
+   "en": "Why C is wrong (HTTP/2 end-to-end):"
+  },
+  {
+   "t": "p",
+   "k": "fe1562bc0e7f",
+   "en": "Same problem as A. You've done nothing about the last mile. Consistent HTTP/2 end-to-end sounds clean, but \"clean\" doesn't show up in your p99."
+  },
+  {
+   "t": "h3",
+   "k": "a8050ba9015d",
+   "en": "DAY 37 · SYSTEM DESIGN"
+  }
+ ]
+}

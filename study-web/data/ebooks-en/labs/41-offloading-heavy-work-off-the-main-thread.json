@@ -1,0 +1,158 @@
+{
+ "id": "41-offloading-heavy-work-off-the-main-thread",
+ "title": "Offloading Heavy Work Off the Main Thread",
+ "titleKey": "cab648e999af",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "8a8cdb52263f",
+   "en": "Your React dashboard freezes for 4 seconds every time a user uploads a CSV."
+  },
+  {
+   "t": "p",
+   "k": "05e19abe292f",
+   "en": "Not a network freeze. A browser freeze. Tab unresponsive. Animations stuck. The \"Page Unresponsive\" dialog popping up on Chrome."
+  },
+  {
+   "t": "p",
+   "k": "b0e7ff5bcdfe",
+   "en": "Here's what's happening in prod:"
+  },
+  {
+   "t": "li",
+   "k": "50ab10d94180",
+   "en": "User drops a 80MB CSV (200k rows, 40 columns) into the upload zone"
+  },
+  {
+   "t": "li",
+   "k": "c5b3a58ab50e",
+   "en": "Your code: Papa.parse(file, { complete: ... }) on the main thread"
+  },
+  {
+   "t": "li",
+   "k": "b6abef49b2a5",
+   "en": "Parsing + validation + schema mapping = 3.8s of synchronous JS"
+  },
+  {
+   "t": "li",
+   "k": "16995729b5bf",
+   "en": "During those 3.8s: scroll dies, the loading spinner stops spinning, input lag goes infinite"
+  },
+  {
+   "t": "li",
+   "k": "357af4993325",
+   "en": "Your INP score on the perf dashboard is now red. Lighthouse is screaming."
+  },
+  {
+   "t": "p",
+   "k": "9a311822c9d0",
+   "en": "Product wants this fixed before the enterprise demo on Friday. Four options on the table: browser breathe."
+  },
+  {
+   "t": "p",
+   "k": "dcf9909538fd",
+   "en": "Web Worker — move the entire parse + validation pipeline into worker.js, communicate via SharedArrayBuffer + Atomics — share the file buffer between main thread and 4 workers, Compile the parser to WebAssembly — drop the JS parser, run a Rust CSV parser through WASM postMessage, main thread stays free. parallelize the parse across cores, zero-copy. for near-native speed."
+  },
+  {
+   "t": "h3",
+   "k": "8547ffa5a95b",
+   "en": "DAY 40 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "668610674fb8",
+   "en": "Why B wins:"
+  },
+  {
+   "t": "p",
+   "k": "2d3844cff701",
+   "en": "The actual problem isn't speed. It's where the work runs. The main thread is the same thread that handles scroll, input, layout, paint, and animation. Anything synchronous on it = jank. Period."
+  },
+  {
+   "t": "p",
+   "k": "9ff0e720d6db",
+   "en": "A Web Worker is a separate OS-level thread with its own event loop. You ship the file (transferable via postMessage with a Transferable so it's zero-copy), parse it over there, send back the parsed rows."
+  },
+  {
+   "t": "p",
+   "k": "4b8b05491418",
+   "en": "Main thread stays at 60fps the entire time. INP drops from 3800ms to ~80ms. Done."
+  },
+  {
+   "t": "p",
+   "k": "c5eb7d2d57c5",
+   "en": "This is what Figma does for its rendering pipeline, what Google Sheets does for formula recalc, what Excalidraw does for its scene processing, what VS Code Web does for syntax highlighting. Every serious browser-based product runs heavy compute in a worker. It is the boring, correct, ten-year-old answer."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "88af59dcffc2",
+   "en": "Why A is wrong (the \"clever\" trap): requestIdleCallback + time-slicing keeps the UI technically responsive but stretches the parse from"
+  },
+  {
+   "t": "li",
+   "k": "9f5324177d14",
+   "en": "8s to ~6s of wall-clock time, because you're constantly yielding. Worse: idle callbacks are deprioritized — under load, they don't fire at all. React 18's concurrent rendering uses time-slicing for rendering, not for blocking IO-shaped work. Wrong tool."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "p",
+   "k": "3d2a40eb5904",
+   "en": "Why C is wrong (the SENIOR ENGINEER TRAP):"
+  },
+  {
+   "t": "p",
+   "k": "69e5663c0a09",
+   "en": "SharedArrayBuffer + Atomics is the answer that sounds smart in a design review. \"We'll parallelize across cores! Zero-copy! Lock-free!\" Then you discover:"
+  },
+  {
+   "t": "li",
+   "k": "b179bb21a431",
+   "en": "It requires COOP + COEP headers site-wide, which break Stripe Elements, YouTube embeds, Intercom, and half your analytics scripts."
+  },
+  {
+   "t": "li",
+   "k": "b3caa3edf4c5",
+   "en": "A single 80MB CSV parse is embarrassingly serializable — splitting rows across 4 cores saves you ~2s while costing you weeks of cross-origin isolation hell."
+  },
+  {
+   "t": "li",
+   "k": "b74da3a9f42e",
+   "en": "You now own a custom thread pool in JavaScript. In 2026."
+  },
+  {
+   "t": "p",
+   "k": "b3aa629fd8d5",
+   "en": "SAB is the right answer for exactly two problems: real-time audio/video processing (where you need lock-free ring buffers between threads at 48kHz), and shared simulation state (think multiplayer game engines in the browser). A one-shot CSV upload is neither."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "p",
+   "k": "dd6115364ce8",
+   "en": "Why D is wrong:"
+  },
+  {
+   "t": "p",
+   "k": "aac60bb4bf0e",
+   "en": "WASM makes the parser faster. It doesn't move it off the main thread. A WASM parser running synchronously on the main thread still freezes the UI — just for 1.2s instead of 3.8s. You'd still need to put it inside a worker. So D isn't an answer; it's a possible optimization inside B. And honestly, Papa Parse in a worker is fast enough that you don't need it."
+  },
+  {
+   "t": "h3",
+   "k": "1c9c4b1957be",
+   "en": "DAY 41 · SYSTEM DESIGN"
+  }
+ ]
+}

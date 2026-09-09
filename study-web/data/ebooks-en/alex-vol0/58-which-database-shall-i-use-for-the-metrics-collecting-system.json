@@ -1,0 +1,63 @@
+{
+ "id": "58-which-database-shall-i-use-for-the-metrics-collecting-system",
+ "title": "Which database shall I use for the metrics collecting system?",
+ "titleKey": "ac6ab2e0e1f3",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "b97d9a71da51",
+   "en": "This is one of the most important questions we need to address in an interview."
+  },
+  {
+   "t": "p",
+   "k": "aa858daef328",
+   "en": "𝐃𝐚𝐭𝐚 𝐚𝐜𝐜𝐞𝐬𝐬 𝐩𝐚𝐭𝐭𝐞𝐫𝐧 As shown in the diagram, each label on the y-axis represents a time series (uniquely identified by the names and labels) while the x-axis represents time."
+  },
+  {
+   "t": "p",
+   "k": "e80eb5ee98db",
+   "en": "The write load is heavy. As you can see, there can be many time-series data points written at any moment. There are millions of operational metrics written per day, and many metrics are collected at high frequency, so the traffic is undoubtedly write-heavy."
+  },
+  {
+   "t": "p",
+   "k": "2b6224459554",
+   "en": "At the same time, the read load is spiky. Both visualization and alert services send queries to the database and depending on the access patterns of the graphs and alerts, the read volume could be bursty."
+  },
+  {
+   "t": "p",
+   "k": "a0255c89d2f7",
+   "en": "𝐂𝐡𝐨𝐨𝐬𝐞 𝐭𝐡𝐞 𝐫𝐢𝐠𝐡𝐭 𝐝𝐚𝐭𝐚𝐛𝐚𝐬𝐞 The data storage system is the heart of the design. It’s not recommended to build your own storage system or use a general-purpose storage system (MySQL) for this job."
+  },
+  {
+   "t": "p",
+   "k": "c283a23f3026",
+   "en": "A general-purpose database, in theory, could support time-series data, but it would require expert-level tuning to make it work at our scale."
+  },
+  {
+   "t": "p",
+   "k": "31eea8d13620",
+   "en": "Specifically, a relational database is not optimized for operations you would commonly perform against time-series data. For example, computing the moving average in a rolling time window requires complicated SQL that is difficult to read (there is an example of this in the deep dive section). Besides, to support tagging/labeling data, we need to add an index for each tag. Moreover, a general-purpose relational database does not perform well under constant heavy write load. At our scale, we would need to expend significant effort in tuning the database, and even then, it might not perform well. 126 How about NoSQL? In theory, a few NoSQL databases on the market could handle time-series data effectively. For example, Cassandra and Bigtable can both be used for time series data. However, this would require deep knowledge of the internal workings of each NoSQL to devise a scalable schema for effectively storing and querying time-series data. With industrial-scale time-series databases readily available, using a general purpose NoSQL database is not appealing."
+  },
+  {
+   "t": "p",
+   "k": "d935a9795c71",
+   "en": "There are many storage systems available that are optimized for time-series data. The optimization lets us use far fewer servers to handle the same volume of data. Many of these databases also have custom query interfaces specially designed for the analysis of time-series data that are much easier to use than SQL. Some even provide features to manage data retention and data aggregation. Here are a few examples of time-series databases."
+  },
+  {
+   "t": "p",
+   "k": "adfbcb0fc4eb",
+   "en": "OpenTSDB is a distributed time-series database, but since it is based on Hadoop and HBase, running a Hadoop/HBase cluster adds complexity. Twitter uses MetricsDB, and Amazon offers Timestream as a time-series database. According to DB-engines, the two most popular time-series databases are InfluxDB and Prometheus, which are designed to store large volumes of time-series data and quickly perform real-time analysis on that data. Both of them primarily rely on an in-memory cache and on-disk storage. And they both handle durability and performance quite well. According to the benchmark listed on InfluxDB website, a DB server with 8 cores and 32GB RAM can handle over 250,000 writes per second."
+  },
+  {
+   "t": "p",
+   "k": "904e99880406",
+   "en": "Since a time-series database is aspecializeddatabase,you are not expected to understand the internals in an interview unless you explicitly mentioned it in your resume. For the purpose of an interview, it’s important to understand the metrics data are time-series in nature and we can select time-series databases such as InfluxDB for storage to store them."
+  },
+  {
+   "t": "p",
+   "k": "c758710525a0",
+   "en": "Another feature of a strong time-series database is efficient aggregation and analysis of a large amount of time-series data by labels, also known as tags in some databases. For example, InfluxDB builds indexes on labels to facilitate the fast lookup of time-series by 127 labels. It provides clear best-practice guidelines on how to use labels, without overloading the database. The key is to make sure each label is of low cardinality (having a small set of possible values). This feature is critical for visualization, and it would take a lot of effort to build this with a general-purpose database. 128"
+  }
+ ]
+}

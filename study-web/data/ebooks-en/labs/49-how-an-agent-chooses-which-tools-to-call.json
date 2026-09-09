@@ -1,0 +1,178 @@
+{
+ "id": "49-how-an-agent-chooses-which-tools-to-call",
+ "title": "How an Agent Chooses Which Tools to Call",
+ "titleKey": "397734c0b013",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "5638a16121ad",
+   "en": "Your AI agent just got a user message: \"Book me a flight to Dubai next Friday.\""
+  },
+  {
+   "t": "p",
+   "k": "52b2e22ea526",
+   "en": "The LLM has access to 12 tools: search_flights, get_user_preferences, check_calendar, book_flight, send_confirmation, get_weather… How does the agent decide which tools to call, in what order, and when to stop?"
+  },
+  {
+   "t": "p",
+   "k": "08d2ec0edc83",
+   "en": "A) ReAct loop — model reasons step-by-step, emits a \"thought\" then picks one tool at a time, observes output, repeats until it self-decides it's done B) Parallel tool calling — model emits ALL required tool calls in a single response, executes them concurrently, feeds all results back in one context update C) Forced function schema — you lock the model into a strict JSON schema per turn; it can't produce free text, only structured tool calls you defined D) Planner-executor split — a lightweight planner LLM creates a tool call DAG upfront, a separate executor runs the graph, results flow back to planner only at checkpoints"
+  },
+  {
+   "t": "h3",
+   "k": "7591ce8970a6",
+   "en": "DAY 48 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "4976856a9c12",
+   "en": "A — ReAct loop Correct for most cases ReAct (Reason + Act) is the dominant production pattern for a reason."
+  },
+  {
+   "t": "p",
+   "k": "f17cfe796363",
+   "en": "The model emits a \"Thought:\" explaining what it's doing, then an \"Action:\" with a single tool call, then observes the result before deciding what's next."
+  },
+  {
+   "t": "p",
+   "k": "d78b95a6af14",
+   "en": "Why it works:"
+  },
+  {
+   "t": "li",
+   "k": "8c4744079593",
+   "en": "Each step is observable and debuggable"
+  },
+  {
+   "t": "li",
+   "k": "b79c0e96c98a",
+   "en": "The model can bail out, retry, or change direction after each tool result"
+  },
+  {
+   "t": "li",
+   "k": "dda8e1530093",
+   "en": "Works even with tools that have side effects — you can gate dangerous calls"
+  },
+  {
+   "t": "li",
+   "k": "850a8b27cb84",
+   "en": "Supported natively by OpenAI, Anthropic, LangChain, LlamaIndex out of the box The trap: ReAct is sequential. If you need get_user_preferences AND check_calendar AND search_flights all before book_flight, you're making 3 round trips when you could make 1."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "c3b85680b447",
+   "en": "B — Parallel tool calling Right when dependencies allow it Modern LLMs (GPT-4o, Claude 3.5+) can emit multiple tool calls in a single response."
+  },
+  {
+   "t": "p",
+   "k": "1abd8bd028ba",
+   "en": "If the tools are independent — run them in parallel. Massive latency win."
+  },
+  {
+   "t": "p",
+   "k": "a7661f20cba5",
+   "en": "Example: get_user_preferences + check_calendar have no dependency on each other. Call both at once. Then feed both results back before calling search_flights."
+  },
+  {
+   "t": "p",
+   "k": "2df40a0ef1f2",
+   "en": "The trap: not all tools are independent. If Tool B needs the output of Tool A, parallel calling breaks your context. The model doesn't \"know\" B failed because A hadn't run yet — it just gets a bad result and may hallucinate a fix."
+  },
+  {
+   "t": "p",
+   "k": "c73655563302",
+   "en": "Production pattern: use parallel calling for the fan-out phase, ReAct for the sequential decision phase."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "p",
+   "k": "5968cb1c29c0",
+   "en": "C — Forced function schema The senior engineer trap Looks like control. Actually limits you."
+  },
+  {
+   "t": "p",
+   "k": "545830c0af41",
+   "en": "When you force strict JSON schema mode, you lose the model's ability to reason before calling."
+  },
+  {
+   "t": "p",
+   "k": "6bb5a7106d76",
+   "en": "This breaks down fast when:"
+  },
+  {
+   "t": "li",
+   "k": "2b1abd491e81",
+   "en": "The user's intent is ambiguous (should the agent call search_flights or clarify_intent?)"
+  },
+  {
+   "t": "li",
+   "k": "1718cbbc547d",
+   "en": "A tool fails and the model needs to decide whether to retry or give up"
+  },
+  {
+   "t": "li",
+   "k": "ea785e763180",
+   "en": "You need conditional logic between steps Use schema enforcement for output validation, not tool dispatch. Validate what comes back from the model — don't handcuff the model going in...."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "p",
+   "k": "c2b9be5cb4c9",
+   "en": "D — Planner-executor split Right at scale, overkill for most🏗 This is the architecture behind production agentic pipelines like Devin, AutoGPT-style systems, and enterprise agent frameworks."
+  },
+  {
+   "t": "p",
+   "k": "c975d5e88abe",
+   "en": "The planner builds a DAG of tool calls upfront. The executor runs it. The planner only re-engages at checkpoints or on failure."
+  },
+  {
+   "t": "p",
+   "k": "b8f0c2bfeb01",
+   "en": "Benefits:"
+  },
+  {
+   "t": "li",
+   "k": "8da6e12ee257",
+   "en": "Parallelism by default (the DAG has clear dependency edges)"
+  },
+  {
+   "t": "li",
+   "k": "54d1a3fa18cc",
+   "en": "Cost-efficient (the powerful planner model runs less)"
+  },
+  {
+   "t": "li",
+   "k": "451be5ec94ee",
+   "en": "Auditable — you can inspect the plan before running it The trap: the planner has to get the full plan right before execution starts. If the world changes mid-run (API returns unexpected data, user updates their request), you need replanning. That's a whole second problem."
+  },
+  {
+   "t": "p",
+   "k": "a87ceaa483f7",
+   "en": "Most teams reach for this too early. Start with ReAct. Add parallel tool calling when latency hurts."
+  },
+  {
+   "t": "p",
+   "k": "5f1801b70794",
+   "en": "Only build planner-executor when you have complex multi-step workflows with 10+ tools and real parallelism requirements...."
+  },
+  {
+   "t": "h3",
+   "k": "ff3c5a8a669e",
+   "en": "DAY 49 · SYSTEM DESIGN"
+  }
+ ]
+}

@@ -1,0 +1,649 @@
+{
+ "id": "005-back-of-the-envelope-calculations",
+ "title": "Back-of-the-envelope Calculations",
+ "titleKey": "3ab6a2d6d13f",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "1d6f8743a166",
+   "en": "Put Back-of-the-envelope Numbers in Perspective"
+  },
+  {
+   "t": "p",
+   "k": "680c4ea3edcf",
+   "en": "Learn to use appropriate numbers in back-of-the-envelope calculations."
+  },
+  {
+   "t": "h2",
+   "k": "168127049d4b",
+   "en": "Why do we use back-of-the-envelope calculations?"
+  },
+  {
+   "t": "p",
+   "k": "fcdf4fafeb18",
+   "en": "A distributed system has compute nodes connected via a network. There’s a wide variety of available compute nodes and they can be connected in many different ways. Back-of-the-envelope calculations help us ignore the nitty-gritty details of the system (at least at the design level) and focus on more important aspects."
+  },
+  {
+   "t": "p",
+   "k": "e7d6462ee7df",
+   "en": "Some examples of a back-of-the-envelope calculation could be:"
+  },
+  {
+   "t": "p",
+   "k": "4afcbe20f53d",
+   "en": "The number of concurrent TCP connections a server can support."
+  },
+  {
+   "t": "p",
+   "k": "41d1e1f940b3",
+   "en": "The number of requests per second (RPS) a web, database, or cache server can handle."
+  },
+  {
+   "t": "p",
+   "k": "6b5c7bad213f",
+   "en": "The storage requirements of a service."
+  },
+  {
+   "t": "p",
+   "k": "2f7036d22feb",
+   "en": "Choosing an unreasonable number for such calculations can lead to a flawed design. Since we need good estimations in many design problems, we’ll discuss all the relevant concepts in detail in this lesson. These concepts include:"
+  },
+  {
+   "t": "p",
+   "k": "d136955e4d39",
+   "en": "The types of data center servers."
+  },
+  {
+   "t": "p",
+   "k": "fe32540ba120",
+   "en": "The realistic access latencies of different components."
+  },
+  {
+   "t": "p",
+   "k": "b283f383103a",
+   "en": "The estimation of RPS that a server can handle."
+  },
+  {
+   "t": "p",
+   "k": "856034ee24c2",
+   "en": "Examples of bandwidth, servers, and storage estimation."
+  },
+  {
+   "t": "h2",
+   "k": "7ddff9b0d0bc",
+   "en": "Types of data center servers"
+  },
+  {
+   "t": "p",
+   "k": "df8e7a9fe01f",
+   "en": "Data centers don’t have a single type of server. Enterprise solutions use commodity hardware to save cost and develop scalable solutions. Below, we discuss the types of servers that are commonly used within a data center to handle different workloads."
+  },
+  {
+   "t": "h3",
+   "k": "91914af1f14c",
+   "en": "Web servers"
+  },
+  {
+   "t": "p",
+   "k": "72ccc4e6f465",
+   "en": "Depending on the service that’s offered, the memory and storage resources in web servers can be small to medium. However, such servers require good computational resources. For example, Facebook has used a web server with 32 GB of RAM and 500 GB of storage space. But for its high-end computational needs, it partnered with Intel to build a custom 16-core processor."
+  },
+  {
+   "t": "p",
+   "k": "93706aaedfbe",
+   "en": "Note: Many numbers quoted in this lesson are obtained from the data center design that Facebook open-sourced in 2011. Due to the slowing of Moore’s law-induced performance circa 2004, the numbers are not stale."
+  },
+  {
+   "t": "h3",
+   "k": "500c432dce8a",
+   "en": "Application servers"
+  },
+  {
+   "t": "p",
+   "k": "f61bc6242fb7",
+   "en": "Application servers primarily provide dynamic content, whereas web servers mostly serve static content to the client, which is mostly a web browser. They can require extensive computational and storage resources. Storage resources can be volatile and non-volatile. Facebook has used application servers with a RAM of up to 256 GB and two types of storage—traditional rotating disks and flash—with a capacity of up to 6.5 TB."
+  },
+  {
+   "t": "h3",
+   "k": "9146c73a720d",
+   "en": "Storage servers"
+  },
+  {
+   "t": "p",
+   "k": "ccb860998ed5",
+   "en": "With the explosive growth of Internet users, the amount of data stored by giant services has multiplied. Additionally, various types of data are now being stored in different storage units. For instance, YouTube uses the following datastores:"
+  },
+  {
+   "t": "li",
+   "k": "c86d20b14809",
+   "en": "Blob storage for its encoded videos."
+  },
+  {
+   "t": "li",
+   "k": "58cf70c5f882",
+   "en": "A temporary processing queue storage that can hold a few hundred hours of video content uploaded daily to YouTube for processing."
+  },
+  {
+   "t": "li",
+   "k": "8cd4564a9f2c",
+   "en": "Specialized storage called Bigtable for storing a large number of thumbnails of videos."
+  },
+  {
+   "t": "li",
+   "k": "b1a46c56af9d",
+   "en": "Relational database management system (RDBMS) for users and videos metadata (comments, likes, user channels, and so on."
+  },
+  {
+   "t": "p",
+   "k": "0c5bbf36f824",
+   "en": "Other data stores are still used for analytics—for example, Hadoop’s HDFS."
+  },
+  {
+   "t": "p",
+   "k": "6ec87f634932",
+   "en": "Storage servers mainly include structured (for example, SQL) and non-structured (NoSQL) data management systems."
+  },
+  {
+   "t": "p",
+   "k": "29728766252e",
+   "en": "Coming back to the example of Facebook, we know that they’ve used servers with a storage capacity of up to 120 TB. With the number of servers in use, 18 Facebook is able to house exabytes of storage. One exabyte is 10 Bytes. By convention, we measure storage and network bandwidth in base 10, and not base 2. However, the RAM of these servers is only 32 GB."
+  },
+  {
+   "t": "li",
+   "k": "cafdcbfcc238",
+   "en": "Note: The servers described above are not the only types of servers in a data center. Organizations also require servers for services like configuration, monitoring, load balancing, analytics, accounting, caching, and so on.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "0ec0c792fcdd",
+   "en": "The numbers open-sourced by Facebook are outdated as of now. In the table below, we depict the capabilities of a server that can be used in the data centers of today:"
+  },
+  {
+   "t": "h2",
+   "k": "b8696f9be9af",
+   "en": "Typical Server Specifications"
+  },
+  {
+   "t": "p",
+   "k": "50a6427827e9",
+   "en": "ComponentCount Number of sockets2 Processor Intel Xeon X2686 36 cores (72 hardware threads)"
+  },
+  {
+   "t": "p",
+   "k": "3f7fcfd16f5d",
+   "en": "Number of cores RAM256 GB Cache (L3)45 MB Storage capacity15 TB Note: Hardware threads were originally called simultaneous multithreading. Later, Intel rebranded it as hyper threading."
+  },
+  {
+   "t": "p",
+   "k": "93766f3605fa",
+   "en": "The numbers above are inspired by the Amazon bare-metal server, but there can be more or less powerful machines supporting much higher RAM (up to 8 TB), disk storage (up to 24 disks with up to 20 TB each, circa 2021), and cache memory (up to 120 MB)."
+  },
+  {
+   "t": "h2",
+   "k": "72e84ef6afe3",
+   "en": "Standard numbers to remember"
+  },
+  {
+   "t": "p",
+   "k": "467341b79718",
+   "en": "A lot of effort goes into the planning and implementation of a service. But without any basic knowledge of the kind of workloads machines can handle, this planning isn’t possible. Latencies play an important role in deciding the amount of workload a machine can handle. The table below depicts some of the important numbers system designers should know in order to perform resource estimation."
+  },
+  {
+   "t": "h2",
+   "k": "a2dd32165d5b",
+   "en": "Important Latencies"
+  },
+  {
+   "t": "p",
+   "k": "be25bbdca9f2",
+   "en": "ComponentTime (nanoseconds)"
+  },
+  {
+   "t": "p",
+   "k": "039f3d21a62d",
+   "en": "L1 cache reference0.9 L2 cache reference2.8 L3 cache reference12.9 Main memory reference100 Compress 1KB with Snzip3,000 (3 microseconds)"
+  },
+  {
+   "t": "p",
+   "k": "d37947e291f7",
+   "en": "Read 1 MB sequentially from 9,000 (9 microseconds) memory Read 1 MB sequentially from SSD200,000 (200 microseconds)"
+  },
+  {
+   "t": "p",
+   "k": "0777e6c2ed32",
+   "en": "Round trip within same 500,000 (500 microseconds) datacenter Read 1 MB sequentially from SSD 1,000,000 (1 milliseconds) with speed ~1GB/sec SSD Disk seek4,000,000 (4 milliseconds)"
+  },
+  {
+   "t": "p",
+   "k": "fafdc75002a0",
+   "en": "Read 1 MB sequentially from disk2,000,000 (2 milliseconds)"
+  },
+  {
+   "t": "p",
+   "k": "516e6c55d017",
+   "en": "Send packet SF->NYC71,000,000 (71 milliseconds)"
+  },
+  {
+   "t": "p",
+   "k": "7f68540db96b",
+   "en": "Apart from the latencies listed above, there are also throughput numbers measured as queries per second (QPS) that a typical single-server datastore can handle."
+  },
+  {
+   "t": "h2",
+   "k": "db904b0ecfc9",
+   "en": "Important Rates"
+  },
+  {
+   "t": "p",
+   "k": "ce89c8840ec3",
+   "en": "QPS handled by MySQL1000 QPS handled by key-value store10,000 QPS handled by cache server100,000–1 M The numbers above are approximations and vary greatly depending on a number of reasons like the type of query (point and range), the specification of the machine, the design of the database, the indexing, and so on."
+  },
+  {
+   "t": "h2",
+   "k": "2f183797d80b",
+   "en": "Requests estimation"
+  },
+  {
+   "t": "p",
+   "k": "20bf1c5fa45f",
+   "en": "This section discusses the number of requests a typical server can handle in a second. Within a server, there are limited resources and depending on the type of client requests, different resources can become a bottleneck. Let’s understand two types of requests."
+  },
+  {
+   "t": "li",
+   "k": "0bb258ec3982",
+   "en": "CPU-bound requests: These are the type of requests where the limiting factor is the CPU.",
+   "lead": "CPU-bound requests"
+  },
+  {
+   "t": "li",
+   "k": "8554173c7203",
+   "en": "Memory-bound requests: These are the types of requests that are limited by the amount of memory a machine has.",
+   "lead": "Memory-bound requests"
+  },
+  {
+   "t": "p",
+   "k": "3feacffd2836",
+   "en": "Let’s approximate the RPS for each type of request. But before that, we need to assume the following:"
+  },
+  {
+   "t": "p",
+   "k": "cbe5ad9ddb01",
+   "en": "Our server has the specifications of the typical server that we defined in the table above."
+  },
+  {
+   "t": "p",
+   "k": "f19fcb6d9ed3",
+   "en": "Operating systems and other auxiliary processes have consumed a total of 16 GB of RAM."
+  },
+  {
+   "t": "p",
+   "k": "186f048c1c4d",
+   "en": "Each worker consumes 300 MBs of RAM storage to complete a request."
+  },
+  {
+   "t": "p",
+   "k": "771c91f710e6",
+   "en": "For simplicity, we assume that the CPU obtains data from the RAM."
+  },
+  {
+   "t": "p",
+   "k": "efe0bb95d6e4",
+   "en": "Therefore, a caching system ensures that all the required content is available for serving, without there being a need to access the storage layer."
+  },
+  {
+   "t": "p",
+   "k": "70e2a8559caf",
+   "en": "Each CPU-bound request takes 200 milliseconds, whereas a memory-bound request takes 50 milliseconds to complete."
+  },
+  {
+   "t": "p",
+   "k": "9f08ebb12de1",
+   "en": "Let’s do the computation for each type of request."
+  },
+  {
+   "t": "li",
+   "k": "f04244dcc888",
+   "en": "CPU bound: A simple formula used to calculate the RPS for CPU-bound requests is: 1 RPSCPU = NumCPU x Tasktime In this calculation, we use these terms:",
+   "lead": "CPU bound"
+  },
+  {
+   "t": "p",
+   "k": "d9bd4ba64121",
+   "en": "RPSCPU : CPU bound RPS NumCPU : Number of CPU threads, which are also called hardware threads Tasktime : The time each task takes to complete 1 Then, RPSCPU = 72 x = 360 RPS. 200ms The rationale for the calculation shown above is that we can visualize one second as a box and we calculate how many mini-boxes (tasks) can fit inside the big box—that is, the number of tasks that can be completed in one second by a number of CPUs. So, a higher number of CPUs/threads will result in a higher RPS."
+  },
+  {
+   "t": "li",
+   "k": "cfe599abe172",
+   "en": "Memory-bound requests: For memory-bound requests, we use the following formula:",
+   "lead": "Memory-bound requests"
+  },
+  {
+   "t": "p",
+   "k": "63b55eb157aa",
+   "en": "RAMsize1 RPSmemory= x WorkermemoryTasktime In this calculation, we use these terms:"
+  },
+  {
+   "t": "p",
+   "k": "bbaad7b20c02",
+   "en": "RPSmemory : Memory bound RPS RAMsize : Total size of RAM Workermemory : A worker in memory that manages a request 240GB1 Then, RPSmemory = x = 16,000 RPS 300MB50ms Continuing our box analogy from the explanation of CPU-bound processes, here we first calculate the number of boxes there are (how many memory-bound processes a server can host) and then how many mini-boxes (tasks) we can fit in each of the bigger boxes."
+  },
+  {
+   "t": "p",
+   "k": "1d9d65ab5c16",
+   "en": "A service receives both the CPU-bound and memory-bound requests."
+  },
+  {
+   "t": "p",
+   "k": "3880a865f93c",
+   "en": "Considering the case that half the requests are CPU-bound and the other half 36016,000 memory-bound, we can handle a total of +=8,180≈ 8,000 RPS 22 The calculations above are only an approximation for developing an understanding of the basic factors involved in estimating RPS. In reality, a lot of other factors come into play. For instance, latency is required to do a disk seek in case the data is not readily available in RAM or if a request is made to the database server, which will also include the database and network latency."
+  },
+  {
+   "t": "p",
+   "k": "fc756636ccbc",
+   "en": "Additionally, the type of query also matters. Of course, faults, bugs in code, node failures, power outages, network disruptions, and more are inevitable factors."
+  },
+  {
+   "t": "p",
+   "k": "4e19511b8fd5",
+   "en": "On a typical day, various types of requests arrive, and a powerful server that only serves static content from the RAM might handle as many as 500k RPS. On the other end of the spectrum, computational-intensive tasks like image processing may only allow a maximum of 50 RPS."
+  },
+  {
+   "t": "li",
+   "k": "b3d7337e3b00",
+   "en": "Note: In reality, capacity estimation is a hard problem, and organizations learn how to improve it over the years. A monitoring system keeps an eye on all parts of our infrastructure to give us early warnings about overloading servers.",
+   "lead": "Note"
+  },
+  {
+   "t": "h1",
+   "k": "c63b31a1410f",
+   "en": "Examples of Resource Estimation"
+  },
+  {
+   "t": "p",
+   "k": "a73d5099da49",
+   "en": "Try your hand at some of the back-of-the-envelope numbers."
+  },
+  {
+   "t": "h2",
+   "k": "26aca7941a99",
+   "en": "Introduction"
+  },
+  {
+   "t": "p",
+   "k": "6370c1b5df76",
+   "en": "Now that we’ve set the foundation for resource estimation, let’s make use of our background knowledge to estimate resources like servers, storage, and bandwidth. Below, we consider a scenario and a service, make assumptions, and based on those assumptions, we make estimations. Let’s jump right in!"
+  },
+  {
+   "t": "h2",
+   "k": "10e68725d7eb",
+   "en": "Number of servers required"
+  },
+  {
+   "t": "p",
+   "k": "7c4df7dac3f0",
+   "en": "Let’s make the following assumptions about a Twitter-like service."
+  },
+  {
+   "t": "li",
+   "k": "bc68bdb2b070",
+   "en": "Assumptions:",
+   "lead": "Assumptions"
+  },
+  {
+   "t": "p",
+   "k": "1f54d784af11",
+   "en": "There are 500 million (M) daily active users (DAU)."
+  },
+  {
+   "t": "p",
+   "k": "c48c68e854ab",
+   "en": "A single user makes 20 requests per day on average."
+  },
+  {
+   "t": "p",
+   "k": "a079ef17997f",
+   "en": "Recall that a single server can handle 8,000 RPS."
+  },
+  {
+   "t": "p",
+   "k": "ddc540d5c3b4",
+   "en": "Estimating the Number of Servers Daily active users (DA 500M U)"
+  },
+  {
+   "t": "p",
+   "k": "5969d5705574",
+   "en": "Requests on average / 20 day f Total requests / day10Billion f Total requests / second115K f Total servers required15 500M×20 Total requests per second =115K requests per second 86400 which is the RPS for our system."
+  },
+  {
+   "t": "p",
+   "k": "7ff4ec32acbb",
+   "en": "Number of Requests/sec115K For the number of servers, =≈15 RPS of server8k servers to handle all requests."
+  },
+  {
+   "t": "p",
+   "k": "faa3085589b8",
+   "en": "Indeed, the number above doesn’t seem right. If we only need 15 commodity servers to serve 500M daily users, then why do big services use millions of servers in a data center? The primary reason for this is that the RPS is not enough to estimate the number of servers required to provide a service. Also, we made some underlying assumptions in the calculations above. One of the assumptions was that a request is handled by one server only. In reality, requests go through to web servers that may interact with application servers that may also request data from storage servers. Each server may take a different amount of time to handle each request. Furthermore, each request may be handled differently depending upon the state of the data center, the application, and the request itself. Remember that we have a variety of servers for providing various services within a data center."
+  },
+  {
+   "t": "p",
+   "k": "a0e54b9c86ba",
+   "en": "We have established that:"
+  },
+  {
+   "t": "li",
+   "k": "4fe601434c32",
+   "en": "Finding accurate capacity estimations is challenging due to many factors— for example, each service being designed differently, having different fan-out rules and hardware, server responsibilities changing over time, etc."
+  },
+  {
+   "t": "li",
+   "k": "fc3797738128",
+   "en": "At the design level, a coarse-grained estimation is appropriate because the purpose is to come up with reasonable upper bounds on the required resources. We can also use advanced methods from the queuing theory and operations research to make better estimates. However, an interview or initial design is not an appropriate time to use such a strategy. Real systems use various methods (back-of-the-envelope calculations, simulations, prototyping, and monitoring) to improve on their initial (potentially sloppy) estimates gradually."
+  },
+  {
+   "t": "p",
+   "k": "51a6a06f6b61",
+   "en": "Therefore, we approximate the number of servers by depicting how many clients a server handles on a given day:"
+  },
+  {
+   "t": "p",
+   "k": "854d3e52755e",
+   "en": "Number of daily active users RPS of a server To have a better approximation, let's use the following two assumptions:"
+  },
+  {
+   "t": "li",
+   "k": "5cd8b2970388",
+   "en": "We assume that each daily active user (DAU) of the service sends just one request per day."
+  },
+  {
+   "t": "p",
+   "k": "d48e7512c520",
+   "en": "Number of daily active users = RPS of a server Number of requests/day (1)"
+  },
+  {
+   "t": "p",
+   "k": "41c8b69e8ed3",
+   "en": "RPS of server"
+  },
+  {
+   "t": "li",
+   "k": "ccb013d61083",
+   "en": "We assume that there is a specific second in the day when all the requests of all the users arrive at the service simultaneously. We use it to get the capacity estimation for a peak load. To do better, we will need request and response distributions, which might be available at the prototyping level."
+  },
+  {
+   "t": "p",
+   "k": "ea1fbb798d5a",
+   "en": "We might assume that distributions follow a particular type of distribution, for example, the Poisson distribution. By using DAU as a proxy for peak load for a specific second, we have avoided difficulties finding the arrival rates of requests and responses."
+  },
+  {
+   "t": "p",
+   "k": "e2162a8d1542",
+   "en": "Therefore, the DAU will then become the number of requests per second. We already have RPS for a server; therefore, equation (1) becomes:"
+  },
+  {
+   "t": "p",
+   "k": "f857e876ad6a",
+   "en": "Number of requests/second RPS of server By inserting values in the equation above, we yield the following number of servers:"
+  },
+  {
+   "t": "p",
+   "k": "9ecbf5172be9",
+   "en": "Number of requests/second500 M ==62,500 RPS of server8000"
+  },
+  {
+   "t": "li",
+   "k": "6a9b44cd89b5",
+   "en": "Note: Our calculations are based on an approximation that might not give us a tight bound on the number of servers, but still it’s a realistic one. Therefore, we use this approach in estimating the number of servers in our design problems. Informally, the equation given above assumes that one server can handle 8,000 users per second. We use this reference in the rest of the course as well.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "92f52e6a03c5",
+   "en": "Storage requirements"
+  },
+  {
+   "t": "p",
+   "k": "8a172a5a4f80",
+   "en": "In this section, we attempt to understand how storage estimation is done by using Twitter as an example. We estimate the amount of storage space required by Twitter for new tweets in a year. Let’s make the following assumptions to begin with:"
+  },
+  {
+   "t": "p",
+   "k": "8df4fea0e27e",
+   "en": "We have a total of 250 M daily active users."
+  },
+  {
+   "t": "p",
+   "k": "a6bace3511b4",
+   "en": "Each user posts three tweets in a day."
+  },
+  {
+   "t": "p",
+   "k": "e3fbea8a9bfd",
+   "en": "Ten percent of the tweets contain images, whereas five percent of the tweets contain a video. Any tweet containing a video will not contain an image and vice versa."
+  },
+  {
+   "t": "p",
+   "k": "bd1cb633fedd",
+   "en": "Assume that an image is 200 KB and a video is 3 MB in size on average."
+  },
+  {
+   "t": "p",
+   "k": "dc7022fd32bc",
+   "en": "The tweet text and its metadata require a total of 250 Bytes of storage in the database."
+  },
+  {
+   "t": "p",
+   "k": "8c42f292dc69",
+   "en": "Then, the following storage space will be required:"
+  },
+  {
+   "t": "p",
+   "k": "2fad001b53ce",
+   "en": "Estimating Storage Requirements Daily active users (DA 250M U)"
+  },
+  {
+   "t": "p",
+   "k": "7097420f8a15",
+   "en": "Daily tweets3 f Total requests / day750M Storage required per t 250B weet Storage required per i 200KB mage Storage required per vi 3MB deo f Storage for tweets187.5GB f Storage for images15TB f Storage for videos112.5TB f Total storage128TB 6 Total tweets: 250M×3 = 750×10 tweets per day."
+  },
+  {
+   "t": "p",
+   "k": "17ffa6b9dee8",
+   "en": "Storage required for tweets in one day: 6 750×10×250B=187.5 GB Storage required for 10 percent images for one day: 6 750×10×103 ×200×10B=15 TB 100 Storage required for 5 percent video content for one day: 6 750×10×56 ×3×10B=112.5 TB 100 Total storage required for one day ="
+  },
+  {
+   "t": "li",
+   "k": "7c4c199c9928",
+   "en": "1875TB+15TB+112.5TB≈128TB Storage required for one year = 365×128TB=46.72PB"
+  },
+  {
+   "t": "h2",
+   "k": "25ad77cd59c0",
+   "en": "Bandwidth requirements"
+  },
+  {
+   "t": "p",
+   "k": "97bc9a0ce65d",
+   "en": "In order to estimate the bandwidth requirements for a service, we use the following steps:"
+  },
+  {
+   "t": "li",
+   "k": "f14790f24c92",
+   "en": "Estimate the daily amount of incoming data to the service."
+  },
+  {
+   "t": "li",
+   "k": "6a46659748cb",
+   "en": "Estimate the daily amount of outgoing data from the service."
+  },
+  {
+   "t": "li",
+   "k": "dd7c6ee32c79",
+   "en": "Estimate the bandwidth in Gbps (gigabits per second) by dividing the incoming and outgoing data by the number of seconds in a day."
+  },
+  {
+   "t": "li",
+   "k": "0153c98565f9",
+   "en": "Incoming traffic: Let’s continue from our previous example of Twitter, which requires 128 TBs of storage each day. Therefore, the incoming traffic should support the following bandwidth per second: 12 128×10 ×8≈12Gbps 86400",
+   "lead": "Incoming traffic"
+  },
+  {
+   "t": "li",
+   "k": "d2423d010fdf",
+   "en": "Note: We multiply by 8 in order to convert Bytes(B) into bits(b) because bandwidth is measured in bits per second.",
+   "lead": "Note"
+  },
+  {
+   "t": "li",
+   "k": "5728c8899f58",
+   "en": "Outgoing traffic: Assume that a single user views 50 tweets in a day.",
+   "lead": "Outgoing traffic"
+  },
+  {
+   "t": "p",
+   "k": "74a86c04e3c7",
+   "en": "Considering the same ratio of five percent and 10 percent for videos and images, respectively, for the 50 tweets, 2.5 tweets will contain video content whereas five tweets will contain an image. Considering that there are 250 M active daily users, we come to the following estimations:"
+  },
+  {
+   "t": "p",
+   "k": "2439e50c33a9",
+   "en": "Estimating Bandwidth Requirements Daily active users (DA 250M U)"
+  },
+  {
+   "t": "p",
+   "k": "383a8afaf3b7",
+   "en": "Daily tweets viewed50per user f Tweets viewed / secon 145K d f Bandwidth required fo"
+  },
+  {
+   "t": "li",
+   "k": "666b0ad0e933",
+   "en": "3Gbps r tweets f Bandwidth required fo"
+  },
+  {
+   "t": "li",
+   "k": "d3def33629ee",
+   "en": "2Gbps r images f Bandwidth required fo 174Gbps r videos f Total bandwidth197.5Gbps 250M×50 tweets=12.5 billion tweets are viewed per day"
+  },
+  {
+   "t": "li",
+   "k": "fc433d1bc7fa",
+   "en": "53 Tweets viewed per second: =145×10 tweets per second 86400 3 Bandwidth for tweet: 145×10×250×8 bits≈0.3 Gbps (One tweet is equal to 250 bytes)."
+  },
+  {
+   "t": "p",
+   "k": "1cfd2e670366",
+   "en": "Bandwidth of 10 percent images in tweets in a second: 3103 145×10××200×10×8 bits=23.2 Gbps 100 Bandwidth for 5 percent video tweets in a second: 356 145×10××3×10×8 bits=174 Gbps 100 The total outgoing traffic required will be equal to:"
+  },
+  {
+   "t": "li",
+   "k": "6f810c9c492c",
+   "en": "3+23.2+174≈197.5 Gbps."
+  },
+  {
+   "t": "p",
+   "k": "f0aa3438adf2",
+   "en": "Twitter will need a total of 12 Gbps of incoming traffic and 197.5 Gbps of outgoing, assuming that the uploaded content is not compressed. Total bandwidth requirements = 12+197.5=209.5 Gbps."
+  }
+ ]
+}

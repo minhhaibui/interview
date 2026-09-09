@@ -1,0 +1,18 @@
+{
+ "id": "31-redis-vs-memcached",
+ "title": "Redis vs Memcached",
+ "titleKey": "4bfeb6637d15",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "f2be83550f92",
+   "en": "The diagram below illustrates the key differences."
+  },
+  {
+   "t": "p",
+   "k": "f257797a7bd4",
+   "en": "The advantages on data structures make Redis a good choice for: 🔹 Recording the number of clicks and comments for each post (hash) 🔹 Sorting the commented user list and deduping the users (zset) 🔹 Caching user behavior history and filtering malicious behaviors (zset, hash) 🔹 Storing boolean information of extremely large data into small space. For example, login status, membership status. (bitmap) 64"
+  }
+ ]
+}

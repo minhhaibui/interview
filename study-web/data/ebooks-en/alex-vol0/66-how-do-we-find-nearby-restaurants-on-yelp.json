@@ -1,0 +1,53 @@
+{
+ "id": "66-how-do-we-find-nearby-restaurants-on-yelp",
+ "title": "How do we find nearby restaurants on Yelp?",
+ "titleKey": "8005530230f6",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "d499008a90b8",
+   "en": "Here are some design details behind the scenes."
+  },
+  {
+   "t": "p",
+   "k": "d6fc61c5eef2",
+   "en": "There are two key services (see the diagram below): - 𝐁𝐮𝐬𝐢𝐧𝐞𝐬𝐬 𝐒𝐞𝐫𝐯𝐢𝐜𝐞 144 - Add/delete/update restaurant information - Customers view restaurant details - 𝐋𝐨𝐜𝐚𝐥-𝐛𝐚𝐬𝐞𝐝 𝐒𝐞𝐫𝐯𝐢𝐜𝐞 (𝐋𝐁𝐒) - Given a radius and location, return a list of nearby restaurants How are the restaurant locations stored in the database so that LBS can return nearby restaurants efficiently?"
+  },
+  {
+   "t": "p",
+   "k": "cf8c9981b256",
+   "en": "Store the latitude and longitude of restaurants in the database? The query will be very inefficient when you need to calculate the distance between you and every restaurant."
+  },
+  {
+   "t": "p",
+   "k": "863a7ef50d08",
+   "en": "One way to speed up the search is using the𝐠𝐞𝐨𝐡𝐚𝐬𝐡𝐚𝐥𝐠𝐨𝐫𝐢𝐭𝐡𝐦."
+  },
+  {
+   "t": "p",
+   "k": "760f0e613f05",
+   "en": "First, divide the planet into four quadrants along with the prime meridian and equator： - Latitude range [-90, 0] is represented by 0 - Latitude range [0, 90] is represented by 1 - Longitude range [-180, 0] is represented by 0 - Longitude range [0, 180] is represented by 1 Second, divide each grid into four smaller grids. Each grid can be represented by alternating between longitude bit and latitude bit."
+  },
+  {
+   "t": "p",
+   "k": "74751a5637c6",
+   "en": "So when you want to search for the nearby restaurants in the red-highlighted block, you can write SQL like:"
+  },
+  {
+   "t": "p",
+   "k": "bbe8bfe16586",
+   "en": "SELECT * FROM geohash_index WHERE geohash LIKE `01%` Geohash has some limitations. There can be a lot of restaurants in one block (downtown New York), but none in another block (ocean). So there are other more complicated algorithms to optimize the process."
+  },
+  {
+   "t": "p",
+   "k": "a0cbc0cf7361",
+   "en": "Let me know if you are interested in the details. 145 One picture is worth more than a thousand words. Log4j from attack to prevention in one illustration."
+  },
+  {
+   "t": "p",
+   "k": "7f012e65f415",
+   "en": "Credit GovCERT Link: https://www.govcert.ch/blog/zero-day-exploit-targeting-popular-java-libr ary-log4j/ 146"
+  }
+ ]
+}

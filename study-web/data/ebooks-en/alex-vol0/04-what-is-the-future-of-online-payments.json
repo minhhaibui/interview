@@ -1,0 +1,48 @@
+{
+ "id": "04-what-is-the-future-of-online-payments",
+ "title": "What is the future of online payments?",
+ "titleKey": "85ba60102b6b",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "3a713ebed506",
+   "en": "I don’t know the answer, but I do know one of the candidates is the blockchain."
+  },
+  {
+   "t": "p",
+   "k": "a804664e2772",
+   "en": "As a fan of technology, I always seek new solutions to old challenges."
+  },
+  {
+   "t": "p",
+   "k": "3ae2a941b9f8",
+   "en": "A book that explains a lot about an emerging payment system is ‘Mastering Bitcoin’ by Andreas M. Antonopoulos. I want to share my discovery of this book with you because it explains very clearly bitcoin and its underlying blockchain. This book makes me rethink how to renovate payment systems."
+  },
+  {
+   "t": "p",
+   "k": "6e0dd162e8a3",
+   "en": "Here are the takeaways:"
+  },
+  {
+   "t": "li",
+   "k": "b190972052cf",
+   "en": "The bitcoin wallet balance is calculated on the fly, while the traditional wallet balance is stored in the database. You can check chapter 12 of System Design Interview Volume 2, on how to implement a traditional wallet (https://amzn.to/34G2vmC). 9"
+  },
+  {
+   "t": "li",
+   "k": "454ba2de73b3",
+   "en": "The golden source of truth for bitcoin is the blockchain, which is also the journal. It’s the same if we use Event Sourcing architecture to build a traditional wallet, although there are other options."
+  },
+  {
+   "t": "li",
+   "k": "e0535d4a66e3",
+   "en": "There is a small virtual machine for bitcoin - and also Ethereum. The virtual machine defines a set of bytecodes to do basic tasks such as validation."
+  },
+  {
+   "t": "p",
+   "k": "02c988f2ded9",
+   "en": "Over to you: if Elon Musk set up a base on planet Mars, what payment solution will you recommend? 10"
+  }
+ ]
+}

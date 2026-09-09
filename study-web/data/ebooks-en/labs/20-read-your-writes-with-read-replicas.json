@@ -1,0 +1,118 @@
+{
+ "id": "20-read-your-writes-with-read-replicas",
+ "title": "Read-Your-Writes with Read Replicas",
+ "titleKey": "1f1befded4fc",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "4db131d1b886",
+   "en": "Your checkout endpoint has a 400ms P95. Profiling shows 70% of that is DB reads."
+  },
+  {
+   "t": "p",
+   "k": "d21c0ec55050",
+   "en": "You add a read replica and point all SELECT queries at it. P95 drops to 90ms. The team celebrates."
+  },
+  {
+   "t": "p",
+   "k": "c7252359ab63",
+   "en": "Two hours later, support tickets flood in. Customers update their shipping address but see the old one on the confirmation screen. One customer gets charged twice because the \"order already exists\" check read stale data and missed the duplicate."
+  },
+  {
+   "t": "p",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:"
+  },
+  {
+   "t": "li",
+   "k": "0f0da41d925f",
+   "en": "Primary handles all writes, replication lag ~200ms→"
+  },
+  {
+   "t": "li",
+   "k": "b1ed1dd62b9f",
+   "en": "Replica handling 100% of reads→"
+  },
+  {
+   "t": "li",
+   "k": "e0113a789f02",
+   "en": "Affected flows profile updates, order dedup, payment idempotency→ The replica is working exactly as designed. That's the problem."
+  },
+  {
+   "t": "p",
+   "k": "ca4df9361545",
+   "en": "What do you do?"
+  },
+  {
+   "t": "p",
+   "k": "4129e92c6d61",
+   "en": "Synchronous replication: make primary wait for replica to confirm before ACKing the write. Monitor replica lag + retry: detect when lag exceeds a threshold and fall back to primary. Route critical reads to primary: replicas only serve non-critical reads like analytics."
+  },
+  {
+   "t": "h3",
+   "k": "daf62d6cd4b8",
+   "en": "DAY 19 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "f7bbb6ecd435",
+   "en": "Why A wins:"
+  },
+  {
+   "t": "p",
+   "k": "beb5ef3bcb61",
+   "en": "After a user performs a write, their subsequent reads are routed to the primary for a short window: typically a few seconds, or until replica lag catches up. Everyone else reads from the replica. The performance win is preserved for the vast majority of traffic."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "178e37929eff",
+   "en": "Why D is the trap: \"Critical\" is not a stable category. The primary read list quietly shrinks, stale read bugs come back, and you spend the next quarter playing whack-a-mole with consistency bugs. You've traded a systematic solution for a per-feature judgment call."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "p",
+   "k": "2e2eb394ac3d",
+   "en": "Why B is wrong:"
+  },
+  {
+   "t": "p",
+   "k": "6eec11f7b833",
+   "en": "Synchronous replication means the primary waits for the replica to confirm every write. Replica lag goes to zero, but your write P95 goes from 20ms to 80–120ms. Worse, you've coupled your primary's availability to your replica's health."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "p",
+   "k": "f1cecd3a1143",
+   "en": "Why C is wrong:"
+  },
+  {
+   "t": "p",
+   "k": "ca858b8df619",
+   "en": "Average lag isn't your problem. Your problem is that a user reads their own write within 200ms of making it. The lag metric looks fine (200ms is \"normal\"), but the data the user needs is still in transit."
+  },
+  {
+   "t": "p",
+   "k": "9e0b59a6c2d6",
+   "en": "Drop the timeout to 2s and add 3 retries with exponential backoff."
+  },
+  {
+   "t": "h3",
+   "k": "519fd6871aac",
+   "en": "DAY 20 · SYSTEM DESIGN"
+  }
+ ]
+}

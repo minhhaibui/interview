@@ -1,0 +1,167 @@
+{
+ "id": "19-surviving-a-cache-stampede",
+ "title": "Surviving a Cache Stampede",
+ "titleKey": "3bf2fd8ea237",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "76991fb98b5e",
+   "en": "Your Redis cache just expired on a key that 8,000 users hit every second."
+  },
+  {
+   "t": "p",
+   "k": "d8eb8fab5198",
+   "en": "Every single one of those requests is now flying straight at your database."
+  },
+  {
+   "t": "p",
+   "k": "268a3b972f81",
+   "en": "This is the thundering herd. You didn't have a traffic problem — you had a cache problem. Now you have both."
+  },
+  {
+   "t": "p",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:"
+  },
+  {
+   "t": "p",
+   "k": "697444479295",
+   "en": "Service Node.js API, 8,000 req/sec on the /feed endpoint→ Cache Redis, TTL = 60s on the feed key→ DB Postgres, comfortable at ~200 req/sec sustained→ What happened TTL expired at peak traffic, all 8,000 req/sec hit Postgres simultaneously→ The DB is on its knees. You have minutes before it falls over. And the next TTL expiry is in 60 seconds."
+  },
+  {
+   "t": "p",
+   "k": "ca4df9361545",
+   "en": "What do you do?"
+  },
+  {
+   "t": "p",
+   "k": "d24e1bc119c0",
+   "en": "Probabilistic early expiry — start randomly rebuilding the cache before the TTL actually hits zero. Request coalescing — collapse all in-flight requests for the same key into a single DB query, return Cache pre-warming — a background job rebuilds the key on a schedule, TTL never reaches zero the same result to all of them. in prod."
+  },
+  {
+   "t": "h3",
+   "k": "c40d1c6ac783",
+   "en": "DAY 18 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "fe03571a91ab",
+   "en": "Answer: D — Cache pre-warming ✅ Here's why, and why the other three trick smart engineers:"
+  },
+  {
+   "t": "li",
+   "k": "c750e77ff24b",
+   "en": "Why D wins (Cache pre-warming):",
+   "lead": "Why D wins (Cache pre-warming)"
+  },
+  {
+   "t": "p",
+   "k": "5da83784f807",
+   "en": "Pre-warming eliminates the thundering herd at the root. A background job — a cron, a scheduled Lambda, a Sidekiq worker — rebuilds the cache key on a fixed schedule that's shorter than the TTL."
+  },
+  {
+   "t": "p",
+   "k": "4b9a9c0fcbf0",
+   "en": "The key never goes cold in production. There's no expiry cliff for 8,000 requests to fall off."
+  },
+  {
+   "t": "p",
+   "k": "450465263899",
+   "en": "You know the data is hot. You know when it expires. You have the compute to rebuild it proactively."
+  },
+  {
+   "t": "p",
+   "k": "d2cc084e239e",
+   "en": "The cost is a background job running every ~45 seconds; the benefit is your database never sees the spike. Netflix pre-warms content metadata. Twitter pre-builds timelines for high-follower accounts."
+  },
+  {
+   "t": "p",
+   "k": "f4de642d38bb",
+   "en": "The pattern is everywhere — it's just not glamorous enough to make it into most architecture posts."
+  },
+  {
+   "t": "p",
+   "k": "0bcf5b1e9e2c",
+   "en": "One detail that matters: pair it with stale-while-revalidate. Serve the stale value while the background job refreshes, so a slightly-late rebuild never causes a miss."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "e1911c16631e",
+   "en": "Why C is the trap answer (Request coalescing):",
+   "lead": "Why C is the trap answer (Request coalescing)"
+  },
+  {
+   "t": "p",
+   "k": "1c90781712de",
+   "en": "Coalescing sounds most sophisticated — collapse all concurrent requests for the same key into one DB query, return the same result to all of them. No stampede, no lock contention. Elegant."
+  },
+  {
+   "t": "p",
+   "k": "85d18ffb4269",
+   "en": "Here's where it breaks: coalescing requires in-process coordination. It works beautifully on a single server. On 50 Node.js instances behind a load balancer, each instance coalesces independently — so now you have 50 concurrent DB queries instead of 8,000. Better, but still a 50x spike at every TTL expiry. To coalesce across instances you need a distributed coordination layer, and now you've built something nearly as complex as a mutex without the simplicity."
+  },
+  {
+   "t": "p",
+   "k": "18a50bc246df",
+   "en": "Right answer for a single-process server. Partial solution at scale that engineers convince themselves is complete."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "561e89c891cf",
+   "en": "Why A is wrong (Mutex lock):",
+   "lead": "Why A is wrong (Mutex lock)"
+  },
+  {
+   "t": "p",
+   "k": "003891de443e",
+   "en": "Mutex looks clean: one request gets the lock, rebuilds the cache, everyone else waits. No duplicate DB queries."
+  },
+  {
+   "t": "p",
+   "k": "ad8472e28f02",
+   "en": "The problem is \"everyone else waits.\" Under 8,000 req/sec, waiting means API threads blocked, request queue filling up, p99 latency spiking to seconds. You've traded a DB overload for an application-layer backup. The database survives; the user experience dies. And if the lock holder is slow — DB is struggling, rebuild takes 500ms — every request in the system stalls for that window."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "af4af71c1b73",
+   "en": "Why B is wrong (Probabilistic early expiry):",
+   "lead": "Why B is wrong (Probabilistic early expiry)"
+  },
+  {
+   "t": "p",
+   "k": "f4c360030d3c",
+   "en": "XFetch / jitter-based expiry is clever: as the TTL counts down, each cache read has a small random chance of triggering a rebuild early. No lock, no coordination layer. Elegant math."
+  },
+  {
+   "t": "p",
+   "k": "dac502ea397f",
+   "en": "The problem is it's probabilistic, not guaranteed. Under the exact wrong timing (low traffic right before TTL, then a sudden spike) the key still expires cold. You've reduced the probability of a thundering herd without eliminating it. For an endpoint running at 8,000 req/sec 24/7, you want a deterministic guarantee — not good odds."
+  },
+  {
+   "t": "p",
+   "k": "add4c7e5d8e7",
+   "en": "Read-your-writes consistency: route a user's reads to primary for a short window after they write."
+  },
+  {
+   "t": "h3",
+   "k": "deae1697d7e0",
+   "en": "DAY 19 · SYSTEM DESIGN"
+  }
+ ]
+}

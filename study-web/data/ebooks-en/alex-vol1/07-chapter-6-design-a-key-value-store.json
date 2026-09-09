@@ -1,0 +1,832 @@
+{
+ "id": "07-chapter-6-design-a-key-value-store",
+ "title": "CHAPTER 6: DESIGN A KEY-VALUE STORE",
+ "titleKey": "69a18c7db2e2",
+ "book": "alex-vol1",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "998c1a00d437",
+   "en": "A key-value store, also referred to as a key-value database, is a non-relational database. Each unique identifier is stored as a key with its associated value. This data pairing is known as a “key-value” pair."
+  },
+  {
+   "t": "p",
+   "k": "b4a8c561677a",
+   "en": "In a key-value pair, the key must be unique, and the value associated with the key can be accessed through the key. Keys can be plain text or hashed values. For performance reasons, a short key works better. What do keys look like? Here are a few examples:"
+  },
+  {
+   "t": "li",
+   "k": "69509eb8b680",
+   "en": "Plain text key: “last_logged_in_at”"
+  },
+  {
+   "t": "li",
+   "k": "2406b99e8b70",
+   "en": "Hashed key: 253DDEC4 The value in a key-value pair can be strings, lists, objects, etc. The value is usually treated as an opaque object in key-value stores, such as Amazon dynamo [1], Memcached [2], Redis [3], etc."
+  },
+  {
+   "t": "p",
+   "k": "99f051e4150c",
+   "en": "Here is a data snippet in a key-value store:"
+  },
+  {
+   "t": "p",
+   "k": "d036c7ca712f",
+   "en": "In this chapter, you are asked to design a key-value store that supports the following operations: - put(key, value) // insert “value” associated with “key” - get(key) // get “value” associated with “key”"
+  },
+  {
+   "t": "h2",
+   "k": "786974e15079",
+   "en": "Understand the problem and establish design scope"
+  },
+  {
+   "t": "p",
+   "k": "650f9690d5c7",
+   "en": "There is no perfect design. Each design achieves a specific balance regarding the tradeoffs of the read, write, and memory usage. Another tradeoff has to be made was between consistency and availability. In this chapter, we design a key-value store that comprises of the following characteristics:"
+  },
+  {
+   "t": "li",
+   "k": "d764ae99c9be",
+   "en": "The size of a key-value pair is small: less than 10 KB."
+  },
+  {
+   "t": "li",
+   "k": "fb8c53059f2c",
+   "en": "Ability to store big data."
+  },
+  {
+   "t": "li",
+   "k": "69e3fb4e5beb",
+   "en": "High availability: The system responds quickly, even during failures."
+  },
+  {
+   "t": "li",
+   "k": "65b6bdd75786",
+   "en": "High scalability: The system can be scaled to support large data set."
+  },
+  {
+   "t": "li",
+   "k": "c0a826067801",
+   "en": "Automatic scaling: The addition/deletion of servers should be automatic based on traffic."
+  },
+  {
+   "t": "li",
+   "k": "379f298967fb",
+   "en": "Tunable consistency."
+  },
+  {
+   "t": "li",
+   "k": "2449dac371b8",
+   "en": "Low latency."
+  },
+  {
+   "t": "h2",
+   "k": "6d1a68791d08",
+   "en": "Single server key-value store"
+  },
+  {
+   "t": "p",
+   "k": "79fb0f84bec6",
+   "en": "Developing a key-value store that resides in a single server is easy. An intuitive approach is to store key-value pairs in a hash table, which keeps everything in memory. Even though memory access is fast, fitting everything in memory may be impossible due to the space constraint. Two optimizations can be done to fit more data in a single server:"
+  },
+  {
+   "t": "li",
+   "k": "7227dc69f08c",
+   "en": "Data compression"
+  },
+  {
+   "t": "li",
+   "k": "31f6ab859927",
+   "en": "Store only frequently used data in memory and the rest on disk Even with these optimizations, a single server can reach its capacity very quickly. A distributed key-value store is required to support big data."
+  },
+  {
+   "t": "h2",
+   "k": "896bcc0199c3",
+   "en": "Distributed key-value store"
+  },
+  {
+   "t": "h2",
+   "k": "e8ce341368ab",
+   "en": "CAP theorem"
+  },
+  {
+   "t": "p",
+   "k": "a6d9eb971088",
+   "en": "Consistency: consistency means all clients see the same data at the same time no matter which node they connect to."
+  },
+  {
+   "t": "li",
+   "k": "a11fe0849e46",
+   "en": "Availability: availability means any client which requests data gets a response even if some of the nodes are down.",
+   "lead": "Availability"
+  },
+  {
+   "t": "li",
+   "k": "f693c6b3600d",
+   "en": "Partition Tolerance: a partition indicates a communication break between two nodes.",
+   "lead": "Partition Tolerance"
+  },
+  {
+   "t": "p",
+   "k": "4c68f219af40",
+   "en": "Partition tolerance means the system continues to operate despite network partitions."
+  },
+  {
+   "t": "p",
+   "k": "2672aca907e2",
+   "en": "CAP theorem states that one of the three properties must be sacrificed to support 2 of the 3 properties as shown in Figure 6-1."
+  },
+  {
+   "t": "p",
+   "k": "9735a316689d",
+   "en": "Nowadays, key-value stores are classified based on the two CAP characteristics they support:"
+  },
+  {
+   "t": "h3",
+   "k": "728e7cc10e47",
+   "en": "CP (consistency and partition tolerance) systems: a CP key-value store supports"
+  },
+  {
+   "t": "p",
+   "k": "f38e655b0e81",
+   "en": "consistency and partition tolerance while sacrificing availability."
+  },
+  {
+   "t": "h3",
+   "k": "5f3569023e3d",
+   "en": "AP (availability and partition tolerance) systems: an AP key-value store supports"
+  },
+  {
+   "t": "p",
+   "k": "cb64acc220b5",
+   "en": "availability and partition tolerance while sacrificing consistency."
+  },
+  {
+   "t": "p",
+   "k": "c9c582839960",
+   "en": "CA (consistency and availability) systems: a CA key-value store supports consistency and availability while sacrificing partition tolerance. Since network failure is unavoidable, a distributed system must tolerate network partition. Thus, a CA system cannot exist in real-world applications."
+  },
+  {
+   "t": "p",
+   "k": "0d88e0f1f4d7",
+   "en": "What you read above is mostly the definition part. To make it easier to understand, let us take a look at some concrete examples. In distributed systems, data is usually replicated multiple times. Assume data are replicated on three replica nodes, n1, n2 and n3 as shown in Figure 6-"
+  },
+  {
+   "t": "h3",
+   "k": "9c26b7229077",
+   "en": "Ideal situation"
+  },
+  {
+   "t": "p",
+   "k": "f8e682e14568",
+   "en": "In the ideal world, network partition never occurs. Data written to n1 is automatically replicated to n2 and n3. Both consistency and availability are achieved."
+  },
+  {
+   "t": "h3",
+   "k": "1beb1583c930",
+   "en": "Real-world distributed systems"
+  },
+  {
+   "t": "p",
+   "k": "fd7e2dfd4212",
+   "en": "In a distributed system, partitions cannot be avoided, and when a partition occurs, we must choose between consistency and availability. In Figure 6-3, n3 goes down and cannot communicate with n1 and n2. If clients write data to n1 or n2, data cannot be propagated to n3. If data is written to n3 but not propagated to n1 and n2 yet, n1 and n2 would have stale data."
+  },
+  {
+   "t": "p",
+   "k": "cee2d199c1d0",
+   "en": "If we choose consistency over availability (CP system), we must block all write operations to n1 and n2 to avoid data inconsistency among these three servers, which makes the system unavailable. Bank systems usually have extremely high consistent requirements. For example, it is crucial for a bank system to display the most up-to-date balance info. If inconsistency occurs due to a network partition, the bank system returns an error before the inconsistency is resolved."
+  },
+  {
+   "t": "p",
+   "k": "81c70826c47e",
+   "en": "However, if we choose availability over consistency (AP system), the system keeps accepting reads, even though it might return stale data. For writes, n1 and n2 will keep accepting writes, and data will be synced to n3 when the network partition is resolved."
+  },
+  {
+   "t": "p",
+   "k": "b72dd419c9ff",
+   "en": "Choosing the right CAP guarantees that fit your use case is an important step in building a distributed key-value store. You can discuss this with your interviewer and design the system accordingly."
+  },
+  {
+   "t": "h2",
+   "k": "74a9c2caefdb",
+   "en": "System components"
+  },
+  {
+   "t": "p",
+   "k": "453b038243f7",
+   "en": "In this section, we will discuss the following core components and techniques used to build a key-value store:"
+  },
+  {
+   "t": "li",
+   "k": "7aca6ea729a4",
+   "en": "Data partition"
+  },
+  {
+   "t": "li",
+   "k": "c58761f981c8",
+   "en": "Data replication"
+  },
+  {
+   "t": "li",
+   "k": "028944e40958",
+   "en": "Consistency"
+  },
+  {
+   "t": "li",
+   "k": "54a31f737cab",
+   "en": "Inconsistency resolution"
+  },
+  {
+   "t": "li",
+   "k": "b4d6e271a239",
+   "en": "Handling failures"
+  },
+  {
+   "t": "li",
+   "k": "09e952dd1165",
+   "en": "System architecture diagram"
+  },
+  {
+   "t": "li",
+   "k": "10985fc38271",
+   "en": "Write path"
+  },
+  {
+   "t": "li",
+   "k": "298716e926de",
+   "en": "Read path The content below is largely based on three popular key-value store systems: Dynamo [4], Cassandra [5], and BigTable [6]."
+  },
+  {
+   "t": "h2",
+   "k": "7aca6ea729a4",
+   "en": "Data partition"
+  },
+  {
+   "t": "p",
+   "k": "fee0f1b477d7",
+   "en": "For large applications, it is infeasible to fit the complete data set in a single server. The simplest way to accomplish this is to split the data into smaller partitions and store them in multiple servers. There are two challenges while partitioning the data:"
+  },
+  {
+   "t": "li",
+   "k": "b6b3ef6116d5",
+   "en": "Distribute data across multiple servers evenly."
+  },
+  {
+   "t": "li",
+   "k": "8099969805d2",
+   "en": "Minimize data movement when nodes are added or removed."
+  },
+  {
+   "t": "p",
+   "k": "52866bf71dce",
+   "en": "Consistent hashing discussed in Chapter 5 is a great technique to solve these problems. Let us revisit how consistent hashing works at a high-level."
+  },
+  {
+   "t": "li",
+   "k": "5440f7d0c6d6",
+   "en": "First, servers are placed on a hash ring. In Figure 6-4, eight servers, represented by s0, s1, …, s7, are placed on the hash ring."
+  },
+  {
+   "t": "li",
+   "k": "7620688a795b",
+   "en": "Next, a key is hashed onto the same ring, and it is stored on the first server encountered while moving in the clockwise direction. For instance, key0 is stored in s1 using this logic."
+  },
+  {
+   "t": "p",
+   "k": "b94a34555d7d",
+   "en": "Using consistent hashing to partition data has the following advantages:"
+  },
+  {
+   "t": "li",
+   "k": "9df5c76d455e",
+   "en": "Automatic scaling: servers could be added and removed automatically depending on the load.",
+   "lead": "Automatic scaling"
+  },
+  {
+   "t": "li",
+   "k": "4873fe57a4ac",
+   "en": "Heterogeneity: the number of virtual nodes for a server is proportional to the server capacity.",
+   "lead": "Heterogeneity"
+  },
+  {
+   "t": "p",
+   "k": "f80cbcf2c61e",
+   "en": "For example, servers with higher capacity are assigned with more virtual nodes."
+  },
+  {
+   "t": "h2",
+   "k": "c58761f981c8",
+   "en": "Data replication"
+  },
+  {
+   "t": "p",
+   "k": "219ad10be330",
+   "en": "To achieve high availability and reliability, data must be replicated asynchronously over N servers, where N is a configurable parameter. These N servers are chosen using the following logic: after a key is mapped to a position on the hash ring, walk clockwise from that position and choose the first N servers on the ring to store data copies. In Figure 6-5 (N = 3), key0 is replicated at s1, s2, and s3."
+  },
+  {
+   "t": "p",
+   "k": "2424a508fd34",
+   "en": "With virtual nodes, the first N nodes on the ring may be owned by fewer than N physical servers. To avoid this issue, we only choose unique servers while performing the clockwise walk logic."
+  },
+  {
+   "t": "h2",
+   "k": "028944e40958",
+   "en": "Consistency"
+  },
+  {
+   "t": "p",
+   "k": "7bb2bfe96ee1",
+   "en": "Since data is replicated at multiple nodes, it must be synchronized across replicas. Quorum consensus can guarantee consistency for both read and write operations. Let us establish a few definitions first."
+  },
+  {
+   "t": "p",
+   "k": "c3003b1109c2",
+   "en": "N = The number of replicas W = A write quorum of size W. For a write operation to be considered as successful, write operation must be acknowledged from W replicas."
+  },
+  {
+   "t": "p",
+   "k": "7d7095db1ab2",
+   "en": "R = A read quorum of size R. For a read operation to be considered as successful, read operation must wait for responses from at least R replicas."
+  },
+  {
+   "t": "p",
+   "k": "901bda1306dc",
+   "en": "Consider the following example shown in Figure 6-6 with N = 3."
+  },
+  {
+   "t": "p",
+   "k": "8ff65df1826b",
+   "en": "W = 1 does not mean data is written on one server. For instance, with the configuration in Figure 6-6, data is replicated at s0, s1, and s2. W = 1 means that the coordinator must receive at least one acknowledgment before the write operation is considered as successful. For instance, if we get an acknowledgment from s1, we no longer need to wait for acknowledgements from s0 and s2. A coordinator acts as a proxy between the client and the nodes."
+  },
+  {
+   "t": "p",
+   "k": "4cac1df9288b",
+   "en": "The configuration of W, R and N is a typical tradeoff between latency and consistency. If W = 1 or R = 1, an operation is returned quickly because a coordinator only needs to wait for a response from any of the replicas. If W or R > 1, the system offers better consistency; however, the query will be slower because the coordinator must wait for the response from the slowest replica."
+  },
+  {
+   "t": "p",
+   "k": "fb93f9790398",
+   "en": "If W + R > N, strong consistency is guaranteed because there must be at least one overlapping node that has the latest data to ensure consistency."
+  },
+  {
+   "t": "p",
+   "k": "9e4544b246b2",
+   "en": "How to configure N, W, and R to fit our use cases? Here are some of the possible setups:"
+  },
+  {
+   "t": "p",
+   "k": "66d35dc1358e",
+   "en": "If R = 1 and W = N, the system is optimized for a fast read."
+  },
+  {
+   "t": "p",
+   "k": "204c3a6ec14d",
+   "en": "If W = 1 and R = N, the system is optimized for fast write."
+  },
+  {
+   "t": "p",
+   "k": "a1d6021ee3d9",
+   "en": "If W + R > N, strong consistency is guaranteed (Usually N = 3, W = R = 2)."
+  },
+  {
+   "t": "p",
+   "k": "27228443f0b2",
+   "en": "If W + R <= N, strong consistency is not guaranteed."
+  },
+  {
+   "t": "p",
+   "k": "61d1f9d9782e",
+   "en": "Depending on the requirement, we can tune the values of W, R, N to achieve the desired level of consistency."
+  },
+  {
+   "t": "h3",
+   "k": "e9c8d422f664",
+   "en": "Consistency models"
+  },
+  {
+   "t": "li",
+   "k": "91bb99f6d3b5",
+   "en": "Strong consistency: any read operation returns a value corresponding to the result of the most updated write data item. A client never sees out-of-date data."
+  },
+  {
+   "t": "li",
+   "k": "040dbd1a6c06",
+   "en": "Weak consistency: subsequent read operations may not see the most updated value."
+  },
+  {
+   "t": "li",
+   "k": "6bbbd71d598c",
+   "en": "Eventual consistency: this is a specific form of weak consistency. Given enough time, all updates are propagated, and all replicas are consistent."
+  },
+  {
+   "t": "p",
+   "k": "b90e3b76aa08",
+   "en": "Strong consistency is usually achieved by forcing a replica not to accept new reads/writes until every replica has agreed on current write. This approach is not ideal for highly available systems because it could block new operations. Dynamo and Cassandra adopt eventual consistency, which is our recommended consistency model for our key-value store. From concurrent writes, eventual consistency allows inconsistent values to enter the system and force the client to read the values to reconcile. The next section explains how reconciliation works with versioning."
+  },
+  {
+   "t": "h2",
+   "k": "1916a6bd757b",
+   "en": "Inconsistency resolution: versioning"
+  },
+  {
+   "t": "p",
+   "k": "d33064f4af92",
+   "en": "Replication gives high availability but causes inconsistencies among replicas. Versioning and vector locks are used to solve inconsistency problems. Versioning means treating each data modification as a new immutable version of data. Before we talk about versioning, let us use an example to explain how inconsistency happens:"
+  },
+  {
+   "t": "p",
+   "k": "8a5c63497211",
+   "en": "As shown in Figure 6-7, both replica nodes n1 and n2 have the same value. Let us call this value the original value. Server 1 and server 2 get the same value for get(“name”) operation."
+  },
+  {
+   "t": "p",
+   "k": "f27e781319bd",
+   "en": "Next, server 1 changes the name to “johnSanFrancisco”, and server 2 changes the name to “johnNewYork” as shown in Figure 6-8. These two changes are performed simultaneously."
+  },
+  {
+   "t": "p",
+   "k": "01337fb5af5c",
+   "en": "Now, we have conflicting values, called versions v1 and v2."
+  },
+  {
+   "t": "p",
+   "k": "002c95a4bce6",
+   "en": "In this example, the original value could be ignored because the modifications were based on it. However, there is no clear way to resolve the conflict of the last two versions. To resolve this issue, we need a versioning system that can detect conflicts and reconcile conflicts. A vector clock is a common technique to solve this problem. Let us examine how vector clocks work."
+  },
+  {
+   "t": "p",
+   "k": "8bdbfcd72eb7",
+   "en": "A vector clock is a [server, version] pair associated with a data item. It can be used to check if one version precedes, succeeds, or in conflict with others."
+  },
+  {
+   "t": "p",
+   "k": "cba6b67de25b",
+   "en": "Assume a vector clock is represented by D([S1, v1], [S2, v2], …, [Sn, vn]), where D is a data item, v1 is a version counter, and s1 is a server number, etc. If data item D is written to server Si, the system must perform one of the following tasks."
+  },
+  {
+   "t": "li",
+   "k": "3522abd333a8",
+   "en": "Increment vi if [Si, vi] exists."
+  },
+  {
+   "t": "li",
+   "k": "d85b6573ce07",
+   "en": "Otherwise, create a new entry [Si, 1]."
+  },
+  {
+   "t": "p",
+   "k": "c01f849b82de",
+   "en": "The above abstract logic is explained with a concrete example as shown in Figure 6-9."
+  },
+  {
+   "t": "li",
+   "k": "e6505539181b",
+   "en": "A client writes a data item D1 to the system, and the write is handled by server Sx, which now has the vector clock D1[(Sx, 1)]."
+  },
+  {
+   "t": "li",
+   "k": "05bcfc877b96",
+   "en": "Another client reads the latest D1, updates it to D2, and writes it back. D2 descends from D1 so it overwrites D1. Assume the write is handled by the same server Sx, which now has vector clock D2([Sx, 2])."
+  },
+  {
+   "t": "li",
+   "k": "0269e1847434",
+   "en": "Another client reads the latest D2, updates it to D3, and writes it back. Assume the write is handled by server Sy, which now has vector clock D3([Sx, 2], [Sy, 1]))."
+  },
+  {
+   "t": "li",
+   "k": "ff4442cb4e29",
+   "en": "Another client reads the latest D2, updates it to D4, and writes it back. Assume the write is handled by server Sz, which now has D4([Sx, 2], [Sz, 1]))."
+  },
+  {
+   "t": "li",
+   "k": "ed6d9e2d007f",
+   "en": "When another client reads D3 and D4, it discovers a conflict, which is caused by data item D2 being modified by both Sy and Sz. The conflict is resolved by the client and updated data is sent to the server. Assume the write is handled by Sx, which now has D5([Sx, 3], [Sy, 1], [Sz, 1]). We will explain how to detect conflict shortly."
+  },
+  {
+   "t": "p",
+   "k": "9426a350df30",
+   "en": "Using vector clocks, it is easy to tell that a version X is an ancestor (i.e. no conflict) of version Y if the version counters for each participant in the vector clock of Y is greater than or equal to the ones in version X. For example, the vector clock D([s0, 1], [s1, 1])] is an ancestor of D([s0, 1], [s1, 2]). Therefore, no conflict is recorded."
+  },
+  {
+   "t": "p",
+   "k": "cd044ab8c391",
+   "en": "Similarly, you can tell that a version X is a sibling (i.e., a conflict exists) of Y if there is any participant in Y's vector clock who has a counter that is less than its corresponding counter in X. For example, the following two vector clocks indicate there is a conflict: D([s0, 1], [s1, 2]) and D([s0, 2], [s1, 1])."
+  },
+  {
+   "t": "p",
+   "k": "3b2ce3da1bde",
+   "en": "Even though vector clocks can resolve conflicts, there are two notable downsides. First, vector clocks add complexity to the client because it needs to implement conflict resolution logic."
+  },
+  {
+   "t": "p",
+   "k": "7f3be371ddbd",
+   "en": "Second, the [server: version] pairs in the vector clock could grow rapidly. To fix this problem, we set a threshold for the length, and if it exceeds the limit, the oldest pairs are removed. This can lead to inefficiencies in reconciliation because the descendant relationship cannot be determined accurately. However, based on Dynamo paper [4], Amazon has not yet encountered this problem in production; therefore, it is probably an acceptable solution for most companies."
+  },
+  {
+   "t": "h2",
+   "k": "b4d6e271a239",
+   "en": "Handling failures"
+  },
+  {
+   "t": "p",
+   "k": "065adc8697b9",
+   "en": "As with any large system at scale, failures are not only inevitable but common. Handling failure scenarios is very important. In this section, we first introduce techniques to detect failures. Then, we go over common failure resolution strategies."
+  },
+  {
+   "t": "h3",
+   "k": "5ca7d9eb6d81",
+   "en": "Failure detection"
+  },
+  {
+   "t": "p",
+   "k": "e8ff82cc78ce",
+   "en": "In a distributed system, it is insufficient to believe that a server is down because another server says so. Usually, it requires at least two independent sources of information to mark a server down."
+  },
+  {
+   "t": "p",
+   "k": "2dfb37b740c7",
+   "en": "As shown in Figure 6-10, all-to-all multicasting is a straightforward solution. However, this is inefficient when many servers are in the system."
+  },
+  {
+   "t": "p",
+   "k": "432ab8c0ab28",
+   "en": "A better solution is to use decentralized failure detection methods like gossip protocol."
+  },
+  {
+   "t": "p",
+   "k": "888ca129504d",
+   "en": "Gossip protocol works as follows:"
+  },
+  {
+   "t": "li",
+   "k": "4bde0503f40e",
+   "en": "Each node maintains a node membership list, which contains member IDs and heartbeat counters."
+  },
+  {
+   "t": "li",
+   "k": "b5aa8481754f",
+   "en": "Each node periodically increments its heartbeat counter."
+  },
+  {
+   "t": "li",
+   "k": "1c7aca41d15d",
+   "en": "Each node periodically sends heartbeats to a set of random nodes, which in turn propagate to another set of nodes."
+  },
+  {
+   "t": "li",
+   "k": "d1af5f4359fd",
+   "en": "Once nodes receive heartbeats, membership list is updated to the latest info."
+  },
+  {
+   "t": "li",
+   "k": "0e1ca1344853",
+   "en": "If the heartbeat has not increased for more than predefined periods, the member is considered as offline."
+  },
+  {
+   "t": "p",
+   "k": "2d42cde58273",
+   "en": "As shown in Figure 6-11:"
+  },
+  {
+   "t": "li",
+   "k": "0389d372d94d",
+   "en": "Node s0 maintains a node membership list shown on the left side."
+  },
+  {
+   "t": "li",
+   "k": "c0c1ae53da89",
+   "en": "Node s0 notices that node s2’s (member ID = 2) heartbeat counter has not increased for a long time."
+  },
+  {
+   "t": "li",
+   "k": "9f6d09afe48b",
+   "en": "Node s0 sends heartbeats that include s2’s info to a set of random nodes. Once other nodes confirm that s2’s heartbeat counter has not been updated for a long time, node s2 is marked down, and this information is propagated to other nodes."
+  },
+  {
+   "t": "h3",
+   "k": "ba5e97a2ba50",
+   "en": "Handling temporary failures"
+  },
+  {
+   "t": "p",
+   "k": "61bf42f4a807",
+   "en": "After failures have been detected through the gossip protocol, the system needs to deploy certain mechanisms to ensure availability. In the strict quorum approach, read and write operations could be blocked as illustrated in the quorum consensus section."
+  },
+  {
+   "t": "p",
+   "k": "e411a6b1f72b",
+   "en": "A technique called “sloppy quorum” [4] is used to improve availability. Instead of enforcing the quorum requirement, the system chooses the first W healthy servers for writes and first R healthy servers for reads on the hash ring. Offline servers are ignored."
+  },
+  {
+   "t": "p",
+   "k": "a2c14bea8464",
+   "en": "If a server is unavailable due to network or server failures, another server will process requests temporarily. When the down server is up, changes will be pushed back to achieve data consistency. This process is called hinted handoff. Since s2 is unavailable in Figure 6-12, reads and writes will be handled by s3 temporarily. When s2 comes back online, s3 will hand the data back to s2."
+  },
+  {
+   "t": "h3",
+   "k": "39ebd5152a52",
+   "en": "Handling permanent failures"
+  },
+  {
+   "t": "p",
+   "k": "98e20f5a74b7",
+   "en": "Hinted handoff is used to handle temporary failures. What if a replica is permanently unavailable? To handle such a situation, we implement an anti-entropy protocol to keep replicas in sync. Anti-entropy involves comparing each piece of data on replicas and updating each replica to the newest version. A Merkle tree is used for inconsistency detection and minimizing the amount of data transferred."
+  },
+  {
+   "t": "p",
+   "k": "c1644c5e861d",
+   "en": "Quoted from Wikipedia [7]: “A hash tree or Merkle tree is a tree in which every non-leaf node is labeled with the hash of the labels or values (in case of leaves) of its child nodes."
+  },
+  {
+   "t": "p",
+   "k": "6da882cac115",
+   "en": "Hash trees allow efficient and secure verification of the contents of large data structures”."
+  },
+  {
+   "t": "p",
+   "k": "4112d4f53212",
+   "en": "Assuming key space is from 1 to 12, the following steps show how to build a Merkle tree."
+  },
+  {
+   "t": "p",
+   "k": "ae6c7da55c6c",
+   "en": "Highlighted boxes indicate inconsistency."
+  },
+  {
+   "t": "p",
+   "k": "09f834a4712a",
+   "en": "Step 1: Divide key space into buckets (4 in our example) as shown in Figure 6-13. A bucket is used as the root level node to maintain a limited depth of the tree."
+  },
+  {
+   "t": "p",
+   "k": "aeb3c86bac11",
+   "en": "Step 2: Once the buckets are created, hash each key in a bucket using a uniform hashing method (Figure 6-14)."
+  },
+  {
+   "t": "p",
+   "k": "824f5c962179",
+   "en": "Step 3: Create a single hash node per bucket (Figure 6-15)."
+  },
+  {
+   "t": "p",
+   "k": "2de7711d2ef2",
+   "en": "Step 4: Build the tree upwards till root by calculating hashes of children (Figure 6-16)."
+  },
+  {
+   "t": "p",
+   "k": "d0b132908bd3",
+   "en": "To compare two Merkle trees, start by comparing the root hashes. If root hashes match, both servers have the same data. If root hashes disagree, then the left child hashes are compared followed by right child hashes. You can traverse the tree to find which buckets are not synchronized and synchronize those buckets only."
+  },
+  {
+   "t": "p",
+   "k": "d154798103a0",
+   "en": "Using Merkle trees, the amount of data needed to be synchronized is proportional to the differences between the two replicas, and not the amount of data they contain. In real-world systems, the bucket size is quite big. For instance, a possible configuration is one million buckets per one billion keys, so each bucket only contains 1000 keys."
+  },
+  {
+   "t": "h3",
+   "k": "c07ee66fe0ca",
+   "en": "Handling data center outage"
+  },
+  {
+   "t": "p",
+   "k": "60e25b60d071",
+   "en": "Data center outage could happen due to power outage, network outage, natural disaster, etc."
+  },
+  {
+   "t": "h2",
+   "k": "09e952dd1165",
+   "en": "System architecture diagram"
+  },
+  {
+   "t": "p",
+   "k": "69788e540b7c",
+   "en": "Now that we have discussed different technical considerations in designing a key-value store, we can shift our focus on the architecture diagram, shown in Figure 6-17."
+  },
+  {
+   "t": "p",
+   "k": "4f606c24a20e",
+   "en": "Main features of the architecture are listed as follows:"
+  },
+  {
+   "t": "li",
+   "k": "fb429a1c335d",
+   "en": "Clients communicate with the key-value store through simple APIs: get(key) and put(key, value)."
+  },
+  {
+   "t": "li",
+   "k": "53ee6e77a6a3",
+   "en": "A coordinator is a node that acts as a proxy between the client and the key-value store."
+  },
+  {
+   "t": "li",
+   "k": "dfcc07e4765f",
+   "en": "Nodes are distributed on a ring using consistent hashing."
+  },
+  {
+   "t": "li",
+   "k": "3fe9134b842c",
+   "en": "The system is completely decentralized so adding and moving nodes can be automatic."
+  },
+  {
+   "t": "li",
+   "k": "49c2dba50238",
+   "en": "Data is replicated at multiple nodes."
+  },
+  {
+   "t": "li",
+   "k": "a351e42c8120",
+   "en": "There is no single point of failure as every node has the same set of responsibilities."
+  },
+  {
+   "t": "p",
+   "k": "d24f56969ce1",
+   "en": "As the design is decentralized, each node performs many tasks as presented in Figure 6-18."
+  },
+  {
+   "t": "h2",
+   "k": "10985fc38271",
+   "en": "Write path"
+  },
+  {
+   "t": "p",
+   "k": "cc4efb367b76",
+   "en": "Figure 6-19 explains what happens after a write request is directed to a specific node. Please note the proposed designs for write/read paths are primary based on the architecture of Cassandra [8]."
+  },
+  {
+   "t": "li",
+   "k": "1bb2590ea216",
+   "en": "The write request is persisted on a commit log file."
+  },
+  {
+   "t": "li",
+   "k": "5d66637e421e",
+   "en": "Data is saved in the memory cache."
+  },
+  {
+   "t": "li",
+   "k": "70de2effaffe",
+   "en": "When the memory cache is full or reaches a predefined threshold, data is flushed to SSTable [9] on disk. Note: A sorted-string table (SSTable) is a sorted list of <key, value> pairs. For readers interested in learning more about SStable, refer to the reference material [9]."
+  },
+  {
+   "t": "h2",
+   "k": "afdf2a4cb7cc",
+   "en": "Read path"
+  },
+  {
+   "t": "p",
+   "k": "b8b5146866c6",
+   "en": "After a read request is directed to a specific node, it first checks if data is in the memory cache. If so, the data is returned to the client as shown in Figure 6-20."
+  },
+  {
+   "t": "p",
+   "k": "5c49144be4dc",
+   "en": "If the data is not in memory, it will be retrieved from the disk instead. We need an efficient way to find out which SSTable contains the key. Bloom filter [10] is commonly used to solve this problem."
+  },
+  {
+   "t": "p",
+   "k": "26b5bd28c8ba",
+   "en": "The read path is shown in Figure 6-21 when data is not in memory."
+  },
+  {
+   "t": "li",
+   "k": "d8e129688c33",
+   "en": "The system first checks if data is in memory. If not, go to step 2."
+  },
+  {
+   "t": "li",
+   "k": "7105d1cfb69c",
+   "en": "If data is not in memory, the system checks the bloom filter."
+  },
+  {
+   "t": "li",
+   "k": "2225a051cd46",
+   "en": "The bloom filter is used to figure out which SSTables might contain the key."
+  },
+  {
+   "t": "li",
+   "k": "a6b4076707d3",
+   "en": "SSTables return the result of the data set."
+  },
+  {
+   "t": "li",
+   "k": "4f3cd6ce669a",
+   "en": "The result of the data set is returned to the client."
+  },
+  {
+   "t": "h2",
+   "k": "05535ecff78e",
+   "en": "Summary"
+  },
+  {
+   "t": "p",
+   "k": "87464e8aeb0f",
+   "en": "This chapter covers many concepts and techniques. To refresh your memory, the following table summarizes features and corresponding techniques used for a distributed key-value store."
+  },
+  {
+   "t": "p",
+   "k": "596dd0e9cf05",
+   "en": "[1] Amazon DynamoDB: https://aws.amazon.com/dynamodb/ [2] memcached: https://memcached.org/ [3] Redis: https://redis.io/ [4] Dynamo: Amazon’s Highly Available Key-value Store: https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf [5] Cassandra: https://cassandra.apache.org/ [6] Bigtable: A Distributed Storage System for Structured Data: https://static.googleusercontent.com/media/research.google.com/en//archive/bigtable-osdi06.pdf [7] Merkle tree: https://en.wikipedia.org/wiki/Merkle_tree [8] Cassandra architecture: https://cassandra.apache.org/doc/latest/architecture/ [9] SStable: https://www.igvita.com/2012/02/06/sstable-and-log-structured-storage-leveldb/ [10] Bloom filter https://en.wikipedia.org/wiki/Bloom_filter"
+  }
+ ]
+}

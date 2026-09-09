@@ -1,0 +1,664 @@
+{
+ "id": "11-chapter-10-design-a-notification-system",
+ "title": "CHAPTER 10: DESIGN A NOTIFICATION SYSTEM",
+ "titleKey": "f1c85463bb57",
+ "book": "alex-vol1",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "059821727c49",
+   "en": "A notification system has already become a very popular feature for many applications in recent years. A notification alerts a user with important information like breaking news, product updates, events, offerings, etc. It has become an indispensable part of our daily life."
+  },
+  {
+   "t": "p",
+   "k": "9049ccffd6cd",
+   "en": "In this chapter, you are asked to design a notification system."
+  },
+  {
+   "t": "p",
+   "k": "0c2893e1b26b",
+   "en": "A notification is more than just mobile push notification. Three types of notification formats are: mobile push notification, SMS message, and Email. Figure 10-1 shows an example of each of these notifications."
+  },
+  {
+   "t": "h2",
+   "k": "cdb2072eee15",
+   "en": "Step 1 - Understand the problem and establish design scope"
+  },
+  {
+   "t": "p",
+   "k": "cc5d4d535e00",
+   "en": "Building a scalable system that sends out millions of notifications a day is not an easy task. It requires a deep understanding of the notification ecosystem. The interview question is purposely designed to be open-ended and ambiguous, and it is your responsibility to ask questions to clarify the requirements."
+  },
+  {
+   "t": "p",
+   "k": "4deefce85f15",
+   "en": "Candidate: What types of notifications does the system support?"
+  },
+  {
+   "t": "p",
+   "k": "516490c10440",
+   "en": "Interviewer: Push notification, SMS message, and email."
+  },
+  {
+   "t": "li",
+   "k": "30842599e1a2",
+   "en": "Candidate: Is it a real-time system?",
+   "lead": "Candidate"
+  },
+  {
+   "t": "li",
+   "k": "e2f41f983ee8",
+   "en": "Interviewer: Let us say it is a soft real-time system. We want a user to receive notifications as soon as possible. However, if the system is under a high workload, a slight delay is acceptable.",
+   "lead": "Interviewer"
+  },
+  {
+   "t": "li",
+   "k": "2cb60712fbc9",
+   "en": "Candidate: What are the supported devices?",
+   "lead": "Candidate"
+  },
+  {
+   "t": "li",
+   "k": "1012e1bd7376",
+   "en": "Interviewer: iOS devices, android devices, and laptop/desktop.",
+   "lead": "Interviewer"
+  },
+  {
+   "t": "li",
+   "k": "8bc996b9be39",
+   "en": "Candidate: What triggers notifications?",
+   "lead": "Candidate"
+  },
+  {
+   "t": "li",
+   "k": "f56ddf6a873d",
+   "en": "Interviewer: Notifications can be triggered by client applications. They can also be scheduled on the server-side.",
+   "lead": "Interviewer"
+  },
+  {
+   "t": "li",
+   "k": "66ae2d6535cc",
+   "en": "Candidate: Will users be able to opt-out?",
+   "lead": "Candidate"
+  },
+  {
+   "t": "li",
+   "k": "d3d48c8cf78c",
+   "en": "Interviewer: Yes, users who choose to opt-out will no longer receive notifications.",
+   "lead": "Interviewer"
+  },
+  {
+   "t": "li",
+   "k": "d52265d6ab83",
+   "en": "Candidate: How many notifications are sent out each day?",
+   "lead": "Candidate"
+  },
+  {
+   "t": "li",
+   "k": "bd84c0e21dcd",
+   "en": "Interviewer: 10 million mobile push notifications, 1 million SMS messages, and 5 million emails.",
+   "lead": "Interviewer"
+  },
+  {
+   "t": "h2",
+   "k": "21ec56b45561",
+   "en": "Step 2 - Propose high-level design and get buy-in"
+  },
+  {
+   "t": "li",
+   "k": "75bf71a04545",
+   "en": "Different types of notifications"
+  },
+  {
+   "t": "li",
+   "k": "5254dff4992e",
+   "en": "Contact info gathering flow"
+  },
+  {
+   "t": "li",
+   "k": "682f7e2d0f57",
+   "en": "Notification sending/receiving flow"
+  },
+  {
+   "t": "h2",
+   "k": "75bf71a04545",
+   "en": "Different types of notifications"
+  },
+  {
+   "t": "p",
+   "k": "d0989698b878",
+   "en": "We start by looking at how each notification type works at a high level."
+  },
+  {
+   "t": "h3",
+   "k": "8b3343cdc502",
+   "en": "iOS push notification"
+  },
+  {
+   "t": "p",
+   "k": "eeff39d0550b",
+   "en": "We primary need three components to send an iOS push notification:"
+  },
+  {
+   "t": "li",
+   "k": "beb19412703f",
+   "en": "Provider. A provider builds and sends notification requests to Apple Push Notification Service (APNS). To construct a push notification, the provider provides the following data:"
+  },
+  {
+   "t": "li",
+   "k": "4e0b4d8c1051",
+   "en": "Device token: This is a unique identifier used for sending push notifications."
+  },
+  {
+   "t": "li",
+   "k": "197ae989a624",
+   "en": "Payload: This is a JSON dictionary that contains a notification’s payload. Here is an example:"
+  },
+  {
+   "t": "li",
+   "k": "426711b40b2f",
+   "en": "APNS: This is a remote service provided by Apple to propagate push notifications to iOS devices."
+  },
+  {
+   "t": "li",
+   "k": "446a538c6839",
+   "en": "iOS Device: It is the end client, which receives push notifications."
+  },
+  {
+   "t": "h3",
+   "k": "8c6ffadb5391",
+   "en": "Android push notification"
+  },
+  {
+   "t": "p",
+   "k": "b2b374c7015b",
+   "en": "Android adopts a similar notification flow. Instead of using APNs, Firebase Cloud Messaging (FCM) is commonly used to send push notifications to android devices."
+  },
+  {
+   "t": "h3",
+   "k": "9965b79c05b7",
+   "en": "SMS message"
+  },
+  {
+   "t": "p",
+   "k": "7b13290e689b",
+   "en": "For SMS messages, third party SMS services like Twilio [1], Nexmo [2], and many others are commonly used. Most of them are commercial services."
+  },
+  {
+   "t": "h3",
+   "k": "a88b7dcd1a9e",
+   "en": "Email"
+  },
+  {
+   "t": "p",
+   "k": "4617c18fe678",
+   "en": "Although companies can set up their own email servers, many of them opt for commercial email services. Sendgrid [3] and Mailchimp [4] are among the most popular email services, which offer a better delivery rate and data analytics."
+  },
+  {
+   "t": "p",
+   "k": "d0f2a7a05438",
+   "en": "Figure 10-6 shows the design after including all the third-party services."
+  },
+  {
+   "t": "h2",
+   "k": "5254dff4992e",
+   "en": "Contact info gathering flow"
+  },
+  {
+   "t": "p",
+   "k": "fc4a7d7567c0",
+   "en": "To send notifications, we need to gather mobile device tokens, phone numbers, or email addresses. As shown in Figure 10-7, when a user installs our app or signs up for the first time, API servers collect user contact info and store it in the database."
+  },
+  {
+   "t": "p",
+   "k": "8d03fc0dbd19",
+   "en": "Figure 10-8 shows simplified database tables to store contact info. Email addresses and phone numbers are stored in the user table, whereas device tokens are stored in the device table. A user can have multiple devices, indicating that a push notification can be sent to all the user devices."
+  },
+  {
+   "t": "h2",
+   "k": "682f7e2d0f57",
+   "en": "Notification sending/receiving flow"
+  },
+  {
+   "t": "p",
+   "k": "b06efff4c20d",
+   "en": "We will first present the initial design; then, propose some optimizations."
+  },
+  {
+   "t": "h3",
+   "k": "f0e860766605",
+   "en": "High-level design"
+  },
+  {
+   "t": "p",
+   "k": "4dafa722dbc8",
+   "en": "Figure 10-9 shows the design, and each system component is explained below."
+  },
+  {
+   "t": "p",
+   "k": "c156a3f68fc1",
+   "en": "Service 1 to N: A service can be a micro-service, a cron job, or a distributed system that triggers notification sending events. For example, a billing service sends emails to remind customers of their due payment or a shopping website tells customers that their packages will be delivered tomorrow via SMS messages."
+  },
+  {
+   "t": "p",
+   "k": "ab594cf30d62",
+   "en": "Notification system: The notification system is the centerpiece of sending/receiving notifications. Starting with something simple, only one notification server is used. It provides APIs for services 1 to N, and builds notification payloads for third party services."
+  },
+  {
+   "t": "li",
+   "k": "d6e4c3ee53f2",
+   "en": "Third-party services: Third party services are responsible for delivering notifications to users. While integrating with third-party services, we need to pay extra attention to extensibility. Good extensibility means a flexible system that can easily plugging or unplugging of a third-party service. Another important consideration is that a third-party service might be unavailable in new markets or in the future. For instance, FCM is unavailable in China. Thus, alternative third-party services such as Jpush, PushY, etc are used there. iOS, Android, SMS, Email: Users receive notifications on their devices.",
+   "lead": "Third-party services"
+  },
+  {
+   "t": "p",
+   "k": "1715cf4bf118",
+   "en": "Three problems are identified in this design:"
+  },
+  {
+   "t": "li",
+   "k": "41dcf6fd9416",
+   "en": "Single point of failure (SPOF): A single notification server means SPOF."
+  },
+  {
+   "t": "li",
+   "k": "1ac89b4cf840",
+   "en": "Hard to scale: The notification system handles everything related to push notifications in one server. It is challenging to scale databases, caches, and different notification processing components independently."
+  },
+  {
+   "t": "li",
+   "k": "4a869decbb43",
+   "en": "Performance bottleneck: Processing and sending notifications can be resource intensive."
+  },
+  {
+   "t": "p",
+   "k": "8fbda2604143",
+   "en": "For example, constructing HTML pages and waiting for responses from third party services could take time. Handling everything in one system can result in the system overload, especially during peak hours."
+  },
+  {
+   "t": "h3",
+   "k": "6fd2994ce82e",
+   "en": "High-level design (improved)"
+  },
+  {
+   "t": "p",
+   "k": "8b9babf17251",
+   "en": "After enumerating challenges in the initial design, we improve the design as listed below:"
+  },
+  {
+   "t": "li",
+   "k": "24d1b625a2b0",
+   "en": "Move the database and cache out of the notification server."
+  },
+  {
+   "t": "li",
+   "k": "635db52dcdf3",
+   "en": "Add more notification servers and set up automatic horizontal scaling."
+  },
+  {
+   "t": "li",
+   "k": "17d78505973a",
+   "en": "Introduce message queues to decouple the system components."
+  },
+  {
+   "t": "p",
+   "k": "c24792acadb5",
+   "en": "Figure 10-10 shows the improved high-level design."
+  },
+  {
+   "t": "p",
+   "k": "10076dc49ab7",
+   "en": "The best way to go through the above diagram is from left to right:"
+  },
+  {
+   "t": "p",
+   "k": "a1cf598037c8",
+   "en": "Service 1 to N: They represent different services that send notifications via APIs provided by notification servers."
+  },
+  {
+   "t": "p",
+   "k": "5b93a48a3e5d",
+   "en": "Notification servers: They provide the following functionalities:"
+  },
+  {
+   "t": "li",
+   "k": "86839b0877cb",
+   "en": "Provide APIs for services to send notifications. Those APIs are only accessible internally or by verified clients to prevent spams."
+  },
+  {
+   "t": "li",
+   "k": "9917af10155c",
+   "en": "Carry out basic validations to verify emails, phone numbers, etc."
+  },
+  {
+   "t": "li",
+   "k": "5b79114d0bb8",
+   "en": "Query the database or cache to fetch data needed to render a notification."
+  },
+  {
+   "t": "li",
+   "k": "cf6437754211",
+   "en": "Put notification data to message queues for parallel processing."
+  },
+  {
+   "t": "p",
+   "k": "e6ee8924443c",
+   "en": "Here is an example of the API to send an email:"
+  },
+  {
+   "t": "p",
+   "k": "3a1877ed8436",
+   "en": "POST https://api.example.com/v/sms/send Request body Cache: User info, device info, notification templates are cached."
+  },
+  {
+   "t": "p",
+   "k": "ea17c6291725",
+   "en": "DB: It stores data about user, notification, settings, etc."
+  },
+  {
+   "t": "p",
+   "k": "2a0a1189ad07",
+   "en": "Message queues: They remove dependencies between components. Message queues serve as buffers when high volumes of notifications are to be sent out. Each notification type is assigned with a distinct message queue so an outage in one third-party service will not affect other notification types."
+  },
+  {
+   "t": "p",
+   "k": "e39a507cc508",
+   "en": "Workers: Workers are a list of servers that pull notification events from message queues and send them to the corresponding third-party services."
+  },
+  {
+   "t": "p",
+   "k": "8a4f7943e396",
+   "en": "Third-party services: Already explained in the initial design. iOS, Android, SMS, Email: Already explained in the initial design."
+  },
+  {
+   "t": "p",
+   "k": "7f2780ea8f8d",
+   "en": "Next, let us examine how every component works together to send a notification:"
+  },
+  {
+   "t": "li",
+   "k": "35064c077a3e",
+   "en": "A service calls APIs provided by notification servers to send notifications."
+  },
+  {
+   "t": "li",
+   "k": "3ca3f348e697",
+   "en": "Notification servers fetch metadata such as user info, device token, and notification setting from the cache or database."
+  },
+  {
+   "t": "li",
+   "k": "fc3300ea605c",
+   "en": "A notification event is sent to the corresponding queue for processing. For instance, an iOS push notification event is sent to the iOS PN queue."
+  },
+  {
+   "t": "li",
+   "k": "d7f0826c3d25",
+   "en": "Workers pull notification events from message queues."
+  },
+  {
+   "t": "li",
+   "k": "1ff71cdcf2c5",
+   "en": "Workers send notifications to third party services."
+  },
+  {
+   "t": "li",
+   "k": "6b45dd7c5eff",
+   "en": "Third-party services send notifications to user devices."
+  },
+  {
+   "t": "h2",
+   "k": "5008c4b3d7bc",
+   "en": "Step 3 - Design deep dive"
+  },
+  {
+   "t": "li",
+   "k": "53b08ea7fc59",
+   "en": "Reliability."
+  },
+  {
+   "t": "li",
+   "k": "2775e8f05847",
+   "en": "Additional component and considerations: notification template, notification settings, rate limiting, retry mechanism, security in push notifications, monitor queued notifications and event tracking."
+  },
+  {
+   "t": "li",
+   "k": "089bb73b18fd",
+   "en": "Updated design."
+  },
+  {
+   "t": "h2",
+   "k": "844e392a5d6c",
+   "en": "Reliability"
+  },
+  {
+   "t": "p",
+   "k": "1e9f02d81f92",
+   "en": "We must answer a few important reliability questions when designing a notification system in distributed environments."
+  },
+  {
+   "t": "h3",
+   "k": "84ddb7f0a17b",
+   "en": "How to prevent data loss?"
+  },
+  {
+   "t": "p",
+   "k": "1dbd3afb60c2",
+   "en": "One of the most important requirements in a notification system is that it cannot lose data."
+  },
+  {
+   "t": "p",
+   "k": "4dcc306de90c",
+   "en": "Notifications can usually be delayed or re-ordered, but never lost. To satisfy this requirement, the notification system persists notification data in a database and implements a retry mechanism. The notification log database is included for data persistence, as shown in Figure 10-11."
+  },
+  {
+   "t": "h3",
+   "k": "5b787c9228c9",
+   "en": "Will recipients receive a notification exactly once?"
+  },
+  {
+   "t": "p",
+   "k": "ae8d6b7d1d02",
+   "en": "The short answer is no. Although notification is delivered exactly once most of the time, the distributed nature could result in duplicate notifications. To reduce the duplication occurrence, we introduce a dedupe mechanism and handle each failure case carefully. Here is a simple dedupe logic:"
+  },
+  {
+   "t": "p",
+   "k": "aefda52eb8fb",
+   "en": "When a notification event first arrives, we check if it is seen before by checking the event ID."
+  },
+  {
+   "t": "p",
+   "k": "aaad4edc2958",
+   "en": "If it is seen before, it is discarded. Otherwise, we will send out the notification. For interested readers to explore why we cannot have exactly once delivery, refer to the reference material [5]."
+  },
+  {
+   "t": "h2",
+   "k": "bba9410dd30e",
+   "en": "Additional components and considerations"
+  },
+  {
+   "t": "h3",
+   "k": "e66ef16907d6",
+   "en": "Notification template"
+  },
+  {
+   "t": "p",
+   "k": "e15ba07a465a",
+   "en": "A large notification system sends out millions of notifications per day, and many of these notifications follow a similar format. Notification templates are introduced to avoid building every notification from scratch. A notification template is a preformatted notification to create your unique notification by customizing parameters, styling, tracking links, etc. Here is an example template of push notifications."
+  },
+  {
+   "t": "p",
+   "k": "27b8f46ad9c6",
+   "en": "BODY:"
+  },
+  {
+   "t": "p",
+   "k": "5e355f2b4941",
+   "en": "You dreamed of it. We dared it. [ITEM NAME] is back — only until [DATE]."
+  },
+  {
+   "t": "p",
+   "k": "fba1bf506b67",
+   "en": "CTA:"
+  },
+  {
+   "t": "p",
+   "k": "ee6d6a13a221",
+   "en": "Order Now. Or, Save My [ITEM NAME]"
+  },
+  {
+   "t": "p",
+   "k": "6e069a856d51",
+   "en": "The benefits of using notification templates include maintaining a consistent format, reducing the margin error, and saving time."
+  },
+  {
+   "t": "h3",
+   "k": "09a08d7205a7",
+   "en": "Notification setting"
+  },
+  {
+   "t": "p",
+   "k": "d57d946def50",
+   "en": "Users generally receive way too many notifications daily and they can easily feel overwhelmed. Thus, many websites and apps give users fine-grained control over notification settings. This information is stored in the notification setting table, with the following fields: user_id bigInt channel varchar # push notification, email or SMS opt_in boolean # opt-in to receive notification Before any notification is sent to a user, we first check if a user is opted-in to receive this type of notification."
+  },
+  {
+   "t": "h3",
+   "k": "c1c2145a4aa4",
+   "en": "Rate limiting"
+  },
+  {
+   "t": "p",
+   "k": "d8b275bf297a",
+   "en": "To avoid overwhelming users with too many notifications, we can limit the number of notifications a user can receive. This is important because receivers could turn off notifications completely if we send too often."
+  },
+  {
+   "t": "h3",
+   "k": "bc225e4a806c",
+   "en": "Retry mechanism"
+  },
+  {
+   "t": "p",
+   "k": "ddff64b0bc6b",
+   "en": "When a third-party service fails to send a notification, the notification will be added to the message queue for retrying. If the problem persists, an alert will be sent out to developers."
+  },
+  {
+   "t": "h3",
+   "k": "9c4c6e723c99",
+   "en": "Security in push notifications"
+  },
+  {
+   "t": "p",
+   "k": "22acb71094d8",
+   "en": "For iOS or Android apps, appKey and appSecret are used to secure push notification APIs [6]. Only authenticated or verified clients are allowed to send push notifications using our APIs. Interested users should refer to the reference material [6]."
+  },
+  {
+   "t": "h3",
+   "k": "46330543ed95",
+   "en": "Monitor queued notifications"
+  },
+  {
+   "t": "p",
+   "k": "e968c0f64916",
+   "en": "A key metric to monitor is the total number of queued notifications. If the number is large, the notification events are not processed fast enough by workers. To avoid delay in the notification delivery, more workers are needed. Figure 10-12 (credit to [7]) shows an example of queued messages to be processed."
+  },
+  {
+   "t": "p",
+   "k": "7be19c4ac95e",
+   "en": "Figure 10-12"
+  },
+  {
+   "t": "h3",
+   "k": "c9f5dc8608c1",
+   "en": "Events tracking"
+  },
+  {
+   "t": "p",
+   "k": "ba6d09f83e01",
+   "en": "Notification metrics, such as open rate, click rate, and engagement are important in understanding customer behaviors. Analytics service implements events tracking. Integration between the notification system and the analytics service is usually required. Figure 10-13 shows an example of events that might be tracked for analytics purposes."
+  },
+  {
+   "t": "h2",
+   "k": "b511976f05c7",
+   "en": "Updated design"
+  },
+  {
+   "t": "p",
+   "k": "3d0b254b0e0e",
+   "en": "Putting everything together, Figure 10-14 shows the updated notification system design."
+  },
+  {
+   "t": "p",
+   "k": "12c4c79c5d1e",
+   "en": "In this design, many new components are added in comparison with the previous design."
+  },
+  {
+   "t": "li",
+   "k": "77661ee975df",
+   "en": "The notification servers are equipped with two more critical features: authentication and rate-limiting."
+  },
+  {
+   "t": "li",
+   "k": "66b2ead8d4ac",
+   "en": "We also add a retry mechanism to handle notification failures. If the system fails to send notifications, they are put back in the messaging queue and the workers will retry for a predefined number of times."
+  },
+  {
+   "t": "li",
+   "k": "ff6295ffb837",
+   "en": "Furthermore, notification templates provide a consistent and efficient notification creation process."
+  },
+  {
+   "t": "li",
+   "k": "0b0f26da1824",
+   "en": "Finally, monitoring and tracking systems are added for system health checks and future improvements."
+  },
+  {
+   "t": "h2",
+   "k": "02a33876c958",
+   "en": "Step 4 - Wrap up"
+  },
+  {
+   "t": "p",
+   "k": "8a0a57938419",
+   "en": "Notifications are indispensable because they keep us posted with important information. It could be a push notification about your favorite movie on Netflix, an email about discounts on new products, or a message about your online shopping payment confirmation."
+  },
+  {
+   "t": "p",
+   "k": "e1f3b96f5619",
+   "en": "Besides the high-level design, we dug deep into more components and optimizations."
+  },
+  {
+   "t": "li",
+   "k": "9190ec8f7648",
+   "en": "Reliability: We proposed a robust retry mechanism to minimize the failure rate."
+  },
+  {
+   "t": "li",
+   "k": "0c50f605691a",
+   "en": "Security: AppKey/appSecret pair is used to ensure only verified clients can send notifications."
+  },
+  {
+   "t": "li",
+   "k": "faecf603f581",
+   "en": "Tracking and monitoring: These are implemented in any stage of a notification flow to capture important stats."
+  },
+  {
+   "t": "li",
+   "k": "ed9d09ed942c",
+   "en": "Respect user settings: Users may opt-out of receiving notifications. Our system checks user settings first before sending notifications."
+  },
+  {
+   "t": "li",
+   "k": "d09ae42e21d7",
+   "en": "Rate limiting: Users will appreciate a frequency capping on the number of notifications they receive."
+  },
+  {
+   "t": "p",
+   "k": "71b8b7a68128",
+   "en": "Congratulations on getting this far! Now give yourself a pat on the back. Good job!"
+  },
+  {
+   "t": "p",
+   "k": "96358db9595f",
+   "en": "[1] Twilio SMS: https://www.twilio.com/sms [2] Nexmo SMS: https://www.nexmo.com/products/sms [3] Sendgrid: https://sendgrid.com/ [4] Mailchimp: https://mailchimp.com/ [5] You Cannot Have Exactly-Once Delivery: https://bravenewgeek.com/you-cannot-have-exactly-once-delivery/ [6] Security in Push Notifications: https://cloud.ibm.com/docs/services/mobilepush? topic=mobile-pushnotification-security-in-push-notifications [7] RadditMQ: https://bit.ly/2sotIa6"
+  }
+ ]
+}

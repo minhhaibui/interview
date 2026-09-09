@@ -1,0 +1,153 @@
+{
+ "id": "006-introduction-to-building-blocks-for-modern-system-design",
+ "title": "Introduction to Building Blocks for Modern System Design",
+ "titleKey": "17b4bdea083e",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "17b4bdea083e",
+   "en": "Introduction to Building Blocks for Modern System Design"
+  },
+  {
+   "t": "p",
+   "k": "fb5f97a59821",
+   "en": "Learn how a system design is like using Lego pieces to make bigger, fascinating artifacts."
+  },
+  {
+   "t": "h2",
+   "k": "9fe2327cb6bc",
+   "en": "The bottom-up approach for modern system design"
+  },
+  {
+   "t": "p",
+   "k": "8a98601f11da",
+   "en": "System design problems usually have some similarities, though specific details are often unique. We have extracted these similarities across design problems as the basic building blocks we’ll be covering. One example of a building block is a load-balancing component, which we’ll probably use in every design problem in one way or the other."
+  },
+  {
+   "t": "p",
+   "k": "fbcc8ce7fc0c",
+   "en": "The purpose of separating the building blocks is to thoroughly discuss their design just once. This means that later we can use them anywhere without having to go over them in detail again. We can think about building blocks as bricks to construct more effective, capable systems."
+  },
+  {
+   "t": "p",
+   "k": "3fdff0325d60",
+   "en": "Many of the building blocks we discuss are also available for actual use in the public clouds, such as Amazon Web Services (AWS), Azure, and Google Cloud Platform (GCP). We can use such constructs to build a system to further cement our understanding. (We won’t construct the system in this course, but we’ve left it as an exercise for interested learners.)"
+  },
+  {
+   "t": "p",
+   "k": "21eac656a64a",
+   "en": "We’ll discuss the following building blocks in detail:"
+  },
+  {
+   "t": "li",
+   "k": "c7dc5c80097a",
+   "en": "Domain Name System: This building block focuses on how to design hierarchical and distributed naming systems for computers connected to the Internet via different Internet protocols."
+  },
+  {
+   "t": "li",
+   "k": "9d7d12938a10",
+   "en": "Load Balancers: Here, we’ll understand the design of a load balancer, which is used to fairly distribute incoming clients’ requests among a pool of available servers. It also reduces load and can bypass failed servers."
+  },
+  {
+   "t": "li",
+   "k": "dc2d8345e371",
+   "en": "Databases: This building block enables us to store, retrieve, modify, and delete data in connection with different data-processing procedures. Here, we’ll discuss database types, replication, partitioning, and analysis of distributed databases."
+  },
+  {
+   "t": "li",
+   "k": "cf58a6bf8223",
+   "en": "Key-Value Store: It is a non-relational database that stores data in the form of a key-value pair. Here, we’ll explain the design of a key-value store along with important concepts such as achieving scalability, durability, and configurability."
+  },
+  {
+   "t": "li",
+   "k": "b64dd74738fb",
+   "en": "Content Delivery Network: In this chapter, we’ll design a content delivery network (CDN) that’s used to keep viral content such as videos, images, audio, and webpages. It efficiently delivers content to end users while reducing latency and burden on the data centers."
+  },
+  {
+   "t": "li",
+   "k": "870b1ed08dd0",
+   "en": "Sequencer: In this building block, we’ll focus on the design of a unique IDs generator with a major focus on maintaining causality. It also explains three different methods for generating unique IDs."
+  },
+  {
+   "t": "li",
+   "k": "8750e6655b6a",
+   "en": "Service Monitoring: Monitoring systems are critical in distributed systems because they help analyze the system and alert the stakeholders if a problem occurs. Monitoring is often useful to get early warning systems so that system administrators can act ahead of an impending problem becoming a huge issue. Here, we’ll build two monitoring systems, one for the server-side and the other for client-side errors."
+  },
+  {
+   "t": "li",
+   "k": "adeead749f94",
+   "en": "Distributed Caching: In this building block, we’ll design a distributed caching system where multiple cache servers coordinate to store frequently accessed data."
+  },
+  {
+   "t": "li",
+   "k": "4f3e63264c5e",
+   "en": "Distributed Messaging Queue: In this building block, we’ll focus on the design of a queue consisting of multiple servers, which is used between interacting entities called producers and consumers. It helps decouple producers and consumers, results in independent scalability, and enhances reliability."
+  },
+  {
+   "t": "li",
+   "k": "e543738321d2",
+   "en": "Publish-Subscribe System: In this building block, we’ll focus on the design of an asynchronous service-to-service communication method called a pub-sub system. It is popular in serverless, microservices architectures and data processing systems."
+  },
+  {
+   "t": "li",
+   "k": "60b81df4d88d",
+   "en": "Rate Limiter: Here, we’ll design a system that throttles incoming requests for a service based on the predefined limit. It is generally used as a defensive layer for services to avoid their excessive usage-whether intended or unintended."
+  },
+  {
+   "t": "li",
+   "k": "b4b3ff2923c1",
+   "en": "Blob Store: This building block focuses on a storage solution for unstructured data—for example, multimedia files and binary executables."
+  },
+  {
+   "t": "li",
+   "k": "47b26d7d0607",
+   "en": "Distributed Search: A search system takes a query from a user and returns relevant content in a few seconds or less. This building block focuses on the three integral components: crawl, index, and search."
+  },
+  {
+   "t": "li",
+   "k": "4de3b9114198",
+   "en": "Distributed Logging: Logging is an I/O intensive operation that is time-consuming and slow. Here, we’ll design a system that allows services in a distributed system to log their events efficiently. The system will be made scalable and reliable."
+  },
+  {
+   "t": "li",
+   "k": "44f83097b882",
+   "en": "Distributed Task Scheduling: We’ll design a distributed task scheduler system that mediates between tasks and resources. It intelligently allocates resources to tasks to meet task-level and system-level goals. It’s often used to offload background processing to be completed asynchronously."
+  },
+  {
+   "t": "li",
+   "k": "46e1a769a4b2",
+   "en": "Sharded Counters: This building block demonstrates an efficient distributed counting system to deal with millions of concurrent read/write requests, such as likes on a celebrity’s tweet."
+  },
+  {
+   "t": "p",
+   "k": "5e56947c2e2e",
+   "en": "We have topologically ordered the building blocks so the building blocks that depend on others come later."
+  },
+  {
+   "t": "h2",
+   "k": "d3ab2b71e903",
+   "en": "Conventions"
+  },
+  {
+   "t": "p",
+   "k": "0c57178613b2",
+   "en": "For elaboration, we’ll use a “Requirements” section whenever we design a building block (and a design problem). The “Requirements” section will highlight the deliverables we expect from the developed design. “Requirements” will have two sub-categories:"
+  },
+  {
+   "t": "li",
+   "k": "98a5dc06fdaf",
+   "en": "Functional requirements: These represent the features a user of the designed system will be able to use. For example, the system will allow a user to search for content using the search bar."
+  },
+  {
+   "t": "li",
+   "k": "5a0cd5968e6f",
+   "en": "Non-functional requirements (NFRs): The non-functional requirements are criteria based on which the user of a system will consider the system usable. NFR may include requirements like high availability, low latency, scalability, and so on."
+  },
+  {
+   "t": "p",
+   "k": "fe95e575e188",
+   "en": "Let’s start with our building blocks."
+  }
+ ]
+}

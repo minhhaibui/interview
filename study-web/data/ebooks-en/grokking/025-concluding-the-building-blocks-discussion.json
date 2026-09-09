@@ -1,0 +1,238 @@
+{
+ "id": "025-concluding-the-building-blocks-discussion",
+ "title": "Concluding-the-Building-Blocks-Discussion",
+ "titleKey": "8afb3bc32897",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "ac0e9ae13d7f",
+   "en": "Wrapping Up the Building Blocks Discussion"
+  },
+  {
+   "t": "p",
+   "k": "dd4ad490d3ed",
+   "en": "Get an overview of what we have learned and what is yet to be discussed."
+  },
+  {
+   "t": "p",
+   "k": "801eca545f3b",
+   "en": "We have covered a good number of building blocks that will enable us to solve bigger design problems. In the coming chapters, we’ll solve a variety of problems that will use various building blocks."
+  },
+  {
+   "t": "p",
+   "k": "4d1118024fe6",
+   "en": "Since we’ve already covered the building blocks, we can focus on solving bigger design problems. From this point onwards, we’ll assume that you’re well acquainted with all the discussed building blocks when we use them in our coming design problems."
+  },
+  {
+   "t": "h2",
+   "k": "83242cb22be4",
+   "en": "What’s next?"
+  },
+  {
+   "t": "p",
+   "k": "281737416afb",
+   "en": "We’ll learn and explore thirteen design problems in the next chapters. We’ll study the following system designs:"
+  },
+  {
+   "t": "li",
+   "k": "d5244a331aad",
+   "en": "YouTube"
+  },
+  {
+   "t": "li",
+   "k": "f0e964c5cdd5",
+   "en": "Quora"
+  },
+  {
+   "t": "li",
+   "k": "cc0bb897e895",
+   "en": "Google Maps"
+  },
+  {
+   "t": "li",
+   "k": "bc2701556292",
+   "en": "Yelp"
+  },
+  {
+   "t": "li",
+   "k": "6fcfb125181c",
+   "en": "Uber"
+  },
+  {
+   "t": "li",
+   "k": "8a1621dae39b",
+   "en": "Twitter"
+  },
+  {
+   "t": "li",
+   "k": "cb637f30f881",
+   "en": "Newsfeed"
+  },
+  {
+   "t": "li",
+   "k": "b66806f4d55c",
+   "en": "Instagram"
+  },
+  {
+   "t": "li",
+   "k": "6b8235562b20",
+   "en": "TinyURL"
+  },
+  {
+   "t": "li",
+   "k": "006a2d257803",
+   "en": "Web Crawler"
+  },
+  {
+   "t": "li",
+   "k": "35ff4793f63f",
+   "en": "WhatsApp"
+  },
+  {
+   "t": "li",
+   "k": "4b998a9541b2",
+   "en": "Typeahead"
+  },
+  {
+   "t": "li",
+   "k": "b04a1d74071d",
+   "en": "Google Docs Each of these designs is an independent chapter, but we recommend that you go through these chapters in the assigned order. Some problems have background material that is helpful in other design problems. For example, working through the Google Maps problem first can be useful for readers interested in learning about the Uber design problem."
+  },
+  {
+   "t": "p",
+   "k": "1ea3f6cfc706",
+   "en": "At the end of the course, we’ll conclude our course with the “Spectacular Failures” chapter, where we’ll discuss how a minor bug or mistake led to a significant outage or failure of some of the most successful systems designed."
+  },
+  {
+   "t": "h1",
+   "k": "9db581fe3220",
+   "en": "The RESHADED Approach for System Design"
+  },
+  {
+   "t": "p",
+   "k": "25beb407b107",
+   "en": "Let's use our RESHADED approach to break down a design problem."
+  },
+  {
+   "t": "h2",
+   "k": "26aca7941a99",
+   "en": "Introduction"
+  },
+  {
+   "t": "p",
+   "k": "073c42c97554",
+   "en": "System design problems are not straightforward. We don’t have a universal formula that we can use for all design problems. However, we can use a high-level common strategy to set the tone for a good solution to any design problem."
+  },
+  {
+   "t": "p",
+   "k": "e63182d2fe71",
+   "en": "We call this the RESHADED approach. Generally, all our design problems are solved by keeping this strategy in mind. RESHADED is a guideline that we’ll use to resolve different design problems. Although there’s no such thing as a one-size-fits-all solution, using this approach will have its advantages, as we will see."
+  },
+  {
+   "t": "h2",
+   "k": "189c8e58b375",
+   "en": "Advantages of RESHADED"
+  },
+  {
+   "t": "p",
+   "k": "71788521fcce",
+   "en": "Before we go through each word in RESHADED, let's cover the benefits of our overall approach. Some of the key advantages of this approach are below:"
+  },
+  {
+   "t": "li",
+   "k": "ed1575739997",
+   "en": "The RESHADED approach helps us remember some key steps for the resolution of every design problem. This means that, at any point in time, there will always be a next step laid out ahead of us."
+  },
+  {
+   "t": "li",
+   "k": "09faeee44ca7",
+   "en": "The solution we come up with will have all the basic ingredients required to solve any design problem. Not only that, but the solution offered through the RESHADED approach will be systematic and thoughtful."
+  },
+  {
+   "t": "h2",
+   "k": "7c6bbd923ec1",
+   "en": "Exploring RESHADED"
+  },
+  {
+   "t": "p",
+   "k": "8a6d5d4779bb",
+   "en": "Below, we describe what steps we take under each word in RESHADED:"
+  },
+  {
+   "t": "p",
+   "k": "e97a0ef00bd0",
+   "en": "Requirements: During this step, we gather all the requirements of the design problem and define its scope. Requirements include understanding what the service is, how it works, and what its main features are. Our goal in this step is to gather the functional and non-functional requirements of a service we are about to design."
+  },
+  {
+   "t": "p",
+   "k": "a950456c13d9",
+   "en": "Estimation: As the name suggests, this step estimates the resources required to provide the service to a defined number of users. By resources, we mean the hardware or infrastructural resources. Some sample estimation questions are the following:"
+  },
+  {
+   "t": "li",
+   "k": "970375f60953",
+   "en": "How many servers will we require to provide smooth services to 500 million daily active users (DAU)?"
+  },
+  {
+   "t": "li",
+   "k": "d99af502f65b",
+   "en": "How much storage do we need if we have to store 125 million tweets per day, and 20% of tweets contain media?"
+  },
+  {
+   "t": "p",
+   "k": "036f966c4bb2",
+   "en": "Estimations are important because they help us understand the scale of the system we’ll design. We’ll make key decisions based on the estimate. For example, we’ll decide what type of database to use for storing our data, which data structure will give optimal performance, and so on."
+  },
+  {
+   "t": "p",
+   "k": "4c8b2f68c781",
+   "en": "Storage schema (optional): This step involvesTable A Table B articulating our data model—that is, we define which tables we need and what type of fields are part of each table. However, this is an optional step, and we may not exercise this effort in every design problem."
+  },
+  {
+   "t": "p",
+   "k": "01943a9e8bdf",
+   "en": "High-level design: This step involves identifying the main components and building blocks we’ll use to design our desired system. We do this by getting inspiration from our functional and non-functional requirements."
+  },
+  {
+   "t": "p",
+   "k": "92d509434818",
+   "en": "This is considered the first step toward the complete design of our system and therefore requires further iteration and improvement. Primarily, this section will focus on fulfilling the functional requirements."
+  },
+  {
+   "t": "p",
+   "k": "32ef2c860d24",
+   "en": "API design: The goal in this phase is to build interfaces for our service. Using these interfaces, users can call various services within our system. These interfaces are in the form of API calls and are generally a translation of our functional requirements."
+  },
+  {
+   "t": "p",
+   "k": "a1a87ff6e9a4",
+   "en": "Detailed design: The detailed design starts by recognizing the limitations of the high-level design. We’ll capitalize on these limitations to evolve our design. During this step, we’ll finalize our design by mentioning all the components and building blocks that we’ll use."
+  },
+  {
+   "t": "p",
+   "k": "7d3459f811b9",
+   "en": "We also define the workflow of our design and its usage of different technologies. The detailed design aims to fulfill the functional as well as non-functional requirements of the problem."
+  },
+  {
+   "t": "p",
+   "k": "7b9fb8a22ec9",
+   "en": "Evaluation: This step will measure the effectiveness of our solution. In other words, we justify how our design fulfills the functional and non-functional requirements."
+  },
+  {
+   "t": "p",
+   "k": "f984b2737c13",
+   "en": "We discuss different trade-offs we made in our solution and also identify room for improvement."
+  },
+  {
+   "t": "p",
+   "k": "db24a9b34276",
+   "en": "Distinctive component/feature: At the start of this lesson, we discussed how no one-size-fits-all solution exists. This step is to identify a unique aspect for each design problem and discuss it. For example, the Uber design problem has payment service and fraud detection as its unique feature. In contrast, Google Docs has concurrency control, which is required when different users want to edit the same section of a document simultaneously."
+  },
+  {
+   "t": "p",
+   "k": "a92500796af1",
+   "en": "Next, we’ll apply our guideline (RESHADED) to many design problems."
+  }
+ ]
+}

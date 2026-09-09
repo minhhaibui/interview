@@ -1,0 +1,1027 @@
+{
+ "id": "036-design-whatsapp",
+ "title": "Design-WhatsApp",
+ "titleKey": "f96046d41f92",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "2df3b127c99f",
+   "en": "System Design: WhatsApp"
+  },
+  {
+   "t": "p",
+   "k": "cc511dcc7978",
+   "en": "Learn to design a WhatsApp messenger."
+  },
+  {
+   "t": "h2",
+   "k": "35ff4793f63f",
+   "en": "WhatsApp"
+  },
+  {
+   "t": "p",
+   "k": "f3a0d24019ed",
+   "en": "In today’s technological world, WhatsApp is an important messaging application that connects billions of people around the globe. Many users start their day by reading or sending WhatsApp messages to their friends and family. According to July 2021 estimates, WhatsApp has two billion active users worldwide. Further, an average WhatsApp user spends approximately 19.4 hours per month on the application."
+  },
+  {
+   "t": "p",
+   "k": "e39e56ed8849",
+   "en": "In December 2020, the WhatsApp CEO tweeted that WhatsApp users share more than 100 billion messages per day, an increase of approximately 54% since 2018."
+  },
+  {
+   "t": "p",
+   "k": "1d5ad43f05c2",
+   "en": "The increase in messages sent globally per day is depicted in the following chart:"
+  },
+  {
+   "t": "h2",
+   "k": "b8578c7e1fa0",
+   "en": "Design problem"
+  },
+  {
+   "t": "p",
+   "k": "b84475ca1f53",
+   "en": "As system designers, we should be aware of the growth rate of users. There are many interesting questions about WhatsApp:"
+  },
+  {
+   "t": "p",
+   "k": "d3825df6f5d0",
+   "en": "How is this application designed?"
+  },
+  {
+   "t": "p",
+   "k": "33dfdfcbb92b",
+   "en": "How does it work?"
+  },
+  {
+   "t": "p",
+   "k": "43f6664d2088",
+   "en": "What are the different types of components involved in it?"
+  },
+  {
+   "t": "p",
+   "k": "0677061b8ba9",
+   "en": "How does WhatsApp enable billions of users to communicate with each other?"
+  },
+  {
+   "t": "p",
+   "k": "078760009195",
+   "en": "How does WhatsApp keep all that data secure?"
+  },
+  {
+   "t": "p",
+   "k": "29ff5d8847f4",
+   "en": "In this chapter, we’ll focus on the high-level and detailed design of the WhatsApp application to answer the above questions."
+  },
+  {
+   "t": "h2",
+   "k": "4fd6b41d01dc",
+   "en": "How will we design WhatsApp?"
+  },
+  {
+   "t": "p",
+   "k": "5a46595d9689",
+   "en": "We’ve divided the design of WhatsApp messenger into the following five lessons:"
+  },
+  {
+   "t": "li",
+   "k": "58fbc8641916",
+   "en": "Requirements: In this lesson, we’ll identify functional and non-functional requirements. We’ll also discuss resource estimations required for better and smooth operations of the proposed design of WhatsApp."
+  },
+  {
+   "t": "li",
+   "k": "5f2bb8088991",
+   "en": "High-level Design: We’ll focus on the high-level design of our WhatsApp version. We’ll also discuss essential APIs for our WhatsApp design."
+  },
+  {
+   "t": "li",
+   "k": "984b8921446c",
+   "en": "Detailed Design: In this lesson, we’ll describe the design of our WhatsApp messenger in detail. Initially, we’ll explain the design of each microservice, including connection with servers, send and receive messages and media content, and group messages. In the end, the design of each microservice is combined into the detailed design of WhatsApp."
+  },
+  {
+   "t": "li",
+   "k": "df9dbad70a71",
+   "en": "Evaluation: This lesson will explain how our version of WhatsApp fulfills non-functional requirements. We’ll also evaluate some trade-offs of our design."
+  },
+  {
+   "t": "li",
+   "k": "be8f722f20a0",
+   "en": "Quiz: Here, we’ll assess what we’ve learned in this chapter through a quiz."
+  },
+  {
+   "t": "p",
+   "k": "350aff121c48",
+   "en": "Let’s start by discussing the requirements of our version of WhatsApp."
+  },
+  {
+   "t": "h1",
+   "k": "8c6e5354f3c6",
+   "en": "Requirements of WhatsApp’s Design"
+  },
+  {
+   "t": "h2",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "p",
+   "k": "431eb2b8e058",
+   "en": "Our design of the WhatsApp messenger should meet the following requirements."
+  },
+  {
+   "t": "h3",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "bfbdef9c52e6",
+   "en": "Conversation: The system should support one-on-one and group conversations between users."
+  },
+  {
+   "t": "p",
+   "k": "dc241a4edb1f",
+   "en": "Acknowledgment: The system should support message delivery acknowledgment, such as sent, delivered, and read."
+  },
+  {
+   "t": "p",
+   "k": "6cb8ac0aa9ad",
+   "en": "Sharing: The system should support sharing of media files, such as images, videos, and audio."
+  },
+  {
+   "t": "p",
+   "k": "9c0833ff0075",
+   "en": "Chat storage: The system must support the persistent storage of chat messages when a user is offline until the successful delivery of messages."
+  },
+  {
+   "t": "p",
+   "k": "68f56d8598c4",
+   "en": "Push notifications: The system should be able to notify offline users of new messages once their status becomes online."
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "3cff5eac9f48",
+   "en": "Low latency: Users should be able to receive messages with low latency."
+  },
+  {
+   "t": "p",
+   "k": "04a7a14a9774",
+   "en": "Consistency: Messages should be delivered in the order they were sent."
+  },
+  {
+   "t": "p",
+   "k": "59e117a3dbec",
+   "en": "Moreover, users must see the same chat history on all of their devices."
+  },
+  {
+   "t": "p",
+   "k": "ad37444ff396",
+   "en": "Availability: The system should be highly available. However, the availability can be compromised in the interest of consistency."
+  },
+  {
+   "t": "p",
+   "k": "c26f705ddb70",
+   "en": "Security: The system must be secure via end-to-end encryption. The end-to-end encryption ensures that only the two communicating parties can see the content of messages. Nobody in between, not even WhatsApp, should have access."
+  },
+  {
+   "t": "li",
+   "k": "9ea1897f40e8",
+   "en": "Scalability: The system should be highly scalable to support an ever-increasing number of users and messages per day.",
+   "lead": "Scalability"
+  },
+  {
+   "t": "h2",
+   "k": "a9be995c473a",
+   "en": "Resource estimation"
+  },
+  {
+   "t": "p",
+   "k": "f2d2ddab82a9",
+   "en": "WhatsApp is the most used messaging application across the globe. According to WhatsApp, it supports more than two billion users around the world who share more than 100 billion messages each day. We need to estimate the storage capacity, bandwidth, and number of servers to support such an enormous number of users and messages."
+  },
+  {
+   "t": "h3",
+   "k": "5e7e60e98560",
+   "en": "Storage estimation"
+  },
+  {
+   "t": "p",
+   "k": "e13ad5c58b18",
+   "en": "As there are more than 100 billion messages shared per day over WhatsApp, let’s estimate the storage capacity based on this figure. Assume that each message takes 100 Bytes on average. Moreover, the WhatsApp servers keep the messages only for 30 days. So, if the user doesn’t get connected to the server within these days, the messages will be permanently deleted from the server. 100 billion/day∗100 Bytes=10 TB/day For 30 days, the storage capacity would become the following: 30∗10 TB/day=300 TB/month Besides chat messages, we also have media files, which take more than 100 Bytes per message. Moreover, we also have to store users’ information and messages’ metadata—for example, time stamp, ID, and so on. Along the way, we also need encryption and decryption for secure communication. Therefore, we would also need to store encryption keys and relevant metadata. So, to be precise, we need more than 300 TB per month, but for the sake of simplicity, let’s stick to the number 300 TB per month."
+  },
+  {
+   "t": "h3",
+   "k": "10d00f179eb1",
+   "en": "Bandwidth estimation"
+  },
+  {
+   "t": "p",
+   "k": "97e72c7706b1",
+   "en": "According to the storage capacity estimation, our service will get 10TB of data each day, giving us a bandwidth of 926 Mb/s. 10 TB/86400sec≈926 Mb/s"
+  },
+  {
+   "t": "li",
+   "k": "01586969b4dc",
+   "en": "Note: To keep our design simple, we’ve ignored the media content (images, videos, documents, and so on). So, the number 926 might seem low.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "fa9f5172c3c9",
+   "en": "We also require an equal amount of outgoing bandwidth as the same message from the sender would need to be delivered to the receiver."
+  },
+  {
+   "t": "h2",
+   "k": "9ccef2fa0bd8",
+   "en": "High-level Estimates"
+  },
+  {
+   "t": "p",
+   "k": "2996a8a57cce",
+   "en": "TypeEstimates Total messages per day100 billion Storage required per day10 TB Storage for 30 days300 TB Incoming data per second926 Mb/s Outgoing data per second926 Mb/s"
+  },
+  {
+   "t": "h3",
+   "k": "7e7845b4ea66",
+   "en": "Number of servers estimation"
+  },
+  {
+   "t": "p",
+   "k": "738f355fae43",
+   "en": "WhatsApp handles around 10 million connections on a single server, which seems quite high for a server. However, it’s possible by extensive performance engineering. We’ll need to know all the in-depth details of a system, such as a server’s kernel, networking library, infrastructure configuration, and so on."
+  },
+  {
+   "t": "li",
+   "k": "5ac349b78034",
+   "en": "Note: We can often optimize a general-purpose server for special tasks by careful performance engineering of the full software stack.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "e532b5f473b0",
+   "en": "Let’s move to the estimation of the number of servers:"
+  },
+  {
+   "t": "p",
+   "k": "54483953561d",
+   "en": "No. of servers= Total connections per day/No. of connections per server= 2 billion/10 million=200 servers So, according to the above estimates, we require 200 chat servers."
+  },
+  {
+   "t": "h3",
+   "k": "caa22f0d5451",
+   "en": "Try it out"
+  },
+  {
+   "t": "p",
+   "k": "008b466b0e0f",
+   "en": "Let’s analyze how the number of messages per day affects the storage and bandwidth requirements. For this purpose, we can change values in the following table to compute the estimates:"
+  },
+  {
+   "t": "p",
+   "k": "6bf335b5cef0",
+   "en": "Number of users per day (in billions 2 )"
+  },
+  {
+   "t": "p",
+   "k": "27e8cb3cbda1",
+   "en": "Number of messages per day (in billi 100 ons)"
+  },
+  {
+   "t": "p",
+   "k": "3f8e69700e1d",
+   "en": "Size of each message (in bytes)100 Number of connections a server can 10 handle (in millions) f Storage estimation per day (in TB)10 f Incoming and Outgoing bandwidth ("
+  },
+  {
+   "t": "li",
+   "k": "bd184656dcf3",
+   "en": "4 Mb/s) f Number of chat servers required200"
+  },
+  {
+   "t": "h2",
+   "k": "cfa08fe6c777",
+   "en": "Building blocks we will use"
+  },
+  {
+   "t": "p",
+   "k": "18f6fbf89823",
+   "en": "The design of WhatsApp utilizes the following building blocks that have also been discussed in the initial chapters:"
+  },
+  {
+   "t": "p",
+   "k": "dd7182dc20a2",
+   "en": "Databases are required to store users’ and groups’ metadata."
+  },
+  {
+   "t": "p",
+   "k": "d8b1ae7fd9ac",
+   "en": "Blob storage is used to store multimedia content shared in messages."
+  },
+  {
+   "t": "p",
+   "k": "6e6f3a7865be",
+   "en": "A CDN is used to effectively deliver multimedia content that’s frequently shared."
+  },
+  {
+   "t": "p",
+   "k": "266c677efdd8",
+   "en": "A load balancer distributes incoming requests among the pool of available servers."
+  },
+  {
+   "t": "p",
+   "k": "d310d09fb9f7",
+   "en": "Caches are required to keep frequently accessed data used by various services."
+  },
+  {
+   "t": "p",
+   "k": "27ee9d818923",
+   "en": "A messaging queue is used to temporarily keep messages in a queue on a database when a user is offline."
+  },
+  {
+   "t": "p",
+   "k": "1c4ed7f3da10",
+   "en": "In the next lesson, we’ll focus on the high-level design of the WhatsApp messenger."
+  },
+  {
+   "t": "h1",
+   "k": "c770de6e16de",
+   "en": "High-level Design of WhatsApp"
+  },
+  {
+   "t": "p",
+   "k": "0252da0fd838",
+   "en": "Get introduced to the high-level design of the WhatsApp system."
+  },
+  {
+   "t": "h2",
+   "k": "f0e860766605",
+   "en": "High-level design"
+  },
+  {
+   "t": "p",
+   "k": "9c74b8dee187",
+   "en": "At an abstract level, the high-level design consists of a chat server responsible for communication between the sender and the receiver. When a user wants to send a message to another user, both connect to the chat server. Both users send their messages to the chat server. The chat server then sends the message to the other intended user and also stores the message in the database."
+  },
+  {
+   "t": "p",
+   "k": "b351a52ce232",
+   "en": "The following steps describe the communication between both clients:"
+  },
+  {
+   "t": "li",
+   "k": "614be2f15d63",
+   "en": "User A and user B create a communication channel with the chat server."
+  },
+  {
+   "t": "li",
+   "k": "d70013092253",
+   "en": "User A sends a message to the chat server."
+  },
+  {
+   "t": "li",
+   "k": "96301050907f",
+   "en": "Upon receiving the message, the chat server acknowledges back to user A."
+  },
+  {
+   "t": "li",
+   "k": "e6cca3e6e4f5",
+   "en": "The chat server sends the message to user B and stores the message in the database if the receiver’s status is offline."
+  },
+  {
+   "t": "li",
+   "k": "e70b955764db",
+   "en": "User B sends an acknowledgment to the chat server."
+  },
+  {
+   "t": "li",
+   "k": "8e0607de6080",
+   "en": "The chat server notifies user A that the message has been successfully delivered."
+  },
+  {
+   "t": "li",
+   "k": "04ec5343e63d",
+   "en": "When user B reads the message, the application notifies the chat server."
+  },
+  {
+   "t": "li",
+   "k": "252fd4f0d9a2",
+   "en": "The chat server notifies user A that user B has read the message."
+  },
+  {
+   "t": "p",
+   "k": "b7a325e35c0e",
+   "en": "The process is shown in the following illustrations:"
+  },
+  {
+   "t": "h2",
+   "k": "58dbf879b581",
+   "en": "API design"
+  },
+  {
+   "t": "p",
+   "k": "8c606508ada9",
+   "en": "WhatsApp provides a vast amount of features to its users via different APIs."
+  },
+  {
+   "t": "p",
+   "k": "d97b4acbe045",
+   "en": "Some features are mentioned below:"
+  },
+  {
+   "t": "h3",
+   "k": "d7f408b183cf",
+   "en": "Send message"
+  },
+  {
+   "t": "p",
+   "k": "362eb5f02319",
+   "en": "The sendMessage API is as follows:"
+  },
+  {
+   "t": "code",
+   "k": "3c12171e6fac",
+   "en": "sendMessage(sender_ID, reciever_ID, type, text=none, media_object=none , document=none)"
+  },
+  {
+   "t": "p",
+   "k": "a61a939adf97",
+   "en": "This API is used to send a text message from a sender to a receiver by making a POST API call to the /messages API endpoint. Generally, the sender’s and receiver’s IDs are their phone numbers. The parameters used in this API call are described in the following table:"
+  },
+  {
+   "t": "p",
+   "k": "8b0a7cd07384",
+   "en": "ParameterDescription sender_IDThis is a unique identifier of the user who sends the message. reciever_IDThis is a unique identifier of the user who receives the message. typeThe default message type is text. This represents whether the sender sends a media file or a document. textThis feild contains the text that has to be sent as a message. media_objectThis parameter is defined based on the type parameter. It represents the media file to be sent. documentThis represents the document file to be sent."
+  },
+  {
+   "t": "h3",
+   "k": "e027e6834005",
+   "en": "Get message"
+  },
+  {
+   "t": "p",
+   "k": "0220ead569db",
+   "en": "The getMessage API is as follows:"
+  },
+  {
+   "t": "code",
+   "k": "0ea11dfcbc5d",
+   "en": "getMessage(user_Id)"
+  },
+  {
+   "t": "p",
+   "k": "f3cb012dc53b",
+   "en": "Using this API call, users can fetch all unread messages when they come online after being offline for some time."
+  },
+  {
+   "t": "p",
+   "k": "257e9c50462f",
+   "en": "ParameterDescription user_IdThis is a unique identifier representing the user who has to fetch all unread messages."
+  },
+  {
+   "t": "h3",
+   "k": "a45dde60b956",
+   "en": "Upload media or document file"
+  },
+  {
+   "t": "p",
+   "k": "070d6c7eb109",
+   "en": "The uploadFile API is as follows:"
+  },
+  {
+   "t": "code",
+   "k": "cad069c3625a",
+   "en": "uploadFile(file_type, file)"
+  },
+  {
+   "t": "p",
+   "k": "46ead7251a83",
+   "en": "We can upload media files via the uploadFile API by making a POST request to the /v1/media API endpoint. A successful response returns an ID that’s forwarded to the receiver. The maximum file size for media that can be uploaded is 16 MB, while the limit is 100 MB for a document."
+  },
+  {
+   "t": "p",
+   "k": "f1c53b600681",
+   "en": "ParameterDescription file_typeThis represents the type of file uploaded via the API call. fileThis contains the file being uploaded via the API call."
+  },
+  {
+   "t": "h3",
+   "k": "8c4de0a18f46",
+   "en": "Download a document or media file"
+  },
+  {
+   "t": "p",
+   "k": "c8501c7a9a91",
+   "en": "The downloadFile API is as follows:"
+  },
+  {
+   "t": "code",
+   "k": "cdbd30d84a59",
+   "en": "downloadFile(user_id, file_id)"
+  },
+  {
+   "t": "p",
+   "k": "f00820ed0645",
+   "en": "The parameters of this API call are explained in the following table:"
+  },
+  {
+   "t": "p",
+   "k": "58cc21e533bc",
+   "en": "ParameterDescription user_idThis is a unique identifier of the user who will download a file. file_idThis is a unique identifier of a file. It’s generated while uploading a file via uploadFile() API call. The downloadFile() API call downloads the media file through this identifier. The client can find the file_id by providing the file name to the server. That API call is not shown here."
+  },
+  {
+   "t": "p",
+   "k": "6d5715040899",
+   "en": "In the next lesson, we’ll focus on the detailed design of the WhatsApp system."
+  },
+  {
+   "t": "h1",
+   "k": "6b81d5623f42",
+   "en": "Detailed Design of WhatsApp"
+  },
+  {
+   "t": "p",
+   "k": "5ef2fbba3137",
+   "en": "Learn about the design of the WhatsApp system in detail, and understand the interaction of various microservices."
+  },
+  {
+   "t": "h2",
+   "k": "674535ec930b",
+   "en": "Detailed design"
+  },
+  {
+   "t": "p",
+   "k": "1c2d68fab07f",
+   "en": "The high-level design discussed in the previous lesson doesn’t answer the following questions:"
+  },
+  {
+   "t": "p",
+   "k": "ba80de5797c5",
+   "en": "How is a communication channel created between clients and servers?"
+  },
+  {
+   "t": "p",
+   "k": "429b25cefc5e",
+   "en": "How can the high-level design be scaled to support billions of users?"
+  },
+  {
+   "t": "p",
+   "k": "3fd9f67fe407",
+   "en": "How is the user’s data stored?"
+  },
+  {
+   "t": "p",
+   "k": "213c658ef8c0",
+   "en": "How is the receiver identified to whom the message is delivered?"
+  },
+  {
+   "t": "p",
+   "k": "bc8f1deefb2a",
+   "en": "To answer all these questions, let’s dive deep into the high-level design and explore each component in detail. Let’s start with how users make connections with the chat servers."
+  },
+  {
+   "t": "h3",
+   "k": "1f675bec75d8",
+   "en": "Connection with a WebSocket server"
+  },
+  {
+   "t": "p",
+   "k": "bbe4f72428e8",
+   "en": "In WhatsApp, each active device is connected with a WebSocket server via WebSocket protocol. A WebSocket server keeps the connection open with all the active (online) users. Since one server isn’t enough to handle billions of devices, there should be enough servers to handle billions of users. The responsibility of each of these servers is to provide a port to every online user. The mapping between servers, ports, and users is stored in the WebSocket manager that resides on top of a cluster of the data store. In this case, that’s Redis."
+  },
+  {
+   "t": "p",
+   "k": "11eec71fdcf3",
+   "en": "Point to Ponder Why is WebSocket preferred over HTTP(S) protocol for client-server communication?"
+  },
+  {
+   "t": "p",
+   "k": "45202ce125f8",
+   "en": "Hide Answer HTTP(S) doesn’t keep the connection open for the servers to send frequent data to a client. With HTTP(S) protocol, a client constantly requests updates from the server, commonly called polling, which is resource intensive and causes latency. WebSocket maintains a persistent connection between the client and a server. This protocol transfers data to the client immediately whenever it becomes available."
+  },
+  {
+   "t": "p",
+   "k": "68ddf898c6dc",
+   "en": "It provides a bidirectional connection used as a common solution to send asynchronous updates from a server to a client."
+  },
+  {
+   "t": "h3",
+   "k": "ba7ccb193db0",
+   "en": "Send or receive messages"
+  },
+  {
+   "t": "p",
+   "k": "e32c181959a2",
+   "en": "The WebSocket manager is responsible for maintaining a mapping between an active user and a port assigned to the user. Whenever a user is connected to another WebSocket server, this information will be updated in the data store."
+  },
+  {
+   "t": "p",
+   "k": "8976a99fb5c6",
+   "en": "A WebSocket server also communicates with another service called message service. Message service is a repository of messages on top of the Mnesia database cluster. It acts as an interface to the Mnesia database for other services interacting with the databases. It is responsible for storing and retrieving messages from the Mnesia database. It also deletes messages from the Mnesia database after a configurable amount of time. And, it exposes APIs to receive messages by various filters, such as user ID, message ID, and so on."
+  },
+  {
+   "t": "p",
+   "k": "dada825ace19",
+   "en": "Now, let’s assume that user A wants to send a message to user B. As shown in the above figure, both users are connected to different WebSocket servers. The system performs the following steps to send messages from user A to user B:"
+  },
+  {
+   "t": "li",
+   "k": "2c6731ab2b7d",
+   "en": "User A communicates with the corresponding WebSocket server to which it is connected."
+  },
+  {
+   "t": "li",
+   "k": "f54883de83eb",
+   "en": "The WebSocket server associated with user A identifies the WebSocket to which user B is connected via the WebSocket manager. If user B is online, the WebSocket manager responds back to user A’s WebSocket server that user B is connected with its WebSocket server."
+  },
+  {
+   "t": "li",
+   "k": "b7c52564fec5",
+   "en": "Simultaneously, the WebSocket server sends the message to the message service and is stored in the Mnesia database where it gets processed in the first-in-first-out order. As soon as these messages are delivered to the receiver, they are deleted from the database."
+  },
+  {
+   "t": "li",
+   "k": "ca182e455303",
+   "en": "Now, user A’s WebSocket server has the information that user B is connected with its own WebSocket server. The communication between user A and user B gets started via their WebSocket servers."
+  },
+  {
+   "t": "li",
+   "k": "5af4639eb2c4",
+   "en": "If user B is offline, messages are kept in the Mnesia database. Whenever they become online, all the messages intended for user B are delivered via push notification. Otherwise, these messages are deleted permanently after 30 days."
+  },
+  {
+   "t": "p",
+   "k": "518786e326c4",
+   "en": "Both users (sender and receiver) communicate with the WebSocket manager to find each other’s WebSocket server. Consider a case where there can be a continuous conversation between both users. This way, many calls are made to the WebSocket manager. To minimize the latency and reduce the number of these calls to the WebSocket manager, each WebSocket server caches the following information:"
+  },
+  {
+   "t": "p",
+   "k": "72004ce7ca7e",
+   "en": "If both users are connected to the same server, the call to the WebSocket manager is avoided."
+  },
+  {
+   "t": "p",
+   "k": "7bb86bc742a8",
+   "en": "It caches information of recent conversations about which user is connected to which WebSocket server."
+  },
+  {
+   "t": "p",
+   "k": "eacb61e95944",
+   "en": "Point to Ponder The data in the cache will become outdated if a user gets disconnected and connects with another server. Keeping this in mind, how long should a WebSocket server cache information?"
+  },
+  {
+   "t": "p",
+   "k": "37e2fc409791",
+   "en": "Hide Answer The information will be updated in the WebSocket manager when a user disconnects due to some faults in the connection and reconnects with a different WebSocket server. The WebSocket manager, in turn, invalidates the data in the cache used by the WebSocket servers, and the updated data is sent to the corresponding cache. So, the information in the cache will remain there until it receives an invalidate signal from the WebSocket manager."
+  },
+  {
+   "t": "h3",
+   "k": "4b085fb5e199",
+   "en": "Send or receive media files"
+  },
+  {
+   "t": "p",
+   "k": "8aee4b32f66a",
+   "en": "So far, we’ve discussed the communication of text messages. But what happens when a user sends media files? Usually, the WebSocket servers are lightweight and don’t support heavy logic such as handling the sending and receiving of media files. We have another service called the asset service, which is responsible for sending and receiving media files."
+  },
+  {
+   "t": "p",
+   "k": "41ef80eb916a",
+   "en": "Moreover, the sending of media files consists of the following steps:"
+  },
+  {
+   "t": "li",
+   "k": "23cf5c573111",
+   "en": "The media file is compressed and encrypted on the device side."
+  },
+  {
+   "t": "li",
+   "k": "55e333545e3f",
+   "en": "The compressed and encrypted file is sent to the asset service to store the file on blob storage. The asset service assigns an ID that’s communicated with the sender. The asset service also maintains a hash for each file to avoid duplication of content on the blob storage. For example, if a user wants to upload an image that’s already there in the blob storage, the image won’t be uploaded. Instead, the same ID is forwarded to the receiver."
+  },
+  {
+   "t": "li",
+   "k": "435496e022aa",
+   "en": "The asset service sends the ID of media files to the receiver via the message service. The receiver downloads the media file from the blob storage using the ID."
+  },
+  {
+   "t": "li",
+   "k": "4808d43e7c3b",
+   "en": "The content is loaded onto a CDN if the asset service receives a large number of requests for some particular content."
+  },
+  {
+   "t": "p",
+   "k": "71610454bdbd",
+   "en": "The following figure demonstrates the components involved in sharing media files over WhatsApp messenger:"
+  },
+  {
+   "t": "h3",
+   "k": "df594c934baa",
+   "en": "Support for group messages"
+  },
+  {
+   "t": "p",
+   "k": "3d3c6e8a10fe",
+   "en": "WebSocket servers don’t keep track of groups because they only track active users. However, some users could be online and others could be offline in a group. For group messages, the following three main components are responsible for delivering messages to each user in a group:"
+  },
+  {
+   "t": "p",
+   "k": "12d6e924bf9e",
+   "en": "Group message handler Group message service Kafka Let’s assume that user A wants to send a message to a group with some unique ID—for example, Group/A. The following steps explain the flow of a message sent to a group:"
+  },
+  {
+   "t": "li",
+   "k": "2e1def9d33da",
+   "en": "Since user A is connected to a WebSocket server, it sends a message to the message service intended for Group/A."
+  },
+  {
+   "t": "li",
+   "k": "629d9a7f7800",
+   "en": "The message service sends the message to Kafka with other specific information about the group. The message is saved there for further processing. In Kafka terminology, a group can be a topic, and the senders and receivers can be producers and consumers, respectively."
+  },
+  {
+   "t": "li",
+   "k": "4b4961bf439f",
+   "en": "Now, here comes the responsibility of the group service. The group service keeps all information about users in each group in the system. It has all the information about each group, including user IDs, group ID, status, group icon, number of users, and so on. This service resides on top of the MySQL database cluster, with multiple secondary replicas distributed geographically. A Redis cache server also exists to cache data from the MySQL servers. Both geographically distributed replicas and Redis cache aid in reducing latency."
+  },
+  {
+   "t": "li",
+   "k": "6bd0a8ada2ab",
+   "en": "The group message handler communicates with the group service to retrieve data of Group/A users."
+  },
+  {
+   "t": "li",
+   "k": "d6875e2209c9",
+   "en": "In the last step, the group message handler follows the same process as a WebSocket server and delivers the message to each user."
+  },
+  {
+   "t": "h3",
+   "k": "30310872104b",
+   "en": "End-to-end encryption"
+  },
+  {
+   "t": "p",
+   "k": "b75239ce55cf",
+   "en": "Similar to the group message service, there’s another service known as user service that keeps track of each user. It contains user-related data, such as name, profile picture, status, and so on. This service resides on top of the MySQL database and utilizes cache for frequently used data."
+  },
+  {
+   "t": "p",
+   "k": "841e215829b8",
+   "en": "At registration time, a WhatsApp client generates a number of public-private key pairs that include keys pairs for identity, a signed prekey, and a batch of one-time prekeys. These keys are used for different purposes. The public keys are stored in the database associated with the user service along with the user’s identifier. Whenever a sender wants to establish a connection with the receiver, it also requests the server for the keys associated with a receiver’s ID. Private keys are only stored on the client’s end devices."
+  },
+  {
+   "t": "h3",
+   "k": "29eeffa0cb21",
+   "en": "One-to-one communication"
+  },
+  {
+   "t": "p",
+   "k": "66cd291f7718",
+   "en": "To communicate securely, WhatsApp clients, on both sender and receiver sides, establish a pairwise encrypted session with each other. The session is created using the following steps:"
+  },
+  {
+   "t": "li",
+   "k": "f0b8d8b5a6d5",
+   "en": "The sender requests the public identity key, signed prekey, and a single public one-time prekey of the receiver’s device. The one-time prekey is used only once."
+  },
+  {
+   "t": "li",
+   "k": "bb1fe1e446ae",
+   "en": "The WhatsApp server returns the requested public keys of the receiver."
+  },
+  {
+   "t": "li",
+   "k": "49c806af3cc3",
+   "en": "The sender generates an ephemeral Curve25519 key pair."
+  },
+  {
+   "t": "li",
+   "k": "6c54349ae0f4",
+   "en": "The sender creates a master secret key using its own identity key, the ephemeral key pair, and the receiver’s public keys."
+  },
+  {
+   "t": "li",
+   "k": "94f80d5b88ba",
+   "en": "The sender uses the HMAC-based key-derivation function (HKDF) to create two other keys known as a root key and chain key from the master secret key. The sender starts sending messages to the receiver after establishing the pairwise encrypted session. The receiver creates the same session based on the information present in the header of the first receiving message."
+  },
+  {
+   "t": "li",
+   "k": "38ede96f44dc",
+   "en": "After establishing a session, an 80-byte Message Key is generated based on the root and chain Keys. The Message Key is used for encryption and authentication of messages."
+  },
+  {
+   "t": "h3",
+   "k": "9dd10ff8c9e4",
+   "en": "Group communication"
+  },
+  {
+   "t": "p",
+   "k": "1884f5942e57",
+   "en": "The communication in a WhatsApp group is handled by the same process discussed in the previous section on one-to-one communication. A sender key, used by the signaling messaging protocol, is generated and shared with each member’s device of the group using the pairwise encrypted session."
+  },
+  {
+   "t": "p",
+   "k": "c2dba81fe30f",
+   "en": "The messages sent to a group are encrypted using the sender key."
+  },
+  {
+   "t": "p",
+   "k": "aed398496fe3",
+   "en": "The communication in a group is directed by Kafka, where each user in a group subscribes to the relevant topic (a group with an associated messaging queue). The messages are then delivered in a fanout messaging pattern where messages are delivered from a single sender to multiple receivers."
+  },
+  {
+   "t": "h3",
+   "k": "fc0ad1690014",
+   "en": "Simultaneous maintenance of WhatsApp sessions on multiple devices"
+  },
+  {
+   "t": "p",
+   "k": "d9a5732e4a55",
+   "en": "Every device on WhatsApp is identified by a device identity key. If a user uses multiple devices (a primary and several other companion devices), each device identity key is stored against the user’s account on the WhatsApp server. When the WhatsApp server receives a message from a user, it transmits messages multiple times to each device linked with a user’s account."
+  },
+  {
+   "t": "p",
+   "k": "471b65c7bb46",
+   "en": "Similarly, each device used by a user has its own set of encryption keys. If a set of keys of one companion device is compromised, the attacker won’t be able to see messages communicated with the other device."
+  },
+  {
+   "t": "p",
+   "k": "6bdcc3b6bf58",
+   "en": "We’ve just touched the basics here because security is a deep topic. See the WhatsApp security whitepaper for further details."
+  },
+  {
+   "t": "h2",
+   "k": "2bb9f67de9dd",
+   "en": "Put everything together"
+  },
+  {
+   "t": "p",
+   "k": "d7b6bbee6282",
+   "en": "We discussed the features of our WhatsApp system design. It includes user connection with a server, sending messages and media files, group messages, and end-to-end encryption, individually. The final design of our WhatsApp messenger is as follows:"
+  },
+  {
+   "t": "h1",
+   "k": "24fd56148ee2",
+   "en": "Evaluation of WhatsApp’s Design"
+  },
+  {
+   "t": "h2",
+   "k": "231a1e3ec592",
+   "en": "Fulfill the requirements"
+  },
+  {
+   "t": "p",
+   "k": "68818052b7ba",
+   "en": "Low latency: We can minimize the latency of the system at various levels:"
+  },
+  {
+   "t": "p",
+   "k": "037719f31a89",
+   "en": "We can do this through geographically distributed WebSocket servers and the cache associated with them."
+  },
+  {
+   "t": "p",
+   "k": "e7209b77b666",
+   "en": "We can use Redis cache clusters on top of MySQL database clusters."
+  },
+  {
+   "t": "p",
+   "k": "4ee366497b13",
+   "en": "We can use CDNs for frequently sharing documents and media content."
+  },
+  {
+   "t": "p",
+   "k": "92116904ea28",
+   "en": "Consistency: The system also provides high consistency in messages with the help of a FIFO messaging queue with strict ordering. However, the ordering of messages would require the Sequencer to provide ID with appropriate causality inference mechanisms to each message. For offline users, the Mnesia database stores messages in a queue. The messages are sent later in a sequence after the user goes online."
+  },
+  {
+   "t": "p",
+   "k": "e9b51ff47c91",
+   "en": "Availability: The system can be made highly available if we have enough WebSocket servers and replicate data across multiple servers. When a user gets disconnected due to some fault in the WebSocket server, the session is re-created via a load balancer with a different server. Moreover, the messages are stored on the Mnesia cluster following the primary-secondary replication model, which provides high availability and durability."
+  },
+  {
+   "t": "p",
+   "k": "537b856bebb2",
+   "en": "Security: The system also provides an end-to-end encryption mechanism that secures the chat between users."
+  },
+  {
+   "t": "li",
+   "k": "960c9147dff8",
+   "en": "Scalability: Due to high-performance engineering, scalability might not be a significant issue, as WhatsApp can handle around 10 million connections per server. However, our proposed system is flexible, as more servers can be added or removed as the load increases or decreases.",
+   "lead": "Scalability"
+  },
+  {
+   "t": "p",
+   "k": "63d58f4ad227",
+   "en": "Point to Ponder In the event of a network partition, what should the system choose to compromise between consistency and availability?"
+  },
+  {
+   "t": "p",
+   "k": "4108da076aa5",
+   "en": "Hide Answer According to the CAP theorem, the system would provide either consistency or availability in the event of a network partition. In our system of a WhatsApp messenger, the correct ordering of messages is essential. Otherwise, the context of the information communicated between users might change significantly. Therefore, availability in our system can take a hit if the network partition occurs."
+  },
+  {
+   "t": "h2",
+   "k": "4ece5a4b62f8",
+   "en": "Approaches to Achieve the Non-functional Requirements"
+  },
+  {
+   "t": "p",
+   "k": "f93796ea0dee",
+   "en": "Non-functional Approaches Requirements Minimizing latency •Geographically distributed cache management systems and servers"
+  },
+  {
+   "t": "li",
+   "k": "2b05acb1d6e5",
+   "en": "CDNs Consistency •Provide unique IDs to messages using Sequencer or other mechanisms"
+  },
+  {
+   "t": "li",
+   "k": "cb4faa24708c",
+   "en": "Use FIFO messaging queue with strict ordering Availability •Provide multiple WebSocket servers and managers to establish connections between users"
+  },
+  {
+   "t": "li",
+   "k": "bf5e3d2d7678",
+   "en": "Replication of messages and data associated with users and groups on different servers"
+  },
+  {
+   "t": "li",
+   "k": "9d3d91d5e7b1",
+   "en": "Follow disaster recovery protocols Security •Via end-to-end encryption Scalability •Performance tuning of servers"
+  },
+  {
+   "t": "li",
+   "k": "90a643d14f1b",
+   "en": "Horizontal scalability of services"
+  },
+  {
+   "t": "h2",
+   "k": "b76e427542cf",
+   "en": "Trade-offs"
+  },
+  {
+   "t": "p",
+   "k": "97bf070aaf2e",
+   "en": "There’s a trade-off between consistency and availability."
+  },
+  {
+   "t": "p",
+   "k": "a403e6fceb4e",
+   "en": "There’s a trade-off between latency and security."
+  },
+  {
+   "t": "h3",
+   "k": "ad320361d925",
+   "en": "The trade-off between consistency and availability"
+  },
+  {
+   "t": "p",
+   "k": "22d56139fad7",
+   "en": "According to the CAP theorem, in the event of a network failure or partition, the system can provide either consistency or availability. So, in the case of our WhatsApp design, we have to choose either consistency or availability. In WhatsApp, the order of messages sent or received by a user is essential."
+  },
+  {
+   "t": "p",
+   "k": "5967c4f08ca7",
+   "en": "Therefore, we should prioritize consistency rather than availability."
+  },
+  {
+   "t": "h3",
+   "k": "290cd4d00d38",
+   "en": "The trade-off between latency and security"
+  },
+  {
+   "t": "p",
+   "k": "9741b7556887",
+   "en": "Low latency is an essential factor in system design that provides a real-time experience to users. However, on the other side, sharing information or data over WhatsApp might be insecure without encryption. The absence of a proper security mechanism makes the data vulnerable to unauthorized access. So, we can accept a trade-off prioritizing the secure transmission of messages over low latency."
+  },
+  {
+   "t": "p",
+   "k": "44accadff6d4",
+   "en": "We might wonder where the trade-off is. Often, communication involves multimedia. Encrypting them in near real-time on the sender device and decrypting on the receiver side can be taxing for the devices, causing latency."
+  },
+  {
+   "t": "p",
+   "k": "226db498462c",
+   "en": "The process is illustrated in the following figure:"
+  },
+  {
+   "t": "h2",
+   "k": "05535ecff78e",
+   "en": "Summary"
+  },
+  {
+   "t": "p",
+   "k": "a5deffba87e5",
+   "en": "In this chapter, we designed a WhatsApp messenger. First, we identified the functional and non-functional requirements along with the resources estimation crucial for the design. Second, we focused on the high-level and detailed design of the WhatsApp system, where we described various components responsible for different services. Finally, we evaluated the non-functional requirements and highlighted some trade-offs in the design."
+  },
+  {
+   "t": "p",
+   "k": "1c9961388177",
+   "en": "This design problem highlighted that we can optimize general-purpose computational resources for specific use cases. WhatsApp optimized its software stack to handle a substantially large number of connections on the commodity servers."
+  }
+ ]
+}

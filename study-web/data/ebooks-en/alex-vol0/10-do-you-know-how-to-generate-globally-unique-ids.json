@@ -1,0 +1,28 @@
+{
+ "id": "10-do-you-know-how-to-generate-globally-unique-ids",
+ "title": "Do you know how to generate globally unique IDs?",
+ "titleKey": "9ef88d50eb57",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "803a86bdc0f0",
+   "en": "In this post, we will explore common requirements for IDs that are used in social media such as Facebook, Twitter, and LinkedIn."
+  },
+  {
+   "t": "p",
+   "k": "ce32f2c24437",
+   "en": "Requirements: 🔹Globally unique 🔹Roughly sorted by time 🔹Numerical values only 🔹64 bits 🔹Highly scalable, low latency 22 The implementation details of the algorithms can be found online so we will not go into detail here."
+  },
+  {
+   "t": "p",
+   "k": "cffa5f743b05",
+   "en": "Over to you: What kind of ID generators have you used? — Check out our bestselling system design books."
+  },
+  {
+   "t": "p",
+   "k": "ada887bbb14d",
+   "en": "Paperback:AmazonDigital:ByteByteGo. 23"
+  }
+ ]
+}

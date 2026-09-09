@@ -1,0 +1,48 @@
+{
+ "id": "02-what-is-iaas-paas-saas",
+ "title": "What is IaaS/PaaS/SaaS?",
+ "titleKey": "5fe507fc1b4c",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "80c37358f1ac",
+   "en": "The diagram below illustrates the differences between IaaS (Infrastructure-as-a-Service), PaaS (Platform-as-a-Service), and SaaS (Software-as-a-Service)."
+  },
+  {
+   "t": "p",
+   "k": "83c0ef43da8d",
+   "en": "For a non-cloud application, we own and manage all the hardware and software. We say the application is on-premises."
+  },
+  {
+   "t": "p",
+   "k": "34410179d4a8",
+   "en": "With cloud computing, cloud service vendors provide three kinds of models for us to use: IaaS, PaaS, and SaaS."
+  },
+  {
+   "t": "p",
+   "k": "90473d2e1864",
+   "en": "𝐈𝐚𝐚𝐒 provides us access to cloud vendors' infrastructure, like servers, storage, and networking. We pay for the infrastructure service and install and manage supporting software on it for our application."
+  },
+  {
+   "t": "p",
+   "k": "56128be45d46",
+   "en": "𝐏𝐚𝐚𝐒 goes further. It provides a platform with a variety of middleware, frameworks, and tools to build our application. We only focus on application development and data."
+  },
+  {
+   "t": "p",
+   "k": "cd9c70a41a6f",
+   "en": "𝐒𝐚𝐚𝐒 enables the application to run in the cloud. We pay a monthly or annual fee to use the SaaS product."
+  },
+  {
+   "t": "p",
+   "k": "3e82e65c1e31",
+   "en": "Over to you: which IaaS/PaaS/SaaS products have you used? How do you decide which architecture to use?"
+  },
+  {
+   "t": "p",
+   "k": "83934cdc41af",
+   "en": "Image Source:https://www.ibm.com/cloud/learn/iaas-paas-saas 6"
+  }
+ ]
+}

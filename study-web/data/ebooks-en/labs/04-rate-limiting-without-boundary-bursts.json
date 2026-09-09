@@ -1,0 +1,157 @@
+{
+ "id": "04-rate-limiting-without-boundary-bursts",
+ "title": "Rate Limiting Without Boundary Bursts",
+ "titleKey": "bfa115ebdaf2",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "7c38303fd01d",
+   "en": "You run a SaaS API. POST /v1/messages is the money endpoint."
+  },
+  {
+   "t": "p",
+   "k": "7d48684a657f",
+   "en": "Plan limit: 100 requests/minute per API key. Customers keep getting 429s at minute boundaries even though their average RPS is well under the cap."
+  },
+  {
+   "t": "p",
+   "k": "b0e7ff5bcdfe",
+   "en": "Here's what's happening in prod:"
+  },
+  {
+   "t": "li",
+   "k": "5efd135c47b6",
+   "en": "12:59:58 customer sends 90 requests (batched job kicked off)→"
+  },
+  {
+   "t": "li",
+   "k": "562966d401e7",
+   "en": "13:00:02 same customer sends 90 more (next tick)→"
+  },
+  {
+   "t": "li",
+   "k": "378824c438bc",
+   "en": "Your counter resets at 13:00:00"
+  },
+  {
+   "t": "li",
+   "k": "7147545655cb",
+   "en": "Both bursts pass. 180 requests in 4 seconds. Your downstream database starts crying."
+  },
+  {
+   "t": "p",
+   "k": "c9cae4298d54",
+   "en": "Now Support is on your back about 429s, and SRE is on your back about traffic spikes. You need to replace the limiter this week."
+  },
+  {
+   "t": "p",
+   "k": "fbc0f72b36e9",
+   "en": "FOUR OPTIONS ON THE TABLE: key per user."
+  },
+  {
+   "t": "p",
+   "k": "de89aea28eb0",
+   "en": "Sliding Window Log — store every request timestamp in Redis. Count requests in the last 60s on Token Bucket — 100 tokens per key, refill at 100/60 per second. Each request takes a token. Leaky Bucket — queue incoming requests, dispatch at a constant 1.66/sec. Excess requests wait every call. Exact to the millisecond."
+  },
+  {
+   "t": "p",
+   "k": "091cffdc747e",
+   "en": "Bursts up to 100, then shaped. or get dropped."
+  },
+  {
+   "t": "h3",
+   "k": "d840cbaa18dc",
+   "en": "DAY 03 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "efd02bd36bb6",
+   "en": "Answer: C — Token Bucket ✅ Here's why, and why the other three trip up good engineers:"
+  },
+  {
+   "t": "li",
+   "k": "451110aa1a8f",
+   "en": "Why C wins (Token Bucket):",
+   "lead": "Why C wins (Token Bucket)"
+  },
+  {
+   "t": "p",
+   "k": "44d8c3b9c7d7",
+   "en": "Token Bucket is what AWS API Gateway, Stripe, GitHub, and basically every mature public API runs."
+  },
+  {
+   "t": "p",
+   "k": "d614ed7c3560",
+   "en": "Each API key gets a bucket of 100 tokens, refilling at ~1.66 tokens/sec. Every request takes a token."
+  },
+  {
+   "t": "p",
+   "k": "9e910b5a2266",
+   "en": "Empty bucket = 429."
+  },
+  {
+   "t": "p",
+   "k": "a292c519a005",
+   "en": "This fixes the boundary-burst bug exactly: no window resets. The 12:59:58 burst drains the bucket, and 13:00:02 finds an almost-empty bucket — not a shiny new 100-request allowance. O(1) memory per key, O(1) check, trivially distributed."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "1b567efa325b",
+   "en": "Why B is the trap (Sliding Window Log):",
+   "lead": "Why B is the trap (Sliding Window Log)"
+  },
+  {
+   "t": "p",
+   "k": "5a116d1fd68e",
+   "en": "Mathematically perfect — but stores one Redis entry per request per key. At 100k active keys you're looking at real memory pressure and p99 latency spikes. Smart engineers pick it without thinking about the memory cost. That's the tell."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "2fc61266a6ec",
+   "en": "Why A is wrong (Fixed Window):",
+   "lead": "Why A is wrong (Fixed Window)"
+  },
+  {
+   "t": "p",
+   "k": "6bbd7cef12b6",
+   "en": "Literally the bug in the post. Counter resets at the minute boundary customers can burst 2x their→ limit in a 2-second window. Still the most common production mistake."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "70d420e1b511",
+   "en": "Why D is wrong here (Leaky Bucket):",
+   "lead": "Why D is wrong here (Leaky Bucket)"
+  },
+  {
+   "t": "p",
+   "k": "032f2065e999",
+   "en": "Solves a different problem — shapes output by queuing requests at a constant dispatch rate. Great for protecting a fragile downstream. Wrong for a customer-facing API because it adds latency to legitimate bursts. Token Bucket rejects excess; Leaky Bucket delays it. For a public API, reject > delay."
+  },
+  {
+   "t": "p",
+   "k": "0c4b0ae4f9f0",
+   "en": "Add a unique constraint on (orderId, amount) in the payments table — the second insert fails,"
+  },
+  {
+   "t": "h3",
+   "k": "8be609d1f1e2",
+   "en": "DAY 04 · SYSTEM DESIGN"
+  }
+ ]
+}

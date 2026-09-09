@@ -1,0 +1,78 @@
+{
+ "id": "18-how-do-microservices-collaborate-and-interact-with-each-othe",
+ "title": "How do microservices collaborate and interact with each other?",
+ "titleKey": "3c06012dbce4",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "941400602d24",
+   "en": "There are two ways: 𝐨𝐫𝐜𝐡𝐞𝐬𝐭𝐫𝐚𝐭𝐢𝐨𝐧 and 𝐜𝐡𝐨𝐫𝐞𝐨𝐠𝐫𝐚𝐩𝐡𝐲."
+  },
+  {
+   "t": "p",
+   "k": "9f98bbe9c605",
+   "en": "The diagram below illustrates the collaboration of microservices."
+  },
+  {
+   "t": "p",
+   "k": "b2330ace0efa",
+   "en": "Choreography is like having a choreographer set all the rules. Then the dancers on stage (the microservices) interact according to them."
+  },
+  {
+   "t": "p",
+   "k": "8a9bbadeb331",
+   "en": "Service choreography describes this exchange of messages and the rules by which the microservices interact."
+  },
+  {
+   "t": "p",
+   "k": "dec2b2e2a2e2",
+   "en": "Orchestration is different. The orchestrator acts as a center of authority.It is responsible for invoking and combiningthe services. It 38 describes the interactions between all the participating services.It is just like a conductor leading the musicians in a musical symphony.The orchestration pattern also includes the transaction management among different services."
+  },
+  {
+   "t": "p",
+   "k": "bab1432322d5",
+   "en": "The benefits of orchestration:"
+  },
+  {
+   "t": "li",
+   "k": "329ed4a8a933",
+   "en": "Reliability - orchestration has built-in transaction management and error handling, while choreography is point-to-point communications and the fault tolerance scenarios are much more complicated."
+  },
+  {
+   "t": "li",
+   "k": "92a7126d77aa",
+   "en": "Scalability - when adding a new service into orchestration, only the orchestrator needs to modify the interaction rules, while in choreography all the interacting services need to be modified."
+  },
+  {
+   "t": "p",
+   "k": "79d35b06d104",
+   "en": "Some limitations of orchestration:"
+  },
+  {
+   "t": "li",
+   "k": "35edcb505f96",
+   "en": "Performance - all the services talk via a centralized orchestrator, so latency is higher than it is with choreography. Also, the throughput is bound to the capacity of the orchestrator."
+  },
+  {
+   "t": "li",
+   "k": "4e99690c881d",
+   "en": "Single point of failure - if the orchestrator goes down, no services can talk to each other. To mitigate this, the orchestrator must be highly available."
+  },
+  {
+   "t": "p",
+   "k": "8016b08f9096",
+   "en": "Real-world use case: Netflix Conductor is a microservice orchestrator and you can read more details on the orchestrator design."
+  },
+  {
+   "t": "p",
+   "k": "eeeda1e4b5e2",
+   "en": "Question - Have you used orchestrator products in production? What are their pros & cons? — Check out our bestselling system design books."
+  },
+  {
+   "t": "p",
+   "k": "92cba5f93424",
+   "en": "Paperback:AmazonDigital:ByteByteGo. 39"
+  }
+ ]
+}

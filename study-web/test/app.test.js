@@ -2968,3 +2968,72 @@ test('english-support: EN_SUP_TRACKS là nguồn duy nhất — app.js không ha
   assert.ok(/window\[t\.vocab\]/.test(APP) && /window\[t\.vgroups\]/.test(APP),
     'esTrackData phải đọc vocab/vgroups qua khai báo track');
 });
+
+// ---------------------------------------------------------------------------
+// 📕 EBOOK SONG NGỮ
+// ---------------------------------------------------------------------------
+const EB_EN = path.resolve(__dirname, '..', 'data', 'ebooks-en');
+const EB_VI = path.resolve(__dirname, '..', 'data', 'ebooks-vi');
+const ebIndex = () => JSON.parse(fs.readFileSync(path.join(EB_EN, 'index.json'), 'utf8'));
+
+test('ebook: index khớp file chương, không chương rỗng, id không trùng', () => {
+  const idx = ebIndex();
+  assert.ok(idx.books.length >= 3, 'phải có ≥3 bộ sách');
+  const seenBooks = new Set();
+  for (const b of idx.books) {
+    assert.ok(!seenBooks.has(b.id), `id sách trùng: ${b.id}`);
+    seenBooks.add(b.id);
+    assert.ok(b.title && b.titleVi && b.author && b.note, `sách ${b.id} thiếu metadata`);
+    assert.ok(b.chapters.length, `sách ${b.id} không có chương nào`);
+    const ids = b.chapters.map(c => c.id);
+    assert.strictEqual(new Set(ids).size, ids.length,
+      `id chương trùng trong ${b.id}: ${ids.filter((x, i) => ids.indexOf(x) !== i)}`);
+    for (const c of b.chapters) {
+      const file = path.join(EB_EN, b.id, `${c.id}.json`);
+      assert.ok(fs.existsSync(file), `thiếu file chương ${b.id}/${c.id}.json`);
+      const ch = JSON.parse(fs.readFileSync(file, 'utf8'));
+      assert.strictEqual(ch.blocks.length, c.blocks, `${b.id}/${c.id}: số block lệch index`);
+      assert.ok(ch.blocks.length, `${b.id}/${c.id} rỗng`);
+      assert.ok(ch.titleKey, `${b.id}/${c.id} thiếu titleKey (không tra được tiêu đề dịch)`);
+      for (const blk of ch.blocks) {
+        assert.ok(blk.k && blk.en && blk.t, `${b.id}/${c.id} có block thiếu k/en/t`);
+      }
+    }
+  }
+});
+
+test('ebook: bản dịch tiếng Việt khớp khoá băm của bản gốc', () => {
+  // Bản dịch tra theo hash nội dung tiếng Anh. Trích lại PDF mà đổi cách tách
+  // đoạn sẽ làm hash cũ thành mồ côi — bản dịch âm thầm biến mất khỏi web.
+  if (!fs.existsSync(EB_VI)) return;
+  const idx = ebIndex();
+  let orphan = 0, translated = 0;
+  for (const b of idx.books) {
+    for (const c of b.chapters) {
+      const viFile = path.join(EB_VI, b.id, `${c.id}.json`);
+      if (!fs.existsSync(viFile)) continue;
+      const vi = JSON.parse(fs.readFileSync(viFile, 'utf8'));
+      const ch = JSON.parse(fs.readFileSync(path.join(EB_EN, b.id, `${c.id}.json`), 'utf8'));
+      const keys = new Set([ch.titleKey, ...ch.blocks.map(x => x.k)]);
+      for (const [k, v] of Object.entries(vi)) {
+        assert.ok(typeof v === 'string' && v.trim(), `${b.id}/${c.id}: bản dịch rỗng ở khoá ${k}`);
+        if (keys.has(k)) translated++; else orphan++;
+      }
+    }
+  }
+  assert.strictEqual(orphan, 0, `${orphan} bản dịch mồ côi (khoá không còn trong bản gốc)`);
+  assert.ok(translated >= 0);
+});
+
+test('ebook: tab được nối đủ (script, view, switchView, service worker)', () => {
+  assert.ok(HTML.includes('src="ebook.js"'), 'index.html thiếu <script src="ebook.js">');
+  assert.ok(HTML.includes('data-view="ebook"'), 'thiếu nút tab ebook');
+  assert.ok(HTML.includes('id="ebook-body"'), 'thiếu #ebook-body');
+  assert.ok(/name === 'ebook'/.test(APP), 'switchView thiếu nhánh ebook');
+  assert.ok(SW.includes("'ebook.js'"), 'sw.js chưa precache ebook.js');
+  assert.ok(SW.includes("'data/ebooks/index.json'"), 'sw.js chưa precache danh mục ebook');
+  const EBOOK = read('ebook.js');
+  for (const id of ['eb-filter', 'eb-list', 'eb-reader', 'eb-prev', 'eb-next', 'eb-done']) {
+    assert.ok(EBOOK.includes(id), `ebook.js mất id ${id}`);
+  }
+});

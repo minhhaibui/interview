@@ -1,0 +1,137 @@
+{
+ "id": "09-keeping-cache-and-database-in-sync",
+ "title": "Keeping Cache and Database in Sync",
+ "titleKey": "8f126be2ab89",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "1ee046bab325",
+   "en": "E-commerce product catalog. Redis in front of Postgres. 40K RPS at peak."
+  },
+  {
+   "t": "p",
+   "k": "4eb1a9aaf46e",
+   "en": "In staging, cache hit ratio sits at 94%. Response times under 20ms. Everything looks clean."
+  },
+  {
+   "t": "p",
+   "k": "e964b06b0f4b",
+   "en": "Ship to prod. Within 48 hours, support tickets start rolling in. Customers seeing wrong prices. Old stock counts. Products showing \"available\" that shipped out three hours ago."
+  },
+  {
+   "t": "p",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:"
+  },
+  {
+   "t": "p",
+   "k": "ba94456726dc",
+   "en": "App (Node.js) Redis (cache) Postgres (source of truth)→→ Writes come from: admin panel (price updates), inventory service (stock decrements), order service (purchase events)."
+  },
+  {
+   "t": "p",
+   "k": "0f21ecad002f",
+   "en": "Reads come from: product pages, search results, checkout flow."
+  },
+  {
+   "t": "p",
+   "k": "8dd4d1ec2f32",
+   "en": "The cache is leaking stale data in production. Your team is debating the invalidation strategy. What do you ship? stale."
+  },
+  {
+   "t": "p",
+   "k": "f64614124942",
+   "en": "Write-behind (write-back) — writes land in Redis first, async worker flushes to Postgres in Cache-aside (lazy loading) — app writes directly to Postgres, invalidates the cache key, lets the Read-through — Redis sits inline, handles its own misses, pulls from Postgres when needed. batches. next read repopulate."
+  },
+  {
+   "t": "h3",
+   "k": "8d2c34222379",
+   "en": "DAY 08 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "9277b45dbeda",
+   "en": "✅ Answer: C — Cache-aside"
+  },
+  {
+   "t": "li",
+   "k": "1e7b0f11d408",
+   "en": "Why C wins:",
+   "lead": "Why C wins"
+  },
+  {
+   "t": "p",
+   "k": "df4f62743637",
+   "en": "Multiple write paths (admin panel, inventory service, order service) all hit Postgres independently."
+  },
+  {
+   "t": "p",
+   "k": "040c9bc7e378",
+   "en": "Cache-aside fits perfectly: each writer updates Postgres invalidates the cache key (DEL→ product:123) next read misses fetches fresh data repopulates Redis. Postgres stays the→→→ uncontested source of truth. Redis is just a disposable read accelerator. If Redis dies, the app still works — slower, but correct. This is what Shopify, Etsy, and most AWS reference architectures run in prod."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "cafc36bbb755",
+   "en": "Why A is the trap (Write-through): \"We write to both atomically\" — except there's no distributed transaction between Redis and Postgres.",
+   "lead": "Why A is the trap (Write-through)"
+  },
+  {
+   "t": "p",
+   "k": "f81c38d4d42f",
+   "en": "You write to Postgres, then write to Redis. If the Redis write fails (network blip, timeout), you have consistent Postgres + stale Redis. The exact bug you were trying to fix. Worse, write-through couples every service to Redis — now your inventory service and order service both need Redis credentials."
+  },
+  {
+   "t": "p",
+   "k": "6406f1701b11",
+   "en": "One Redis outage takes down your entire write path. Works great for single-service/single-writer systems. Falls apart with multiple writers."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "799758fdcab6",
+   "en": "Why B is wrong (Write-behind):",
+   "lead": "Why B is wrong (Write-behind)"
+  },
+  {
+   "t": "p",
+   "k": "d5ee63496163",
+   "en": "Redis becomes your source of truth. Redis loses data during failovers, OOM kills, AOF lag. \"We might lose the last few price updates\" is not defensible in a postmortem when real money is involved. Write-behind belongs in metrics pipelines and analytics counters — not e-commerce write paths."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "0bd3f01da0b8",
+   "en": "Why D is wrong (Read-through):",
+   "lead": "Why D is wrong (Read-through)"
+  },
+  {
+   "t": "p",
+   "k": "dac361e7171b",
+   "en": "Only solves the read side. Your writes are still going through 3 different services with nothing telling the cache. Read-through doesn't fix stale data from multiple writers — you'd still need invalidation on top, which is just cache-aside with extra steps."
+  },
+  {
+   "t": "p",
+   "k": "0d34d194ff23",
+   "en": "Full CQRS — separate read/write models, project writes into a denormalized read store Add read replicas — point dashboards + reports at the replica, keep writes on the primary."
+  },
+  {
+   "t": "h3",
+   "k": "818177246096",
+   "en": "DAY 09 · SYSTEM DESIGN"
+  }
+ ]
+}

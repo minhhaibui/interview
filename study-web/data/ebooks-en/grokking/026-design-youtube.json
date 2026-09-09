@@ -1,0 +1,1633 @@
+{
+ "id": "026-design-youtube",
+ "title": "Design-YouTube",
+ "titleKey": "62c0ffdcb357",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "473e2514664f",
+   "en": "System Design: YouTube"
+  },
+  {
+   "t": "p",
+   "k": "703f95fca009",
+   "en": "Let’s understand the basic details to design the YouTube service."
+  },
+  {
+   "t": "h2",
+   "k": "c5fa3e618958",
+   "en": "What is YouTube?"
+  },
+  {
+   "t": "p",
+   "k": "a8c886fe1cee",
+   "en": "YouTube is a popular video streaming service where users upload, stream, search, comment, share, and like or dislike videos. Large businesses as well as individuals maintain channels where they host their videos. YouTube allows free hosting of video content to be shared with users globally. YouTube is considered a primary source of entertainment, especially among young people, and as of 2022, it is listed as the second-most viewed website after Google by Wikipedia."
+  },
+  {
+   "t": "h2",
+   "k": "09945a142354",
+   "en": "YouTube’s popularity"
+  },
+  {
+   "t": "p",
+   "k": "b4bca4d79131",
+   "en": "Some of the reasons why YouTube has gained popularity over the years include the following reasons:"
+  },
+  {
+   "t": "p",
+   "k": "8615a09a2b80",
+   "en": "Simplicity: YouTube has a simple yet powerful interface."
+  },
+  {
+   "t": "p",
+   "k": "0945249ce041",
+   "en": "Rich content: Its simple interface and free hosting has attracted a large number of content creators."
+  },
+  {
+   "t": "p",
+   "k": "297e4462e3f4",
+   "en": "Continuous improvement: The development team of YouTube has worked relentlessly to meet scalability requirements over time. Additionally, Google acquired YouTube in 2007, which has added to its credibility."
+  },
+  {
+   "t": "p",
+   "k": "f30d0eef6413",
+   "en": "Source of income: YouTube coined a partnership program where it allowed content creators to earn money with their viral content."
+  },
+  {
+   "t": "p",
+   "k": "474bd8a28a6a",
+   "en": "Apart from the above reasons, YouTube also partnered up with well-established market giants like CNN and NBC to set a stronger foothold."
+  },
+  {
+   "t": "h2",
+   "k": "8289a75bd890",
+   "en": "YouTube’s growth"
+  },
+  {
+   "t": "p",
+   "k": "ef745151bf5c",
+   "en": "Let’s look at some interesting statistics about YouTube and its popularity."
+  },
+  {
+   "t": "p",
+   "k": "6e5f69334199",
+   "en": "Since its inception in February 2005, the number of YouTube users has multiplied. As of now, there are more than 2.5 billion monthly active users of YouTube. Let’s take a look at the chart below to see how YouTube users have increased in the last decade."
+  },
+  {
+   "t": "p",
+   "k": "a7bec8a685fc",
+   "en": "YouTube is the second most-streamed website after Netflix. A total of 694,000 hours of video content is streamed on YouTube per minute!"
+  },
+  {
+   "t": "p",
+   "k": "3f0138c6f322",
+   "en": "Now that we realize how successful YouTube is, let’s understand how we can design it."
+  },
+  {
+   "t": "h2",
+   "k": "94b418ac7e99",
+   "en": "How will we design YouTube?"
+  },
+  {
+   "t": "p",
+   "k": "1953e6d93749",
+   "en": "We’ve divided the design of YouTube into five lessons:"
+  },
+  {
+   "t": "li",
+   "k": "1e38e0eda2cf",
+   "en": "Requirements: This is where we identify the functional and non-functional requirements. We also estimate the resources required to serve millions of users each day. This lesson answers questions like how much storage space YouTube will need to store 500 hours of video content uploaded to YouTube per day."
+  },
+  {
+   "t": "li",
+   "k": "7fec835e97f7",
+   "en": "Design: In this lesson, we explain how we’ll design the YouTube service. We also briefly explain the API design and database schemas. Lastly, we will also briefly go over how YouTube’s search works."
+  },
+  {
+   "t": "li",
+   "k": "8800e6e175a4",
+   "en": "Evaluation: This lesson explains how YouTube is able to fulfill all the requirements through the proposed design. It also looks at how scaling in the future can affect the system and what solutions are required to deal with scaling problems."
+  },
+  {
+   "t": "li",
+   "k": "725f59ffa0e6",
+   "en": "Reality is more complicated: During this lesson, we’ll explore different techniques that YouTube employs to deliver content effectively to the client and avoid network congestions."
+  },
+  {
+   "t": "li",
+   "k": "3b90c9cba769",
+   "en": "Quiz: We reinforce major concepts we learned designing YouTube by considering how we could design Netflix’s system."
+  },
+  {
+   "t": "p",
+   "k": "949fec056087",
+   "en": "Our discussion on the usage of various building blocks in the design will be limited since we’ve already explored them in detail in the building blocks chapter."
+  },
+  {
+   "t": "h1",
+   "k": "8f6c5159f598",
+   "en": "Requirements of YouTube’s Design"
+  },
+  {
+   "t": "p",
+   "k": "e5e298d7fde3",
+   "en": "Understand the requirements and estimation for YouTube’s design."
+  },
+  {
+   "t": "h2",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "p",
+   "k": "4d893289bddb",
+   "en": "Let’s start with the requirements for designing a system like YouTube."
+  },
+  {
+   "t": "h3",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "e7271a967f62",
+   "en": "We require that our system is able to perform the following functions:"
+  },
+  {
+   "t": "li",
+   "k": "98d894f47691",
+   "en": "Stream videos"
+  },
+  {
+   "t": "li",
+   "k": "5dcc4e34858d",
+   "en": "Upload videos"
+  },
+  {
+   "t": "li",
+   "k": "4e30a1896090",
+   "en": "Search videos according to titles"
+  },
+  {
+   "t": "li",
+   "k": "43b84239162f",
+   "en": "Like and dislike videos"
+  },
+  {
+   "t": "li",
+   "k": "95937a37f6c3",
+   "en": "Add comments to videos"
+  },
+  {
+   "t": "li",
+   "k": "4dfcb0a718c3",
+   "en": "View thumbnails"
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "e25afd9dcf17",
+   "en": "It’s important that our system also meets the following requirements:"
+  },
+  {
+   "t": "p",
+   "k": "9e963d7e1bb0",
+   "en": "Scalability: As the number of users grows, these issues should not become bottlenecks: storage for uploading content, the bandwidth required for simultaneous viewing, and the number of concurrent user requests should not overwhelm our application/web server."
+  },
+  {
+   "t": "p",
+   "k": "526c97f6f6f8",
+   "en": "Good performance: A smooth streaming experience leads to better performance overall."
+  },
+  {
+   "t": "p",
+   "k": "d7f1b9a0baf3",
+   "en": "Reliability: Content uploaded to the system should not be lost or damaged."
+  },
+  {
+   "t": "p",
+   "k": "5c02e6d5d6b7",
+   "en": "We don’t require strong consistency for YouTube’s design. Consider an example where a creator uploads a video. Not all users subscribed to the creator’s channel should immediately get the notification for uploaded content."
+  },
+  {
+   "t": "p",
+   "k": "53aa943cc787",
+   "en": "Based on the requirements, we’ll estimate the required resources and design of our system."
+  },
+  {
+   "t": "h2",
+   "k": "a9be995c473a",
+   "en": "Resource estimation"
+  },
+  {
+   "t": "p",
+   "k": "5fcdb8d5f8f8",
+   "en": "Estimation requires the identification of important resources that we’ll need in the system."
+  },
+  {
+   "t": "p",
+   "k": "d2cc977723df",
+   "en": "Hundreds of minutes of video content get uploaded to YouTube every minute."
+  },
+  {
+   "t": "p",
+   "k": "65d61123b377",
+   "en": "Also, a large number of users will be streaming content at the same time, which means that the following resources will be required:"
+  },
+  {
+   "t": "p",
+   "k": "460ffa04d464",
+   "en": "Storage resources will be needed to store uploaded and processed content."
+  },
+  {
+   "t": "p",
+   "k": "9ac27b77dff1",
+   "en": "A large number of requests can be handled by doing concurrent processing. This means web/application servers should be in place to serve these users."
+  },
+  {
+   "t": "p",
+   "k": "4ef2745090d4",
+   "en": "Both upload and download bandwidth will be required to serve millions of users."
+  },
+  {
+   "t": "p",
+   "k": "45dde43b4b44",
+   "en": "To convert the above resources into actual numbers, we assume the following:"
+  },
+  {
+   "t": "p",
+   "k": "6497d7a581dd",
+   "en": "Total number of YouTube users: 1.5 billion."
+  },
+  {
+   "t": "p",
+   "k": "60169144741f",
+   "en": "Active daily users (who watch or upload videos): 500 million."
+  },
+  {
+   "t": "p",
+   "k": "b351fb947f62",
+   "en": "Average length of a video: 5 minutes."
+  },
+  {
+   "t": "p",
+   "k": "cd5fc5a36fcf",
+   "en": "Size of an average (5 minute-long) video before processing/encoding (compression, format changes, and so on): 600 MB."
+  },
+  {
+   "t": "p",
+   "k": "73fbc6c2ef5c",
+   "en": "Size of an average video after encoding (using different algorithms for different resolutions like MPEG-4 and VP9): 30 MB."
+  },
+  {
+   "t": "h3",
+   "k": "5e7e60e98560",
+   "en": "Storage estimation"
+  },
+  {
+   "t": "p",
+   "k": "699ba829739f",
+   "en": "To find the storage needs of YouTube, we have to estimate the total number of videos and the length of each video uploaded to YouTube per minute. Let’s consider that 500 hours worth of content is uploaded to YouTube in one minute. 30 Since each video of 30 MB is 5 minutes long, we require = 6 MB to store 1 5 minute of video."
+  },
+  {
+   "t": "p",
+   "k": "638b4a4692e4",
+   "en": "Let’s put this in a formula by assuming the following:"
+  },
+  {
+   "t": "p",
+   "k": "b4393eea19cf",
+   "en": "T otalstorage : Total storage requirement."
+  },
+  {
+   "t": "p",
+   "k": "daebcd33c377",
+   "en": "T otalupload/min : Total content uploaded (in minutes) per minute."
+  },
+  {
+   "t": "p",
+   "k": "8b21e06d220d",
+   "en": "Example: 500 hours worth of video is uploaded in one minute."
+  },
+  {
+   "t": "p",
+   "k": "f28b69cbe550",
+   "en": "Storagemin : Storage required for each minute of content Then, the following formula is used to compute the storage:"
+  },
+  {
+   "t": "p",
+   "k": "d2ecacd37caa",
+   "en": "T otal =storage T otal ×upload/min Storagemin Below is a calculator to help us estimate our required resources. We’ll look first at the storage required to persist 500 hours of content uploaded per minute, where each minute of video costs 6 MBs to store:"
+  },
+  {
+   "t": "p",
+   "k": "6f554d607860",
+   "en": "Storage Required for Storing Content per Minute on YouTube No. of video hou Minutes per hou Storage per min MB per minute rs per minuterute (GB) f 500 The numbers mentioned above correspond to the compressed version of videos."
+  },
+  {
+   "t": "p",
+   "k": "c2420a6a2ab8",
+   "en": "However, we need to transcode videos into various formats for reasons that we will see in the coming lessons. Therefore, we’ll require more storage space than the one estimated above."
+  },
+  {
+   "t": "p",
+   "k": "9fd94946dd46",
+   "en": "Quiz 60 6 180 Assuming YouTube stores videos in five different qualities and the average size of a one-minute video is 6 MB, what would the estimated storage requirements per minute be?"
+  },
+  {
+   "t": "p",
+   "k": "0b6a73981cbc",
+   "en": "Hide Answer Since we need 6 MBs per minute and we need to store files in five different formats, the overall requirement is 5 × 6MB = 30 MBs."
+  },
+  {
+   "t": "p",
+   "k": "ebec30805636",
+   "en": "Next, we’ll calculate the below value:"
+  },
+  {
+   "t": "p",
+   "k": "92634fd70e44",
+   "en": "N umber of hours uploaded to Y ouT ube/min × N umber of minutes per hour × hours 60minutes storage requirement per minute = 500 × × minutehour MB 900GB 30 = minute minute"
+  },
+  {
+   "t": "h3",
+   "k": "10d00f179eb1",
+   "en": "Bandwidth estimation"
+  },
+  {
+   "t": "p",
+   "k": "2ec49d93defe",
+   "en": "A lot of data transfer will be performed for streaming and uploading videos to YouTube. This is why we need to calculate our bandwidth estimation too."
+  },
+  {
+   "t": "p",
+   "k": "a93b4af72190",
+   "en": "Assume the upload:view ratio is 1:300—that is, for each uploaded video, we have 300 video views per second. We’ll also have to keep in mind that when a video is uploaded, it is not in compressed format, while viewed videos can be of different qualities. Let’s estimate the bandwidth required for uploading the videos."
+  },
+  {
+   "t": "p",
+   "k": "053328cb8274",
+   "en": "We assume:"
+  },
+  {
+   "t": "p",
+   "k": "f4eea290d054",
+   "en": "T otalbandwidth: Total bandwidth required."
+  },
+  {
+   "t": "p",
+   "k": "60192b4fef1b",
+   "en": "T otalcontent: Total content (in minutes) uploaded per minute."
+  },
+  {
+   "t": "p",
+   "k": "d5f67ccedd19",
+   "en": "Size minute: Transmission required (in MBs) for each minute of content."
+  },
+  {
+   "t": "p",
+   "k": "589a2b67f18f",
+   "en": "Then, the following formula is used to do the computation below:"
+  },
+  {
+   "t": "p",
+   "k": "cf588d1f45d8",
+   "en": "T otal =bandwidth T otal ×content_transf erred Size minute The Bandwidth Required for Uploading Videos to YouTube No. of video hou Minutes per hou Bandwidth requ MB per minute rs per minuterired (Gbps) f 500 We calculate bandwidth in bits per second (bps), as shown above."
+  },
+  {
+   "t": "p",
+   "k": "cb9b51325d54",
+   "en": "Therefore, the detailed calculation of the above number (200 Gbps) is given below. hours 60minutes 50MB =8 bits 200 500 × × × Gbps minutehourminute60 seconds The 8 bits are used to convert bytes to bits. By convention metric of bandwidth is in bits per second."
+  },
+  {
+   "t": "p",
+   "k": "51a0d7b98c4c",
+   "en": "Quiz If 200 Gbps of bandwidth is required for satisfying uploading needs, how much bandwidth would be required to stream videos? Assume each minute of video requires 10 MB of bandwidth on average."
+  },
+  {
+   "t": "p",
+   "k": "119232e6166a",
+   "en": "Hint: The upload:view ratio is provided. 60 50 200 Hide Answer For every video uploaded, 300 videos are watched. Therefore, the equation becomes this: total number of viewing hours per minutes × hours size in MB of each minute × view ratio = 500 × minute minutes 10MB 300 = 90TB 8T b 60 × × × bits = 720 = hourminuteminuteminute 12 T bps"
+  },
+  {
+   "t": "h3",
+   "k": "7e7845b4ea66",
+   "en": "Number of servers estimation"
+  },
+  {
+   "t": "p",
+   "k": "cb0898791122",
+   "en": "We need to handle concurrent requests coming from 500 million daily active users. Let’s assume that a typical YouTube server handles 8,000 requests per second."
+  },
+  {
+   "t": "p",
+   "k": "0782e4ef17b2",
+   "en": "N umber of active users 62, 500 = servers Queries handled per server"
+  },
+  {
+   "t": "li",
+   "k": "7bc125918db2",
+   "en": "Note: In a real-world scenario, YouTube’s design requires storage for thumbnails, users’ data, video metadata, users’ channel information, and so on. Since the storage requirement for these data sets will not be significant compared to video files, we ignore it for simplicity’s sake.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "cfa08fe6c777",
+   "en": "Building blocks we will use"
+  },
+  {
+   "t": "p",
+   "k": "d7bce2594e35",
+   "en": "Now that we have completed the resource estimations, let’s identify the building blocks that will be an integral part of our design for the YouTube system. The key building blocks are given below:"
+  },
+  {
+   "t": "p",
+   "k": "9b1455fca897",
+   "en": "Databases are required to store the metadata of videos, thumbnails, comments, and user-related information."
+  },
+  {
+   "t": "p",
+   "k": "7cc8b7df2dc7",
+   "en": "Blob storage is important for storing all videos on the platform."
+  },
+  {
+   "t": "p",
+   "k": "5ed536683eef",
+   "en": "A CDN is used to effectively deliver content to end users, reducing delay and burden on end-servers."
+  },
+  {
+   "t": "p",
+   "k": "f3bd454c6405",
+   "en": "Load balancers are a necessity to distribute millions of incoming clients requests among the pool of available servers."
+  },
+  {
+   "t": "p",
+   "k": "4e69949a6dc5",
+   "en": "Other than our building blocks, we anticipate the use of the following components in our high-level design:"
+  },
+  {
+   "t": "p",
+   "k": "b12373426d50",
+   "en": "Servers are a basic requirement to run application logic and entertain user requests."
+  },
+  {
+   "t": "p",
+   "k": "449d3e5ed0aa",
+   "en": "Encoders and transcoders compress videos and transform them into different formats and qualities to support varying numbers of devices according to their screen resolution and bandwidth."
+  },
+  {
+   "t": "h1",
+   "k": "ef7b917180b0",
+   "en": "Design of YouTube"
+  },
+  {
+   "t": "p",
+   "k": "becbd9a1eb3d",
+   "en": "Take a deep dive into YouTube’s design."
+  },
+  {
+   "t": "h2",
+   "k": "f0e860766605",
+   "en": "High-level design"
+  },
+  {
+   "t": "p",
+   "k": "427ba2a35ac6",
+   "en": "The workflow for the abstract design is provided below:"
+  },
+  {
+   "t": "li",
+   "k": "45497878cd28",
+   "en": "The user uploads a video to the server."
+  },
+  {
+   "t": "li",
+   "k": "606bbb25f01a",
+   "en": "The server stores the metadata and the accompanying user data to the database and, at the same time, hands over the video to the encoder for encoding (see 2.1 and 2.2 in the illustration above)."
+  },
+  {
+   "t": "li",
+   "k": "ff1d461fdf51",
+   "en": "The encoder, along with the transcoder, compresses the video and transforms it into multiple resolutions (like 2160p, 1440p, 1080p, and so on). The videos are stored on blob storage (similar to GFS or S3)."
+  },
+  {
+   "t": "li",
+   "k": "4f65c71c2423",
+   "en": "Some popular videos may be forwarded to the CDN, wh ich acts as a cache."
+  },
+  {
+   "t": "li",
+   "k": "814dabac1ae1",
+   "en": "The CDN, because of its vicinity to the user, lets t he user stream the video with low latency. However, CDN is not the only infrastructure for serving videos to the end user, which we will see in the detailed design."
+  },
+  {
+   "t": "p",
+   "k": "10a891fc40a4",
+   "en": "Quiz Why don’t we upload the video directly to the encoder instead of to the server? Doesn’t the current strategy introduce an additional delay?"
+  },
+  {
+   "t": "p",
+   "k": "5c4fbbfa0ef3",
+   "en": "Hide Answer There are several reasons why it’s a good idea to introduce a server in between the encoder and the client:"
+  },
+  {
+   "t": "p",
+   "k": "5190f7040458",
+   "en": "The client could be malicious and could abuse the encoder."
+  },
+  {
+   "t": "p",
+   "k": "086a3974527e",
+   "en": "If the uploaded video is a duplicate, the server could filter it out."
+  },
+  {
+   "t": "p",
+   "k": "d63557c42aa2",
+   "en": "Encoders will be available on a private IP address within YouTube’s network and not available for public access."
+  },
+  {
+   "t": "h2",
+   "k": "58dbf879b581",
+   "en": "API design"
+  },
+  {
+   "t": "p",
+   "k": "4e69ea6f7e9d",
+   "en": "Let’s understand the design of APIs in terms of the functionalities we’re providing. We’ll design APIs to translate our feature set into technical specifications. In this case, REST APIs can be used for simplicity and speed purposes. Our API design section will help us understand how the client will request services from the back-end application of YouTube. Let’s develop APIs for each of the following features:"
+  },
+  {
+   "t": "h3",
+   "k": "1c4cb228b015",
+   "en": "Upload video"
+  },
+  {
+   "t": "p",
+   "k": "6df40b225cc6",
+   "en": "The POST method can upload a video to the /uploadVideo API:"
+  },
+  {
+   "t": "code",
+   "k": "08d62c94af83",
+   "en": "uploadVideo(user_id, video_file, category_id, title, description, tags , default_language, privacy_settings)"
+  },
+  {
+   "t": "p",
+   "k": "5d6c4b279d4c",
+   "en": "Let’s take a look at the description of the following parameters here."
+  },
+  {
+   "t": "p",
+   "k": "b75381f00486",
+   "en": "Parameter"
+  },
+  {
+   "t": "code",
+   "k": "1d842462a463",
+   "en": "user_id video_file category_id"
+  },
+  {
+   "t": "p",
+   "k": "cbb6eeb19b74",
+   "en": "“Entertainment,” “Engineering,” “Science,” and so on."
+  },
+  {
+   "t": "code",
+   "k": "0b3e6123744f",
+   "en": "title description tags"
+  },
+  {
+   "t": "p",
+   "k": "c074e9b9d275",
+   "en": "improve search results."
+  },
+  {
+   "t": "code",
+   "k": "7ab71cbd80d0",
+   "en": "default_language"
+  },
+  {
+   "t": "p",
+   "k": "5348c30c7a45",
+   "en": "streamed."
+  },
+  {
+   "t": "code",
+   "k": "f7ad47abcddd",
+   "en": "privacy_settings"
+  },
+  {
+   "t": "p",
+   "k": "59ea428bab19",
+   "en": "or private to the uploader."
+  },
+  {
+   "t": "p",
+   "k": "22e5f7c049da",
+   "en": "The video file is broken down into smaller packets and uploaded to the server in order. In case of failure, YouTube can store data for a limited time and resume the upload if the user retries. To understand the concept in detail, read more about asynchronous APIs."
+  },
+  {
+   "t": "h3",
+   "k": "1356a4f907e3",
+   "en": "Stream video"
+  },
+  {
+   "t": "p",
+   "k": "81f4d4f40e65",
+   "en": "The GET method is best suited for the /streamVideo API:"
+  },
+  {
+   "t": "code",
+   "k": "adfd9026d878",
+   "en": "streamVideo(user_id, video_id, screen_resolution, user_bitrate, device _chipset)"
+  },
+  {
+   "t": "p",
+   "k": "a4b0c4f53518",
+   "en": "Some new things introduced in this case are the following parameters:"
+  },
+  {
+   "t": "p",
+   "k": "0fda43d84b95",
+   "en": "Description This is the user that is uploading the video. This is the video file that the user wants to upload. This refers to the category a video belongs to. Typical categories can This is the title of the video. This is the description of the video. This refers to the specific topics the content of the video covers. The This is the default language a page will show to the user when the v This refers to the privacy of the video. Generally, videos can be a pu Parameter"
+  },
+  {
+   "t": "code",
+   "k": "0b36468c0222",
+   "en": "screen_resolution user_bitrate"
+  },
+  {
+   "t": "p",
+   "k": "50097168dc2f",
+   "en": "of video chunks should be transferred to the client or user."
+  },
+  {
+   "t": "code",
+   "k": "42c6c39b43c8",
+   "en": "device_chipset"
+  },
+  {
+   "t": "p",
+   "k": "73070d46693f",
+   "en": "important to know the handling capabilities of these devices to bette users."
+  },
+  {
+   "t": "p",
+   "k": "305c36e44e21",
+   "en": "The server will store different qualities of the same video in its storage and serve users based on their transmission rate."
+  },
+  {
+   "t": "h3",
+   "k": "166d5b080b0c",
+   "en": "Search videos"
+  },
+  {
+   "t": "p",
+   "k": "ccfeb0f5d83f",
+   "en": "The /searchVideo API uses the GET method:"
+  },
+  {
+   "t": "code",
+   "k": "341cb7c53ce8",
+   "en": "searchVideo(user_id, search_string, length, quality, upload_date)"
+  },
+  {
+   "t": "p",
+   "k": "b75381f00486",
+   "en": "Parameter"
+  },
+  {
+   "t": "code",
+   "k": "93ff2e157ff5",
+   "en": "search_string length quality"
+  },
+  {
+   "t": "p",
+   "k": "aa481c58012a",
+   "en": "1080p, and so on. upload_dateThis is used to filter videos based on their upload date to YouTub (optional)"
+  },
+  {
+   "t": "h3",
+   "k": "4dfcb0a718c3",
+   "en": "View thumbnails"
+  },
+  {
+   "t": "p",
+   "k": "5206bfd58fcb",
+   "en": "Description The server can best optimize the video if the user's screen resolution The transmission capacity of the user is required to understand whic Many YouTube users watch content on handheld devices, which mak Description This is the string used for searching videos by their title. (optional) This is used to filter videos based on their length in terms of time (optional) This is used to filter videos based on the resolution, like 2048p, 14 We can use the GET method to access the /viewThumbnails API:"
+  },
+  {
+   "t": "code",
+   "k": "c490a1cfbe84",
+   "en": "viewThumbnails(user_id, video_id)"
+  },
+  {
+   "t": "p",
+   "k": "b75381f00486",
+   "en": "Parameter"
+  },
+  {
+   "t": "code",
+   "k": "1a2f38562507",
+   "en": "video_id"
+  },
+  {
+   "t": "p",
+   "k": "87569fd2f0bb",
+   "en": "This API will return the thumbnails of a video in a sequence."
+  },
+  {
+   "t": "h2",
+   "k": "dc7d9bb4d408",
+   "en": "Like and dislike a video"
+  },
+  {
+   "t": "p",
+   "k": "5b5f6dc7c9ea",
+   "en": "The like and dislike API uses the POST method to register a like/dislike. As shown below, it’s fairly simple."
+  },
+  {
+   "t": "code",
+   "k": "dcbebfaa76f2",
+   "en": "likeDislike(user_id, video_id, like)"
+  },
+  {
+   "t": "p",
+   "k": "8f4e3a70d988",
+   "en": "We can use the same API for the like and dislike functionality. Depending on what is passed as a parameter to the like field, we can update the database accordingly—that is, 0 for like and a 1 for dislike."
+  },
+  {
+   "t": "p",
+   "k": "eec35a9b7441",
+   "en": "The like field may also accept another input, such as none, to remove the like/dislike earlier registered by a user."
+  },
+  {
+   "t": "h2",
+   "k": "5f33cf57c1c4",
+   "en": "Comment video"
+  },
+  {
+   "t": "p",
+   "k": "1ce9f7f0d46d",
+   "en": "Much like the like and dislike API, we only have to provide the comment string to the API. This API will also use the POST method."
+  },
+  {
+   "t": "code",
+   "k": "4781ca022b4b",
+   "en": "commentVideo(user_id, video_id, comment_text)"
+  },
+  {
+   "t": "p",
+   "k": "d5b5e46065d8",
+   "en": "Description This specifies the unique ID of the video associated with the thumbnai Parameter"
+  },
+  {
+   "t": "code",
+   "k": "84eaa1e0d08e",
+   "en": "comment_text"
+  },
+  {
+   "t": "h2",
+   "k": "636805a26ba3",
+   "en": "Storage schema"
+  },
+  {
+   "t": "li",
+   "k": "72f1d5798777",
+   "en": "Note: Much of the underlying details regarding database tables that can be mapped to services provided by YouTube have been omitted for simplicity. For example, one video can have different qualities and that is not mentioned in the “Video” table.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "674535ec930b",
+   "en": "Detailed design"
+  },
+  {
+   "t": "p",
+   "k": "370a7860bca9",
+   "en": "Now, let’s get back to our high-level design and see if we can further explore parts of the design. In particular, the following areas require more discussion:"
+  },
+  {
+   "t": "p",
+   "k": "2cf8741f2504",
+   "en": "Component integration: We’ll cover some interconnections between the Description This refers to the text that is typed by the user on the particular vid servers and storage components to better understand how the system will work."
+  },
+  {
+   "t": "p",
+   "k": "7ad87e7f6697",
+   "en": "Thumbnails: It’s important for users to see some parts of the video through thumbnails. Therefore, we’ll add thumbnail generation and storage to the detailed design."
+  },
+  {
+   "t": "p",
+   "k": "0e8d269acbbc",
+   "en": "Database structure: Our estimation showed that we require massive storage space. We also require storing varying types of data, such as videos, video metadata, and thumbnails, each of which demands specialized data storage for performance reasons. Understanding the database details will enable us to design a system with the least possible lag."
+  },
+  {
+   "t": "p",
+   "k": "366c3b040112",
+   "en": "Let’s take a look at the diagram below. We’ll explain our design in two steps, where the first looks at what the newly added components are, and the second considers how they coordinate to build the YouTube system."
+  },
+  {
+   "t": "h3",
+   "k": "253722f80c81",
+   "en": "Detailed design components"
+  },
+  {
+   "t": "p",
+   "k": "934ed49a8a15",
+   "en": "Since we highlighted the requirements of smooth streaming, server-level details, and thumbnail features, the following design will meet our expectations. Let’s explain the purpose of each added component here:"
+  },
+  {
+   "t": "p",
+   "k": "38523651827b",
+   "en": "Load balancers: To divide a large number of user requests among the web servers, we require load balancers."
+  },
+  {
+   "t": "p",
+   "k": "7c68b67414df",
+   "en": "Web servers: Web servers take in user requests and respond to them."
+  },
+  {
+   "t": "p",
+   "k": "d8cab821845b",
+   "en": "These can be considered the interface to our API servers that entertain user requests."
+  },
+  {
+   "t": "p",
+   "k": "8141acb34ae2",
+   "en": "Application server: The application and business logic resides in application servers. They prepare the data needed by the web servers to handle the end users’ queries."
+  },
+  {
+   "t": "p",
+   "k": "a37aacc5b5c9",
+   "en": "User and metadata storage: Since we have a large number of users and videos, the storage required to hold the metadata of videos and the content related to users must be stored in different storage clusters. This is because a large amount of not-so-related data should be decoupled for scalability purposes."
+  },
+  {
+   "t": "p",
+   "k": "726214a3024d",
+   "en": "Bigtable: For each video, we’ll require multiple thumbnails. Bigtable is a good choice for storing thumbnails because of its high throughput and scalability for storing key-value data. Bigtable is optimal for storing a large number of data items each below 10 MB. Therefore, it is the ideal choice for YouTube’s thumbnails."
+  },
+  {
+   "t": "p",
+   "k": "6a07f849a0f8",
+   "en": "Upload storage: The upload storage is temporary storage that can store user-uploaded videos."
+  },
+  {
+   "t": "p",
+   "k": "613ae7a5b893",
+   "en": "Encoders: Each uploaded video requires compression and transcoding into various formats. Thumbnail generation service is also obtained from the encoders."
+  },
+  {
+   "t": "p",
+   "k": "0b485f68999b",
+   "en": "CDN and colocation sites: CDNs and colocation sites store popular and moderately popular content that is closer to the user for easy access."
+  },
+  {
+   "t": "p",
+   "k": "99a765f0b8f5",
+   "en": "Colocation centers are used where it’s not possible to invest in a data center facility due to business reasons."
+  },
+  {
+   "t": "h3",
+   "k": "fe5697cc8101",
+   "en": "Design flow and technology usage"
+  },
+  {
+   "t": "p",
+   "k": "f3e1a94c0df7",
+   "en": "Now that we understand the purpose of every component, let’s discuss the flow and technology used in different components in the following steps:"
+  },
+  {
+   "t": "li",
+   "k": "9ca4edd679ec",
+   "en": "The user can upload a video by connecting to the web se rvers. The web server can run Apache or Lighttpd. Lighttpd is preferable because it can serve static pages and videos due to its fast speed."
+  },
+  {
+   "t": "li",
+   "k": "ce18fbdd3f3c",
+   "en": "Requests from the web servers are passed onto applic ation servers that can contact various data stores to read or write user, videos, or videos’ metadata. There are separate web and application servers because we want to decouple clients’ services from the application and business logic."
+  },
+  {
+   "t": "p",
+   "k": "bfbc52391194",
+   "en": "Different programming languages can be used on this layer to perform different tasks efficiently. For example, the C programming language can be used for encryption. Moreover, this gives us an additional layer of caching, where the most requested objects are stored on the application server while the most frequently requested pages will be stored on the web servers."
+  },
+  {
+   "t": "li",
+   "k": "1c633673dc3d",
+   "en": "Multiple storage units are used. Let’s go through each of these:"
+  },
+  {
+   "t": "p",
+   "k": "cf13a3903d2e",
+   "en": "I. Upload storage is used to store user-uploaded video s before they are temporarily encoded."
+  },
+  {
+   "t": "p",
+   "k": "01e4177a1a3d",
+   "en": "II. User account data is stored in a separate database, whereas videos metadata is stored separately. The idea is to separate the more frequently and less frequently accessed storage clusters from each other for optimal access time. We can use MySQL if there are a limited number of concurrent reads and writes. However, as the number of users—and therefore the number of concurrent reads and writes— grows, we can move towards NoSQL types of data management systems."
+  },
+  {
+   "t": "p",
+   "k": "c6a7b7511770",
+   "en": "III. Since Bigtable is based on Google File System (GFS ), it is designed to store a large number of small files with low retrieval latency. It is a reasonable choice for storing thumbnails."
+  },
+  {
+   "t": "li",
+   "k": "8badcae87f2f",
+   "en": "The encoders generate thumbnails and also store additional metadata related to videos in the metadata database. It will also provide popular and moderately popular content to CDNs and colocation servers, respectively."
+  },
+  {
+   "t": "li",
+   "k": "048364e13c55",
+   "en": "The user can finally stream videos from any available sit e."
+  },
+  {
+   "t": "li",
+   "k": "8cb9a58df896",
+   "en": "Note: Because YouTube is storage intensive, sharding different storage services will effectively come into play as we scale and do frequent writes on the database. At the same time, Bigtable has multiple cache hierarchies. If we combine that with GFS, web- and application-level caching will further reduce the request processing latency.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "01c4a6cacc46",
+   "en": "YouTube search"
+  },
+  {
+   "t": "p",
+   "k": "cc62d7a5c104",
+   "en": "Since YouTube is one of the most visited websites, a large number of users will be using the search feature. Even though we have covered a building block on distributed search, we’ll provide a basic overview of how search inside the YouTube system will work."
+  },
+  {
+   "t": "p",
+   "k": "52e0f0c9ea92",
+   "en": "Each new video uploaded to YouTube will be processed for data extraction. We can use a JSON file to store extracted data, which includes the following:"
+  },
+  {
+   "t": "p",
+   "k": "4c06d85ef789",
+   "en": "Title of the video."
+  },
+  {
+   "t": "p",
+   "k": "9ccb468aada3",
+   "en": "Channel name."
+  },
+  {
+   "t": "p",
+   "k": "b657c69334a1",
+   "en": "Description of the video."
+  },
+  {
+   "t": "p",
+   "k": "9cdde024a674",
+   "en": "The content of the video, possibly extracted from the transcripts."
+  },
+  {
+   "t": "p",
+   "k": "567cf222a122",
+   "en": "Video length."
+  },
+  {
+   "t": "p",
+   "k": "c0744b021b2d",
+   "en": "Categories."
+  },
+  {
+   "t": "p",
+   "k": "08728f981466",
+   "en": "Each of the JSON files can be referred to as a document. Next, keywords will be extracted from the documents and stored in a key-value store. The key in the key-value store will hold all the keywords searched by the users, while the value in the key-value store will contain the occurrence of each key, its frequency, and the location of the occurrence in the different documents. When a user searches for a keyword, the videos with the most relevant keywords will be returned."
+  },
+  {
+   "t": "p",
+   "k": "01aef9024305",
+   "en": "The approach above is simplistic, and the relevance of keywords is not the only factor affecting search in YouTube. In reality, a number of other factors will matter. The processing engine will improve the search results by filtering and ranking videos. It will make use of other factors like view count, the watch time of videos, and the context, along with the history of the user, to improve search results."
+  },
+  {
+   "t": "h1",
+   "k": "41a8efdc9133",
+   "en": "Evaluation of YouTube' s Design"
+  },
+  {
+   "t": "p",
+   "k": "09d3106a41ae",
+   "en": "Let’s understand how our design decision fulÞlls the requirements."
+  },
+  {
+   "t": "li",
+   "k": "c5e0395d4488",
+   "en": "Our proposed design needs to fulfill the requirements we mentioned in the previous lessons. Our main requirements are smooth streaming (low latency), availability, and reliability. Let’s discuss them one by one."
+  },
+  {
+   "t": "li",
+   "k": "6d0037354e64",
+   "en": "Low latency/Smooth streaming can be achieved through these strategies:"
+  },
+  {
+   "t": "p",
+   "k": "727eacd45aee",
+   "en": "Geographically distributed cache servers at the ISP level to keep the most viewed content."
+  },
+  {
+   "t": "p",
+   "k": "7b91bf355dd5",
+   "en": "Choosing appropriate storage systems for different types of data. For example, we’ll can use Bigtable for thumbnails, blob storage for videos, and so on."
+  },
+  {
+   "t": "p",
+   "k": "9bdbb838377d",
+   "en": "Using caching at various layers via a distributed cache management system."
+  },
+  {
+   "t": "li",
+   "k": "dd0b3d870eee",
+   "en": "Scalability: We’ve taken various steps to ensure scalability in our design as depicted in the table below. The horizontal scalability of web and application servers will not be a problem as the users grow. However, MySQL storage cannot scale beyond a certain point. As we’ll see in the coming sections, that may require some restructuring."
+  },
+  {
+   "t": "li",
+   "k": "6bf300076107",
+   "en": "Availablity: The system can be made available through redundancy by replicating data to as many servers as possible to avoid a single point of failure. Replicating data across data centers will ensure high availability, even if an entire data center fails because of power or network issues."
+  },
+  {
+   "t": "p",
+   "k": "b5df232f9d43",
+   "en": "Furthermore, local load balancers can exclude any dead servers, and global load balancers can steer traffic to a different region if the need arises."
+  },
+  {
+   "t": "li",
+   "k": "f965310f7086",
+   "en": "Reliability: YouTube’s system can be made reliable by using data partitioning and fault-tolerance techniques. Through data partitioning, the non-availability of one type of data will not affect others. We can use redundant hardware and software components for fault tolerance."
+  },
+  {
+   "t": "p",
+   "k": "50254996174d",
+   "en": "Furthermore, we can use the heartbeat protocol to monitor the health of servers and omit servers that are faulty and erroneous. We can use a variant of consistent hashing to add or remove servers seamlessly and reduce the burden on specific servers in case of non-uniform load."
+  },
+  {
+   "t": "p",
+   "k": "385afb6924ef",
+   "en": "Quiz Isn’t the load balancer a single point of failure (SPOF)?"
+  },
+  {
+   "t": "p",
+   "k": "3a014086a257",
+   "en": "Hide Answer Just like with servers, we can use multiple load balancers. Users can be randomly forwarded to different load balancers from the Domain Name System (DNS)."
+  },
+  {
+   "t": "h2",
+   "k": "b76e427542cf",
+   "en": "Trade-offs"
+  },
+  {
+   "t": "p",
+   "k": "faf13de93f5a",
+   "en": "Let’s discuss some of the trade-offs of our proposed solution."
+  },
+  {
+   "t": "h3",
+   "k": "028944e40958",
+   "en": "Consistency"
+  },
+  {
+   "t": "p",
+   "k": "cc95de0e7a74",
+   "en": "Our solution prefers high availability and low latency. However, strong consistency can take a hit because of high availability (see the CAP theorem)."
+  },
+  {
+   "t": "p",
+   "k": "83c80333ec94",
+   "en": "Nonetheless, for a system like YouTube, we can afford to let go of strong consistency. This is because we don’t need to show a consistent feed to all the users. For example, different users subscribed to the same channel may not see a newly uploaded video at the same time. It’s important to mention that we’ll maintain strong consistency of user data. This is another reason why we’ve decoupled user data from video metadata."
+  },
+  {
+   "t": "h3",
+   "k": "13d19b62c770",
+   "en": "Distributed cache"
+  },
+  {
+   "t": "p",
+   "k": "064a214f9b00",
+   "en": "We prefer a distributed cache over a centralized cache in our YouTube design."
+  },
+  {
+   "t": "p",
+   "k": "52ca65c8b434",
+   "en": "This is because the factors of scalability, availability, and fault-tolerance, which are needed to run YouTube, require a cache that is not a single point of failure."
+  },
+  {
+   "t": "p",
+   "k": "23c98ea3d468",
+   "en": "This is why we use a distributed cache. Since YouTube mostly serves static content (thumbnails and videos), Memcached is a good choice because it is open source and uses the popular Least Recently Used (LRU) algorithm. Since YouTube video access patterns are long-tailed, LRU-like algorithms are suitable for such data sets."
+  },
+  {
+   "t": "h3",
+   "k": "64300526d939",
+   "en": "Bigtable versus MySQL"
+  },
+  {
+   "t": "p",
+   "k": "c762a300b5a6",
+   "en": "Another interesting aspect of our design is the use of different storage technologies for different data sets. Why did we choose MySQL and Bigtable?"
+  },
+  {
+   "t": "p",
+   "k": "7e0bf9fea95a",
+   "en": "The primary reason for the choice is performance and flexibility. The number of users in YouTube may not scale as much as the number of videos and thumbnails do. Moreover, we require storing the user and metadata in structured form for convenient searching. Therefore, MySQL is a suitable choice for such cases."
+  },
+  {
+   "t": "p",
+   "k": "50e254da5fb4",
+   "en": "However, the number of videos uploaded and the thumbnails for each video would be very large in number. Scalability needs would force us to use a custom or NoSQL type of design for that storage. One could use alternatives to GFS and Bigtable, such as HDFS and Cassandra."
+  },
+  {
+   "t": "h3",
+   "k": "5081c529d63c",
+   "en": "Public versus private CDN"
+  },
+  {
+   "t": "p",
+   "k": "82b351d53bc6",
+   "en": "Our design relies on CDNs for low latency serving of the content. However, CDNs can be private or public. YouTube can choose between any one of the two options."
+  },
+  {
+   "t": "p",
+   "k": "51c4d57874ac",
+   "en": "This choice is more of a cost issue than a design issue. However, for areas where there is little traffic, YouTube can use the public CDN because of the following reasons:"
+  },
+  {
+   "t": "li",
+   "k": "8587a2733df5",
+   "en": "Setting up a private CDN will require a lot of CAPEX."
+  },
+  {
+   "t": "li",
+   "k": "dc388055823a",
+   "en": "For rather little viral traffic in certain regions, ther e will not be enough time to set up a new CDN."
+  },
+  {
+   "t": "li",
+   "k": "4766c5a029f5",
+   "en": "There may not be enough users to sustain the business ."
+  },
+  {
+   "t": "p",
+   "k": "48a0d447d84c",
+   "en": "However, YouTube can consider building its own CDN if the number of users is too high, since public CDNs can prove to be expensive if the traffic is high."
+  },
+  {
+   "t": "p",
+   "k": "8fda7c3c1474",
+   "en": "Private CDNs can also be optimized for internal usage to better serve customers."
+  },
+  {
+   "t": "h3",
+   "k": "5f7d77d19d52",
+   "en": "Duplicate videos"
+  },
+  {
+   "t": "p",
+   "k": "5d0ccc61155a",
+   "en": "The current YouTube design doesn’t handle duplicate videos that have been uploaded by a user or spammers. Duplicated videos take extra space, which leads to a trade-off. As a result, we either waste storage space or face an additional complexity to the upload process for handling duplicate videos."
+  },
+  {
+   "t": "p",
+   "k": "c90d719d698c",
+   "en": "Let’s perform some calculations to resolve this problem. Assume that 50 out of 500 hours of videos uploaded to YouTube are duplicates. Considering that one minute of video requires 6 MB of storage space, the duplicated content will take up the following storage space:"
+  },
+  {
+   "t": "code",
+   "k": "32a4d7672cd9",
+   "en": "(50 x 60) minutes x 6 MB/min = 18 GB"
+  },
+  {
+   "t": "p",
+   "k": "926d593b6ed8",
+   "en": "If we avoid video duplication, we can save up to 9.5 petabytes of storage space in a year. The calculations are as follows:"
+  },
+  {
+   "t": "code",
+   "k": "d383c05489ec",
+   "en": "18 GB/min x (60 x 24 x 365) total minutes in an year = 9.5 Peta Bytes"
+  },
+  {
+   "t": "p",
+   "k": "6dc0d07610a3",
+   "en": "Storage space being wasted, and other computational costs are not the only issues with duplicate videos. An important aspect of duplicate videos is the copyright issue. No content creator would want their content plagiarized."
+  },
+  {
+   "t": "p",
+   "k": "08238b9d950c",
+   "en": "Therefore, it’s plausible to add the complexity of handling duplicate videos to the design of YouTube."
+  },
+  {
+   "t": "p",
+   "k": "95624397ba4a",
+   "en": "Duplication can be solved with simple techniques like locality-sensitive hashing."
+  },
+  {
+   "t": "p",
+   "k": "313865060891",
+   "en": "However, there can be complex techniques like Block Matching Algorithms (BMAs) and phase correlation to find duplications. Implementing this solution can be quite complex in a huge database of videos. We may have to use technologies like artificial intelligence (AI)."
+  },
+  {
+   "t": "p",
+   "k": "e4bbcaabb1a6",
+   "en": "So far, we’ve focused on the design and analysis of the proposed design for YouTube. In reality, the design of YouTube is quite complex and requires advanced systems. In this section, we’ll focus on the pragmatic structure of data stores and the web server."
+  },
+  {
+   "t": "p",
+   "k": "5c9dda0aa0e5",
+   "en": "We’ll begin our discussion with some limitations in terms of scaling YouTube. In particular, we’ll consider what design changes we’ll have to make if the traffic load to our service goes up by, say, a few folds."
+  },
+  {
+   "t": "p",
+   "k": "8a127166f63b",
+   "en": "We already know that we’ll have to scale our existing infrastructure, which includes the below elements:"
+  },
+  {
+   "t": "p",
+   "k": "283f536d1bbd",
+   "en": "Web servers Application servers Datastores Placing load balancers among each of the layers above Implementing distributed caches Any infrastructure mentioned above requires some modifications and adaptation to the application-level logic. For example, if we continue to increase our data in MySQL servers, it can become a choke point. To effectively use a sharded database, we might have to make changes to our database client to achieve a good level of performance and maintain the ACID (atomicity, consistency, isolation, durability) properties. However, even if we continue to change to the database client as we scale, its complexity may reach a point where it is no longer manageable. Also note that we haven’t incorporated a disaster recovery mechanism into our design yet."
+  },
+  {
+   "t": "p",
+   "k": "cf1ed1585884",
+   "en": "To resolve the problems above, YouTube has developed a solution called Vitess."
+  },
+  {
+   "t": "p",
+   "k": "58dc65f21618",
+   "en": "The key idea in Vitess is to put an abstraction on top of all the database layers, giving the database client the illusion that it is talking to a single database server. The single database in this case is the Vitess system. Therefore, all the database-client complexity is migrated to and handled by Vitess. This maintains the ACID properties because the internal database in use is MySQL. However, we can enable scaling through partitioning. Consequently, we’ll get a MySQL structured database that gives the performance of a NoSQL storage system. At the same time, we won’t have to live with a rich database client (application logic). The following illustration highlights how Vitess is able to achieve both scalability and structure."
+  },
+  {
+   "t": "p",
+   "k": "a9a56005097a",
+   "en": "One could imagine using techniques like data denormalization instead of the Vitess system. However, data denormalization won’t work because it comes at the cost of reduced writing performance. Even if our work is read-intensive, as the system scales, writing performance will degrade to an unbearable limit."
+  },
+  {
+   "t": "p",
+   "k": "6b0bf2adc3e9",
+   "en": "A web server is an extremely important component and, with scale, a custom web server can be a viable solution. This is because most commercial or open-source solutions are general purpose and are developed with a wide range of users in mind. Therefore, a custom solution for such a successful service is desirable."
+  },
+  {
+   "t": "p",
+   "k": "ab4a4e604c72",
+   "en": "Let’s try an interesting exercise to see which server YouTube currently uses."
+  },
+  {
+   "t": "p",
+   "k": "247d3127c672",
+   "en": "Click on the terminal below and execute the following command:"
+  },
+  {
+   "t": "code",
+   "k": "469a6196df63",
+   "en": "lynx -head -dump http://www.youtube.com | grep ^Server"
+  },
+  {
+   "t": "h3",
+   "k": "fa826abcea18",
+   "en": "Click to Connect..."
+  },
+  {
+   "t": "li",
+   "k": "9c86a5577f13",
+   "en": "Note: ESF is a custom web server developed by Google, and as of early 2022, it is widely in use in the Google ecosystem because out-of-the-box solutions were not enough for YouTube’s needs.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "9125a2f02bd5",
+   "en": "Learn how YouTube can use different techniques to effectively deliver content to the end user."
+  },
+  {
+   "t": "h2",
+   "k": "26aca7941a99",
+   "en": "Introduction"
+  },
+  {
+   "t": "p",
+   "k": "177a7af11b41",
+   "en": "Now that we’ve understood the design well, let’s see how YouTube can optimize the usage of storage and network demands while maintaining good quality of experience (QoE) for the end user."
+  },
+  {
+   "t": "p",
+   "k": "599de4c62f97",
+   "en": "When talking about providing effective service to end users, the following three steps are important:"
+  },
+  {
+   "t": "p",
+   "k": "243292946270",
+   "en": "Encode: The raw videos uploaded to YouTube have significant storage requirements. It’s possible to use various encoding schemes to reduce the size of these raw video files. Apart from compression, the choice of encoding scheme will also depend on the types of end devices used to stream the video content. Since multiple devices could be used to stream the same video, we may have to encode the same video using different encoding schemes resulting in one raw video file being converted into multiple files each encoded differently. This strategy will result in a good user-perceived experience because of two reasons: users will save Introduction Encode Deploy Recommendations Deliver Adaptive streaming Potential follow-up questions bandwidth because the video file will be encoded and compressed to some limit, and the encoded video file will be appropriate for the client for a smooth playback experience."
+  },
+  {
+   "t": "p",
+   "k": "f79f0ac46538",
+   "en": "Deploy: For low latency, content must be intelligently deployed so that it is closer to a large number of end users. Not only will this reduce latency, but it will also put less burden on the networks as well as YouTube’s core servers."
+  },
+  {
+   "t": "p",
+   "k": "da9bdb1e32c4",
+   "en": "Deliver: Delivering to the client requires knowledge about the client or device used for playing the video. This knowledge will help in adapting to the client and network conditions. Therefore, we’ll enable ourselves to serve content efficiently."
+  },
+  {
+   "t": "p",
+   "k": "6bde2f8a000f",
+   "en": "Let’s understand each phase in detail now."
+  },
+  {
+   "t": "h2",
+   "k": "a8923bb6da55",
+   "en": "Encode"
+  },
+  {
+   "t": "p",
+   "k": "8c27fb76d211",
+   "en": "Until now, we’ve considered encoding one video with different encoding schemes. However, if we encode videos on a per-shot basis, we’ll divide the video into smaller time frames and encode them individually. We can divide videos into shorter time frames and refer to them as segments. Each segment will be encoded using multiple encoding schemes to generate different files called chunks. The choice of encoding scheme for a segment will be based on the detail within the segment to get optimized quality with lesser storage requirements. Eventually, each shot will be encoded into multiple chunk sizes depending on the segment’s content and encoding scheme used. As we divide the raw video into segments, we’ll see its advantages during the deployment and delivery phase."
+  },
+  {
+   "t": "p",
+   "k": "6d91a32e0dfa",
+   "en": "Let’s understand how the per-segment encoding will work. For any video with dynamic colors and high depth, we’ll encode it differently from a video with fewer colors. This means that a not-so-dynamic segment will be encoded such that it’s compressed more to save additional storage space. Eventually, we’ll have to transfer smaller file sizes and save bandwidth during the deployment and streaming phases."
+  },
+  {
+   "t": "p",
+   "k": "747636e50a90",
+   "en": "Using the strategy above, we’ll have to encode individual shots of a video in various formats. However, the alternative to this would be storing an entire video (using no segmenting) after encoding it in various formats. If we encode on a per-shot basis, we would be able to optimally reduce the size of the entire video by doing the encoding on a granular level. We can also encode audio in various formats to optimally allow streaming for various clients like TVs, mobile phones, and desktop machines. Specifically, for services like Netflix, audio encoding is more useful because audios are offered in various languages."
+  },
+  {
+   "t": "h2",
+   "k": "b0d51b9ff91b",
+   "en": "Deploy"
+  },
+  {
+   "t": "p",
+   "k": "7445e4e4d180",
+   "en": "As discussed in our design and evaluation sections, we have to bring the content closer to the user. This has three main advantages:"
+  },
+  {
+   "t": "li",
+   "k": "a4018d982ebd",
+   "en": "Users will be able to stream videos quickly."
+  },
+  {
+   "t": "li",
+   "k": "02d4d22525d9",
+   "en": "There will be a reduced burden on the origin servers."
+  },
+  {
+   "t": "li",
+   "k": "5390bea53394",
+   "en": "Internet service providers (ISPs) will have spare bandw idth."
+  },
+  {
+   "t": "p",
+   "k": "6978d69e626b",
+   "en": "So, instead of streaming from our data centers directly, we can deploy chunks of popular videos in CDNs and point of presence (PoPs) of ISPs. In places where there is no collaboration possible with the ISPs, our content can be placed in internet exchange point (IXPs). We can put content in IXPs that will not only be closer to users, but can also be helpful in filling the cache of ISP PoPs."
+  },
+  {
+   "t": "p",
+   "k": "a8fc1c6d2691",
+   "en": "We should keep in mind that the caching at the ISP or IXP is performed only for the popular content or moderately popular content because of limited storage capacity. Since our per-shot encoding scheme saves storage space, we’ll be able to serve out more content using the cache infrastructure closer to end users."
+  },
+  {
+   "t": "p",
+   "k": "036103194487",
+   "en": "Additionally, we can have two types of storage at the origin servers:"
+  },
+  {
+   "t": "li",
+   "k": "ca9a6703f543",
+   "en": "Flash servers: These servers hold popular and moderately popular content. They are optimized for low-latency delivery."
+  },
+  {
+   "t": "li",
+   "k": "bca91c7238ad",
+   "en": "Storage servers: This type holds a large portion of videos that are not popular. These servers are optimized to hold large storage."
+  },
+  {
+   "t": "li",
+   "k": "9e92262c7e71",
+   "en": "Note: When we transfer streaming content, it can result in the congestion of networks. That is why we have to transfer the content to ISPs in off-peak hours.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "f0e86f64a290",
+   "en": "YouTube recommends videos to users based on their profile, taking into account factors such as their interests, view and search history, subscribed channels, related topics to already viewed content, and activities on content such as comments and likes."
+  },
+  {
+   "t": "p",
+   "k": "a23fe0ef3920",
+   "en": "An approximation of the recommendation engine of YouTube is provided below."
+  },
+  {
+   "t": "p",
+   "k": "9d893d5a3147",
+   "en": "YouTube filters videos in two phases:"
+  },
+  {
+   "t": "li",
+   "k": "f2321dad9886",
+   "en": "Candidate generation: During this phase, millions of YouTube videos are filtered down to hundreds based on the user’s history and current context."
+  },
+  {
+   "t": "li",
+   "k": "22d9150a245f",
+   "en": "Ranking: The ranking phase rates videos based on their features and according to the user’s interests and history. Hundreds of videos are filtered and ranked down to a few dozen videos during this phase."
+  },
+  {
+   "t": "p",
+   "k": "5a49548761ed",
+   "en": "YouTube employs machine learning technology in both phases to provide recommendations to users."
+  },
+  {
+   "t": "p",
+   "k": "caace81024a5",
+   "en": "Points to Ponder Previously, we said that popular content is sent to ISPs, IXPs, and CDNs."
+  },
+  {
+   "t": "p",
+   "k": "25ee1a8116cb",
+   "en": "We’ve now discussed YouTube’s feature that recommends content. What is the difference between popular and recommended content on YouTube?"
+  },
+  {
+   "t": "p",
+   "k": "773ac49906d4",
+   "en": "Hide Answer Recommendations are specific to users’ profiles and interests, whereas popular content is recognized on a regional or global basis. It is possible to present popular content to the general audience. 1 of 3"
+  },
+  {
+   "t": "h2",
+   "k": "c3a71b151887",
+   "en": "Deliver"
+  },
+  {
+   "t": "p",
+   "k": "29379b0cbde6",
+   "en": "Let’s see how the end user gets the content on their device. Since we have the chunks of videos already deployed near users, we redirect users to the nearest available chunks. As shown below, whenever a user requests content that YouTube has recognized as popular, YouTube redirects the user to the nearest CDN."
+  },
+  {
+   "t": "p",
+   "k": "72aa6e3225b2",
+   "en": "However, in the case of non-popular content, the user is served from colocation sites or YouTube’s data center where the content is stored initially. We have already learned how YouTube can reduce latency times by having distributed caches at different design layers."
+  },
+  {
+   "t": "h3",
+   "k": "59c55a3080d0",
+   "en": "Adaptive streaming"
+  },
+  {
+   "t": "p",
+   "k": "fca5d20078b3",
+   "en": "While the content is being served, the bandwidth of the user is also being monitored at all times. Since the video is divided into chunks of different qualities, each of the same time frame, the chunks are provided to clients based on changing network conditions."
+  },
+  {
+   "t": "p",
+   "k": "77ed2236e6e5",
+   "en": "As shown below, when the bandwidth is high, a higher quality chunk is sent to the client and vice versa."
+  },
+  {
+   "t": "p",
+   "k": "869d2af9dcc2",
+   "en": "The adaptive bitrate algorithm depends on the following four parameters:"
+  },
+  {
+   "t": "li",
+   "k": "e7b8641e7314",
+   "en": "End-to-end available bandwidth (from a CDN/servers to a sp ecific client)."
+  },
+  {
+   "t": "li",
+   "k": "43e2e211b9e2",
+   "en": "The device capabilities of the user."
+  },
+  {
+   "t": "li",
+   "k": "57b89990de44",
+   "en": "Encoding techniques used."
+  },
+  {
+   "t": "li",
+   "k": "4db37679dd3a",
+   "en": "The buffer space at the client [ t source]."
+  },
+  {
+   "t": "h2",
+   "k": "72060da072c0",
+   "en": "Potential follow-up uestions"
+  },
+  {
+   "t": "p",
+   "k": "f3427decf543",
+   "en": "There can be many different aspects of the system design of YouTube as there is more depth in the subject area. Therefore, many questions can arise. Some questions and directions toward their answers are as follows:"
+  },
+  {
+   "t": "li",
+   "k": "7eda6b995a79",
+   "en": "Question: It is possible to quantify availability by adding numbers like"
+  },
+  {
+   "t": "li",
+   "k": "173acaf5c517",
+   "en": "99% availability or 99.999% availability. In that case, what design changes will be required?"
+  },
+  {
+   "t": "p",
+   "k": "48cc2969f90f",
+   "en": "This is a hard question. In reality, such numbers are part of a service’s SLA, and they are generated from models or long-term empirical studies. While it is good to know how the above numbers are obtained and how organizations use monitoring to keep availability high, it might be a better strategy to discuss the fault tolerance of the system—what will happen if there are software faults, server failures, full data center failures, and so on. If the system is resilient against faults, that implies the system will have good availability."
+  },
+  {
+   "t": "li",
+   "k": "30ec13ac1dab",
+   "en": "Question: We assumed some reasonable numbers to come up with broad resource requirements. For example, we said the average length of a video is five minutes. In this case, are we designing for average behavior? What will happen to users who don’t follow the average profile?"
+  },
+  {
+   "t": "p",
+   "k": "5911dfef818b",
+   "en": "A possible answer could be that the above number will likely change over time. Our system design should be horizontally scalable so that with increasing users, the system keeps functioning adequately. Practically, systems might not scale when some aspect of the system increases by an order of magnitude. When some aspects of a system increase by an order of magnitude (for example, 10x), we usually need a new, different design. Cost points of designing 10x and 100x scales are very different."
+  },
+  {
+   "t": "li",
+   "k": "26f2ec91ffbd",
+   "en": "Question: Why didn’t we discuss and estimate resources for video comments and likes?"
+  },
+  {
+   "t": "p",
+   "k": "0ce0be633f69",
+   "en": "Concurrent users’ comments on videos are roughly at the same complexity as designing a messaging system. We’ll discuss that problem elsewhere in the course."
+  },
+  {
+   "t": "li",
+   "k": "f588ae2d1dc1",
+   "en": "Question: How to manage unexpected spikes in system load?"
+  },
+  {
+   "t": "p",
+   "k": "44f95ab2fef2",
+   "en": "A possible answer is that because our design is horizontally scalable, we can shed some load on the public cloud due to its elasticity features."
+  },
+  {
+   "t": "p",
+   "k": "440a4308956a",
+   "en": "However, public clouds are not infinitely scalable. They often need a priori business contracts that might put a limit on maximum, concurrently allowed resource use at different data centers."
+  },
+  {
+   "t": "li",
+   "k": "7f4bbe8699c9",
+   "en": "Question: How will we deploy a global network to connect data centers and CDN sites?"
+  },
+  {
+   "t": "p",
+   "k": "447e67bf86ed",
+   "en": "In practice, YouTube uses Google’s network, which is built for that purpose and peers with many ISPs of the world. It is a fascinating field of study that we have left outside this course for further review."
+  },
+  {
+   "t": "li",
+   "k": "b59461806708",
+   "en": "Question: Why isn’t there more detail on audio/video encoding?"
+  },
+  {
+   "t": "p",
+   "k": "d708b4bcc168",
+   "en": "There are many audio/video encoding choices, many publicly known and some proprietary. Due to excessive redundancy in multimedia content, encoding is often able to reduce a huge raw format content to a much smaller size (for example, from 600 MB to 30 MB). We have left the details of such encoding algorithms to you if you’re interested in further exploration."
+  },
+  {
+   "t": "li",
+   "k": "e3ec9c796290",
+   "en": "Question: Cant we use specialized hardware (or accelerators like GPUs) to speed up some aspects of the YouTube computation?"
+  },
+  {
+   "t": "p",
+   "k": "857a5a63822e",
+   "en": "When we estimated the number of servers, we assumed that any server could fulfill any required functionality. In reality, with the slowing of Moore’s law, we have special-purpose hardware available (for example, hardware encoders/decoders, machine-learning accelerators like Tensor Processing Units, and many more). All such platforms need their own courses to do justice to the content. So, we avoided that discussion in this design problem."
+  },
+  {
+   "t": "li",
+   "k": "15ff384c4d63",
+   "en": "Question: Should compression be performed at the client-side or the server-side during the content uploading stage?"
+  },
+  {
+   "t": "p",
+   "k": "474c1b2b60f9",
+   "en": "We might use some lossless but fast compression (for example, Google Snappy) on the client end to reduce data that needs to be uploaded. This might mean that we’ll need a rich client, or we would have to fall back to plain data if the compressor was unavailable. Both of those options add complexity to the system."
+  },
+  {
+   "t": "li",
+   "k": "70af7c70f6d1",
+   "en": "Question: Are there any other benefits to making file chunks other than in adaptive bitrates?"
+  },
+  {
+   "t": "p",
+   "k": "3fd63ec4ab5f",
+   "en": "We discussed video file chunks in the context of adaptive bit rates only."
+  },
+  {
+   "t": "p",
+   "k": "0457c6b86ed4",
+   "en": "Such chunks also help to parallelize any preprocessing, which is important to meet real-time requirements, especially for live streams. Parallel processing is again a full-fledged topic in itself, and we’ve left it to you for further exploration."
+  }
+ ]
+}

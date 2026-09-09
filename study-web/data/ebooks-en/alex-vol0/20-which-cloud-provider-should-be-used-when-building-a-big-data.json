@@ -1,0 +1,58 @@
+{
+ "id": "20-which-cloud-provider-should-be-used-when-building-a-big-data",
+ "title": "Which cloud provider should be used when building a big data solution?",
+ "titleKey": "b6111a485fea",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "d1a7e371777a",
+   "en": "The diagram below illustrates the detailed comparison of AWS, Google Cloud, and Microsoft Azure. 42 The common parts of the solutions:"
+  },
+  {
+   "t": "li",
+   "k": "9cbff066c7dc",
+   "en": "Data ingestion of structured or unstructured data."
+  },
+  {
+   "t": "li",
+   "k": "9f543278877a",
+   "en": "Raw data storage."
+  },
+  {
+   "t": "li",
+   "k": "632ce2327ed9",
+   "en": "Data processing, including filtering, transformation, normalization, etc."
+  },
+  {
+   "t": "li",
+   "k": "36e0364c8ed8",
+   "en": "Data warehouse, including key-value storage, relational database, OLAP database, etc."
+  },
+  {
+   "t": "li",
+   "k": "7a8fc7fb24a6",
+   "en": "Presentation layer with dashboards and real-time notifications."
+  },
+  {
+   "t": "p",
+   "k": "96baf344a99e",
+   "en": "It is interesting to see different cloud vendors have different names for the same type of products."
+  },
+  {
+   "t": "p",
+   "k": "87440c50380a",
+   "en": "For example, the first step and the last step both use the serverless product. The product is called “lambda” in AWS, and “function” in Azure and Google Cloud."
+  },
+  {
+   "t": "p",
+   "k": "4a11e85024b4",
+   "en": "Question - which products have you used in production? What kind of application did you use it for?"
+  },
+  {
+   "t": "p",
+   "k": "258b9fa40313",
+   "en": "Source:S.C. Gupta’s post 43"
+  }
+ ]
+}

@@ -1,0 +1,158 @@
+{
+ "id": "28-keeping-an-llm-s-answers-up-to-date",
+ "title": "Keeping an LLM’s Answers Up to Date",
+ "titleKey": "fcb43e967325",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "d8df1e5ac39b",
+   "en": "Your LLM answers are wrong. Not hallucination-wrong — outdated-wrong."
+  },
+  {
+   "t": "p",
+   "k": "752ad1610af9",
+   "en": "You shipped a customer support bot on GPT-4. It's trained through early 2024. Your product changed 14 times since then. Every week, users get answers that were accurate 8 months ago and are flat-out wrong today."
+  },
+  {
+   "t": "p",
+   "k": "c66db70d2535",
+   "en": "The team is debating the fix."
+  },
+  {
+   "t": "p",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:"
+  },
+  {
+   "t": "p",
+   "k": "a4933fbc9cb8",
+   "en": "NestJS API OpenAI GPT-4 + PostgreSQL (product knowledge base)→ ~2,000 support queries/day, 15% return wrong answers tied to stale knowledge Knowledge base updates weekly — new pricing, new features, deprecated flows Budget: mid-size startup, not training custom models from scratch You need accurate, up-to-date answers without re-training on every product update What do you do?"
+  },
+  {
+   "t": "p",
+   "k": "cef0e2c6571b",
+   "en": "A) RAG — embed your knowledge base, retrieve relevant chunks at query time, inject into context. Model stays the same, knowledge is always fresh."
+  },
+  {
+   "t": "p",
+   "k": "29a6fbc0ac76",
+   "en": "B) Fine-tune the base model — train GPT-4 (or open-source equivalent) on your product docs. The model internalizes your domain."
+  },
+  {
+   "t": "p",
+   "k": "f75c8ea87ae1",
+   "en": "C) Fine-tune + RAG hybrid — fine-tune for style/tone/domain fluency, RAG for factual grounding. Best of both worlds."
+  },
+  {
+   "t": "p",
+   "k": "3afd061e88b5",
+   "en": "D) Prompt engineering only — detailed system prompt + few-shot examples. No infra, no training, just better instructions."
+  },
+  {
+   "t": "h3",
+   "k": "227f277a33bd",
+   "en": "DAY 27 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "4419dffc1bef",
+   "en": "Answer: A — RAG The problem is freshness — the model doesn't know what changed, not that it doesn't understand your domain."
+  },
+  {
+   "t": "p",
+   "k": "57790fbcf0f6",
+   "en": "RAG separates knowledge from reasoning. The model stays frozen (no retraining cost, no deployment cycle). Your knowledge base lives in a vector store — update a doc, re-embed it, done. New pricing ships Monday, your bot knows it by Monday."
+  },
+  {
+   "t": "p",
+   "k": "79f48e5e0680",
+   "en": "At runtime: user asks embed query retrieve top-K relevant chunks inject into context →→→→ model reasons over fresh, accurate content."
+  },
+  {
+   "t": "p",
+   "k": "aeed6d1b3c6d",
+   "en": "You've turned a model problem into a data pipeline problem. Every engineering team already knows how to solve data pipelines."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "e4e43e4e7719",
+   "en": "B — Fine-tuning (the trap answer)"
+  },
+  {
+   "t": "p",
+   "k": "2aee125b3d55",
+   "en": "Feels like the obvious upgrade. Makes the problem worse."
+  },
+  {
+   "t": "p",
+   "k": "0163ecb4d0e7",
+   "en": "Fine-tuning bakes knowledge into weights. Those weights are static until you retrain. Weekly product updates = weekly retraining at real cost (time + money) + real risk of catastrophic forgetting (new training can degrade recall of old content if not carefully managed)."
+  },
+  {
+   "t": "p",
+   "k": "7e108bcf30c2",
+   "en": "Fine-tuning is the right answer for behavioral changes — tone, format, domain fluency, internal jargon. It teaches the model how to behave, not what to know. Wrong tool for a freshness problem."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "p",
+   "k": "9ddbfa5e1185",
+   "en": "C — Fine-tune + RAG hybrid (overkill)"
+  },
+  {
+   "t": "p",
+   "k": "58b474af8174",
+   "en": "Genuinely powerful architecture — but it's step 3, not step 1."
+  },
+  {
+   "t": "p",
+   "k": "746f5ea0dc29",
+   "en": "You can't productively fine-tune for style until your factual grounding is solid first. The hybrid is what you reach for after you've shipped RAG cleanly and hit the ceiling of what retrieval alone can do."
+  },
+  {
+   "t": "p",
+   "k": "27301633d408",
+   "en": "For a startup with a 15% wrong-answer rate due to stale knowledge, shipping a hybrid is a 3-month project when a 2-week RAG implementation fixes the actual problem."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "p",
+   "k": "6e767140ad9e",
+   "en": "D — Prompt engineering only (hits the ceiling fast)"
+  },
+  {
+   "t": "p",
+   "k": "017b02d9ff4b",
+   "en": "Fastest to ship, first to break."
+  },
+  {
+   "t": "p",
+   "k": "967afb2f5ecb",
+   "en": "A detailed system prompt can set tone and format. It cannot inject 400 pages of updated product docs without hitting token limits — and manually picking which docs to include is just RAG without the retrieval infrastructure."
+  },
+  {
+   "t": "p",
+   "k": "a5d30a2b31d3",
+   "en": "Prompt engineering works when the model already knows what it needs to know. It can't fix a knowledge gap. pgvector extension on your existing PostgreSQL — store embeddings in a new column, query Pinecone — fully managed vector database, serverless tier, no infra to run. Weaviate — open-source vector DB, self-hosted on Kubernetes, full control over indexing."
+  },
+  {
+   "t": "h3",
+   "k": "c2280cedaf27",
+   "en": "DAY 28 · SYSTEM DESIGN"
+  }
+ ]
+}

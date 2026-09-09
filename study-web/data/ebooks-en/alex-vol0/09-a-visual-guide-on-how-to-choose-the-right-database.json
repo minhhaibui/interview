@@ -1,0 +1,18 @@
+{
+ "id": "09-a-visual-guide-on-how-to-choose-the-right-database",
+ "title": "A visual guide on how to choose the right Database",
+ "titleKey": "c279533191a8",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "ff75fb60ce07",
+   "en": "Picking a database is a long-term commitment so the decision shouldn’t be made lightly. The important thing to keep in mind is to choose the right database for the right job. 20 Data can be structured (SQL table schema), semi-structured (JSON, XML, etc.), and unstructured (Blob)."
+  },
+  {
+   "t": "p",
+   "k": "a690275c5fd1",
+   "en": "Common database categories include: 🔹 Relational 🔹 Columnar 🔹 Key-value 🔹 In-memory 🔹 Wide column 🔹 Time Series 🔹 Immutable ledger 🔹Geospatial 🔹Graph 🔹Document 🔹Text search 🔹Blob Thanks,Satish Chandra Gupta Over to you - Which database have you used for which workload? 21"
+  }
+ ]
+}

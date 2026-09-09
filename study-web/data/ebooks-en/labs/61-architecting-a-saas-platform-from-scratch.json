@@ -1,0 +1,213 @@
+{
+ "id": "61-architecting-a-saas-platform-from-scratch",
+ "title": "Architecting a SaaS Platform from Scratch",
+ "titleKey": "bc24c70de1a0",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "b34c15699cb7",
+   "en": "You're designing the architecture for a new SaaS platform from scratch."
+  },
+  {
+   "t": "p",
+   "k": "b3b25d210b1b",
+   "en": "It needs to handle 50,000 requests per second at launch. Multi-tenant. Real-time data. Global users. AI inference built in."
+  },
+  {
+   "t": "p",
+   "k": "022c0723d65d",
+   "en": "Your CTO gives you 3 months and a blank slate."
+  },
+  {
+   "t": "p",
+   "k": "5ed9816331b1",
+   "en": "You've been thinking about this for a week. You finally sit down to draw the first box."
+  },
+  {
+   "t": "p",
+   "k": "e5225be54353",
+   "en": "Here's what engineers actually debate in that room:"
+  },
+  {
+   "t": "p",
+   "k": "e00a7febb44b",
+   "en": "A) Start with a distributed microservices architecture — services for auth, billing, inference, and core domain from day one. Scale each independently."
+  },
+  {
+   "t": "p",
+   "k": "3a0578543e07",
+   "en": "B) Start with a modular monolith — one deployable unit with clean internal module boundaries. Extract services only when a specific boundary proves it needs it."
+  },
+  {
+   "t": "p",
+   "k": "82b3535b1615",
+   "en": "C) Start with serverless — Lambda/Cloud Functions for every endpoint, DynamoDB for state, SQS for async. Zero infra to manage, scales to zero between bursts."
+  },
+  {
+   "t": "p",
+   "k": "ba0d160f2062",
+   "en": "D) Start with an event-driven architecture — Kafka as the backbone, all services communicate through events, no direct API calls between services from day one."
+  },
+  {
+   "t": "h3",
+   "k": "d712d41c14b3",
+   "en": "DAY 60 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "bd5388820037",
+   "en": "B) Modular Monolith — right The constraint isn't scale. It's the 3-month runway plus uncertainty about domain boundaries."
+  },
+  {
+   "t": "p",
+   "k": "5942135bc6ff",
+   "en": "A modular monolith gives you:"
+  },
+  {
+   "t": "li",
+   "k": "1eea3414a517",
+   "en": "Fast iteration — no network serialization overhead, no cross-service API contracts to version"
+  },
+  {
+   "t": "li",
+   "k": "6aa2a8be1d65",
+   "en": "Real module boundaries enforced in code (auth, billing, inference, core domain — no shared DB tables, no cross-module direct calls)"
+  },
+  {
+   "t": "li",
+   "k": "88df75e0179d",
+   "en": "Single deploy, single observability surface, single transaction boundary"
+  },
+  {
+   "t": "li",
+   "k": "e6c4698c4341",
+   "en": "The option to extract services later — when you know exactly which boundary is real When billing hits 10k RPS independently and needs separate scaling, you extract it. The boundary is already clean. The migration is a refactor, not a rewrite."
+  },
+  {
+   "t": "p",
+   "k": "9cd422856e1c",
+   "en": "The AI inference piece specifically: inference latency is dominated by model I/O (50–500ms), not your application code. That's a reason to put it behind a clean internal interface — not a reason to make it a separate service on day one."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "1e4da672837e",
+   "en": "A) Microservices from day one — wrong 50,000 RPS sounds like you need microservices. It doesn't."
+  },
+  {
+   "t": "p",
+   "k": "02d0740d4406",
+   "en": "That's a solved load balancing problem, not a distribution problem."
+  },
+  {
+   "t": "p",
+   "k": "86855a49eef6",
+   "en": "What microservices from day one actually gives you:"
+  },
+  {
+   "t": "li",
+   "k": "848e13f16338",
+   "en": "6+ independently deployable services before you've found your real domain boundaries"
+  },
+  {
+   "t": "li",
+   "k": "bb3d4bcd4114",
+   "en": "Distributed transactions across auth, billing, inference, and core domain"
+  },
+  {
+   "t": "li",
+   "k": "ee7a2816a9d7",
+   "en": "Network hops on every request that used to be in-process calls"
+  },
+  {
+   "t": "li",
+   "k": "738afd4cced2",
+   "en": "3 months of infra work instead of product Amazon's \"two-pizza teams\" rule was for existing services with known boundaries. Not for new domains where you're still discovering what the boundaries are."
+  },
+  {
+   "t": "p",
+   "k": "4dcac74c4c64",
+   "en": "The boundary is the hard part. You don't know it yet."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "p",
+   "k": "3e595d72cf11",
+   "en": "C) Serverless — wrong (senior engineer trap) \"Scales to zero\" sounds great until you price out 50k RPS sustained on Lambda."
+  },
+  {
+   "t": "p",
+   "k": "c9f230348641",
+   "en": "The math:"
+  },
+  {
+   "t": "li",
+   "k": "49a053be8f4e",
+   "en": "50,000 req/s × 100ms avg = 5,000 concurrent Lambda executions"
+  },
+  {
+   "t": "li",
+   "k": "1928c8767a62",
+   "en": "At that scale you're paying more than a reserved EC2 cluster"
+  },
+  {
+   "t": "li",
+   "k": "e477c560f461",
+   "en": "Cold starts are real and you promised \"real-time data\""
+  },
+  {
+   "t": "li",
+   "k": "d181f150487d",
+   "en": "AI inference in Lambda = cold start + memory limit + 15-min hard timeout = pain Serverless wins for bursty, unpredictable event workloads. SaaS with consistent load and real-time requirements is not that workload."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "p",
+   "k": "c33c5e254a5d",
+   "en": "D) Event-driven from day one — wrong This one trips up engineers who've read about Kafka at Netflix and Uber."
+  },
+  {
+   "t": "p",
+   "k": "94520a24b6f0",
+   "en": "Event-driven is the right answer — for Netflix and Uber, after they've already mapped their domain."
+  },
+  {
+   "t": "p",
+   "k": "6f8311065a31",
+   "en": "Starting with Kafka before you have a working system means:"
+  },
+  {
+   "t": "li",
+   "k": "4db0103f3272",
+   "en": "Every feature needs an event schema, a producer, and a consumer before it works"
+  },
+  {
+   "t": "li",
+   "k": "75e4a521b9ec",
+   "en": "Debugging \"why didn't this event get processed\" during week 2 of development"
+  },
+  {
+   "t": "li",
+   "k": "3f7bf9e1d3c0",
+   "en": "Eventual consistency as the default when you don't yet know which operations need strong consistency"
+  },
+  {
+   "t": "li",
+   "k": "c2748a7cadeb",
+   "en": "Kafka operational overhead before you've validated the product Event-driven is an optimization for a known system. Not a foundation for an unknown one."
+  }
+ ]
+}

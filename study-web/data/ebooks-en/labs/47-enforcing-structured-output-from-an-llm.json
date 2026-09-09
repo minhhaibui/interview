@@ -1,0 +1,157 @@
+{
+ "id": "47-enforcing-structured-output-from-an-llm",
+ "title": "Enforcing Structured Output from an LLM",
+ "titleKey": "7ca1ee35b900",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "8fa35539a40d",
+   "en": "Your production LLM agent just returned this JSON to your order processing service:"
+  },
+  {
+   "t": "code",
+   "k": "69f0899f8bbe",
+   "en": "{ \"action\": \"refund\", \"amount\": \"fifty dollars\", \"order_id\": null, \"confidence\": \"pretty high\" }"
+  },
+  {
+   "t": "p",
+   "k": "e0d60df0fb3c",
+   "en": "Your downstream service crashes. The retry hits the same model. Same broken output. The refund never fires — but the user got a confirmation email."
+  },
+  {
+   "t": "p",
+   "k": "03507b4eb4f2",
+   "en": "You need your agent to return valid, typed, structured output — every time. What do you do?"
+  },
+  {
+   "t": "p",
+   "k": "868e0415c90d",
+   "en": "A) Prompt-engineer harder — add \"Always return valid JSON with these exact fields\" to your system prompt and document the schema inline."
+  },
+  {
+   "t": "p",
+   "k": "dc80f656ca5d",
+   "en": "B) Use structured outputs / function calling (OpenAI, Bedrock tool use, Gemini response schema) — constrain the model at the API level to return a typed schema."
+  },
+  {
+   "t": "p",
+   "k": "5e889cc9383e",
+   "en": "C) Post-process with a validation layer — parse the output, run JSON Schema or Pydantic validation, retry with corrective context if it fails (max 2 retries)."
+  },
+  {
+   "t": "p",
+   "k": "e1293d622320",
+   "en": "D) Add a second LLM as a judge — pass the first model's output to a smaller, faster model that scores and flags invalid responses before they reach your service."
+  },
+  {
+   "t": "h3",
+   "k": "147704b971f1",
+   "en": "DAY 46 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "li",
+   "k": "773721ef2796",
+   "en": "Why B wins (Structured outputs / API-level schema enforcement):",
+   "lead": "Why B wins (Structured outputs / API-level schema enforcement)"
+  },
+  {
+   "t": "p",
+   "k": "769f9cef194c",
+   "en": "This is the only option that eliminates the problem at the source. When you use OpenAI's response_format: { type: \"json_schema\" }, Bedrock's tool use / converse API, or Gemini's response_schema, the model's token sampling is constrained — it cannot produce output that violates the schema. Not \"it's less likely.\" Cannot."
+  },
+  {
+   "t": "p",
+   "k": "932ee7bf3ffd",
+   "en": "Under the hood, these APIs use constrained decoding: the model's output probability distribution is masked so invalid tokens are zeroed out at each step. The result is guaranteed schema conformance on every call. No retries. No parsing. No \"it worked 98% of the time.\""
+  },
+  {
+   "t": "p",
+   "k": "01387e9f995e",
+   "en": "In production: use Pydantic (Python) or Zod (TypeScript) to define your schema, pass it to the API, deserialize directly into your typed model. Your downstream service never sees a string where it expects an int."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "869ca8086abf",
+   "en": "Why A is wishful thinking (Prompt engineering): \"Always return valid JSON\" is not a contract. It's a suggestion.",
+   "lead": "Why A is wishful thinking (Prompt engineering)"
+  },
+  {
+   "t": "p",
+   "k": "a43321490a22",
+   "en": "LLMs are probabilistic text predictors. Under load, edge-case prompts, or slightly different phrasing, they drift. You'll get valid JSON 97% of the time and a markdown code block the other 3%. At 10k requests/day that's 300 failures. At 100k, it's 3,000."
+  },
+  {
+   "t": "p",
+   "k": "3d5b430d686e",
+   "en": "Prompt engineering is a first step when you're prototyping. It is not an output validation strategy for production. Teams that rely on this eventually write 50-line system prompts trying to enumerate every failure mode. The model still escapes."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "6f91524a5891",
+   "en": "Why C is correct but incomplete (Post-process + retry loop):",
+   "lead": "Why C is correct but incomplete (Post-process + retry loop)"
+  },
+  {
+   "t": "p",
+   "k": "9f3f6bdc3c0c",
+   "en": "Validation layer + retry with corrective context is a legitimate, widely-used pattern — especially when you can't use structured outputs (e.g., open-source models like Llama, Mistral, or your own fine-tune via Ollama/vLLM)."
+  },
+  {
+   "t": "p",
+   "k": "c47728ab993d",
+   "en": "The implementation: parse validate with Pydantic/JSON Schema on failure, re-inject the→→ original prompt + the bad output + a correction instruction (\"Your previous output had these errors: [list]. Try again.\") retry, max 2 attempts fail hard and surface to human review.→→ But: this is your fallback, not your primary. Every retry is latency + cost. Under high load, retry storms can spike your API spend 3–4x. Corrective context also doesn't help when the model fundamentally can't produce what you're asking — you'll just retry into the same failure."
+  },
+  {
+   "t": "p",
+   "k": "ca032d172f27",
+   "en": "Use C when B isn't available. Use B when it is...."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "2ee95242a97a",
+   "en": "Why D is a trap (LLM-as-judge for validation):",
+   "lead": "Why D is a trap (LLM-as-judge for validation)"
+  },
+  {
+   "t": "p",
+   "k": "f5db739e5a7b",
+   "en": "LLM-as-judge is a real eval pattern — it's used to score quality, tone, safety, and correctness in offline evaluation pipelines and red-teaming."
+  },
+  {
+   "t": "p",
+   "k": "f31c8d3e1c50",
+   "en": "For structural output validation in a hot path? It's expensive, slow (~200–500ms extra per request), and unreliable for schema enforcement. A judge model can tell you \"this response seems wrong\" — it cannot guarantee a valid typed object. You've added latency and cost without actually solving the problem."
+  },
+  {
+   "t": "p",
+   "k": "0a04aadf4621",
+   "en": "LLM-as-judge belongs in your eval harness (nightly runs, CI) — not in your request/response loop for data integrity."
+  },
+  {
+   "t": "p",
+   "k": "26ceac7e992c",
+   "en": "The worse failure mode: teams add a judge in addition to bad structured prompting, feel safer, and ship it. Both models can hallucinate in sync. The judge agrees the broken output looks fine. Silent corruption ships to prod."
+  },
+  {
+   "t": "h3",
+   "k": "370681ef41da",
+   "en": "DAY 47 · SYSTEM DESIGN"
+  }
+ ]
+}

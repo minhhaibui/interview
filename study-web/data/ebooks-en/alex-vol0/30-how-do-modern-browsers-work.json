@@ -1,0 +1,18 @@
+{
+ "id": "30-how-do-modern-browsers-work",
+ "title": "How do modern browsers work?",
+ "titleKey": "07813dd3662f",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "a4910c4355b4",
+   "en": "Google published a series of articles about \"Inside look at modern web browser\". It's a great read."
+  },
+  {
+   "t": "p",
+   "k": "4a599188ba53",
+   "en": "Links: https://developer.chrome.com/blog/inside-browser-part1/ https://developer.chrome.com/blog/inside-browser-part2/ https://developer.chrome.com/blog/inside-browser-part3/ https://developer.chrome.com/blog/inside-browser-part4/ 63"
+  }
+ ]
+}

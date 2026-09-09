@@ -1,0 +1,143 @@
+{
+ "id": "53-versioning-an-api-without-breaking-clients",
+ "title": "Versioning an API Without Breaking Clients",
+ "titleKey": "d375c50cb772",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "76e41647f700",
+   "en": "Your API just shipped a breaking change. /users now returns fullName instead of first_name + last_name. 3 mobile clients broke. 1 partner integration went down. Your on-call is not happy."
+  },
+  {
+   "t": "p",
+   "k": "dcf6097a84fb",
+   "en": "You had a versioning strategy. It just wasn't the right one."
+  },
+  {
+   "t": "p",
+   "k": "5eb2c1ed9ae2",
+   "en": "There are 4 ways to version an API. Here's what actually happens when you pick each one in production:"
+  },
+  {
+   "t": "p",
+   "k": "e07de28d1fc8",
+   "en": "A — URL path versioning (/v1/users, /v2/users)"
+  },
+  {
+   "t": "p",
+   "k": "675209dace64",
+   "en": "Simple. Explicit. Every request makes the version visible in logs and caches. But now you're maintaining 2 full route trees. A bugfix in the business logic layer has to be patched in both. Teams quietly let v1 rot."
+  },
+  {
+   "t": "p",
+   "k": "53d9a699f43c",
+   "en": "B — Header versioning (API-Version: 2)"
+  },
+  {
+   "t": "p",
+   "k": "ef2b3c95cca2",
+   "en": "Clean URLs. Version negotiation in the transport layer, not the path. Harder to test in a browser, invisible in logs unless you instrument for it, and clients forget to send the header — defaulting to whatever your server decides \"latest\" means."
+  },
+  {
+   "t": "p",
+   "k": "64a642ab3a50",
+   "en": "C — Query param versioning (/users?version=2)"
+  },
+  {
+   "t": "p",
+   "k": "e9e368f93d82",
+   "en": "Fast to implement. Zero client SDK changes. Cache-unfriendly — every CDN layer treats ?version=1 and ? version=2 as separate cache keys. Works until you have 40 endpoints and version drift becomes untrackable."
+  },
+  {
+   "t": "p",
+   "k": "c20e2404a6b1",
+   "en": "D — Content negotiation (Accept: application/vnd.api.v2+json)"
+  },
+  {
+   "t": "p",
+   "k": "03e29c5fef54",
+   "en": "The REST-purist approach. Semantically correct — you're asking for a representation, not a route. Almost nobody implements it right. Client library support is inconsistent. One wrong Accept header and you get a"
+  },
+  {
+   "t": "h3",
+   "k": "52bfb9b9a490",
+   "en": "DAY 52 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "2eb4f8647d12",
+   "en": "D — Content negotiation: correct spec, wrong reality Accept: application/vnd.api.v2+json is what the HTTP spec intended. You're asking for a specific representation of a resource, not a different route. Semantically, it's the most correct."
+  },
+  {
+   "t": "p",
+   "k": "b009dfeaa01d",
+   "en": "In practice: Accept header parsing is inconsistent across client libraries. Middleware strips headers silently. A misconfigured client gets a 406 Not Acceptable with no obvious error message pointing to the version field. GitHub tried content negotiation early in their API and moved to URL versioning."
+  },
+  {
+   "t": "p",
+   "k": "5c6f992ef8ec",
+   "en": "That tells you something."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "eeb8ecf2a172",
+   "en": "A — URL path versioning: the pragmatic default (not wrong, but has a cost)"
+  },
+  {
+   "t": "p",
+   "k": "c8b56876c157",
+   "en": "This is what Stripe, Twilio, and GitHub use. Not because it's theoretically pure — it isn't — but because it's operationally obvious."
+  },
+  {
+   "t": "p",
+   "k": "6d799d7f880c",
+   "en": "Every proxy, log aggregator, and CDN understands it without configuration. /v1/ vs /v2/ is visible everywhere without instrumentation."
+  },
+  {
+   "t": "p",
+   "k": "134b2d001331",
+   "en": "The cost is real: you're running parallel route trees, and v1 maintenance debt compounds fast. A bugfix in shared business logic has to be patched in both versions. Stripe's answer was to pin clients to a version at the API key level and deprecate slowly over years. Most teams don't have that discipline — so v1 quietly rots while v2 gets all the attention."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "p",
+   "k": "c08e5a1154dc",
+   "en": "B — Header versioning: good theory, rough edges Clean architecture. The URL represents a resource, the header represents the negotiation. This is how internal microservices often version — when you control both client and server, it works well."
+  },
+  {
+   "t": "p",
+   "k": "fa0a74b45bec",
+   "en": "The problem: invisible in browser tabs, impossible to share as a curl command without extra flags, and \"default to latest\" on a missing header is a footgun. In year two, a legacy client quietly drops the header. Your server defaults it to v2. The client breaks. Nobody knows why — it's not in the URL, it's not in the logs unless you specifically instrumented for it."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "p",
+   "k": "8172c7540083",
+   "en": "C — Query params: the quick fix that stays forever Fast to implement. Zero client SDK changes. Works immediately."
+  },
+  {
+   "t": "p",
+   "k": "1bf108811a27",
+   "en": "Cache invalidation gets messy at scale — every CDN layer treats ?version=1 and ?version=2 as separate cache keys, so your cache hit rate tanks. The bigger problem is version drift: with no forcing function, clients scatter across v1/v2/v3 with no deprecation pressure. Good for internal tools where you control all the clients. Gets expensive for public APIs."
+  },
+  {
+   "t": "h3",
+   "k": "637d056fd27a",
+   "en": "DAY 53 · SYSTEM DESIGN"
+  }
+ ]
+}

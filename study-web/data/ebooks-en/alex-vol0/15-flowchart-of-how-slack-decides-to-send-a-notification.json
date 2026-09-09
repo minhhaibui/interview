@@ -1,0 +1,28 @@
+{
+ "id": "15-flowchart-of-how-slack-decides-to-send-a-notification",
+ "title": "Flowchart of how slack decides to send a notification",
+ "titleKey": "cb16f2163c06",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "5fc10950cf39",
+   "en": "It is a great example of why a simple feature may take much longer to develop than many people think."
+  },
+  {
+   "t": "p",
+   "k": "0154f1936274",
+   "en": "When we have a great design, users may not notice the complexity because it feels like the feature is just working as intended."
+  },
+  {
+   "t": "p",
+   "k": "98fc38e8efec",
+   "en": "What’s your takeaway from this diagram?"
+  },
+  {
+   "t": "p",
+   "k": "0c2e10a8d587",
+   "en": "Image source: https://slack.engineering/reducing-slacks-memory-footprint/ 32"
+  }
+ ]
+}

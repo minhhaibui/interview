@@ -1,0 +1,871 @@
+{
+ "id": "023-distributed-task-scheduler",
+ "title": "Distributed Task Scheduler",
+ "titleKey": "69f43a145105",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "cb16b4cb7e5c",
+   "en": "System Design: The Distributed Task Scheduler"
+  },
+  {
+   "t": "p",
+   "k": "fa05050483e4",
+   "en": "Learn about the basics of designing a distributed task scheduler."
+  },
+  {
+   "t": "h1",
+   "k": "b3326d1fb94f",
+   "en": "What is a task scheduler?"
+  },
+  {
+   "t": "p",
+   "k": "4eb63f7bd5ec",
+   "en": "A task is a piece of computational work that requires resources (CPU time, memory, storage, network bandwidth, and so on) for some specified time. For example, uploading a photo or a video on Facebook or Instagram consists of the following background tasks:"
+  },
+  {
+   "t": "li",
+   "k": "9a2540095599",
+   "en": "Encode the photo or video in multiple resolutions."
+  },
+  {
+   "t": "li",
+   "k": "fb2380a6ca6d",
+   "en": "Validate the photo or video to check for content monetization copyrights, and many more."
+  },
+  {
+   "t": "p",
+   "k": "f6c56f26f907",
+   "en": "The successful execution of all the above tasks makes the photo or video visible."
+  },
+  {
+   "t": "p",
+   "k": "70b19284c998",
+   "en": "However, a photo and video uploader does not need to stop the above tasks to complete."
+  },
+  {
+   "t": "p",
+   "k": "fc6839593ca8",
+   "en": "Another example is when we post a comment on Facebook. We don’t hold the comment poster until that comment is delivered to all the followers. That delivery is delegated to an asynchronous task scheduler to do offline."
+  },
+  {
+   "t": "p",
+   "k": "7f1378efc2b8",
+   "en": "In a system, many tasks contend for limited computational resources. A system that mediates between tasks and resources by intelligently allocating resources to tasks so that task-level and system-level goals are met is called a task scheduler."
+  },
+  {
+   "t": "h2",
+   "k": "387f81d7e2e4",
+   "en": "When to use a task schedular"
+  },
+  {
+   "t": "p",
+   "k": "27ba20541656",
+   "en": "A task scheduler is a critical component of a system for getting work done efficiently. It allows us to complete a large number of tasks using limited resources. It also aids in fully utilizing the system’s resources, provides users with an uninterrupted execution experience, and so on. The following are some of the use cases of task scheduling:"
+  },
+  {
+   "t": "li",
+   "k": "1a3f3c9d3453",
+   "en": "Single-OS-based node: It has many processes or tasks that contend for the node’s limited computational resources. So, we could use a local OS task scheduler that efficiently allocates resources to the tasks. It uses multi-feedback queues to pick some tasks and runs them on some processor.",
+   "lead": "Single-OS-based node"
+  },
+  {
+   "t": "li",
+   "k": "96f185c9a3f9",
+   "en": "Cloud computing services: Where there are many distributed resources and various tasks from multiple tenants, there is a strong need for a task scheduler to utilize cloud computing resources efficiently and meet tenants’ demands. A local OS task scheduler isn’t sufficient for this purpose because the tasks are in the billions, the source of the tasks is not single, and the resources to manage are not in a single machine. We have to go for a distributed solution.",
+   "lead": "Cloud computing services"
+  },
+  {
+   "t": "li",
+   "k": "48bc9dd32111",
+   "en": "Large distributed systems: In this system, many tasks run in the background against a single request by a user. Consider that there are millions to billions of users of a popular system like Facebook, WhatsApp, or Instagram. These systems require a task scheduler to handle billions of tasks. Facebook schedules its tasks against billions of parallel asynchronous requests by its users using Async.",
+   "lead": "Large distributed systems"
+  },
+  {
+   "t": "li",
+   "k": "49df6a8f2d13",
+   "en": "Note: Async is Facebook’s own distributed task scheduler that schedules all its tasks. Some tasks are more time-sensitive, like the tasks that should run to notify the users that the livestream of an event has started.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "456e6a511cf7",
+   "en": "It would be pointless if the users received a notification about the livestream after it had finished. Some tasks can be delayed, like tasks that make friend suggestions to users. Async schedules tasks based on appropriate priorities."
+  },
+  {
+   "t": "h2",
+   "k": "7537f205dd9d",
+   "en": "Distributed task scheduling"
+  },
+  {
+   "t": "p",
+   "k": "4643863a5532",
+   "en": "The process of deciding and assigning resources to the tasks in a timely manner is called task scheduling. The visual difference between an OS-level task scheduler and a data center-level task scheduler is shown in the following illustration:"
+  },
+  {
+   "t": "p",
+   "k": "5c90d6e0ebf5",
+   "en": "The OS task scheduler schedules a node’s local tasks or processes on that node’s computational resources. At the same time, the data center’s task scheduler schedules billions of tasks coming from multiple tenants that use the data center’s resources."
+  },
+  {
+   "t": "p",
+   "k": "86b1abe7076f",
+   "en": "Our goal is to design a task scheduler similar to the data center-level task scheduler where the following is considered:"
+  },
+  {
+   "t": "p",
+   "k": "ed53260e08cc",
+   "en": "Tasks will come from many different sources, tenants, and sub-systems."
+  },
+  {
+   "t": "p",
+   "k": "c262e7f26dac",
+   "en": "Many resources will be dispersed in a data center (or maybe across many data centers)."
+  },
+  {
+   "t": "p",
+   "k": "87d37fd996c0",
+   "en": "The above two requirements make the task scheduling problem challenging."
+  },
+  {
+   "t": "p",
+   "k": "3b6cc7783bd1",
+   "en": "We’ll design a distributed task scheduler that can handle all these tasks by making it scalable, reliable, and fault-tolerant."
+  },
+  {
+   "t": "h2",
+   "k": "a52126c0bf2b",
+   "en": "How will we design a task scheduling system?"
+  },
+  {
+   "t": "p",
+   "k": "d90a9038be3c",
+   "en": "We have divided the design of the task scheduler into four lessons:"
+  },
+  {
+   "t": "li",
+   "k": "6668ccde96a7",
+   "en": "Requirements: We’ll identify the functional and non-functional requirements of a task scheduling system in this lesson."
+  },
+  {
+   "t": "li",
+   "k": "ac21ec78f2f6",
+   "en": "Design: This lesson will discuss the system design of our task scheduling system and explores the components of the system and database schema."
+  },
+  {
+   "t": "li",
+   "k": "f0ce72da69a2",
+   "en": "Design considerations: In this lesson, we’ll highlight some design factors, such as task prioritization, resource optimization, and so on."
+  },
+  {
+   "t": "li",
+   "k": "de614f3036be",
+   "en": "Evaluation: We’ll evaluate our design of task scheduler based on our requirements."
+  },
+  {
+   "t": "p",
+   "k": "c283fa0241b8",
+   "en": "Let’s start by understanding the requirements of a task scheduling system."
+  },
+  {
+   "t": "h1",
+   "k": "66d1cd4926d3",
+   "en": "Requirements of a Distributed Task Scheduler's Design"
+  },
+  {
+   "t": "h2",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "h3",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "d6e521ccffeb",
+   "en": "Submit tasks: The system should allow the users to submit their tasks for execution."
+  },
+  {
+   "t": "p",
+   "k": "b507e495f802",
+   "en": "Allocate resources: The system should be able to allocate the required resources to each task."
+  },
+  {
+   "t": "p",
+   "k": "f26981139258",
+   "en": "Remove tasks: The system should allow the users to cancel the submitted tasks."
+  },
+  {
+   "t": "p",
+   "k": "f894d4aa2c01",
+   "en": "Monitor task execution: The task execution should be adequately monitored and rescheduled if the task fails to execute."
+  },
+  {
+   "t": "p",
+   "k": "e18fd0428c47",
+   "en": "Efficient resource utilization: The resources (CPU and memory) must be used efficiently in terms of time, cost, and fairness. Efficiency means that we do not waste resources. For example, if we allocate a heavy resource to a light task that can easily be executed on a cheap resource, it means that we have not efficiently utilized our resources. Fairness is all tenants’ ability to get the resources with equally likely probability in a certain cost class."
+  },
+  {
+   "t": "p",
+   "k": "08d65afd1780",
+   "en": "Release resources: After successfully executing a task, the system should take back the resources assigned to the task."
+  },
+  {
+   "t": "p",
+   "k": "530919eac20d",
+   "en": "Show task status: The system should show the users the current status of the task."
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "li",
+   "k": "dbe4c58f0962",
+   "en": "Availability: The system should be highly available to schedule and execute tasks.",
+   "lead": "Availability"
+  },
+  {
+   "t": "li",
+   "k": "35376db97f93",
+   "en": "Durability: The tasks received by the system should be durable and should not be lost.",
+   "lead": "Durability"
+  },
+  {
+   "t": "li",
+   "k": "a308993b622c",
+   "en": "Scalability: The system should be able to schedule and execute an ever-increasing number of tasks per day. Fault-tolerance: The system must be fault-tolerant by providing services uninterrupted despite faults in one or more of its components.",
+   "lead": "Scalability"
+  },
+  {
+   "t": "li",
+   "k": "f586326b113a",
+   "en": "Bounded waiting time: This is how long a task needs to wait before starting execution. We must not execute tasks much later than expected.",
+   "lead": "Bounded waiting time"
+  },
+  {
+   "t": "p",
+   "k": "97571aa39867",
+   "en": "Users shouldn’t be kept on waiting for an infinite time. If the waiting time for users crosses a certain threshold, they should be notified."
+  },
+  {
+   "t": "p",
+   "k": "4d470efafd81",
+   "en": "So far in this lesson, we have learned about task schedulers in general and distinguished between centralized and distributed task schedulers. Lastly, we listed the requirements of the distributed task scheduler system."
+  },
+  {
+   "t": "h2",
+   "k": "cfa08fe6c777",
+   "en": "Building blocks we will use"
+  },
+  {
+   "t": "p",
+   "k": "de66e50cb53c",
+   "en": "We’ll utilize the following building blocks in the design of our task scheduling system:"
+  },
+  {
+   "t": "figure",
+   "k": "505943e3fe0a",
+   "en": "Rate limiter SequencerDatabase Distributed queue Monitoring"
+  },
+  {
+   "t": "p",
+   "k": "be638394ba09",
+   "en": "Rate limiter is required to limit the number of tasks so that our system is reliable."
+  },
+  {
+   "t": "p",
+   "k": "3b9ff4086a50",
+   "en": "A sequencer is needed to uniquely identify tasks."
+  },
+  {
+   "t": "p",
+   "k": "2ca3319d6e91",
+   "en": "Database(s) are used to store task information."
+  },
+  {
+   "t": "p",
+   "k": "865e96e3cc0c",
+   "en": "A distributed queue is required to arrange tasks in the order of execution."
+  },
+  {
+   "t": "p",
+   "k": "d18a9f742c27",
+   "en": "Monitoring is essential to check the health of the resources and to detect failed tasks to provide reliable service to the users."
+  },
+  {
+   "t": "p",
+   "k": "934a49699a4e",
+   "en": "We’ve identified the requirements of the task scheduler. In the next lesson, we’ll design our task scheduling system according to these requirements."
+  },
+  {
+   "t": "h1",
+   "k": "f7d7ed966226",
+   "en": "Design of a Distributed Task Scheduler"
+  },
+  {
+   "t": "p",
+   "k": "8d21d9f5d10f",
+   "en": "Explore and connect the design components of the distributed task scheduler."
+  },
+  {
+   "t": "h2",
+   "k": "c212f08ed115",
+   "en": "Components"
+  },
+  {
+   "t": "p",
+   "k": "1b8ac3ccde35",
+   "en": "We can consider scheduling at many levels. We could be asked to design scheduling that is done internally by an organization to run tasks on their own cluster of machines. There, they have to find ample resources and need to decide which task to run first."
+  },
+  {
+   "t": "p",
+   "k": "d7132df6fd4a",
+   "en": "On the other hand, we could also be asked to design scheduling that a cloud provider uses to schedule tasks coming from multiple clients. Cloud providers need to decide which task to run first and which clients to handle first to provide appropriate isolation between different tenants."
+  },
+  {
+   "t": "p",
+   "k": "177c4d48e940",
+   "en": "So, in general, the big components of our system are:"
+  },
+  {
+   "t": "li",
+   "k": "fe5dcca9b87b",
+   "en": "Clients: They initiate the task execution.",
+   "lead": "Clients"
+  },
+  {
+   "t": "li",
+   "k": "c9d1f9a4ba60",
+   "en": "Resources: The task is executed on these components.",
+   "lead": "Resources"
+  },
+  {
+   "t": "p",
+   "k": "ea03494e4e9f",
+   "en": "Scheduler: A scheduler performs processes between clients and resources and decides which task should get resources first."
+  },
+  {
+   "t": "p",
+   "k": "b423970ac565",
+   "en": "As shown in the above illustration, it is necessary to put the incoming tasks into a queue. It is because of the following reasons:"
+  },
+  {
+   "t": "p",
+   "k": "ea898a0521b2",
+   "en": "We might not have sufficient resources available right now."
+  },
+  {
+   "t": "p",
+   "k": "125f280cd787",
+   "en": "There is task dependency, and some tasks need to wait for others."
+  },
+  {
+   "t": "p",
+   "k": "eb6f5cb46f78",
+   "en": "We need to decouple the clients from the task execution so that they can hand off work to our system. Our system then queues it for execution."
+  },
+  {
+   "t": "p",
+   "k": "4218b35f3ef4",
+   "en": "Let’s design a task scheduling system that should be able to schedule any task."
+  },
+  {
+   "t": "p",
+   "k": "53b3951026be",
+   "en": "Often, many tasks are relatively short-lived—from seconds to minutes. For long-running tasks, we might need the ability of periodic checksumming and restoration at the application level to recover from possible failures."
+  },
+  {
+   "t": "p",
+   "k": "5914a5a85201",
+   "en": "Let’s assume that some single server in our fleet can meet the computational needs of each task. For tasks that need many servers, either the application would need to break them down into smaller tasks for our system or employ long-term resource acquisition from the cluster manager."
+  },
+  {
+   "t": "h2",
+   "k": "056f11827899",
+   "en": "Design"
+  },
+  {
+   "t": "p",
+   "k": "9298b9d46f89",
+   "en": "When a task comes for scheduling, it should contain the following information with it:"
+  },
+  {
+   "t": "li",
+   "k": "cd1b6bb2bcd5",
+   "en": "Resource requirements: The requirements include how many CPU cores it needs, how much RAM is required to execute this task, how much disk space is required, what should the disk access rate be (input/output rate per second, or IOPS), and how many TCP ports the task needs for the execution, and so on. But, it is difficult for the clients to quantify these requirements.",
+   "lead": "Resource requirements"
+  },
+  {
+   "t": "p",
+   "k": "04ebfb4dad6e",
+   "en": "To remedy this situation, we have different tiers of resources like basic, regular, and premium. The client can specify the requirement in terms of these tiers."
+  },
+  {
+   "t": "li",
+   "k": "53840e5d774b",
+   "en": "Dependency: Broadly, tasks can be of two types: dependent and independent.",
+   "lead": "Dependency"
+  },
+  {
+   "t": "p",
+   "k": "51757dcdff50",
+   "en": "Dependent tasks require executing one or more additional tasks for their complete execution. These tasks must run in a sequence. For a dependent task, the client should provide a list of the tasks on which a given task is dependent."
+  },
+  {
+   "t": "p",
+   "k": "a31303948ed5",
+   "en": "Independent tasks don’t depend on the execution of any other task."
+  },
+  {
+   "t": "p",
+   "k": "3cd84d516f84",
+   "en": "Independent tasks can run in parallel. We should know whether a task is dependent or independent. The dependency information helps to execute both dependent tasks in order and independent tasks in parallel for efficient utilization of resources."
+  },
+  {
+   "t": "p",
+   "k": "215fba7b3d70",
+   "en": "The design of the task scheduler is shown in the following illustration:"
+  },
+  {
+   "t": "p",
+   "k": "53dd80c3f465",
+   "en": "Clients: The clients of the cloud providers are individuals or organizations from small to large businesses who want to execute their tasks."
+  },
+  {
+   "t": "p",
+   "k": "2a8664abe023",
+   "en": "Rate limiter: The resources available for a client depend on the cost they pay. It is important to limit the number of tasks for the reliability of our service. For instance, X number of tasks per hour are allowed to enter the system. Others will get a message like “Limit exceeded” instead of accepting the task and responding late. A rate limiter limits the number of tasks the client schedules based on its subscription. If the limit is exceeded, it returns an error message to the client that the rate limit has been exceeded."
+  },
+  {
+   "t": "p",
+   "k": "4691cc90910d",
+   "en": "Task submitter: The task submitter admits the task if it successfully passes through the rate limiter. There isn’t a single task submitter. Instead, we have a cluster of nodes that admit the increasing number of tasks."
+  },
+  {
+   "t": "p",
+   "k": "53ab2ed243e9",
+   "en": "Unique ID generator: It assigns unique IDs to the newly admitted tasks."
+  },
+  {
+   "t": "p",
+   "k": "f83b1a17d138",
+   "en": "Database: All of the tasks taken by the task submitter are stored in a distributed database. For each task, we have some attributes, and all of the attributes except one are stored in the relational database."
+  },
+  {
+   "t": "p",
+   "k": "c261d2a3350a",
+   "en": "Relational database (RDB): A relational database stores task IDs, user IDs, required resources, execution caps, the total number of attempts made by the client, delay tolerance, and so on, as shown in the following table. We can find the details on the RDB here."
+  },
+  {
+   "t": "p",
+   "k": "648f998012ab",
+   "en": "Graph database (GDB): This is a non-relational database that uses the graph data structure to store data. We use it to build and store a directed acyclic graph (DAG) of dependent tasks, topologically sorted by the task submitter, so that we can schedule tasks according to that DAG. We can find more details of the graph DB here."
+  },
+  {
+   "t": "h2",
+   "k": "c4835c160a57",
+   "en": "Database Schema"
+  },
+  {
+   "t": "p",
+   "k": "cd0330cd5dcc",
+   "en": "Column NameDatatypeDescription TaskIDIntegerUniquely identifies each task."
+  },
+  {
+   "t": "p",
+   "k": "309de2464329",
+   "en": "UserIDIntegerThis is the ID of the task owner."
+  },
+  {
+   "t": "p",
+   "k": "510c84f7d56d",
+   "en": "SchedulingTypeVarCharThis can be either once, daily, weekly, monthly, or annually."
+  },
+  {
+   "t": "p",
+   "k": "63d7589ff382",
+   "en": "TotalAttemptsIntegerThis is the maximum number of retries in case a task execution fails."
+  },
+  {
+   "t": "p",
+   "k": "2be314e7d675",
+   "en": "ResourceRequirementsVarCharClients have to specify the type of the offered resource categories, such as Basic, Regular, or Premium. The specified resource category is saved in the form of a ExecutionCapTimeThis is the maximum time allowed for the task execution. (This time starts when a resource is allocated to the task.)"
+  },
+  {
+   "t": "p",
+   "k": "6da6f8e5e09c",
+   "en": "StatusVarCharThis can be waiting, in progress, done, or failed."
+  },
+  {
+   "t": "p",
+   "k": "617ab1c527b3",
+   "en": "DelayToleranceTimeThis indicates how much delay we can sustain before starting a task."
+  },
+  {
+   "t": "p",
+   "k": "b8d4b643dfab",
+   "en": "ScriptPathVarCharThe path of the script that needs to be executed. The script is a file placed in a file system. The file should be made accessible so that it can be executed, just like how we mount Google Drive in the Google Colaboratory and then execute our code files there."
+  },
+  {
+   "t": "li",
+   "k": "bd18ec035c7a",
+   "en": "Note: If we use geo-replicated data stores, we can run multiple instances of our task scheduling system in different data centers to achieve even larger scale and higher resource utilization.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "b366f3077165",
+   "en": "Batching and prioritization: After we store the tasks in the RDB, the tasks are grouped into batches. Prioritization is based on the attributes of the tasks, such as delay tolerance or the tasks with short execution cap, and so on. The top K priority tasks are pushed into the distributed queue, where K limits the number of elements we can push into the queue. The value of K depends t on many factors, such as currently available resources, the client or task priority, and subscription level."
+  },
+  {
+   "t": "p",
+   "k": "a2f94a00fbf4",
+   "en": "Point to Ponder Why do we store tasks in a database? Why should we not push the tasks directly to the queue?"
+  },
+  {
+   "t": "p",
+   "k": "cbbc849745ee",
+   "en": "Show Answer Distributed queue: It consists of a queue and a queue manager. The queue manager adds, updates, or deletes tasks in the queue. It keeps track of the types of queues we use. It is also responsible for keeping the task in the queue until it executes successfully. In case a task execution fails, that task is made visible in the queue again. The queue manager knows which queue to run during the peak time and which queue to run during the off-peak time."
+  },
+  {
+   "t": "p",
+   "k": "b9485bd3aa70",
+   "en": "Queue manager: The queue manager deletes a task from the queue if it executes successfully. It also makes the task visible if its previous execution failed. It retries for the allowed number of attempts for a task in case of a failed execution."
+  },
+  {
+   "t": "p",
+   "k": "fb6632bf2380",
+   "en": "Resource manager: The resource manager knows which of the resources are free. It pulls the tasks from the distributed queue and assigns them resources. The resource manager keeps track of the execution of each task and sends back their statuses to the queue manager. If a task goes beyond its promised or required resource use, that task will be terminated, and the status is sent back to the task submitter, which will notify the client about the termination of the task through an error message."
+  },
+  {
+   "t": "p",
+   "k": "813b84bd3ec4",
+   "en": "Monitoring service: It is responsible for checking the health of the resource manager and the resources. If some resource fails, it alerts the administrators to repair the resource or add new resources if required. If resources are not being used, it alerts the administrators to remove them or power them off. Here’s a detailed discussion on the design of monitoring services."
+  },
+  {
+   "t": "h2",
+   "k": "0d477df4bb48",
+   "en": "Task submitter"
+  },
+  {
+   "t": "p",
+   "k": "8d39a66e2be9",
+   "en": "As we have seen above, every component we use in the design of the distributed task scheduler is distributed and therefore scalable and available. But, the task submitter could be a single point of failure. So, to handle this, we use a cluster of nodes. Each node must admit the tasks, send the tasks to a unique ID generator for ID assignment, and then store the task along with the task ID in the distributed database."
+  },
+  {
+   "t": "p",
+   "k": "76adf5e1372d",
+   "en": "There is a cluster manager to which each node sends a heartbeat that indicates the node is working correctly. Each node updates the cluster manager about the admitted tasks. The cluster manager maintains a list of tasks and the node ID that admitted that task. In case a node fails to execute a task, the cluster manager hands over that task to another node in the cluster. The cluster manager is itself replicated."
+  },
+  {
+   "t": "p",
+   "k": "bc4e41e76344",
+   "en": "Above, we designed a task scheduling system. We’ll discuss the design considerations of our task scheduler in the next lesson."
+  },
+  {
+   "t": "h1",
+   "k": "70d0f5507707",
+   "en": "Design Considerations of a Distributed Task Scheduler"
+  },
+  {
+   "t": "p",
+   "k": "bdb66959c893",
+   "en": "Learn about the design considerations for the distributed task scheduler."
+  },
+  {
+   "t": "h2",
+   "k": "86e5bbc33225",
+   "en": "Queueing"
+  },
+  {
+   "t": "p",
+   "k": "0a64b5a37eb8",
+   "en": "A distributed queue is a major building block used by a scheduler. The simplest scheduling approach is to push the task into the queue on a first-come, first-served basis. If there are 10,000 nodes (resources) in a cluster (cloud), the task scheduler quickly extracts tasks from the queue and schedules them on the nodes. But, if all the resources are currently busy, then tasks will need to wait in the queue, and small tasks might need to wait longer."
+  },
+  {
+   "t": "p",
+   "k": "40d7375f478b",
+   "en": "This scheduling mechanism can affect the reliability of the system, availability of the system, and priority of tasks. There could be cases where we want urgent execution of a task—for example, a task that notifies a user that their account was accessed from an unrecognized device. So, we can’t rely only on the first-come, first-serve to schedule tasks. Instead, we categorize the tasks and set appropriate priorities. We have the following three categories for our tasks:"
+  },
+  {
+   "t": "p",
+   "k": "aadceafcf9b5",
+   "en": "Tasks that can’t be delayed."
+  },
+  {
+   "t": "p",
+   "k": "0e1588e29a10",
+   "en": "Tasks that can be delayed."
+  },
+  {
+   "t": "p",
+   "k": "8c0b403db3c2",
+   "en": "Tasks that need to be executed periodically (for example, every 5 minutes, or every hour, or every day)."
+  },
+  {
+   "t": "p",
+   "k": "ff8a3c9732f0",
+   "en": "Our system ensures that tasks in non-urgent queues are not starved. As soon as some task’s delay limit is about to be reached, it is moved to the urgent tasks queue so that it gets service. We’ll see how the task scheduler implements priorities later in this lesson."
+  },
+  {
+   "t": "p",
+   "k": "6e201365fbbe",
+   "en": "Let’s explore some parameters that help the scheduler efficiently utilize resources and provide reliable service to the users."
+  },
+  {
+   "t": "h2",
+   "k": "ac50d69aa8d6",
+   "en": "Execution cap"
+  },
+  {
+   "t": "p",
+   "k": "717b90ad2dbc",
+   "en": "Some tasks take very long to execute and occupy the resource blocking other tasks. The execution cap is an important parameter to consider while scheduling tasks. If we completely allocate a resource to a single task and wait for that task’s completion, some tasks might not halt because of a bug in the task script that doesn’t let it finish its execution. We let the clients set the execution cap for their tasks. After that specified time, we should stop task execution, release the resource, and allocate it to the next task in the queue. If the task execution stops due to the execution cap limit, our system notifies the respective clients of these instances. The client needs to do appropriate remedial actions for such cases."
+  },
+  {
+   "t": "p",
+   "k": "20fd149f9620",
+   "en": "If clients don’t set the execution cap, the scheduler uses its default upper bound on the maximum allowed time to kill the tasks. Suppose a task actually takes longer—for example, if we are training a machine learning model. In that case, the scheduler might need to pause and resume a task many times to accommodate other tasks. It wouldn’t be fair to the short task that has to wait for two days to use a resource for two seconds."
+  },
+  {
+   "t": "p",
+   "k": "316124e201cf",
+   "en": "Cloud providers can’t let a task execute for an unlimited time for a basic (free) account, because using their resources costs a certain fee to the providers. To handle such cases, clients are informed about maximum usage limits so that they can handle long task execution. For example, clients may design their task in such a way that they checkpoint after some time and load from that state to resume progress in case resources are taken from the client due to usage limit."
+  },
+  {
+   "t": "p",
+   "k": "258521024ee8",
+   "en": "Point to Ponder What if a long task is 90% executed, but before it completes, the machine that was executing this task fails?"
+  },
+  {
+   "t": "p",
+   "k": "91ac01551b68",
+   "en": "Hide Answer The task scheduler will re-execute the task on some other machine."
+  },
+  {
+   "t": "p",
+   "k": "ba7f3f2085ba",
+   "en": "Tasks need to be either idempotent, which is discussed later in the lesson, or they should be able to restore their state from a previous checkpoint. Once the state is saved, we can resume that task’s execution on any other machine. This makes our system fault tolerant and saves our resources."
+  },
+  {
+   "t": "h2",
+   "k": "f14093117aa1",
+   "en": "Prioritization"
+  },
+  {
+   "t": "p",
+   "k": "1fb9bd246112",
+   "en": "There are tasks that need urgent execution. For example, in a social application like Facebook, the users can mark themselves safe during an emergency situation, such as an earthquake. The tasks that carry out this activity should be executed in a timely manner, otherwise this feature would be useless to Facebook users. Sending an email notification to the customers that their account was debited a certain amount of money is another example of tasks that require urgent execution."
+  },
+  {
+   "t": "p",
+   "k": "056c3cd4c2b7",
+   "en": "To prioritize the tasks, the task scheduler maintains a delay tolerance parameter for each task and executes the task close to its delay tolerance. Delay tolerance is the maximum amount of time a task execution could be delayed."
+  },
+  {
+   "t": "p",
+   "k": "426547ada3f6",
+   "en": "The task that has the shortest delay tolerance time is executed first. By using a delay tolerance parameter, we can postpone the tasks with longer delay tolerance values to make room for urgent tasks during peak times."
+  },
+  {
+   "t": "p",
+   "k": "a5e44326ccff",
+   "en": "Point to Ponder How do we determine the value of delay tolerance?"
+  },
+  {
+   "t": "p",
+   "k": "c60cff5c5b47",
+   "en": "Hide Answer Since there are different categories of tasks in various applications, the application owners or clients can set or automate the values themselves, depending upon the task category. For example, in a social media application like Facebook, we can generate a newsfeed, suggest friends, allow users to mark themselves safe after a disaster, send notifications about a live stream event, and many more. Out of the listed tasks, the priority tasks should be to mark a person safe during an earthquake and send notifications about live stream events. Clients can tighten the delay tolerance values of these tasks down to milliseconds or a few seconds while tasks like suggesting friends can be delayed for days."
+  },
+  {
+   "t": "p",
+   "k": "d969d8b0a4de",
+   "en": "The task scheduling system itself can set the delay tolerance value depending on the task category and its severity."
+  },
+  {
+   "t": "p",
+   "k": "254ccb26a655",
+   "en": "There are different costs for different priorities (there are usually higher costs for high-priority tasks, for example) so that customers can carefully categorize their tasks."
+  },
+  {
+   "t": "h2",
+   "k": "cf16f1947a8d",
+   "en": "Resource capacity optimization"
+  },
+  {
+   "t": "p",
+   "k": "8d2a8ff76774",
+   "en": "There could be a time when resources are close to the overload threshold (for example, above 80% utilization). This is called peak time. The same resource may be idle during off-peak times. So, we have to think about better utilization of the resources during off-peak times and how to keep resources available during peak times."
+  },
+  {
+   "t": "p",
+   "k": "5d32090bf3d7",
+   "en": "There are tasks that don’t need urgent execution. For example, in a social application like Facebook, suggesting friends is not an urgent task. We can make a separate queue for tasks like this and execute them in off-peak times. If we consistently have more work to do than the available resources, we might have a capacity problem, and to solve that, we should commission more resources. A cloud provider needs to have a target resources-to-demand ratio. When demand starts increasing, the ratio will move towards 0. If the ratio starts changing over time, the provider might decide to commission more or fewer resources."
+  },
+  {
+   "t": "h2",
+   "k": "67dfd846f8c0",
+   "en": "Task idempotency"
+  },
+  {
+   "t": "p",
+   "k": "88fa7ac3ff80",
+   "en": "If the task executes successfully, but for some reason the machine fails to send an acknowledgement, the scheduler will schedule the task again. The task is executed again, and we end up with the wrong result, which means the task was non-idempotent. An example of non-idempotence is shown in the following illustration:"
+  },
+  {
+   "t": "p",
+   "k": "5051d54ea31c",
+   "en": "We don’t want the final result to change when executing the task again. This is critical in financial applications while transferring money. We require that tasks are idempotent. An idempotent task produces the same result, no matter how many times we execute it. The execution of an idempotent task is shown in the following illustration:"
+  },
+  {
+   "t": "p",
+   "k": "9abfc488a32d",
+   "en": "Let’s make the task of uploading a video to the database an idempotent operation. We don’t want the video to be duplicated in the database in case the uploader didn’t receive the acknowledgment. Idempotency ensures that the video is not duplicated. This property is added in the implementation by the developers where they identify the video by something (for example, its name) and overwrite the old one. This way, no matter how many times someone uploads it, the final result is the same. Idempotency enables us to simply re-execute a failed task."
+  },
+  {
+   "t": "p",
+   "k": "2aa5f9622ff8",
+   "en": "Point to Ponder How should we handle task execution that can never be completed because of an infinite loop in the payload of that task?"
+  },
+  {
+   "t": "p",
+   "k": "97ee903318ec",
+   "en": "Show Answer"
+  },
+  {
+   "t": "h2",
+   "k": "f5a36b73df74",
+   "en": "Schedule and execute untrusted tasks"
+  },
+  {
+   "t": "p",
+   "k": "215c4cb87392",
+   "en": "Before proceeding, let’s ask ourselves a question: What are the untrusted tasks, and how should we manage them?"
+  },
+  {
+   "t": "p",
+   "k": "96bf6f352c62",
+   "en": "If you’re unsure about the answer, click the “Show Hint” button below:"
+  },
+  {
+   "t": "p",
+   "k": "70da1eff20c9",
+   "en": "Untrusted tasks are the tasks where there is a chance of some malicious instructions in the task script that can affect the execution of the other tasks. The affected tasks could be those of the other tenants. Untrusted tasks can also harm the operating system or the resource on which they’re executed."
+  },
+  {
+   "t": "p",
+   "k": "744759376ad5",
+   "en": "Programs have latent bugs and might have malicious intent. When using task schedulers, we should be careful that one task does not impact other tasks negatively. If we provide infrastructure as a service, security is an essential component. This is because it becomes easier for tenants to harm each other’s tasks by executing malicious code in the shared environment. Execution of malicious code can also damage our infrastructure. So, we need to keep the following considerations in mind:"
+  },
+  {
+   "t": "p",
+   "k": "5a8ee4fffc2e",
+   "en": "Use appropriate authentication and resource authorization."
+  },
+  {
+   "t": "p",
+   "k": "91b6b8ff1d7f",
+   "en": "Consider code sandboxing using dockers or virtual machines."
+  },
+  {
+   "t": "p",
+   "k": "663dd415a84a",
+   "en": "Use performance isolation between tasks by monitoring tasks’ resource utilization and capping (or terminating) badly behaving tasks."
+  },
+  {
+   "t": "p",
+   "k": "179f3088021f",
+   "en": "Point to Ponder What happens when the same task fails multiple times?"
+  },
+  {
+   "t": "p",
+   "k": "237d55ab9bef",
+   "en": "Hide Answer We can use a dead-letter queue facility to isolate repeatedly failing tasks."
+  },
+  {
+   "t": "p",
+   "k": "011f2c0b3b6c",
+   "en": "Now, let’s evaluate the design of our distributed task scheduler in the next lesson."
+  },
+  {
+   "t": "h1",
+   "k": "5313f72c3759",
+   "en": "Evaluation of a Distributed Task Scheduler's Design"
+  },
+  {
+   "t": "p",
+   "k": "3e68126e17d8",
+   "en": "Evaluate the proposed task scheduler system based on our requirements."
+  },
+  {
+   "t": "h2",
+   "k": "f2c1b76db30d",
+   "en": "Availability"
+  },
+  {
+   "t": "p",
+   "k": "dfbec039427e",
+   "en": "The first component in our design was a rate limiter that is appropriately replicated and ensures availability. Task submission is done by several nodes. If a node that submits a task fails, the other nodes take its place. The queue in which we push the task is also distributed in nature, ensuring availability. We always have resources available because we continuously monitor if we need to add or remove resources. Each component in the design is distributed and makes the overall system available."
+  },
+  {
+   "t": "h2",
+   "k": "c6649247ee71",
+   "en": "Durability"
+  },
+  {
+   "t": "p",
+   "k": "a94fae9d7294",
+   "en": "We store the tasks in a persistent distributed database and push the tasks into the queue near their execution time. Once a task is submitted, it is in the database until its execution."
+  },
+  {
+   "t": "h2",
+   "k": "b06273ade235",
+   "en": "Scalability"
+  },
+  {
+   "t": "p",
+   "k": "db3a3315993b",
+   "en": "Our task scheduler provides scalability because the task submitter is distributed in our design. We can add more nodes to the cluster to submit an increasing number of tasks. The tasks are then saved into a distributed relational database, which is also scalable. The tasks from RDB are then pushed to a distributed queue, which can scale with an increasing number of tasks. We can add more queues for different types of tasks. We can also add more resources depending on the resource-to-demand ratio."
+  },
+  {
+   "t": "h2",
+   "k": "c09350ca5ce3",
+   "en": "Fault tolerance"
+  },
+  {
+   "t": "p",
+   "k": "731a034078b2",
+   "en": "A task is not removed from the queue the first time it is sent for execution. If the execution fails, we retry for the maximum number of allowed attempts. If the task contains an infinite loop, we kill the task after some specified time and notify the user."
+  },
+  {
+   "t": "h2",
+   "k": "f9c12c9fb194",
+   "en": "Bounded waiting time"
+  },
+  {
+   "t": "p",
+   "k": "a7526c965334",
+   "en": "We don’t let the users wait for an infinite time. We have a limit on the maximum waiting time. If the limit is reached and we are unable to schedule the task for some reason, we notify the users and ask them to try again."
+  },
+  {
+   "t": "h2",
+   "k": "6a38a38f03e4",
+   "en": "Conclusion"
+  },
+  {
+   "t": "p",
+   "k": "f28c29bf9d40",
+   "en": "We discussed the difference between an OS-level task scheduler and a data center-level task scheduler. We explained that the data center-level task scheduling needs a distributed solution because of multiple tenants and dispersed resources. We learned that the queue is a major building block of a task scheduler. We also used distributed queues where we can scale with an increasing number of tasks to utilize an increasing number of resources."
+  },
+  {
+   "t": "p",
+   "k": "b18ada3834ea",
+   "en": "This lesson helped us to evaluate the issues with the FIFO queue. It was observed that the main job of the task scheduler is to set the priorities of the tasks for which we used a delay tolerance parameter. We discussed how the task scheduler determines the delay tolerance value and used different distributed databases to store task details. We ensured that the dependent tasks are executed in order by running the tasks according to DAG stored in the graph database. Depending upon the number of tasks (or demand), we added or removed resources to optimize the capacity. In the end, we used the monitoring service that alerts the administrators in case we need to add or remove resources."
+  }
+ ]
+}

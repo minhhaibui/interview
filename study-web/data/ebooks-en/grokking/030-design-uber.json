@@ -1,0 +1,1297 @@
+{
+ "id": "030-design-uber",
+ "title": "Design-Uber",
+ "titleKey": "0ee6a16cebee",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "89cad0dfdd76",
+   "en": "System Design: Uber"
+  },
+  {
+   "t": "p",
+   "k": "3039c417afc5",
+   "en": "Learn about the basics of designing an Uber service."
+  },
+  {
+   "t": "h2",
+   "k": "a21c24f30aed",
+   "en": "What is Uber?"
+  },
+  {
+   "t": "p",
+   "k": "ba9af3a0cdfd",
+   "en": "Uber is an application that provides ride-hailing services to its users. Anyone who needs a ride can register and book a vehicle to travel from source to destination. Anyone who has a vehicle can register as a driver and take riders to their destination. Drivers and riders can communicate through the Uber app on their smartphones."
+  },
+  {
+   "t": "p",
+   "k": "a6078761f8ab",
+   "en": "The illustration below shows the number of active users of Uber from the start of 2017 to 2020 (source: Statista):"
+  },
+  {
+   "t": "h2",
+   "k": "0f3cbf090a55",
+   "en": "How will we design Uber?"
+  },
+  {
+   "t": "p",
+   "k": "bb6177c0c715",
+   "en": "There are many unanswered questions regarding Uber. How does it work? How do drivers connect with riders? These are only two of many. This chapter will design a system like Uber and find the answer to such questions."
+  },
+  {
+   "t": "p",
+   "k": "45d54ab7a108",
+   "en": "We’ve divided the design of Uber into six sections:"
+  },
+  {
+   "t": "li",
+   "k": "9c04b278484c",
+   "en": "Requirements: This lesson will describe the functional and non-functional requirements of a system like Uber. We’ll also estimate the requirements of multiple aspects of Uber, such as storage, bandwidth, and the computation resources."
+  },
+  {
+   "t": "li",
+   "k": "6eb73871d720",
+   "en": "High-level Design: We’ll discuss the high-level design of Uber in this lesson. In addition, we’ll also briefly explain the API design of the Uber service."
+  },
+  {
+   "t": "li",
+   "k": "4364add85d6b",
+   "en": "Detailed Design: We’ll explore the detailed design of Uber in this lesson."
+  },
+  {
+   "t": "p",
+   "k": "91e1af46251d",
+   "en": "Moreover, we will also discuss the working of different components used in designing Uber."
+  },
+  {
+   "t": "li",
+   "k": "de642ac559f1",
+   "en": "Payment Service and Fraud Detection: We’ll learn how the payment system works in Uber design. Moreover, we’ll also discuss how we can catch different frauds related to payments in Uber-like systems."
+  },
+  {
+   "t": "li",
+   "k": "b3d2633b9821",
+   "en": "Evaluation: This lesson will explain how Uber can fulfill all the non-functional requirements through the proposed design."
+  },
+  {
+   "t": "li",
+   "k": "b9caf8dab046",
+   "en": "Quiz: We’ll reinforce major concepts of Uber design via a quiz."
+  },
+  {
+   "t": "p",
+   "k": "e69449d385c8",
+   "en": "Let’s go over the requirements for designing a system like Uber in the next lesson."
+  },
+  {
+   "t": "h1",
+   "k": "877382964690",
+   "en": "Requirements of Uber’s Design"
+  },
+  {
+   "t": "p",
+   "k": "a503d8123937",
+   "en": "Learn about the requirements to design an Uber service."
+  },
+  {
+   "t": "h2",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "p",
+   "k": "750229fa0252",
+   "en": "Let’s start with the requirements for designing a system like Uber."
+  },
+  {
+   "t": "h3",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "ce164295d1b8",
+   "en": "Update driver location: The driver is a moving entity, so the driver’s location should be automatically updated at regular intervals."
+  },
+  {
+   "t": "p",
+   "k": "96fc2b17a84f",
+   "en": "Find nearby drivers: The system should find and show the nearby available drivers to the rider."
+  },
+  {
+   "t": "p",
+   "k": "616f962e6f56",
+   "en": "Request a ride: A rider should be able to request a ride, after which the nearest driver should be notified about the rider’s requests."
+  },
+  {
+   "t": "li",
+   "k": "ebd04e1404cd",
+   "en": "Manage payments: At the start of the trip, the system must initiate the payment process and manage the payments.",
+   "lead": "Manage payments"
+  },
+  {
+   "t": "li",
+   "k": "697fcdce9218",
+   "en": "Show driver estimated time of arrival (ETA): The rider should be able to see the estimated time of arrival of the driver.",
+   "lead": "Show driver estimated time of arrival (ETA)"
+  },
+  {
+   "t": "li",
+   "k": "df1a2e398a15",
+   "en": "Confirm pickup: Drivers should be able to confirm that they have picked up the rider.",
+   "lead": "Confirm pickup"
+  },
+  {
+   "t": "p",
+   "k": "e25f860c2b97",
+   "en": "Show trip updates: Once a driver and a rider accept a ride, they should be able to constantly see trip updates like ETA and current location until the trip finishes."
+  },
+  {
+   "t": "li",
+   "k": "42ff950dd413",
+   "en": "End the trip: The driver marks the journey complete upon reaching the destination, and they then become available for the next ride.",
+   "lead": "End the trip"
+  },
+  {
+   "t": "p",
+   "k": "58424b578dc1",
+   "en": "Point to Ponder What if two drivers are at the same distance from the rider? How will we select the driver to whom we’ll send the request?"
+  },
+  {
+   "t": "p",
+   "k": "263bd18f3c82",
+   "en": "Hide Answer This decision will be made on multiple factors, such as the distance, type of vehicle, rank of the driver, and so on. Still, if two drivers are identical, we can randomly select one and send a request to that driver."
+  },
+  {
+   "t": "p",
+   "k": "c87d3e5461fa",
+   "en": "If one driver doesn’t accept the ride within a few seconds, we retract the ride offer from this driver and present it to a new one."
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "li",
+   "k": "e310a429a4b5",
+   "en": "Availability: The system should be highly available. The downtime of even a fraction of a second can result in a trip failure, in the driver being unable to locate the rider, or in the rider being unable to contact the driver.",
+   "lead": "Availability"
+  },
+  {
+   "t": "li",
+   "k": "9f19539d8f42",
+   "en": "Scalability: The system should be scalable to handle an ever-increasing number of drivers and riders with time.",
+   "lead": "Scalability"
+  },
+  {
+   "t": "li",
+   "k": "7652581a5b5d",
+   "en": "Reliability: The system should provide fast and error-free services. Ride requests and location updates should happen smoothly.",
+   "lead": "Reliability"
+  },
+  {
+   "t": "li",
+   "k": "fd382a65601e",
+   "en": "Consistency: The system must be strongly consistent. The drivers and riders in an area should have a consistent view of the system.",
+   "lead": "Consistency"
+  },
+  {
+   "t": "li",
+   "k": "072b0058b457",
+   "en": "Fraud detection: The system should have the ability to detect any fraudulent activity related to payment.",
+   "lead": "Fraud detection"
+  },
+  {
+   "t": "h2",
+   "k": "a9be995c473a",
+   "en": "Resource estimation"
+  },
+  {
+   "t": "p",
+   "k": "d05af63d08e2",
+   "en": "Now, let’s estimate the resources for our design. Let’s assume it has around 500 million riders and about five million drivers. We’ll assume the following numbers for our estimates:"
+  },
+  {
+   "t": "p",
+   "k": "78a598c9b1e7",
+   "en": "We have 20 million daily active riders and three million daily active drivers."
+  },
+  {
+   "t": "p",
+   "k": "76136f753360",
+   "en": "We have 20 million daily trips."
+  },
+  {
+   "t": "p",
+   "k": "7e9d0c649d93",
+   "en": "All active drivers send a notification of their current location every four seconds."
+  },
+  {
+   "t": "h3",
+   "k": "5e7e60e98560",
+   "en": "Storage estimation"
+  },
+  {
+   "t": "p",
+   "k": "3420afec4f8e",
+   "en": "Let’s estimate the storage required for our system:"
+  },
+  {
+   "t": "h3",
+   "k": "f8c9ea76be91",
+   "en": "Rider’s metadata"
+  },
+  {
+   "t": "p",
+   "k": "9edffaf1ed19",
+   "en": "Let’s assume we need around 1,000 Bytes to store each rider’s information, including ID, name, email, and so on, when the rider registers in our application."
+  },
+  {
+   "t": "p",
+   "k": "d5b872cde5a4",
+   "en": "To store the 500 million riders, we require 500 GB of storage: 6 500×10×1000=500 GB Additionally, if we have around 500,000 new riders registered daily, we’ll need a further 500 MB to store them."
+  },
+  {
+   "t": "h3",
+   "k": "5b7298f2697c",
+   "en": "Driver’s metadata"
+  },
+  {
+   "t": "p",
+   "k": "ab3b524c06b3",
+   "en": "Let’s assume we need around 1,000 Bytes to store each driver’s information, including ID, name, email, vehicle type, and so on, when the driver registers in our application. To store the five million drivers, we require 5 GB of storage: 6 5×10×1000=5 GB Additionally, if we have around 100,00 new drivers registered daily, we’ll need around 100 MB to store them."
+  },
+  {
+   "t": "h3",
+   "k": "24e3b0a836e7",
+   "en": "Driver location metadata"
+  },
+  {
+   "t": "p",
+   "k": "66f37328b55a",
+   "en": "Let’s assume we need around 36 Bytes to store the driver’s location updates. If we have five million drivers, we need around 180 MB of storage just for the drivers’ locations."
+  },
+  {
+   "t": "h3",
+   "k": "8395ad686463",
+   "en": "Trip metadata"
+  },
+  {
+   "t": "p",
+   "k": "d9b80f819b20",
+   "en": "Let’s assume we need around 100 Bytes to store single trip information, including trip ID, rider ID, driver ID, and so on. If we have 20 million daily rides, we need around 2 GB of storage for the trip data."
+  },
+  {
+   "t": "p",
+   "k": "c64d9d061eca",
+   "en": "Let’s calculate the total storage required for Uber in a single day:"
+  },
+  {
+   "t": "p",
+   "k": "65b4d963aa83",
+   "en": "Storage Capacity Estimation Number of drivers (millions)5 Storage required to store a driver's l 36 ocation (Bytes) f Total storage required to store drive 180 rs’ locations (MB per day)"
+  },
+  {
+   "t": "p",
+   "k": "e131f8f5c419",
+   "en": "Number of trips (millions)20 Storage required to store a trip (Byte 100"
+  },
+  {
+   "t": "li",
+   "k": "ec94541ca064",
+   "en": "f Total storage required to store trips 2 (GB per day)"
+  },
+  {
+   "t": "p",
+   "k": "f1208ea28b23",
+   "en": "Storage required for new riders dail 500 y (MB per day)"
+  },
+  {
+   "t": "p",
+   "k": "26776964dbc5",
+   "en": "Storage required for new drivers dai 100 ly (MB per day) f Total storage (GB per day)2.78"
+  },
+  {
+   "t": "li",
+   "k": "5d6ef57d83eb",
+   "en": "Note: We can adjust the values in the table to see how the estimations change.",
+   "lead": "Note"
+  },
+  {
+   "t": "h3",
+   "k": "10d00f179eb1",
+   "en": "Bandwidth estimation"
+  },
+  {
+   "t": "p",
+   "k": "13c61e077b27",
+   "en": "We’ll only consider drivers’ location updates and trip data for bandwidth calculation since other factors don’t require significant bandwidth. We have 20 million daily rides, which means we have approximately 232 trips per second. 20000000 ≈232 trips per second 86400 Now, each trip takes around 100 Bytes. So, it takes around 23 KB per second of bandwidth. 232×100 = 23 KB×8 = 185 kbps As already stated, the driver’s location is updated every four seconds. If we receive the driver’s ID (3 Bytes) and location (16 Bytes), our application will take the following bandwidth: 456 3M active drivers×(3+16)B=57MB×8 = =114 Mbps 4 These bandwidth requirements are modest because we didn’t include bandwidth needs for maps and other components that are present in the real Uber service."
+  },
+  {
+   "t": "p",
+   "k": "befcf44d118d",
+   "en": "Bandwidth Requirements Trips per second232 Bandwidth for each trip (Bytes)100 f Total bandwidth for trips (kilo bits p"
+  },
+  {
+   "t": "li",
+   "k": "8b92ee58af06",
+   "en": "6 er second)"
+  },
+  {
+   "t": "p",
+   "k": "533b9d347ea4",
+   "en": "Active drivers (millions)3 Bandwidth for each driver (Bytes)19 f Bandwidth for drivers (Megabits per 114 second) f Total bandwidth (Megabits per seco nd)"
+  },
+  {
+   "t": "li",
+   "k": "d0dcbcd739fd",
+   "en": "Note: We can adjust the values in the table to see how the requirements change.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "8cd7537d1870",
+   "en": "We’ve ignored the bandwidth from the Uber service to users because it was very small. More bandwidth will be required for sending map data from the Uber service to users, which we’ve also discussed in the Google Maps chapter."
+  },
+  {
+   "t": "h3",
+   "k": "7e7845b4ea66",
+   "en": "Number of servers estimation"
+  },
+  {
+   "t": "p",
+   "k": "bd36f2106f41",
+   "en": "We need to handle concurrent requests coming from 20 million daily active users. We’ll use the following formula to estimate a pragmatic number of servers. We established this formula in the Back-of-the-envelope Calculations chapter: 6 Number of daily active users20×10 ==2500 RPS of a server8000"
+  },
+  {
+   "t": "p",
+   "k": "a7d03cf768f5",
+   "en": "Estimating the Number of Servers Daily active users (millions)20 RPS of a server8000 f Number of servers required2500"
+  },
+  {
+   "t": "li",
+   "k": "5d6ef57d83eb",
+   "en": "Note: We can adjust the values in the table to see how the estimations change.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "cfa08fe6c777",
+   "en": "Building blocks we will use"
+  },
+  {
+   "t": "p",
+   "k": "4fbd787a38fb",
+   "en": "The design of Uber utilizes the following building blocks:"
+  },
+  {
+   "t": "p",
+   "k": "714334473098",
+   "en": "Databases store the metadata of riders, drivers, and trips."
+  },
+  {
+   "t": "p",
+   "k": "9d3762286ff1",
+   "en": "A cache stores the most requested data for quick responses."
+  },
+  {
+   "t": "p",
+   "k": "ede1c8d82969",
+   "en": "CDNs are used to effectively deliver content to end users, reducing delay and the burden on end-servers."
+  },
+  {
+   "t": "p",
+   "k": "75e08c6bc57c",
+   "en": "A load balancer distributes the read/write requests among the respective services."
+  },
+  {
+   "t": "p",
+   "k": "84e96f518225",
+   "en": "Riders’ and drivers’ devices should have sufficient bandwidth and GPS equipment for smooth navigation with maps."
+  },
+  {
+   "t": "li",
+   "k": "6950ea181c56",
+   "en": "Note: The information provided in this chapter is inspired by the engineering blog of Uber.",
+   "lead": "Note"
+  },
+  {
+   "t": "h1",
+   "k": "45156a28fd1b",
+   "en": "High-level Design of Uber"
+  },
+  {
+   "t": "p",
+   "k": "faea4db69e02",
+   "en": "Learn how to design an Uber system."
+  },
+  {
+   "t": "h2",
+   "k": "159c7b7b9de9",
+   "en": "Workflow of our application"
+  },
+  {
+   "t": "p",
+   "k": "5ed960b7d552",
+   "en": "Before diving deep into the design, let’s understand how our application works."
+  },
+  {
+   "t": "p",
+   "k": "00e26ca7ee95",
+   "en": "The following steps show the workflow of our application:"
+  },
+  {
+   "t": "li",
+   "k": "1303a117c9d4",
+   "en": "All the nearby drivers except those already serving rides can be seen when the rider starts our application."
+  },
+  {
+   "t": "li",
+   "k": "3b55944f1052",
+   "en": "The rider enters the drop-off location and requests a ride."
+  },
+  {
+   "t": "li",
+   "k": "abe54cd3bbdd",
+   "en": "The application receives the request and finds a suitable driver."
+  },
+  {
+   "t": "li",
+   "k": "78942e888205",
+   "en": "Until a matching driver is found, the status will be “Waiting for the driver to respond.”"
+  },
+  {
+   "t": "li",
+   "k": "8c598c0194cf",
+   "en": "The drivers report their location every four seconds. The application finds the trip information and returns it to the driver."
+  },
+  {
+   "t": "li",
+   "k": "cc72acc78f64",
+   "en": "The driver accepts or rejects the request:"
+  },
+  {
+   "t": "p",
+   "k": "5b3d782bf203",
+   "en": "The driver accepts the request, and status information is modified on both the rider’s and the driver’s applications. The rider finds that they have successfully matched and obtains the driver’s information."
+  },
+  {
+   "t": "p",
+   "k": "dff73f88cb79",
+   "en": "The driver refuses the ride request. The rider restarts from step 2 and rematches to another driver."
+  },
+  {
+   "t": "h2",
+   "k": "45156a28fd1b",
+   "en": "High-level design of Uber"
+  },
+  {
+   "t": "p",
+   "k": "03ed3615baf1",
+   "en": "At a high level, our system should be able to take requests for a ride from the rider and return the matched driver information and trip information to the rider. It also regularly takes the driver’s location. Additionally, it returns the trip and rider information to the driver when the driver is matched to a rider."
+  },
+  {
+   "t": "h2",
+   "k": "58dbf879b581",
+   "en": "API design"
+  },
+  {
+   "t": "p",
+   "k": "f0cf9d395136",
+   "en": "Let’s discuss the design of APIs according to the functionalities we provide. We’ll design APIs to translate our feature set into technical specifications."
+  },
+  {
+   "t": "p",
+   "k": "a49f4be4e4a8",
+   "en": "We won’t repeat the description of repeating parameters in the following APIs."
+  },
+  {
+   "t": "h3",
+   "k": "e927ab92c01a",
+   "en": "Update driver location"
+  },
+  {
+   "t": "code",
+   "k": "017643a9f236",
+   "en": "updateDriverLocation(driverID, oldlat, oldlong, newlat, newlong )"
+  },
+  {
+   "t": "p",
+   "k": "44d98f0295a3",
+   "en": "ParameterDescription driverIDThe ID of the driver oldlatThe previous latitude of the driver oldlongThe previous longitude of the driver newlatThe new latitude of the driver newlongThe new longitude of the driver The updateDriverLocation API is used to send the driver’s coordinates to the driver location servers. This is where the location of the driver is updated and communicated to the riders."
+  },
+  {
+   "t": "h3",
+   "k": "bc48befb623f",
+   "en": "Find nearby drivers"
+  },
+  {
+   "t": "code",
+   "k": "1e4ec5b09964",
+   "en": "findNearbyDrivers(riderID, lat, long)"
+  },
+  {
+   "t": "p",
+   "k": "d0c18e4342f2",
+   "en": "ParameterDescription riderIDThe ID of the rider latThe latitude of the rider longThe longitude of the rider The findNearbyDrivers API is used to send the location of the rider for whom we want to find the nearby drivers."
+  },
+  {
+   "t": "h3",
+   "k": "5690de24bf5e",
+   "en": "Request a ride"
+  },
+  {
+   "t": "code",
+   "k": "001273f40a11",
+   "en": "requestRide(riderID, lat, long, dropOfflat,dropOfflong, typeOfVehicle)"
+  },
+  {
+   "t": "p",
+   "k": "30e8c06fdd2c",
+   "en": "ParameterDescription latThe current latitude of the rider longThe current longitude of the rider dropOfflatThe latitude of the rider’s drop-off location dropOfflongThe longitude of the rider’s drop-off location typeOfVehicleThe type of vehicle required by the rider—for example, business, economy, and so on."
+  },
+  {
+   "t": "p",
+   "k": "dcfaebc5d810",
+   "en": "The requestRide API is used to send the location of the rider and the type of vehicle the rider needs."
+  },
+  {
+   "t": "h3",
+   "k": "e11cc676dae1",
+   "en": "Show driver ETA"
+  },
+  {
+   "t": "code",
+   "k": "04f0ed68936f",
+   "en": "showETA(driverID, eta)"
+  },
+  {
+   "t": "p",
+   "k": "c48e1a122bd9",
+   "en": "ParameterDescription etaThe estimated time of arrival of the driver The showEta API is used to show the estimated time of arrival to the rider."
+  },
+  {
+   "t": "h3",
+   "k": "7f2673101c00",
+   "en": "Confirm pickup"
+  },
+  {
+   "t": "code",
+   "k": "0f473d075727",
+   "en": "confirmPickup(driverID, riderID, timestamp)"
+  },
+  {
+   "t": "p",
+   "k": "b4b683af7a73",
+   "en": "ParameterDescription timestampThe time at which the driver picked up the rider The confirmPickup API is used to determine when the driver has picked up the rider."
+  },
+  {
+   "t": "h3",
+   "k": "bb5fc50b2b52",
+   "en": "Show trip updates"
+  },
+  {
+   "t": "code",
+   "k": "aa719430c33a",
+   "en": "showTripUpdates(tripID, riderID, driverID, driverlat, driverlong, time _elapsed, time_remaining)"
+  },
+  {
+   "t": "p",
+   "k": "8476568dac35",
+   "en": "ParameterDescription tripIDThe ID of the trip driverlatThe latitude of the driver driverlongThe longitude of the driver time_elapsedThe total time of the trip time_remainingThe time remaining (extract the current time from the ETA) to reach the destination The showTripUpdates API is used to show the updates of the trip, including the position of the driver and the time remaining to reach the destination."
+  },
+  {
+   "t": "h3",
+   "k": "118d0ae00fcd",
+   "en": "End the trip"
+  },
+  {
+   "t": "code",
+   "k": "bd4f1cc1d81f",
+   "en": "endTrip(tripID, riderID, driverID ,time_elapsed, lat, long)"
+  },
+  {
+   "t": "p",
+   "k": "644ba7d65502",
+   "en": "The endTrip API is used to end the trip."
+  },
+  {
+   "t": "h1",
+   "k": "c974ba851150",
+   "en": "Detailed Design of Uber"
+  },
+  {
+   "t": "p",
+   "k": "cad238fe00d3",
+   "en": "Learn about the detailed design of the Uber system."
+  },
+  {
+   "t": "h2",
+   "k": "c212f08ed115",
+   "en": "Components"
+  },
+  {
+   "t": "p",
+   "k": "cd0df5cdca4b",
+   "en": "Let’s discuss the components of our Uber system design in detail."
+  },
+  {
+   "t": "h3",
+   "k": "c1e344e0ae75",
+   "en": "Location manager"
+  },
+  {
+   "t": "p",
+   "k": "a5d69677f91c",
+   "en": "The riders and drivers are connected to the location manager service. This service shows the nearby drivers to the riders when they open the application."
+  },
+  {
+   "t": "p",
+   "k": "3d4c7b6e8166",
+   "en": "This service also receives location updates from the drivers every four seconds."
+  },
+  {
+   "t": "h3",
+   "k": "a069598ed5db",
+   "en": "QuadTree map service"
+  },
+  {
+   "t": "p",
+   "k": "77860d9272a2",
+   "en": "The QuadTree map service updates the location of the drivers. The main problem is how we deal with finding nearby drivers efficiently."
+  },
+  {
+   "t": "p",
+   "k": "a455f14528bf",
+   "en": "We’ll modify the solution discussed in the Yelp chapter according to our requirements. We used QuadTrees on Yelp to find the location. QuadTrees help to divide the map into segments. If the number of drivers exceeds a certain limit, for example, 500, then we split that segment into four more child nodes and divide the drivers into them."
+  },
+  {
+   "t": "p",
+   "k": "bae557f778c1",
+   "en": "Each leaf node in QuadTrees contains segments that can’t be divided further. We can use the same QuadTrees for finding the drivers. The most significant difference we have now is that our QuadTree wasn’t designed with regular upgrades in consideration. So, we have the following issues with our dynamic segment solution."
+  },
+  {
+   "t": "p",
+   "k": "4b2fffe2e55a",
+   "en": "We must update our data structures to point out that all active drivers update their location every four seconds. It takes a longer amount of time to modify the QuadTree whenever a driver’s position changes. To identify the driver’s new location, we must first find a proper grid depending on the driver’s previous position. If the new location doesn’t match the current grid, we should remove the driver from the current grid and shift it to the correct grid. We have to repartition the new grid if it exceeds the driver limit, which is the number of drivers for each region that we set initially. Furthermore, our platform must tell both the driver and the rider, of the car’s current location while the ride is in progress."
+  },
+  {
+   "t": "p",
+   "k": "2fe9b0982f35",
+   "en": "To overcome the above problem, we can use a hash table to store the latest position of the drivers and update our QuadTree occasionally, say after 10–15 seconds. We can update the driver’s location in the QuadTree around every 15 seconds instead of four seconds, and we use a hash table that updates every four seconds and reflects the drivers’ latest location. By doing this, we use fewer resources and time."
+  },
+  {
+   "t": "h3",
+   "k": "13ab5753056e",
+   "en": "Request vehicle"
+  },
+  {
+   "t": "h3",
+   "k": "70699eab54ab",
+   "en": "Find driver"
+  },
+  {
+   "t": "h3",
+   "k": "8fcb78fc5556",
+   "en": "Trip manager"
+  },
+  {
+   "t": "p",
+   "k": "7e934a873bd0",
+   "en": "The trip manager service manages all the trip-related tasks. It creates a trip in the database and stores all the information of the trip in the database."
+  },
+  {
+   "t": "h3",
+   "k": "e5a18a7512c7",
+   "en": "ETA service"
+  },
+  {
+   "t": "p",
+   "k": "f88308dac96e",
+   "en": "Calculate the shortest route from origin to destination."
+  },
+  {
+   "t": "p",
+   "k": "a9ead200030e",
+   "en": "Compute the time required to travel the route."
+  },
+  {
+   "t": "p",
+   "k": "7a9e7d9fb94f",
+   "en": "The whole road network is represented as a graph. Intersections are represented by nodes, while edges represent road segments. The graph also depicts one-way streets, turn limitations, and speed limits."
+  },
+  {
+   "t": "p",
+   "k": "1a26aa9a9334",
+   "en": "To identify the shortest path between source and destination, we can utilize routing algorithms such as Dijkstra’s algorithm. However, Dijkstra, or any other algorithm that operates on top of an unprocessed graph, is quite slow for such a system. Therefore, this method is impractical at the scale at which these ride-hailing platforms operate."
+  },
+  {
+   "t": "p",
+   "k": "d33fb1743bb5",
+   "en": "To resolve these issues, we can split the whole graph into partitions. We preprocess the optimum path inside partitions using contraction hierarchies and deal with just the partition boundaries. This strategy can considerably reduce the time complexity since it partitions the graph into layers of tiny cells that are largely independent of one another. The preprocessing stage is executed in parallel in the partitions when necessary to increase speed. In the illustration below, all the partitions process the best route in parallel. For example, if each partition takes one second to find the path, we can have the complete path in one second since all partitions work in parallel."
+  },
+  {
+   "t": "p",
+   "k": "f141f5f7c06d",
+   "en": "Once we determine the best route, we calculate the expected time to travel the road segment while accounting for traffic. The traffic data will be the edge weights between the nodes."
+  },
+  {
+   "t": "h3",
+   "k": "5fe205a2050f",
+   "en": "DeepETA"
+  },
+  {
+   "t": "p",
+   "k": "069a6ba0248f",
+   "en": "We use a machine learning component named DeepETA to deliver an immediate improvement to metrics in production. It establishes a model foundation that can be reused for multiple consumer use cases."
+  },
+  {
+   "t": "p",
+   "k": "1038b9347db5",
+   "en": "We also use a routing engine that uses real-time traffic information and map data to predict an ETA to traverse the best path between the source and the destination. We use a post-processing ML model that considers spatial and temporal parameters, such as the source, destination, time of the request, and knowledge about real-time traffic, to forecast the ETA residual."
+  },
+  {
+   "t": "h3",
+   "k": "6d613a1ee01e",
+   "en": "Database"
+  },
+  {
+   "t": "p",
+   "k": "dc5affcbbf0b",
+   "en": "Let’s select the database according to our requirements:"
+  },
+  {
+   "t": "p",
+   "k": "4a6e366ce8fc",
+   "en": "The database must be able to scale horizontally. There are new customers and drivers on a regular basis, so we should be able to add more storage without any problems."
+  },
+  {
+   "t": "p",
+   "k": "56e719d56387",
+   "en": "The database should handle a large number of reads and writes because the location of drivers is updated every four seconds."
+  },
+  {
+   "t": "p",
+   "k": "1e1912273202",
+   "en": "Our system should never be down."
+  },
+  {
+   "t": "p",
+   "k": "0b62a0f6e49d",
+   "en": "We’ve already discussed the various database types and their specifications in the Database chapter. So, according to our understanding and requirements (high availability, high scalability, and fault tolerance), we can use Cassandra to store the driver’s last known location and the trip information after the trip has been completed, and there will be no updates to it. We use Cassandra because the data we store is enormous and it increases continuously."
+  },
+  {
+   "t": "p",
+   "k": "934e81ff347f",
+   "en": "We can use a MySQL database to store trip information while it’s in progress. We use MySQL for in-progress trips for frequent updates since the trip information is relational, and it needs to be consistent across tables."
+  },
+  {
+   "t": "li",
+   "k": "39a27ee97fd6",
+   "en": "Note: Recently, Uber migrated their data storage to Google Cloud Spanner. It provides global transactions, strongly consistent reads, and automatic multisite replication and failover features.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "e7178b8ed17a",
+   "en": "Points to Ponder Why haven’t we used only the MySQL database?"
+  },
+  {
+   "t": "p",
+   "k": "bec2083bbc77",
+   "en": "Hide Answer As the data becomes massive with the passage of time, it reduces our system’s performance. Also, it won’t be easy to scale the MySQL database. 1 of 2"
+  },
+  {
+   "t": "h3",
+   "k": "636805a26ba3",
+   "en": "Storage schema"
+  },
+  {
+   "t": "p",
+   "k": "e0af565de548",
+   "en": "On a basic level in the Uber application, we need the following tables:"
+  },
+  {
+   "t": "li",
+   "k": "9b5dd960a189",
+   "en": "Riders: We store the rider’s related information, such as ID, name, email, photo, phone number, and so on.",
+   "lead": "Riders"
+  },
+  {
+   "t": "li",
+   "k": "03b9bfa0db0b",
+   "en": "Drivers: We store the driver’s related information, such as ID, name, email, photo, phone number, vehicle name, vehicle type, and so on.",
+   "lead": "Drivers"
+  },
+  {
+   "t": "li",
+   "k": "578c6641bb51",
+   "en": "Driver_location: We store the driver’s last known location.",
+   "lead": "Driver_location"
+  },
+  {
+   "t": "li",
+   "k": "bfd69d526f69",
+   "en": "Trips: We store the trip’s related information, such as trip ID, rider ID, driver ID, status, ETA, location of the vehicle, and so on.",
+   "lead": "Trips"
+  },
+  {
+   "t": "p",
+   "k": "9d91da81da46",
+   "en": "The following illustration visualizes the data model:"
+  },
+  {
+   "t": "h3",
+   "k": "c09350ca5ce3",
+   "en": "Fault tolerance"
+  },
+  {
+   "t": "p",
+   "k": "fa4cbd9a351b",
+   "en": "For availability, we need to have replicas of our database. We use the primary-secondary replication model. We have one primary database and a few secondary databases. We synchronously replicate data from primary to secondary databases. Whenever our primary database is down, we can use a secondary database as a primary one."
+  },
+  {
+   "t": "p",
+   "k": "d38824ccdf26",
+   "en": "Point to Ponder How will we handle a driver’s slow and disconnecting network?"
+  },
+  {
+   "t": "p",
+   "k": "ddb156bc06b3",
+   "en": "Hide Answer We can use the driver’s phone as local storage and save the state of a trip every few seconds there. All requests and the last recorded state are stored on a local disk, which ensures that they’re preserved even if the application is restarted. Suppose the driver exits the application while there are a few requests waiting to be synchronized with the server."
+  },
+  {
+   "t": "p",
+   "k": "05071421cd87",
+   "en": "The requests and last known state are loaded from the local disk upon relaunch. When the driver relaunches the application, they remain in the same situation as before. The requests are queued in order to keep the server up to date."
+  },
+  {
+   "t": "h3",
+   "k": "3bf875b6cceb",
+   "en": "Load balancers"
+  },
+  {
+   "t": "p",
+   "k": "07b65f1dd6e8",
+   "en": "We use load balancers between clients (drivers and riders) and the application servers to uniformly distribute the load among the servers. The requests are routed to the specified server that provides the requested service."
+  },
+  {
+   "t": "h3",
+   "k": "b03592806efa",
+   "en": "Cache"
+  },
+  {
+   "t": "p",
+   "k": "6fe9d80c0051",
+   "en": "A million drivers need to send the updated location every four seconds. A million requests to the QuadTree service affects how well it works. For this, we first store the updated location in the hash table stored in Redis. Eventually, these values are copied into the persistent storage every 10–15 seconds."
+  },
+  {
+   "t": "h1",
+   "k": "0378d46c5d21",
+   "en": "Payment Service and Fraud Detection in Uber Design"
+  },
+  {
+   "t": "p",
+   "k": "84f03150c2a1",
+   "en": "Learn how the payment service of Uber works and how they deal with payment fraud."
+  },
+  {
+   "t": "p",
+   "k": "78c292cdffed",
+   "en": "We’ll first briefly go through how the payment system works, and then we’ll cover how to guard our system against malicious activity."
+  },
+  {
+   "t": "p",
+   "k": "31a8a3471390",
+   "en": "The payment service deals with the payments side of the Uber application. It includes collecting payment from the rider to give it to the driver. As the trip completes, it collects the trip information, calculates the cost of the journey, and initiates the payment process."
+  },
+  {
+   "t": "h2",
+   "k": "51940778982d",
+   "en": "Major functionality"
+  },
+  {
+   "t": "p",
+   "k": "6de964eb53b8",
+   "en": "The Uber payments platform includes the following functionality:"
+  },
+  {
+   "t": "p",
+   "k": "43a5d52a8c2d",
+   "en": "New payment options: It adds new payment options for users."
+  },
+  {
+   "t": "p",
+   "k": "2a5f277a85c8",
+   "en": "Authorization: It authorizes the payments for transactions."
+  },
+  {
+   "t": "p",
+   "k": "59b444c81ae6",
+   "en": "Refund: It refunds a payment that was authorized before."
+  },
+  {
+   "t": "li",
+   "k": "828d9271c37c",
+   "en": "Charging: It moves money from a user account to Uber.",
+   "lead": "Charging"
+  },
+  {
+   "t": "h2",
+   "k": "daa4acc87595",
+   "en": "What to prevent"
+  },
+  {
+   "t": "p",
+   "k": "cb02be9816d8",
+   "en": "We need to prevent the following scenarios for the success of the payment system:"
+  },
+  {
+   "t": "p",
+   "k": "caa5aaa64bc8",
+   "en": "Lack of payment Duplicate payments Incorrect payment Incorrect currency conversion Dangling authorization The Uber payment platform is based on the double-entry bookkeeping method."
+  },
+  {
+   "t": "h2",
+   "k": "056f11827899",
+   "en": "Design"
+  },
+  {
+   "t": "p",
+   "k": "a22501eff53a",
+   "en": "Let’s look at the design of the payment platform in Uber and learn how different components work together to complete the transactions:"
+  },
+  {
+   "t": "p",
+   "k": "e466d4f40f35",
+   "en": "The key components used in the payment service are as follows:"
+  },
+  {
+   "t": "p",
+   "k": "791e6078f934",
+   "en": "API: The Uber API is used to access the payment service."
+  },
+  {
+   "t": "p",
+   "k": "65bb3f4c2a34",
+   "en": "Order store: This stores all the orders. Orders collect payments and contain information regarding money flow between different riders and drivers."
+  },
+  {
+   "t": "p",
+   "k": "1e6096574f2e",
+   "en": "Account store: This stores all the accounts of riders and drivers."
+  },
+  {
+   "t": "p",
+   "k": "da6fadb2a4d9",
+   "en": "Risk engine: The risk engine analyzes different risks involved in collecting payment from a particular rider. It checks the history of the rider—for example, the rating of the rider, if the rider has sufficient funds in their rider account, any pending dues, if the rider cancels the rides frequently, and so on."
+  },
+  {
+   "t": "p",
+   "k": "348b0000bebd",
+   "en": "Payment profile service: This provides information on the payment mechanisms, such as credit and debit cards."
+  },
+  {
+   "t": "p",
+   "k": "ed37047f70f3",
+   "en": "User profile service: This provides information regarding users’ payments."
+  },
+  {
+   "t": "p",
+   "k": "9851a5fa4679",
+   "en": "Payment authorization service: This offers payment authentication services."
+  },
+  {
+   "t": "p",
+   "k": "506aaa81b93a",
+   "en": "PSP gateways: This connects with payment service providers"
+  },
+  {
+   "t": "h3",
+   "k": "899531e0f885",
+   "en": "Workflow"
+  },
+  {
+   "t": "p",
+   "k": "46416c62abca",
+   "en": "The following steps show the workflow of the payment service:"
+  },
+  {
+   "t": "li",
+   "k": "6b18e64c20ab",
+   "en": "When a rider requests a ride, the Uber application uses the Uber API to request the risk engine to check the risks involved."
+  },
+  {
+   "t": "li",
+   "k": "a93eeeba2973",
+   "en": "The risk engine obtains user information from the user profile service and evaluates the risk involved."
+  },
+  {
+   "t": "li",
+   "k": "d722fb7e4d27",
+   "en": "If the risks are high, the rider’s request isn’t entertained."
+  },
+  {
+   "t": "li",
+   "k": "99d18819ef2e",
+   "en": "If the risks are low, the risk engine creates an authorization token and sends it to the payment profile service (for record-keeping), which fetches that token and sends it to the payment authorization service."
+  },
+  {
+   "t": "li",
+   "k": "1a8a35c8ac40",
+   "en": "The payment authorization service sends that request to the PSP gateway, which contacts the service provider for authorization."
+  },
+  {
+   "t": "li",
+   "k": "d1cdf5e75914",
+   "en": "The PSP gateway sends the authorization token back to the payment authorization service, which sends the token back to the Uber application that the trip request is approved."
+  },
+  {
+   "t": "li",
+   "k": "ee4f5e9b024f",
+   "en": "After the trip is completed, the Uber application uses the API to send the payment request to the PSP gateway with authorization data."
+  },
+  {
+   "t": "li",
+   "k": "70f2ac30d501",
+   "en": "The PSP gateway contacts the service provider and sends the status back to the Uber application through the API."
+  },
+  {
+   "t": "p",
+   "k": "0e09796a1d70",
+   "en": "The Uber payment service is constructed with a set of microservices grouped together as a stream-processing architecture."
+  },
+  {
+   "t": "h3",
+   "k": "5dd9422f45dc",
+   "en": "Apache Kafka"
+  },
+  {
+   "t": "p",
+   "k": "fc41098edd2f",
+   "en": "Kafka is an open-source stream-processing software platform. It’s the primary technology used in payment services. Let’s see how Kafka helps to process an order:"
+  },
+  {
+   "t": "p",
+   "k": "703d2b64988e",
+   "en": "The order creator gets a business event—for example, the trip is finished. The order creator creates the money movement information and the metadata. This order creator publishes that information to Kafka. Kafka processes that order and sends it to the order processor. The order processor then takes that information from Kafka, processes it, and sends it as intent to Kafka. From that, the order processor again processes and contacts the PSP . The order processor then takes the answer from PSP and transmits it to Kafka as a result. The result is then saved by the order writer."
+  },
+  {
+   "t": "p",
+   "k": "323d4468a636",
+   "en": "The key capabilities of Kafka that the payment service uses are the following:"
+  },
+  {
+   "t": "p",
+   "k": "10435dd17c11",
+   "en": "It works like message queues to publish and subscribe to message queues."
+  },
+  {
+   "t": "p",
+   "k": "2cb666c9bbc3",
+   "en": "It stores the records in a way that is fault tolerant."
+  },
+  {
+   "t": "p",
+   "k": "88d06f82814a",
+   "en": "It processes the payment records asynchronously."
+  },
+  {
+   "t": "h2",
+   "k": "016bab2f652d",
+   "en": "Fraud detection"
+  },
+  {
+   "t": "p",
+   "k": "a00ae08aac9e",
+   "en": "Fraud detection is a critical operational component of our design. Payment fraud losses are calculated as a percentage of gross amounts. Despite fraud activities accounting for a tiny portion of gross bookings, these losses considerably influence earnings. Moreover, if malicious behavior isn’t promptly detected and handled, it may be further leveraged, which results in significant losses for the business. Earlier, we discussed the risk engine that detects fraud before the trip starts. Here, we’ll focus on the fraud detection that happens during trips or at the end of the trips."
+  },
+  {
+   "t": "p",
+   "k": "725465738eeb",
+   "en": "Fraud detection is challenging because many instances of fraud are like detecting zero-day security bugs. Therefore, our system needs intelligence to detect anomalies, and it also needs accountability for automated decisions in the form of human-led audits."
+  },
+  {
+   "t": "p",
+   "k": "3f3ad6961de9",
+   "en": "The activities that are considered fraudulent by Uber are as follows:"
+  },
+  {
+   "t": "p",
+   "k": "db505f854e89",
+   "en": "A driver deliberately increases the time or distance of a trip in a dishonest manner—for example, if they take a much longer route than necessary to the rider’s destination."
+  },
+  {
+   "t": "p",
+   "k": "d1956f4eddd9",
+   "en": "A driver manipulates the GPS data or uses fake location GPS apps."
+  },
+  {
+   "t": "p",
+   "k": "8ba52e313ddf",
+   "en": "A driver confirms trips with no intention of completing them, forcing riders to cancel."
+  },
+  {
+   "t": "p",
+   "k": "bf3e10e0e8de",
+   "en": "A driver creates false driver or rider accounts for fraudulent purposes."
+  },
+  {
+   "t": "p",
+   "k": "fc346b6037ba",
+   "en": "A driver provides incorrect or inaccurate information about themselves when opening their account."
+  },
+  {
+   "t": "p",
+   "k": "cc96a56e9030",
+   "en": "A driver drives a vehicle that hasn’t been approved by Uber."
+  },
+  {
+   "t": "p",
+   "k": "fa47789fd48f",
+   "en": "A driver claims fraudulent fees or charges, such as unwarranted cleaning fees."
+  },
+  {
+   "t": "p",
+   "k": "26b456654056",
+   "en": "A driver willfully confirms or completes fraudulent trips."
+  },
+  {
+   "t": "h3",
+   "k": "87c70a0bc14a",
+   "en": "RADAR"
+  },
+  {
+   "t": "p",
+   "k": "ec366bd28486",
+   "en": "Uber introduced RADAR, a human-assisted AI fraud detection and mitigation solution to handle the discussed scenarios of fraud. The RADAR system detects fraud by analyzing the activity time series of the payment system. It then generates a rule for it and stops it from further processing. This proactive approach can help to detect unseen fraud in real time. This detection model also uses human knowledge for continuous improvements. Here, we’ll briefly discuss how RADAR works:"
+  },
+  {
+   "t": "p",
+   "k": "c681be33552f",
+   "en": "RADAR recognizes the beginning of a fraud attempt and creates a rule to prevent it. The fraud analyst is involved in the next step. They review the rule and approve or reject it if required. They then send feedback (approved or not approved) to the protection system. The feedback is also sent to the fraud detection system by the fraud analysts to improve detection."
+  },
+  {
+   "t": "p",
+   "k": "25f3710fcd41",
+   "en": "Furthermore, the system examines the data in the following time dimensions:"
+  },
+  {
+   "t": "p",
+   "k": "74f1029c6e19",
+   "en": "It examines the trip time when a trip has been completed. Multiple factors are involved in real-time trip monitoring. For instance, the system can check whether or not the driver and rider locations are the same. The system can also monitor the speed and analyze the real traffic to check if the driver is intentionally driving slow or if there’s traffic congestion."
+  },
+  {
+   "t": "p",
+   "k": "1dd4b9b4561b",
+   "en": "Payment settlement time refers to obtaining payment processing data. It might take days or weeks to settle."
+  },
+  {
+   "t": "p",
+   "k": "c8521e263f89",
+   "en": "We’ve just discussed the basic details of how guarding against malicious activity at scale is necessary for the success of a business. In the proposed model, the human experts are involved, potentially decreasing the scalability of the system."
+  },
+  {
+   "t": "p",
+   "k": "65960db0d6eb",
+   "en": "Research is being carried out on how to ensure that the decisions made by the AI system are fair and ethical."
+  },
+  {
+   "t": "h1",
+   "k": "a69428b9dd6d",
+   "en": "Evaluation of Uber’s Design"
+  },
+  {
+   "t": "h2",
+   "k": "471c038d8a4d",
+   "en": "Fulfill non-functional requirements"
+  },
+  {
+   "t": "h3",
+   "k": "f2c1b76db30d",
+   "en": "Availability"
+  },
+  {
+   "t": "p",
+   "k": "186d43ed6b60",
+   "en": "Our system is highly available. We used WebSocket servers. If a user gets disconnected, the session is recreated via a load balancer with a different server."
+  },
+  {
+   "t": "h3",
+   "k": "b06273ade235",
+   "en": "Scalability"
+  },
+  {
+   "t": "p",
+   "k": "1b0c3fa68912",
+   "en": "Our system is highly scalable. We used many independent services so that we can scale these services horizontally, independent of each other as per our needs. We used QuadTrees for searching by dividing the map into smaller segments, which shortens our search space. We used a CDN, which increases the capacity to handle more users. We also used a NoSQL database, Cassandra, which is horizontally scalable. Additionally, we used load balancers, which improve speed by distributing read workload among different servers."
+  },
+  {
+   "t": "h3",
+   "k": "844e392a5d6c",
+   "en": "Reliability"
+  },
+  {
+   "t": "p",
+   "k": "33ec0b4f08de",
+   "en": "Our system is highly reliable. The trip can continue even if the rider’s or driver’s connection is broken. This is achieved by using their phones as local storage. The use of multiple WebSocket servers ensures smooth, nearly real-time operations."
+  },
+  {
+   "t": "h3",
+   "k": "028944e40958",
+   "en": "Consistency"
+  },
+  {
+   "t": "p",
+   "k": "8ecd4d12d9c8",
+   "en": "We used storage like MySQL to keep our data consistent globally. Moreover, our system does synchronous replication to achieve strong consistency. Because of a limited number of data writers and viewers for a trip (rider, driver, some internal services), the usage of traditional databases doesn’t become a bottleneck. Also, data sharding is easier in this scenario."
+  },
+  {
+   "t": "h3",
+   "k": "016bab2f652d",
+   "en": "Fraud detection"
+  },
+  {
+   "t": "p",
+   "k": "43c369a46274",
+   "en": "Our system is able to detect any fraudulent activity related to payment. We used the RADAR system to detect any suspicious activity. RADAR recognizes the beginning of a fraud attempt and creates a rule to prevent it."
+  },
+  {
+   "t": "h2",
+   "k": "ffca82d594bf",
+   "en": "Meeting Non-functional Requirements"
+  },
+  {
+   "t": "li",
+   "k": "7f2ea34ba653",
+   "en": "Using database replicas with Cassandra database"
+  },
+  {
+   "t": "li",
+   "k": "9bb3fe677cc8",
+   "en": "Load balancers hide server failures from end users Scalability •Horizontal sharding of the database"
+  },
+  {
+   "t": "li",
+   "k": "f2d38e2e9ce4",
+   "en": "The Cassandra NoSQL database Reliability•No single point of failure"
+  },
+  {
+   "t": "li",
+   "k": "659a398afd42",
+   "en": "Redundant components Consistency•Strong consistency using synchronous replications Fraud detection•Using RADAR to recognize and prevent any fraud related to payments"
+  },
+  {
+   "t": "h2",
+   "k": "6a38a38f03e4",
+   "en": "Conclusion"
+  },
+  {
+   "t": "p",
+   "k": "c9d391bb4ac9",
+   "en": "This chapter taught us how to design a ride-hailing service like Uber. We discussed its functional and non-functional requirements. We learned how to efficiently locate drivers on the map using QuadTrees. We also discussed how to efficiently calculate the estimated time of arrival using routing algorithms and machine learning. Additionally, we learned that guarding our service against fraudulent activities is important for the business’s success."
+  }
+ ]
+}

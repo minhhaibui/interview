@@ -1,0 +1,121 @@
+{
+ "id": "15-safely-rolling-out-a-risky-change",
+ "title": "Safely Rolling Out a Risky Change",
+ "titleKey": "b64f6653f30f",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "f81ed65c8993",
+   "en": "You're shipping a rewrite of your checkout write path on Friday."
+  },
+  {
+   "t": "p",
+   "k": "4375959f25df",
+   "en": "Node.js on ECS Fargate. ~3,000 RPS at peak. Postgres with row-level locking on the orders table. The change touches the line of code that actually charges the customer's card — old path uses Stripe Charges API, new path uses PaymentIntents with 3DS."
+  },
+  {
+   "t": "p",
+   "k": "fc053bf8aa54",
+   "en": "The QA env is green. Load test passed. Your staff engineer signs off."
+  },
+  {
+   "t": "p",
+   "k": "b30b1945619f",
+   "en": "But it's checkout. If this breaks, money breaks. And you can't roll back a card that already got charged."
+  },
+  {
+   "t": "p",
+   "k": "58ec8d1649be",
+   "en": "Pick the deploy strategy: the load balancer. Instant rollback by flipping back. minutes, then ramp 5% 25% 100%.→→ Rolling — replace ECS tasks one at a time. Old and new versions serve traffic side-by-side until Feature Flag — deploy the new code to 100% of tasks behind a flag defaulting to OFF. Then flip the new version is fully rolled out. the flag for internal users 1% of customers 10% 100%, with an instant kill switch.→→→"
+  },
+  {
+   "t": "h3",
+   "k": "c4d75d8cb3f6",
+   "en": "DAY 14 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "602f7e151ed3",
+   "en": "Answer: D — Feature Flag ✅ Here's why, and why the other three look right but quietly fail when the change touches money:"
+  },
+  {
+   "t": "li",
+   "k": "741c08331591",
+   "en": "Why D wins (Feature Flag):",
+   "lead": "Why D wins (Feature Flag)"
+  },
+  {
+   "t": "p",
+   "k": "30b181cc2108",
+   "en": "Feature flags decouple deploy from release. The new code ships to 100% of your ECS tasks — but it's dormant. Nothing executes until you flip the flag."
+  },
+  {
+   "t": "li",
+   "k": "217502bd937e",
+   "en": "Rollback is a config push, not a deploy. Sub-second. No ECS restarts, no LB drain, no DNS TTL."
+  },
+  {
+   "t": "li",
+   "k": "d3b2f559e378",
+   "en": "You target who sees the new path, not what % of random traffic. $0.99 customer and $40K B2B customer shouldn't get coin-flipped equally — that's not a strategy, that's hope."
+  },
+  {
+   "t": "li",
+   "k": "cb34edcab0da",
+   "en": "You can keep the old code path warm for weeks. 3DS edge case on a specific issuing bank in Brazil? Flip those users back while keeping everyone else on v2."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "1adc1e78bc73",
+   "en": "Why B is the trap (Canary):"
+  },
+  {
+   "t": "li",
+   "k": "41029ad1613b",
+   "en": "Canary routes by request, not by customer. A B2B billing job hits your 1% canary 50 times in an hour. Bug on their card type? You've charged them 50 times before dashboards catch it."
+  },
+  {
+   "t": "li",
+   "k": "08a073ad2446",
+   "en": "Payment failures don't surface as 5xx errors — they surface as successful 200s that charged the wrong amount. Your error-rate alarm never fires."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "62987ba8b810",
+   "en": "Why A is wrong (Blue/Green): \"Instant cutover\" is the problem. The moment you flip the LB, 100% of live traffic hits new code — including Stripe webhooks confirming PaymentIntents created by the old code. Cross-version race condition on real money. Rollback doesn't undo a charge.",
+   "lead": "Why A is wrong (Blue/Green)"
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "9d09db28f740",
+   "en": "Why C is wrong (Rolling):",
+   "lead": "Why C is wrong (Rolling)"
+  },
+  {
+   "t": "p",
+   "k": "f7f26749470a",
+   "en": "For 5–10 minutes, old and new tasks serve checkout simultaneously. \"Create order\" hits v1. \"Confirm payment\" webhook 800ms later hits v2. Inconsistent state written by code that was never tested together."
+  },
+  {
+   "t": "h3",
+   "k": "d4d4cc228590",
+   "en": "DAY 15 · SYSTEM DESIGN"
+  }
+ ]
+}

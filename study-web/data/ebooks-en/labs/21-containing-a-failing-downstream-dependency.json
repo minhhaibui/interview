@@ -1,0 +1,187 @@
+{
+ "id": "21-containing-a-failing-downstream-dependency",
+ "title": "Containing a Failing Downstream Dependency",
+ "titleKey": "219b05a8bb97",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "76712900812d",
+   "en": "Your checkout service calls a 3rd-party fraud-check API on every order."
+  },
+  {
+   "t": "p",
+   "k": "6d263fb568f6",
+   "en": "That API just started timing out at 30s instead of its usual 200ms."
+  },
+  {
+   "t": "p",
+   "k": "6269a30624b8",
+   "en": "Your Node.js checkout pods have a 50-connection pool. Within 90 seconds, every connection is parked waiting on the fraud API. New checkout requests pile up in the queue. P99 latency on /checkout goes from 300ms to 28s. Customers retry. Pods OOM. The fraud API is degraded — your entire checkout is down."
+  },
+  {
+   "t": "p",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:"
+  },
+  {
+   "t": "li",
+   "k": "1b73b651e729",
+   "en": "Checkout (NestJS) Fraud API (3rd party) — 30s timeouts→"
+  },
+  {
+   "t": "li",
+   "k": "f73df2f77cfc",
+   "en": "Same pods also handle /cart, /orders, /health — all healthy dependencies"
+  },
+  {
+   "t": "li",
+   "k": "c219b81c11af",
+   "en": "Fraud API's own dashboard says it'll be back in ~10 minutes"
+  },
+  {
+   "t": "li",
+   "k": "7d0fc67f535c",
+   "en": "Your SLO budget for the quarter is about to evaporate You need to stop the bleeding without losing the rest of checkout. What do you do?"
+  },
+  {
+   "t": "p",
+   "k": "cdad5ed7dc91",
+   "en": "Add a Circuit Breaker that opens after N failures, then half-opens with a single probe request Bulkhead the fraud API calls into a separate connection pool / thread pool so they can't starve the Both B and C — circuit breaker for the failing dependency, bulkhead to isolate the blast radius. before fully closing. rest of checkout."
+  },
+  {
+   "t": "h3",
+   "k": "7ccd6fbf4167",
+   "en": "DAY 20 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "dcbad8ac150b",
+   "en": "Answer: D — Circuit Breaker + Bulkhead, together ✅ Here's why, and why the other three trick smart engineers:"
+  },
+  {
+   "t": "li",
+   "k": "c80fdd65e422",
+   "en": "Why D wins (Circuit Breaker + Bulkhead):",
+   "lead": "Why D wins (Circuit Breaker + Bulkhead)"
+  },
+  {
+   "t": "p",
+   "k": "60b4f9953cbd",
+   "en": "These two patterns solve two different failure modes, and you need both."
+  },
+  {
+   "t": "p",
+   "k": "aefdf5908aad",
+   "en": "The Circuit Breaker stops you from hammering a dead dependency. After N consecutive failures (or a failure rate threshold over a rolling window), it flips to OPEN — every subsequent call to the fraud API fails instantly with a fallback. No 30s wait. No connection held hostage. After a cooldown (say 30s), it goes HALF-OPEN: it allows exactly one probe request through. If that probe succeeds, the breaker closes and traffic resumes. If it fails, back to OPEN for another cooldown. Half-open is the part most tutorials gloss over — it's what prevents the thundering herd from re-killing a service that's just coming back up."
+  },
+  {
+   "t": "p",
+   "k": "bbf9e821fd7a",
+   "en": "The Bulkhead is the part most engineers forget exists until they get burned. It isolates resource pools."
+  },
+  {
+   "t": "p",
+   "k": "d597f3487f2d",
+   "en": "Your fraud API gets its own dedicated pool of, say, 10 connections — separate from the 40 connections that serve /cart, /orders, /health. When the fraud API hangs, it can saturate its 10 connections, but the other 40 stay free. /cart keeps working. /health keeps working. The blast radius stops at the fraud feature. The ship doesn't sink because one compartment flooded — that's literally where the name comes from."
+  },
+  {
+   "t": "p",
+   "k": "f6ac11c736b8",
+   "en": "Resilience4j, Polly (.NET), and Hystrix (legacy) all ship both. AWS App Mesh + Envoy give you bulkheads at the proxy layer. Netflix wrote Hystrix specifically because they learned this lesson the hard way: a single slow dependency cascading through shared thread pools took down recommendations during peak hours."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "c3f8daae5dc5",
+   "en": "Why B alone is the staff-engineer trap answer:",
+   "lead": "Why B alone is the staff-engineer trap answer"
+  },
+  {
+   "t": "p",
+   "k": "aef6ba8f7b7c",
+   "en": "A circuit breaker without a bulkhead is the answer that sounds complete in an interview. It's the most-mentioned pattern in resilience talks. And it does fix the specific failure described — once the breaker opens, fraud calls fail fast and stop tying up connections."
+  },
+  {
+   "t": "p",
+   "k": "4f96182026df",
+   "en": "But here's the production reality: between failure #1 and the breaker tripping (failure #N), every one of those N requests is still holding a connection from the shared pool. If your threshold is 20 failures over 10 seconds, you can still saturate a 50-connection pool before the breaker even notices. You've reduced the outage window, not eliminated the cascade."
+  },
+  {
+   "t": "p",
+   "k": "c5ad6519cc72",
+   "en": "Bulkheads make the breaker's threshold latency-tolerant. They give you slack to detect and react without the rest of the system already being on fire."
+  },
+  {
+   "t": "p",
+   "k": "3b4b78ae88d1",
+   "en": "This is the trap because B is right and incomplete. Senior engineers stop at B in design reviews because it sounds sufficient. Staff engineers ship D because they've seen B fail in production at 3am."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "2cafe4c71002",
+   "en": "Why C alone is partial:",
+   "lead": "Why C alone is partial"
+  },
+  {
+   "t": "p",
+   "k": "7ce34cbd51a9",
+   "en": "Bulkhead alone is better than nothing — it contains the damage. But your 10 dedicated fraud connections will still spend 30 seconds each waiting on doomed calls. You're paying full latency cost on every checkout, just on a smaller pool. Customers still see slow checkouts; you just don't lose /cart with them."
+  },
+  {
+   "t": "p",
+   "k": "969d83b37b4a",
+   "en": "Bulkhead without a breaker = \"the leak is contained, but the room is still flooding.\""
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "dbf5314eafb2",
+   "en": "Why A is wrong (and dangerous):",
+   "lead": "Why A is wrong (and dangerous)"
+  },
+  {
+   "t": "p",
+   "k": "fad657b53a94",
+   "en": "Lower timeout + retries with backoff is the single worst thing you can do to a degraded dependency."
+  },
+  {
+   "t": "p",
+   "k": "d41eb6a545c7",
+   "en": "It's the canonical anti-pattern."
+  },
+  {
+   "t": "p",
+   "k": "71cc39281b78",
+   "en": "The fraud API is already struggling. You just decided to send it 3x the traffic. Every retry storm from every checkout pod converges on a service that needs less load to recover. This is how a partial outage becomes a total outage — and how a 10-minute incident becomes a 4-hour incident. Retries belong on transient errors (a single 503, a connection reset), not on systemic degradation. And they always need a circuit breaker upstream of them to cap the blast."
+  },
+  {
+   "t": "p",
+   "k": "249963dd455e",
+   "en": "If you've ever read a postmortem with the phrase \"retry storm contributed to extended recovery time\" — this is what they meant."
+  },
+  {
+   "t": "p",
+   "k": "76d1e4bdafe8",
+   "en": "WebSockets — the default for \"real-time,\" full-duplex, every chat app uses it."
+  },
+  {
+   "t": "h3",
+   "k": "5a9ff97301dc",
+   "en": "DAY 21 · SYSTEM DESIGN"
+  }
+ ]
+}

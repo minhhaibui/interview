@@ -1,0 +1,83 @@
+{
+ "id": "41-cdn",
+ "title": "CDN",
+ "titleKey": "9caed18b3958",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "6e3b6c6d71df",
+   "en": "A content delivery network (CDN) refers to a geographically distributed servers (also called edge servers) which provide fast delivery of static and dynamic content. Let’s take a look at how it works."
+  },
+  {
+   "t": "p",
+   "k": "55e702c2c69b",
+   "en": "Suppose Bob who lives in New York wants to visit an eCommerce website that is deployed in London. If the request goes to servers located in London, the response will be quite slow. So we deploy CDN servers close to where Bob lives, and the content will be loaded from the nearby CDN server."
+  },
+  {
+   "t": "p",
+   "k": "1fa3b5c4950d",
+   "en": "The diagram below illustrates the process:"
+  },
+  {
+   "t": "li",
+   "k": "026e9be2a688",
+   "en": "Bob types in www.myshop.com in the browser. The browser looks up the domain name in the local DNS cache. 84"
+  },
+  {
+   "t": "li",
+   "k": "4162f70b7ba1",
+   "en": "If the domain name does not exist in the local DNS cache, the browser goes to the DNS resolver to resolve the name. The DNS resolver usually sits in the Internet Service Provider (ISP)."
+  },
+  {
+   "t": "li",
+   "k": "a76581595981",
+   "en": "The DNS resolver recursively resolves the domain name (see my previous post for details). Finally, it asks the authoritative name server to resolve the domain name."
+  },
+  {
+   "t": "li",
+   "k": "7a672694eaf3",
+   "en": "If we don’t use CDN, the authoritative name server returns the IP address for www.myshop.com. But with CDN, the authoritative name server has an alias pointing to www.myshop.cdn.com (the domain name of the CDN server)."
+  },
+  {
+   "t": "li",
+   "k": "bc27ac6ad148",
+   "en": "The DNS resolver asks the authoritative name server to resolve www.myshop.cdn.com."
+  },
+  {
+   "t": "li",
+   "k": "940d9bb1ae22",
+   "en": "The authoritative name server returns the domain name for the load balancer of CDN www.myshop.lb.com."
+  },
+  {
+   "t": "li",
+   "k": "64e17479ea63",
+   "en": "The DNS resolver asks the CDN load balancer to resolve www.myshop.lb.com. The load balancer chooses an optimal CDN edge server based on the user’s IP address, user’s ISP, the content requested, and the server load."
+  },
+  {
+   "t": "li",
+   "k": "6fd6e27aa1fd",
+   "en": "The CDN load balancer returns the CDN edge server’s IP address for www.myshop.lb.com."
+  },
+  {
+   "t": "li",
+   "k": "bcf58143c6ca",
+   "en": "Now we finally get the actual IP address to visit. The DNS resolver returns the IP address to the browser."
+  },
+  {
+   "t": "li",
+   "k": "c11d29db6a9b",
+   "en": "The browser visits the CDN edge server to load the content. There are two types of contents cached on the CDN servers: static contents and dynamic contents. The former contains static pages, pictures, and videos; the latter one includes results of edge computing."
+  },
+  {
+   "t": "li",
+   "k": "8de58b2d5f19",
+   "en": "If the edge CDN server cache doesn't contain the content, it goes upward to the regional CDN server. If the content is still not found, it will go upward to the central CDN server, or even go to the origin - the 85 London web server. This is called the CDN distribution network, where the servers are deployed geographically."
+  },
+  {
+   "t": "p",
+   "k": "0c89c3e317a6",
+   "en": "Over to you: How do you prevent videos cached on CDN from being pirated? 86"
+  }
+ ]
+}

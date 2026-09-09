@@ -1,0 +1,33 @@
+{
+ "id": "13-interview-question-design-google-docs",
+ "title": "Interview Question: design Google Docs",
+ "titleKey": "ea0b1ba231b7",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "d2f4c7952048",
+   "en": "1⃣ Clients send document editing operations to the WebSocket Server. 2⃣ The real-time communication is handled by the WebSocket Server. 3⃣ Documents operations are persisted in the Message Queue. 28 4⃣ The File Operation Server consumes operations produced by clients and generates transformed operations using collaboration algorithms. 5⃣ Three types of data are stored: file metadata, file content, and operations."
+  },
+  {
+   "t": "p",
+   "k": "4d335d068112",
+   "en": "One of the biggest challenges is real-time conflict resolution. Common algorithms include: 🔹 Operational transformation (OT) 🔹 Differential Synchronization (DS) 🔹 Conflict-free replicated data type (CRDT)"
+  },
+  {
+   "t": "p",
+   "k": "7229dc9aae04",
+   "en": "Google Doc uses OT according to its Wikipedia page and CRDT is an active area of research for real-time concurrent editing."
+  },
+  {
+   "t": "p",
+   "k": "e238e2cfa086",
+   "en": "Over to you - Have you encountered any issues while using Google Docs? If so, what do you think might have caused the issue? — Check out our bestselling system design books."
+  },
+  {
+   "t": "p",
+   "k": "bac5b495c928",
+   "en": "Paperback:AmazonDigital:ByteByteGo. 29"
+  }
+ ]
+}

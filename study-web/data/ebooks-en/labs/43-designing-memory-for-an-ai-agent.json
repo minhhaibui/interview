@@ -1,0 +1,103 @@
+{
+ "id": "43-designing-memory-for-an-ai-agent",
+ "title": "Designing Memory for an AI Agent",
+ "titleKey": "f4ae7abad7b1",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "86d93d23af7c",
+   "en": "Your AI agent remembered the user's name."
+  },
+  {
+   "t": "p",
+   "k": "a436daae41b0",
+   "en": "Then it forgot what it was doing."
+  },
+  {
+   "t": "p",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:"
+  },
+  {
+   "t": "p",
+   "k": "393a11470d79",
+   "en": "User asks the agent: book the cheapest flight to NYC, search hotels under $150/night, then compare total trip cost."
+  },
+  {
+   "t": "p",
+   "k": "76208765300e",
+   "en": "By step 3, the agent calls the LLM with 8,000 tokens of raw conversation history — and still answers as if it's turn 1."
+  },
+  {
+   "t": "p",
+   "k": "86eff71f7705",
+   "en": "You need a memory architecture before this ships. Which one do you pick?"
+  },
+  {
+   "t": "p",
+   "k": "a09d24b9a9f8",
+   "en": "A) In-context window only — full conversation stays in the system prompt. Simple. Breaks at ~15 turns or 8K tokens, whichever comes first."
+  },
+  {
+   "t": "p",
+   "k": "308cd34d69eb",
+   "en": "B) Vector memory store — embed past turns, retrieve the top-k by semantic similarity at query time. Works great until \"NYC flight\" pulls a memory about a past NYC trip instead of the current task."
+  },
+  {
+   "t": "p",
+   "k": "5a7ffe1f5e9a",
+   "en": "C) Episodic memory with summarization — compress old turns into structured event summaries, inject the relevant ones per request. More complex to build. Much harder to confuse."
+  },
+  {
+   "t": "p",
+   "k": "d86761b4261c",
+   "en": "D) Redis session state — structured key-value store, explicit agent reads/writes. Deterministic. Requires the agent to know what to store and when."
+  },
+  {
+   "t": "h3",
+   "k": "4749a8ae2e7a",
+   "en": "DAY 42 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "11aee3587617",
+   "en": "C — Episodic memory with summarization Right answer for task-oriented agents. The pattern: → Keep the last N turns in context (short-term) → Compress older turns into structured event summaries (episodic) → Inject only relevant summaries per new request It's how production agents at Anthropic, LangChain Memory v2, and OpenAI Assistants API all converge. More engineering upfront — but the only pattern that degrades gracefully at scale."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "4c5e30806651",
+   "en": "A — In-context window only Collapses fast. At ~15 turns or 8K tokens you're either truncating early context or hitting the model's limit. Works for demos. Fails in production agents with multi-step tasks. The \"just increase context length\" argument ignores cost and the lost-in-the-middle problem — LLMs reliably ignore content buried in the middle of long prompts."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "p",
+   "k": "ad14280dfcab",
+   "en": "B — Vector memory store The retrieval problem is nastier than it looks. Semantic similarity isn't the same as task relevance. In a multi-step booking task, embedding \"find hotels under $150\" might retrieve a memory from a different user session — or a past conversation about a different city entirely. Great for knowledge retrieval. Unreliable for procedural task state."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "p",
+   "k": "d60443606bf6",
+   "en": "D — Redis session state Solid and deterministic. The catch: the agent has to explicitly decide what to write to state and when to read it. That's a non-trivial design problem — you're building a working memory protocol on top of your tool calls. Most teams underestimate the schema design this requires."
+  },
+  {
+   "t": "h3",
+   "k": "604f57e54515",
+   "en": "DAY 43 · SYSTEM DESIGN"
+  }
+ ]
+}

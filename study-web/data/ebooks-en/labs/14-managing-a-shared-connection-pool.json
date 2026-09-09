@@ -1,0 +1,191 @@
+{
+ "id": "14-managing-a-shared-connection-pool",
+ "title": "Managing a Shared Connection Pool",
+ "titleKey": "1d600fb0b91d",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "f4e9472852ca",
+   "en": "You're running 3 workloads against the same Postgres RDS instance. max_connections = 300. They all need a connection pool. None of them want to share."
+  },
+  {
+   "t": "p",
+   "k": "3e3a5440eff5",
+   "en": "Here's the setup: → NestJS REST API on ECS Fargate. Short transactions, 800 RPS, 10 tasks × 40 pool = 400 connections requested. → Background job workers. Long-running analytics queries. Hold a connection for 30–90 seconds each. → Lambda functions. Bursty, cold-start heavy, 0–200 concurrent invocations."
+  },
+  {
+   "t": "p",
+   "k": "3837bc327ba1",
+   "en": "Three clients. One database. 300 max connections. Math doesn't math."
+  },
+  {
+   "t": "p",
+   "k": "e3e5547476d7",
+   "en": "You need to pool without breaking any of them. Pick your poison:"
+  },
+  {
+   "t": "p",
+   "k": "a6f0e4c93234",
+   "en": "A: single pooler in front of RDS, maximum multiplexing."
+  },
+  {
+   "t": "p",
+   "k": "85c4f4f427c7",
+   "en": "B: split pooler config by workload type. Lambda goes through one of them."
+  },
+  {
+   "t": "p",
+   "k": "22557e12ae99",
+   "en": "RDS Proxy for Lambda + PgBouncer transaction mode for ECS Separate read replica for the analytics workers + PgBouncer transaction mode for REST + C: hybrid. Route by client type."
+  },
+  {
+   "t": "p",
+   "k": "4ab5a95ab416",
+   "en": "Lambda: isolate the workload at the DB level."
+  },
+  {
+   "t": "h3",
+   "k": "a7bde9c7b81d",
+   "en": "DAY 13 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "81b416373173",
+   "en": "Answer: B — PgBouncer session mode for workers + transaction mode for REST API ✅ This one separates engineers who've actually run PgBouncer in prod from ones who've only read the docs. Here's the breakdown:"
+  },
+  {
+   "t": "li",
+   "k": "780a3d8206d0",
+   "en": "Why B wins (split pooler config by workload type):",
+   "lead": "Why B wins (split pooler config by workload type)"
+  },
+  {
+   "t": "p",
+   "k": "0e13435660b0",
+   "en": "The whole point of PgBouncer is multiplexing — one backend Postgres connection serves many client connections, but only when it's safe to hand the connection back between transactions. That's transaction mode."
+  },
+  {
+   "t": "p",
+   "k": "26feb37a017a",
+   "en": "Transaction mode is perfect for the NestJS REST API: short transactions, 800 RPS, no session state, no SET LOCAL, no advisory locks held across queries, no prepared statements that need to survive. The REST API's 400 requested client connections collapse down to ~30–50 actual backend connections to Postgres. Math suddenly maths."
+  },
+  {
+   "t": "p",
+   "k": "3bbe01029d5b",
+   "en": "Transaction mode is catastrophic for the analytics workers. Their queries run 30–90 seconds and span multiple transactions — some hold session state, some use temp tables, some use SET search_path, some use cursors. Hand the connection back between transactions and that state is gone. Worse: at 800 RPS from the API side, the worker's chance of getting the same backend connection back on the next transaction is basically zero. The worker silently breaks."
+  },
+  {
+   "t": "p",
+   "k": "2b0d42a68acd",
+   "en": "So you give the workers their own PgBouncer pool in session mode — one client connection = one backend connection for the whole session. They get fewer connections, but they hold them, which is what they actually need."
+  },
+  {
+   "t": "p",
+   "k": "afc278097c9f",
+   "en": "The Lambda traffic goes through the REST API's transaction-mode pool (it's stateless, short-lived — same shape as the API). One pooler instance, two pool configs, two listening ports. PgBouncer supports this natively."
+  },
+  {
+   "t": "p",
+   "k": "c2f9651a538d",
+   "en": "End state: API gets multiplexing, workers don't starve, total backend connections to Postgres stay under 300, nobody breaks. That's the boring correct answer that wins on call."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "b81cef382c32",
+   "en": "...Why A is the trap (PgBouncer transaction mode for everyone):"
+  },
+  {
+   "t": "p",
+   "k": "bd369e1a306c",
+   "en": "This is the answer most engineers reach for because \"transaction mode = best multiplexing.\" It works beautifully for the API. It silently destroys the workers."
+  },
+  {
+   "t": "p",
+   "k": "c053be94b7f6",
+   "en": "The moment an analytics query needs anything that doesn't fit in one transaction — a temp table, a session variable, a SET LOCAL, a prepared statement, a cursor that outlives a transaction — PgBouncer hands the connection back to the pool. Next query? Different backend connection. State gone. Query fails or worse, returns wrong results."
+  },
+  {
+   "t": "p",
+   "k": "fc697afec998",
+   "en": "The failure mode is the cruelest kind: it works in dev (low concurrency, same connection by luck), it works in staging (light load), it dies in prod when the API is hammering the pool and the workers can't get a stable connection. You'll find this at 3am during a financial close."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "bfa916ff442d",
+   "en": "Why C is wrong (RDS Proxy for Lambda + PgBouncer for ECS):",
+   "lead": "Why C is wrong (RDS Proxy for Lambda + PgBouncer for ECS)"
+  },
+  {
+   "t": "p",
+   "k": "82e386d950f2",
+   "en": "Defensible on paper. RDS Proxy is genuinely good for Lambda — it handles the cold-start connection storm, manages IAM auth, integrates with the VPC. If the question were just \"Lambda + Postgres,\" C is right."
+  },
+  {
+   "t": "p",
+   "k": "a5f07209922e",
+   "en": "But C doesn't fix the workers. They're still long-running, they still need session state, and you've now introduced a second pooling product to operate, monitor, and pay for. RDS Proxy is also more expensive than PgBouncer per connection-hour, and it doesn't support session pinning across transactions the way session-mode PgBouncer does."
+  },
+  {
+   "t": "p",
+   "k": "3d9faeca3ff1",
+   "en": "C solves the easiest of the three problems and leaves the hardest one untouched."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "f1c879928d2e",
+   "en": "Why D is the senior-engineer trap (read replica for workers):",
+   "lead": "Why D is the senior-engineer trap (read replica for workers)"
+  },
+  {
+   "t": "p",
+   "k": "bdcae5937f58",
+   "en": "This is the option that fools experienced engineers, because it pattern-matches to \"isolate the workload.\" And isolating analytics from OLTP at the DB level is genuinely a great idea — for a different problem."
+  },
+  {
+   "t": "p",
+   "k": "829c9344c0ae",
+   "en": "D solves read scaling and noisy neighbor on query plans / cache / IO. It does not solve the connection math. Your read replica still has its own max_connections ceiling. Your workers still hold connections for 30–90 seconds. You've just moved the connection exhaustion problem from the primary to the replica — and now you're paying for an extra RDS instance."
+  },
+  {
+   "t": "p",
+   "k": "0911102d0a34",
+   "en": "If the problem statement was \"analytics queries are starving the OLTP workload,\" D would be right."
+  },
+  {
+   "t": "p",
+   "k": "2c8e4a16fc02",
+   "en": "The problem statement is \"we don't have enough connections.\" Different pain. Different pattern."
+  },
+  {
+   "t": "p",
+   "k": "0bc92746155b",
+   "en": "D is what you do after you have B working and you realize analytics is also competing for IOPS and buffer cache."
+  },
+  {
+   "t": "p",
+   "k": "1175429b5a20",
+   "en": "Blue/Green — spin up a parallel \"green\" environment running the new code, smoke-test it, flip Canary — route 1% of live traffic to the new version, watch error rates and p99 latency for 30"
+  },
+  {
+   "t": "h3",
+   "k": "4e16e48cac21",
+   "en": "DAY 14 · SYSTEM DESIGN"
+  }
+ ]
+}

@@ -1,0 +1,132 @@
+{
+ "id": "42-moving-from-batch-to-real-time-streaming",
+ "title": "Moving from Batch to Real-Time Streaming",
+ "titleKey": "8284bf4bf384",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "92a9771e4d82",
+   "en": "Your data team just got a new SLA: surface fraud signals within 500ms of a transaction."
+  },
+  {
+   "t": "p",
+   "k": "b16ddba7cbb7",
+   "en": "Right now you're running nightly Spark batch jobs. The business wants \"real-time.\" Your team knows Spark."
+  },
+  {
+   "t": "p",
+   "k": "4d3261be2f84",
+   "en": "Someone already opened a PR adding Spark Structured Streaming."
+  },
+  {
+   "t": "p",
+   "k": "5ebd6b987fad",
+   "en": "The transaction volume: 8,000 events/sec peak. You're on AWS. The fraud model runs in Python. The output feeds a DynamoDB table the API reads from."
+  },
+  {
+   "t": "p",
+   "k": "cee355bdbbd9",
+   "en": "You need to redesign the pipeline. What do you pick?"
+  },
+  {
+   "t": "p",
+   "k": "2f09bca7b8a3",
+   "en": "A) Kafka Streams — event-by-event processing, stateful operators, sub-10ms latency. Lives inside your app JVM."
+  },
+  {
+   "t": "p",
+   "k": "639ae512a81a",
+   "en": "B) Apache Flink — true streaming engine, exactly-once semantics, built for high-throughput stateful processing."
+  },
+  {
+   "t": "p",
+   "k": "4ec57a4967a1",
+   "en": "C) Spark Structured Streaming — micro-batch under the hood, 100ms–5s windows, same API your team already knows."
+  },
+  {
+   "t": "p",
+   "k": "cde628c69ad4",
+   "en": "D) Keep the batch job, drop the window to 1 minute — \"near real-time\" at zero migration cost."
+  },
+  {
+   "t": "h3",
+   "k": "2c0e6f6dd6f0",
+   "en": "DAY 41 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "li",
+   "k": "0a16bec97d19",
+   "en": "Why B wins (Apache Flink):",
+   "lead": "Why B wins (Apache Flink)"
+  },
+  {
+   "t": "p",
+   "k": "176fa2b9763d",
+   "en": "Flink is a true streaming engine — event-by-event, not batch. Every transaction triggers processing the moment it arrives. Latency: sub-50ms end-to-end with proper tuning. At 8K events/sec, Flink doesn't blink. Exactly-once semantics mean your fraud signals aren't double-counted when a node fails. The Python fraud model integrates via PyFlink or a sidecar microservice. Flink's watermark model handles out-of-order events cleanly — which matters when transactions arrive from distributed payment processors with clock skew."
+  },
+  {
+   "t": "p",
+   "k": "257f2ba6fb71",
+   "en": "Operational overhead is real. But the SLA demands it. You're not reaching for Flink prematurely here — the business asked for 500ms and gave you 8K events/sec. That's exactly the problem Flink was built for."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "5889cf64f60f",
+   "en": "Why A is close but not the cleanest fit (Kafka Streams):",
+   "lead": "Why A is close but not the cleanest fit (Kafka Streams)"
+  },
+  {
+   "t": "p",
+   "k": "88d79bcd72a6",
+   "en": "Kafka Streams is event-by-event too — sub-10ms achievable. The constraint: it runs inside your application JVM. Your fraud model is Python. That means Kafka Streams handles the stream topology, but the model scoring lives in a separate Python service, adding a network hop. Flink handles that boundary more cleanly with PyFlink. Kafka Streams is the right call if the fraud logic is stateful JVM-native aggregation. Wrong default when the model is a Python service."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "164708e5e141",
+   "en": "Why C is the senior engineer trap (Spark Structured Streaming):",
+   "lead": "Why C is the senior engineer trap (Spark Structured Streaming)"
+  },
+  {
+   "t": "p",
+   "k": "319c10564057",
+   "en": "The PR is already open. The API looks familiar. But Structured Streaming is micro-batch — it collects events for a trigger interval (practically 100ms–5s under production load), then processes them as a mini-batch. You'll tune it, it'll pass staging, and it'll breach SLA the first time peak traffic hits."
+  },
+  {
+   "t": "p",
+   "k": "1c7dafda7a6e",
+   "en": "Mistaking \"Streaming\" in the name for actual event-by-event processing is the trap."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "2f84db83537e",
+   "en": "Why D is eliminated immediately (batch, 1-minute windows):",
+   "lead": "Why D is eliminated immediately (batch, 1-minute windows)"
+  },
+  {
+   "t": "p",
+   "k": "e8cb8dbcabdf",
+   "en": "Minimum latency = the window size. At 60 seconds you're 120x over SLA before the first line of fraud logic runs. \"Near real-time\" is not a SLA."
+  },
+  {
+   "t": "h3",
+   "k": "3e5085a92b9a",
+   "en": "DAY 42 · SYSTEM DESIGN"
+  }
+ ]
+}

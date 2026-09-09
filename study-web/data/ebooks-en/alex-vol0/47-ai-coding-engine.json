@@ -1,0 +1,48 @@
+{
+ "id": "47-ai-coding-engine",
+ "title": "AI Coding engine",
+ "titleKey": "48c159c18701",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "5a9834df8a35",
+   "en": "DeepMind says its new AI coding engine (AlphaCode) is as good as an average programmer."
+  },
+  {
+   "t": "p",
+   "k": "ff351f426371",
+   "en": "The AI bot participated in the 10 Codeforces coding competitions and was ranked 54.3%. It means its score exceeded half of the human contestants. If we look at its score for the last 6 months, AlphaCode ranks at 28%."
+  },
+  {
+   "t": "p",
+   "k": "f5e64390dab0",
+   "en": "The diagram below explains how the AI bot works:"
+  },
+  {
+   "t": "li",
+   "k": "fa87214cbbd6",
+   "en": "Pre-train the transformer models on GitHub code."
+  },
+  {
+   "t": "li",
+   "k": "fb204e265017",
+   "en": "Fine-tune the models on the relatively small competitive programming dataset."
+  },
+  {
+   "t": "li",
+   "k": "76d1bc6d1dcf",
+   "en": "At evaluation time, create a massive amount of solutions for each problem."
+  },
+  {
+   "t": "li",
+   "k": "a06c34061d04",
+   "en": "Filter, cluster and rerank the solutions to a small set of candidate programs (at most 10), and then submit for further assessments."
+  },
+  {
+   "t": "li",
+   "k": "ee5f79fcb3f8",
+   "en": "Run the candidate programs against the test cases, evaluate the performance, and choose the best one. 101 Do you think AI bot will be better at Leetcode or competitive programming than software engineers five years from now? 102"
+  }
+ ]
+}

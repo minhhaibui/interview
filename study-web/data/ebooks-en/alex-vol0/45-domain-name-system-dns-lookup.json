@@ -1,0 +1,88 @@
+{
+ "id": "45-domain-name-system-dns-lookup",
+ "title": "Domain Name System (DNS) lookup",
+ "titleKey": "17bc793cdf3c",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "8071a7d033ea",
+   "en": "DNS acts as an address book. It translates human-readable domain names (google.com) to machine-readable IP addresses (142.251.46.238)."
+  },
+  {
+   "t": "p",
+   "k": "bd317112c7c2",
+   "en": "To achieve better scalability, the DNS servers are organized in a hierarchical tree structure."
+  },
+  {
+   "t": "p",
+   "k": "3937426beca5",
+   "en": "There are 3 basic levels of DNS servers:"
+  },
+  {
+   "t": "li",
+   "k": "450eb9723cb8",
+   "en": "Root name server (.). It stores the IP addresses of Top Level Domain (TLD) name servers. There are 13 logical root name servers globally."
+  },
+  {
+   "t": "li",
+   "k": "397991d12988",
+   "en": "TLD name server. It stores the IP addresses of authoritative name servers. There are several types of TLD names. For example, generic TLD (.com, .org), country code TLD (.us), test TLD (.test)."
+  },
+  {
+   "t": "li",
+   "k": "af498de0fbae",
+   "en": "Authoritative name server. It provides actual answers to the DNS query. You can register authoritative name servers with domain name registrar such as GoDaddy, Namecheap, etc."
+  },
+  {
+   "t": "p",
+   "k": "0d6032be93bd",
+   "en": "The diagram below illustrates how DNS lookup works under the hood:"
+  },
+  {
+   "t": "li",
+   "k": "c31af3cf49b6",
+   "en": "google.com is typed into the browser, and the browser sends the domain name to the DNS resolver. 97"
+  },
+  {
+   "t": "li",
+   "k": "9963a95a24e0",
+   "en": "The resolver queries a DNS root name server."
+  },
+  {
+   "t": "li",
+   "k": "45d3c88fe5e5",
+   "en": "The root server responds to the resolver with the address of a TLD DNS server. In this case, it is .com."
+  },
+  {
+   "t": "li",
+   "k": "72acde40e31a",
+   "en": "The resolver then makes a request to the .com TLD."
+  },
+  {
+   "t": "li",
+   "k": "aa1016b19f10",
+   "en": "The TLD server responds with the IP address of the domain’s name server, google.com (authoritative name server)."
+  },
+  {
+   "t": "li",
+   "k": "4412f22b66e1",
+   "en": "The DNS resolver sends a query to the domain’s nameserver."
+  },
+  {
+   "t": "li",
+   "k": "cd469defe28c",
+   "en": "The IP address for google.com is then returned to the resolver from the nameserver."
+  },
+  {
+   "t": "li",
+   "k": "e9505a41c2b9",
+   "en": "The DNS resolver responds to the web browser with the IP address (142.251.46.238) of the domain requested initially."
+  },
+  {
+   "t": "p",
+   "k": "065391be55f2",
+   "en": "DNS lookups on average take between 20-120 milliseconds to complete (according to YSlow). 98"
+  }
+ ]
+}

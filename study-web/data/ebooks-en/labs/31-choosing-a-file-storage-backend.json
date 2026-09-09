@@ -1,0 +1,177 @@
+{
+ "id": "31-choosing-a-file-storage-backend",
+ "title": "Choosing a File Storage Backend",
+ "titleKey": "82498f1f6d5d",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "3835277e8a9b",
+   "en": "You're building a file upload service. 10TB of user files today. 100TB in 12 months."
+  },
+  {
+   "t": "p",
+   "k": "499c3bf1f7f3",
+   "en": "Your team is having a fight."
+  },
+  {
+   "t": "p",
+   "k": "7fde13f286f0",
+   "en": "The backend lead says: \"Just use S3. Done.\""
+  },
+  {
+   "t": "p",
+   "k": "4b88de026d7a",
+   "en": "The DevOps engineer says: \"Mount an EBS volume. Simpler, faster.\""
+  },
+  {
+   "t": "p",
+   "k": "35d76da815de",
+   "en": "The platform architect says: \"We need EFS — multiple services need to read the same files.\""
+  },
+  {
+   "t": "p",
+   "k": "9cec35b2d1ad",
+   "en": "The startup CTO says: \"We can't afford cloud storage at scale. Self-host with MinIO.\""
+  },
+  {
+   "t": "p",
+   "k": "832c639c650c",
+   "en": "All four have shipped this in production. All four have opinions backed by scars."
+  },
+  {
+   "t": "p",
+   "k": "0e2caf7208aa",
+   "en": "Here's the setup: — Upload service (NestJS) receives files from mobile + web clients — ML pipeline needs to read uploaded images for processing — Audit service needs read access to the same files — Files range from 5KB profile pics to 2GB video exports — You're on AWS What do you pick?"
+  },
+  {
+   "t": "p",
+   "k": "0e02bc36d051",
+   "en": "A) S3 — object storage, infinite scale, pay per GB, no servers to manage."
+  },
+  {
+   "t": "p",
+   "k": "d26b97fb25af",
+   "en": "B) EBS — block storage, SSD-backed, attach to your EC2, low latency reads."
+  },
+  {
+   "t": "p",
+   "k": "b04aced62f4e",
+   "en": "C) EFS — managed NFS, shared across multiple EC2 instances simultaneously."
+  },
+  {
+   "t": "p",
+   "k": "bfa1ef2ad183",
+   "en": "D) MinIO on EC2 — S3-compatible self-hosted object storage, you own the infra."
+  },
+  {
+   "t": "h3",
+   "k": "6a6364283d1d",
+   "en": "DAY 30 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "li",
+   "k": "f505e7cdd8bd",
+   "en": "Why A wins (S3):",
+   "lead": "Why A wins (S3)"
+  },
+  {
+   "t": "p",
+   "k": "17a5eb9f8c09",
+   "en": "One storage layer. Zero capacity planning. Every service reads from the same bucket using the S3 key stored in your DB."
+  },
+  {
+   "t": "p",
+   "k": "6741d2d95927",
+   "en": "At 100TB ~$2,300/month. Lifecycle policies move cold files to Glacier automatically. S3 events→ trigger your ML pipeline the moment a file lands. Versioning, encryption, audit logs — all built in, zero extra work."
+  },
+  {
+   "t": "p",
+   "k": "1dfd6eef819f",
+   "en": "For greenfield cloud services, this is the default. You only deviate when you have a specific reason not to."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "a58584ca1d5a",
+   "en": "Why B destroys your architecture quietly (EBS):",
+   "lead": "Why B destroys your architecture quietly (EBS)"
+  },
+  {
+   "t": "p",
+   "k": "6bce0ee3b934",
+   "en": "EBS is a disk. A fast, reliable disk — attached to one EC2 instance at a time."
+  },
+  {
+   "t": "p",
+   "k": "189ac6c2684c",
+   "en": "The moment your ML pipeline runs on a different instance than your upload service, it can't read those files. Add auto-scaling? Each new instance gets a blank disk. Deploy across two AZs? Same problem."
+  },
+  {
+   "t": "p",
+   "k": "05a24a681d07",
+   "en": "Works perfectly in dev. Silently breaks the moment you scale horizontally. The team that picks EBS here usually discovers this 6 months later when they're doing a painful migration under pressure."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "5927c33d6789",
+   "en": "Why C is great — but not here (EFS):",
+   "lead": "Why C is great — but not here (EFS)"
+  },
+  {
+   "t": "p",
+   "k": "c7ec71d84009",
+   "en": "EFS is genuinely powerful. Shared NFS, multiple EC2 instances mount it simultaneously, full POSIX semantics."
+  },
+  {
+   "t": "p",
+   "k": "29125d32737e",
+   "en": "The problem: $0.30/GB/month. At 100TB that's $30,000/month vs S3's $2,300/month. A 13x cost difference."
+  },
+  {
+   "t": "p",
+   "k": "2f748dc7a9de",
+   "en": "EFS is the right answer when your legacy app is hardcoded to open() / read() / write() filesystem calls and can't be refactored. For a greenfield NestJS service with an S3 SDK? You're paying 13x for filesystem semantics you don't need."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "3b3bd685cc30",
+   "en": "Why D is a cost-savings trap (MinIO):",
+   "lead": "Why D is a cost-savings trap (MinIO)"
+  },
+  {
+   "t": "p",
+   "k": "e18f2413b073",
+   "en": "MinIO is a real product used at hyperscale. S3-compatible API, high throughput, runs on your own hardware."
+  },
+  {
+   "t": "p",
+   "k": "21049d368395",
+   "en": "But self-hosted means you own availability, disk failures, backups, capacity planning, and 3am incidents. At 10–100TB, the engineering cost of running MinIO reliably exceeds S3 spend by a wide margin. You're not saving money — you're converting cloud spend into engineering hours, which cost more."
+  },
+  {
+   "t": "p",
+   "k": "2affdfecfc1f",
+   "en": "MinIO makes sense at petabyte scale with dedicated infra teams and painful egress bills. Not here."
+  },
+  {
+   "t": "h3",
+   "k": "12cefc4a9391",
+   "en": "DAY 31 · SYSTEM DESIGN"
+  }
+ ]
+}

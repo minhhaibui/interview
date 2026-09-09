@@ -1,0 +1,1638 @@
+{
+ "id": "009-databases",
+ "title": "Databases",
+ "titleKey": "0167bbf5aa9e",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "41227e6d06e8",
+   "en": "Introduction to Databases"
+  },
+  {
+   "t": "p",
+   "k": "9dd7b66b53d1",
+   "en": "Understand what a database is and its use cases in the system design."
+  },
+  {
+   "t": "h2",
+   "k": "e1cad14b3808",
+   "en": "Problem statement"
+  },
+  {
+   "t": "p",
+   "k": "005c7d45e66c",
+   "en": "Let’s start with a simple question. Can we make a software application without using databases? Let’s suppose we have an application like WhatsApp. People use our application to communicate with their friends. Now, where and how can we store information (a list of people’s names and their respective messages) permanently and retrieve it?"
+  },
+  {
+   "t": "p",
+   "k": "54dfdee54c84",
+   "en": "We can use a simple file to store all the records on separate lines and retrieve them from the same file. But using a file for storage has some limitations."
+  },
+  {
+   "t": "h3",
+   "k": "ca66c8507ec1",
+   "en": "Limitations of file storage"
+  },
+  {
+   "t": "p",
+   "k": "f49a0d9a1c38",
+   "en": "We can’t offer concurrent management to separate users accessing the storage files from different locations."
+  },
+  {
+   "t": "p",
+   "k": "0b164fc4e098",
+   "en": "We can’t grant different access rights to different users."
+  },
+  {
+   "t": "p",
+   "k": "38edf3024776",
+   "en": "How will the system scale and be available when adding thousands of entries?"
+  },
+  {
+   "t": "p",
+   "k": "e21b8a6515b4",
+   "en": "How will we search content for different users in a short time?"
+  },
+  {
+   "t": "p",
+   "k": "5ee1d65a13a9",
+   "en": "The above limitations can be addressed using databases."
+  },
+  {
+   "t": "p",
+   "k": "5741bcb51b67",
+   "en": "A database is an organized collection of data that can be managed and accessed easily."
+  },
+  {
+   "t": "p",
+   "k": "7380264d5f0b",
+   "en": "Databases are created to make it easier to store, retrieve, modify, and delete data in connection with different data-processing procedures."
+  },
+  {
+   "t": "p",
+   "k": "e2500696acfd",
+   "en": "Some of the applications where we use database management are the banking systems, online shopping stores, and so on. Different organizations have different sizes of databases according to their needs."
+  },
+  {
+   "t": "p",
+   "k": "4ff575891424",
+   "en": "Note: According to a source, the World Data Center for Climate (WDCC) is the largest database in the world. It contains around 220 terabytes of web data and 6 petabytes of additional data."
+  },
+  {
+   "t": "p",
+   "k": "145605efa414",
+   "en": "There are two basic types of databases:"
+  },
+  {
+   "t": "p",
+   "k": "c91d82f94b06",
+   "en": "SQL (relational databases)"
+  },
+  {
+   "t": "p",
+   "k": "06329c45591e",
+   "en": "NoSQL (non-relational databases)"
+  },
+  {
+   "t": "p",
+   "k": "88096130d2f2",
+   "en": "They differ in terms of their intended use case, the type of information they hold, and the storage method they employ."
+  },
+  {
+   "t": "p",
+   "k": "1258e1f9dfd0",
+   "en": "Relational databases, like phone books that record contact numbers and addresses, are organized and have predetermined schemas. Non-relational databases, like file directories that store anything from a person’s constant information to shopping preferences, are unstructured, scattered, and feature a dynamic schema. We’ll discuss their differences and their types in detail in the next lesson."
+  },
+  {
+   "t": "h2",
+   "k": "09f5089cefc8",
+   "en": "Advantages"
+  },
+  {
+   "t": "p",
+   "k": "354e6bc34e2b",
+   "en": "A proper database is essential for every business or organization. This is because the database stores all essential information about the organization, such as personnel records, transactions, salary information, and so on. Following are some of the reasons why the database is important:"
+  },
+  {
+   "t": "p",
+   "k": "38cc9ac7536d",
+   "en": "Managing large data: A large amount of data can be easily handled with a database, which wouldn’t be possible using other tools."
+  },
+  {
+   "t": "p",
+   "k": "c06149da7269",
+   "en": "Retrieving accurate data (data consistency): Due to different constraints in databases, we can retrieve accurate data whenever we want."
+  },
+  {
+   "t": "p",
+   "k": "67e5a669d4f8",
+   "en": "Easy updation: It is quite easy to update data in databases using data manipulation language (DML)."
+  },
+  {
+   "t": "p",
+   "k": "356d6327a594",
+   "en": "Security: Databases ensure the security of the data. A database only allows authorized users to access data."
+  },
+  {
+   "t": "p",
+   "k": "71817ecd1e28",
+   "en": "Data integrity: Databases ensure data integrity by using different constraints for data."
+  },
+  {
+   "t": "p",
+   "k": "a5e412c13c4e",
+   "en": "Availability: Databases can be replicated (using data replication) on different servers, which can be concurrently updated. These replicas ensure availability."
+  },
+  {
+   "t": "p",
+   "k": "d0fa4d118ed6",
+   "en": "Scalability: Databases are divided (using data partitioning) to manage the load on a single node. This increases scalability."
+  },
+  {
+   "t": "h2",
+   "k": "7f3403db07e6",
+   "en": "How will we explain databases?"
+  },
+  {
+   "t": "p",
+   "k": "4c5ec1394443",
+   "en": "We have divided the database chapter into four lessons:"
+  },
+  {
+   "t": "li",
+   "k": "1390fe892fd2",
+   "en": "Types of Databases: We’ll discuss the different types of databases, their advantages, and their disadvantages."
+  },
+  {
+   "t": "li",
+   "k": "f4a47d769d1c",
+   "en": "Data Replication: We’ll discuss what data replication is and its different models with their pros and cons."
+  },
+  {
+   "t": "li",
+   "k": "bae319039b49",
+   "en": "Data Partitioning: We’ll discuss what data partitioning is and its different models with their pros and cons."
+  },
+  {
+   "t": "li",
+   "k": "a6782414de33",
+   "en": "Cost-benefit analysis: We’ll discuss which database sharding approach is best for different kinds of databases."
+  },
+  {
+   "t": "p",
+   "k": "a827f6ccc1c7",
+   "en": "Let’s get started by understanding different types of databases and their preferred use cases."
+  },
+  {
+   "t": "h1",
+   "k": "954f0be6cefe",
+   "en": "Types of Databases"
+  },
+  {
+   "t": "p",
+   "k": "ba14db5530d2",
+   "en": "Understand various types of databases and their use cases in system design."
+  },
+  {
+   "t": "h2",
+   "k": "86fe298c8c09",
+   "en": "Relational databases"
+  },
+  {
+   "t": "p",
+   "k": "1a0c0a807928",
+   "en": "Relational databases adhere to particular schemas before storing the data. The data stored in relational databases has prior structure. Mostly, this model organizes data into one or more relations (also called tables), with a unique key for each tuple (instance). Each entity of the data consists of instances and attributes, where instances are stored in rows, and the attributes of each instance are stored in columns. Since each tuple has a unique key, a tuple in one table can be linked to a tuple in other tables by storing the primary keys in other tables, generally known as foreign keys."
+  },
+  {
+   "t": "p",
+   "k": "b1a3a3124845",
+   "en": "A Structure Query Language (SQL) is used for manipulating the database. This includes insertion, deletion, and retrieval of data."
+  },
+  {
+   "t": "p",
+   "k": "f5bbebac3d70",
+   "en": "But ACID is like a big hammer by design so that it’s generic enough for all the problems. If some specific application only needs to deal with a few anomalies, there’s a window of opportunity to use a custom solution for higher performance, though there is added complexity."
+  },
+  {
+   "t": "p",
+   "k": "c0c50e63521c",
+   "en": "Let’s discuss ACID in detail:"
+  },
+  {
+   "t": "li",
+   "k": "61aea7c2cc75",
+   "en": "Atomicity: A transaction is considered an atomic unit. Therefore, either all the statements within a transaction will successfully execute, or none of them will execute. If a statement fails within a transaction, it should be aborted and rolled back.",
+   "lead": "Atomicity"
+  },
+  {
+   "t": "li",
+   "k": "23d196e44e4c",
+   "en": "Consistency: At any given time, the database should be in a consistent state, and it should remain in a consistent state after every transaction. For example, if multiple users want to view a record from the database, it should return a similar result each time.",
+   "lead": "Consistency"
+  },
+  {
+   "t": "li",
+   "k": "f1188636a3ec",
+   "en": "Isolation: In the case of multiple transactions running concurrently, they shouldn’t be affected by each other. The final state of the database should be the same as the transactions were executed sequentially.",
+   "lead": "Isolation"
+  },
+  {
+   "t": "li",
+   "k": "dd8acdfcd548",
+   "en": "Durability: The system should guarantee that completed transactions will survive permanently in the database even in system failure events.",
+   "lead": "Durability"
+  },
+  {
+   "t": "p",
+   "k": "4972bedc1534",
+   "en": "Various database management systems (DBMS) are used to define relational database schema along with other operations, such as to store, retrieve, and run SQL queries on data. Some of the popular DBMS are as follows:"
+  },
+  {
+   "t": "p",
+   "k": "167e94d5d343",
+   "en": "MySQL Oracle Database Microsoft SQL Server IBM DB2 Postgres SQLite"
+  },
+  {
+   "t": "h3",
+   "k": "7701310d2101",
+   "en": "Why relational databases?"
+  },
+  {
+   "t": "p",
+   "k": "4911a39af801",
+   "en": "One of the greatest powers of the relational database is its abstractions of ACID transactions and related programming semantics. This make it very convenient for the end-programmer to use a relational database. Let’s revisit some important features of relational databases:"
+  },
+  {
+   "t": "h3",
+   "k": "ca406905ac77",
+   "en": "Flexibility"
+  },
+  {
+   "t": "p",
+   "k": "445ef8e0b5b5",
+   "en": "In the context of SQL, data definition language (DDL) provides us the flexibility to modify the database, including tables, columns, renaming the tables, and other changes. DDL even allows us to modify schema while other queries are happening and the database server is running."
+  },
+  {
+   "t": "h3",
+   "k": "64f05c17089a",
+   "en": "Reduced redundancy"
+  },
+  {
+   "t": "p",
+   "k": "28bc9e118443",
+   "en": "One of the biggest advantages of the relational database is that it eliminates data redundancy. The information related to a specific entity appears in one table while the relevant data to that specific entity appears in the other tables linked through foreign keys. This process is called normalization and has the additional benefit of removing an inconsistent dependency."
+  },
+  {
+   "t": "h3",
+   "k": "53e20abf9480",
+   "en": "Concurrency"
+  },
+  {
+   "t": "p",
+   "k": "0b823fc2c4dd",
+   "en": "Concurrency is an important factor while designing an enterprise database. In such a case, the data is read and written by many users at the same time. We need to coordinate such interactions to avoid inconsistency in data—for example, the double booking of hotel rooms. Concurrency in a relational database is handled through transactional access to the data. As explained earlier, a transaction is considered an atomic operation, so it also works in error handling to either roll back or commit a transaction on successful execution."
+  },
+  {
+   "t": "h3",
+   "k": "06eff510132b",
+   "en": "Integration"
+  },
+  {
+   "t": "p",
+   "k": "6d6b7723db6d",
+   "en": "The process of aggregating data from multiple sources is a common practice in enterprise applications. A common way to perform this aggregation is to integrate a shared database where multiple applications store their data. This way, all the applications can easily access each other’s data while the concurrency control measures handle the access of multiple applications."
+  },
+  {
+   "t": "h3",
+   "k": "f44041e04994",
+   "en": "Backup and disaster recovery"
+  },
+  {
+   "t": "p",
+   "k": "8c90aa2ffbd2",
+   "en": "Relational databases guarantee the state of data is consistent at any time. The export and import operations make backup and restoration easier. Most cloud-based relational databases perform continuous mirroring to avoid loss of data and make the restoration process easier and quicker."
+  },
+  {
+   "t": "h3",
+   "k": "89c6ec8f2985",
+   "en": "Drawback Impedance mismatch"
+  },
+  {
+   "t": "p",
+   "k": "b890738fbf59",
+   "en": "Impedance mismatch is the difference between the relational model and the in-memory data structures. The relational model organizes data into a tabular structure with relations and tuples. SQL operation on this structured data yields relations aligned with relational algebra. However, it has some limitations. In particular, the values in a table take simple values that can’t be a structure or a list. The case is different for in-memory, where a complex data structure can be stored. To make the complex structures compatible with the relations, we would need a translation of the data in light of relational algebra. So, the impedance mismatch requires translation between two representations, as denoted in the following figure:"
+  },
+  {
+   "t": "h2",
+   "k": "ee76774984bc",
+   "en": "Why non-relational (NoSQL) databases?"
+  },
+  {
+   "t": "p",
+   "k": "c798c0a4842c",
+   "en": "A NoSQL database is designed for a variety of data models to access and manage data. There are various types of NoSQL databases, which we’ll explain in the next section. These databases are used in applications that require a large volume of semi-structured and unstructured data, low latency, and flexible data models. This can be achieved by relaxing some of the data consistency restrictions of other databases. Following are some characteristics of the NoSQL database:"
+  },
+  {
+   "t": "li",
+   "k": "4234b5fd6e3c",
+   "en": "Simple design: Unlike relational databases, NoSQL doesn’t require dealing with the impedance mismatch—for example, storing all the employees’ data in one document instead of multiple tables that require join operations. This strategy makes it simple and easier to write less code, debug, and maintain.",
+   "lead": "Simple design"
+  },
+  {
+   "t": "li",
+   "k": "bc5dfa890737",
+   "en": "Horizontal scaling: Primarily, NoSQL is preferred due to its ability to run databases on a large cluster. This solves the problem when the number of concurrent users increases. NoSQL makes it easier to scale out since the data related to a specific employee is stored in one document instead of multiple tables over nodes. NoSQL databases often spread data across multiple nodes and balance data and queries across nodes automatically. In case of a node failure, it can be transparently replaced without any application disruption.",
+   "lead": "Horizontal scaling"
+  },
+  {
+   "t": "li",
+   "k": "74618d1a24bc",
+   "en": "Availability: To enhance the availability of data, node replacement can be performed without application downtime. Most of the non-relational databases’ variants support data replication to ensure high availability and disaster recovery.",
+   "lead": "Availability"
+  },
+  {
+   "t": "li",
+   "k": "c05d21f597b3",
+   "en": "Support for unstructured and semi-structured data: Many NoSQL databases work with data that doesn’t have schema at the time of database configuration or data writes. For example, document databases are structureless; they allow documents (JSON, XML, BSON, and so on) to have different fields. For example, one JSON document can have fewer fields than the other.",
+   "lead": "Support for unstructured and semi-structured data"
+  },
+  {
+   "t": "li",
+   "k": "6ea7c7764e2e",
+   "en": "Cost: Licenses for many RDBMSs are pretty expensive, while many NoSQL databases are open source and freely available. Similarly, some RDBMSs rely on costly proprietary hardware and storage systems, while NoSQL databases usually use clusters of cheap commodity servers.",
+   "lead": "Cost"
+  },
+  {
+   "t": "h3",
+   "k": "f1d67f0f2428",
+   "en": "Types of NoSQL databases"
+  },
+  {
+   "t": "p",
+   "k": "4bb2ad7febc4",
+   "en": "Various types of NoSQL databases are described below:"
+  },
+  {
+   "t": "h3",
+   "k": "b19d8446358a",
+   "en": "Key-value database"
+  },
+  {
+   "t": "p",
+   "k": "8c671c48fab8",
+   "en": "Key-value databases use key-value methods like hash tables to store data in key-value pairs. We can see this depicted in the figure a couple of paragraphs below. Here, the key serves as a unique or primary key, and the values can be anything ranging from simple scalar values to complex objects. These databases allow easy partitioning and horizontal scaling of the data. Some popular key-value databases include Amazon DynamoDB, Redis, and Memcached DB."
+  },
+  {
+   "t": "p",
+   "k": "f3cc1f5f5ec7",
+   "en": "Use case: Key-value databases are efficient for session-oriented applications."
+  },
+  {
+   "t": "p",
+   "k": "41cca98b97a4",
+   "en": "Session oriented-applications, such as web applications, store users’ data in the main memory or in a database during a session. This data may include user profile information, recommendations, targeted promotions, discounts, and more. A unique ID (a key) is assigned to each user’s session for easy access and storage. Therefore, a better choice to store such data is the key-value database."
+  },
+  {
+   "t": "p",
+   "k": "9d39d74269a5",
+   "en": "The following figure shows an example of a key-value database. The Product ID and Type of the item are collectively considered as the primary key. This is considered as a key for this key-value database. Moreover, the schema for storing the item attributes is defined based on the nature of the item and the number of attributes it possesses."
+  },
+  {
+   "t": "h3",
+   "k": "81db9584d95f",
+   "en": "Document database"
+  },
+  {
+   "t": "p",
+   "k": "1dca0a83b502",
+   "en": "A document database is designed to store and retrieve documents in formats like XML, JSON, BSON, and so on. These documents are composed of a hierarchical tree data structure that can include maps, collections, and scalar values. Documents in this type of database may have varying structures and data. MongoDB and Google Cloud Firestore are examples of document databases."
+  },
+  {
+   "t": "p",
+   "k": "b93b1e115b48",
+   "en": "Use case: Document databases are suitable for unstructured catalog data, like JSON files or other complex structured hierarchical data. For example, in e-commerce applications, a product has thousands of attributes, which is unfeasible to store in a relational database due to its impact on the reading performance. Here comes the role of a document database, which can efficiently store each attribute in a single file for easy management and faster reading speed. Moreover, it’s also a good option for content management applications, such as blogs and video platforms. An entity required for the application is stored as a single document in such applications."
+  },
+  {
+   "t": "p",
+   "k": "e5ab8825daf2",
+   "en": "The following example shows data stored in a JSON document. This data is about a person. Various attributes are stored in the file, including id, name, email, and so on."
+  },
+  {
+   "t": "code",
+   "k": "e72eabfea3e0",
+   "en": "1{{ \"id\": 1001, \"id\": 1001, 2 \"name\": \"Brown\", 3 \"title\": \"Mr.\", 4 \"email\": \"brown@anyEmail.com\", 5 \"cell\": \"123-465-9999\", 6 \"likes\": [ 7 \"designing\", 8 \"cycling\", 9 \"skiing\"], 10 \"businesses\": [ 11 { \"name\": \"ABC co.\", 12 \"partner\": \"Vike\", 13 \"status\": \"Bankrupt\", 14 \"date_founded\": { 15 \"$date\": \"2021-12-10\" } }]}"
+  },
+  {
+   "t": "h3",
+   "k": "cb47d4cff787",
+   "en": "Graph database"
+  },
+  {
+   "t": "p",
+   "k": "520c04c83829",
+   "en": "Graph databases use the graph data structure to store data, where nodes represent entities, and edges show relationships between entities. The organization of nodes based on relationships leads to interesting patterns between the nodes. This database allows us to store the data once and then interpret it differently based on relationships. Popular graph databases include Neo4J, OrientDB, and InfiniteGraph. Graph data is kept in store files for persistent storage. Each of the files contains data for a specific part of the graph, such as nodes, links, properties, and so on."
+  },
+  {
+   "t": "p",
+   "k": "383cc151ce28",
+   "en": "In the following figure, some data is stored using a graph data structure in nodes connected to each other via edges representing relationships between nodes."
+  },
+  {
+   "t": "p",
+   "k": "0d042d87bb93",
+   "en": "Each node has some properties, like Name, ID, and Age. The node having ID: 2 has the Name of James and Age of 29 years."
+  },
+  {
+   "t": "p",
+   "k": "5fa0547b753c",
+   "en": "Use case: Graph databases can be used in social applications and provide interesting facts and figures among different kinds of users and their activities."
+  },
+  {
+   "t": "p",
+   "k": "6b7a4d1524c7",
+   "en": "The focus of graph databases is to store data and pave the way to drive analyses and decisions based on relationships between entities. The nature of graph databases makes them suitable for various applications, such as data regulation and privacy, machine learning research, financial services-based applications, and many more."
+  },
+  {
+   "t": "h3",
+   "k": "7090286f6508",
+   "en": "Columnar database"
+  },
+  {
+   "t": "p",
+   "k": "f92ed154fc3f",
+   "en": "Columnar databases store data in columns instead of rows. They enable access to all entries in the database column quickly and efficiently. Popular columnar databases include Cassandra, HBase, Hypertable, and Amazon Redshift."
+  },
+  {
+   "t": "p",
+   "k": "5ab6dae0c7e1",
+   "en": "Use case: Columnar databases are efficient for a large number of aggregation and data analytics queries. It drastically reduces the disk I/O requirements and the amount of data required to load from the disk. For example, in applications related to financial institutions, there’s a need to sum the financial transaction over a period of time. Columnar databases make this operation quicker by just reading the column for the amount of money, ignoring other attributes of customers."
+  },
+  {
+   "t": "h3",
+   "k": "71184a42e9d1",
+   "en": "Drawbacks of NoSQL databases Lack of standardization"
+  },
+  {
+   "t": "p",
+   "k": "f0bce180029e",
+   "en": "NoSQL doesn’t follow any specific standard, like how relational databases follow relational algebra. Porting applications from one type of NoSQL database to another might be a challenge."
+  },
+  {
+   "t": "h3",
+   "k": "028944e40958",
+   "en": "Consistency"
+  },
+  {
+   "t": "p",
+   "k": "7b3cc67058b1",
+   "en": "NoSQL databases provide different products based on the specific trade-offs between consistency and availability when failures can happen. We won’t have strong data integrity, like primary and referential integrities in a relational database. Data might not be strongly consistent but slowly converging using a weak model like eventual consistency."
+  },
+  {
+   "t": "h2",
+   "k": "aa1ca1ca055b",
+   "en": "Choose the right database"
+  },
+  {
+   "t": "h2",
+   "k": "8d4fc3c96a5d",
+   "en": "Relational and Non-relational Databases"
+  },
+  {
+   "t": "p",
+   "k": "efc9e95f93e7",
+   "en": "Relational DatabaseNon-relational Database If the data to be stored is If the data to be stored is structuredunstructured If ACID properties are requiredIf there’s a need to serialize and deserialize data If the size of the data is relatively If the size of the data to be stored small and can fit on a node)is large Note: When NoSQL databases first came into being, they were drastically different to program and use as compared to traditional databases. Though, due to extensive research in academia and industry over the last many years, the programmer-facing differences between NoSQL and traditional stores are blurring. We might be using the same SQL constructs to talk to a NoSQL store and get a similar level of performance and consistency as a traditional store. Google’s Cloud Spanner is one such database that’s geo-replicated with automatic horizontal sharding ability and high-speed global snapshots of data."
+  },
+  {
+   "t": "h2",
+   "k": "d501d3ec02af",
+   "en": "Quiz"
+  },
+  {
+   "t": "p",
+   "k": "b0b54873a60d",
+   "en": "Test your knowledge of the different types of databases via a quiz."
+  },
+  {
+   "t": "p",
+   "k": "27a708b37945",
+   "en": "Which database should we use when we have unstructured data and there’s a need for high performance?"
+  },
+  {
+   "t": "h1",
+   "k": "c58761f981c8",
+   "en": "Data Replication"
+  },
+  {
+   "t": "p",
+   "k": "84dbdd6f4963",
+   "en": "Understand the models through which data is replicated across several nodes."
+  },
+  {
+   "t": "p",
+   "k": "a2ae7bb40a51",
+   "en": "We need the following characteristics from our data store:"
+  },
+  {
+   "t": "p",
+   "k": "0b75ede93c3b",
+   "en": "Availability under faults (failure of some disk, nodes, and network and power outages)."
+  },
+  {
+   "t": "p",
+   "k": "f3a149ec29b6",
+   "en": "Scalability (with increasing reads, writes, and other operations)."
+  },
+  {
+   "t": "p",
+   "k": "52c0d9e292b7",
+   "en": "Performance (low latency and high throughput for the clients)."
+  },
+  {
+   "t": "p",
+   "k": "e23428008ba9",
+   "en": "It’s challenging, or even impossible, to achieve the above characteristics on a single node."
+  },
+  {
+   "t": "h2",
+   "k": "7ddb9625261f",
+   "en": "Replication"
+  },
+  {
+   "t": "p",
+   "k": "84839cbe9167",
+   "en": "Replication refers to keeping multiple copies of the data at various nodes (preferably geographically distributed) to achieve availability, scalability, and performance. In this lesson, we assume that a single node is enough to hold our entire data. We won’t use this assumption while discussing the partitioning of data in multiple nodes. Often, the concepts of replication and partitioning go together."
+  },
+  {
+   "t": "p",
+   "k": "621f285b791e",
+   "en": "However, with many benefits, like availability, replication comes with its complexities. Replication is relatively simple if the replicated data doesn’t require frequent changes. The main problem in replication arises when we have to maintain changes in the replicated data over time."
+  },
+  {
+   "t": "p",
+   "k": "88dbc68e9d8d",
+   "en": "Additional complexities that could arise due to replication are as follows:"
+  },
+  {
+   "t": "p",
+   "k": "460f74d8e23f",
+   "en": "How do we keep multiple copies of data consistent with each other?"
+  },
+  {
+   "t": "p",
+   "k": "4b15f8c93f89",
+   "en": "How do we deal with failed replica nodes?"
+  },
+  {
+   "t": "p",
+   "k": "2ae81e78db53",
+   "en": "Should we replicate synchronously or asynchronously?"
+  },
+  {
+   "t": "p",
+   "k": "4eaa91fcc8bd",
+   "en": "How do we deal with replication lag in case of asynchronous replication?"
+  },
+  {
+   "t": "p",
+   "k": "08146d3c5bf8",
+   "en": "How do we handle concurrent writes?"
+  },
+  {
+   "t": "p",
+   "k": "c2972de5f210",
+   "en": "What consistency model needs to be exposed to the end programmers?"
+  },
+  {
+   "t": "p",
+   "k": "a4ed9b48a118",
+   "en": "We’ll explore the answer to these questions in this lesson."
+  },
+  {
+   "t": "p",
+   "k": "9dc553071cc6",
+   "en": "Before we explain the different types of replication, let’s understand the synchronous and asynchronous approaches of replication."
+  },
+  {
+   "t": "h2",
+   "k": "b40ac3bef8c2",
+   "en": "Synchronous versus asynchronous replication"
+  },
+  {
+   "t": "p",
+   "k": "44a68254bc88",
+   "en": "There are two ways to disseminate changes to the replica nodes:"
+  },
+  {
+   "t": "p",
+   "k": "6f3375679970",
+   "en": "Synchronous replication Asynchronous replication In synchronous replication, the primary node waits for acknowledgments from secondary nodes about updating the data. After receiving acknowledgment from all secondary nodes, the primary node reports success to the client. Whereas in asynchronous replication, the primary node doesn’t wait for the acknowledgment from the secondary nodes and reports success to the client after updating itself."
+  },
+  {
+   "t": "p",
+   "k": "f6185ffafb35",
+   "en": "The advantage of synchronous replication is that all the secondary nodes are completely up to date with the primary node. However, there’s a disadvantage to this approach. If one of the secondary nodes doesn’t acknowledge due to failure or fault in the network, the primary node would be unable to acknowledge the client until it receives the successful acknowledgment from the crashed node."
+  },
+  {
+   "t": "p",
+   "k": "ea510c034475",
+   "en": "This causes high latency in the response from the primary node to the client."
+  },
+  {
+   "t": "p",
+   "k": "740b3d9896de",
+   "en": "On the other hand, the advantage of asynchronous replication is that the primary node can continue its work even if all the secondary nodes are down."
+  },
+  {
+   "t": "p",
+   "k": "4cf1823af339",
+   "en": "However, if the primary node fails, the writes that weren’t copied to the secondary nodes will be lost."
+  },
+  {
+   "t": "p",
+   "k": "59538910aabb",
+   "en": "The above paragraph explains a trade-off between data consistency and availability when different components of the system can fail."
+  },
+  {
+   "t": "h2",
+   "k": "bde756698aeb",
+   "en": "Data replication models"
+  },
+  {
+   "t": "p",
+   "k": "6e7f3e73fb6d",
+   "en": "Now, let’s discuss various mechanisms of data replication. In this section, we’ll discuss the following models along with their strengths and weaknesses:"
+  },
+  {
+   "t": "h3",
+   "k": "e007ff51d0f0",
+   "en": "Single leader/primary-secondary replication"
+  },
+  {
+   "t": "p",
+   "k": "21d521b88845",
+   "en": "In primary-secondary replication, data is replicated across multiple nodes."
+  },
+  {
+   "t": "p",
+   "k": "af1538f065c7",
+   "en": "One node is designated as the primary. It’s responsible for processing any writes to data stored on the cluster. It also sends all the writes to the secondary nodes and keeps them in sync."
+  },
+  {
+   "t": "p",
+   "k": "8b007dfea557",
+   "en": "Primary-secondary replication is appropriate when our workload is read-heavy."
+  },
+  {
+   "t": "p",
+   "k": "b1b3381dadcc",
+   "en": "To better scale with increasing readers, we can add more followers and distribute the read load across the available followers. However, replicating data to many followers can make a primary bottleneck. Additionally, primary-secondary replication is inappropriate if our workload is write-heavy."
+  },
+  {
+   "t": "p",
+   "k": "e25e48f6eb0e",
+   "en": "Another advantage of primary-secondary replication is that it’s read resilient."
+  },
+  {
+   "t": "p",
+   "k": "05c2dfa2d206",
+   "en": "Secondary nodes can still handle read requests in case of primary node failure."
+  },
+  {
+   "t": "p",
+   "k": "906e89eba826",
+   "en": "Therefore, it’s a helpful approach for read-intensive applications."
+  },
+  {
+   "t": "p",
+   "k": "495509927b56",
+   "en": "Point to Ponder What happens when the primary node fails?"
+  },
+  {
+   "t": "p",
+   "k": "f56b542bdf6d",
+   "en": "Hide Answer In case of failure of the primary node, a secondary node can be appointed as a primary node, which speeds up the process of recovering the initial primary node. There are two approaches to select the new primary node: manual and automatic."
+  },
+  {
+   "t": "p",
+   "k": "4bed7a368f1f",
+   "en": "In a manual approach, an operator decides which node should be the primary node and notifies all secondary nodes."
+  },
+  {
+   "t": "p",
+   "k": "52d9e95ccfa1",
+   "en": "In an automatic approach, when secondary nodes find out that the primary node has failed, they appoint the new primary node by conducting an election known as a leader election."
+  },
+  {
+   "t": "h3",
+   "k": "f4358bb2ca7d",
+   "en": "Primary-secondary replication methods"
+  },
+  {
+   "t": "p",
+   "k": "74fef836f6b1",
+   "en": "There are many different replication methods in primary-secondary replication:"
+  },
+  {
+   "t": "h3",
+   "k": "f33d2568ac21",
+   "en": "Statement-based replication"
+  },
+  {
+   "t": "h3",
+   "k": "6b049cff16f9",
+   "en": "Write-ahead log (WAL) shipping"
+  },
+  {
+   "t": "p",
+   "k": "f9c480410a89",
+   "en": "In the write-ahead log (WAL) shipping approach, the primary node saves the query before executing it in a log file known as a write-ahead log file. It then uses these logs to copy the data onto the secondary nodes. This is used in PostgreSQL and Oracle. The problem with WAL is that it only defines data at a very low level. It’s tightly coupled with the inner structure of the database engine, which makes upgrading software on the leader and followers complicated."
+  },
+  {
+   "t": "h3",
+   "k": "a72507312f3a",
+   "en": "Logical (row-based) log replication"
+  },
+  {
+   "t": "p",
+   "k": "8cf286f63823",
+   "en": "In the logical (row-based) log replication approach, all secondary nodes replicate the actual data changes. For example, if a row is inserted or deleted in a table, the secondary nodes will replicate that change in that specific table. The binary log records change to database tables on the primary node at the record level. To create a replica of the primary node, the secondary node reads this data and changes its records accordingly. Row-based replication doesn’t have the same difficulties as WAL because it doesn’t require information about data layout inside the database engine."
+  },
+  {
+   "t": "h3",
+   "k": "3946fdf51a90",
+   "en": "Multi-leader replication"
+  },
+  {
+   "t": "p",
+   "k": "960088bb76f1",
+   "en": "As discussed above, single leader replication using asynchronous replication has a drawback. There’s only one primary node, and all the writes have to go through it, which limits the performance. In case of failure of the primary node, the secondary nodes may not have the updated database."
+  },
+  {
+   "t": "p",
+   "k": "8632e75c2ea4",
+   "en": "This kind of replication is quite useful in applications in which we can continue work even if we’re offline—for example, a calendar application in which we can set our meetings even if we don’t have access to the internet. Once we’re online, it replicates its changes from our local database (our mobile phone or laptop acts as a primary node) to other nodes."
+  },
+  {
+   "t": "h3",
+   "k": "ae214513a0d2",
+   "en": "Conflict"
+  },
+  {
+   "t": "p",
+   "k": "c4675e860dec",
+   "en": "Multi-leader replication gives better performance and scalability than single leader replication, but it also has a significant disadvantage. Since all the primary nodes concurrently deal with the write requests, they may modify the same data, which can create a conflict between them. For example, suppose the same data is edited by two clients simultaneously. In that case, their writes will be successful in their associated primary nodes, but when they reach the other primary nodes asynchronously, it creates a conflict."
+  },
+  {
+   "t": "h3",
+   "k": "c18134c44881",
+   "en": "Handle conflicts"
+  },
+  {
+   "t": "p",
+   "k": "a96e08d58782",
+   "en": "Conflicts can result in different data at different nodes. These should be handled efficiently without losing any data. Let’s discuss some of the approaches to handle conflicts:"
+  },
+  {
+   "t": "h3",
+   "k": "847c6a3a5580",
+   "en": "Conflict avoidance"
+  },
+  {
+   "t": "p",
+   "k": "8673fbe8baee",
+   "en": "A simple strategy to deal with conflicts is to prevent them from happening in the first place. Conflicts can be avoided if the application can verify that all writes for a given record go via the same leader."
+  },
+  {
+   "t": "p",
+   "k": "1b8fa582c754",
+   "en": "However, the conflict may still occur if a user moves to a different location and is now near a different data center. If that happens, we need to reroute the traffic."
+  },
+  {
+   "t": "p",
+   "k": "a4dbd61439b9",
+   "en": "In such scenarios, the conflict avoidance approach fails and results in concurrent writes."
+  },
+  {
+   "t": "h3",
+   "k": "cc268a8d4fc5",
+   "en": "Last-write-wins"
+  },
+  {
+   "t": "p",
+   "k": "9a26281ed251",
+   "en": "Using their local clock, all nodes assign a timestamp to each update. When a conflict occurs, the update with the latest timestamp is selected."
+  },
+  {
+   "t": "p",
+   "k": "406e5caa2d74",
+   "en": "This approach can also create difficulty because the clock synchronization across nodes is challenging in distributed systems. There’s clock skew that can result in data loss."
+  },
+  {
+   "t": "h3",
+   "k": "ef34fe45d271",
+   "en": "Custom logic"
+  },
+  {
+   "t": "h3",
+   "k": "a7cd28fedffd",
+   "en": "Multi-leader replication topologies"
+  },
+  {
+   "t": "h3",
+   "k": "c540be8673c9",
+   "en": "Peer-to-peer/leaderless replication"
+  },
+  {
+   "t": "p",
+   "k": "0eeb65be09e3",
+   "en": "In primary-secondary replication, the primary node is a bottleneck and a single point of failure. Moreover, it helps to achieve read scalability but fails in providing write scalability. The peer-to-peer replication model resolves these problems by not having a single primary node. All the nodes have equal weightage and can accept reads and writes requests. Amazon popularized such a scheme in their DynamoDB data store."
+  },
+  {
+   "t": "p",
+   "k": "24275af1e1c3",
+   "en": "This is because when several nodes accept write requests, it may lead to concurrent writes. A helpful approach used for solving write-write inconsistency is called quorums."
+  },
+  {
+   "t": "h3",
+   "k": "822614f5452a",
+   "en": "Quorums"
+  },
+  {
+   "t": "p",
+   "k": "d349ab399b7f",
+   "en": "Let’s suppose we have three nodes. If at least two out of three nodes are guaranteed to return successful updates, it means only one node has failed. This means that if we read from two nodes, at least one of them will have the updated version, and our system can continue working."
+  },
+  {
+   "t": "p",
+   "k": "abbbdd0e2332",
+   "en": "If we have n nodes, then every write must be updated in at least w nodes to be considered a success, and we must read from r nodes. We’ll get an updated value from reading as long as w+r>n because at least one of the nodes must have an updated write from which we can read. Quorum reads and writes adhere to these r and w values. These n, w, and r are configurable in Dynamo-style databases."
+  },
+  {
+   "t": "p",
+   "k": "b4d7c5b749eb",
+   "en": "For more details on the topic of Quorum, refer to the following links:"
+  },
+  {
+   "t": "p",
+   "k": "f049401c5474",
+   "en": "What is Quorum?"
+  },
+  {
+   "t": "p",
+   "k": "6a3ddd63888e",
+   "en": "What is Quorum in distributed systems?"
+  },
+  {
+   "t": "p",
+   "k": "8a00a8ae99a5",
+   "en": "Which replication mechanism is the most appropriate (high throughput, low latency to client, low implementation overhead) when our workload is read-heavy?"
+  },
+  {
+   "t": "h1",
+   "k": "1699bc7bd8fa",
+   "en": "Data Partitioning"
+  },
+  {
+   "t": "p",
+   "k": "8b8d9162d3b8",
+   "en": "Learn about data partitioning models along with their pros and cons."
+  },
+  {
+   "t": "h2",
+   "k": "9191fca7b1e8",
+   "en": "Why do we partition data?"
+  },
+  {
+   "t": "p",
+   "k": "d756a865e886",
+   "en": "Data is an asset for any organization. Increasing data and concurrent read/write traffic to the data puts scalability pressure on traditional databases. As a result, the latency and throughput are affected. Traditional databases are attractive due to their properties such as range queries, secondary indices, and transactions with the ACID properties."
+  },
+  {
+   "t": "p",
+   "k": "0358b4bac4d0",
+   "en": "At some point, a single node-based database isn’t enough to tackle the load. We might need to distribute the data over many nodes but still export all the nice properties of relational databases. In practice, it has proved challenging to provide single-node database-like properties over a distributed database."
+  },
+  {
+   "t": "p",
+   "k": "75b5a2be4828",
+   "en": "One solution is to move data to a NoSQL-like system. However, the historical codebase and its close cohesion with traditional databases make it an expensive problem to tackle."
+  },
+  {
+   "t": "p",
+   "k": "c3874232b51b",
+   "en": "Organizations might scale traditional databases by using a third-party solution."
+  },
+  {
+   "t": "p",
+   "k": "9fd0240da188",
+   "en": "But often, integrating a third-party solution has its complexities. More importantly, there are abundant opportunities to optimize for the specific problem at hand and get much better performance than a general-purpose solution."
+  },
+  {
+   "t": "p",
+   "k": "ef6bf1104c7d",
+   "en": "Data partitioning (or sharding) enables us to use multiple nodes where each node manages some part of the whole data. To handle increasing query rates and data amounts, we strive for balanced partitions and balanced read/write load."
+  },
+  {
+   "t": "p",
+   "k": "b9aa79434ee3",
+   "en": "We’ll discuss different ways to partition data, related challenges, and their solutions in this lesson."
+  },
+  {
+   "t": "h2",
+   "k": "8023730938af",
+   "en": "Sharding"
+  },
+  {
+   "t": "p",
+   "k": "a1c50415a21d",
+   "en": "To divide load among multiple nodes, we need to partition the data by a phenomenon known as partitioning or sharding. In this approach, we split a large dataset into smaller chunks of data stored at different nodes on our network."
+  },
+  {
+   "t": "p",
+   "k": "9af5ac518978",
+   "en": "The partitioning must be balanced so that each partition receives about the same amount of data. If partitioning is unbalanced, the majority of queries will fall into a few partitions. Partitions that are heavily loaded will create a system bottleneck. The efficacy of partitioning will be harmed because a significant portion of data retrieval queries will be sent to the nodes that carry the highly congested partitions. Such partitions are known as hotspots. Generally, we use the following two ways to shard the data:"
+  },
+  {
+   "t": "h3",
+   "k": "89a3ee2efeae",
+   "en": "Vertical sharding"
+  },
+  {
+   "t": "p",
+   "k": "33d7677854cb",
+   "en": "We can put different tables in various database instances, which might be running on a different physical server. We might break a table into multiple tables so that some columns are in one table while the rest are in the other. We should be careful if there are joins between multiple tables. We may like to keep such tables together on one shard."
+  },
+  {
+   "t": "p",
+   "k": "e0d1a699bc7a",
+   "en": "Often, vertical sharding is used to increase the speed of data retrieval from a table consisting of columns with very wide text or a binary large object (blob). In this case, the column with large text or a blob is split into a different table."
+  },
+  {
+   "t": "p",
+   "k": "1cc52758c875",
+   "en": "As shown in the figure a couple paragraphs below, the Employee table is divided into two tables: a reduced Employee table and an EmployeePicture table. The EmployeePicture table has just two columns, EmployeeID and Picture, separated from the original table. Moreover, the primary key EmployeeID of the Employee table is added in both partitioned tables. This makes the data read and write easier, and the reconstruction of the table is performed efficiently."
+  },
+  {
+   "t": "p",
+   "k": "be2d7ad67e93",
+   "en": "Note: Creating shards by moving specific tables of a database around is also a form of vertical sharding. Usually, those tables are put in the same shard because they often appear together in queries, for example, for joins. We will see an example of such a use-case ahead in the course."
+  },
+  {
+   "t": "h3",
+   "k": "205c162d7af2",
+   "en": "Horizontal sharding"
+  },
+  {
+   "t": "p",
+   "k": "4d0b1f6b6fce",
+   "en": "At times, some tables in the databases become too big and affect read/write latency. Horizontal sharding or partitioning is used to divide a table into multiple tables by splitting data row-wise, as shown in the figure in the next section. Each partition of the original table distributed over database servers is called a shard. Usually, there are two strategies available:"
+  },
+  {
+   "t": "p",
+   "k": "662eb98739d3",
+   "en": "Key-range based sharding Hash based sharding"
+  },
+  {
+   "t": "h3",
+   "k": "d76b5809829b",
+   "en": "Key-range based sharding"
+  },
+  {
+   "t": "p",
+   "k": "67f87007fa81",
+   "en": "In the key-range based sharding, each partition is assigned a continuous range of keys."
+  },
+  {
+   "t": "p",
+   "k": "cb9f02b17787",
+   "en": "In the following figure, horizontal partitioning on the Invoice table is performed using the key-range based sharding with Customer_Id as the partition key. The two different colored tables represent the partitions."
+  },
+  {
+   "t": "p",
+   "k": "1ae82a905dee",
+   "en": "Sometimes, a database consists of multiple tables bound by foreign key relationships. In such a case, the horizontal partition is performed using the same partition key on all tables in a relation. Tables (or subtables) that belong to the same partition key are distributed to one database shard. The following figure shows that several tables with the same partition key are placed in a single database shard:"
+  },
+  {
+   "t": "p",
+   "k": "8ad94957f0d1",
+   "en": "The basic design techniques used in multi-table sharding are as follows:"
+  },
+  {
+   "t": "p",
+   "k": "e4fa587728e6",
+   "en": "There’s a partition key in the Customer mapping table. This table resides on each shard and stores the partition keys used in the shard. Applications create a mapping logic between the partition keys and database shards by reading this table from all shards to make the mapping efficient."
+  },
+  {
+   "t": "p",
+   "k": "bf27160355db",
+   "en": "Sometimes, applications use advanced algorithms to determine the location of a partition key belonging to a specific shard."
+  },
+  {
+   "t": "p",
+   "k": "51c6a5050db8",
+   "en": "The partition key column, Customer_Id, is replicated in all other tables as a data isolation point. It has a trade-off between an impact on increased storage and locating the desired shards efficiently. Apart from this, it’s helpful for data and workload distribution to different database shards."
+  },
+  {
+   "t": "p",
+   "k": "13e2afb61ea4",
+   "en": "The data routing logic uses the partition key at the application tier to map queries specified for a database shard."
+  },
+  {
+   "t": "p",
+   "k": "ca488b6a546a",
+   "en": "Primary keys are unique across all database shards to avoid key collision during data migration among shards and the merging of data in the online analytical processing (OLAP) environment."
+  },
+  {
+   "t": "p",
+   "k": "85c1fa89fc8c",
+   "en": "The column Creation_date serves as the data consistency point, with an assumption that the clocks of all nodes are synchronized. This column is used as a criterion for merging data from all database shards into the global view when essential."
+  },
+  {
+   "t": "h3",
+   "k": "09f5089cefc8",
+   "en": "Advantages"
+  },
+  {
+   "t": "p",
+   "k": "4667bbf30201",
+   "en": "Using key-range-based sharding method, the range-query-based scheme is easy to implement. We precisely know where (which node, which shard) to look for a specific range of keys."
+  },
+  {
+   "t": "p",
+   "k": "acdd2ffc93e0",
+   "en": "Range queries can be performed using the partitioning keys, and those can be kept in partitions in sorted order. How exactly such a sorting happens over time as new data comes in is implementation specific."
+  },
+  {
+   "t": "h3",
+   "k": "81d545cb9cb8",
+   "en": "Disadvantages"
+  },
+  {
+   "t": "p",
+   "k": "d959ba8d4234",
+   "en": "Range queries can’t be performed using keys other than the partitioning key."
+  },
+  {
+   "t": "p",
+   "k": "a9fd23f70a14",
+   "en": "If keys aren’t selected properly, some nodes may have to store more data due to an uneven distribution of the traffic."
+  },
+  {
+   "t": "h3",
+   "k": "fa3b6479e629",
+   "en": "Hash-based sharding"
+  },
+  {
+   "t": "p",
+   "k": "f546f84d633d",
+   "en": "Hash-based sharding uses a hash-like function on an attribute, and it produces different values based on which attribute the partitioning is performed. The main concept is to use a hash function on the key to get a hash value and then mod by the number of partitions. Once we’ve found an appropriate hash function for keys, we may give each partition a range of hashes (rather than a range of keys). Any key whose hash occurs inside that range will be kept in that partition."
+  },
+  {
+   "t": "p",
+   "k": "02360581b06a",
+   "en": "In the illustration below, we use a hash function of Value mod=n. The n is the number of nodes, which is four. We allocate keys to nodes by checking the mod for each key. Keys with a mod value of 2 are allocated to node 2. Keys with a mod value of 1 are allocated to node 1. Keys with a mod value of 3 are allocated to node 3. Because there’s no key with a mod value of 0, node 0 is left vacant."
+  },
+  {
+   "t": "h3",
+   "k": "09f5089cefc8",
+   "en": "Advantages"
+  },
+  {
+   "t": "p",
+   "k": "c57665f84399",
+   "en": "Keys are uniformly distributed across the nodes."
+  },
+  {
+   "t": "h3",
+   "k": "81d545cb9cb8",
+   "en": "Disadvantages"
+  },
+  {
+   "t": "p",
+   "k": "91fbf4f31634",
+   "en": "We can’t perform range queries with this technique. Keys will be spread over all partitions."
+  },
+  {
+   "t": "li",
+   "k": "63e9cb32cfdf",
+   "en": "Note: How many shards per database?",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "bed9d4617007",
+   "en": "Empirically, we can determine how much each node can serve with acceptable performance. It can help us find out the maximum amount of data that we would like to keep on any one node. For example, if we find out that we can put a maximum of 50 GB of data on one node, we have the following:"
+  },
+  {
+   "t": "p",
+   "k": "7849fd513c21",
+   "en": "Database size = 10 TB Size of a single shard = 50 GB Number of shards the database should be distributed in = 10 TB/50 GB = 200 shards"
+  },
+  {
+   "t": "h3",
+   "k": "ace34de1abce",
+   "en": "Consistent hashing"
+  },
+  {
+   "t": "p",
+   "k": "e5a0dbda832c",
+   "en": "Consistent hashing assigns each server or item in a distributed hash table a place on an abstract circle, called a ring, irrespective of the number of servers in the table. This permits servers and objects to scale without compromising the system’s overall performance."
+  },
+  {
+   "t": "h3",
+   "k": "0bc21d26ab60",
+   "en": "Advantages of consistent hashing"
+  },
+  {
+   "t": "p",
+   "k": "a252d2a0971e",
+   "en": "It’s easy to scale horizontally."
+  },
+  {
+   "t": "p",
+   "k": "8b8c292d9107",
+   "en": "It increases the throughput and improves the latency of the application."
+  },
+  {
+   "t": "h3",
+   "k": "71245ca8537b",
+   "en": "Disadvantages of consistent hashing"
+  },
+  {
+   "t": "p",
+   "k": "c938fbc594d3",
+   "en": "Randomly assigning nodes in the ring may cause non-uniform distribution."
+  },
+  {
+   "t": "h3",
+   "k": "d7a030f950cf",
+   "en": "Rebalance the partitions"
+  },
+  {
+   "t": "p",
+   "k": "878d0e08279f",
+   "en": "Query load can be imbalanced across the nodes due to many reasons, including the following:"
+  },
+  {
+   "t": "p",
+   "k": "ba4ad201ddcd",
+   "en": "The distribution of the data isn’t equal."
+  },
+  {
+   "t": "p",
+   "k": "074b682ebfd6",
+   "en": "There’s too much load on a single partition."
+  },
+  {
+   "t": "p",
+   "k": "bb1d6095b489",
+   "en": "There’s an increase in the query traffic, and we need to add more nodes to keep up."
+  },
+  {
+   "t": "p",
+   "k": "2c3f110828d4",
+   "en": "We can apply the following strategies to rebalance partitions."
+  },
+  {
+   "t": "h3",
+   "k": "0ca8daa05a0d",
+   "en": "Avoid hash mod n"
+  },
+  {
+   "t": "p",
+   "k": "3c1cd1a16bfd",
+   "en": "Usually, we avoid the hash of a key for partitioning (we used such a scheme to explain the concept of hashing in simple terms earlier). The problem with the addition or removal of nodes in the case of hashmodn is that every node’s partition number changes and a lot of data moves. For example, assume we have hash(key)=1235. If we have five nodes at the start, the key will start on node 1 (1235 mod 5=0). Now, if a new node is added, the key would have to be moved to node 6 (1235 mod 6=5), and so on. This moving of keys from one node to another makes rebalancing costly."
+  },
+  {
+   "t": "h3",
+   "k": "4784a6e2d3af",
+   "en": "Fixed number of partitions"
+  },
+  {
+   "t": "p",
+   "k": "f18ea9adfd67",
+   "en": "In this approach, the number of partitions to be created is fixed at the time when we set our database up. We create a higher number of partitions than the nodes and assign these partitions to nodes. So, when a new node is added to the system, it can take a few partitions from the existing nodes until the partitions are equally divided."
+  },
+  {
+   "t": "p",
+   "k": "9db57d1ef724",
+   "en": "There’s a downside to this approach. The size of each partition grows with the total amount of data in the cluster since all the partitions contain a small part of the total data. If a partition is very small, it will result in too much overhead because we may have to make a large number of small-sized partitions, each costing us some overhead. If the partition is very large, rebalancing the nodes and recovering from node failures will be expensive. It’s very important to choose the right number of partitions. A fixed number of partitions is used in Elasticsearch, Riak, and many more."
+  },
+  {
+   "t": "h3",
+   "k": "46dbfa7c9147",
+   "en": "Dynamic partitioning"
+  },
+  {
+   "t": "p",
+   "k": "162ee9ff7778",
+   "en": "In this approach, when the size of a partition reaches the threshold, it’s split equally into two partitions. One of the two split partitions is assigned to one node and the other one to another node. In this way, the load is divided equally."
+  },
+  {
+   "t": "p",
+   "k": "b067ce31c596",
+   "en": "The number of partitions adapts to the overall data amount, which is an advantage of dynamic partitioning."
+  },
+  {
+   "t": "p",
+   "k": "99c352b98d42",
+   "en": "However, there’s a downside to this approach. It’s difficult to apply dynamic rebalancing while serving the reads and writes. Dynamic rebalancing during reads and writes is challenging because it involves moving data between nodes, causing latency and potential conflicts. Ensuring data consistency (as data is simultaneously moved and accessed) and availability (potentially requiring pauses in reads/writes during rebalancing) introduces complexities that can impact system performance and reliability. This approach is used in HBase and MongoDB."
+  },
+  {
+   "t": "h3",
+   "k": "422b99884596",
+   "en": "Partition proportionally to nodes"
+  },
+  {
+   "t": "p",
+   "k": "00be039a902f",
+   "en": "In this approach, the number of partitions is proportionate to the number of nodes, which means every node has fixed partitions. In earlier approaches, the number of partitions was dependent on the size of the dataset. That isn’t the case here. While the number of nodes remains constant, the size of each partition rises according to the dataset size. However, as the number of nodes increases, the partitions shrink. When a new node enters the network, it splits a certain number of current partitions at random, then takes one half of the split and leaves the other half alone. This can result in an unfair split. This approach is used by Cassandra and Ketama."
+  },
+  {
+   "t": "p",
+   "k": "4f7380684371",
+   "en": "Point to Ponder Who performs the rebalancing? Is it automatic or manual?"
+  },
+  {
+   "t": "p",
+   "k": "06d926bd270e",
+   "en": "Hide Answer There are two ways to perform rebalancing: automatic and manual. In automatic rebalancing, there’s no administrator. The system determines when to perform the partitions and when to move data from one node to another."
+  },
+  {
+   "t": "p",
+   "k": "0b65c50d3858",
+   "en": "In manual rebalancing, the administrator determines when and how to perform the partitioning. Organizations perform rebalancing according to their needs. Some use automatic rebalancing, and some use manual."
+  },
+  {
+   "t": "h3",
+   "k": "25e1fd5b6140",
+   "en": "Partitioning and secondary indexes"
+  },
+  {
+   "t": "p",
+   "k": "c1a515af92cb",
+   "en": "We’ve discussed key-value data model partitioning schemes in which the records are retrieved with primary keys. But what if we have to access the records through secondary indexes? Secondary indexes are the records that aren’t identified by primary keys but are just a way of searching for some value. For example, the above illustration of horizontal partitioning contains the customer table, searching for all customers with the same creation year."
+  },
+  {
+   "t": "p",
+   "k": "165b2f232bbb",
+   "en": "We can partition with secondary indexes in the following ways."
+  },
+  {
+   "t": "h3",
+   "k": "cd4daa9f1daa",
+   "en": "Partition secondary indexes by document"
+  },
+  {
+   "t": "p",
+   "k": "0d260730d5c1",
+   "en": "Each partition is fully independent in this indexing approach. Each partition has its secondary indexes covering just the documents in that partition. It’s unconcerned with the data held in other partitions. If we want to write anything to our database, we need to handle that partition only containing the document ID we’re writing. It’s also known as the local index. In the illustration below, there are three partitions, each having its own identity and data. If we want to get all the customer IDs with the name John, we have to request from all partitions."
+  },
+  {
+   "t": "p",
+   "k": "aaf5dcefcdf9",
+   "en": "However, this type of querying on secondary indexes can be expensive. As a result of being restricted by the latency of a poor-performing partition, read query latencies may increase."
+  },
+  {
+   "t": "h3",
+   "k": "878f5f8ad3bb",
+   "en": "Partition secondary indexes by the term"
+  },
+  {
+   "t": "p",
+   "k": "673aeb4b2712",
+   "en": "Instead of creating a secondary index for each partition (a local index), we can make a global index for secondary terms that encompasses data from all partitions."
+  },
+  {
+   "t": "p",
+   "k": "a2ba50022ae8",
+   "en": "In the illustration below, we create indexes on names (the term on which we’re partitioning) and store all the indexes for names on separated nodes. To get the cust_id of all the customers named John, we must determine where our term index is located. The index 0 contains all the customers with names starting with “A” to “M.” The index 1 includes all the customers with names beginning with “N” to “Z.” Because John lies in index 0, we fetch a list of cust_id with the name"
+  },
+  {
+   "t": "code",
+   "k": "b1fc1b5068e0",
+   "en": "John from index 0."
+  },
+  {
+   "t": "p",
+   "k": "e05a867e7b0e",
+   "en": "Partitioning secondary indexes by the term is more read-efficient than partitioning secondary indexes by the document. This is because it only accesses the partition that contains the term. However, a single write in this approach affects multiple partitions, making the method write-intensive and complex."
+  },
+  {
+   "t": "h2",
+   "k": "836c439a84a9",
+   "en": "Request routing"
+  },
+  {
+   "t": "p",
+   "k": "50db9fef4a0d",
+   "en": "We’ve learned how to partition our data. However, one question arises here:"
+  },
+  {
+   "t": "p",
+   "k": "73b893083649",
+   "en": "How does a client know which node to connect to while making a request? The allocation of partitions to nodes varies after rebalancing. If we want to read a specific key, how do we know which IP address we need to connect to read?"
+  },
+  {
+   "t": "p",
+   "k": "807f25839ce9",
+   "en": "This problem is also known as service discovery. Following are a few approaches to this problem:"
+  },
+  {
+   "t": "p",
+   "k": "1467a0dd0f02",
+   "en": "Allow the clients to request any node in the network. If that node doesn’t contain the requested data, it forwards that request to the node that does contain the related data."
+  },
+  {
+   "t": "p",
+   "k": "a06286f45030",
+   "en": "The second approach contains a routing tier. All the requests are first forwarded to the routing tier, and it determines which node to connect to fulfill the request."
+  },
+  {
+   "t": "p",
+   "k": "6ec3097a9f94",
+   "en": "The clients already have the information related to partitioning and which partition is connected to which node. So, they can directly contact the node that contains the data they need."
+  },
+  {
+   "t": "p",
+   "k": "49a64ef471e4",
+   "en": "In all of these approaches, the main challenge is to determine how these components know about updates in the partitioning of the nodes."
+  },
+  {
+   "t": "h3",
+   "k": "8a0444ded963",
+   "en": "ZooKeeper"
+  },
+  {
+   "t": "p",
+   "k": "31280af36407",
+   "en": "To track changes in the cluster, many distributed data systems need a separate management server like ZooKeeper. Zookeeper keeps track of all the mappings in the network, and each node connects to ZooKeeper for the information."
+  },
+  {
+   "t": "p",
+   "k": "1f40c55fa90a",
+   "en": "Whenever there’s a change in the partitioning, or a node is added or removed, ZooKeeper gets updated and notifies the routing tier about the change. HBase, Kafka and SolrCloud use ZooKeeper."
+  },
+  {
+   "t": "h2",
+   "k": "6a38a38f03e4",
+   "en": "Conclusion"
+  },
+  {
+   "t": "p",
+   "k": "829c2fef0505",
+   "en": "For all current distributed systems, partitioning has become the standard protocol. Because systems contain increasing amounts of data, partitioning the data makes sense since it speeds up both writes and reads. It increases the system’s availability, scalability, and performance."
+  },
+  {
+   "t": "h1",
+   "k": "992e29424d57",
+   "en": "Trade-offs in Databases"
+  },
+  {
+   "t": "h2",
+   "k": "8297edf3ff01",
+   "en": "Which is the best database sharding approach?"
+  },
+  {
+   "t": "p",
+   "k": "2f3f4b8650be",
+   "en": "Both horizontal and vertical sharding involve adding resources to our computing infrastructure. Our business stakeholders must decide which is suitable for our organization. We must scale our resources accordingly for our organization and business to grow, to prevent downtime, and to reduce latency."
+  },
+  {
+   "t": "p",
+   "k": "55b23cbc7c1e",
+   "en": "We can scale these resources through a combination of adjustments to CPU, physical memory requirements, hard disk adjustments, and network bandwidth."
+  },
+  {
+   "t": "p",
+   "k": "85c203095a04",
+   "en": "The following sections explain the pros and cons of no sharding versus sharding."
+  },
+  {
+   "t": "h3",
+   "k": "37244107d9b0",
+   "en": "Advantages and disadvantages of a centralized database Advantages"
+  },
+  {
+   "t": "p",
+   "k": "ac38b10a4fa6",
+   "en": "Data maintenance, such as updating and taking backups of a centralized database, is easy."
+  },
+  {
+   "t": "p",
+   "k": "b4bdc70fd7b8",
+   "en": "Centralized databases provide stronger consistency and ACID transactions than distributed databases."
+  },
+  {
+   "t": "p",
+   "k": "f9e90cf1521d",
+   "en": "Centralized databases provide a much simpler programming model for the end programmers as compared to distributed databases."
+  },
+  {
+   "t": "p",
+   "k": "5360ccd2f9da",
+   "en": "It’s more efficient for businesses to have a small amount of data to store that can reside on a single node."
+  },
+  {
+   "t": "h3",
+   "k": "81d545cb9cb8",
+   "en": "Disadvantages"
+  },
+  {
+   "t": "p",
+   "k": "063509cd17a7",
+   "en": "A centralized database can slow down, causing high latency for end users, when the number of queries per second accessing the centralized database is approaching single-node limits."
+  },
+  {
+   "t": "p",
+   "k": "175fb1f82d06",
+   "en": "A centralized database has a single point of failure. Because of this, its probability of not being accessible is much higher."
+  },
+  {
+   "t": "h3",
+   "k": "4ac1e77654bf",
+   "en": "Advantages and disadvantages of a distributed database Advantages"
+  },
+  {
+   "t": "p",
+   "k": "93064e755c58",
+   "en": "It’s fast and easy to access data in a distributed database because data is retrieved from the nearest database shard or the one frequently used."
+  },
+  {
+   "t": "p",
+   "k": "874407d5b0a2",
+   "en": "Data with different levels of distribution transparency can be stored in separate places."
+  },
+  {
+   "t": "p",
+   "k": "113d82049acc",
+   "en": "Intensive transactions consisting of queries can be divided into multiple optimized subqueries, which can be processed in a parallel fashion."
+  },
+  {
+   "t": "h3",
+   "k": "81d545cb9cb8",
+   "en": "Disadvantages"
+  },
+  {
+   "t": "p",
+   "k": "03a77f491016",
+   "en": "Sometimes, data is required from multiple sites, which takes more time than expected."
+  },
+  {
+   "t": "p",
+   "k": "ec80037a5041",
+   "en": "Relations are partitioned vertically or horizontally among different nodes."
+  },
+  {
+   "t": "p",
+   "k": "637fde598821",
+   "en": "Therefore, operations such as joins need to reconstruct complete relations by carefully fetching data. These operations can become much more expensive and complex."
+  },
+  {
+   "t": "p",
+   "k": "3d93337d785d",
+   "en": "It’s difficult to maintain consistency of data across sites in the distributed database, and it requires extra measures."
+  },
+  {
+   "t": "p",
+   "k": "27a116b465ac",
+   "en": "Updations and backups in distributed databases take time to synchronize data."
+  },
+  {
+   "t": "h3",
+   "k": "45011f113cf6",
+   "en": "Query optimization and processing speed in a distributed database"
+  },
+  {
+   "t": "p",
+   "k": "a6f7355e5b33",
+   "en": "A transaction in the distributed database depends on the type of query, number of sites (shards) involved, communication speed, and other factors, such as underlying hardware and the type of database used. However, as an example, let’s assume a query accessing three tables, Store, Product, and Sales, residing on different sites."
+  },
+  {
+   "t": "p",
+   "k": "41a2d9981e4d",
+   "en": "The number of attributes in each table is given in the following figure:"
+  },
+  {
+   "t": "p",
+   "k": "61c5c229a689",
+   "en": "Let’s assume the distribution of both tables on different sites is the following:"
+  },
+  {
+   "t": "p",
+   "k": "d7c3504a81df",
+   "en": "The Store table has 10,000 tuples stored at site A."
+  },
+  {
+   "t": "p",
+   "k": "c218f6a0dca1",
+   "en": "The Product table has 100,000 tuples stored at site B."
+  },
+  {
+   "t": "p",
+   "k": "08b7e26f30cc",
+   "en": "The Sales table has one million tuples stored at site A."
+  },
+  {
+   "t": "p",
+   "k": "2d1dfa3e2da9",
+   "en": "Now, assume that we need to process the following query:"
+  },
+  {
+   "t": "code",
+   "k": "bdb6039e6812",
+   "en": "Select Store_key from (Store JOIN Sales JOIN Product) where Region= 'East' AND Brand='Wolf';"
+  },
+  {
+   "t": "p",
+   "k": "7771b12736ce",
+   "en": "The above query performs the join operations on the Store, Sales, and Product tables and retrieves the Store_key values from the table generated in the result of join operations."
+  },
+  {
+   "t": "p",
+   "k": "3e771e55f72d",
+   "en": "Next, assume every stored tuple is 200 bits long. That’s equal to 25 Bytes."
+  },
+  {
+   "t": "p",
+   "k": "8684e6938d0f",
+   "en": "Furthermore, estimated cardinalities of certain intermediate results are as follows:"
+  },
+  {
+   "t": "p",
+   "k": "4f7dcb1fd520",
+   "en": "The number of the Wolf brand is 10."
+  },
+  {
+   "t": "p",
+   "k": "7eb9db85b650",
+   "en": "The number of East region stores is 3000 (since there are 10,000 rows in the store table, and 3000 have region as east)."
+  },
+  {
+   "t": "p",
+   "k": "c6ac354ceb7f",
+   "en": "Communication assumptions are the following:"
+  },
+  {
+   "t": "p",
+   "k": "42ad78966673",
+   "en": "Data rate = 50M bits per second Access delay = 0.1 second"
+  },
+  {
+   "t": "h3",
+   "k": "dbc8ca41bb7c",
+   "en": "Parameters assumption"
+  },
+  {
+   "t": "p",
+   "k": "58d22b44fd50",
+   "en": "Before processing the query using different approaches, let’s define some parameters: a= Total access delay b= Data rate v= Total data volume Now, let’s compute the total communication time, T, according to the following formula: v T= a + b Let’s try the following possible approaches to execute the query."
+  },
+  {
+   "t": "h3",
+   "k": "9ffedc52300e",
+   "en": "Possible approaches"
+  },
+  {
+   "t": "p",
+   "k": "8f6f69ef6a70",
+   "en": "Move the Product table to site A and process the query at A. 100,000×200 T=0.1+ =0.5 seconds 50,000,000 Here, 0.1 is the access delay of the table on site A, and 100,000 is the number of tuples in the Product table. The size of each tuple in bits is 200, and 50,000,000 is the data rate. The 200 and 50,000,000 figures are the same for all of the following calculations."
+  },
+  {
+   "t": "p",
+   "k": "76e47396c901",
+   "en": "Move Store and Sales to site B and process the query at B: (10,000+1,000,000)×200 T=0.2+ =4.24 seconds 50,000,000 Here, 0.2 is the access delay of the Store and Sales tables. The numbers 10,000 and 1,000,000 are the number of tuples in the Store and Sales tables, respectively."
+  },
+  {
+   "t": "p",
+   "k": "6344eedfa0ee",
+   "en": "Restrict Brand at site B to Wolf (called selection) and move the result to site A: 10×200 T=0.1+ ≈0.1 seconds 50,000,000 Here, 0.1 is the access delay of the Product table. The number of the Wolf brand is 10, hence the number of tuples."
+  },
+  {
+   "t": "p",
+   "k": "2e4c2cc9f5cb",
+   "en": "When we compare the three approaches, the third approach provides us the least latency (0.1 seconds). We didn’t calculate filtering at site A because the number of rows will be much larger, and hence data volume will be more than the third case (filtering at the site B and then fetching data). This example shows that careful query optimization is also critical in the distributed database."
+  },
+  {
+   "t": "h3",
+   "k": "6a38a38f03e4",
+   "en": "Conclusion"
+  },
+  {
+   "t": "p",
+   "k": "01f5cf1dd7b5",
+   "en": "Data distribution (vertical and horizontal sharding) across multiple nodes aims to improve the following features, considering that the queries are optimized:"
+  },
+  {
+   "t": "p",
+   "k": "07e7d6c213b2",
+   "en": "Reliability (fault-tolerance)"
+  },
+  {
+   "t": "p",
+   "k": "0ac1438e4b1d",
+   "en": "Performance Balanced storage capacity and dollar costs Both centralized and distributed databases have their pros and cons. We should choose them according to the needs of our application."
+  }
+ ]
+}

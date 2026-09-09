@@ -1,0 +1,653 @@
+{
+ "id": "018-pub-sub",
+ "title": "Pub-sub",
+ "titleKey": "32dad4046c48",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "ca78d7d3c60f",
+   "en": "System Design: The Pub-sub Abstraction"
+  },
+  {
+   "t": "p",
+   "k": "ee12487690ff",
+   "en": "Get introduced to the basics of designing a pub-sub system."
+  },
+  {
+   "t": "h2",
+   "k": "2186ab21eb58",
+   "en": "What is a pub-sub system?"
+  },
+  {
+   "t": "p",
+   "k": "3dfe197ed054",
+   "en": "Publish-subscribe messaging, often known as pub-sub messaging, is an asynchronous service-to-service communication method that’s popular in serverless and microservices architectures. Messages can be sent asynchronously to different subsystems of a system using the pub-sub system."
+  },
+  {
+   "t": "p",
+   "k": "c9053c773451",
+   "en": "All the services subscribed to the pub-sub model receive the message that’s pushed into the system."
+  },
+  {
+   "t": "p",
+   "k": "64d2ff4d964d",
+   "en": "For example, when Cristiano Ronaldo, a famous athlete, posts on Instagram or shares a tweet, all of his followers are updated. Here, Cristiano Ronaldo is the publisher, his post or tweet is the message, and all of his followers are subscribers."
+  },
+  {
+   "t": "h2",
+   "k": "5f191134dde6",
+   "en": "Motivation"
+  },
+  {
+   "t": "p",
+   "k": "1bb8f68adb1c",
+   "en": "The hardware infrastructure of distributed systems consists of millions of machines. Using a pub-sub system to communicate asynchronously increases scalability. Producers and consumers are disconnected and operate independently, thereby allowing us to scale and develop them separately. The decoupling between components, producers and consumers, allows greater scalability because adding or removing any component doesn’t affect the other components."
+  },
+  {
+   "t": "h2",
+   "k": "e7768232b680",
+   "en": "How do we design a pub-sub system?"
+  },
+  {
+   "t": "p",
+   "k": "c13fe6a26f20",
+   "en": "We have divided the pub-sub system design into the following lessons:"
+  },
+  {
+   "t": "li",
+   "k": "60b8acdf6eb6",
+   "en": "Introduction: In this lesson, we learn about the use cases of the pub-sub system, define its requirements, and design the API for it."
+  },
+  {
+   "t": "li",
+   "k": "eba4e719647e",
+   "en": "Design: In this lesson, we discuss two designs of the pub-sub system, one with messaging queues and the other with a broker."
+  },
+  {
+   "t": "h1",
+   "k": "101f8f158573",
+   "en": "Introduction to Pub-sub"
+  },
+  {
+   "t": "p",
+   "k": "c2e6a520266f",
+   "en": "Learn about the use cases of the pub-sub system, how to deﬁne its requirements, and design the API for it."
+  },
+  {
+   "t": "h2",
+   "k": "59dacca52e95",
+   "en": "Use cases of pub-sub"
+  },
+  {
+   "t": "p",
+   "k": "beb25e4da94f",
+   "en": "A few use cases of pub-sub are listed below:"
+  },
+  {
+   "t": "p",
+   "k": "c866e58aadbf",
+   "en": "Improved performance: The pub-sub system enables push-based distribution, alleviating the need for message recipients to check for new information and changes regularly. It encourages faster response times and lowers the delivery latency."
+  },
+  {
+   "t": "p",
+   "k": "486868a521b8",
+   "en": "Handling ingestion: The pub-sub helps in handling log ingestion. The user-interaction data can help us figure out useful analyses about the behavior of users. We can ingest a large amount of data to the pub-sub system, so much so that it can deliver the data to any analytical system to understand the behavior patterns of users. Moreover, we can also log the details of the event that’s happening while completing a request from the user. Large services like Meta use a pub-sub system called Scribe to know exactly who needs what data, and remove or archive processed or unwanted data."
+  },
+  {
+   "t": "p",
+   "k": "98a0ece309cc",
+   "en": "Doing this is necessary to manage an enormous amount of data."
+  },
+  {
+   "t": "p",
+   "k": "1e9c5e5b41cc",
+   "en": "Real-time monitoring: Raw or processed messages of an application or system can be provided to multiple applications to monitor a system in real time."
+  },
+  {
+   "t": "p",
+   "k": "d0a24c44d292",
+   "en": "Replicating data: The pub-sub system can be used to distribute changes."
+  },
+  {
+   "t": "p",
+   "k": "b5039b07d6d2",
+   "en": "For example, in a leader-follower protocol, the leader sends the changes to its followers via a pub-sub system. It allows followers to update their data asynchronously. The distributed caches can also refresh themselves by receiving the modifications asynchronously. Along the same lines, applications like WhatsApp that allow multiple views of the same conversation—for example, on a mobile phone and a computer’s browser— can elegantly work using a pub-sub, where multiple views can act either as a publisher or a subscriber."
+  },
+  {
+   "t": "p",
+   "k": "ee1d8ddb3cf6",
+   "en": "Points to Ponder What are the similarities and differences between a pub-sub system and queues?"
+  },
+  {
+   "t": "p",
+   "k": "a65c5b0d3c85",
+   "en": "Hide Answer The pub-sub system and queues are similar because they deliver information that’s produced by the producer to the consumer. The difference is that only one consumer consumes a message in the queue, while there can be multiple consumers of the same message in a pub-sub system. 1 of 2"
+  },
+  {
+   "t": "h2",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "p",
+   "k": "7a26659343ad",
+   "en": "We aim to design a pub-sub system that has the following requirements."
+  },
+  {
+   "t": "h3",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "30a44249a224",
+   "en": "Create a topic: The producer should be able to create a topic."
+  },
+  {
+   "t": "p",
+   "k": "575043309d38",
+   "en": "Write messages: Producers should be able to write messages to the topic."
+  },
+  {
+   "t": "p",
+   "k": "cf4f457f07c3",
+   "en": "Subscription: Consumers should be able to subscribe to the topic to receive messages."
+  },
+  {
+   "t": "p",
+   "k": "a5f1a5b604bb",
+   "en": "Read messages: The consumer should be able to read messages from the topic."
+  },
+  {
+   "t": "p",
+   "k": "f3e4f5537cff",
+   "en": "Specify retention time: The consumers should be able to specify the retention time after which the message should be deleted from the system."
+  },
+  {
+   "t": "p",
+   "k": "da1364223162",
+   "en": "Delete messages: A message should be deleted from the topic or system after a certain retention period as defined by the user of the system."
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "65b7fdec29cd",
+   "en": "Scalable: The system should scale with an increasing number of topics and increasing writing (by producers) and reading (by consumers) load."
+  },
+  {
+   "t": "p",
+   "k": "0f84dd4d0b39",
+   "en": "Available: The system should be highly available, so that producers can add their data and consumers can read data from it anytime."
+  },
+  {
+   "t": "p",
+   "k": "4de1547c3f57",
+   "en": "Durability: The system should be durable. Messages accepted from producers must not be lost and should be delivered to the intended subscribers."
+  },
+  {
+   "t": "p",
+   "k": "fb62147e45ea",
+   "en": "Fault tolerance: Our system should be able to operate in the event of failures."
+  },
+  {
+   "t": "p",
+   "k": "ab37ddad08b8",
+   "en": "Concurrent: The system should handle concurrency issues where reading and writing are performed simultaneously."
+  },
+  {
+   "t": "h2",
+   "k": "58dbf879b581",
+   "en": "API Design"
+  },
+  {
+   "t": "p",
+   "k": "78e205488376",
+   "en": "We’ll exclude some parameters from the functions below, such as the producer or consumer’s identifier. Let’s assume that this information is available from the underlying connection context. The API design for this problem is as follows:"
+  },
+  {
+   "t": "p",
+   "k": "11cb856d4f2c",
+   "en": "Create a topic The API call to create a topic should look like this:"
+  },
+  {
+   "t": "code",
+   "k": "4e0aa06c4bad",
+   "en": "create(topic_ID, topic_name)"
+  },
+  {
+   "t": "p",
+   "k": "60ecf208b8d2",
+   "en": "This function returns an acknowledgment if it successfully creates a topic, or an error if it fails to do so."
+  },
+  {
+   "t": "p",
+   "k": "04389bfdb778",
+   "en": "ParameterDescription topic_IDIt uniquely identifies the topic. topic_nameIt contains the name of the topic."
+  },
+  {
+   "t": "p",
+   "k": "ea51448d2857",
+   "en": "Write a message The API call to write into the pub-sub system should look like this:"
+  },
+  {
+   "t": "code",
+   "k": "bbed461a62b6",
+   "en": "write(topic_ID, message)"
+  },
+  {
+   "t": "p",
+   "k": "b8d48981bdb7",
+   "en": "The API call will write a message into a topic with an ID of topic_ID. Each message can have a maximum size of 1 MB. This function will return an acknowledgment if it successfully places the data in the systems, or an appropriate error if it fails."
+  },
+  {
+   "t": "p",
+   "k": "07d966680e92",
+   "en": "ParameterDescription messageThe message to be written in the system."
+  },
+  {
+   "t": "p",
+   "k": "53553513201a",
+   "en": "Read a message The API call to read data from the system should look like this:"
+  },
+  {
+   "t": "code",
+   "k": "dc6429c69aff",
+   "en": "read(topic_ID)"
+  },
+  {
+   "t": "p",
+   "k": "dc20f282018f",
+   "en": "The topic is found using topic_ID, and the call will return an object containing the message to the caller."
+  },
+  {
+   "t": "p",
+   "k": "3c25e707175d",
+   "en": "ParameterDescription topic_IDIt is the ID of the topic against which the message will be read."
+  },
+  {
+   "t": "p",
+   "k": "7bfa5fb9f10b",
+   "en": "Subscribe to a topic The API call to subscribe to a topic from the system should look like this:"
+  },
+  {
+   "t": "code",
+   "k": "3d444c874a78",
+   "en": "subscribe(topic_ID)"
+  },
+  {
+   "t": "p",
+   "k": "d5c281c9feae",
+   "en": "The function adds the consumer as a subscriber to the topic that has the"
+  },
+  {
+   "t": "code",
+   "k": "7e0c1d83699c",
+   "en": "topic_ID."
+  },
+  {
+   "t": "p",
+   "k": "4b4291c7b8cc",
+   "en": "ParameterDescription topic_IDThe ID of the topic to which the consumer will be subscribed."
+  },
+  {
+   "t": "p",
+   "k": "8f603ace5d41",
+   "en": "Unsubscribe from a topic The API call to unsubscribe from a topic from the system should look like this:"
+  },
+  {
+   "t": "code",
+   "k": "d6e2b0fcc3a1",
+   "en": "unsubscribe(topic_ID)"
+  },
+  {
+   "t": "p",
+   "k": "9920d87d3b0b",
+   "en": "The function removes the consumer as a subscriber from the topic that has the"
+  },
+  {
+   "t": "code",
+   "k": "7e0c1d83699c",
+   "en": "topic_ID."
+  },
+  {
+   "t": "p",
+   "k": "343d3a24a32c",
+   "en": "ParameterDescription topic_IDThe ID of the topic against which the consumers will be unsubscribed."
+  },
+  {
+   "t": "p",
+   "k": "2c3a20d36636",
+   "en": "Delete a topic The API call to delete a topic from the system should look like this:"
+  },
+  {
+   "t": "code",
+   "k": "8148102ae09a",
+   "en": "delete_topic(topic_ID)"
+  },
+  {
+   "t": "p",
+   "k": "823a8300bf02",
+   "en": "The function deletes the topic on the basis of the topic_ID."
+  },
+  {
+   "t": "p",
+   "k": "ce5181aca787",
+   "en": "ParameterDescription topic_IDThe ID of the topic which is to be deleted."
+  },
+  {
+   "t": "h2",
+   "k": "cfa08fe6c777",
+   "en": "Building blocks we will use"
+  },
+  {
+   "t": "p",
+   "k": "3f8bdb09a00f",
+   "en": "The design of pub-sub utilizes many building blocks that have been discussed in the initial chapters. We’ll consider the following lessons on building blocks."
+  },
+  {
+   "t": "p",
+   "k": "a1a645b16215",
+   "en": "Database: We’ll use databases to store information like subscription details."
+  },
+  {
+   "t": "p",
+   "k": "6d393d695e6c",
+   "en": "Distributed messaging queue: We’ll use use a messaging queue to store messages sent by the producer."
+  },
+  {
+   "t": "p",
+   "k": "94f697f9085a",
+   "en": "Key-value: We’ll use a key-value store to hold information about consumers."
+  },
+  {
+   "t": "p",
+   "k": "7df65dc89afc",
+   "en": "In the next lesson, we’ll focus on designing a pub-sub system."
+  },
+  {
+   "t": "h1",
+   "k": "49580ac17c68",
+   "en": "Design of a Pub-sub System"
+  },
+  {
+   "t": "p",
+   "k": "e1706d86800a",
+   "en": "Dive into designing a pub-sub system and its components."
+  },
+  {
+   "t": "h2",
+   "k": "7a1d71d8e306",
+   "en": "First design"
+  },
+  {
+   "t": "p",
+   "k": "c70f79804c77",
+   "en": "In the previous lesson, we discussed that a producer writes into topics, and consumers subscribe to a topic to read messages from that topic. Since new messages are added at the end of the queue, we can use distributed messaging queues for topics."
+  },
+  {
+   "t": "p",
+   "k": "7f0d4e35e19d",
+   "en": "The components we’ll need have been listed below:"
+  },
+  {
+   "t": "p",
+   "k": "410e40ed5bea",
+   "en": "Topic queue: Each topic will be a distributed messaging queue so we can store the messages sent to us from the producer. A producer will write their messages to that queue."
+  },
+  {
+   "t": "p",
+   "k": "49437432de3c",
+   "en": "Database: We’ll use a relational database that will store the subscription details. For example, we need to store which consumer has subscribed to which topic so we can provide the consumers with their desired messages."
+  },
+  {
+   "t": "p",
+   "k": "2dd1ea4e2869",
+   "en": "We’ll use a relational database since our consumer-related data is structured and we want to ensure our data integrity."
+  },
+  {
+   "t": "p",
+   "k": "cc808c752e88",
+   "en": "Message director: This service will read the message from the topic queue, fetch the consumers from the database, and send the message to the consumer queue."
+  },
+  {
+   "t": "p",
+   "k": "d0b2819ecea3",
+   "en": "Consumer queue: The message from the topic queue will be copied to the consumer’s queue so the consumer can read the message. For each consumer, we’ll define a separate distributed queue."
+  },
+  {
+   "t": "p",
+   "k": "0b6de7166c10",
+   "en": "Subscriber: When the consumer requests a subscription to a topic, this service will add an entry into the database."
+  },
+  {
+   "t": "p",
+   "k": "66a143ef06e2",
+   "en": "The consumer will subscribe to a topic, and the system will add the subscriber’s details to the database. The producer will write into the topics, and the message director will read the message from the queue, fetch the details to whom it should add the message, and send it to them. The consumers will consume the message from their queue."
+  },
+  {
+   "t": "p",
+   "k": "a3ac91124a3b",
+   "en": "Note: We’ll use fail-over services for the message director and subscriber to guard against failures."
+  },
+  {
+   "t": "p",
+   "k": "5a7ff97bfdbc",
+   "en": "Using the distributed messaging queues makes our design simple. However, the huge number of queues needed is a significant concern. If we have millions of subscribers for thousands of topics, defining and maintaining millions of queues is expensive. Moreover, we’ll copy the same message for a topic in all subscriber queues, which is unnecessary duplication and takes up space."
+  },
+  {
+   "t": "p",
+   "k": "6c4a397addf1",
+   "en": "Points to Ponder Is there a way to avoid maintaining a separate queue for each reader?"
+  },
+  {
+   "t": "p",
+   "k": "b39470667394",
+   "en": "Hide Answer In messaging queues, the message disappears after the reader consumes it. So, what if we add a counter for each message? The counter value decrements as a subscriber consumes the message. It does not delete the message until the counter becomes zero. Now, we don’t need to keep a separate queue for each reader. 1 of 2"
+  },
+  {
+   "t": "h2",
+   "k": "5ff479cf646f",
+   "en": "Second design"
+  },
+  {
+   "t": "p",
+   "k": "a85b7b18c12c",
+   "en": "Let’s consider another approach to designing a pub-sub system."
+  },
+  {
+   "t": "h3",
+   "k": "f0e860766605",
+   "en": "High-level design"
+  },
+  {
+   "t": "p",
+   "k": "77947cbf5ad0",
+   "en": "At a high level, the pub-sub system will have the following components:"
+  },
+  {
+   "t": "p",
+   "k": "b85dca8c35a3",
+   "en": "Broker: This server will handle the messages. It will store the messages sent from the producer and allow the consumers to read them."
+  },
+  {
+   "t": "p",
+   "k": "177815a84540",
+   "en": "Cluster manager: We’ll have numerous broker servers to cater to our scalability needs. We need a cluster manager to supervise the broker’s health. It will notify us if a broker fails."
+  },
+  {
+   "t": "p",
+   "k": "08abd2a3fc99",
+   "en": "Storage: We’ll use a relational database to store consumer details, such as subscription information and retention period."
+  },
+  {
+   "t": "p",
+   "k": "7b42553553be",
+   "en": "Consumer manager: This is responsible for managing the consumers. For example, it will verify if the consumer is authorized to read a message from a certain topic or not."
+  },
+  {
+   "t": "p",
+   "k": "ca6ad72a0f94",
+   "en": "Besides these components, we also have the following design considerations:"
+  },
+  {
+   "t": "p",
+   "k": "3cda7d75bdbf",
+   "en": "Acknowledgment: An acknowledgment is used to notify the producer that the received message has been stored successfully. The system will wait for an acknowledgment from the consumer if it has successfully consumed the message."
+  },
+  {
+   "t": "p",
+   "k": "43a738880b65",
+   "en": "Retention time: The consumers can specify the retention period time of their messages. The default will be seven days, but it is configurable. Some applications like banking applications require the data to be stored for a few weeks as a business requirement, while an analytical application might not need the data after consumption."
+  },
+  {
+   "t": "p",
+   "k": "a3cc8bf89320",
+   "en": "Let’s understand the role of each component in detail."
+  },
+  {
+   "t": "h2",
+   "k": "ceb8885a255b",
+   "en": "Broker"
+  },
+  {
+   "t": "p",
+   "k": "0656fba8d3a8",
+   "en": "The broker server is the core component of our pub-sub system. It will handle write and read requests. A broker will have multiple topics where each topic can have multiple partitions associated with it. We use partitions to store messages in the local storage for persistence. Consequently, this improves availability."
+  },
+  {
+   "t": "p",
+   "k": "ede66a16216a",
+   "en": "Partitions contain messages encapsulated in segments. Segments help identify the start and end of a message using an offset address. Using segments, consumers consume the message of their choice from a partition by reading from a specific offset address. The illustration below depicts the concept that has been described above."
+  },
+  {
+   "t": "p",
+   "k": "2536dd6ff0a0",
+   "en": "As we know, a topic is a persistent sequence of messages stored in the local storage of the broker. Once the data has been added to the topic, it cannot be modified. Reading and writing a message from or to a topic is an I/O task for computers, and scaling such tasks is challenging. This is the reason we split the topics into multiple partitions. The data belonging to a single topic can be present in numerous partitions. For example, let’s assume have Topic A and we allocate three partitions for it. The producers will send their messages to the relevant topic. The messages received will be sent to various partitions on basis of the round-robin algorithm. We’ll use a variation of round-robin: weighted round-robin. The following slides show how the messages are stored in various partitions belonging to a single topic."
+  },
+  {
+   "t": "p",
+   "k": "b0ea2302e145",
+   "en": "Points to Ponder Strict ordering ensures that the messages are stored in the order in which they are produced. How can we ensure strict ordering for our messages?"
+  },
+  {
+   "t": "p",
+   "k": "a3698f55ee6d",
+   "en": "Hide Answer We’ll assign each partition a unique ID, partition_ID. The user can provide the partition_ID while writing into the system. In this way, the messages will be sent to the specified partition, and the ordering will be strict. Our API call to write into the pub-sub system looks like this:"
+  },
+  {
+   "t": "code",
+   "k": "9887808768c6",
+   "en": "write(topic_ID, partition_ID, message)"
+  },
+  {
+   "t": "p",
+   "k": "9d78e605e655",
+   "en": "If the user does not provide the partition_ID, we’ll use the weighted round-robin algorithm to decide which message has to be sent to which partition."
+  },
+  {
+   "t": "p",
+   "k": "3fddcffcd8be",
+   "en": "It might seem strange to give the ability to choose a partition to the client of pub-sub. However, such a facility can be the basis from where clients can get data for some specific time period—for example, getting data from yesterday. For simplicity, we won’t include time-based reading in our design. 1 of 4 We’ll allocate the partitions to various brokers in the system. This just means that different partitions of the same topic will be in different brokers. We’ll follow strict ordering in partitions by adding newer content at the end of existing messages."
+  },
+  {
+   "t": "p",
+   "k": "33b4bb3088e6",
+   "en": "Consider the slides below. We have various brokers in our system. Each broker has different topics. The topic is divided into multiple partitions."
+  },
+  {
+   "t": "p",
+   "k": "a8f51d6523bf",
+   "en": "We discussed that a message will be stored in a segment. We’ll identify each segment using an offset. Since these are immutable records, the readers are independent and they can read messages anywhere from this file using the necessary API functions. The following slides show the segment level detail."
+  },
+  {
+   "t": "p",
+   "k": "578a82ff990b",
+   "en": "The broker solved the problems that our first design had. We avoided a large number of queues by partitioning the topic. We introduced parallelism using partitions that avoided bottlenecks while consuming the message."
+  },
+  {
+   "t": "h2",
+   "k": "a96a0652a156",
+   "en": "Cluster manager"
+  },
+  {
+   "t": "p",
+   "k": "807d878578e3",
+   "en": "We’ll have multiple brokers in our cluster. The cluster manager will perform the following tasks:"
+  },
+  {
+   "t": "p",
+   "k": "698f83cdeb07",
+   "en": "Broker and topics registry: This stores the list of topics for each broker."
+  },
+  {
+   "t": "p",
+   "k": "b2c3ef93dff6",
+   "en": "Manage replication: The cluster manager manages replication by using the leader-follower approach. One of the brokers is the leader. If it fails, the manager decides who the next leader is. In case the follower fails, it adds a new broker and makes sure to turn it into an updated follower. It updates the metadata accordingly. We’ll keep three replicas of each partition on different brokers."
+  },
+  {
+   "t": "h2",
+   "k": "e8453cc9b6e7",
+   "en": "Consumer manager"
+  },
+  {
+   "t": "p",
+   "k": "8dbc2bc715e1",
+   "en": "The consumer manager will manage the consumers. It has the following responsibilities:"
+  },
+  {
+   "t": "p",
+   "k": "81b4f9145e57",
+   "en": "Verify the consumer: The manager will fetch the data from the database and verify if the consumer is allowed to read a certain message. For example, if the consumer has subscribed to Topic A (but not to Topic B), then it should not be allowed to read from Topic B. The consumer manager verifies the consumer’s request."
+  },
+  {
+   "t": "p",
+   "k": "4823337f31e9",
+   "en": "Retention time management: The manager will also verify if the consumer is allowed to read the specific message or not. If, according to its retention time, the message should be inaccessible to the consumer, then it will not allow the consumer to read the message."
+  },
+  {
+   "t": "p",
+   "k": "6bbbe2380f96",
+   "en": "Message receiving options management: There are two methods for consumers to get data. The first is that our system pushes the data to its consumers. This method may result in overloading the consumers with continuous messages. Another approach is for consumers to request the system to read data from a specific topic. The drawback is that a few consumers might want to know about a message as soon as it is published, but we do not support this function."
+  },
+  {
+   "t": "p",
+   "k": "51815445df4d",
+   "en": "Therefore, we’ll support both techniques. Each consumer will inform the broker that it wants the data to be pushed automatically or it needs the data to read itself. We can avoid overloading the consumer and also provide liberty to the consumer. We’ll save this information in the relational database along with other consumer details."
+  },
+  {
+   "t": "p",
+   "k": "25cdd7d00194",
+   "en": "Allow multiple reads: The consumer manager stores the offset information of each consumer. We’ll use a key-value to store offset information against each consumer. It allows fast fetching and increases the availability of the consumers. If Consumer 1 has read from offset 0 and has sent the acknowledgment, we’ll store it. So, when the consumer wants to read again, we can provide the next offset to the reader for reading the message."
+  },
+  {
+   "t": "h2",
+   "k": "f7ccaf9e4624",
+   "en": "Finalized design"
+  },
+  {
+   "t": "p",
+   "k": "0f849d8cb502",
+   "en": "The finalized design of our pub-sub system is shown below."
+  },
+  {
+   "t": "h2",
+   "k": "6a38a38f03e4",
+   "en": "Conclusion"
+  },
+  {
+   "t": "p",
+   "k": "a8dc2589dd4d",
+   "en": "We saw two designs of pub-sub, using queues and using our custom storage optimized for writing and reading small-sized data."
+  },
+  {
+   "t": "p",
+   "k": "4fcba40308da",
+   "en": "There are numerous use cases of a pub-sub. Due to decoupling between producers and consumers, the system can scale dynamically, and the failures are well-contained. Additionally, due to proper accounting of data consumption, the pub-sub is a system of choice for a large-scale system that produces enormous data. We can determine precisely which data is needed and not needed."
+  }
+ ]
+}

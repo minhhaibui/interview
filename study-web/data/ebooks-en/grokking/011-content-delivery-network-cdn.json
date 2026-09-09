@@ -1,0 +1,1268 @@
+{
+ "id": "011-content-delivery-network-cdn",
+ "title": "Content Delivery Network (CDN)",
+ "titleKey": "2ca6a8ed72c8",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "b4dc0b267ff0",
+   "en": "System Design: The Content Delivery Network (CDN)"
+  },
+  {
+   "t": "p",
+   "k": "8201ef1d5837",
+   "en": "Understand what problems a CDN solves."
+  },
+  {
+   "t": "h2",
+   "k": "e1cad14b3808",
+   "en": "Problem statement"
+  },
+  {
+   "t": "p",
+   "k": "1bb8e0d5954c",
+   "en": "Let’s start with a question: If millions of users worldwide use our data-intensive applications, and our service is deployed in a single data center to serve the users’ requests, what possible problems can arise?"
+  },
+  {
+   "t": "p",
+   "k": "4171401f4e9b",
+   "en": "The following problems can arise:"
+  },
+  {
+   "t": "p",
+   "k": "55ca329db217",
+   "en": "High latency: The user-perceived latency will be high due to the physical distance from the serving data center. User-perceived latency has many components, such as transmission delays (a function of available bandwidth), propagation delays (a function of distance), queuing delays (a function of network congestion), and nodal processing delays. Therefore, data transmission over a large distance results in higher latency. Real-time applications require a latency below 200 milliseconds (ms) in general. For the Voice over Internet Protocol (VoIP), latency should not be more than 150 ms, whereas video streaming applications cannot tolerate a latency above a few seconds."
+  },
+  {
+   "t": "li",
+   "k": "f0d7af6fbdcc",
+   "en": "Note: According to one of the readings taken on December 21, 2021, the average latency from US East (N. Virginia) to US West (N. California) was",
+   "lead": "Note"
+  },
+  {
+   "t": "li",
+   "k": "a6a370a8906d",
+   "en": "9 ms. Across continents—for example, from the US East (N. Virginia) to Africa (Cape Town)—was 225.63 ms. This is two-way latency, known as round-trip latency."
+  },
+  {
+   "t": "p",
+   "k": "e91cd6f11ef6",
+   "en": "Data-intensive applications: Data-intensive applications require transferring large traffic. Over a longer distance, this could be a problem due to the network path stretching through different kinds of ISPs. Because of some smaller Path message transmission unit (MTU) links, the throughput of applications on the network might be reduced. Similarly, different portions of the network path might have different congestion characteristics. The problem multiplies as the number of users grows because the origin servers will have to provide the data individually to each user. That is, the primary data center will need to send out a lot of redundant data when multiple clients ask for it. However, applications that use streaming services are both data-intensive and dynamic in nature."
+  },
+  {
+   "t": "li",
+   "k": "b9b06031a1f8",
+   "en": "Note: According to a survey, 78% of the United States consumers use streaming services, which is an increase of 25% in five years.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "d1e10ac5187e",
+   "en": "Scarcity of data center resources: Important data center resources like computational capacity and bandwidth become a limitation when the number of users of a service increases significantly. Services engaging millions of users simultaneously need scaling. Even if scaling is achieved in a single data center, it can still suffer from becoming a single point of failure when the data center goes offline due to natural calamity or connectivity issues with the Internet."
+  },
+  {
+   "t": "li",
+   "k": "47e3661183d6",
+   "en": "Note: According to one study, YouTube, Netflix, and Amazon Prime collectively generated 80% of Internet traffic in 2020. Circa 2016, the CDN provider Akamai served 15% to 30% of web traffic (about 30 terabits per second). For 90% of Internet users, Akamai was just one hop away. Therefore, we have strong reasons to optimize the delivery and consumption of this data without making the Internet core a bottleneck.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "99f771dee345",
+   "en": "How will we design a CDN?"
+  },
+  {
+   "t": "p",
+   "k": "506ab7ce3e9b",
+   "en": "We’ve divided the design of CDN into six lessons:"
+  },
+  {
+   "t": "li",
+   "k": "c5eeb03fb247",
+   "en": "Introduction to a CDN: We’ll provide a thorough introduction to CDNs and identify the functional and non-functional requirements."
+  },
+  {
+   "t": "li",
+   "k": "e811d329f5a0",
+   "en": "Design of a CDN: We’ll explain how to design the CDN. We’ll also briefly describe the API design."
+  },
+  {
+   "t": "li",
+   "k": "8503d1ba7af0",
+   "en": "In-depth Investigation of CDN: Part 1: This lesson explains caching strategies and CDN architecture. Also, we’ll discuss various approaches to finding the nearest proxy server."
+  },
+  {
+   "t": "li",
+   "k": "19fb34863e99",
+   "en": "In-depth Investigation of CDN: Part 2: We’ll discuss how to make content consistent in a CDN and the deployment of proxy servers. We’ll also cover the custom and specialized CDN in detail."
+  },
+  {
+   "t": "li",
+   "k": "cfe38e717d63",
+   "en": "Evaluation of CDN: This lesson will provide an evaluation of our proposed design."
+  },
+  {
+   "t": "li",
+   "k": "3c602d5e438a",
+   "en": "Quiz on CDN System Design: We’ll reinforce major concepts of CDN design with a quiz."
+  },
+  {
+   "t": "p",
+   "k": "164493f6c144",
+   "en": "Let’s think about the solution to the discussed issues in the next lesson."
+  },
+  {
+   "t": "h1",
+   "k": "55b9b01db17e",
+   "en": "Introduction to a CDN"
+  },
+  {
+   "t": "h2",
+   "k": "1536d3759fba",
+   "en": "Proposed solution"
+  },
+  {
+   "t": "p",
+   "k": "b05f18610699",
+   "en": "The solution to all the problems discussed in the previous lesson is the content delivery network (CDN). A CDN is a group of geographically distributed proxy servers. A proxy server is an intermediate server between a client and the origin server. The proxy servers are placed on the network edge. As the network edge is close to the end users, the placement of proxy servers helps quickly deliver the content to the end users by reducing latency and saving bandwidth."
+  },
+  {
+   "t": "p",
+   "k": "4bcdd953eb5b",
+   "en": "A CDN has added intelligence on top of being a simple proxy server."
+  },
+  {
+   "t": "p",
+   "k": "1557b6edd94e",
+   "en": "We can bring data close to the user by placing a small data center near the user and storing copies of the data there. CDN mainly stores two types of data: static and dynamic. A CDN primarily targets propagation delay by bringing the data closer to its users. CDN providers make the extra effort to have sufficient bandwidth available through the path and bring data closer to the users (possibly within their ISP). They also try to reduce transmission and queuing delays because the ISP presumably has more bandwidth available within the autonomous system."
+  },
+  {
+   "t": "p",
+   "k": "b917a54aa30d",
+   "en": "Let’s look at the different ways CDN solves the discussed problems:"
+  },
+  {
+   "t": "p",
+   "k": "005ce02dcad7",
+   "en": "High latency: CDN brings the content closer to end users. Therefore, it reduces the physical distance and latency."
+  },
+  {
+   "t": "p",
+   "k": "9a330ab83e55",
+   "en": "Data-intensive applications: Since the path to the data includes only the ISP and the nearby CDN components, there’s no issue in serving a large number of users through a few CDN components in a specific area. As shown below, the origin data center will have to provide the data to local CDN components only once, whereas local CDN components can provide data to different users individually. No user will have to download their own copy of data from the origin servers."
+  },
+  {
+   "t": "p",
+   "k": "a88a2919849e",
+   "en": "Note: Various streaming protocols are used to deliver dynamic content by the CDN providers. For example, CDNsun uses the Real-time Messaging Protocol (RTMP), HTTP Live Streaming (HLS), Real-time Streaming Protocol (RTSP), and many more to deliver dynamic content."
+  },
+  {
+   "t": "p",
+   "k": "0330713cfd57",
+   "en": "Scarcity of data center resources: A CDN is used to serve popular content."
+  },
+  {
+   "t": "p",
+   "k": "31aa4c757f92",
+   "en": "Due to this reason, most of the traffic is handled at the CDN instead of the origin servers. So, different local or distributed CDN components share the load on origin servers."
+  },
+  {
+   "t": "li",
+   "k": "1f07386852d5",
+   "en": "Note: A few well-known CDN providers are Akamai, StackPath, Cloudflare, Rackspace, Amazon CloudFront, and Google Cloud CDN.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "e73a13958e0f",
+   "en": "Point to Ponder Does a CDN cache all content from the origin server?"
+  },
+  {
+   "t": "p",
+   "k": "97ee903318ec",
+   "en": "Show Answer"
+  },
+  {
+   "t": "h2",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "h3",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "05072fd9748d",
+   "en": "Retrieve: Depending upon the type of CDN models, a CDN should be able to retrieve content from the origin servers. We’ll cover CDN models in the coming lesson."
+  },
+  {
+   "t": "p",
+   "k": "214bd61129a6",
+   "en": "Request: Content delivery from the proxy server is made upon the user’s request. CDN proxy servers should be able to respond to each user’s request in this regard."
+  },
+  {
+   "t": "p",
+   "k": "bcc00c85bbba",
+   "en": "Deliver: In the case of the push model, the origin servers should be able to send the content to the CDN proxy servers."
+  },
+  {
+   "t": "p",
+   "k": "e2c27183d548",
+   "en": "Search: The CDN should be able to execute a search against a user query for cached or otherwise stored content within the CDN infrastructure."
+  },
+  {
+   "t": "p",
+   "k": "762671dce326",
+   "en": "Update: In most cases, content comes from the origin server, but if we run a script in a CDN, the CDN should be able to update the content within peer CDN proxy servers in a PoP."
+  },
+  {
+   "t": "p",
+   "k": "c2fcb30348f2",
+   "en": "Delete: Depending upon the type of content (static or dynamic), it should be possible to delete cached entries from the CDN servers after a certain period."
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "4f470fa73f44",
+   "en": "Performance: Minimizing latency is one of the core missions of a CDN. The proposed design should have the minimum possible latency."
+  },
+  {
+   "t": "p",
+   "k": "6e0ae65d514a",
+   "en": "Availability: CDNs are expected to be available at all times because of their effectiveness. Availability includes protection against attacks like DDoS."
+  },
+  {
+   "t": "p",
+   "k": "2bd61e78a15b",
+   "en": "Scalability: An increasing number of users will request content from CDNs."
+  },
+  {
+   "t": "h2",
+   "k": "cfa08fe6c777",
+   "en": "Building blocks we will use"
+  },
+  {
+   "t": "p",
+   "k": "95f275b7aa82",
+   "en": "The design of a CDN utilizes the following building blocks:"
+  },
+  {
+   "t": "p",
+   "k": "2fff15a5b20c",
+   "en": "DNS is the service that maps human-friendly CDN domain names to machine-readable IP addresses. This IP address will take the users to the specified proxy server."
+  },
+  {
+   "t": "p",
+   "k": "0aef2e2fcbc1",
+   "en": "Load balancers distribute millions of requests among the operational proxy servers."
+  },
+  {
+   "t": "p",
+   "k": "6e7c9dd82f0a",
+   "en": "In the next lesson, we’ll discuss the design of the CDN."
+  },
+  {
+   "t": "h1",
+   "k": "fc488f7e2767",
+   "en": "Design of a CDN"
+  },
+  {
+   "t": "p",
+   "k": "6252d4c74bab",
+   "en": "Let's understand the basic design of a CDN system."
+  },
+  {
+   "t": "h2",
+   "k": "4cbff4c7f2aa",
+   "en": "CDN design"
+  },
+  {
+   "t": "p",
+   "k": "4d4f5b57bc00",
+   "en": "We’ll explain our CDN design in two phases. In the first phase, we’ll cover the components that comprise a CDN. By the end of this phase, we’ll understand why we need a specific component. In the second phase, we’ll explore the workflow by explaining how each component interacts with others to develop a fully functional CDN. Let’s dive in."
+  },
+  {
+   "t": "h3",
+   "k": "38a7c5e0c236",
+   "en": "CDN components"
+  },
+  {
+   "t": "p",
+   "k": "e656db002fd5",
+   "en": "The following components comprise a CDN:"
+  },
+  {
+   "t": "p",
+   "k": "a2d65303bf28",
+   "en": "Clients: End users use various clients, like browsers, smartphones, and other devices, to request content from the CDN."
+  },
+  {
+   "t": "p",
+   "k": "513d9807690f",
+   "en": "Routing system: The routing system directs clients to the nearest CDN facility. To do that effectively, this component receives input from various systems to understand where content is placed, how many requests are made for particular content, the load a particular set of servers is handling, and the URI (Uniform Resource Identifier) namespace of various contents."
+  },
+  {
+   "t": "p",
+   "k": "98a544c88cdb",
+   "en": "In the next lesson, we’ll discuss different routing mechanisms to forward users to the nearest CDN facility."
+  },
+  {
+   "t": "p",
+   "k": "c1508068bfb5",
+   "en": "Scrubber servers: Scrubber servers are used to separate the good traffic from malicious traffic and protect against well-known attacks, like DDoS."
+  },
+  {
+   "t": "p",
+   "k": "ff1c03a906e4",
+   "en": "Scrubber servers are generally used only when an attack is detected. In that case, the traffic is scrubbed or cleaned and then routed to the target destination."
+  },
+  {
+   "t": "p",
+   "k": "aa381a04461d",
+   "en": "Proxy servers: The proxy or edge proxy servers serve the content from RAM to the users. Proxy servers store hot data in RAM, though they can store cold data in SSD or hard drive as well. These servers also provide accounting information and receive content from the distribution system."
+  },
+  {
+   "t": "p",
+   "k": "9ac7ae5e0697",
+   "en": "Distribution system: The distribution system is responsible for distributing content to all the edge proxy servers to different CDN facilities."
+  },
+  {
+   "t": "p",
+   "k": "6a810cde332c",
+   "en": "This system uses the Internet and intelligent broadcast-like approaches to distribute content across the active edge proxy servers."
+  },
+  {
+   "t": "p",
+   "k": "d78d2251e9db",
+   "en": "Origin servers: The CDN infrastructure facilitates users with data received from the origin servers. The origin servers serve any unavailable data at the CDN to clients. Origin servers will use appropriate stores to keep content and other mapping metadata. Though, we won’t discuss the internal architecture of origin infrastructure here."
+  },
+  {
+   "t": "p",
+   "k": "fc02a0eaccac",
+   "en": "Management system: The management systems are important in CDNs from a business and managerial aspect where resource usage and statistics are constantly observed. This component measures important metrics, like latency, downtime, packet loss, server load, and so on. For third-party CDNs, accounting information can also be used for billing purposes."
+  },
+  {
+   "t": "h3",
+   "k": "899531e0f885",
+   "en": "Workflow"
+  },
+  {
+   "t": "p",
+   "k": "2bea2e9bc128",
+   "en": "The workflow for the abstract design is given below:"
+  },
+  {
+   "t": "li",
+   "k": "ee457d1e9a64",
+   "en": "The origin servers provide the URI namespace delegation of all objects cached in the CDN to the request routing system."
+  },
+  {
+   "t": "li",
+   "k": "de8d1ad48574",
+   "en": "The origin server publishes the content to the distribution system responsible for data distribution across the active edge proxy servers."
+  },
+  {
+   "t": "li",
+   "k": "6c26a6042398",
+   "en": "The distribution system distributes the content among the proxy servers and provides feedback to the request routing system. This feedback is helpful in optimizing the selection of the nearest proxy server for a requesting client. This feedback contains information about which content is cached on which proxy server to route traffic to relevant proxy servers."
+  },
+  {
+   "t": "li",
+   "k": "27749923f734",
+   "en": "The client requests the routing system for a suitable proxy server from the request routing system."
+  },
+  {
+   "t": "li",
+   "k": "74bb2d2ce2a7",
+   "en": "The request routing system returns the IP address of an appropriate proxy server."
+  },
+  {
+   "t": "li",
+   "k": "c32927766157",
+   "en": "The client request routes through the scrubber servers for security reasons."
+  },
+  {
+   "t": "li",
+   "k": "2d5b47f48ac1",
+   "en": "The scrubber server forwards good traffic to the edge proxy server."
+  },
+  {
+   "t": "li",
+   "k": "266d2966e6b1",
+   "en": "The edge proxy server serves the client request and periodically forwards accounting information to the management system. The management system updates the origin servers and sends feedback to the routing system about the statistics and detail of the content. However, the request is routed to the origin servers if the content isn’t available in the proxy servers. It’s also possible to have a hierarchy of proxy servers if the content isn’t found in the edge proxy servers. For such cases, the request gets forwarded to the parent proxy servers."
+  },
+  {
+   "t": "h2",
+   "k": "58dbf879b581",
+   "en": "API Design"
+  },
+  {
+   "t": "p",
+   "k": "1c4d6c4867ce",
+   "en": "This section will discuss the API design of the functionalities offered by CDN."
+  },
+  {
+   "t": "p",
+   "k": "52246270c382",
+   "en": "This will help us understand how the CDN will receive requests from the clients, receive content from the origin servers, and communicate to other components in the network. Let’s develop APIs for each of the following functionalities:"
+  },
+  {
+   "t": "p",
+   "k": "7dc4131826d1",
+   "en": "Retrieve content Deliver content Request content Search content Update content Delete content Content can be anything, like a file, video, audio, or other web object. Here, we’ll use the word “content” to refer to all of the above. For clarity, we won’t discuss the privacy-related parameters—like if the content is public or private, who should be able to access this content, if it should be encrypted, and so on—in the following APIs."
+  },
+  {
+   "t": "h3",
+   "k": "80712c8dbf96",
+   "en": "Retrieve (proxy server to origin server)"
+  },
+  {
+   "t": "p",
+   "k": "223cdbe97412",
+   "en": "If the proxy servers request content, the GET method retrieves the content through the /retrieveContent API below:"
+  },
+  {
+   "t": "code",
+   "k": "76efa82ef651",
+   "en": "retrieveContent(proxyserver_id, content_type, content_version, descrip tion)"
+  },
+  {
+   "t": "p",
+   "k": "abd18f566687",
+   "en": "Let’s see the details of the parameters:"
+  },
+  {
+   "t": "h2",
+   "k": "c7f55c3a7e32",
+   "en": "Details of Parameters"
+  },
+  {
+   "t": "p",
+   "k": "1eee3e9b1bd4",
+   "en": "ParameterDescription proxyserver_idThis is a unique ID of the requesting proxy server. content_typeThis data structure will contain information about the requested content. Specifically, it will contain the category (audio, video, document, script, and so on), the type of clients it’s requested for, and the requested quality (if any). content_versionThis represents the version number of the content. For the /retrieveContent content_version will contain the current version of the content residing in the proxy server. The content_version will be NULL if no previous version is available at the proxy server. descriptionThis specifies the content detail—for example, the video's extension, resolution detail, and so on if the content_type is video."
+  },
+  {
+   "t": "p",
+   "k": "7aa7db278f2b",
+   "en": "The above API gives a response in a JSON file, which contains the text, content types, links to the images or videos in the content, and so on."
+  },
+  {
+   "t": "h3",
+   "k": "1015a148af58",
+   "en": "Deliver (origin server to proxy servers)"
+  },
+  {
+   "t": "p",
+   "k": "441276b43866",
+   "en": "The origin servers use this API to deliver the specified content, the updated version, to the proxy servers through the distribution system. We call this the"
+  },
+  {
+   "t": "code",
+   "k": "949a1dbb86cb",
+   "en": "/deliverContent API: deliverContent(origin_id, server_list, content_type, content_version, description)"
+  },
+  {
+   "t": "h2",
+   "k": "c7f55c3a7e32",
+   "en": "Details of Parameters"
+  },
+  {
+   "t": "p",
+   "k": "4c92a9c7b9bd",
+   "en": "ParameterDescription origin_idThis recognizes each origin server uniquely. server_listThis identifies the list of servers the content will be pushed to by the distribution system. content_versionThis represents the updated version of the content at the origin server. The proxy server receiving the content will discard the previous version."
+  },
+  {
+   "t": "p",
+   "k": "f9e155250356",
+   "en": "The rest of the parameters have been explained above already."
+  },
+  {
+   "t": "h3",
+   "k": "dca8f8f72f97",
+   "en": "Request (clients to proxy servers)"
+  },
+  {
+   "t": "p",
+   "k": "8e9a3873f29b",
+   "en": "The users use this API to request the content from the proxy servers. We call this"
+  },
+  {
+   "t": "code",
+   "k": "6e2607f82b1d",
+   "en": "the /requestContent API: requestContent(user_id, content_type, description)"
+  },
+  {
+   "t": "h2",
+   "k": "2ec9928f8a2d",
+   "en": "Details of Parameter"
+  },
+  {
+   "t": "p",
+   "k": "eaab35507801",
+   "en": "ParameterDescription user_idThis is the unique ID of the user who requested the content."
+  },
+  {
+   "t": "p",
+   "k": "fdcf97889b1b",
+   "en": "The specified proxy server returns the particular content to the requested users in response to the above API."
+  },
+  {
+   "t": "h3",
+   "k": "9019af09507c",
+   "en": "Search (proxy server to peer proxy servers)"
+  },
+  {
+   "t": "p",
+   "k": "83ed7926473f",
+   "en": "Although the content is first searched locally at the proxy server, the proxy servers can also probe requested content in the peer proxy servers in the same PoP through the /searchContent API. This could flood the query to all proxy servers in a PoP . Alternatively, we can use a data store in the PoP to query the content, though proxy servers will need to maintain what content is available on which proxy server."
+  },
+  {
+   "t": "p",
+   "k": "660e30875335",
+   "en": "The /searchContent API is shown below:"
+  },
+  {
+   "t": "code",
+   "k": "9f824bde9d5d",
+   "en": "searchContent(proxyserver_id, content_type, description)"
+  },
+  {
+   "t": "h3",
+   "k": "03e3fa4ced28",
+   "en": "Update (proxy server to peer proxy servers)"
+  },
+  {
+   "t": "p",
+   "k": "f8dadedd717a",
+   "en": "The proxy servers use the /updateContent API to update the specified content in the peer proxy servers in the PoP . It does so when specified isolated scripts run on the CDN to provide image resizing, video resolution conversion, security, and many more services. This type of scripting is known as serverless scripting."
+  },
+  {
+   "t": "p",
+   "k": "fd55e0d9597a",
+   "en": "The /updateContent API is shown below:"
+  },
+  {
+   "t": "code",
+   "k": "a661a559599b",
+   "en": "updateContent(proxyserver_id, content_type, description)"
+  },
+  {
+   "t": "h2",
+   "k": "2ec9928f8a2d",
+   "en": "Details of Parameter"
+  },
+  {
+   "t": "p",
+   "k": "7e4d771555a8",
+   "en": "ParameterDescription porxyserver_idThis recognizes the proxy server uniquely in the PoP to update the content."
+  },
+  {
+   "t": "p",
+   "k": "f9e155250356",
+   "en": "The rest of the parameters have been explained above already."
+  },
+  {
+   "t": "p",
+   "k": "206dacbf8c94",
+   "en": "Note: The Delete API isn’t discussed here. In our caching chapter, we discussed different eviction mechanisms in detail. Those mechanisms are also applicable for a CDN content eviction. Nevertheless, situations can arise where the Delete APIs may be required. We’ll discuss a few content consistency mechanisms, like how much time content stays in the cache, in the next lesson."
+  },
+  {
+   "t": "p",
+   "k": "babe38750c0f",
+   "en": "In the upcoming lessons, we’ll dive deep into the characteristics of CDNs."
+  },
+  {
+   "t": "h1",
+   "k": "dd3883410e8d",
+   "en": "In-depth Investigation of CDN: Part 1"
+  },
+  {
+   "t": "p",
+   "k": "2e023c16ea90",
+   "en": "Learn push and pull models and dynamic content cache optimization in CDNs."
+  },
+  {
+   "t": "h2",
+   "k": "04f95e150c57",
+   "en": "Content caching strategies in CDN"
+  },
+  {
+   "t": "p",
+   "k": "f509dbeebf23",
+   "en": "Identifying content to cache is important in delivering up-to-date and popular web content. To ensure timely updates, two classifications of CDNs are used to get the content from the origin servers."
+  },
+  {
+   "t": "h3",
+   "k": "5db580e5c547",
+   "en": "Push CDN"
+  },
+  {
+   "t": "p",
+   "k": "9b1eb6e1d256",
+   "en": "Content gets sent automatically to the CDN proxy servers from the origin server in the push CDN model. The content delivery to the CDN proxy servers is the content provider’s responsibility. Push CDN is appropriate for static content delivery, where the origin server decides which content to deliver to users using the CDN. The content is pushed to proxy servers in various locations according to the content’s popularity. If the content is rapidly changing, the push model might struggle to keep up and will do redundant content pushes."
+  },
+  {
+   "t": "h3",
+   "k": "18b9dc256321",
+   "en": "Pull CDN"
+  },
+  {
+   "t": "p",
+   "k": "28ebaaf38486",
+   "en": "A CDN pulls the unavailable data from origin servers when requested by a user."
+  },
+  {
+   "t": "p",
+   "k": "aad9349d59e6",
+   "en": "The proxy servers keep the files for a specified amount of time and then remove them from the cache if they’re no longer requested to balance capacity and cost."
+  },
+  {
+   "t": "p",
+   "k": "b0e8817a5d31",
+   "en": "When users request web content in the pull CDN model, the CDN itself is responsible for pulling the requested content from the origin server and serving it to the users. Therefore, this type of CDN is more suited for serving dynamic content."
+  },
+  {
+   "t": "p",
+   "k": "7a369b9d0029",
+   "en": "As stated, the push CDN is mostly used for serving static content. Since static content is served to a wide range of users for longer than dynamic content, the push CDN scheme maintains more replicas than the pull CDN, thus improving availability. On the other hand, the pull CDN is favored for frequently changing content and a high traffic load. Low storage consumption is one of the main benefits of the pull CDN."
+  },
+  {
+   "t": "li",
+   "k": "9ffbdf2b8d56",
+   "en": "Note: Most content providers use both pull and push CDN caching approaches to get the benefits of both.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "0e4f8592cd28",
+   "en": "Dynamic content caching optimization"
+  },
+  {
+   "t": "p",
+   "k": "074b734308c5",
+   "en": "Since dynamic content often changes, it’s a good idea to cache it optimally. This section deals with the optimization of frequently changing content."
+  },
+  {
+   "t": "p",
+   "k": "9bb07456062f",
+   "en": "Certain dynamic content creation requires the execution of scripts that can be executed at proxy servers instead of running on the origin server. Dynamic data can be generated using various parameters, which can be beneficial if executed at the proxy servers. For example, we can generate dynamic content based on user location, time of day at a location, third-party APIs specific to a location (for instance, weather API), and so on. So, it’s optimal to run the scripts at proxy servers instead of the origin servers."
+  },
+  {
+   "t": "p",
+   "k": "31e5b28580bb",
+   "en": "To reduce the communication between the origin server and proxy servers and storage requirements at proxy servers, it’s useful to employ compression techniques as well. For example, Cloudflare uses Railgun to compress dynamic content."
+  },
+  {
+   "t": "p",
+   "k": "bc47a8719b96",
+   "en": "Another popular approach for dynamic data compression is Edge Side Includes (ESI) markup language. Usually, a small portion of the web pages changes in a certain time. It means fetching a full web page on each small change contains a lot of redundant data. To resolve this performance penalty, ESI specifies where content was changed so that the rest of the web page content can be cached. It assembles dynamic content at the CDN edge server or client browser. ESI isn’t standardized yet by the World Wide Web Consortium (W3C), but many CDN providers use it."
+  },
+  {
+   "t": "p",
+   "k": "0843b6bd4d23",
+   "en": "Note: Dynamic Adaptive Streaming over HTTP (DASH) uses a manifest file with URIs of the video with different resolutions so that the client can fetch whatever is appropriate as per prevailing network and end node conditions. Netflix uses a proprietary DASH version with a Byte-range in the URL for further content request and delivery optimization."
+  },
+  {
+   "t": "h2",
+   "k": "ef2b71a742bb",
+   "en": "Multi-tier CDN architecture"
+  },
+  {
+   "t": "p",
+   "k": "b96ee23ad9c1",
+   "en": "The content provider sends the content to a large number of clients through a CDN. The task of distributing data to all the CDN proxy servers simultaneously is challenging and burdens the origin server significantly. CDNs follow a tree-like structure to ease the data distribution process for the origin server. The edge proxy servers have some peer servers that belong to the same hierarchy. This set of servers receives data from the parent nodes in the tree, which eventually receive data from the origin servers. The data is copied from the origin server to the proxy servers by following different paths in the tree."
+  },
+  {
+   "t": "p",
+   "k": "18d696edf67d",
+   "en": "The tree structure for data distribution allows us to scale our system for increasing users by adding more server nodes to the tree. It also reduces the burden on the origin server for data distribution. A CDN typically has one or two tiers of proxy servers (caches). The following illustration shows the two tiers of proxy servers:"
+  },
+  {
+   "t": "p",
+   "k": "592bfd7f9607",
+   "en": "Whenever a new proxy server enters the tree of a CDN, it requests the control core, which maintains information on all the proxy servers in the CDN and provides initial content with the configuration data."
+  },
+  {
+   "t": "p",
+   "k": "a1d8cc7d0cce",
+   "en": "Research shows that many contents have long-tail distribution. This means that, at some point, only a handful of content is very popular, and then we have a long tail of less popular content. Here, a multi-layer cache might be used to handle long-tail content."
+  },
+  {
+   "t": "p",
+   "k": "1c5a53a0c952",
+   "en": "Point to Ponder What happens if a child or parent proxy server fails or if the origin server fails?"
+  },
+  {
+   "t": "p",
+   "k": "ecbfc1f1663a",
+   "en": "Hide Answer Each PoP contains a collection of CDN proxy servers. When any child proxy server stops working due to any failures, DNS can route clients to a different child-level proxy server. Each child proxy server knows many upper-layer parent servers, and if one fails, it can go to the other one. The origin server is a set of servers with a hot backup(s), and content is in replicated store. If any of the origin servers fail, other servers take the load."
+  },
+  {
+   "t": "p",
+   "k": "081765e58a39",
+   "en": "Now that we’ve seen a way to distribute content from the origin server to all the proxy servers of the CDN, we should also educate ourselves on how users can use these proxy servers to get the data more efficiently. We’ll discuss how the nearest proxy server is chosen when clients make requests and how the CDN is located in the upcoming sections of this lesson."
+  },
+  {
+   "t": "h2",
+   "k": "36ed22e1c967",
+   "en": "Find the nearest proxy server to fetch the data"
+  },
+  {
+   "t": "p",
+   "k": "aea24ca611ab",
+   "en": "It’s vital for the user to fetch data from the nearest proxy server because the CDN aims to reduce user-perceived latency by bringing the data close to the user."
+  },
+  {
+   "t": "p",
+   "k": "1885350d7795",
+   "en": "However, the question remains of how users worldwide request data from the nearest proxy server. The goal of this section is to answer that question."
+  },
+  {
+   "t": "h3",
+   "k": "d2878cee905d",
+   "en": "Important factors that affect the proximity of the proxy server"
+  },
+  {
+   "t": "p",
+   "k": "fced19b0cc57",
+   "en": "There are two important factors that are relevant to finding the nearest proxy server to the user:"
+  },
+  {
+   "t": "p",
+   "k": "60330e5cf1b2",
+   "en": "Network distance between the user and the proxy server is crucial. This is a function of the following two things:"
+  },
+  {
+   "t": "p",
+   "k": "5ae712013323",
+   "en": "The first is the length of the network path."
+  },
+  {
+   "t": "p",
+   "k": "c6e8415a718c",
+   "en": "The second is the capacity (bandwidth) limits along the network path."
+  },
+  {
+   "t": "p",
+   "k": "95729cdba6c8",
+   "en": "The shortest network path with the highest capacity (bandwidth) is the nearest proxy server to the user in question. This path helps the user download content more quickly."
+  },
+  {
+   "t": "p",
+   "k": "74a817f4c886",
+   "en": "Requests load refers to the load a proxy server handles at any point in time. If a set of proxy servers are overloaded, the request routing system should forward the request to a location with a lesser load. This action balances out the proxy server load and, consequently, reduces the response latency."
+  },
+  {
+   "t": "p",
+   "k": "08ca1b359101",
+   "en": "Let’s look at the techniques that can be used to route users to the nearest proxy server."
+  },
+  {
+   "t": "h3",
+   "k": "7245adc4fe61",
+   "en": "DNS redirection"
+  },
+  {
+   "t": "p",
+   "k": "fbda7334a4bc",
+   "en": "In a typical DNS resolution, we use a DNS system to get an IP against a human-readable name. However, the DNS can also return another URI (instead of an IP) to the client. Such a mechanism is called DNS redirect."
+  },
+  {
+   "t": "p",
+   "k": "5384d64a91e7",
+   "en": "Content providers can use DNS redirect to send a client to a specific CDN. As an example, if the client tries to resolve a name that has the word “video” in it, the authoritative DNS server provides another URL (for example, cdn.xyz.com). The client does another DNS resolution, and the CDN’s authoritative DNS provides an IP address of an appropriate CDN proxy server to fetch the required content."
+  },
+  {
+   "t": "p",
+   "k": "400443dc8b34",
+   "en": "Depending on the location of the user, the response of the DNS can be different."
+  },
+  {
+   "t": "p",
+   "k": "248f3107c6bf",
+   "en": "Let’s see the slides below to understand how DNS redirection works:"
+  },
+  {
+   "t": "p",
+   "k": "b00585acf5a6",
+   "en": "Note: The nearest proxy server doesn’t necessarily mean the one that’s geographically the closest. It could be, but it’s not only the geography that matters. Other factors like network distance, bandwidth, and traffic load already on that route also matter."
+  },
+  {
+   "t": "p",
+   "k": "a436f99beadc",
+   "en": "There are two steps in the DNS redirection approach:"
+  },
+  {
+   "t": "li",
+   "k": "861027369efe",
+   "en": "In the first step, it maps the clients to the appropriate network location."
+  },
+  {
+   "t": "li",
+   "k": "e588a2a9d956",
+   "en": "In the second step, it distributes the load over the proxy servers in that location to balance the load among the proxy servers (see DNS and Load Balancers building blocks for more details on this)."
+  },
+  {
+   "t": "p",
+   "k": "54c6da7310c0",
+   "en": "DNS redirection takes both of these important factors—network distance and requests load—into consideration, and that reduces the latency towards a proxy server."
+  },
+  {
+   "t": "p",
+   "k": "a147aefeb986",
+   "en": "To shift a client from one machine in a cluster to another, the DNS replies at the second step are given with short TTLs so that the client repeats the resolution after a short while. DNS keeps delivering the content by routing requests to other active servers in case of hardware failures and network congestion. It does so by load balancing the traffic, using intelligent failover, and maintaining servers across many data centers, which achieves good reliability and performance."
+  },
+  {
+   "t": "p",
+   "k": "a9080b0820c9",
+   "en": "Since the load at proxy servers changes over time, the content provider needs to make appropriate changes in the DNS to make the DNS redirection effective."
+  },
+  {
+   "t": "p",
+   "k": "d7522b4070a5",
+   "en": "Many CDN providers like Akamai use DNS redirection in their routing system."
+  },
+  {
+   "t": "h3",
+   "k": "44a5034b0c6f",
+   "en": "Anycast"
+  },
+  {
+   "t": "p",
+   "k": "a903fb9f1a4e",
+   "en": "Anycast is a routing methodology in which all the edge servers located in multiple locations share the same single IP address. It employs the Border Gateway Protocol (BGP) to route clients based on the Internet’s natural network flow. A CDN provider can use the anycast mechanism so that clients are directed to the nearest proxy servers for content."
+  },
+  {
+   "t": "h3",
+   "k": "83c176d6a678",
+   "en": "Client multiplexing"
+  },
+  {
+   "t": "p",
+   "k": "fa0f8ea489d9",
+   "en": "Client multiplexing involves sending a client a list of candidate servers. The client then chooses one server from the list to send the request to. This approach is inefficient because the client lacks the overall information to choose the most suitable server for their request. This may result in sending requests to an already-loaded server and experiencing higher access latency."
+  },
+  {
+   "t": "h3",
+   "k": "a4c32d157ea5",
+   "en": "HTTP redirection"
+  },
+  {
+   "t": "p",
+   "k": "17ac57b5583e",
+   "en": "HTTP redirection is the simplest of all approaches. With this scheme, the client requests content from the origin server. The origin server responds with an HTTP protocol to redirect the user via a URL of the content."
+  },
+  {
+   "t": "p",
+   "k": "f2d3dcc26ba7",
+   "en": "Below is an example of an HTML snippet provided by Facebook. As is highlighted in line 8, the user is redirected to the CDN to download the logo of Facebook:"
+  },
+  {
+   "t": "code",
+   "k": "e80b417819bf",
+   "en": "1<<!–– The code below is taken from Facebook. -->!–– The code below is taken from Facebook. --> 2<div class=\"fb_content clearfix \" id=\"content\" role=\"main\"> 3 <div> 4 <div class=\"_8esj _95k9 _8esf _8opv _8f3m _8ilg _8icx _8op_ _95ka\"> 5 <div class=\"_8esk\"> 6 <div class=\"_8esl\"> 7 <div class=\"_8ice\"> 8 <img class=\"fb_logo\" src=\"https://static.xx.fbcdn.net/rsrc.php/y8/r/dF5SId3U 9 </div> 10 <h2 class=\"_8eso\">Facebook helps you connect and share with the peop 11 </div> 12 </div> 13 </div> 14 </div> 15</div>"
+  },
+  {
+   "t": "p",
+   "k": "19047ced4539",
+   "en": "In the next lesson, we discuss the different details of content consistency and proxy server deployment in CDN."
+  },
+  {
+   "t": "h1",
+   "k": "4cda26203720",
+   "en": "In-depth Investigation of CDN: Part 2"
+  },
+  {
+   "t": "p",
+   "k": "3304c82d3009",
+   "en": "Learn about content consistency mechanisms and the deployment of the proxy server in a CDN."
+  },
+  {
+   "t": "h2",
+   "k": "b5586a101feb",
+   "en": "Content consistency in CDN"
+  },
+  {
+   "t": "p",
+   "k": "5ef1e6d72bf4",
+   "en": "Data in the proxy servers should be consistent with data in the origin servers."
+  },
+  {
+   "t": "p",
+   "k": "e24f49981d17",
+   "en": "There’s always a risk of users accessing stale data if the proxy servers don’t remain consistent with the origin servers. Different consistency mechanisms can be used to ensure consistency of data, depending on the push or pull model."
+  },
+  {
+   "t": "h3",
+   "k": "dd6f547c6d4d",
+   "en": "Periodic polling"
+  },
+  {
+   "t": "p",
+   "k": "deb547de08a1",
+   "en": "Using the pull model, proxy servers request the origin server periodically for updated data and change the content in the cache accordingly. When content changes infrequently, the polling approach consumes unnecessary bandwidth."
+  },
+  {
+   "t": "p",
+   "k": "2127d53ebe84",
+   "en": "Periodic polling uses time-to-refresh (TTR) to adjust the time period for requesting updated data from the origin servers."
+  },
+  {
+   "t": "h3",
+   "k": "662720da48de",
+   "en": "Time-to-live (TTL)"
+  },
+  {
+   "t": "p",
+   "k": "862ce320a877",
+   "en": "Because of the TTR, the proxy servers may uselessly request the origin servers for updated data. A better approach that could be employed to reduce the frequency of refresh messages is the time-to-live (TTL) approach. In this approach, each object has a TTL attribute assigned to it by the origin server. The TTL defines the expiration time of the content. The proxy servers serve the same data version to the users until that content expires. Upon expiration, the proxy server checks for an update with the origin server. If the data is changed, it gets the updated data from the origin server and then responds to the user’s requests with the updated data. Otherwise, it keeps the same data with an updated expiration time from the origin servers."
+  },
+  {
+   "t": "h3",
+   "k": "266e42a9c146",
+   "en": "Leases"
+  },
+  {
+   "t": "p",
+   "k": "e54d4a26ee23",
+   "en": "The origin server grants a lease to the data sent to a proxy server using this technique. The lease denotes the time interval for which the origin server agrees to notify the proxy server if there’s any change in the data. The proxy server must send a message requesting a lease renewal after the expiration of the lease."
+  },
+  {
+   "t": "p",
+   "k": "b116cddda367",
+   "en": "The lease method helps to reduce the number of messages exchanged between the proxy and origin server. Additionally, the lease duration can be optimized dynamically according to the observed load on the proxy servers. This technique is referred to as an adaptive lease."
+  },
+  {
+   "t": "p",
+   "k": "ae2eae8e2042",
+   "en": "In the following section, we discuss where to place the CDN proxy server to transmit data effectively."
+  },
+  {
+   "t": "h2",
+   "k": "7233fb3683f4",
+   "en": "Deployment"
+  },
+  {
+   "t": "p",
+   "k": "6c32ea9ffbb5",
+   "en": "We have to be clear with the answers to the following questions before we install the CDN facility:"
+  },
+  {
+   "t": "p",
+   "k": "2e3696602fa7",
+   "en": "What are the best locations to install proxy servers to maximally utilize CDN technology?"
+  },
+  {
+   "t": "p",
+   "k": "b86f77630c00",
+   "en": "How many CDN proxy servers should we install?"
+  },
+  {
+   "t": "h3",
+   "k": "1098ae3f5627",
+   "en": "Placement of CDN proxy servers"
+  },
+  {
+   "t": "p",
+   "k": "46f56483f2b7",
+   "en": "The CDN proxy servers must be placed at network locations with good connectivity. See the options below:"
+  },
+  {
+   "t": "p",
+   "k": "06e4e4b6daf3",
+   "en": "On-premises represents a smaller data center that could be placed near major IXPs."
+  },
+  {
+   "t": "p",
+   "k": "35e1803aebc4",
+   "en": "Off-premises represents placing CDN proxy servers in ISP’s networks."
+  },
+  {
+   "t": "p",
+   "k": "e0144a8ad3b3",
+   "en": "Today, it might be feasible to keep a large portion of a movie’s data in a CDN infrastructure that’s housed inside an ISP . Still, for services like YouTube, data is so large and ever-expanding that it’s challenging to decide what we should put near a user. Google uses split TCP to reduce user-perceived delays by keeping persistent connections with huge TCP windows from the IXP-level infrastructure to their primary data centers. The client’s TCP requests terminate at the IXP-level infrastructure and are then forwarded on already established, low latency TCP connections."
+  },
+  {
+   "t": "p",
+   "k": "a29f934d8123",
+   "en": "Doing this substantially reduces client-perceived latency, which is due to the avoidance of the initial three-way handshake of TCP connection and slow-start stages to a host far away (had the client wanted to go to the primary data centers of Google). A round-trip delay to IXP is often very low. Therefore, three-way handshakes and slow starts at that level are negligible. Predictive push is a significant research field to decide what to push near the customers."
+  },
+  {
+   "t": "p",
+   "k": "ce1a9c52c4d7",
+   "en": "We can use measurements to facilitate the decision of proxy server placement."
+  },
+  {
+   "t": "p",
+   "k": "da4a76d4a918",
+   "en": "One such tool is ProxyTeller to decide where to place the proxy server and how many proxy servers are required to achieve high performance. ProxyTeller uses hit ratio, network bandwidth, and client-response time (latency) as performance parameters to decide the placement of proxy servers. Other greedy, random, and hotspot algorithms are also used for proxy server placements."
+  },
+  {
+   "t": "p",
+   "k": "51786e8392f7",
+   "en": "Note: Akamai and Netflix popularized the idea of keeping their CDN proxy servers inside the client’s ISPs. For many clients of Akamai, content is just one network hop away. On the other hand, Google also has its private CDN infrastructure but relies more on its servers near IXPs."
+  },
+  {
+   "t": "p",
+   "k": "cbc3a0ed042a",
+   "en": "One reason for this could be the sheer amount of data and the change patterns."
+  },
+  {
+   "t": "p",
+   "k": "871667120e3a",
+   "en": "Point to Ponder What benefits could an ISP get by placing the CDN proxy servers inside their network?"
+  },
+  {
+   "t": "p",
+   "k": "9a99aff31422",
+   "en": "Hide Answer A CDN node cuts down the amount of external bandwidth that ISPs need and pay for. The SLA defined by ISPs with the proxy server providers may benefit the ISPs economically."
+  },
+  {
+   "t": "p",
+   "k": "7c5c9064803c",
+   "en": "A CDN node improves responsiveness for the ISP’s customers, which makes the ISP’s customers happier. This gives them a competitive advantage over ISPs that don’t have a CDN node."
+  },
+  {
+   "t": "p",
+   "k": "91ba13adea14",
+   "en": "Bringing content closer to the users reduces data on the Internet core."
+  },
+  {
+   "t": "h2",
+   "k": "c583db7e7dbb",
+   "en": "CDN as a service"
+  },
+  {
+   "t": "p",
+   "k": "bc39e90066af",
+   "en": "Most companies don’t build their own CDN. Instead, they use the services of a CDN provider, such as Akamai, Cloudflare, Fastly, and so on, to deliver their content. Similarly, players like AWS make it possible for anyone to use a global CDN facility."
+  },
+  {
+   "t": "p",
+   "k": "639c10edc2eb",
+   "en": "The companies sign a contract with the CDN service provider and deliver their content to the CDN, thereby allowing the CDN to distribute the content to the end users. A public CDN raises the following concerns for content providers:"
+  },
+  {
+   "t": "p",
+   "k": "c385892e0ce0",
+   "en": "The content provider can’t do anything if the public CDN is down."
+  },
+  {
+   "t": "p",
+   "k": "837679dc7332",
+   "en": "If a public CDN doesn’t have any proxy servers located in the region or country where some website traffic comes from, then those specific customers are out of luck. In such cases, the content providers have to buy CDN services from other CDN providers or deploy and use their own private CDN."
+  },
+  {
+   "t": "p",
+   "k": "8d2ca62c97ab",
+   "en": "It’s possible that some domains or IP addresses of CDN providers are blocked or restricted in some countries because they might be delivering content that’s banned in those countries."
+  },
+  {
+   "t": "p",
+   "k": "0fbd52d483c0",
+   "en": "Note: Some companies make their own CDN instead of using the services of CDN providers. For example, Netflix has its own purpose-built CDN called Open Connect."
+  },
+  {
+   "t": "h2",
+   "k": "bb85783d6a7b",
+   "en": "Specialized CDN"
+  },
+  {
+   "t": "p",
+   "k": "8a66da8d0dee",
+   "en": "These PoPs can be caching servers, reverse proxies, or application delivery controllers. Although a specialized CDN has high costs at its first setup, the costs eventually decrease with time. In essence, it’s a buy versus build decision."
+  },
+  {
+   "t": "p",
+   "k": "3dbbae95f1e4",
+   "en": "The specialized CDN’s PoPs consist of many proxy servers to serve petabytes of content. A private CDN can be used in coexistence with a public CDN. In case the capacity of a private CDN isn’t enough or there’s a failure that leads to capacity reduction, the public CDN is used as a backup. Netflix’s Open Connect Appliance (OCA) is an example of a CDN that’s specialized in video delivery."
+  },
+  {
+   "t": "p",
+   "k": "7ad5cc2c0840",
+   "en": "Netflix’s OCA servers don’t store user data. Instead, they fulfill the following tasks:"
+  },
+  {
+   "t": "p",
+   "k": "58677c5c1477",
+   "en": "They report their status—health, learned routes, and details of cached content—to the Open Connect control plane that resides in AWS (Amazon Web Services)."
+  },
+  {
+   "t": "p",
+   "k": "e4eb5d086c88",
+   "en": "They serve the cached content that’s requested by the user."
+  },
+  {
+   "t": "p",
+   "k": "9c81d04dd375",
+   "en": "All the deployed OCAs situated in IXP or embedded in the ISP network are monitored by the Open Connect operation team."
+  },
+  {
+   "t": "h3",
+   "k": "c09220aa3481",
+   "en": "Why Netflix built its CDN"
+  },
+  {
+   "t": "p",
+   "k": "8da50a74efc0",
+   "en": "As Netflix became more popular, it decided to build and manage its own CDN for the following reasons:"
+  },
+  {
+   "t": "p",
+   "k": "fa580f84373a",
+   "en": "The CDN service providers were scuffling to expand their infrastructure due to the rapid growth in customer demand for video streaming on Netflix."
+  },
+  {
+   "t": "p",
+   "k": "ef6899feb35a",
+   "en": "With the increasing volume of streaming videos, the expense of using CDN services increased."
+  },
+  {
+   "t": "p",
+   "k": "8c528544df18",
+   "en": "Video streaming is the main business and a primary revenue source for Netflix. So, protecting the data of all the videos on the platform is critical."
+  },
+  {
+   "t": "p",
+   "k": "437cbcdec594",
+   "en": "Netflix’s OCA manages potential data leakage risks in a better way."
+  },
+  {
+   "t": "p",
+   "k": "284fae99b6af",
+   "en": "To provide optimal streaming media delivery to customers, Netflix needed to maximize its control over the user’s video player, the network between the user, and the Netflix servers."
+  },
+  {
+   "t": "p",
+   "k": "e1443cb61bb8",
+   "en": "Netflix’s OCA can use custom HTTP modules and TCP connection algorithms to detect network problems quickly and troubleshoot any issues in their CDN network."
+  },
+  {
+   "t": "p",
+   "k": "3140c220518d",
+   "en": "Netflix wanted to keep popular content for a long time. This wasn’t entirely possible while operating with a public CDN due to the high costs that would be incurred to keep and maintain it."
+  },
+  {
+   "t": "p",
+   "k": "ef17af6ed700",
+   "en": "Note: Netflix is able to achieve a hit ratio close to 95% using OCA."
+  },
+  {
+   "t": "p",
+   "k": "905bbcb3610e",
+   "en": "We’ll evaluate our proposed design in the next lesson."
+  },
+  {
+   "t": "h1",
+   "k": "8e269c57b54d",
+   "en": "Evaluation of CDN's Design"
+  },
+  {
+   "t": "p",
+   "k": "70cd6ac957d5",
+   "en": "Let's evaluate our proposed CDN."
+  },
+  {
+   "t": "h2",
+   "k": "90f0f88bf84f",
+   "en": "Evaluation"
+  },
+  {
+   "t": "h3",
+   "k": "476ee0f6af1d",
+   "en": "Performance"
+  },
+  {
+   "t": "p",
+   "k": "c3ce3dacca41",
+   "en": "CDN achieves high performance by minimizing latency. Some of the key design decisions that minimize latency are as follows:"
+  },
+  {
+   "t": "p",
+   "k": "0f715cba64d2",
+   "en": "Proxy servers usually serve content from the RAM."
+  },
+  {
+   "t": "p",
+   "k": "3d93d725e27b",
+   "en": "CDN proxy servers are placed near the users to provide faster access to content."
+  },
+  {
+   "t": "p",
+   "k": "ab466803b162",
+   "en": "A CDN can also be the provider of proxy servers located in the ISP or Internet exchange points (IXPs) to handle high traffic."
+  },
+  {
+   "t": "p",
+   "k": "8a2c8ebdb71c",
+   "en": "The request routing system ensures that users are directed to the nearest proxy servers, as discussed earlier."
+  },
+  {
+   "t": "p",
+   "k": "2420967e755c",
+   "en": "The proxy servers have long-tail content stored in nonvolatile storage systems like SSD or HDD. Serving from these resources results in a more negligible latency than we’d see from serving content from origin servers."
+  },
+  {
+   "t": "p",
+   "k": "529d6bb18ff0",
+   "en": "As was discussed previously, proxy servers can be implemented in layers where if one layer doesn’t have the content, the request can be entertained by the next layer of proxy servers. For example, the edge proxy servers can request the parent proxy servers. Placing proxy servers at specific ISPs could be the best option when most traffic comes from those ISP regions."
+  },
+  {
+   "t": "h3",
+   "k": "f2c1b76db30d",
+   "en": "Availability"
+  },
+  {
+   "t": "p",
+   "k": "8283d7f27e10",
+   "en": "A CDN can deal with massive traffic due to its distributed nature. A CDN ensures availability through its cached content that serves as a backup whenever the origin servers fail. Moreover, if one or more proxy servers in the CDN stop working, other operational proxy servers step in and continue to drive the web traffic. In addition, edge proxy servers can be made available through redundancy by replicating data to as many proxy servers as needed to avoid a single point of failure and to meet the request load. Finally, we can use a load balancer to distribute the users’ requests to nearby active proxy servers."
+  },
+  {
+   "t": "h3",
+   "k": "b06273ade235",
+   "en": "Scalability"
+  },
+  {
+   "t": "p",
+   "k": "3d54b984f2cd",
+   "en": "The design of CDN facilitates scalability in the following ways:"
+  },
+  {
+   "t": "p",
+   "k": "7f88342d6cdc",
+   "en": "It brings content closer to the user and removes the requirement of high bandwidth, thereby ensuring scalability."
+  },
+  {
+   "t": "p",
+   "k": "da1f2813e46c",
+   "en": "Horizontal scalability is possible by adding the number of reading replicas in the form of edge proxy servers."
+  },
+  {
+   "t": "p",
+   "k": "f986547e3d9a",
+   "en": "The limitations with horizontal scalability and storage capacity of an individual proxy server can be dealt with using the layered architecture of the proxy servers we described above."
+  },
+  {
+   "t": "h3",
+   "k": "592927bc4049",
+   "en": "Reliability and security"
+  },
+  {
+   "t": "p",
+   "k": "685eba3174cb",
+   "en": "A CDN ensures no single failure point by carefully implementing maintenance cycles and integrating additional hardware and software when required. Apart from failures, the CDN handles massive traffic loads by equally distributing the load to the edge proxy servers. We can use scrubber servers to prevent DDoS attacks and securely host content. Moreover, we can use the heartbeat protocol to monitor the health of servers and omit faulty servers. Real-time applications also build their own specified CDNs to prevent content leakage problems and securely serve content to their end users."
+  },
+  {
+   "t": "h2",
+   "k": "6a38a38f03e4",
+   "en": "Conclusion"
+  }
+ ]
+}

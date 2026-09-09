@@ -1,0 +1,33 @@
+{
+ "id": "33-cache-miss-attack",
+ "title": "Cache miss attack",
+ "titleKey": "d37d35a599a0",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "0d90293e985d",
+   "en": "Caching is awesome but it doesn’t come without a cost, just like many things in life."
+  },
+  {
+   "t": "p",
+   "k": "f6b7ab7fd2de",
+   "en": "One of the issues is 𝐂𝐚𝐜𝐡𝐞 𝐌𝐢𝐬𝐬 𝐀𝐭𝐭𝐚𝐜𝐤. Correct me if this is not the right term. It refers to the scenario where data to fetch doesn't exist in the database and the data isn’t cached either. So every request hits the database eventually, defeating the purpose of using a cache. If a malicious user initiates lots of queries with such keys, the database can easily be overloaded."
+  },
+  {
+   "t": "p",
+   "k": "89cd7e29984e",
+   "en": "The diagram below illustrates the process."
+  },
+  {
+   "t": "p",
+   "k": "ba6a1d5cfe71",
+   "en": "Two approaches are commonly used to solve this problem: 68 🔹Cache keys with null value. Set a short TTL (Time to Live) for keys with null value. 🔹Using Bloom filter.A Bloom filter is a data structurethat can rapidly tell us whether an element is present in a set or not. If the key exists, the request first goes to the cache and then queries the database if needed. If the key doesn't exist in the data set, it means the key doesn’t exist in the cache/database. In this case, the query will not hit the cache or database layer. — Check out our bestselling system design books."
+  },
+  {
+   "t": "p",
+   "k": "437ef5d44df9",
+   "en": "Paperback:AmazonDigital:ByteByteGo. 69"
+  }
+ ]
+}

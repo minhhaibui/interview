@@ -1,0 +1,176 @@
+{
+ "id": "26-queue-backpressure-under-a-traffic-spike",
+ "title": "Queue Backpressure Under a Traffic Spike",
+ "titleKey": "386e8ae3fa15",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "59030ffc9e24",
+   "en": "Your order processing service runs on SQS."
+  },
+  {
+   "t": "p",
+   "k": "c5dcbf8107f8",
+   "en": "Normal load: 200 orders/min. Consumers keep up fine."
+  },
+  {
+   "t": "p",
+   "k": "25c3d3a3ecf6",
+   "en": "Then Black Friday hits. Producers start pushing 4,000 orders/min. Queue depth climbs to 80,000 messages in 20 minutes. Your downstream DB is at 95% CPU. Consumers are falling behind and you're watching the queue grow in real time."
+  },
+  {
+   "t": "p",
+   "k": "8dcf93ddfa3d",
+   "en": "You need to handle this backpressure. What do you do?"
+  },
+  {
+   "t": "p",
+   "k": "ec32fc38f808",
+   "en": "A) Scale consumers horizontally — add more Lambda functions / EC2 workers to chew through the backlog faster."
+  },
+  {
+   "t": "p",
+   "k": "e4245f0fe3dd",
+   "en": "B) Set a visibility timeout and route failures to a dead-letter queue to protect against poison pills."
+  },
+  {
+   "t": "p",
+   "k": "bd55a420f338",
+   "en": "C) Rate-limit producers at the source — use a token bucket or sliding window to cap how fast messages enter the queue."
+  },
+  {
+   "t": "p",
+   "k": "f27ff7131728",
+   "en": "D) Switch to SQS delay queues — defer message visibility to spread out delivery and reduce consumer pressure."
+  },
+  {
+   "t": "h3",
+   "k": "30494034870b",
+   "en": "DAY 25 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "6e88634a23fa",
+   "en": "Why C wins, and why it doesn't wreck UX The queue grows because the producer is winning the race. 4,000 in, 200 out. You can scale consumers all day and that gap won't close on its own, especially with the DB already sitting at 95% CPU."
+  },
+  {
+   "t": "p",
+   "k": "c2b673f8689d",
+   "en": "The fix is upstream. Rate-limit the producer with a token bucket or sliding window. In AWS that's API Gateway usage plans, Lambda reserved concurrency, or throttle middleware inside the service. Queue depth stabilizes, consumers catch up at their natural pace, and the DB stops cooking."
+  },
+  {
+   "t": "p",
+   "k": "d9fde04ba64c",
+   "en": "The mental model: slow the tap, don't just widen the drain."
+  },
+  {
+   "t": "p",
+   "k": "ef1935dc9551",
+   "en": "Now the part the diagram glossed over: the \"producer\" isn't your user."
+  },
+  {
+   "t": "p",
+   "k": "cdf6d6117730",
+   "en": "In most real systems the order flow is decoupled. A user submits an order, it's written to the DB, and they get their success response right away. A separate processor then reads those events (polling or CDC) and emits them to the queue. That emitter is the producer you throttle."
+  },
+  {
+   "t": "p",
+   "k": "4fe84829a92d",
+   "en": "So rate-limiting never touches checkout. The user already has their ack from the write. You're capping how fast events flow into the queue, not how fast users can order. UX stays intact; the queue just stops outrunning your consumers."
+  },
+  {
+   "t": "p",
+   "k": "3b1927b5db9c",
+   "en": "That's what backpressure actually is: the downstream system telling the upstream to slow down. The queue depth is the signal. You react to it upstream."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "2470248826d7",
+   "en": "Why A is the trap answer (Scale consumers):",
+   "lead": "Why A is the trap answer (Scale consumers)"
+  },
+  {
+   "t": "p",
+   "k": "583086fdec83",
+   "en": "This is the instinct answer, and it's close enough to fool senior engineers."
+  },
+  {
+   "t": "p",
+   "k": "942275ae9cfb",
+   "en": "Yes, more consumers means more throughput. But you're treating a rate mismatch as a capacity problem. If your producer can always generate faster than your consumers can process — and on Black Friday it can — you're in an arms race you can't win. You spin up 10x Lambda functions, hit DynamoDB write throughput limits, hammer your RDS connection pool, and the queue still grows."
+  },
+  {
+   "t": "p",
+   "k": "2dd4b94aab51",
+   "en": "Just slower, and now your infra bill doubled."
+  },
+  {
+   "t": "p",
+   "k": "3485b9415f34",
+   "en": "Consumer scaling works when your bottleneck is compute. It doesn't work when the problem is unbounded producer rate."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "2f0de70111fa",
+   "en": "Why B is wrong (Visibility timeout + DLQ):",
+   "lead": "Why B is wrong (Visibility timeout + DLQ)"
+  },
+  {
+   "t": "p",
+   "k": "bf50b475a1cb",
+   "en": "This is failure handling, not backpressure."
+  },
+  {
+   "t": "p",
+   "k": "967cd380cd81",
+   "en": "DLQ catches poison pills — messages that fail processing repeatedly and would otherwise loop forever. Visibility timeout controls how long a message stays invisible after a consumer picks it up (preventing double-processing). Neither of these slows the producer or reduces queue depth growth."
+  },
+  {
+   "t": "p",
+   "k": "a59b5475098a",
+   "en": "Mixing up backpressure with retry/error handling is one of the most common architecture confusions I see. They solve completely different problems."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "47c56111c375",
+   "en": "Why D is wrong (SQS delay queues):",
+   "lead": "Why D is wrong (SQS delay queues)"
+  },
+  {
+   "t": "p",
+   "k": "414d016ede39",
+   "en": "Delay queues defer message visibility, not message creation. Your producer still pushes 4,000 msg/min. Messages pile up invisibly, then become visible in bursts when the delay expires. You haven't reduced backpressure — you've deferred it and made the delivery pattern spikier."
+  },
+  {
+   "t": "p",
+   "k": "b42b750c1e74",
+   "en": "This is like covering a flooding sink with a lid and calling it fixed. The water is still rising...."
+  },
+  {
+   "t": "p",
+   "k": "d40c6c8ec22d",
+   "en": "Write-through — write to cache and DB together, synchronously. Cache is always warm, always"
+  },
+  {
+   "t": "h3",
+   "k": "df4a4fb9003e",
+   "en": "DAY 26 · SYSTEM DESIGN"
+  }
+ ]
+}

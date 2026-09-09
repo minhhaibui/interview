@@ -1,0 +1,138 @@
+{
+ "id": "06-choosing-a-database-sharding-strategy",
+ "title": "Choosing a Database Sharding Strategy",
+ "titleKey": "19bbce5450f4",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "f32e75ebe37a",
+   "en": "4 database sharding strategies. 4 completely different scaling outcomes. One wrong choice and you're melting a primary on Black Friday."
+  },
+  {
+   "t": "p",
+   "k": "8230ef0226ab",
+   "en": "Your Postgres orders table just crossed 500M rows."
+  },
+  {
+   "t": "p",
+   "k": "3e99cf9e9ff8",
+   "en": "Range scans that used to take 40ms are creeping past 800ms."
+  },
+  {
+   "t": "p",
+   "k": "983ffc55035a",
+   "en": "Vertical scaling is dead. You need to shard."
+  },
+  {
+   "t": "p",
+   "k": "1f2f810dbdd9",
+   "en": "Here is the workload:"
+  },
+  {
+   "t": "li",
+   "k": "0d4fc2d44d23",
+   "en": "orders = 500M rows, growing 3M/week"
+  },
+  {
+   "t": "li",
+   "k": "b0c9d9264760",
+   "en": "80% reads = \"customer X's last 30 days of orders\""
+  },
+  {
+   "t": "li",
+   "k": "07b2277d09d2",
+   "en": "15% reads = analytics joins on date ranges"
+  },
+  {
+   "t": "li",
+   "k": "a930bdd4a575",
+   "en": "5% writes = new orders (steady 400 RPS, 2x on sale days)"
+  },
+  {
+   "t": "p",
+   "k": "4eddad605abd",
+   "en": "Which strategy do you pick?"
+  },
+  {
+   "t": "p",
+   "k": "ce989c56ef9d",
+   "en": "Range sharding on created_at — keeps time-series queries local. Directory-based sharding — lookup table maps customer to shard. Consistent hashing with virtual nodes — easy rebalancing on scale-up."
+  },
+  {
+   "t": "h3",
+   "k": "485d2d849e38",
+   "en": "DAY 05 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "874b9f22597a",
+   "en": "Answer: C — Directory-based sharding ✅ Here is why the other three trick smart engineers:"
+  },
+  {
+   "t": "p",
+   "k": "1c91a7f176fd",
+   "en": "Why C wins (Directory-based): 80% of reads are \"customer X's orders.\" You want every order for a customer on exactly one shard. A customer-scoped read hits one node, no scatter-gather fan-out."
+  },
+  {
+   "t": "p",
+   "k": "45d72b86ba78",
+   "en": "You keep a customer_shard_map table (cached in Redis). If shard 3 gets hot, you migrate specific heavy customers (whales) without rehashing anything. Targeted rebalancing is the superpower."
+  },
+  {
+   "t": "p",
+   "k": "56fd48b74f6c",
+   "en": "Figma, Notion, and Slack do this."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "11bff4f5b908",
+   "en": "Why A is the trap (Hash on order_id):"
+  },
+  {
+   "t": "p",
+   "k": "a0617b4c6c8b",
+   "en": "The classic tutorial answer: \"Hash the primary key!\" It wrecks you here. A single customer's 200 orders scatter across all shards. Every read becomes a 4-shard fan-out gated by your slowest node. P99 latency goes up."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "p",
+   "k": "ff77a36c4546",
+   "en": "Why B is wrong (Range on created_at):"
+  },
+  {
+   "t": "p",
+   "k": "383650b9cdaf",
+   "en": "Creates a hot shard by design. Every new order writes to the same shard. Your newest shard absorbs 100% of writes and 70% of reads. On Black Friday, this shard melts while others sit idle."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "p",
+   "k": "f4a149a4cf91",
+   "en": "Why D is wrong (Consistent hashing):"
+  },
+  {
+   "t": "p",
+   "k": "9ddac4e959ee",
+   "en": "Great for uniform data, but you can't migrate specific heavy tenants. If four whales land on the same shard, you are stuck."
+  },
+  {
+   "t": "h3",
+   "k": "7668bf34499a",
+   "en": "DAY 06 · SYSTEM DESIGN"
+  }
+ ]
+}

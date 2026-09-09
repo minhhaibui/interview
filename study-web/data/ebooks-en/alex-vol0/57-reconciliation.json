@@ -1,0 +1,83 @@
+{
+ "id": "57-reconciliation",
+ "title": "Reconciliation",
+ "titleKey": "4f7525e28a45",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "057f74b3ce63",
+   "en": "My previous post about painful payment reconciliation problems sparked lots of interesting discussions. One of the readers shared more problems we may face when working with intermediary payment processors in the trenches and a potential solution:"
+  },
+  {
+   "t": "li",
+   "k": "39e31136eafc",
+   "en": "Foreign Currency Problem: When you operate a store globally, you will come across this problem quite frequently. To go back to the example from Paypal - if the transaction happens in a currency different from the standard currency of Paypal, this will create another layer, where the transaction is first received in that currency and exchanged to whatever currency your Paypal is using. There needs to be a reliable way to reconcile that currency exchange transaction. It certainly does not help that every payment provider handles this differently."
+  },
+  {
+   "t": "li",
+   "k": "9a6e14228aae",
+   "en": "Payment providers are only that - intermediaries. Each purchase does not trigger two events for a company, but actually at least 4. The purchase via Paypal (where both the time and the currency dimension can come into play) trigger the debit/credit pair for the transaction and then, usually a few days later, another pair when the money is transferred from Paypal to a bank account (where there might be yet another FX discrepancy to reconcile if, for example, the initial purchase was in JPY, Paypal is set up in USD and your bank account is in EUR)."
+  },
+  {
+   "t": "p",
+   "k": "4fafb22f7c15",
+   "en": "There needs to be a way to reconcile all of these."
+  },
+  {
+   "t": "li",
+   "k": "52f4e63d3820",
+   "en": "Some problems also pop up on the buyer side that is very platform-specific. One example is shadow transaction from Paypal: if you buy two items on Paypal with 1 week of time between the two transactions, Paypal will first debit money from your bank account for transaction A. If at the time of transaction B, transaction A has not gone through completely or is canceled, there might be a world where Paypal will use the money from transaction A to partially pay for transaction B, which leads to only a partial amount of transaction B being withdrawn from the bank account."
+  },
+  {
+   "t": "p",
+   "k": "26e72de89145",
+   "en": "In practice, this usually looks something like this:"
+  },
+  {
+   "t": "li",
+   "k": "6bb294692bb4",
+   "en": "Your shop assigns an order number to the purchase 122"
+  },
+  {
+   "t": "li",
+   "k": "9d9cbce14c5b",
+   "en": "The order number is carried over to the payment provider"
+  },
+  {
+   "t": "li",
+   "k": "777d8dad8b4f",
+   "en": "The payment provider creates another internal ID, which is carried over across transactions within the system"
+  },
+  {
+   "t": "li",
+   "k": "e964284ee7b2",
+   "en": "The payment ID is used when you get the payout on your bank account (or the payment provider bundles individual payments, which can be reconciled within the payment provider system)"
+  },
+  {
+   "t": "li",
+   "k": "da36c6ec94c8",
+   "en": "Ideally, your payment provider and your shop have an integration/API with the tool you use to (hopefully automatically) create invoices. This usually carries over the order id from the shop (closing the loop) and sometimes even the payment id to match it with the invoice id, which you then can use to reconcile it with your accounts receivable/payable. :)"
+  },
+  {
+   "t": "p",
+   "k": "e1eccc1f8cc4",
+   "en": "Credit: A knowledgeable reader who prefers to stay private. Thank you! 123 Continued: how to choose the right database for metrics collecting service?"
+  },
+  {
+   "t": "p",
+   "k": "d935a9795c71",
+   "en": "There are many storage systems available that are optimized for time-series data. The optimization lets us use far fewer servers to handle the same volume of data. Many of these databases also have custom query interfaces specially designed for the analysis of time-series data that are much easier to use than SQL. Some even provide features to manage data retention and data aggregation. Here are a few examples of time-series databases."
+  },
+  {
+   "t": "p",
+   "k": "900d03d3b42f",
+   "en": "OpenTSDB is a distributed time-series database, but since it is based on Hadoop and HBase, running a Hadoop/HBase cluster adds complexity. Twitter uses MetricsDB, and Amazon offers Timestream as a time-series database. According to DB-engines, the two most popular time-series databases are InfluxDB and Prometheus, which are designed to store large volumes of time-series data and quickly perform real-time analysis on that data. Both of them primarily rely on an in-memory cache and on-disk storage. And they both handle durability and performance quite well. According to the benchmark, an InfluxDB with 8 cores and 32GB RAM can handle over 250,000 writes per second. 124 Since a time-series database is a specialized database, you are not expected to understand the internals in an interview unless you explicitly mentioned it in your resume. For the purpose of an interview, it’s important to understand the metrics data are time-series in nature and we can select time-series databases such as InfluxDB for storage to store them."
+  },
+  {
+   "t": "p",
+   "k": "aa3260dfb513",
+   "en": "Another feature of a strong time-series database is efficient aggregation and analysis of a large amount of time-series data by labels, also known as tags in some databases. For example, InfluxDB builds indexes on labels to facilitate the fast lookup of time-series by labels. It provides clear best-practice guidelines on how to use labels, without overloading the database. The key is to make sure each label is of low cardinality (having a small set of possible values). This feature is critical for visualization, and it would take a lot of effort to build this with a general-purpose database. 125"
+  }
+ ]
+}

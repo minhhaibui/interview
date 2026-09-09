@@ -1,0 +1,38 @@
+{
+ "id": "00-m-u",
+ "title": "Mở đầu",
+ "titleKey": "3763d3765a47",
+ "book": "alex-vol1",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "3d7859c52ee3",
+   "en": "System Design Interview: An Insider’s Guide"
+  },
+  {
+   "t": "p",
+   "k": "baf574d5a3a3",
+   "en": "All rights reserved. This book or any portion thereof may not be reproduced or used in any manner whatsoever without the express written permission of the publisher except for the use of brief quotations in a book review."
+  },
+  {
+   "t": "h3",
+   "k": "4e6e2af9b0fa",
+   "en": "About the author:"
+  },
+  {
+   "t": "p",
+   "k": "a11959aaa1b6",
+   "en": "Alex Xu is an experienced software engineer and entrepreneur. Previously, he worked at Twitter, Apple, Zynga and Oracle. He received his M.S. from Carnegie Mellon University."
+  },
+  {
+   "t": "p",
+   "k": "009733f427a3",
+   "en": "He has a passion for designing and implementing complex systems."
+  },
+  {
+   "t": "p",
+   "k": "4bf3a1a85d03",
+   "en": "Please subscribe to our email list if you want to be notified when new chapters are available: https://bit.ly/3dtIcsE For more information, contact systemdesigninsider@gmail.com Editor: Paul Solomon Table of Contents System Design Interview: An Insider’s Guide FORWARD CHAPTER 1: SCALE FROM ZERO TO MILLIONS OF USERS CHAPTER 2: BACK-OF-THE-ENVELOPE ESTIMATION CHAPTER 3: A FRAMEWORK FOR SYSTEM DESIGN INTERVIEWS CHAPTER 4: DESIGN A RATE LIMITER CHAPTER 5: DESIGN CONSISTENT HASHING CHAPTER 6: DESIGN A KEY-VALUE STORE CHAPTER 7: DESIGN A UNIQUE ID GENERATOR IN DISTRIBUTED SYSTEMS CHAPTER 8: DESIGN A URL SHORTENER CHAPTER 9: DESIGN A WEB CRAWLER CHAPTER 10: DESIGN A NOTIFICATION SYSTEM CHAPTER 11: DESIGN A NEWS FEED SYSTEM CHAPTER 12: DESIGN A CHAT SYSTEM CHAPTER 13: DESIGN A SEARCH AUTOCOMPLETE SYSTEM CHAPTER 14: DESIGN YOUTUBE CHAPTER 15: DESIGN GOOGLE DRIVE CHAPTER 16: THE LEARNING CONTINUES AFTERWORD"
+  }
+ ]
+}

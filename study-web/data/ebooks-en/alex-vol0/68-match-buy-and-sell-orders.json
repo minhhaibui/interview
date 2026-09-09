@@ -1,0 +1,33 @@
+{
+ "id": "68-match-buy-and-sell-orders",
+ "title": "Match buy and sell orders",
+ "titleKey": "2a997a888033",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "57d3eb9be4a2",
+   "en": "Stocks go up and down. Do you know what data structure is used to efficiently match buy and sell orders?"
+  },
+  {
+   "t": "p",
+   "k": "e275a1b92e68",
+   "en": "Stock exchanges use the data structure called 𝐨𝐫𝐝𝐞𝐫 𝐛𝐨𝐨𝐤𝐬. An order book is an electronic list of buy and sell orders, organized by price levels. It has a buy book and a sell book, where each side of the book contains a bunch of price levels, and each price level contains a list of orders (first in first out)."
+  },
+  {
+   "t": "p",
+   "k": "87eedc2a6260",
+   "en": "The image is an example of price levels and the queued quantity in each price level."
+  },
+  {
+   "t": "p",
+   "k": "005f6fb8b43f",
+   "en": "So what happens when you place a market order to buy 2700 shares in the diagram? - The buy order is matched with all the sell onrders at price 100.10, and the first order at price 100.11 (illustrated in light red). 149 - Now because of the big buy order which “eats up” the first price level on the sell book, the best ask price goes up from 100.10 to 100.11. - So when the market is bullish, people tend to buy stocks, and the price goes up and up."
+  },
+  {
+   "t": "p",
+   "k": "b31aae930f43",
+   "en": "An efficient data structure for an order book must satisfy: - Constant lookup time. Operations include: get volume at a price level or between price levels, query best bid/ask. - Fast add/cancel/execute/update operations, preferably O(1) time complexity. Operations include: place a new order, cancel an order, and match an order. 150"
+  }
+ ]
+}

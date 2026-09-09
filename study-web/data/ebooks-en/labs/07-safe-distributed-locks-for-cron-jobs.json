@@ -1,0 +1,157 @@
+{
+ "id": "07-safe-distributed-locks-for-cron-jobs",
+ "title": "Safe Distributed Locks for Cron Jobs",
+ "titleKey": "b9502a783412",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "aa976b564479",
+   "en": "Your job scheduler runs on 3 instances behind an ALB."
+  },
+  {
+   "t": "p",
+   "k": "a7bb08bb28cd",
+   "en": "Every 5 minutes, a cron fires the same \"generate-daily-report\" job — and all 3 instances try to grab it."
+  },
+  {
+   "t": "p",
+   "k": "66a8286f5b79",
+   "en": "You reach for the classic fix: a Redis SETNX lock."
+  },
+  {
+   "t": "p",
+   "k": "a6f714ddc100",
+   "en": "SET job:daily-report locked NX EX 300 only one instance wins. Done.→ Works perfectly for a month. Until 2am on a Saturday."
+  },
+  {
+   "t": "p",
+   "k": "123b2621e54b",
+   "en": "Instance B wins the lock. Starts the job. 60 seconds in, the pod gets OOM-killed. The lock is still there. TTL says 300 seconds. The report runs once every 5 minutes."
+  },
+  {
+   "t": "p",
+   "k": "2bed29bede22",
+   "en": "Nothing processes that report for 4 more minutes. Then instance A grabs it — but instance B's pod restarted and it's ALSO trying to run it now. Both instances processing the same job."
+  },
+  {
+   "t": "p",
+   "k": "dc6599d8047f",
+   "en": "Worse: a slow GC pause on instance A makes it hold the lock past TTL. Redis quietly hands the lock to instance C. Now A thinks it owns the lock. C also thinks it owns the lock. Both write to the same output."
+  },
+  {
+   "t": "p",
+   "k": "5c3f143712b8",
+   "en": "What's the right pattern here?"
+  },
+  {
+   "t": "p",
+   "k": "1a86d708c6d7",
+   "en": "Redis SETNX + short TTL + fencing token — monotonically increasing token the downstream Redlock — acquire the lock across 5 independent Redis nodes, majority wins. DB-based pessimistic lock — SELECT ... FOR UPDATE on a jobs table, transaction holds the lock. Optimistic concurrency — no lock. Each instance tries to insert the result with a unique key; DB resource checks on every write. rejects duplicates."
+  },
+  {
+   "t": "h3",
+   "k": "67a575a9a4c6",
+   "en": "DAY 06 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "bd63405a5393",
+   "en": "Answer: A — SETNX + short TTL + fencing token ✅ Here's why, and why the other three trick smart engineers:"
+  },
+  {
+   "t": "li",
+   "k": "402563c6221c",
+   "en": "Why A wins (SETNX + TTL + fencing token):",
+   "lead": "Why A wins (SETNX + TTL + fencing token)"
+  },
+  {
+   "t": "p",
+   "k": "e15224e9a92c",
+   "en": "A lock alone can't protect a distributed resource. You need to assume the lock holder might be dead, paused, or partitioned — and the lock might get reassigned while they still think they own it. This is exactly the scenario above: GC pause, TTL expires, Redis gives the lock to someone else, original owner wakes up and keeps writing."
+  },
+  {
+   "t": "p",
+   "k": "a58ef43d3976",
+   "en": "The fencing token fixes it. Every time a lock is acquired, Redis (or the lock service) hands out a monotonically increasing number — 42, 43, 44. The downstream resource (the DB, the storage system, the output queue) remembers the highest token it's seen and rejects any write with a lower token."
+  },
+  {
+   "t": "p",
+   "k": "12feeeb618ca",
+   "en": "So when instance A wakes up from its GC pause holding token 42, and instance C is already writing with token 43, A's write gets rejected by the DB itself. The resource is the source of truth — not the lock service."
+  },
+  {
+   "t": "p",
+   "k": "1d240826cc28",
+   "en": "This is what Google's Chubby does. It's what Martin Kleppmann recommends in \"How to do distributed locking.\" It's the only pattern on this list that's actually safe against process pauses."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "7fc85e77964a",
+   "en": "Why B is the trap answer (Redlock):",
+   "lead": "Why B is the trap answer (Redlock)"
+  },
+  {
+   "t": "p",
+   "k": "a5901093e037",
+   "en": "Redlock is the pattern most senior engineers reach for. It looks rigorous. Martin Kleppmann wrote a now-famous post (2016) showing Redlock is unsafe in the exact scenario above: any process can pause long enough to lose its lock without noticing."
+  },
+  {
+   "t": "p",
+   "k": "5d457f4ede4f",
+   "en": "More importantly — Redlock without a fencing token has the same fundamental flaw as SETNX. If your resource can't verify a token on write, Redlock doesn't save you. You're maintaining 5 Redis clusters for a problem a fencing token solves on 1."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "9c79ee541c25",
+   "en": "Why C is wrong (DB pessimistic lock):",
+   "lead": "Why C is wrong (DB pessimistic lock)"
+  },
+  {
+   "t": "p",
+   "k": "bbd624d531b3",
+   "en": "SELECT ... FOR UPDATE inside a transaction works — for tiny critical sections. The lock auto-releases when the transaction ends or the connection dies."
+  },
+  {
+   "t": "p",
+   "k": "02066ce5f49a",
+   "en": "But the lock lives inside a single DB transaction. If your job is \"generate a daily report\" that takes 60 seconds of S3 writes and external API calls, you're holding a row lock on your primary DB for 60 seconds per job. Connection pool starved. Every other query blocked behind it."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "bacae3679832",
+   "en": "Why D is wrong here (optimistic concurrency):",
+   "lead": "Why D is wrong here (optimistic concurrency)"
+  },
+  {
+   "t": "p",
+   "k": "71df89c3b98b",
+   "en": "Optimistic concurrency is beautiful when it fits — no lock service, no lock holder, no stale-lock problem. Each instance tries the operation; the DB unique constraint rejects losers."
+  },
+  {
+   "t": "p",
+   "k": "a835d39b9a7f",
+   "en": "It breaks when the work isn't idempotent or isn't a single write. Three instances racing to do all of that means triple the S3 writes, triple the Slack pings, triple the compute cost."
+  },
+  {
+   "t": "h3",
+   "k": "aa21ba3983dc",
+   "en": "DAY 07 · SYSTEM DESIGN"
+  }
+ ]
+}

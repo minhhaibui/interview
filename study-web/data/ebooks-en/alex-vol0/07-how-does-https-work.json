@@ -1,0 +1,63 @@
+{
+ "id": "07-how-does-https-work",
+ "title": "How does HTTPS work?",
+ "titleKey": "363a9bfd3def",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "20857af61fd0",
+   "en": "Hypertext Transfer Protocol Secure (HTTPS) is an extension of the Hypertext Transfer Protocol(HTTP.) HTTPS transmitsencrypted data usingTransport Layer Security(TLS.) If the datais hijacked online, all the hijacker gets is binary code."
+  },
+  {
+   "t": "p",
+   "k": "31b9a9d16fc8",
+   "en": "How is the data encrypted and decrypted?"
+  },
+  {
+   "t": "p",
+   "k": "ab238a9ab9bb",
+   "en": "Step 1 - The client (browser) and the server establish a TCP connection."
+  },
+  {
+   "t": "p",
+   "k": "015993d1069e",
+   "en": "Step 2 - The client sends a “client hello” to the server. The message contains a set of necessary encryption algorithms (cipher suites) and the latest TLS version it can support. The server responds with a “server hello” so the browser knows whether it can support the algorithms and TLS version. 16 The server then sends the SSL certificate to the client. The certificate contains the public key, host name, expiry dates, etc. The client validates the certificate."
+  },
+  {
+   "t": "p",
+   "k": "969d5006c984",
+   "en": "Step 3 - After validating the SSL certificate, the client generates a session key and encrypts it using the public key. The server receives the encrypted session key and decrypts it with the private key."
+  },
+  {
+   "t": "p",
+   "k": "0260b3640961",
+   "en": "Step 4 - Now that both the client and the server hold the same session key (symmetric encryption), the encrypted data is transmitted in a secure bi-directional channel."
+  },
+  {
+   "t": "p",
+   "k": "0440f76180c9",
+   "en": "Why does HTTPS switch to symmetric encryption during data transmission? There are two main reasons:"
+  },
+  {
+   "t": "li",
+   "k": "86f639a4bbd1",
+   "en": "Security: The asymmetric encryption goes only one way. This means that if the server tries to send the encrypted data back to the client, anyone can decrypt the data using the public key."
+  },
+  {
+   "t": "li",
+   "k": "4fbb6f929526",
+   "en": "Server resources: The asymmetric encryption adds quite a lot of mathematical overhead. It is not suitable for data transmissions in long sessions."
+  },
+  {
+   "t": "p",
+   "k": "3b1cdca14be5",
+   "en": "Over to you: how much performance overhead does HTTPS add, compared to HTTP? — Check out our bestselling system design books."
+  },
+  {
+   "t": "p",
+   "k": "1907da068c28",
+   "en": "Paperback:AmazonDigital:ByteByteGo. 17"
+  }
+ ]
+}

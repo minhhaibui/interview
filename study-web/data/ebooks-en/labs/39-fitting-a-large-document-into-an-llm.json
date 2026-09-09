@@ -1,0 +1,147 @@
+{
+ "id": "39-fitting-a-large-document-into-an-llm",
+ "title": "Fitting a Large Document into an LLM",
+ "titleKey": "38153b890218",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "84d4c1603353",
+   "en": "Your LLM has 128K tokens."
+  },
+  {
+   "t": "p",
+   "k": "ff79fc55e12d",
+   "en": "Your document has 150K words."
+  },
+  {
+   "t": "p",
+   "k": "fedfcd52fe05",
+   "en": "Something has to give. What do you do? time."
+  },
+  {
+   "t": "h3",
+   "k": "fdaf1fdac5ab",
+   "en": "DAY 38 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "li",
+   "k": "f9a7ec325051",
+   "en": "Why A wins (RAG with chunked embeddings):",
+   "lead": "Why A wins (RAG with chunked embeddings)"
+  },
+  {
+   "t": "p",
+   "k": "ce038177e9dc",
+   "en": "You split the document into overlapping chunks (~500 tokens, ~10–20% overlap), embed each one, store in a vector DB (Pinecone, pgvector, Qdrant), and retrieve top-k at query time."
+  },
+  {
+   "t": "p",
+   "k": "b159e8a4c2b2",
+   "en": "This scales to any document size. Your LLM context at inference only sees the retrieved chunks — staying well inside the context window. Latency stays low because retrieval is a fast ANN lookup, not a sequential scan."
+  },
+  {
+   "t": "p",
+   "k": "d3087be12c27",
+   "en": "The catch: chunking boundaries destroy semantic coherence. If a clause starts on page 12 and resolves on page 13, a hard chunk boundary between them means neither chunk retrieves well for that question. This is why overlap and chunk size tuning matter so much. Most teams underestimate this."
+  },
+  {
+   "t": "p",
+   "k": "49ee3026ccb8",
+   "en": "Production fix: chunk at sentence or paragraph boundaries, not character counts. Hybrid retrieval (keyword + semantic) handles the edge cases."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "91b9f5497726",
+   "en": "Why B is the trap answer (sliding window):",
+   "lead": "Why B is the trap answer (sliding window)"
+  },
+  {
+   "t": "p",
+   "k": "62a7b942e6c6",
+   "en": "Sliding window looks elegant — process the document in overlapping passes, accumulate the answer."
+  },
+  {
+   "t": "p",
+   "k": "eeba4b6fad27",
+   "en": "But it doesn't actually fix the context window problem. You still have to process every chunk sequentially, and the answer to a question spanning chunk 1 and chunk 47 gets lost. You're doing O(n) LLM calls per query. At 150K words and a 3s/call LLM, that's minutes per query. Nobody ships this in production for QA on large documents."
+  },
+  {
+   "t": "p",
+   "k": "db9d04e9fb10",
+   "en": "It works fine for summarization tasks where the output from chunk N feeds into chunk N+1. For retrieval? Wrong tool."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "3f9a05a552a8",
+   "en": "Why C sometimes works (progressive summarization):",
+   "lead": "Why C sometimes works (progressive summarization)"
+  },
+  {
+   "t": "p",
+   "k": "6152039bad24",
+   "en": "For summarizing a 200-page doc? Solid. You map-reduce the document — summarize sections, then summarize the summaries. GPT-4o does this well."
+  },
+  {
+   "t": "p",
+   "k": "4ae0316401b4",
+   "en": "For answering a specific question about clause 38(b) on page 97? It doesn't. The intermediate summary will have compressed away the specific detail you needed. Lossy compression applied to information retrieval is a category error."
+  },
+  {
+   "t": "p",
+   "k": "3f71513c512f",
+   "en": "Use progressive summarization when you want a high-level understanding. Don't use it when specific facts need to survive to the end of the pipeline."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "bbec164928a6",
+   "en": "Why D is obviously wrong (and also surprisingly common):",
+   "lead": "Why D is obviously wrong (and also surprisingly common)"
+  },
+  {
+   "t": "p",
+   "k": "d25d939ef42a",
+   "en": "Truncating to the last N tokens is the default behavior of most LLM API wrappers when you exceed the context limit and don't handle it explicitly. Many teams ship this by accident."
+  },
+  {
+   "t": "p",
+   "k": "ce3495915319",
+   "en": "The problem beyond the obvious data loss: LLMs have a \"lost in the middle\" failure mode (Liu et al.,"
+  },
+  {
+   "t": "li",
+   "k": "e3346b871ce7",
+   "en": ". Performance on retrieval tasks is highest when the answer is at the start or end of the context window — and degrades significantly when it's buried in the middle. So even if you fit everything in context, position matters."
+  },
+  {
+   "t": "p",
+   "k": "344575c0b328",
+   "en": "Truncation compounds this — you're not just losing data, you're losing data unpredictably."
+  },
+  {
+   "t": "p",
+   "k": "6c0fa873762e",
+   "en": "Pessimistic locking — SELECT FOR UPDATE on the wallet row. One transaction blocks until the Optimistic locking — read the row with a version number, only write if version hasn't changed MVCC — let both reads see a consistent snapshot, rely on the database to detect write conflicts at Serializable isolation — set the transaction isolation level to SERIALIZABLE and let the database"
+  },
+  {
+   "t": "h3",
+   "k": "00a2475ef776",
+   "en": "DAY 39 · SYSTEM DESIGN"
+  }
+ ]
+}

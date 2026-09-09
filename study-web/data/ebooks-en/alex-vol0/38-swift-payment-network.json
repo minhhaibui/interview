@@ -1,0 +1,93 @@
+{
+ "id": "38-swift-payment-network",
+ "title": "SWIFT payment network",
+ "titleKey": "9263c550719f",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "58233c0c73f8",
+   "en": "You probably heard about 𝐒𝐖𝐈𝐅𝐓. What is SWIFT? What role does it play in cross-border payments? You can find answers to those questions in this post."
+  },
+  {
+   "t": "p",
+   "k": "a559dc492926",
+   "en": "The Society for Worldwide Interbank Financial Telecommunication (SWIFT) is the main secure 𝐦𝐞𝐬𝐬𝐚𝐠𝐢𝐧𝐠 𝐬𝐲𝐬𝐭𝐞𝐦 that links the world’s banks."
+  },
+  {
+   "t": "p",
+   "k": "5a5dff0b529d",
+   "en": "The Belgium-based system is run by its member banks and handles millions of payment messages per day. The diagram below illustrates how payment messages are transmitted from Bank A (in New York) to Bank B (in London)."
+  },
+  {
+   "t": "p",
+   "k": "f61740aa366f",
+   "en": "Step 1: Bank A sends a message with transfer details to Regional Processor A in New York. The destination is Bank B. 77 Step 2: Regional processor validates the format and sends it to Slice Processor A. The Regional Processor is responsible for input message validation and output message queuing. The Slice Processor is responsible for storing and routing messages safely."
+  },
+  {
+   "t": "p",
+   "k": "c5921c248e9a",
+   "en": "Step 3: Slice Processor A stores the message."
+  },
+  {
+   "t": "p",
+   "k": "fe2e701b7e69",
+   "en": "Step 4: Slice Processor A informs Regional Processor A the message is stored."
+  },
+  {
+   "t": "p",
+   "k": "e0805b46441f",
+   "en": "Step 5: Regional Processor A sends ACK/NAK to Bank A. ACK means a message will be sent to Bank B. NAK means the message will NOT be sent to Bank B."
+  },
+  {
+   "t": "p",
+   "k": "711504e6aef1",
+   "en": "Step 6: Slice Processor A sends the message to Regional Processor B in London."
+  },
+  {
+   "t": "p",
+   "k": "9721fab46bc2",
+   "en": "Step 7: Regional Processor B stores the message temporarily."
+  },
+  {
+   "t": "p",
+   "k": "42e1f4fa5db6",
+   "en": "Step 8: Regional Processor B assigns a unique ID MON (Message Output Number) to the message and sends it to Slice Processor B Step 9: Slice Processor B validates MON."
+  },
+  {
+   "t": "p",
+   "k": "3607087227ca",
+   "en": "Step 10: Slice Processor B authorizes Regional Processor B to send the message to Bank B."
+  },
+  {
+   "t": "p",
+   "k": "332a7172e0c7",
+   "en": "Step 11: Regional Processor B sends the message to Bank B."
+  },
+  {
+   "t": "p",
+   "k": "85dc6f80e311",
+   "en": "Step 12: Bank B receives the message and stores it."
+  },
+  {
+   "t": "p",
+   "k": "3d22160396b3",
+   "en": "Step 13: Bank B sends UAK/UNK to Regional Processor B. UAK (user positive acknowledgment) means Bank B received the message without error; UNK (user negative acknowledgment) means Bank B received checksum failure."
+  },
+  {
+   "t": "p",
+   "k": "c18237abc6e3",
+   "en": "Step 14: Regional Processor B creates a report based on Bank B’s response, and sends it to Slice Processor B. 78 Step 15: Slice Processor B stores the report."
+  },
+  {
+   "t": "p",
+   "k": "1427a134dcd2",
+   "en": "Step 16 - 17: Slice Processor B sends a copy of the report to Slice Processor A. Slice Processor A stores the report. — Check out our bestselling system design books."
+  },
+  {
+   "t": "p",
+   "k": "e8a83f737fd9",
+   "en": "Paperback:AmazonDigital:ByteByteGo. 79"
+  }
+ ]
+}

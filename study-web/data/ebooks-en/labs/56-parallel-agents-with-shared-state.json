@@ -1,0 +1,192 @@
+{
+ "id": "56-parallel-agents-with-shared-state",
+ "title": "Parallel Agents with Shared State",
+ "titleKey": "74533b811dca",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "f957d55701c7",
+   "en": "You built an agent. It works."
+  },
+  {
+   "t": "p",
+   "k": "c4cff1d504c4",
+   "en": "Now you need 5 of them running in parallel, sharing state, and handing off work to each other."
+  },
+  {
+   "t": "p",
+   "k": "1bb64961f8fc",
+   "en": "Your pipeline breaks on the first real workload."
+  },
+  {
+   "t": "p",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:"
+  },
+  {
+   "t": "p",
+   "k": "d2a0a5f666c7",
+   "en": "You're building a research agent system. A user asks a complex question. You need to:"
+  },
+  {
+   "t": "li",
+   "k": "a96b277b1745",
+   "en": "Fan out to 3 specialized sub-agents simultaneously"
+  },
+  {
+   "t": "li",
+   "k": "c84719d7ac79",
+   "en": "One agent might spawn 2 more based on what it finds"
+  },
+  {
+   "t": "li",
+   "k": "3e681a1cd307",
+   "en": "They all write back to shared context"
+  },
+  {
+   "t": "li",
+   "k": "2a2061ddf0fe",
+   "en": "A final agent synthesizes everything Classic multi-agent orchestration. You have 4 options for how agents coordinate."
+  },
+  {
+   "t": "p",
+   "k": "2d6527ffefe1",
+   "en": "A) Centralized Orchestrator — one controller agent dispatches tasks, collects results, manages shared state. Agents are dumb workers."
+  },
+  {
+   "t": "p",
+   "k": "abefe817bc69",
+   "en": "B) Decentralized Peer Handoff — each agent decides who gets the task next. No central controller. Agents communicate directly."
+  },
+  {
+   "t": "p",
+   "k": "7a4c97ae0df4",
+   "en": "C) Shared Message Queue + Blackboard — all agents read/write to a shared blackboard. Coordination happens through state, not calls."
+  },
+  {
+   "t": "p",
+   "k": "018739f89aa1",
+   "en": "D) Hierarchical Nesting — orchestrator spawns sub-orchestrators. Each sub-tree is self-coordinating."
+  },
+  {
+   "t": "p",
+   "k": "a0077dee3c8e",
+   "en": "Recursive decomposition of the problem."
+  },
+  {
+   "t": "h3",
+   "k": "13a570bdc62a",
+   "en": "DAY 55 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "df1451640e71",
+   "en": "Answer: A — Centralized Orchestrator Here's the full breakdown — and where each pattern actually belongs:"
+  },
+  {
+   "t": "li",
+   "k": "0539c1f080c5",
+   "en": "Why A wins (Centralized Orchestrator):",
+   "lead": "Why A wins (Centralized Orchestrator)"
+  },
+  {
+   "t": "p",
+   "k": "a5d3b5a6d4a1",
+   "en": "One agent owns the plan. It dispatches, collects, retries, and synthesizes. Every sub-agent is stateless and dumb on purpose — they receive a task, return a result, done."
+  },
+  {
+   "t": "p",
+   "k": "bd82e324d44c",
+   "en": "This isn't a limitation. It's a feature."
+  },
+  {
+   "t": "p",
+   "k": "40c4e24a2b29",
+   "en": "When something fails, you know exactly where to look: the orchestrator. It holds the retry logic, the timeout budgets, the fallback paths. Sub-agents can die and restart without corrupting global state because the orchestrator is the only one maintaining it."
+  },
+  {
+   "t": "p",
+   "k": "c1687eb887b6",
+   "en": "LangGraph, CrewAI, and every production-grade agentic framework defaults to this model for a reason. It's debuggable, observable, and deterministic. You can replay an orchestrator run from its state log. Try doing that with peer-to-peer handoffs."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "1958840654ad",
+   "en": "Why B is the trap (Decentralized Peer Handoff):",
+   "lead": "Why B is the trap (Decentralized Peer Handoff)"
+  },
+  {
+   "t": "p",
+   "k": "841a64dde682",
+   "en": "This sounds elegant in theory. Agents self-organize, no bottleneck at the top."
+  },
+  {
+   "t": "p",
+   "k": "0664f63cd8eb",
+   "en": "The problem: who resolves conflicts? If Agent A hands off to Agent B, and Agent B decides the task actually belongs to Agent C, which also hands it back to Agent A — you have a cycle with no circuit breaker."
+  },
+  {
+   "t": "p",
+   "k": "a0718a0f3b89",
+   "en": "Peer handoff works in closed, well-defined pipelines (like a Git commit hook chain). It breaks the moment you have conditional routing, error recovery, or parallel fan-out."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "7564799cd2a5",
+   "en": "Why C is partial credit (Shared Blackboard):",
+   "lead": "Why C is partial credit (Shared Blackboard)"
+  },
+  {
+   "t": "p",
+   "k": "01d362461d43",
+   "en": "A shared blackboard is real and useful — but as a data layer, not a coordination mechanism."
+  },
+  {
+   "t": "p",
+   "k": "2bda27f301dd",
+   "en": "Agents writing to and reading from shared state works for passing context. What it can't do cleanly is orchestrate who runs next, when, and with what inputs. You end up building an implicit orchestrator via polling — same thing, no visibility into it."
+  },
+  {
+   "t": "p",
+   "k": "03c98a9c20be",
+   "en": "Use a blackboard for state sharing. Use an orchestrator for task routing. They're complementary, not alternatives."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "75c186c6aa4a",
+   "en": "Why D fits a specific problem (Hierarchical Nesting):",
+   "lead": "Why D fits a specific problem (Hierarchical Nesting)"
+  },
+  {
+   "t": "p",
+   "k": "7446dcded7c8",
+   "en": "Hierarchical orchestration is the right model when the problem itself is hierarchically decomposable — like a pipeline where \"summarize AI papers\" fans out to 10 sub-tasks, each of which fans out further."
+  },
+  {
+   "t": "p",
+   "k": "ef7d53bfded1",
+   "en": "The catch: recursion adds latency and debugging complexity at every layer. If your problem doesn't naturally decompose into clean sub-trees, you're adding indirection for no gain. Default to flat centralized orchestration first. Reach for hierarchical only when the problem demands it."
+  },
+  {
+   "t": "h3",
+   "k": "50e60eeb628c",
+   "en": "DAY 56 · SYSTEM DESIGN"
+  }
+ ]
+}

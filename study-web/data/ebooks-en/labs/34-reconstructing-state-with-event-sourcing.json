@@ -1,0 +1,182 @@
+{
+ "id": "34-reconstructing-state-with-event-sourcing",
+ "title": "Reconstructing State with Event Sourcing",
+ "titleKey": "fe626d6288c0",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "d9d1bc3ea33d",
+   "en": "Your order service takes 200 writes/sec at peak."
+  },
+  {
+   "t": "p",
+   "k": "e3d2a1675176",
+   "en": "You audit 6 months of data. Something's off — two orders show the same ID, different totals."
+  },
+  {
+   "t": "p",
+   "k": "f7705f50e668",
+   "en": "You have the current state. You don't have how it got there."
+  },
+  {
+   "t": "p",
+   "k": "89b6a9310888",
+   "en": "Your DB is a graveyard of overwritten rows."
+  },
+  {
+   "t": "p",
+   "k": "d4ef80f87d52",
+   "en": "Here's the system:"
+  },
+  {
+   "t": "li",
+   "k": "f966ede73c48",
+   "en": "OrderService Postgres (current state only)→"
+  },
+  {
+   "t": "li",
+   "k": "dae70749f78d",
+   "en": "Events: placed, updated, cancelled, refunded"
+  },
+  {
+   "t": "li",
+   "k": "3e2c8991a0f4",
+   "en": "Every UPDATE overwrites the previous row"
+  },
+  {
+   "t": "li",
+   "k": "1a420c72da72",
+   "en": "No audit log. No event history. No replay."
+  },
+  {
+   "t": "p",
+   "k": "d500ba2cd4be",
+   "en": "A billing dispute just landed. You need to reconstruct exactly what happened to Order #8471. You can't."
+  },
+  {
+   "t": "p",
+   "k": "bd3042d3983f",
+   "en": "Instead of storing the current state, you store the sequence of events that produced it."
+  },
+  {
+   "t": "p",
+   "k": "6889c9064240",
+   "en": "What's your approach when redesigning this service?"
+  },
+  {
+   "t": "p",
+   "k": "e1b0273638bc",
+   "en": "Event Sourcing — append-only event log as the source of truth, current state derived from Change Data Capture (CDC) — keep Postgres as-is, but stream all row changes to Kafka for an Add an audit_log table — trigger-based shadow writes on every INSERT/UPDATE/DELETE. Dual-write — write to both the current-state table and a separate events table on every operation. replaying events. audit trail."
+  },
+  {
+   "t": "h3",
+   "k": "2f4a7fce952c",
+   "en": "DAY 33 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "648f37949011",
+   "en": "Answer: A — Event Sourcing ✅ Here's why, and why the other three look reasonable but miss the point:"
+  },
+  {
+   "t": "li",
+   "k": "9273ebb3f0b2",
+   "en": "Why A wins (Event Sourcing):",
+   "lead": "Why A wins (Event Sourcing)"
+  },
+  {
+   "t": "p",
+   "k": "e731a8174430",
+   "en": "Event Sourcing flips the model entirely. Instead of storing the latest state and losing how you got there, you store every event that ever happened. The current state is a projection — computed by replaying events from the beginning (or from a snapshot)."
+  },
+  {
+   "t": "p",
+   "k": "a52f9bb3024c",
+   "en": "For Order #8471: you don't query a row. You replay OrderPlaced, OrderUpdated, PaymentCaptured, RefundInitiated. Every mutation is preserved, timestamped, immutable. You can reconstruct state at any point in time. You can build new projections (e.g., \"total revenue by SKU last 90 days\") without changing the core model — just replay and project differently."
+  },
+  {
+   "t": "p",
+   "k": "83afc6b1255d",
+   "en": "This is what Axon, EventStoreDB, and the event-sourced layers in most serious fintech/e-commerce systems do. It's not a log — it's the primary data model."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "694cf78f970e",
+   "en": "Why B is the trap (CDC):",
+   "lead": "Why B is the trap (CDC)"
+  },
+  {
+   "t": "p",
+   "k": "fa01d83eb1aa",
+   "en": "CDC is powerful and often underrated. Tools like Debezium + Kafka let you stream every Postgres row change downstream without touching your app. It looks like Event Sourcing from the outside — you have a sequence of changes."
+  },
+  {
+   "t": "p",
+   "k": "e11f829b99ff",
+   "en": "But here's the trap: CDC captures state deltas, not business events. You get total changed from 89.99 to"
+  },
+  {
+   "t": "li",
+   "k": "6dcfc5bddb2a",
+   "en": "99 — not DiscountApplied by coupon SAVE10. The semantic meaning is lost. You can reconstruct what changed, not why it changed. That distinction kills you during disputes and compliance audits."
+  },
+  {
+   "t": "p",
+   "k": "0f7da51dd607",
+   "en": "CDC is a great complement to Event Sourcing for propagation. It's not a substitute for it."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "40ea6964c1c2",
+   "en": "Why C is wrong (audit_log table):",
+   "lead": "Why C is wrong (audit_log table)"
+  },
+  {
+   "t": "p",
+   "k": "d404adca6b66",
+   "en": "Trigger-based audit logs are the classic band-aid. The problem: you're treating the row as source of truth and logging changes as a side effect."
+  },
+  {
+   "t": "p",
+   "k": "f6a704c10180",
+   "en": "Side effects break. Triggers get disabled during migrations. Bulk imports skip them. Schema changes orphan the trigger. Six months later, the audit_log has gaps — exactly when you need it most. It's a shadow, not a foundation."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "ad729a464feb",
+   "en": "Why D is wrong (Dual-write):",
+   "lead": "Why D is wrong (Dual-write)"
+  },
+  {
+   "t": "p",
+   "k": "cb348fc98814",
+   "en": "Dual-write seems reasonable. But you've created a distributed consistency problem inside your own service. If the state write succeeds and the events write fails — network hiccup, crash, OOM — you've got state with no corresponding event. Audit trail unreliable by design."
+  },
+  {
+   "t": "p",
+   "k": "9bed9f2dbe80",
+   "en": "This is the exact problem the Outbox Pattern was invented to solve. But if you're going that far, you're halfway to proper Event Sourcing anyway."
+  },
+  {
+   "t": "h3",
+   "k": "fe61a5f3c093",
+   "en": "DAY 34 · SYSTEM DESIGN"
+  }
+ ]
+}

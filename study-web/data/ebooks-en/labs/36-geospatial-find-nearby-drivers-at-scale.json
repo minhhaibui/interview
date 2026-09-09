@@ -1,0 +1,152 @@
+{
+ "id": "36-geospatial-find-nearby-drivers-at-scale",
+ "title": "Geospatial “Find Nearby Drivers” at Scale",
+ "titleKey": "012ee1c6db0e",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "81984bc58fb6",
+   "en": "You're building the \"find nearby drivers\" feature for a ride-hailing app."
+  },
+  {
+   "t": "p",
+   "k": "152717817be6",
+   "en": "At peak, you have 500,000 active drivers updating their GPS location every 5 seconds. Riders query for drivers within 2km. At scale, you're doing ~100,000 proximity queries per second."
+  },
+  {
+   "t": "p",
+   "k": "37c04b9ac371",
+   "en": "Your naive implementation does this:"
+  },
+  {
+   "t": "code",
+   "k": "ff2430941ab0",
+   "en": "SELECT * FROM drivers WHERE lat BETWEEN ? AND ? AND lng BETWEEN ? AND ?"
+  },
+  {
+   "t": "p",
+   "k": "70017fbfb42f",
+   "en": "It works fine at 1,000 drivers. At 500,000, it's a full table scan on every query. Latency hits 800ms. Riders see a spinner. Drivers miss trips."
+  },
+  {
+   "t": "p",
+   "k": "5c30ff502dfb",
+   "en": "Your team proposes 4 approaches to fix this:"
+  },
+  {
+   "t": "p",
+   "k": "9cf90a25e315",
+   "en": "A) Geohash partitioning — Encode each driver's location into a geohash string. Index by geohash prefix."
+  },
+  {
+   "t": "p",
+   "k": "2080016d9789",
+   "en": "Proximity queries become a string lookup on the index."
+  },
+  {
+   "t": "p",
+   "k": "5f41479f2b3d",
+   "en": "B) PostGIS with spatial indexes — Add a PostGIS extension to Postgres. Use a proper R-tree/GiST spatial index for bounding-box and radius queries."
+  },
+  {
+   "t": "p",
+   "k": "2dceec7c5483",
+   "en": "C) Quadtree in memory — Keep all active driver positions in a quadtree data structure in a Redis-backed in-memory service. Decompose space recursively until each cell has ≤ N drivers."
+  },
+  {
+   "t": "p",
+   "k": "72776e5707d7",
+   "en": "D) H3 hexagonal grid (Uber's system) — Divide the earth into hexagonal cells at multiple resolutions."
+  },
+  {
+   "t": "p",
+   "k": "378762102c9f",
+   "en": "Assign each driver to a cell. Queries check the target cell + 6 neighbors at the right resolution."
+  },
+  {
+   "t": "p",
+   "k": "b2e16703046b",
+   "en": "You need sub-50ms p99 latency, real-time updates, and it has to stay accurate at cell boundaries."
+  },
+  {
+   "t": "h3",
+   "k": "dcd6d733ded7",
+   "en": "DAY 35 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "ed8c4412133a",
+   "en": "Answer: D — H3 Hexagonal Grid"
+  },
+  {
+   "t": "li",
+   "k": "66aa32556f82",
+   "en": "Why D wins:",
+   "lead": "Why D wins"
+  },
+  {
+   "t": "p",
+   "k": "8c049ea62622",
+   "en": "Uber open-sourced H3 for exactly this problem. Hexagons have 6 neighbors, all equidistant from the center. Squares (geohash) have corner neighbors that are ~40% farther — this distorts \"within 2km\" queries. H3 also has 16 resolution levels (no reindexing on zoom changes). The killer feature: the k-ring query (target cell + 6 neighbors) guarantees no driver gets missed near a boundary. Uber does sub-10ms lookups at millions of drivers: get cells in ring fetch IDs from Redis set keyed by cell. Lyft,→ Airbnb, DoorDash all use variants."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "071e2a7df987",
+   "en": "Why A is the trap (Geohash):",
+   "lead": "Why A is the trap (Geohash)"
+  },
+  {
+   "t": "p",
+   "k": "1f708706c721",
+   "en": "Production-grade, widely used — and wrong here. Geohash uses a Z-order curve (interleaved bits) that doesn't guarantee geographic adjacency for adjacent prefix strings. Two drivers 1 meter apart can have entirely different prefix strings if they straddle a cell boundary. This becomes a systematic miss rate at 100k queries/sec. Geohash is right for coarse partitioning (sharding by region), wrong for real-time sub-km proximity."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "f79a75c988a6",
+   "en": "Why B fails at scale (PostGIS):",
+   "lead": "Why B fails at scale (PostGIS)"
+  },
+  {
+   "t": "p",
+   "k": "d9962087943a",
+   "en": "PostGIS is correct — it's the right answer for 5,000 trucks on a fleet dashboard. Not for 500k drivers updating every 5s. The math: 500k × 12 updates/min = 100k writes/sec against a GiST index. GiST indexes are write-expensive. Your DB burns half its capacity on index maintenance. And you can't easily scale Postgres writes horizontally. PostGIS is the starting point — H3 + Redis is where you land when it breaks."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "12423414e034",
+   "en": "Why C almost works (Quadtree):",
+   "lead": "Why C almost works (Quadtree)"
+  },
+  {
+   "t": "p",
+   "k": "e343383414aa",
+   "en": "O(log n) insert/query, great in theory. Breaks at ride-hailing density: driver crossing a cell boundary = delete + reinsert + potential rebalancing, 100k times per second. Same rectangular boundary problem as geohash. Dense cities create deep uneven trees. A quadtree is a building block — not a complete solution at this scale."
+  },
+  {
+   "t": "p",
+   "k": "8f50a1aa8235",
+   "en": "HTTP/2 only — multiplexing over a single TCP connection eliminates the old HTTP/1.1 head-of- HTTP/3 only — built on QUIC (UDP), eliminates TCP head-of-line blocking entirely, 0-RTT"
+  },
+  {
+   "t": "h3",
+   "k": "c7df33bc0ae3",
+   "en": "DAY 36 · SYSTEM DESIGN"
+  }
+ ]
+}

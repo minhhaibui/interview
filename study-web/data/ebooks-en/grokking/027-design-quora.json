@@ -1,0 +1,1299 @@
+{
+ "id": "027-design-quora",
+ "title": "Design-Quora",
+ "titleKey": "7df64b389899",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "1e25ccb00be0",
+   "en": "System Design: Quora"
+  },
+  {
+   "t": "p",
+   "k": "9cdc08d6064b",
+   "en": "Learn about the basics of designing Quora."
+  },
+  {
+   "t": "h2",
+   "k": "26aca7941a99",
+   "en": "Introduction"
+  },
+  {
+   "t": "p",
+   "k": "bceaeccac2ad",
+   "en": "With so much information available online, finding answers to questions can be daunting. That’s why information sharing online has become so widespread.."
+  },
+  {
+   "t": "p",
+   "k": "1731e5b2872b",
+   "en": "Search engines help us dig for information across the web. For example, Google’s search engine is intelligent enough to answer questions by extracting information from web pages. While search engines have their advantages, sometimes finding the information we want isn’t a straightforward process. Let’s look at the illustration below to understand how seeking information through search engines is different in comparison to people."
+  },
+  {
+   "t": "p",
+   "k": "9dc633ddd6e3",
+   "en": "The illustration above depicts that information-seeking through other people can be more instructive, even if it comes at the cost of additional time. Seeking information through search engines can lead to dead ends because of content unavailability on a topic. Instead, we can ask questions of others."
+  },
+  {
+   "t": "h2",
+   "k": "77575e3dbf7a",
+   "en": "What is Quora?"
+  },
+  {
+   "t": "p",
+   "k": "3ca80ccd530a",
+   "en": "Quora is a social question-and-answer service that allows users to ask questions to other users. Quora was created because of the issue that asking questions from search engines results in fast answers but shallow information. Instead, we can ask the general public, which feels more conversational and can result in deeper understanding, even if it’s slower. Quora enables anyone to ask questions, and anyone can reply. Furthermore, there are domain experts that have in-depth knowledge of a specific topic who occasionally share their expertise by answering questions."
+  },
+  {
+   "t": "p",
+   "k": "d607649b33f4",
+   "en": "The following plot shows global user search trends for the term “Quora” using Google:"
+  },
+  {
+   "t": "p",
+   "k": "555545f486aa",
+   "en": "More than 300 million monthly active users post thousands of questions daily related to more than 400,000 topics on Quora."
+  },
+  {
+   "t": "h2",
+   "k": "b704343d82c6",
+   "en": "How will we design Quora?"
+  },
+  {
+   "t": "p",
+   "k": "f284a4a4eef6",
+   "en": "We'll design Quora by dividing the design problem into the following four lessons."
+  },
+  {
+   "t": "li",
+   "k": "d4b3f1014341",
+   "en": "Requirements: This lesson will focus on the functional and non-functional requirements for designing Quora. We’ll also estimate the resources required to design the system."
+  },
+  {
+   "t": "li",
+   "k": "af2ceb4301e4",
+   "en": "Initial design: We’ll create an initial design that fulfills all the functional requirements for Quora and also formulate the API design in this lesson."
+  },
+  {
+   "t": "p",
+   "k": "bb20b3ea1248",
+   "en": "Primarily, we’ll discuss the system’s building blocks, other components involved in completing the design, their integration, and workflow."
+  },
+  {
+   "t": "li",
+   "k": "bfe64e041212",
+   "en": "Final design: In this lesson, we’ll start by identifying the limitations of the initial design. Then, we’ll update our final design to fulfill all the functional and non-functional requirements while addressing these limitations. We’ll also focus on some interesting aspects of our design, like vertical sharding of the database."
+  },
+  {
+   "t": "li",
+   "k": "e3d9dea45c59",
+   "en": "Evaluation: We’ll assess our design specifically for non-functional requirements and discuss some of its trade-offs. We’ll also discuss some ideas on how we can improve the availability of our design in this lesson."
+  },
+  {
+   "t": "li",
+   "k": "bd2105b62631",
+   "en": "Note: The information provided in this chapter is inspired by the engineering blog of Quora.",
+   "lead": "Note"
+  },
+  {
+   "t": "h1",
+   "k": "3ef64c61c580",
+   "en": "Requirements of Quora’s Design"
+  },
+  {
+   "t": "p",
+   "k": "6cb81e9e33b7",
+   "en": "Learn about the requirements for designing Quora."
+  },
+  {
+   "t": "h2",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "h3",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "fd9c4931e83f",
+   "en": "A user should be able to perform the following functionalities:"
+  },
+  {
+   "t": "p",
+   "k": "e91621320757",
+   "en": "Questions and answers: Users can ask questions and give answers."
+  },
+  {
+   "t": "p",
+   "k": "7dabd723a103",
+   "en": "Questions and answers can include images and videos."
+  },
+  {
+   "t": "p",
+   "k": "80d20566e11b",
+   "en": "Upvote/downvote and comment: It is possible for users to upvote, downvote, and comment on answers."
+  },
+  {
+   "t": "p",
+   "k": "b0c5e7792ba1",
+   "en": "Search: Users should have a search feature to find questions already asked on the platform by other users."
+  },
+  {
+   "t": "p",
+   "k": "de2e4ba17e4c",
+   "en": "Recommendation system: A user can view their feed, which includes topics they’re interested in. The feed can also include questions that need answers or answers that interest the reader. The system should facilitate user discovery with a recommender system."
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "2317b7a2b490",
+   "en": "Scalability: The system should scale well as the number of features and users grow with time. It means that the performance and usability should not be impacted by an increasing number of users."
+  },
+  {
+   "t": "p",
+   "k": "1583f051fb86",
+   "en": "Consistency: The design should ensure that different users’ views of the same content should be consistent. In particular, critical content like questions and answers should be the same for any collection of viewers."
+  },
+  {
+   "t": "p",
+   "k": "5d08bc7cafd8",
+   "en": "However, it is not necessary that all users of Quora see a newly posted question, answer, or comment right away."
+  },
+  {
+   "t": "p",
+   "k": "d9e6cebaf7eb",
+   "en": "Availability: The system should have high availability. This applies to cases where servers receive a large number of concurrent requests."
+  },
+  {
+   "t": "p",
+   "k": "c5ea4a72f516",
+   "en": "Performance: The system should provide a smooth experience to the user without a noticeable delay."
+  },
+  {
+   "t": "h2",
+   "k": "a9be995c473a",
+   "en": "Resource estimation"
+  },
+  {
+   "t": "p",
+   "k": "5bf56abbd98a",
+   "en": "In this section, we’ll make an estimate about the resource requirements for Quora service. We’ll make assumptions to get a practical and tractable estimate."
+  },
+  {
+   "t": "p",
+   "k": "f916170d0562",
+   "en": "We’ll estimate the number of servers, the storage, and the bandwidth required to facilitate a large number of users."
+  },
+  {
+   "t": "p",
+   "k": "911ea3ceb5b7",
+   "en": "Assumptions: It is important to base our estimation on some underlying assumptions. We, therefore, assume the following:"
+  },
+  {
+   "t": "p",
+   "k": "c0c9d20b6b4c",
+   "en": "There are a total of 1 billion users, out of which 300 million are daily active users."
+  },
+  {
+   "t": "p",
+   "k": "f3699289e27d",
+   "en": "Assume 15% of questions have an image, and 5% of questions have a video embedded in them. A question cannot have both at the same time."
+  },
+  {
+   "t": "p",
+   "k": "12435e058c4e",
+   "en": "We’ll assume an image is estimated to be 250 KBs, and a video is considered 5 MBs."
+  },
+  {
+   "t": "h3",
+   "k": "7e7845b4ea66",
+   "en": "Number of servers estimation"
+  },
+  {
+   "t": "p",
+   "k": "b87e6f9c5e16",
+   "en": "Let’s estimate our requests per second (RPS) for our design. If there are an average of 300 million daily active users and each user can generate 20 requests per day, then the total number of requests in a day will be: 6 20 = 69 300 × 10 × × 10 9 6×10 Therefore, the RPS = approximately requests per second.≈69500 86400 Estimating RPS Daily active users Requests per day per u 20 ser f Requests Per Second (R 69444 PS)"
+  },
+  {
+   "t": "p",
+   "k": "d95dbc938d33",
+   "en": "We already established in the back-of-the-envelope calculations chapter that we’ll use the following formula to estimate a pragmatic number of servers: 6 N umber of daily active users =8000300 × 10 =37500 RPS of a server 300 million"
+  },
+  {
+   "t": "p",
+   "k": "4fa73ca91f23",
+   "en": "Therefore, the total number of servers required to facilitate 300 million users generating an average of 69,500 requests per second will be 37,500."
+  },
+  {
+   "t": "h3",
+   "k": "5e7e60e98560",
+   "en": "Storage estimation"
+  },
+  {
+   "t": "p",
+   "k": "12b0a02b6436",
+   "en": "Let’s keep in mind our assumption that 15% of questions have images and 5% have videos. So, we’ll make the following assumptions to estimate the storage requirements for our design:"
+  },
+  {
+   "t": "p",
+   "k": "5daa70dc9719",
+   "en": "Each of the 300 million active users posts 1 question in a day, and each question has 2 responses on average, 10 upvotes, and 5 comments in total."
+  },
+  {
+   "t": "p",
+   "k": "c819d830deba",
+   "en": "The collective storage required for the textual content (including the question, answer(s), and comment(s) text) of one question equals .100 KB Storage Requirements Estimation Calculator Questions per user f Total questions per da 300millions y Size of textual content 100 per question Image size Video size Questions containing i 15 mages Questions containing v 5 ideos f Storage for textual con 30TB tent f Storage for image cont"
+  },
+  {
+   "t": "li",
+   "k": "faaf6a8b3692",
+   "en": "25TB ent f Storage for video conte 75TB nt 1 per day KB 250 KB 5 MB percent percent The following are the default calculations: 6 Total questions: questions per day.300M × 1 = 300 × 10 Storage required for textual content of all questions in one day: 300 × M × 1 × KB = 300GB Storage required for images for one day: 6 300×10 ×153 11.25 ×250 × 10 B =TB 100 Storage required for video content for one day: 6 300×10 ×56 75 ×5 × 10 B =TB 100"
+  },
+  {
+   "t": "p",
+   "k": "4a00172d5ed9",
+   "en": "Total storage required for one day = 30 TB + 11.25 TB + 75 TB = 116.25 TB per day The daily storage requirements of Quora seem very high. But for service with 300 million DAU, a yearly requirement of is 116.25 TB × 365 = 42.43 PB feasible. The practical requirement will be much higher because we have disregarded the storage required for a number of things. For example, non-active (out of ) users’ data will require storage.1 B"
+  },
+  {
+   "t": "h3",
+   "k": "10d00f179eb1",
+   "en": "Bandwidth estimation"
+  },
+  {
+   "t": "p",
+   "k": "5396364f8b61",
+   "en": "The bandwidth estimate requires the calculation of incoming and outgoing data through the network."
+  },
+  {
+   "t": "p",
+   "k": "207a66f2f232",
+   "en": "Incoming traffic: The incoming traffic bandwidth required per day will be"
+  },
+  {
+   "t": "li",
+   "k": "3b3f797dcad1",
+   "en": "25 TB 8 = 10.9 equal to × Gbps ≈ 11 Gbps 86400 Outgoing traffic: We have assumed that 300 million active users views 20 questions per day, so the total bandwidth requirements can be found in the below calculator:"
+  },
+  {
+   "t": "p",
+   "k": "2ffc2ba41e04",
+   "en": "Bandwidth Requirements Estimation Calculator Total storage required"
+  },
+  {
+   "t": "li",
+   "k": "2712acb4daad",
+   "en": "25 per day f Incoming traffic band 11Gbps width Questions viewed per 20 user f Total questions viewed f Bandwidth for text of a"
+  },
+  {
+   "t": "li",
+   "k": "010e6cf5e39c",
+   "en": "56Gbps ll questions f Bandwidth for 15% of i"
+  },
+  {
+   "t": "li",
+   "k": "e100ed5e5025",
+   "en": "83Gbps mage content f Bandwidth for 5% of vi"
+  },
+  {
+   "t": "li",
+   "k": "a6a8e76d0cfd",
+   "en": "89Gbps deo content f Outgoing traffic bandw"
+  },
+  {
+   "t": "li",
+   "k": "f8ba315da00d",
+   "en": "3Gbps idth TB per day 69444 per second 300M × 20 questions = 6 billion questions are viewed per day. 9 6×103 Questions viewed per second: questions are =69.4 × 10 86400 viewed per second."
+  },
+  {
+   "t": "p",
+   "k": "90fe54810010",
+   "en": "Bandwidth for the textual content of all questions and their answers: 3 1003 8"
+  },
+  {
+   "t": "li",
+   "k": "68ac71ab147d",
+   "en": "4 × 10 × × 10 × bits = 55.56 Gbps Bandwidth of the 15% of content which contain images per second: 3 ×15 2503 8"
+  },
+  {
+   "t": "li",
+   "k": "de247afe407c",
+   "en": "4 × 10 × × 10 × bits = 20.83 Gbps 100 Bandwidth for the 5% of content that contains video per second: 3 ×5 56 8"
+  },
+  {
+   "t": "li",
+   "k": "18ce5c37aa38",
+   "en": "4 × 10 × × 10 × bits = 138.9 Gbps 100 Total outgoing traffic bandwidth:"
+  },
+  {
+   "t": "li",
+   "k": "8802af97ea98",
+   "en": "56 Gbps + 20.82 Gbps + 138.9 Gbps = 215.3 Gbps We use rounding at each step in this explanation. The answers in the calculator above are slightly different due to rounding."
+  },
+  {
+   "t": "p",
+   "k": "e40503684a79",
+   "en": "Total bandwidth requirement of Quora is equal to:"
+  },
+  {
+   "t": "p",
+   "k": "abd125ad29ca",
+   "en": "Incoming + outgoing traffic bandwidth = 11 Gbps + 215.3 Gbps = 226.3 Gbps"
+  },
+  {
+   "t": "h2",
+   "k": "cfa08fe6c777",
+   "en": "Building blocks we will use"
+  },
+  {
+   "t": "p",
+   "k": "2f94ef871270",
+   "en": "We’ll use the following building blocks for the initial design of Quora:"
+  },
+  {
+   "t": "p",
+   "k": "60a559a242ee",
+   "en": "Load balancers will be used to divide the traffic load among the service hosts."
+  },
+  {
+   "t": "p",
+   "k": "e92a97435916",
+   "en": "Databases are essential for storing all sorts of data, such as user questions and answers, comments, and likes and dislikes. Also, user data will be stored in the databases. We may use different types of databases to store different data."
+  },
+  {
+   "t": "p",
+   "k": "c6e9d65eb47d",
+   "en": "A distributed caching system will be used to store frequently accessed data. We can also use caching to store our view counters for different questions."
+  },
+  {
+   "t": "p",
+   "k": "97daec822a93",
+   "en": "The blob store will keep images and video files."
+  },
+  {
+   "t": "h1",
+   "k": "971bf8bf1c53",
+   "en": "Initial Design of Quora"
+  },
+  {
+   "t": "p",
+   "k": "a1910a4f9dc1",
+   "en": "Transform the Quora requirements into a high-level design."
+  },
+  {
+   "t": "h2",
+   "k": "9bec44131eab",
+   "en": "Initial design"
+  },
+  {
+   "t": "p",
+   "k": "d48a50db5265",
+   "en": "The initial design of Quora will be composed of the following building blocks and components:"
+  },
+  {
+   "t": "p",
+   "k": "5d7883836bf0",
+   "en": "Web and application servers: A typical Quora page is generated by various services. The web and application servers maintain various processes to generate a webpage. The web servers have manager processes and the application servers have worker processes for handling various requests. The manager processes distribute work among the worker processes using a router library. The router library is enqueued with tasks by the manager processes and dequeued by worker processes. Each application server maintains several in-memory queues to handle different user requests. The following illustration provides an abstract view of web and application servers:"
+  },
+  {
+   "t": "p",
+   "k": "bef72f3f044c",
+   "en": "Data stores: Different types of data require storage in different data stores."
+  },
+  {
+   "t": "p",
+   "k": "7bb50eba4267",
+   "en": "We can use critical data like questions, answers, comments, and upvotes/downvotes in a relational database like MySQL because it offers a higher degree of consistency. NoSQL databases like HBase can be used to store the number of views of a page, scores used to rank answers, and the extracted features from data to be used for recommendations later on."
+  },
+  {
+   "t": "p",
+   "k": "d5d9e62d10a9",
+   "en": "Because recomputing features is an expensive operation, HBase can be a good option to store and retrieve data at high bandwidth. We require high read/write throughput because big data processing systems use high parallelism to efficiently get the required statistics. Also, blob storage is required to store videos and images posted in questions and answers."
+  },
+  {
+   "t": "p",
+   "k": "06db892bce33",
+   "en": "Quora was founded in 2009, whereas HBase was developed in 2008 by Apache. Because it is open-source and modeled after Google’s BigTable, it is suitable for storing a large amount of small-sized data. Furthermore, it has high read/write throughput. Therefore, it was a natural choice for Quora to use in its inception."
+  },
+  {
+   "t": "p",
+   "k": "b6a4b0e6f05a",
+   "en": "Distributed cache: For performance improvement, two distributed cache systems are used: Memcached and Redis. Memcached is primarily used to store frequently accessed critical data that is otherwise stored in MySQL."
+  },
+  {
+   "t": "p",
+   "k": "60bb941c90cc",
+   "en": "On the other hand, Redis is mainly used to store an online view counter of answers because it allows in-store increments. Therefore, two cache systems are employed according to their use case. Apart from these two, CDNs serve frequently accessed videos and images."
+  },
+  {
+   "t": "p",
+   "k": "c24ae4e1440b",
+   "en": "Compute servers: A set of compute servers are required to facilitate features like recommendations and ranking based on a set of attributes."
+  },
+  {
+   "t": "p",
+   "k": "10b64726668e",
+   "en": "These features can be computed in online or offline mode. The compute servers use machine learning (ML) technology to provide effective recommendations. Naturally, these compute servers have a substantially high amount of RAM and processing power."
+  },
+  {
+   "t": "p",
+   "k": "2d182e4f63fc",
+   "en": "Of course, other basic building blocks like load balancers, monitoring services, and rate limiters will also be part of the design. A high-level design is provided below:"
+  },
+  {
+   "t": "h2",
+   "k": "899531e0f885",
+   "en": "Workflow"
+  },
+  {
+   "t": "p",
+   "k": "14278317281e",
+   "en": "Posting question, answers, comments: The web servers receive user requests through the load balancer and direct them to the application servers. Meanwhile, the web servers generate part of the web page and let the worker process in the application servers do the rest of the page generation. The questions and answers data is stored in a MySQL database, whereas any videos and images are stored in the blob storage. A similar approach is used to post comments and upvote or downvote answers. Task prioritization is performed by employing different queues for different tasks. We perform prioritization because certain tasks require immediate attention—for example, fetching data from the database for a user request —while others are not so urgent—for example, sending a weekly email digest. The worker processes will perform tasks by fetching from these queues."
+  },
+  {
+   "t": "p",
+   "k": "f8e30b9530e5",
+   "en": "Points to Ponder When would a service like Quora require a notifications feature?"
+  },
+  {
+   "t": "p",
+   "k": "181554914959",
+   "en": "Hide Answer Quora will need a notification service in the following scenarios:"
+  },
+  {
+   "t": "p",
+   "k": "8c0072cd4402",
+   "en": "A user posts a question on a topic subscribed by a would-be respondent."
+  },
+  {
+   "t": "p",
+   "k": "fa95ba6cc554",
+   "en": "A user posts an answer to a question asked by another user."
+  },
+  {
+   "t": "p",
+   "k": "d02f924afd69",
+   "en": "A post a user is interested in or wrote received new comments or upvotes/downvotes, and so on. 1 of 2 Answer ranking system: Answers to questions can be sorted based on date. Although it is convenient to develop a ranking system on the basis of date (using time stamps), users prefer to see the most appropriate answer at the top. Therefore, Quora uses ML to rank answers. Different features are extracted over time and stored in the HBase for each type of question."
+  },
+  {
+   "t": "p",
+   "k": "1d5f07208e52",
+   "en": "These features are forwarded to the ML engine to rank the most useful answer at the top. We cannot use the number of upvotes as the only metric for ranking answers because a good number of answers can be jokes—and such answers also get a lot of upvotes. It is good to implement the ranking system offline because good answers get upvotes and views over time. Also, the offline mode poses a lesser burden on the infrastructure. Implementing the ranking system offline and the need for special ML hardware makes it suitable to use some public cloud elastic services."
+  },
+  {
+   "t": "p",
+   "k": "90107e72e31e",
+   "en": "Recommendation system: The recommendation system is responsible for several features. For example, we might need to develop a user feed, find related questions and ads, recommend questions to potential respondents, and even highlight duplicate content and content in violation of the service’s terms of use. Unlike the answer ranking system, the recommendation system must provide both online and offline services."
+  },
+  {
+   "t": "p",
+   "k": "0064413dfd30",
+   "en": "This system receives requests from the application server and forwards selected features to the ML engine."
+  },
+  {
+   "t": "p",
+   "k": "6734219c3814",
+   "en": "Search feature: Over time, as questions and answers are fed to the Quora system, it is possible to build an index in the HBase. User search queries are matched against the index, and related content is suggested to the user."
+  },
+  {
+   "t": "p",
+   "k": "367155e68c59",
+   "en": "Frequently accessed indexes can be served from cache for low latency. The index can be constructed from questions, answers, topics labels, and usernames. Tokenization of the search index returns the same results for reordered words also (see Scaling Search and Indexing in Distributed Search chapter for more details)."
+  },
+  {
+   "t": "p",
+   "k": "2388a0047ac1",
+   "en": "Quora is mostly built on Amazon Web Services (AWS)."
+  },
+  {
+   "t": "p",
+   "k": "fc0550d89b4f",
+   "en": "Initially, Quora used Amazon’s EC2 instances as their application servers used eight cores with an 8 MB cache."
+  },
+  {
+   "t": "p",
+   "k": "98da42c873e0",
+   "en": "Quora used the search server called Sphinx. Later, because of its slow performance, Quora custom-built its search engine using Thrift and Python Unicode libraries only."
+  },
+  {
+   "t": "p",
+   "k": "0b99afc26348",
+   "en": "The full-text search feature was launched by Quora in 2013. Before that, it was possible to get results for individual words only."
+  },
+  {
+   "t": "h2",
+   "k": "58dbf879b581",
+   "en": "API design"
+  },
+  {
+   "t": "p",
+   "k": "9f089fa89c74",
+   "en": "We’ll design the API calls for Quora in this section. We’ll define APIs for the following features only:"
+  },
+  {
+   "t": "li",
+   "k": "8ce23f9a6bf6",
+   "en": "Note: We don’t consider APIs for a recommendation system or ranking because they are not placed as an explicit request by the user. Instead, the web server coordinates with other components to ensure the service.",
+   "lead": "Note"
+  },
+  {
+   "t": "h3",
+   "k": "21d22dfd962b",
+   "en": "Post a question"
+  },
+  {
+   "t": "p",
+   "k": "3303a6c1cf97",
+   "en": "The POST method of HTTP is used to call the /postQuestion API:"
+  },
+  {
+   "t": "code",
+   "k": "d8b6af71d182",
+   "en": "postQuestion(user_id, question, description, topic_label, video, image )"
+  },
+  {
+   "t": "p",
+   "k": "26100554ff39",
+   "en": "Let’s understand each parameter of the API call:"
+  },
+  {
+   "t": "p",
+   "k": "b75381f00486",
+   "en": "Parameter"
+  },
+  {
+   "t": "code",
+   "k": "cace4a159ff9",
+   "en": "user_id"
+  },
+  {
+   "t": "p",
+   "k": "e9afe3eb15b1",
+   "en": "question."
+  },
+  {
+   "t": "code",
+   "k": "5602c4191672",
+   "en": "question description topic_label"
+  },
+  {
+   "t": "p",
+   "k": "608271afad6b",
+   "en": "is related."
+  },
+  {
+   "t": "code",
+   "k": "01bc5ccb026c",
+   "en": "video image"
+  },
+  {
+   "t": "p",
+   "k": "f6f45fec1664",
+   "en": "The video and image parameters can be NULL if no image or video is embedded within the question. Otherwise, it is uploaded as part of the question."
+  },
+  {
+   "t": "p",
+   "k": "7e9f2898d593",
+   "en": "Description This is the unique identification of the user that posts the This is the text of the question posed by the user. This is the description of a question. This is an optional field. This represents a list of domains to which the user’s question This is a video file embedded in a user question. This is an image that is a part of a user question."
+  },
+  {
+   "t": "h3",
+   "k": "9f48006970fb",
+   "en": "Post an answer"
+  },
+  {
+   "t": "p",
+   "k": "3db0f4a13da5",
+   "en": "For posting an answer, the POST method is a suitable choice for /postAnswer API:"
+  },
+  {
+   "t": "code",
+   "k": "42d8d2f0de5e",
+   "en": "postAnswer(user_id, question_id, answer_text, video, image)"
+  },
+  {
+   "t": "p",
+   "k": "b75381f00486",
+   "en": "Parameter"
+  },
+  {
+   "t": "code",
+   "k": "be27f6608f37",
+   "en": "question_id answer_text"
+  },
+  {
+   "t": "p",
+   "k": "bc8b73e8b66e",
+   "en": "The rest of the parameters are self-explanatory."
+  },
+  {
+   "t": "h3",
+   "k": "50773744518d",
+   "en": "Upvote an answer"
+  },
+  {
+   "t": "p",
+   "k": "4a0e86ffe9d8",
+   "en": "The /upvote API is below:"
+  },
+  {
+   "t": "code",
+   "k": "6e0cd8b3bae5",
+   "en": "upvote(user_id, question_id, answer_id)"
+  },
+  {
+   "t": "p",
+   "k": "b75381f00486",
+   "en": "Parameter"
+  },
+  {
+   "t": "code",
+   "k": "e66d4d626498",
+   "en": "user_id answer_id"
+  },
+  {
+   "t": "p",
+   "k": "7d1246841378",
+   "en": "particular question, which is identified by the question_id"
+  },
+  {
+   "t": "li",
+   "k": "abac31fab419",
+   "en": "Note: The downvote API is the same as the upvote API because both are similar functionalities.",
+   "lead": "Note"
+  },
+  {
+   "t": "h3",
+   "k": "3ddbcd1f78b0",
+   "en": "Comment on an answer"
+  },
+  {
+   "t": "p",
+   "k": "326101d75559",
+   "en": "Description This refers to the question the answer is posted against. This is the textual answer posted by the responder. Description This represents the user upvoting the answer. This represents the identity of the answer that is upvoted for a ."
+  },
+  {
+   "t": "p",
+   "k": "cbfc303f8a1c",
+   "en": "The /comment API has the following structure:"
+  },
+  {
+   "t": "code",
+   "k": "48942a0156df",
+   "en": "comment(user_id, answer_id, comment_text)"
+  },
+  {
+   "t": "p",
+   "k": "b75381f00486",
+   "en": "Parameter"
+  },
+  {
+   "t": "code",
+   "k": "38bf36191131",
+   "en": "user_id comment_text by the answer_id"
+  },
+  {
+   "t": "h3",
+   "k": "3559d7accf00",
+   "en": "Search"
+  },
+  {
+   "t": "p",
+   "k": "7608db45ef2c",
+   "en": "The /search API has the following details:"
+  },
+  {
+   "t": "code",
+   "k": "a02f14196b3f",
+   "en": "search(user_id, search_text)"
+  },
+  {
+   "t": "p",
+   "k": "b75381f00486",
+   "en": "Parameter"
+  },
+  {
+   "t": "code",
+   "k": "a0b75872cdf3",
+   "en": "user_iduser_id"
+  },
+  {
+   "t": "p",
+   "k": "3d5b6ea8b271",
+   "en": "in this case because a non-registered user can also search for questions."
+  },
+  {
+   "t": "code",
+   "k": "37274361d1e5",
+   "en": "search_text"
+  },
+  {
+   "t": "p",
+   "k": "3621c835f02f",
+   "en": "We use a sequencer to generate the different IDs mentioned in the API calls."
+  },
+  {
+   "t": "p",
+   "k": "d2010efc79f5",
+   "en": "Point to Ponder Description It represents the user commenting on the answer. It represents the text a user posts against an answer identified . Description This is the performing the search query. It is optional This is the search query entered by a user."
+  },
+  {
+   "t": "p",
+   "k": "996cc8c7570c",
+   "en": "Why is there a custom routing layer between the web and application servers instead of a load-balancing layer?"
+  },
+  {
+   "t": "p",
+   "k": "b69bacca50d0",
+   "en": "Hide Answer The primary reason is performance. A generic load-balancing layer will have little application understandability and higher latency."
+  },
+  {
+   "t": "p",
+   "k": "0363ed4084e6",
+   "en": "As stated, the manager processes generate the skeleton of the web page and leave the majority of the work to worker processes. In that sense, one manager process can generate multiple worker tasks. The custom router library is a queue between manager and worker, where any worker process can consume a task generated by the manager process."
+  },
+  {
+   "t": "p",
+   "k": "6189cdeb3d9e",
+   "en": "This design improves the overall performance and supports scalability."
+  },
+  {
+   "t": "h1",
+   "k": "44e8259097b4",
+   "en": "Final Design of \u0000 \u0001 \u0002 \u0003 a"
+  },
+  {
+   "t": "p",
+   "k": "69fac99e3623",
+   "en": "Learn about the limitations of Quora’s design and improve the design."
+  },
+  {
+   "t": "li",
+   "k": "570ba85010ff",
+   "en": "The proposed design serves all the functional requirements. However, it has a number of serious drawbacks that emerge as we scale. This means that we are unable to fulfill the non-functional requirements. Let’s explore the main shortcomings below:"
+  },
+  {
+   "t": "p",
+   "k": "d6632026dfb3",
+   "en": "Limitations of web and application servers: To entertain the user’s request, payloads are transferred between web and application servers, which increases latency because of network I/O between these two types of servers. Even if we achieve parallel computation by separating the web from application servers (that is, the manager and worker processes), the added latency due to an additional network link erodes a user’s experience."
+  },
+  {
+   "t": "p",
+   "k": "36fed5d4384c",
+   "en": "Apart from data transfer, control communication between the router library with manager and worker processes also imposes additional performance penalties."
+  },
+  {
+   "t": "p",
+   "k": "f69af4660b8a",
+   "en": "In-memory queue failure: The internal architecture of application servers log tasks and forward them to the in-memory queues, which serve them to Limitations of the proposed design Detailed design of Quora Service hosts Vertical sharding of MySQL MyRocks Kafka Technology usage the workers. These in-memory queues of different priorities can be subject to failures. For instance, if a queue gets lost, all the tasks in that queue are lost as well, and manual engineering is required to recover those tasks. This greatly reduces the performance of the system. On the other hand, replicating these queues requires increasing RAM size. Also, with the number of features (functional requirements) that our system offers, many tasks can get assembled, which results in insufficient memory. At the same time, it is not desirable to choke application servers with not-so-urgent tasks. For example, application servers should not be burdened with tasks like storing view counts for answers, adding statistics to the database for later analysis, and so on."
+  },
+  {
+   "t": "p",
+   "k": "662cf86022f0",
+   "en": "Increasing QPS on MySQL: Because we have a higher number of features offered by our system, few MySQL tables receive a lot of user queries. This results in a higher number of QPS on certain MySQL servers, which can result in higher latency. Furthermore, there is no scheme defined for disaster recovery management in our design."
+  },
+  {
+   "t": "li",
+   "k": "c95953180c1a",
+   "en": "Latency of HBase: Even though HBase allows high real-time throughput, its P99 latency is not among the best. A number of Quora features require the ML engine that has a latency of its own. Due to the addition of the higher latency of HBase, the overall performance of the system degrades over time.",
+   "lead": "Latency of HBase"
+  },
+  {
+   "t": "p",
+   "k": "9e76b9a6bdb5",
+   "en": "The issues highlighted above require changes to the earlier proposed design."
+  },
+  {
+   "t": "p",
+   "k": "60bd3537e2b3",
+   "en": "Therefore, we’ll make the following adjustments and update our design:"
+  },
+  {
+   "t": "h2",
+   "k": "cc728e0e83b3",
+   "en": "Detailed design o \r \u0012 \u0013 \n \u0011 a"
+  },
+  {
+   "t": "p",
+   "k": "d1dd69beb8cd",
+   "en": "Let’s understand the improvements in our design:"
+  },
+  {
+   "t": "h3",
+   "k": "0ae6c1f30ebd",
+   "en": "Service hosts"
+  },
+  {
+   "t": "p",
+   "k": "568866360efb",
+   "en": "We combine the web and application servers within a single powerful machine that can handle all the processes at once. This technique eliminates the network I/O and the latency introduced due to the network hops required between the manager, worker, and routing library processes. The illustration below provides an abstract view of the updated web server architecture:"
+  },
+  {
+   "t": "h3",
+   "k": "11c39b3a67a4",
+   "en": "Vertical sharding o \u0018 M y SQ \u0019"
+  },
+  {
+   "t": "p",
+   "k": "a75b61b1a213",
+   "en": "Tables in the MySQL server are converted to separate shards that we refer to as partitions. A partition has a single primary server and multiple replica servers."
+  },
+  {
+   "t": "p",
+   "k": "d547c1edcbb7",
+   "en": "The goal is to improve performance and reduce the load due to an increasing number of queries on a single database table. To achieve that, we do vertical sharding in two ways:"
+  },
+  {
+   "t": "li",
+   "k": "e4061f6be675",
+   "en": "We split tables of a single database into multiple parti tions. The concept is depicted in Partitions 2 and 3, which embed Tables 4 and 3, respectively."
+  },
+  {
+   "t": "li",
+   "k": "46e998a15d9a",
+   "en": "We combine multiple tables into a single partition, wher e join operations are anticipated. The concept is depicted in Partition 1, which embeds Tables 1 and 2."
+  },
+  {
+   "t": "p",
+   "k": "85514bda0b2e",
+   "en": "Therefore, we are able to co-locate related data and reduce traffic on hot data."
+  },
+  {
+   "t": "p",
+   "k": "634992a4c63c",
+   "en": "The illustration below depicts vertical sharding at Quora."
+  },
+  {
+   "t": "p",
+   "k": "1ab9a72727a8",
+   "en": "After we complete the partitioning, we require two types of mappings or metadata to complete our scaling process:"
+  },
+  {
+   "t": "li",
+   "k": "327188e9ba09",
+   "en": "Which partitions contain which tables and columns?"
+  },
+  {
+   "t": "li",
+   "k": "fd6e54b772d4",
+   "en": "Which hosts are primary and replicas of a particular part ition?"
+  },
+  {
+   "t": "p",
+   "k": "205299832cb1",
+   "en": "Both of these mappings are maintained by a service like ZooKeeper."
+  },
+  {
+   "t": "p",
+   "k": "3680c22e73f0",
+   "en": "The sharded design above ensures scalability because we are able to locate related data in a single partition, and therefore it eliminates the need for querying data from multiple shards. Also, the number of read-replicas can be increased for hot shards, or further sharding may be performed. For edge cases where joining may be needed, we can perform it at the application level."
+  },
+  {
+   "t": "li",
+   "k": "ae20fcd660ca",
+   "en": "Note: Vertical sharding is of particular interest in Quora’s design because horizontal sharding is more common in the database community. The main idea behind vertical sharding is to achieve",
+   "lead": "Note"
+  },
+  {
+   "t": "figure",
+   "k": "c7de38e127b8",
+   "en": "Table 1 Table 2 Table 3 Table 4 Table 3"
+  },
+  {
+   "t": "p",
+   "k": "632363b28350",
+   "en": "scalability by carefully dividing or re-locating tables and eliminating join operations across different shards. Nevertheless, a vertically sharded partition or table can grow horizontally to an extent where horizontal sharding will be necessary to retain acceptable performance."
+  },
+  {
+   "t": "p",
+   "k": "2c2ced97d974",
+   "en": "The new design embeds MyRocks as the key-value store instead of HBase. We use the MyRocks version of RocksDB for two main reasons:"
+  },
+  {
+   "t": "li",
+   "k": "52e50edf658e",
+   "en": "MyRocks has a lower p99 latency instead of HBase. Quora clai ms to have reduced P99 latency from 80 ms to 4 ms using MyRocks."
+  },
+  {
+   "t": "li",
+   "k": "b0a860686df3",
+   "en": "There are operational tools that can transfer data between My Rocks and MySQL."
+  },
+  {
+   "t": "li",
+   "k": "78f4f33be0af",
+   "en": "Note: Quora serves the ML compute engine by extracting features from questions and answers stored in MySQL. In this case, the operational tools come in handy to transfer data between MyRocks and MySQL.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "0b703674a0a6",
+   "en": "Our updated design reduces the request load on service hosts by separating not-so-urgent tasks from the regular API calls. For this purpose, we use Kafka, which can disseminate jobs among various queues for tasks such as the view counter (see Sharded Counters), notification system, analytics, and highlight topics to the user. Each of these jobs is executed through cron jobs."
+  },
+  {
+   "t": "p",
+   "k": "d2272271fa71",
+   "en": "Services that scale quickly have little time to develop new features and handle an increasing number of requests from users. Such services employ cloud infrastructure to handle spikes in traffic. Also, the choice of programming language is important. Just like we mentioned that YouTube chose Python for faster programming, we can apply the same logic to Quora. In fact, Quora uses the Python Paste web framework."
+  },
+  {
+   "t": "p",
+   "k": "3e148f401c63",
+   "en": "It is desirable to use a faster programming language like C++ to develop the feature extraction service. For online recommendation services through a ML engine, feature extraction service should be quick, to enable the ML engine to accomplish accurate recommendations. Not only that, but reducing the latency burden on the ML engine allows it to provide a larger set of services. We can employ the Thrift service to support interoperability between programming languages within different components."
+  },
+  {
+   "t": "p",
+   "k": "e62bb930db86",
+   "en": "Features like comments, upvotes, and downvotes require frequent page updates from the client side. Polling is a technique where the client (browser) frequently requests the server for new updates. The server may or may not have any updates but still responds to the client. Therefore, the server may get uselessly overburdened. To resolve this issue, Quora uses a technique called long polling, where if a client requests for an update, the server may not respond for as long as 60 seconds if there are no updates. However, if there is an update, the server will reply immediately and allow the client to make new requests."
+  },
+  {
+   "t": "p",
+   "k": "2a7e1b2c5587",
+   "en": "Lastly, Memcached can employ multiget() to obtain multiple keys from the cache shards to reduce the retrieval latency of multiple keys."
+  },
+  {
+   "t": "li",
+   "k": "e7c0b8c7a1f9",
+   "en": "Note: Quora has employed AWS to set up a good number of its infrastructure elements, including S3 (see the Blob Storage chapter) and Redshift storage.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "d501d3ec02af",
+   "en": "Quiz"
+  },
+  {
+   "t": "p",
+   "k": "6fb553738e05",
+   "en": "What would be considered a good approach for communication between different manager and worker processes within the service hosts?"
+  },
+  {
+   "t": "p",
+   "k": "54aa4275645b",
+   "en": "Hide Answer Two approaches are feasible for communication:"
+  },
+  {
+   "t": "li",
+   "k": "52504251a48c",
+   "en": "UNIX sockets"
+  },
+  {
+   "t": "li",
+   "k": "88be9a517ef5",
+   "en": "TCP connections Sockets (Unix or TCP) allow data streaming between sender and receiver with appropriate flow control (and congestion control in the case of TCP). That means the sender and receiver can send variable-size data in a decoupled fashion."
+  },
+  {
+   "t": "p",
+   "k": "7cce5da84627",
+   "en": "Other interprocess communication techniques like shared memory may not be feasible because they require estimating the size of the required memory segment, which makes the participants more coupled. Also, it will not work across physical servers."
+  },
+  {
+   "t": "p",
+   "k": "5ec882239ef9",
+   "en": "So, we prefer sockets due to their high decoupling, flow control, and ability to work for both single servers or over the network. 1 of 3 Learn how tw ! o o \" # # \" $ % & ( ) * Þlls tw & o & s ( ) & + , $ o & - * ! equire. & , \" /"
+  },
+  {
+   "t": "li",
+   "k": "35bf60bd48a0",
+   "en": "We have used various techniques to fulfill our functional requirements."
+  },
+  {
+   "t": "li",
+   "k": "9f021357502e",
+   "en": "Scalability: Our system is highly scalable for several reasons. The updated design uses powerful and homogeneous service hosts. Quora uses powerful machines because service hosts use an in-memory cache, some level of queueing, maintain manager, worker, and routing library. The horizontal scaling of these service hosts is convenient because they are homogeneous.",
+   "lead": "Scalability"
+  },
+  {
+   "t": "p",
+   "k": "d9ab64a81a06",
+   "en": "On the database end, our design shards the MySQL databases vertically, which avoids issues in scalability because of overloaded MySQL servers. To reduce complex join queries, tables anticipating join operations are placed in the same shard or partition."
+  },
+  {
+   "t": "li",
+   "k": "2fd55b38d155",
+   "en": "Note: As mentioned earlier, vertical sharding may not be enough because each shard can grow large horizontally. For large MySQL tables, writing becomes a bottleneck. Therefore, our design may have to adhere to horizontal sharding, a well-known practice in database scaling.",
+   "lead": "Note"
+  },
+  {
+   "t": "li",
+   "k": "d323243b9719",
+   "en": "Consistency: Due to the variety of functionalities offered by Quora, different consistency schemes may be selected for different types of data.",
+   "lead": "Consistency"
+  },
+  {
+   "t": "p",
+   "k": "8f611bf4ac87",
+   "en": "For example, certain critical data like questions and answers should be stored synchronously. In this case, performance can take a hit because users don’t expect instantaneous responses to their questions. It means that a user may get a reply in five minutes, one hour, one day, or no response at all, depending on the user’s question and the availability of would-be respondents."
+  },
+  {
+   "t": "p",
+   "k": "81870ab90b9e",
+   "en": "Other data like view counts may not necessarily be stored synchronously because it is not a goal of the Quora service to ensure that all users see the same number of views as soon as the question is posted. For such cases, eventual consistency is favored for improved performance."
+  },
+  {
+   "t": "li",
+   "k": "1b7b462f88f9",
+   "en": "Note: In general, our design is equipped with strong techniques to reduce the user-perceived latency as a whole.",
+   "lead": "Note"
+  },
+  {
+   "t": "li",
+   "k": "d4a44d93a65b",
+   "en": "Availability: Some of the main ideas to improve availability include isolation between different components, keeping redundant instances, using CDN, using configuration services like ZooKeeper, and load balancers to hide failures from users.",
+   "lead": "Availability"
+  },
+  {
+   "t": "p",
+   "k": "0a6c4304fb00",
+   "en": "Decoupling services help to maintain, upgrade, and recover during failures of individual service or hosts. If services are collocated on the same node or host, a failed node results in the loss of multiple services at once."
+  },
+  {
+   "t": "p",
+   "k": "9a383e3b78e1",
+   "en": "Our design, however, lacks any disaster recovery management, which we’ll explore in the next section."
+  },
+  {
+   "t": "li",
+   "k": "69d23557cff3",
+   "en": "Performance: This design has a strong performance because we have employed the right technology for the right feature. For example, we have used several datastores for different reasons. On top of that, we used different distributed caches depending upon the use case and access frequency. Also, we employed Kafka to queue similar tasks and assign them to cron jobs that otherwise take a long time if executed via API calls.",
+   "lead": "Performance"
+  },
+  {
+   "t": "li",
+   "k": "12c114c156f4",
+   "en": "Note: Quora claims that using its custom queuing solution, it can handle roughly 15,000 tasks per second.",
+   "lead": "Note"
+  },
+  {
+   "t": "li",
+   "k": "9f30f20cb79f",
+   "en": "Quora has developed a custom in-memory caching system called Pycache that can store tens of GBs of cache in a local machine."
+  },
+  {
+   "t": "p",
+   "k": "a001b6e5ccf2",
+   "en": "The Pycache API contains simple but effective functions like"
+  },
+  {
+   "t": "code",
+   "k": "3a2d6986fa4c",
+   "en": "pycache.get(key), pycache.set(key, value), pycache.delete(key), pycache.iteritems(), and pycache.update()."
+  },
+  {
+   "t": "p",
+   "k": "aca41aa4cdba",
+   "en": "Both the set and delete functions have variants to set and delete multiple entries at once."
+  },
+  {
+   "t": "li",
+   "k": "852231fa4b96",
+   "en": "Quora has developed and open-sourced a tool called Asynq that simplifies batching of cache requests to Memcached. So, developers can write code faster—and the latency of a round trip to the caching service is reduced Requirements Scalability"
+  },
+  {
+   "t": "li",
+   "k": "3e51aebbc190",
+   "en": "Uses the same servers to reduce complexity in horizo ntal scalabil"
+  },
+  {
+   "t": "li",
+   "k": "75fef49cbb00",
+   "en": "sharding of MySQL database."
+  },
+  {
+   "t": "li",
+   "k": "c669a3344867",
+   "en": "Employs various data stores for different purposes."
+  },
+  {
+   "t": "li",
+   "k": "fe2c03a6d738",
+   "en": "Asynq can enable developers to code quickly by batching cache re"
+  },
+  {
+   "t": "li",
+   "k": "87cff6878605",
+   "en": "separate compute, and feature extraction modules. Therefore, a g facility allows scalability of different recommendation systems."
+  },
+  {
+   "t": "p",
+   "k": "028944e40958",
+   "en": "Consistency"
+  },
+  {
+   "t": "li",
+   "k": "a083b68538be",
+   "en": "Offers eventual consistency for non-critical data like the view cou Availability"
+  },
+  {
+   "t": "li",
+   "k": "28360cb0e4ed",
+   "en": "using database sharding and replicas."
+  },
+  {
+   "t": "li",
+   "k": "c64fa8e6d29d",
+   "en": "Uses CDN as a backup to serve static/dynamic data in case of failu"
+  },
+  {
+   "t": "li",
+   "k": "14de8547aec8",
+   "en": "ZooKeeper enables service hosts to get updates about MySQL shar"
+  },
+  {
+   "t": "li",
+   "k": "b06ce35fa0bb",
+   "en": "Load balancers hide server failures from end users."
+  },
+  {
+   "t": "li",
+   "k": "4f1b2494ec6e",
+   "en": "AWS supports an availability above 99 percent."
+  },
+  {
+   "t": "li",
+   "k": "10b63fffeee0",
+   "en": "Thrift isolates services and therefore failures."
+  },
+  {
+   "t": "p",
+   "k": "476ee0f6af1d",
+   "en": "Performance"
+  },
+  {
+   "t": "li",
+   "k": "53088c80fd4f",
+   "en": "Uses the right programming language to deliver tasks quickly, suc library."
+  },
+  {
+   "t": "li",
+   "k": "a96a17d997a4",
+   "en": "Uses `Multiget()` to retrieve multiple entries from Memcached at"
+  },
+  {
+   "t": "li",
+   "k": "676015506feb",
+   "en": "Eliminates network round trip time with Asynq."
+  },
+  {
+   "t": "li",
+   "k": "4bfd97d530d1",
+   "en": "Kafka improves the performance of service hosts."
+  },
+  {
+   "t": "li",
+   "k": "575b63424f9f",
+   "en": "Sharding improves QPS of MySQL."
+  },
+  {
+   "t": "li",
+   "k": "614258a0b368",
+   "en": "Custom, in-memory caching system reduces the latency of frequent"
+  },
+  {
+   "t": "h2",
+   "k": "274dda6b50d2",
+   "en": "Disaster recover>"
+  },
+  {
+   "t": "p",
+   "k": "4c7d7aefce44",
+   "en": "The first and foremost approach of handling a disaster is frequent backups. The frequency of backups depends on the size of the data. Daily backups are suitable Techniques • Based on AWS, which supports automatic scaling. • Uses MySQL and synchronous replication within a data center for • Use of different data stores prevents failure of multiple services at • MyRocks has a much lower P99 latency. for our design because we can backup individual data stores and shards without any hassle. Of course, backups will be stored at remote destinations because natural disasters can wipe out the entire facility at a location."
+  },
+  {
+   "t": "li",
+   "k": "eb8f95539ce1",
+   "en": "Note: Taking regular backup at remote locations is not enough. Quick restoration of backed-up data in a timely manner completes a disaster recovery plan.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "3c14de3156d0",
+   "en": "The following are important questions for designing a disaster recovery plan:"
+  },
+  {
+   "t": "p",
+   "k": "e2ad98dc0724",
+   "en": "What data and systems are considered critical to recover from disasters?"
+  },
+  {
+   "t": "p",
+   "k": "7f39adb49784",
+   "en": "How fast is the restoration from the backup facility?"
+  },
+  {
+   "t": "p",
+   "k": "d03d503a7754",
+   "en": "Can all systems be recovered through backups?"
+  },
+  {
+   "t": "p",
+   "k": "dbc36c7bc9e4",
+   "en": "How can we deal with potential loss of data that we couldn’t replicate before the disaster hit?"
+  },
+  {
+   "t": "p",
+   "k": "19a7eb7c443c",
+   "en": "The illustration below shows a simple architecture of how a disaster recovery scheme works:"
+  },
+  {
+   "t": "p",
+   "k": "83a2303f42ea",
+   "en": "The approach is fairly straightforward. The data, application servers, and configurations are backed up in the Amazon S3 storage service in the same zone."
+  },
+  {
+   "t": "p",
+   "k": "bb26949ba582",
+   "en": "Zonal replication between S3 storage facilitates transfer to another zone. Later, the application and database servers can be restored from the S3 storage in another zone."
+  },
+  {
+   "t": "p",
+   "k": "bcd525aed19d",
+   "en": "The restoration strategy is simple and effective but it has a couple of drawbacks:"
+  },
+  {
+   "t": "p",
+   "k": "d478d8b02bb5",
+   "en": "We might lose some data that is not backed up since we take backups on a daily basis. However, this issue can be mitigated if we do synchronous replication across regions."
+  },
+  {
+   "t": "p",
+   "k": "69b3991776e0",
+   "en": "Restoration can take a long time (a few hours), and most databases do not serve queries while data is being recovered."
+  },
+  {
+   "t": "li",
+   "k": "3e32b6ea75a8",
+   "en": "Note: In general, Amazon provides service with high reliability and availability. For instance, S3 service reports 99.999999999% durability and 99.9% availability over a year.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "6a38a38f03e4",
+   "en": "Conclusion"
+  },
+  {
+   "t": "p",
+   "k": "bce08b129e68",
+   "en": "Throughout this design, we learned how Quora is able to scale its services as the number of users increases. One interesting aspect of the design includes the vertical sharding of the MySQL database. Apart from that, the Quora design discusses a variety of techniques to meet the functional and non-functional requirements. However, our scope did not include the usage of techniques like natural language processing (NLP) to remove spelling mistakes in user’s questions or typeahead services during the search."
+  },
+  {
+   "t": "p",
+   "k": "0376ea689c5e",
+   "en": "Point to Ponder How can using different data stores for different types of data be beneficial in disaster recovery?"
+  },
+  {
+   "t": "p",
+   "k": "52e46eeca9be",
+   "en": "Hide Answer When we use different data stores, it means that we can recover various forms of data simultaneously instead of one large blob of data. Since we recover data stores with variable recovery times, the final recovery time equals the maximum recovery time among all data stores."
+  },
+  {
+   "t": "p",
+   "k": "558f6632e1f2",
+   "en": "However, using many databases also means that administrators need to know the details of checkpointing or restoring them."
+  }
+ ]
+}

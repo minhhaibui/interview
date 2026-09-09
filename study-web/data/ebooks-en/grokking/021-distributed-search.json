@@ -1,0 +1,1329 @@
+{
+ "id": "021-distributed-search",
+ "title": "Distributed Search",
+ "titleKey": "0924962979a6",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "adf9c6dc0fb2",
+   "en": "System Design: The Distributed Search"
+  },
+  {
+   "t": "p",
+   "k": "17f479474359",
+   "en": "Learn about how a search system works and understand our high-level plan for designing a distributed search system.Search"
+  },
+  {
+   "t": "h2",
+   "k": "932b7998ca63",
+   "en": "Why do we need a search system?"
+  },
+  {
+   "t": "p",
+   "k": "e13f525da300",
+   "en": "Nowadays, we see a search bar on almost every website. We use that search bar to pick out relevant content from the enormous amount of content available on that website. A search bar enables us to quickly find what we’re looking for. For example, there are plenty of courses present on the Educative website. If we didn’t have a search feature, users would have to scroll through many pages and read the name of each course to find the one they’re looking for."
+  },
+  {
+   "t": "p",
+   "k": "872436062222",
+   "en": "Let’s take another example. There are billions of videos uploaded and stored on YouTube. Imagine if YouTube didn’t provide us with a search bar. How would we find a specific video among the millions of videos that have been posted on YouTube over the years? It would take months to navigate through all of those videos and find the one we need. Users find it challenging to find what they’re looking for simply by scrolling around."
+  },
+  {
+   "t": "p",
+   "k": "b3bbee08a5c9",
+   "en": "Search engines are an even bigger example. We have billions of websites on the Internet. Each website has many web pages and there is plenty of content on each of these web pages. With so much content, the Internet would practically be useless without search engines, and users would end up lost in a sea of irrelevant data. Search engines are, essentially, filters for the massive amount of data available. They let users quickly obtain information that is of true interest without having to sift through too many unnecessary web pages."
+  },
+  {
+   "t": "p",
+   "k": "d3f95af2af39",
+   "en": "Behind every search bar, there is a search system."
+  },
+  {
+   "t": "h2",
+   "k": "7ddcef12494d",
+   "en": "What is a search system?"
+  },
+  {
+   "t": "p",
+   "k": "3948cc4ab027",
+   "en": "A search system is a system that takes some text input, a search query, from the user and returns the relevant content in a few seconds or less. There are three main components of a search system, namely:"
+  },
+  {
+   "t": "p",
+   "k": "1afcbeb83d4b",
+   "en": "A crawler, which fetches content and creates documents."
+  },
+  {
+   "t": "p",
+   "k": "44bb94d7c85a",
+   "en": "An indexer, which builds a searchable index."
+  },
+  {
+   "t": "p",
+   "k": "0e91bc12c285",
+   "en": "A searcher, which responds to search queries by running the search query on the index created by the indexer."
+  },
+  {
+   "t": "li",
+   "k": "44319f1f5d07",
+   "en": "Note: We have a separate chapter dedicated to the explanation of the crawler component. In this chapter, we’ll focus on indexing.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "cf05715af324",
+   "en": "How will we design a distributed search system?"
+  },
+  {
+   "t": "p",
+   "k": "29adec9d468a",
+   "en": "We divided the design of a distributed search system into five lessons:"
+  },
+  {
+   "t": "li",
+   "k": "3e296f991d85",
+   "en": "Requirements: In this lesson, we list the functional and non-functional requirements of a distributed search system. We also estimate our system’s resources, such as servers, storage, and the bandwidth needed to serve a number of queries."
+  },
+  {
+   "t": "li",
+   "k": "3aadcffa1933",
+   "en": "Indexing: This lesson provides us with background knowledge on the process of indexing with the help of an example. After discussing indexing, we also look into a centralized architecture of distributed search systems."
+  },
+  {
+   "t": "li",
+   "k": "5e9793c65690",
+   "en": "Initial design: This lesson consists of the high-level design of our system, its API, and the details of the indexing and searching process."
+  },
+  {
+   "t": "li",
+   "k": "7bdffacf49db",
+   "en": "Final design: In this lesson, we evaluate our previous design and revamp it to make it more scalable."
+  },
+  {
+   "t": "li",
+   "k": "ffde536cda35",
+   "en": "Evaluation: This lesson explains how our designed distributed search system fulfills its requirements."
+  },
+  {
+   "t": "p",
+   "k": "34f4e5600d7c",
+   "en": "Let’s start by understanding the requirements of designing a distributed search system."
+  },
+  {
+   "t": "h3",
+   "k": "eb71aed03ce8",
+   "en": "Requirements of a Distributed Search System's Design We'll cover the following"
+  },
+  {
+   "t": "li",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "li",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "li",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "li",
+   "k": "a9be995c473a",
+   "en": "Resource estimation"
+  },
+  {
+   "t": "li",
+   "k": "7e7845b4ea66",
+   "en": "Number of servers estimation"
+  },
+  {
+   "t": "li",
+   "k": "5e7e60e98560",
+   "en": "Storage estimation"
+  },
+  {
+   "t": "li",
+   "k": "10d00f179eb1",
+   "en": "Bandwidth estimation"
+  },
+  {
+   "t": "li",
+   "k": "cfa08fe6c777",
+   "en": "Building blocks we will use"
+  },
+  {
+   "t": "h3",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "p",
+   "k": "1e21f951c30b",
+   "en": "Let’s understand the functional and non-functional requirements of a distributed search system."
+  },
+  {
+   "t": "p",
+   "k": "57111411f57a",
+   "en": "The following is a functional requirement of a distributed search system:"
+  },
+  {
+   "t": "p",
+   "k": "1ee4dfd67035",
+   "en": "Search: Users should get relevant content based on their search queries."
+  },
+  {
+   "t": "p",
+   "k": "e35291457503",
+   "en": "Here are the non-functional requirements of a distributed search system:"
+  },
+  {
+   "t": "p",
+   "k": "2b8c4c81aa35",
+   "en": "Availability: The system should be highly available to the users."
+  },
+  {
+   "t": "p",
+   "k": "020c520f9441",
+   "en": "Scalability: The system should have the ability to scale with the increasing amount of data. In other words, it should be able to index a large amount of data."
+  },
+  {
+   "t": "p",
+   "k": "deb80f01e63a",
+   "en": "Fast search on big data: The user should get the results quickly, no matter how much content they are searching."
+  },
+  {
+   "t": "p",
+   "k": "149a4fbe8c7c",
+   "en": "Reduced cost: The overall cost of building a search system should be less."
+  },
+  {
+   "t": "h3",
+   "k": "a9be995c473a",
+   "en": "Resource estimation"
+  },
+  {
+   "t": "p",
+   "k": "5e0782c58c5d",
+   "en": "Let’s estimate the total number of servers, storage, and bandwidth that is required by the distributed search system. We’ll calculate these numbers using an example of a YouTube search."
+  },
+  {
+   "t": "p",
+   "k": "7adf7b665811",
+   "en": "To estimate the number of servers, we need to know how many daily active users per day are using the search feature on YouTube and how many requests per second our single server can handle. We assume the following numbers:"
+  },
+  {
+   "t": "p",
+   "k": "246a74d3a67c",
+   "en": "The number of daily active users who use the search feature is three million."
+  },
+  {
+   "t": "p",
+   "k": "a11d699696f5",
+   "en": "The number of requests a single server can handle is 1,000."
+  },
+  {
+   "t": "p",
+   "k": "83c790ff49ad",
+   "en": "The number of servers required is calculated using this formula:"
+  },
+  {
+   "t": "p",
+   "k": "2da94421ef40",
+   "en": "Number of active users =3K servers queries handled per server If three million users are searching concurrently, three million search requests are being generated at one time. A single server handles 1,000 requests at a time. Dividing three million by 1,000 gives us 3,000 servers."
+  },
+  {
+   "t": "p",
+   "k": "1c568166b5a1",
+   "en": "Each video’s metadata is stored in a separate JSON document. Each document is uniquely identified by the video ID. This metadata contains the title of the video, its description, the channel name, and a transcript. We assume the following numbers for estimating the storage required to index one video:"
+  },
+  {
+   "t": "p",
+   "k": "f8ed99f116bb",
+   "en": "The size of a single JSON document is 200 KB."
+  },
+  {
+   "t": "p",
+   "k": "4db6a3bf11e3",
+   "en": "The number of unique terms or keys extracted from a single JSON document is 1,000."
+  },
+  {
+   "t": "p",
+   "k": "3494d70d337c",
+   "en": "The amount of storage space required to add one term into the index table is 100 Bytes."
+  },
+  {
+   "t": "p",
+   "k": "0e9a681c14e4",
+   "en": "The following formula is used to compute the storage required to index one video:"
+  },
+  {
+   "t": "p",
+   "k": "f8563192f108",
+   "en": "Totalstorage/video=Storage/doc+(Terms/doc×Storage/term)"
+  },
+  {
+   "t": "p",
+   "k": "9d02d86c5400",
+   "en": "Total Storage Required to Index One Video on YouTube Total storage per video (KB Storage per JSON doc (KB)No. of terms per docStorage per term (Bytes) ) f 2001000100300 In the table above, we calculate the storage required to index one video. We have already seen that the total storage required per video is 300 KB. Assuming that, on average, the number of videos uploaded per day on YouTube is 6,000, let’s calculate the total storage required to index the videos uploaded per day. The following formula is used to compute the storage required to index the videos uploaded to YouTube in one day:"
+  },
+  {
+   "t": "p",
+   "k": "8a4dbe21e389",
+   "en": "Totalstorage/day=No. of videos/day×Totalstorage/video Total Storage Required to Index Videos per Day on YouTube No. of videos per dayTotal storage per video (KB)Total storage per day(GB) f"
+  },
+  {
+   "t": "li",
+   "k": "1bad10126eb0",
+   "en": "8 The total storage required to index 6,000 videos uploaded per day on YouTube is 1.8 GB. This storage requirement is just an estimation for YouTube. The storage need will increase if we provide a distributed search system as a service to multiple tenants."
+  },
+  {
+   "t": "p",
+   "k": "d3551a0dc8d7",
+   "en": "The data is transferred between the user and the server on each search request. We estimate the bandwidth required for the incoming traffic on the server and the outgoing traffic from the server. Here is the formula to calculate the required bandwidth:"
+  },
+  {
+   "t": "p",
+   "k": "4865344c04f0",
+   "en": "Totalbandwidth=Totalrequests_second×Totalquery_size Incoming traffic To estimate the incoming traffic bandwidth, we assume the following numbers:"
+  },
+  {
+   "t": "p",
+   "k": "4e093cf9bbd5",
+   "en": "The number of search requests per day is 150 million."
+  },
+  {
+   "t": "p",
+   "k": "831b6a97b490",
+   "en": "The search query size is 100 Bytes."
+  },
+  {
+   "t": "p",
+   "k": "751f66285964",
+   "en": "We can use the formula given above to calculate the bandwidth required for the incoming traffic."
+  },
+  {
+   "t": "p",
+   "k": "ea06436deae5",
+   "en": "Bandwidth Required for Incoming Search Queries per Second No. of requests per secondQuery size (Bytes)Bandwidth (Mb/s) f"
+  },
+  {
+   "t": "li",
+   "k": "2a14b4e254af",
+   "en": "111001.39 Outgoing traffic Outgoing traffic is the response that the server returns to the user on the search request. We assume that the number of suggested videos against a search query is 80, and one suggestion is of the size 50 Bytes. Suggestions consist of an ordered list of the video IDs."
+  },
+  {
+   "t": "p",
+   "k": "8158bc6f6ddf",
+   "en": "To estimate the outgoing traffic bandwidth, we assume the following numbers:"
+  },
+  {
+   "t": "p",
+   "k": "4e093cf9bbd5",
+   "en": "The number of search requests per day is 150 million."
+  },
+  {
+   "t": "p",
+   "k": "9e1baf6170cc",
+   "en": "The response size is 4,000 Bytes."
+  },
+  {
+   "t": "p",
+   "k": "198e60c9cfaa",
+   "en": "We can use the same formula to calculate the bandwidth required for the outgoing traffic."
+  },
+  {
+   "t": "p",
+   "k": "ff855bcc539c",
+   "en": "Bandwidth Required for Outgoing Traffic per Second No. of requests per secondQuery size (Bytes)Bandwidth (Mb/s) f"
+  },
+  {
+   "t": "li",
+   "k": "60f63a20cf76",
+   "en": "11400055.56"
+  },
+  {
+   "t": "li",
+   "k": "3ef920a30e7d",
+   "en": "Note: The bandwidth requirements are relatively modest because we are assuming text results. Many search services can return small thumbnails and other media to enhance the search page. The bandwidth needs per page are intentionally low so that the service can provide near real-time results to the client.",
+   "lead": "Note"
+  },
+  {
+   "t": "h3",
+   "k": "cfa08fe6c777",
+   "en": "Building blocks we will use"
+  },
+  {
+   "t": "p",
+   "k": "299987709127",
+   "en": "We need a distributed storage in our design. Therefore, we can use the blob store, a previously discussed building block, to store the data to be indexed and the index itself. We’ll use a generic term, that is, “distributed storage” instead of the specific term “blob store.”"
+  },
+  {
+   "t": "h1",
+   "k": "0a8d608844b6",
+   "en": "Indexing in a Distributed Search"
+  },
+  {
+   "t": "p",
+   "k": "f04b6841b0a5",
+   "en": "Learn about indexing and its use in a distributed search."
+  },
+  {
+   "t": "h2",
+   "k": "2b55124fb402",
+   "en": "Indexing"
+  },
+  {
+   "t": "p",
+   "k": "6bb6e53e920c",
+   "en": "Indexing is the organization and manipulation of data that’s done to facilitate fast and accurate information retrieval."
+  },
+  {
+   "t": "h3",
+   "k": "f03b903cff78",
+   "en": "Build a searchable index"
+  },
+  {
+   "t": "p",
+   "k": "a0370aa7403b",
+   "en": "The simplest way to build a searchable index is to assign a unique ID to each document and store it in a database table, as shown in the following table. The first column in the table is the ID of the text and the second column contains the text from each document."
+  },
+  {
+   "t": "h2",
+   "k": "15addefd77d4",
+   "en": "Simple Document Index"
+  },
+  {
+   "t": "p",
+   "k": "c1c41ece77be",
+   "en": "IDDocument Content 1Elasticsearch is the distributed and analytics engine that is based on REST APIs. 2Elasticsearch is a Lucene library-based search engine. 3Elasticsearch is a distributed search and analytics engine built on Apache Lucene."
+  },
+  {
+   "t": "p",
+   "k": "7fb2e1403fe1",
+   "en": "The size of the table given above would vary, depending on the number of documents we have and the size of those documents. The table above is just an example, and the content from each document only consists of one or two sentences. With an actual, real-world example, the content of every document in the table could be pages long. This would make our table quite large. Running a search query on the document-level index given above isn’t a fast process. On each search request, we have to traverse all the documents and count the occurrence of the search string in each document."
+  },
+  {
+   "t": "li",
+   "k": "433990e73044",
+   "en": "Note: For a fuzzy search, we also have to perform different pattern-matching queries. Many strings in the documents would somehow match the searched string. First, we must find the unique candidate strings by traversing all of the documents. Then, we must single out the most approximate matched string out of these strings. We also have to find the occurrence of the most matched string in each document. This means that each search query takes a long time.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "009136cadd28",
+   "en": "The response time to a search query depends on a few factors:"
+  },
+  {
+   "t": "p",
+   "k": "a3218c791738",
+   "en": "The data organization strategy in the database."
+  },
+  {
+   "t": "p",
+   "k": "0d48009cf761",
+   "en": "The size of the data."
+  },
+  {
+   "t": "p",
+   "k": "70374ccdece8",
+   "en": "The processing speed and the RAM of the machine that’s used to build the index and process the search query."
+  },
+  {
+   "t": "p",
+   "k": "0e24bc5e97b2",
+   "en": "Running search queries on billions of documents that are document-level indexed will be a slowprocess, which may take many minutes, or even hours."
+  },
+  {
+   "t": "p",
+   "k": "7d9d36c4db22",
+   "en": "Let’s look at another data organization and processing technique that helps reduce the search time."
+  },
+  {
+   "t": "h3",
+   "k": "ff1e1016404d",
+   "en": "Inverted index"
+  },
+  {
+   "t": "p",
+   "k": "f77187607277",
+   "en": "An inverted index is a HashMap-like data structure that employs a document-term matrix. Instead of storing the complete document as it is, it splits the documents into individual words. After this, the document-term matrix identifies unique words and discards frequently occurring words like “to,” “they,” “the,” “is,” and so on. Frequently occurring words like those are called terms. The document-term matrix maintains a term-level index through this identification of unique words and deletion of unnecessary terms."
+  },
+  {
+   "t": "p",
+   "k": "b439048c1d55",
+   "en": "For each term, the index computes the following information:"
+  },
+  {
+   "t": "p",
+   "k": "6e94699b3b56",
+   "en": "The list of documents in which the term appeared."
+  },
+  {
+   "t": "p",
+   "k": "18db546e54e4",
+   "en": "The frequency with which the term appears in each document."
+  },
+  {
+   "t": "p",
+   "k": "b610e352266c",
+   "en": "The position of the term in each document."
+  },
+  {
+   "t": "h2",
+   "k": "ff1e1016404d",
+   "en": "Inverted Index"
+  },
+  {
+   "t": "p",
+   "k": "44d56a47296f",
+   "en": "TermMapping ( [doc], [freq], [[loc]) elasticsearch( [1, 2, 3], [1, 1, 1], [[1], [1], [1]] ) distributed( [1, 3], [1, 1], [[4], [4]] ) restful( [1], [1], [[5]] ) search( [1, 2, 3], [1, 1, 1], [[6], [4], [5]] ) analytics( [1, 3], [1, 1], [[8], [7]] ) engine( [1, 2, 3], [1, 1, 1], [[9], [5], [8]] ) heart( [1], [1], [[12]] ) elastic( [1], [1], [[15]] ) stack( [1], [1], [[16]] ) lucene( [2, 3], [1, 1], [[9], [12]] ) library( [2], [1], [[10]] )"
+  },
+  {
+   "t": "p",
+   "k": "57a2dd58da88",
+   "en": "Apache( [3], [1], [[11]] )"
+  },
+  {
+   "t": "p",
+   "k": "2c4b24be272a",
+   "en": "In the table above, the “Term” column contains all the unique terms that are extracted from all of the documents. Each entry in the “Mapping” column consists of three lists:"
+  },
+  {
+   "t": "p",
+   "k": "caa9813b4173",
+   "en": "A list of documents in which the term appeared."
+  },
+  {
+   "t": "p",
+   "k": "82b2c7649942",
+   "en": "A list that counts the frequency with which the term appears in each document."
+  },
+  {
+   "t": "p",
+   "k": "a5a4122a44d5",
+   "en": "A two-dimensional list that pinpoints the position of the term in each document. A term can appear multiple times in a single document, which is why a two-dimensional list is used."
+  },
+  {
+   "t": "li",
+   "k": "1bffe0c59bd2",
+   "en": "Note: Instead of lists, the mappings could also be in the form of tuples— such as doc, freq, and loc.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "cc5672d6250c",
+   "en": "Inverted index is one of the most popular index mechanisms used in document retrieval. It enables efficient implementation of boolean, extended boolean, proximity, relevance, and many other types of search algorithms."
+  },
+  {
+   "t": "p",
+   "k": "355ff85338d6",
+   "en": "Advantages of using an inverted index An inverted index facilitates full-text searches."
+  },
+  {
+   "t": "p",
+   "k": "52df8be484b1",
+   "en": "An inverted index reduces the time of counting the occurrence of a word in each document at the run time because we have mappings against each term."
+  },
+  {
+   "t": "p",
+   "k": "11df33908076",
+   "en": "Disadvantages of using an inverted index There is storage overhead for maintaining the inverted index along with the actual documents. However, we reduce the search time."
+  },
+  {
+   "t": "p",
+   "k": "71eb8a07bfe3",
+   "en": "Maintenance costs (processing) on adding, updating, or deleting a document. To add a document, we extract terms from the document. Then, for each extracted term, we either add a new row in the inverted index or update an existing one if that term already has an entry in the inverted index. Similarly, for deleting a document, we conduct processing to find the entries in the inverted index for the deleted document’s terms and update the inverted index accordingly."
+  },
+  {
+   "t": "h3",
+   "k": "7e0aab04c8fd",
+   "en": "Searching from an inverted index"
+  },
+  {
+   "t": "p",
+   "k": "d21ed4788b82",
+   "en": "Consider a system that has the following mappings when we search for the word “search engine:”"
+  },
+  {
+   "t": "p",
+   "k": "263089e8e3c0",
+   "en": "TermMapping search( [1, 2, 3], [1, 1, 1], [[6], [4], [5]] ) engine( [1, 2, 3], [1, 1, 1], [[9], [5], [8]] )"
+  },
+  {
+   "t": "p",
+   "k": "a54a5e1cd719",
+   "en": "Both of these words are found in documents 1, 2, and 3. Both words appear once in each document."
+  },
+  {
+   "t": "p",
+   "k": "de92958e9f3a",
+   "en": "The word “search” is located at position 6 in document 1, at position 4 in document 2, and position 5 in document 3."
+  },
+  {
+   "t": "p",
+   "k": "52703f627a2f",
+   "en": "The word “engine” is located at position 9 in document 1, position 5 in document 2, and position 8 in document 3."
+  },
+  {
+   "t": "p",
+   "k": "130d94e0177c",
+   "en": "A single term can appear in millions of documents. Thus, the list of documents returned against a search query could be very long."
+  },
+  {
+   "t": "p",
+   "k": "2acf924c6bd3",
+   "en": "Would this technique work when too many documents are found against a single term?"
+  },
+  {
+   "t": "p",
+   "k": "a7dd32704e36",
+   "en": "Hide Answer It probably wouldn’t work to return all the documents that are found."
+  },
+  {
+   "t": "p",
+   "k": "83bb44c57177",
+   "en": "Instead, we should sort them based on the relevance to the search query. The top results should be returned to the user, instead of returning all the documents."
+  },
+  {
+   "t": "h3",
+   "k": "bfc2e02e1eea",
+   "en": "Factors of index design"
+  },
+  {
+   "t": "p",
+   "k": "9aa2329adaf9",
+   "en": "Here are some of the factors that we should keep in mind while designing an index:"
+  },
+  {
+   "t": "p",
+   "k": "26602a658923",
+   "en": "Size of the index: How much computer memory, and RAM, is required to keep the index. We keep the index in the RAM to support the low latency of the search."
+  },
+  {
+   "t": "p",
+   "k": "67c419cd2180",
+   "en": "Search speed: How quickly we can find a word from an inverted index."
+  },
+  {
+   "t": "p",
+   "k": "59b059974763",
+   "en": "Maintenance of the index: How efficiently the index can be updated if we add or remove a document."
+  },
+  {
+   "t": "p",
+   "k": "001a70d70588",
+   "en": "Fault tolerance: How critical it is for the service to remain reliable. Coping with index corruption, supporting whether invalid data can be treated in isolation, dealing with defective hardware, partitioning, and replication are all issues to consider here."
+  },
+  {
+   "t": "p",
+   "k": "f7850f85e286",
+   "en": "Resilience: How resilient the system is against someone trying to game the system and guard against search engine optimization (SEO) schemes, since we return only a handful of relevant results against a search."
+  },
+  {
+   "t": "p",
+   "k": "b4b1a8280fdf",
+   "en": "In light of the design factors listed above, let’s look at some problems with building an index on a centralized system."
+  },
+  {
+   "t": "h2",
+   "k": "737c38261d92",
+   "en": "Indexing on a centralized system"
+  },
+  {
+   "t": "p",
+   "k": "8b08ebd7af25",
+   "en": "In a centralized search system, all the search system components run on a single node, which is computationally quite capable. The architecture of a centralized search system is shown in the following illustration:"
+  },
+  {
+   "t": "p",
+   "k": "1dff8f14320a",
+   "en": "The indexing process takes the documents as input and converts them into an inverted index, which is stored in the form of a binary file."
+  },
+  {
+   "t": "p",
+   "k": "877ac09f4d9b",
+   "en": "The query processing or search process interprets the binary file that contains the inverted index. It also computes the intersection of the inverted lists for a given query to return the search results against the query."
+  },
+  {
+   "t": "p",
+   "k": "b2a3196d8977",
+   "en": "These are the problems that come with the architecture of a centralized search system:"
+  },
+  {
+   "t": "p",
+   "k": "54acbf72af5f",
+   "en": "SPOF (single point of failure)"
+  },
+  {
+   "t": "p",
+   "k": "3bded9e14540",
+   "en": "Server overload Large size of the index SPOF: A centralized system is a single point of failure. If it’s dead, no search operation can be performed."
+  },
+  {
+   "t": "p",
+   "k": "71cf2f848639",
+   "en": "Server overload: If numerous users perform queries and the queries are complicated, it stresses the server (node)."
+  },
+  {
+   "t": "p",
+   "k": "6a801aec4638",
+   "en": "Large size of the index: The size of the inverted index increases with the number of documents, placing resource demands on a single server. The bigger the computer system, the higher the cost and complexity of managing it."
+  },
+  {
+   "t": "li",
+   "k": "242a6f590fa9",
+   "en": "Note: With a distributed system, low-cost computer systems are utilized, which is cost effective overall.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "748e644aafef",
+   "en": "An inverted index needs to be loaded into the main memory when adding a document or running a search query. A large portion of the inverted index must fit into the RAM of the machine for efficiency."
+  },
+  {
+   "t": "p",
+   "k": "ffc6449402f9",
+   "en": "According to Google analytics in 2022, there are hundreds of billions of web pages, the total size of which is around 100 petabytes. If we make a search system for the worldwide web, the inverted index size will also be in petabytes."
+  },
+  {
+   "t": "p",
+   "k": "14d52c040be8",
+   "en": "This means we have to load petabytes of data into the RAM. It’s impractical and inefficient to increase the resources of a single machine for indexing a billion pages instead of shifting to a distributed system and utilizing the power of parallelization. Running a search query on a single, large inverted index results in a slow response time."
+  },
+  {
+   "t": "li",
+   "k": "de0b5a9e6650",
+   "en": "Note: Searching a book from a shelf that holds a hundred books is easier than searching a book from a shelf holding a million books. The search time increases with the volume of data we search from.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "75b17c06e6a7",
+   "en": "Attacks on centralized indexing can have a higher impact than attacks on a distributed indexing system. Furthermore, the odds of bottlenecks (which can arise in server bandwidth or RAM) are also lower in a distributed index."
+  },
+  {
+   "t": "p",
+   "k": "a65b2d9b7f15",
+   "en": "In this lesson, we learned about indexing, and we looked into the problems of indexing on a centralized system. The next lesson presents a distribution solution for indexing."
+  },
+  {
+   "t": "h1",
+   "k": "a091261fc122",
+   "en": "Design of a Distributed Search"
+  },
+  {
+   "t": "p",
+   "k": "7ac211933375",
+   "en": "Get an overview of the design of a distributed search system that manages a large number of queries per second."
+  },
+  {
+   "t": "h2",
+   "k": "f0e860766605",
+   "en": "High-level design"
+  },
+  {
+   "t": "p",
+   "k": "d802edd71eb0",
+   "en": "Let’s shape the overall design of a distributed search system before getting into a detailed discussion. There are two phases of such a system, as shown in the illustration below. The offline phase involves data crawling and indexing in which the user has to do nothing. The online phase consists of searching for results against the search query by the user."
+  },
+  {
+   "t": "p",
+   "k": "8e391d86d7d8",
+   "en": "The crawler collects content from the intended resource. For example, if we build a search for a YouTube application, the crawler will crawl through all of the videos on YouTube and extract textual content for each video. The content could be the title of the video, its description, the channel name, or maybe even the video’s annotation to enable an intelligent search based not only on the title and description but also on the content of that video. The crawler formats the extracted content for each video in a JSON document and stores these JSON documents in a distributed storage."
+  },
+  {
+   "t": "p",
+   "k": "0c739e3a1340",
+   "en": "The indexer fetches the documents from a distributed storage and indexes these documents using MapReduce, which runs on a distributed cluster of commodity machines. The indexer uses a distributed data processing system like MapReduce for parallel and distributed index construction. The constructed index table is stored in the distributed storage."
+  },
+  {
+   "t": "p",
+   "k": "5828d76b87f6",
+   "en": "The distributed storage is used to store the documents and the index."
+  },
+  {
+   "t": "p",
+   "k": "f0d02ad12867",
+   "en": "The user enters the search string that contains multiple words in the search bar."
+  },
+  {
+   "t": "p",
+   "k": "42644c59bcf9",
+   "en": "The searcher parses the search string, searches for the mappings from the index that are stored in the distributed storage, and returns the most matched results to the user. The searcher intelligently maps the incorrectly spelled words in the search string to the closest vocabulary words. It also looks for the documents that include all the words and ranks them."
+  },
+  {
+   "t": "h2",
+   "k": "58dbf879b581",
+   "en": "API design"
+  },
+  {
+   "t": "p",
+   "k": "1b75a021f9d5",
+   "en": "Since the user only sends requests in the form of a string, the API design is quite simple."
+  },
+  {
+   "t": "li",
+   "k": "fec3215609ae",
+   "en": "Search: The search function runs when a user queries the system to find some content.",
+   "lead": "Search"
+  },
+  {
+   "t": "code",
+   "k": "785460bdaf08",
+   "en": "search(query)"
+  },
+  {
+   "t": "p",
+   "k": "720bca44f935",
+   "en": "ParameterDescription queryThis is the textual query entered by the user in the search bar, based on which the results are found."
+  },
+  {
+   "t": "h2",
+   "k": "851c83a48e00",
+   "en": "Detailed discussion"
+  },
+  {
+   "t": "p",
+   "k": "adee8c94030f",
+   "en": "Since the indexer is the core component in a search system, we discussed an indexing technique and the problems associated with centralized indexing in the previous lesson. In this lesson, we consider a distributed solution for indexing and searching."
+  },
+  {
+   "t": "h3",
+   "k": "11f0570c7a40",
+   "en": "Distributed indexing and searching"
+  },
+  {
+   "t": "p",
+   "k": "bef53fe92b5f",
+   "en": "Let’s see how we can develop a distributed indexing and searching system. We understand that the input to an indexing system is the documents we created during crawling. To develop an index in a distributed fashion, we employ a large number of low-cost machines (nodes) and partition or divide the documents based on the resources they have. All the nodes are connected. A group of nodes is called a cluster."
+  },
+  {
+   "t": "p",
+   "k": "67d59ae800e2",
+   "en": "For performing distributed indexing, the machines in the cluster typically have dual-processor x86 processors running Linux, with 2–4 GB of memory per machine. It is not necessary that all machines are of the same specification, though they should be somewhat comparable. The MapReduce framework is smart enough to give more work to stronger machines."
+  },
+  {
+   "t": "p",
+   "k": "ab9c03d320ae",
+   "en": "We use numerous small nodes for indexing to achieve cost efficiency. This process requires us to partition or split the input data (documents) among these nodes. However, a key question needs to be addressed: How do we perform this partitioning?"
+  },
+  {
+   "t": "p",
+   "k": "883a878e4343",
+   "en": "The two most common techniques used for data partitioning in distributed indexing are these below:"
+  },
+  {
+   "t": "p",
+   "k": "00df66be7556",
+   "en": "Document partitioning: In document partitioning, all the documents collected by the web crawler are partitioned into subsets of documents."
+  },
+  {
+   "t": "p",
+   "k": "24634afb0af9",
+   "en": "Each node then performs indexing on a subset of documents that are assigned to it."
+  },
+  {
+   "t": "p",
+   "k": "b16150cbf250",
+   "en": "Term partitioning: The dictionary of all terms is partitioned into subsets, with each subset residing at a single node. For example, a subset of documents is processed and indexed by a node containing the term “search.”"
+  },
+  {
+   "t": "p",
+   "k": "8e99fd002280",
+   "en": "In term partitioning, a search query is sent to the nodes that correspond to the query terms. This provides more concurrency because a stream of search queries with different query terms will be served by different nodes. However, term partitioning turns out to be a difficult task in practice. Multiword queries necessitate sending long mapping lists between groups of nodes for merging, which can be more expensive than the benefits from the increased concurrency."
+  },
+  {
+   "t": "p",
+   "k": "d858c81d4a82",
+   "en": "In document partitioning, each query is distributed across all nodes, and the results from these nodes are merged before being shown to the user. This method of partitioning necessitates less inter-node communication. In our design, we use document partitioning."
+  },
+  {
+   "t": "p",
+   "k": "b52a81cc2640",
+   "en": "Following document partitioning, let’s look into a distributed design for index construction and querying, which is shown in the illustration below. We use a cluster that consists of a number of low-cost nodes and a cluster manager. The cluster manager uses a MapReduce programming model to parallelize the index’s computation on each partition. MapReduce can work on significantly larger datasets that are difficult to be handled by a single large server."
+  },
+  {
+   "t": "p",
+   "k": "d1dae7d2fe15",
+   "en": "The system described above works as follows:"
+  },
+  {
+   "t": "p",
+   "k": "5ff14fe7f4a1",
+   "en": "Indexing We have a document set already collected by the crawler."
+  },
+  {
+   "t": "p",
+   "k": "c67a83992dc0",
+   "en": "The cluster manager splits the input document set into N number of partitions, where N is equal to three in the illustration above. The size of each partition is decided by the cluster manager given the size of the data, the computation, memory limits, and the number of nodes in the cluster."
+  },
+  {
+   "t": "p",
+   "k": "5ef50f44c757",
+   "en": "All the nodes may not be available for various reasons. The cluster manager monitors the health of each node through periodic heartbeats."
+  },
+  {
+   "t": "p",
+   "k": "34c55d21dbb4",
+   "en": "To assign a document to one of the N partitions, a hashing function can be utilized."
+  },
+  {
+   "t": "p",
+   "k": "4f0bb12095da",
+   "en": "After making partitions, the cluster manager runs indexing algorithms for all the N partitions simultaneously on the N number of nodes in a cluster."
+  },
+  {
+   "t": "p",
+   "k": "f82abd2705cb",
+   "en": "Each indexing process produces a tiny inverted index, which is stored on the node’s local storage. In this way, we produce N tiny inverted indices rather than one large inverted index."
+  },
+  {
+   "t": "p",
+   "k": "73338631f41a",
+   "en": "Searching In the search phase, when a user query comes in, we run parallel searches on each tiny inverted index stored on the nodes’ local storage generating N queries."
+  },
+  {
+   "t": "p",
+   "k": "09209dd6cc20",
+   "en": "The search result from each inverted tiny index is a mapping list against the queried term (we assume a single word/term user query). The merger aggregates these mapping lists."
+  },
+  {
+   "t": "p",
+   "k": "953dd6d3768c",
+   "en": "After aggregating the mapping lists, the merger sorts the list of documents from the aggregated mapping list based on the frequency of the term in each document."
+  },
+  {
+   "t": "p",
+   "k": "1e39a663fa7e",
+   "en": "The sorted list of documents is returned to the user as a search result. The documents are shown in sorted (ascending) order to the user."
+  },
+  {
+   "t": "li",
+   "k": "99a5321c64bb",
+   "en": "Note: We’ve designed a search system where we utilized a distributed system and parallelized the indexing and searching process. This helped us handle large datasets by working on the smaller partitions of documents. It should be noted that both searching and indexing are performed on the same node. We refer to this idea as colocation.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "4860083c05ea",
+   "en": "The proposed design works, and we can replicate it across the globe in various data centers to facilitate all users. Thus, we can achieve the following advantages:"
+  },
+  {
+   "t": "p",
+   "k": "f8b1502f6ae3",
+   "en": "Our design will not be subject to a single point of failure (SPOF)."
+  },
+  {
+   "t": "p",
+   "k": "7e0adb580767",
+   "en": "Latency for all users will remain small."
+  },
+  {
+   "t": "p",
+   "k": "e25f88d9deb2",
+   "en": "Maintenance and upgrades in individual data centers will be possible."
+  },
+  {
+   "t": "p",
+   "k": "53a7a68e4960",
+   "en": "Scalability (serving more users per second) of our system will be improved."
+  },
+  {
+   "t": "h3",
+   "k": "7ddb9625261f",
+   "en": "Replication"
+  },
+  {
+   "t": "p",
+   "k": "ac095f79964d",
+   "en": "We make replicas of the indexing nodes that produce inverted indices for the assigned partitions. We can answer a query from several sets of nodes with replicas. The overall concept is simple. We continue to use the same architecture as before, but instead of having only one group of nodes, we have R groups of nodes to answer user queries. R is the number of replicas. The number of replicas can expand or shrink based on the number of requests, and each group of nodes has all the partitions required to answer each query."
+  },
+  {
+   "t": "p",
+   "k": "5d01c04bbefa",
+   "en": "Each group of nodes is hosted on different availability zones for better performance and availability of the system in case a data center fails."
+  },
+  {
+   "t": "li",
+   "k": "b8ea7a2c08b4",
+   "en": "Note: A load balancer component is necessary to spread the queries across different groups of nodes and retry in case of any error.",
+   "lead": "Note"
+  },
+  {
+   "t": "h3",
+   "k": "99dee872dd33",
+   "en": "Replication factor and replica distribution"
+  },
+  {
+   "t": "p",
+   "k": "4b4286fb1c82",
+   "en": "Generally, a replication factor of three is enough. A replication factor of three means three nodes host the same partition and produce the index. One of the three nodes becomes the primary node, while the other two are replicas. Each of these nodes produces indexes in the same order to converge on the same state."
+  },
+  {
+   "t": "p",
+   "k": "6f3488437709",
+   "en": "To illustrate, let’s divide the data, a document set, into four partitions. Since the replication factor is three, one partition will be hosted by three nodes. We’ll assume that there are two availability zones (AZ1 and AZ2). And in each availability zone, we have two nodes. Each node acts as a primary for only one partition (For example, Node 1 in AZ1 is the primary node for partition P1). The three copies (pink, blue, and purple) for a partition are shared between the two AZ instances so that two copies are in one zone and the third copy is in another zone. Three colors represent three replicas of each partition. For example, the following is true for partition P4:"
+  },
+  {
+   "t": "p",
+   "k": "a82dd0136e57",
+   "en": "The first replica, represented by the color pink, is placed in Node 2 of AZ2 The second replica, represented by the color blue, is placed in Node 1 of AZ2 The third replica, represented by the color purple, is placed in Node 2 of AZ1 Each group in the illustration below consists of one replica from all of the four partitions (P1, P2, P3, P4)"
+  },
+  {
+   "t": "p",
+   "k": "846a025d2ea4",
+   "en": "In the above illustration, the primary replica for P1 is indicated by the dark purple color, the primary replica for P2 is represented by the dark blue color, and the primary replica for P3 and P4 is represented by the dark pink color."
+  },
+  {
+   "t": "p",
+   "k": "c1a07e7eb08d",
+   "en": "Now that we have completed replication, let’s see how indexing and searching are performed in these replicas."
+  },
+  {
+   "t": "p",
+   "k": "64a1ae8509b8",
+   "en": "Indexing with replicas From the diagram above, we assume that each partition is forwarded to each replica for index computation. Let’s look at the example where we want to index partition P1. This means that the same partition will be forwarded to all three replicas in both availability zones. Therefore, each node will compute the index simultaneously and reach the same state."
+  },
+  {
+   "t": "p",
+   "k": "f65d4a13952a",
+   "en": "The advantage of this strategy is that the indexing operation will not suffer if the primary node fails."
+  },
+  {
+   "t": "h2",
+   "k": "05535ecff78e",
+   "en": "Summary"
+  },
+  {
+   "t": "p",
+   "k": "c97cd45d31a3",
+   "en": "In this lesson, we learned how to handle a large number of data, and a large number of queries with these strategies:"
+  },
+  {
+   "t": "p",
+   "k": "ce6c8d6b3581",
+   "en": "Parallel indexing and searching, where both of these processes are colocated on the same nodes."
+  },
+  {
+   "t": "p",
+   "k": "ecea6b95d3a1",
+   "en": "Replicating each partition, which means that we replicate the indexing and searching process as well."
+  },
+  {
+   "t": "p",
+   "k": "043c413511ef",
+   "en": "We successfully designed a system that scales with read (search) and write (indexing) operations colocated on the same node. But, this scaling method brings some drawbacks. We’ll look into the drawbacks and their solutions in the next lesson."
+  },
+  {
+   "t": "h1",
+   "k": "4e9dd2590754",
+   "en": "Scaling Search and Indexing"
+  },
+  {
+   "t": "p",
+   "k": "1a53084bce83",
+   "en": "Learn an efﬁcient way to scale indexing and search in a search system."
+  },
+  {
+   "t": "h2",
+   "k": "19ef3e774838",
+   "en": "Problems with the proposed design"
+  },
+  {
+   "t": "p",
+   "k": "c17e608e7765",
+   "en": "Although the proposed design in the previous lesson seems reasonable, still, there are a couple of serious drawbacks. We’ll discuss these drawbacks below:"
+  },
+  {
+   "t": "li",
+   "k": "9f7b7a454e09",
+   "en": "Colocated indexing and searching: We’ve created a system that colocates indexing and searching on the same node. Although it seems like efficient usage of resources, it has its downsides as well. Searching and indexing are both resource-intensive operations. Both operations impact the performance of each other. Also, this colocated design doesn’t scale efficiently with varying indexing and search operations over time."
+  },
+  {
+   "t": "p",
+   "k": "8018445cdd17",
+   "en": "Colocating both these operations on the same machine can lead to an imbalance, and it results in scalability issues."
+  },
+  {
+   "t": "li",
+   "k": "4f86ae20fa82",
+   "en": "Index recomputation: We assume that each replica will compute the index individually, which leads to inefficient usage of resources. Furthermore, index computation is a resource-intensive task with possibly hundreds of stages of pipelined operations. Thus, recomputing the same index over different replicas requires powerful machines. Instead, the logical approach is to compute the index once and replicate it across availability zones."
+  },
+  {
+   "t": "p",
+   "k": "35d9fba3bf40",
+   "en": "Because of these key reasons, we’ll look at an alternative approach for distributed indexing and searching."
+  },
+  {
+   "t": "p",
+   "k": "c52265c3d621",
+   "en": "Rather than recomputing the index on each replica, we compute the inverted index on the primary node only. Next, we communicate the inverted index (binary blob/file) to the replicas. The key benefit of this approach is that it avoids using the duplicated amount of CPU and memory for indexing on replicas."
+  },
+  {
+   "t": "p",
+   "k": "5944e4499d2f",
+   "en": "Point to Ponder What are the disadvantages of the above-proposed solution?"
+  },
+  {
+   "t": "p",
+   "k": "c7d6ec9b0034",
+   "en": "Hide Answer Since the inverted index will be transferred to the replicas, this will introduce a transmission latency to copy the inverted index file because the size of the index file can be very large."
+  },
+  {
+   "t": "p",
+   "k": "4795fb91c25a",
+   "en": "When the primary node receives new indexing operations, the inverted index file changes. Each replica needs to fetch the latest version of the file after a certain amount of indexing operations reaches a defined threshold."
+  },
+  {
+   "t": "h2",
+   "k": "bb2ee953fa89",
+   "en": "Separate the indexing and search"
+  },
+  {
+   "t": "p",
+   "k": "1562f72e5593",
+   "en": "With the advent of networking and virtualization technologies, cloud computing has emerged as a successful technology. We have access to massive amounts of bandwidth (up to 100 Gbps) and scalable distributed storage in such a technology. These advancements allow for a strong separation between indexing and search without the negative consequence of indexing latency. Because of this isolation, indexing wouldn’t affect search scalability and vice versa. Also, instead of recomputing the index on the replica nodes, which wastes resources, we can just replicate the index files."
+  },
+  {
+   "t": "p",
+   "k": "9fc4767e2f0e",
+   "en": "We’ll use these technologies to redesign our distributed indexing and searching system. There are three components involved in this search system design:"
+  },
+  {
+   "t": "li",
+   "k": "17cfa858fdd8",
+   "en": "Indexer: It consists of a group of nodes to compute the index."
+  },
+  {
+   "t": "li",
+   "k": "e6d836dd0911",
+   "en": "Distributed storage: This system is used to store partitions and the computed index."
+  },
+  {
+   "t": "li",
+   "k": "5827e752837b",
+   "en": "Searcher: It consists of a number of nodes to perform searching."
+  },
+  {
+   "t": "p",
+   "k": "6d594bb5d310",
+   "en": "The illustration below depicts the generation and transfer of an inverted index between an indexer and a searcher node:"
+  },
+  {
+   "t": "p",
+   "k": "4b8bd8e49df9",
+   "en": "In the above illustration, a single node is shown for each indexing and searching operation. But, in reality, there would be an N number of nodes in the indexing phase, one node per partition (set of documents), that produces inverted indices."
+  },
+  {
+   "t": "p",
+   "k": "f3153b80cc0d",
+   "en": "The inverted index is stored in the form of binary files on the nodes’ local storage. Caching these blob files will result in performance improvement. These binary files are also pushed to a distributed storage. In the case of a hardware failure, a new searcher or indexer machine is added, and a copy of the data is retrieved from the distributed storage."
+  },
+  {
+   "t": "p",
+   "k": "e84c14a64690",
+   "en": "When the upload is complete, the searcher nodes download the index files."
+  },
+  {
+   "t": "p",
+   "k": "85a295ca5341",
+   "en": "Depending upon user search patterns, the searching nodes will maintain a cache of frequently asked queries and serve data from RAM. A user search query will be extended to all searcher nodes, which will generate responses according to their respective indices. A merger node in the front-end servers will combine all search results and present them to the user."
+  },
+  {
+   "t": "p",
+   "k": "3abe1306b09d",
+   "en": "The indexing process indexes the new documents as soon as they are available."
+  },
+  {
+   "t": "p",
+   "k": "d8a6ecbd4de8",
+   "en": "At the same time, the searcher nodes fetch the updated indices to provide improved search results."
+  },
+  {
+   "t": "h2",
+   "k": "f0f1946e7109",
+   "en": "Indexing explained"
+  },
+  {
+   "t": "p",
+   "k": "5e7ef31177d2",
+   "en": "Until now, we have explained the development of a highly scalable and performant design using low-cost nodes. However, we are unaware of the internals of the indexing nodes. In this section, we’ll learn how indexing is performed with a MapReduce distributed model and parallel processing framework."
+  },
+  {
+   "t": "p",
+   "k": "a9e6a491f4f0",
+   "en": "The MapReduce framework is implemented with the help of a cluster manager and a set of worker nodes categorized as Mappers and Reducers. As indicated by its name, MapReduce is composed of two phases:"
+  },
+  {
+   "t": "li",
+   "k": "5796941accd6",
+   "en": "The Map phase"
+  },
+  {
+   "t": "li",
+   "k": "67055e699f50",
+   "en": "The Reduction phase Furthermore, the input to MapReduce is a number of partitions, or set of documents, whereas its output is an aggregated inverted index."
+  },
+  {
+   "t": "p",
+   "k": "fb1bf96db37e",
+   "en": "Let’s understand the purpose of the above components:"
+  },
+  {
+   "t": "p",
+   "k": "344fddcc7956",
+   "en": "Cluster manager: The manager initiates the process by assigning a set of partitions to Mappers. Once the Mappers are done, the cluster manager assigns the output of Mappers to Reducers."
+  },
+  {
+   "t": "p",
+   "k": "291a04ff39d2",
+   "en": "Mappers: This component extracts and filters terms from the partitions assigned to it by the cluster manager. These machines output inverted indexes in parallel, which serve as input to the Reducers."
+  },
+  {
+   "t": "p",
+   "k": "b5d9c5e70476",
+   "en": "Reducers: The reducer combines mappings for various terms to generate a summarized index."
+  },
+  {
+   "t": "p",
+   "k": "9637f3088e26",
+   "en": "The cluster manager ensures that all worker nodes are efficiently utilized in the cluster. The MapReduce is built to work under partial failures. If one node fails, it reschedules the work on another node."
+  },
+  {
+   "t": "p",
+   "k": "ef807b15a194",
+   "en": "Note that the Reducers cannot start as long as the Mappers are working. This means that the cluster manager can use the same node as a Mapper as well as a Reducer."
+  },
+  {
+   "t": "p",
+   "k": "0fbd8b3d2c32",
+   "en": "The slides below depict a simplified setup of how MapReduce can be used to generate an inverted index:"
+  },
+  {
+   "t": "p",
+   "k": "f2c320c3b727",
+   "en": "To keep it simple, we have just shown two indicators for each term in the above illustration: the list of documents in which the term appears and the list of the frequency of the term in each document (refer to Indexing for details)."
+  },
+  {
+   "t": "li",
+   "k": "04705cf8d9ca",
+   "en": "Note: The above MapReduce setup is a simplified version of what happens in practice. A complex pipeline of the MapReduce framework is required to manage the complexities of a real-world search engine.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "0ff1b6696c9e",
+   "en": "However, the fundamental principles are the same as we presented here."
+  },
+  {
+   "t": "h2",
+   "k": "05535ecff78e",
+   "en": "Summary"
+  },
+  {
+   "t": "p",
+   "k": "6e74ff254cfa",
+   "en": "In this lesson, we have resolved two key problems of scalability (due to colocated indexing and searching) and resource wastage (due to index recomputation) by using dedicated nodes for indexing and searching. Both operations rely on distributed storage. Furthermore, we presented a simplified description of the MapReduce framework to parallelize the indexing process."
+  },
+  {
+   "t": "h1",
+   "k": "7bd2df47cca5",
+   "en": "Evaluation of a Distributed Search's Design"
+  },
+  {
+   "t": "p",
+   "k": "6ceeffba41c4",
+   "en": "Analyze how our design meets the requirements."
+  },
+  {
+   "t": "h2",
+   "k": "f2c1b76db30d",
+   "en": "Availability"
+  },
+  {
+   "t": "p",
+   "k": "f029fec6b5d0",
+   "en": "We utilized distributed storage to store these items:"
+  },
+  {
+   "t": "p",
+   "k": "3c6df394a5e2",
+   "en": "Documents crawled by the indexer."
+  },
+  {
+   "t": "p",
+   "k": "84a1a4fb7964",
+   "en": "Inverted indexes generated by the indexing nodes."
+  },
+  {
+   "t": "p",
+   "k": "623bc0dd26ee",
+   "en": "Data is replicated across multiple regions in distributed storage, making cross-region deployment for indexing and search easier. The group of indexing and search nodes merely needs to be replicated in different availability zones."
+  },
+  {
+   "t": "p",
+   "k": "0576b63a4e51",
+   "en": "Therefore, we deploy the cluster of indexing and search nodes in different availability zones. So, if a failure occurs in one place, we can process the requests from another cluster. Multiple groups of indexing and search nodes help to achieve high indexing and search availability. Moreover, in each cluster, if a node dies, another can take its place."
+  },
+  {
+   "t": "p",
+   "k": "3a478910c828",
+   "en": "The indexing is performed offline, not on the user’s critical path. We don’t need to replicate the indexing operations synchronously. It is unnecessary to respond to the user search queries with the latest data that has just been added to the index. So, we don’t have to wait for the replication of the new index to respond to the search queries. This makes the search available to the users."
+  },
+  {
+   "t": "li",
+   "k": "57999363238a",
+   "en": "Note: Once we replicate the latest data in all groups of indexing nodes and the search nodes have downloaded it, then the search queries are performed on the latest data.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "b06273ade235",
+   "en": "Scalability"
+  },
+  {
+   "t": "p",
+   "k": "ae2a4248ec86",
+   "en": "Partitioning is an essential component of search systems to scale. When we increase the number of partitions and add more nodes to the indexing and search clusters, we can scale in terms of data indexing and querying."
+  },
+  {
+   "t": "p",
+   "k": "2aef46ca73b9",
+   "en": "The strong isolation of indexing and search processes help indexing and search scale independently and dynamically."
+  },
+  {
+   "t": "h2",
+   "k": "55990611ae88",
+   "en": "Fast search on big data"
+  },
+  {
+   "t": "p",
+   "k": "69379f19d5e0",
+   "en": "We utilized a number of nodes, each of which performs search queries in parallel on smaller inverted indices. The result from each search node is then merged and returned to the user."
+  },
+  {
+   "t": "h2",
+   "k": "b6e33248d658",
+   "en": "Reduced cost"
+  },
+  {
+   "t": "p",
+   "k": "e1a5e0874780",
+   "en": "We used cheaper machines to compute indexes and perform searches. If one node fails, we don’t have to recompute the complete index. Instead, some of the documents need to be indexed again."
+  },
+  {
+   "t": "h2",
+   "k": "6a38a38f03e4",
+   "en": "Conclusion"
+  },
+  {
+   "t": "p",
+   "k": "140f69274e65",
+   "en": "A search system is required for almost every application. We have seen that it isn’t possible to develop a search system that can run on a single node. We utilized a parallel computation framework and low-cost machines to build a search system that is available, scalable, and highly performant."
+  }
+ ]
+}

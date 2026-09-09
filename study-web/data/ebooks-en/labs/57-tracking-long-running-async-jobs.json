@@ -1,0 +1,98 @@
+{
+ "id": "57-tracking-long-running-async-jobs",
+ "title": "Tracking Long-Running Async Jobs",
+ "titleKey": "fb71d156880d",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "8845cfde0934",
+   "en": "Your background job ran for 4 minutes and nobody knows if it finished."
+  },
+  {
+   "t": "p",
+   "k": "5fdec3103ca0",
+   "en": "That's not a job queue problem. That's a missing design problem."
+  },
+  {
+   "t": "p",
+   "k": "2aaa297434e1",
+   "en": "Long-running jobs break every assumption you built for synchronous APIs. Your load balancer times out after 30s. Your mobile client doesn't know whether to retry. Your retry logic re-runs a job that already half-Here's the real scenario:"
+  },
+  {
+   "t": "p",
+   "k": "e58acf9d4b82",
+   "en": "You're processing a video upload. The job takes 2–8 minutes. Millions of users."
+  },
+  {
+   "t": "p",
+   "k": "0cec497dc34d",
+   "en": "What do you expose to the client?"
+  },
+  {
+   "t": "p",
+   "k": "84dd335f3394",
+   "en": "A) Polling endpoint — client hits /jobs/:id/status every 5s until done B) Webhook — job fires a POST to client's callback URL on completion C) SSE / WebSocket — server pushes progress updates in real time D) Synchronous wait — keep the HTTP connection open until the job finishes One scales to millions without coupling your infrastructure to client uptime."
+  },
+  {
+   "t": "p",
+   "k": "cfe229e7ae7c",
+   "en": "The others have hard production failure modes most teams don't discover until 3 AM."
+  },
+  {
+   "t": "p",
+   "k": "29bbb667617e",
+   "en": "The deeper problem isn't transport — it's these 4 things nobody gets right the first time: → Idempotency. Every job must be safe to re-run. If your retry logic can double-charge, double-send, or double-process — you don't have retries, you have bugs waiting. → Progress granularity. \"0% 100%\" is useless for a 6-minute job. You need intermediate states: queued,→ processing, transcoding, uploading, complete. Clients need something to show users. → Timeout vs failure. A job that stops responding isn't the same as a job that failed. Dead workers, OOM kills, spot instance evictions — your queue needs a heartbeat or a visibility timeout, not just a try/catch. → Deduplication. The client will retry. Your queue will redeliver. You need a dedup key scoped to the original request — not the job run."
+  },
+  {
+   "t": "h3",
+   "k": "68fea146799a",
+   "en": "DAY 56 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "b25d5386504e",
+   "en": "A) Polling — Correct for most cases Client-controlled, stateless, scales independently. The server doesn't care if the client disconnects, retries, or crashes — the job runs and the status endpoint just answers queries. 5s polling intervals on a job that takes 2–8 minutes is trivially cheap. The key rules: make job IDs stable and idempotent, set a TTL on job records so you don't accumulate state forever, and use exponential backoff not fixed intervals. LinkedIn, YouTube, and S3 multipart uploads all use polling for async job status."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "a230029c96ed",
+   "en": "B) Webhook — Right idea, wrong default Webhooks are great for server-to-server flows where the receiver has a stable HTTPS endpoint. They fall apart for mobile clients (no public URL), in environments with NAT/firewall, and when the receiver is down at delivery time. You'd need a retry queue, delivery guarantees, and signature verification just to make it reliable. Webhooks work well as a supplementary delivery mechanism for platform integrations — not as the primary client notification path for end users."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "p",
+   "k": "7c1eb0241fa6",
+   "en": "C) SSE / WebSocket — Expensive for this use case Real-time push is fantastic for chat, live dashboards, and collaborative editing. For a job that takes 2–8 minutes and is triggered once? You're holding an open connection, burning a file descriptor, and adding connection-management complexity for maybe 3 meaningful state changes. SSE makes sense when you genuinely need sub-second updates or continuous streaming. For async job progress, polling is cheaper and simpler."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "p",
+   "k": "e5664c01a13c",
+   "en": "D) Synchronous wait — Production antipattern Keeping the HTTP connection open for 2–8 minutes kills your load balancer (most timeout at 30– 60s), ties up a server thread or process, and gives the client no recovery path if the connection drops mid-job. This is how systems get \"stuck\" — jobs complete but the client never hears about it because the connection dropped at minute 3. Never block on long-running work. Always return immediately with a job ID."
+  },
+  {
+   "t": "p",
+   "k": "0ee781063c28",
+   "en": "Switch to synchronous replication — primary waits for at least one replica to confirm before"
+  },
+  {
+   "t": "h3",
+   "k": "e6bf69d8180b",
+   "en": "DAY 57 · SYSTEM DESIGN"
+  }
+ ]
+}

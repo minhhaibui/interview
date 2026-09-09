@@ -1,0 +1,43 @@
+{
+ "id": "11-how-does-twitter-work",
+ "title": "How does Twitter work?",
+ "titleKey": "2d65afc8c98e",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "d945909a43e9",
+   "en": "This post is a summary of a tech talk given by Twitter in 2013. Let’s take a look."
+  },
+  {
+   "t": "p",
+   "k": "8cd588f06679",
+   "en": "𝐓𝐡𝐞 𝐋𝐢𝐟𝐞 𝐨𝐟 𝐚 𝐓𝐰𝐞𝐞𝐭: 1⃣ A tweet comes in through the Write API. 2⃣ The Write API routes the request to the Fanout service. 3⃣ The Fanout service does a lot of processing and stores them in the Redis cache. 24 4⃣ The Timeline service is used to find the Redis server that has the home timeline on it. 5⃣ A user pulls their home timeline through the Timeline service."
+  },
+  {
+   "t": "p",
+   "k": "982c5544b962",
+   "en": "𝐒𝐞𝐚𝐫𝐜𝐡 & 𝐃𝐢𝐬𝐜𝐨𝐯𝐞𝐫𝐲 🔹 Ingester: annotates and tokenizes Tweets so the data can be indexed. 🔹 Earlybird: stores search index. 🔹 Blender: creates the search and discovery timelines."
+  },
+  {
+   "t": "p",
+   "k": "7ac6bcaf4d0f",
+   "en": "𝐏𝐮𝐬𝐡 𝐂𝐨𝐦𝐩𝐮𝐭𝐞 🔹HTTP push 🔹Mobile push Disclaimer: This article is based on the tech talk given by Twitter in 2013 (https://bit.ly/3vNfjRp). Even though many years have passed, it’s still quite relevant. I redraw the diagram as the original diagram is difficult to read."
+  },
+  {
+   "t": "p",
+   "k": "5bf691a3a3b5",
+   "en": "Over to you:"
+  },
+  {
+   "t": "p",
+   "k": "3758559c12bc",
+   "en": "Do you use Twitter? What are some of the biggest differences between LinkedIn and Twitter that might shape their system architectures? — Check out our bestselling system design books."
+  },
+  {
+   "t": "p",
+   "k": "191884590286",
+   "en": "Paperback:AmazonDigital:ByteByteGo. 25"
+  }
+ ]
+}

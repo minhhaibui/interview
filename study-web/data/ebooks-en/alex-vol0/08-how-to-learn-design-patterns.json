@@ -1,0 +1,48 @@
+{
+ "id": "08-how-to-learn-design-patterns",
+ "title": "How to learn design patterns?",
+ "titleKey": "c039076b4796",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "b5b433aa9dfe",
+   "en": "Besides reading a lot of well-written code, a good book guides us like a good teacher."
+  },
+  {
+   "t": "p",
+   "k": "119bd276fd30",
+   "en": "𝐇𝐞𝐚𝐝 𝐅𝐢𝐫𝐬𝐭 𝐃𝐞𝐬𝐢𝐠𝐧 𝐏𝐚𝐭𝐭𝐞𝐫𝐧𝐬,second edition, is the one I would recommend."
+  },
+  {
+   "t": "p",
+   "k": "439bca46d752",
+   "en": "When I began my journey in software engineering, I found it hard to understand the classic textbook,𝐃𝐞𝐬𝐢𝐠𝐧 𝐏𝐚𝐭𝐭𝐞𝐫𝐧𝐬,by the Gang of Four."
+  },
+  {
+   "t": "p",
+   "k": "71f0a4a77af6",
+   "en": "Luckily, I discovered Head First Design Patterns in the school library."
+  },
+  {
+   "t": "p",
+   "k": "99a4d8e491a3",
+   "en": "This book solved a lot of puzzles for me. When I went back to the Design Patterns book, everything looked familiar and more understandable."
+  },
+  {
+   "t": "p",
+   "k": "85cb72dffda9",
+   "en": "Last year, I bought the second edition of Head First Design Patterns and read through it. Here are a few things I like about the book: 18 🔹This book solves the challenge of software’s abstract, “invisible” nature. Software is difficult to build because we cannot see its architecture; its details are embedded in the code and binary files. It is even harder to understand software design patterns because these are higher-level abstractions of the software. The book fixes this by using visualization. There are lots of diagrams, arrows, and comments on almost every page. If I do not understand the text, it’s no problem. The diagrams explain things very well. 🔹We all have questions we are afraid to ask whenwe first learn a new skill. Maybe we think it’s an easy one. This book is good at tackling design patterns from the student’s point of view. It guides us by asking our questions and clearly answering them. There is a Guru in the book and there’s also a Student."
+  },
+  {
+   "t": "p",
+   "k": "09f7c4811696",
+   "en": "Over to you: which book helped you understand a challenging topic?"
+  },
+  {
+   "t": "p",
+   "k": "b5a6f666a19f",
+   "en": "Why do you like it? 19"
+  }
+ ]
+}

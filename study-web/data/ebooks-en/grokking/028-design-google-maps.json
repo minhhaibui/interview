@@ -1,0 +1,1258 @@
+{
+ "id": "028-design-google-maps",
+ "title": "Design-Google-Maps",
+ "titleKey": "dc5370c36241",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "31d396adbe32",
+   "en": "System Design: Google Maps"
+  },
+  {
+   "t": "p",
+   "k": "38a969fc59cf",
+   "en": "Understand the basics of a Google Maps system."
+  },
+  {
+   "t": "h2",
+   "k": "56505afb54d4",
+   "en": "What is Google Maps?"
+  },
+  {
+   "t": "p",
+   "k": "91e5e42eb40b",
+   "en": "Let’s introduce the problem by assuming that we want to travel from one place to another. Here are the possible things that we might want to know:"
+  },
+  {
+   "t": "p",
+   "k": "4115cfb67891",
+   "en": "What are the best possible paths that take us to our destination, depending on the vehicle type we’re using?"
+  },
+  {
+   "t": "p",
+   "k": "dd615119a5cc",
+   "en": "How long in miles is each path?"
+  },
+  {
+   "t": "p",
+   "k": "dc0f5d5f3f53",
+   "en": "How much time does each path take to get us to our destination?"
+  },
+  {
+   "t": "p",
+   "k": "1d804642de97",
+   "en": "A maps application (like Google Maps or Apple Maps) enables users to answer all of the above questions easily. The following illustration shows the paths calculated by Google maps from “Los Angeles, USA” to “New York City, USA.”"
+  },
+  {
+   "t": "h2",
+   "k": "5385c97f3f2e",
+   "en": "When do we use a maps service?"
+  },
+  {
+   "t": "p",
+   "k": "5956b3924953",
+   "en": "Individuals and organizations rely on location data to navigate around the world. Maps help in these cases:"
+  },
+  {
+   "t": "p",
+   "k": "a7f4eaf2dbc5",
+   "en": "Individuals can find the locations of and directions to new places quickly, instead of wasting their time and the costs of travel, such as gas."
+  },
+  {
+   "t": "p",
+   "k": "546673fd940c",
+   "en": "Individuals use maps to see their estimated time of arrival (ETA) and the shortest path based on current traffic data."
+  },
+  {
+   "t": "p",
+   "k": "100dc0f7ab12",
+   "en": "Many modern applications rely heavily on maps, such as ride-hailing services, autonomous vehicles, and hiking maps. For example:"
+  },
+  {
+   "t": "p",
+   "k": "e3283c4486a1",
+   "en": "Waymo’s self-driving car system uses Google Maps to navigate efficiently, quickly, and safely."
+  },
+  {
+   "t": "p",
+   "k": "ac1efb27ef31",
+   "en": "Uber uses Google Maps as part of its application to assist drivers and provide customers with a visual representation of their journey."
+  },
+  {
+   "t": "p",
+   "k": "5c6fedf3a040",
+   "en": "Routing and logistics-based companies reduce the time it takes to make deliveries. By using a map’s unique real-time and historical traffic data, it minimizes the overall cost of deliveries by reducing gas usage and time spent stuck in traffic."
+  },
+  {
+   "t": "p",
+   "k": "96955e47cfa3",
+   "en": "In 2022, more than five million businesses are using Google Maps. It provides an API for enterprises to use a map system in their application."
+  },
+  {
+   "t": "h2",
+   "k": "3d89b0e9be86",
+   "en": "How will we design Google Maps?"
+  },
+  {
+   "t": "p",
+   "k": "39c78380d517",
+   "en": "We divide the design of Google Maps into five lessons:"
+  },
+  {
+   "t": "li",
+   "k": "682cf5573ebb",
+   "en": "Requirements: In this lesson, we’ll list the functional and non-functional requirements of a Google Maps system. We will also identify the challenges involved in designing such a system. Lastly, we’ll estimate the resources like servers and bandwidth needed to serve queries by millions of users."
+  },
+  {
+   "t": "li",
+   "k": "f90f4e6a6490",
+   "en": "Design: This lesson consists of the high-level and API design of a system like Google maps. We’ll describe the services and the workflow of the system."
+  },
+  {
+   "t": "li",
+   "k": "e378de5ad803",
+   "en": "Meeting the challenges: We will discuss how we overcome the challenges that we highlighted in the requirements lesson."
+  },
+  {
+   "t": "li",
+   "k": "c8c938b1069d",
+   "en": "Detailed design: Based on the solution to the challenges, we will improve our earlier design and also elaborate on different aspects of it. We will describe the detailed design, including storage schema."
+  },
+  {
+   "t": "li",
+   "k": "3a29f94a26cd",
+   "en": "Evaluation: This lesson explains how our designed Google Maps system fulfills all the requirements."
+  },
+  {
+   "t": "p",
+   "k": "bdc431e5ae49",
+   "en": "Let’s start by understanding the requirements for designing a system like Google Maps."
+  },
+  {
+   "t": "h1",
+   "k": "600db052c825",
+   "en": "Requirements of Google Maps' Design"
+  },
+  {
+   "t": "p",
+   "k": "cdd4b30d0235",
+   "en": "Understand the requirements to design a maps application like Google Maps."
+  },
+  {
+   "t": "h2",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "p",
+   "k": "bd0b56c2890d",
+   "en": "Before we start requirements, let’s clarify that we will design a system like Google Maps by picking a few key features because actual Google Maps is feature-rich and complex."
+  },
+  {
+   "t": "h3",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "b0f913fc73fe",
+   "en": "Identify the current location: Users should be able to approximate their current location (latitude and longitude in decimal values) on the world map."
+  },
+  {
+   "t": "p",
+   "k": "ecdabd92cc31",
+   "en": "Recommend the fastest route: Given the source and destination (place names in text), the system should recommend the optimal route by distance and time, depending on the type of transportation."
+  },
+  {
+   "t": "p",
+   "k": "6b4f5acc5e26",
+   "en": "Give directions: Once the user has chosen the route, the system should list directions in text format, where each item in the list guides the user to turn or continue in a specific direction to reach the destination."
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "a7687b0be194",
+   "en": "Availability: The system should be highly available."
+  },
+  {
+   "t": "p",
+   "k": "0385893c8e84",
+   "en": "Scalability: It should be scalable because both individuals and other enterprise applications like Uber and Lyft use Google Maps to find appropriate routes."
+  },
+  {
+   "t": "p",
+   "k": "6752ee3015ee",
+   "en": "Less response time: It shouldn’t take more than two or three seconds to calculate the ETA and the route, given the source and the destination points."
+  },
+  {
+   "t": "p",
+   "k": "b095dbe84f38",
+   "en": "Accuracy: The ETA we predict should not deviate too much from the actual travel time."
+  },
+  {
+   "t": "li",
+   "k": "baacc7620a0e",
+   "en": "Note: We’re not getting into the details of how we get the data on roads and layout. Government agencies provide maps, and in some places, Google itself drives mapping vehicles to find roads and their intersection points. Road networks are modeled with a graph data structure, where intersection points are the vertices, and the roads between intersections are the weighted edges.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "3fb2fefff706",
+   "en": "Challenges"
+  },
+  {
+   "t": "p",
+   "k": "a76559ce6838",
+   "en": "Some of the challenges that we need to focus on while designing a system like Google Maps are below:"
+  },
+  {
+   "t": "p",
+   "k": "af020e4fb820",
+   "en": "Scalability: Serving millions of queries for different routes in a second, given a graph with billions of nodes and edges spanning over 194 countries, requires robust scalability measures. A simple approach, given the latitude and longitude of the source and destination, would be to apply an algorithm like Dijkstra to find the shortest path between the source and the destination."
+  },
+  {
+   "t": "p",
+   "k": "0ced349f49d9",
+   "en": "However, this approach wouldn’t scale well for billions of users sending millions of queries per second. This is because running any path-finding algorithm on a graph with billions of nodes running a million times per second is inefficient in terms of time and cost, ultimately leading to a bad user experience. Therefore, our solution needs to find alternative techniques to scale well."
+  },
+  {
+   "t": "p",
+   "k": "5ff6d9975cd4",
+   "en": "ETA computation: In an ideal situation with empty roads, it’s straightforward to compute ETA using the distance and the speed of the vehicle we want to ride on. However, we cannot ignore factors like the amount of traffic on the roads and road conditions, which affect the ETA directly. For example, a road under construction, collisions, and rush hours all might slow down traffic. Quantifying the factors above to design our system is not trivial. Therefore, we’ll, categorize the factors above in terms of traffic load to complete our design."
+  },
+  {
+   "t": "h2",
+   "k": "a9be995c473a",
+   "en": "Resource estimation"
+  },
+  {
+   "t": "p",
+   "k": "e68d8a9b8a81",
+   "en": "Let’s estimate the total number of servers, storage, and bandwidth required by the system."
+  },
+  {
+   "t": "h3",
+   "k": "7e7845b4ea66",
+   "en": "Number of servers estimation"
+  },
+  {
+   "t": "p",
+   "k": "da211f98f879",
+   "en": "To estimate the number of servers, we need to know how many daily active users are using Google Maps and how many requests per second a single Google Maps server can handle. We assume the following numbers:"
+  },
+  {
+   "t": "p",
+   "k": "e796acd42370",
+   "en": "Daily active users who use Google Maps: 32 million (about 1 billion monthly users)."
+  },
+  {
+   "t": "p",
+   "k": "0f6785a35b05",
+   "en": "Number of requests a single server can handle per second: 8,000."
+  },
+  {
+   "t": "p",
+   "k": "4baddf1d2dd3",
+   "en": "The number of servers required has been calculated using the below formula:"
+  },
+  {
+   "t": "p",
+   "k": "6c64d4dd058a",
+   "en": "Number!of!active!users =4K!servers requests!handled!per!server"
+  },
+  {
+   "t": "h3",
+   "k": "5e7e60e98560",
+   "en": "Storage estimation"
+  },
+  {
+   "t": "p",
+   "k": "d7e818ba8aff",
+   "en": "Google Maps is essentially a system with a one-time storage requirement. The road data from many countries has already been added, which is over 20 petabytes as of 2022. Since there are minimal changes on the road networks, the daily storage requirement is going to be negligible for Google Maps. Also, short-term changes in the road network is a small amount of data as compared to the full network data. Therefore, our storage needs don’t change rapidly."
+  },
+  {
+   "t": "h3",
+   "k": "10d00f179eb1",
+   "en": "Bandwidth estimation"
+  },
+  {
+   "t": "p",
+   "k": "6285b611da10",
+   "en": "As a standard practice, we have to estimate the bandwidth required for the incoming and outgoing traffic of our system. Most of the bandwidth requirements for Google Maps are due to requests sent by users. Therefore, we’ve devised the following formula to calculate bandwidth:"
+  },
+  {
+   "t": "p",
+   "k": "cc8d86392e3d",
+   "en": "Totalbandwidth=Totalrequests_second\"Totalquery_size The Totalrequests_second represents the number of requests per second, whereas the Totalquery_size represents the size of each request."
+  },
+  {
+   "t": "p",
+   "k": "6984e4d79f8e",
+   "en": "Incoming traffic To estimate the incoming query traffic bandwidth, we assume the following numbers:"
+  },
+  {
+   "t": "p",
+   "k": "5807ed8a1baf",
+   "en": "Maximum number of requests by a single user per day: 50."
+  },
+  {
+   "t": "p",
+   "k": "5461e4750a86",
+   "en": "Request size (source and destination): 200 Bytes."
+  },
+  {
+   "t": "p",
+   "k": "0050e72981e1",
+   "en": "Using the assumptions above, we can estimate the total number of requests per second on Google Maps using the following formula:"
+  },
+  {
+   "t": "p",
+   "k": "8033153654bb",
+   "en": "Daily!active!users\"Requestsper_user Totalrequests_second== 24\"60\"60 18,518!requests!per!second."
+  },
+  {
+   "t": "p",
+   "k": "ea53406e106d",
+   "en": "We can calculate the incoming query traffic bandwidth required by Google Maps by inserting the request per second calculated above and the size of each request in the aforementioned bandwidth formula."
+  },
+  {
+   "t": "p",
+   "k": "0c29d878b08f",
+   "en": "Bandwidth Required for Incoming Query Traffic No. of requests per sec Request size (Bytes)Bandwidth (Mb/s) ond f"
+  },
+  {
+   "t": "li",
+   "k": "f60f360bcb4d",
+   "en": "63 Outgoing traffic Outgoing application traffic will include the response that the server generates for the user when they make a navigation request. The response consists of visuals and textual content, and typically includes the route shown on the map, estimated time, distance, and more detail about each step in the route. We assume the following numbers to estimate the outgoing traffic bandwidth:"
+  },
+  {
+   "t": "p",
+   "k": "e8d21903f8b0",
+   "en": "Total requests per second (calculated above): 18,518."
+  },
+  {
+   "t": "p",
+   "k": "6a37192ce674",
+   "en": "Response size: 2 MB + 5 KB = 2005 KB."
+  },
+  {
+   "t": "p",
+   "k": "e9dde82d1f3a",
+   "en": "Size of visual data on average: 2 MB."
+  },
+  {
+   "t": "p",
+   "k": "f1e34a1c922c",
+   "en": "Size of textual data on average: 5 KB."
+  },
+  {
+   "t": "p",
+   "k": "2f7cbca66ae9",
+   "en": "We can calculate the bandwidth required for outgoing traffic using the same formula."
+  },
+  {
+   "t": "p",
+   "k": "3a7608cf34cc",
+   "en": "Bandwidth Required for the Outgoing Application Traffic No. of requests per sec Response size (KB)Bandwidth (Gb/s) ond f"
+  },
+  {
+   "t": "li",
+   "k": "212980172106",
+   "en": "03 Totalbandwidth=Totalrequests_second\"Totalquery_size=18518\" 2005KB\"8!bits=297.03Gbps"
+  },
+  {
+   "t": "h2",
+   "k": "cfa08fe6c777",
+   "en": "Building blocks we will use"
+  },
+  {
+   "t": "p",
+   "k": "31746cc96fd2",
+   "en": "Now that we’ve completed our estimates of resources required, let’s identify the building blocks that will be an integral part of our design for the Google Maps system. Below, we have the key building blocks:"
+  },
+  {
+   "t": "p",
+   "k": "065cb8a59078",
+   "en": "Load balancers are necessary to distribute user requests among different servers and services."
+  },
+  {
+   "t": "p",
+   "k": "8c2d630029f4",
+   "en": "Databases are required to store data in the form of a graph along with metadata information."
+  },
+  {
+   "t": "p",
+   "k": "256be5d7bc6a",
+   "en": "Distributed search is needed to search different places on the map."
+  },
+  {
+   "t": "p",
+   "k": "9c7ad18c7b51",
+   "en": "A pub-sub system is required for generating and responding to important events during navigation and notifying the corresponding services."
+  },
+  {
+   "t": "p",
+   "k": "e2f191525a0a",
+   "en": "A key-value store is also used to store some metadata information."
+  },
+  {
+   "t": "h1",
+   "k": "a4049457f8a2",
+   "en": "Design of Google Maps"
+  },
+  {
+   "t": "p",
+   "k": "230b83f2a292",
+   "en": "Let's build a high-level design of a maps service."
+  },
+  {
+   "t": "h2",
+   "k": "f0e860766605",
+   "en": "High-level design"
+  },
+  {
+   "t": "p",
+   "k": "8593b335e78a",
+   "en": "Let’s start with the high-level design of a map system. We split the discussion into two sections:"
+  },
+  {
+   "t": "li",
+   "k": "616203546729",
+   "en": "The components we’ll need in our design."
+  },
+  {
+   "t": "li",
+   "k": "5ba634ed92d4",
+   "en": "The workflow that interconnects these components."
+  },
+  {
+   "t": "h3",
+   "k": "c212f08ed115",
+   "en": "Components"
+  },
+  {
+   "t": "p",
+   "k": "becbcf51e7e2",
+   "en": "We’ll use the following components in our design:"
+  },
+  {
+   "t": "p",
+   "k": "9f5b1b2ffdd9",
+   "en": "Location finder: The location finder is a service used to find the user’s current location and show it on the map since we can’t possibly personally remember the latitude and longitude for every place in the world."
+  },
+  {
+   "t": "p",
+   "k": "33da4f3c0d48",
+   "en": "Route finder: For the people who are new to a place, it’s difficult to travel because they don’t know the correct routes. The route finder is a service used to find the paths between two locations, or points."
+  },
+  {
+   "t": "p",
+   "k": "eff4285902ce",
+   "en": "Navigator: Suggesting a route through the route finder is not enough. A user may deviate from the optimal path. In that case, a navigator service is used. This service keeps track of users’ journeys and sends updated directions and notifications to the users as soon as they deviate from the suggested route."
+  },
+  {
+   "t": "p",
+   "k": "f828f97c709f",
+   "en": "GPS/Wi-Fi/Cellular technology: These are the technologies that we used to find the user’s ground position."
+  },
+  {
+   "t": "p",
+   "k": "5664fda9d76c",
+   "en": "Distributed search: For converting place names to latitude/longitude values, we need a conversion system behind the source and destination fields. A distributed search maintains an index consisting of places names and their mapping to latitude and longitude. User’s entered keywords are searched using this service to find a location on the map."
+  },
+  {
+   "t": "p",
+   "k": "54e274c8d823",
+   "en": "Area search service: The area search service coordinates between the distributed search and graph processing service to obtain the shortest path against a user query. The area search service will request the distributed search to obtain the locations of the source and destination on the map."
+  },
+  {
+   "t": "p",
+   "k": "574445a94bec",
+   "en": "Then, it will use the graph processing service to find the optimal path from the source to the destination."
+  },
+  {
+   "t": "p",
+   "k": "be5ea08f191c",
+   "en": "Graph processing service: There can be multiple paths from one place to another. The graph processing service runs the shortest path algorithm on a shorter graph based on the area spanning the source and destination points and helps us determine which path to follow."
+  },
+  {
+   "t": "p",
+   "k": "35b4a1d6287a",
+   "en": "Database: As discussed in the previous lesson, we have the road data from various sources stored in the form of a graph. We’ll map this data to a database to develop the road network graph. We’re using a graph database like DataStax Graph to store the graph for our design."
+  },
+  {
+   "t": "p",
+   "k": "a172fd0f0eb2",
+   "en": "Pub-sub system: Users might deviate from the first suggested path. In that case, they’ll need information on a new path to their destination. Pub-sub is a system that listens to various events from a service and triggers another service accordingly. For example, when a user deviates from the suggested path, it pings the area search service to find a new route from the user’s current location to their destination point. It also collects the streams of location data for different users from the navigator. This data can be processed later to find traffic patterns on different roads at different times."
+  },
+  {
+   "t": "p",
+   "k": "8342e40206eb",
+   "en": "We’ll use Kafka as a pub-sub system in our design."
+  },
+  {
+   "t": "p",
+   "k": "8ce9d3eeb7d5",
+   "en": "Third-party road data: How can we build a map system if we don’t have the road networks data? We need to collect the road data from third-party resources and preprocess the collected data to bring it into a single format that can be utilized to build the graph."
+  },
+  {
+   "t": "p",
+   "k": "e0b9686217c1",
+   "en": "Graph building: We’ll use a service that builds the graph from the given data, either collected from the third-party resources or from the users."
+  },
+  {
+   "t": "p",
+   "k": "45c4cc5feb23",
+   "en": "User: This refers to a person or a program that uses the services of the map system."
+  },
+  {
+   "t": "p",
+   "k": "ade188a6930b",
+   "en": "Load balancer: This is a system that is used to distribute user requests among different servers and services."
+  },
+  {
+   "t": "p",
+   "k": "7acd838c9646",
+   "en": "The illustration below shows how the above components are connected."
+  },
+  {
+   "t": "h3",
+   "k": "899531e0f885",
+   "en": "Workflow"
+  },
+  {
+   "t": "p",
+   "k": "a9a60126e25f",
+   "en": "We explain the workflow by assuming that a user has to travel between two points but doesn’t know their current location or how to get to their destination."
+  },
+  {
+   "t": "p",
+   "k": "726134ea94ff",
+   "en": "So, let’s see how the maps system helps."
+  },
+  {
+   "t": "p",
+   "k": "b96d3d70643f",
+   "en": "For this exercise, we assume that the data about road networks and maps has already been collected from the third parties and the graph is built and stored in the Graph DB."
+  },
+  {
+   "t": "p",
+   "k": "02228ff27738",
+   "en": "In a maps system, the user has to enter their starting point and their destination to create a path between the two. For the starting source point, the user uses the current location service."
+  },
+  {
+   "t": "p",
+   "k": "2d2f0c7f189b",
+   "en": "The location finder determines the current location by maintaining a persistent connection with the user. The user will provide an updated location using GPS, Wi-Fi, and cellular technology. This will be the user’s source point."
+  },
+  {
+   "t": "p",
+   "k": "a974226e525c",
+   "en": "For the destination point, the user types an address in text format. It’s a good idea to make use of our Typeahead service here to provide useful suggestions and avoid spelling mistakes."
+  },
+  {
+   "t": "p",
+   "k": "5b92bece3644",
+   "en": "After entering the source and the destination points, the user requests the optimal path."
+  },
+  {
+   "t": "p",
+   "k": "33db5a18339f",
+   "en": "The user’s path request is forwarded to the route-finder service."
+  },
+  {
+   "t": "p",
+   "k": "6878bcdc9d01",
+   "en": "The route finder forwards the requests to an area search service with the source and the destination points."
+  },
+  {
+   "t": "p",
+   "k": "6444a8c4ac11",
+   "en": "The area search service uses the distributed search to find the latitude/longitude for the source and the destination. It then calculates the area on the map spanning the two (source’s and destination’s) latitude/longitude points."
+  },
+  {
+   "t": "p",
+   "k": "a1ffd1b8c8e5",
+   "en": "After finding the area, the area search service asks the graph processing service to process part of the graph, depending on the area to find the optimal path."
+  },
+  {
+   "t": "p",
+   "k": "a56da7a0dc83",
+   "en": "The graph processing service fetches the edges and nodes within that specified area from the database, finds the shortest path, and returns it to the route-finder service that visualizes the optimal path with the distance and time necessary to comeplete the route. It also displays the steps the user should follow for navigation."
+  },
+  {
+   "t": "p",
+   "k": "b2b6f025c2e5",
+   "en": "Now that the user can visualize the shortest path on the map, they also want to get directions towards the destination. The direction request is handled by the navigator."
+  },
+  {
+   "t": "p",
+   "k": "56f9a5ad52aa",
+   "en": "The navigator tracks that the user is following the correct path, which it has from the route-finder service. It updates the user’s location on the map while the user is moving, and shows where to turn with the distance. If a user deviates from the path, it generates an event that is fed to Kafka."
+  },
+  {
+   "t": "p",
+   "k": "0843d70458ba",
+   "en": "Upon receiving the event from the navigator, Kafka updates the subscribed topic of the area search service, which in turn recalculates the optimal path and suggests it to the user. The navigator also provides a stream of live location data to the graph, building it through the pub-sub system. Later, this data can be used to improve route suggestions provided to the users."
+  },
+  {
+   "t": "h2",
+   "k": "58dbf879b581",
+   "en": "API design"
+  },
+  {
+   "t": "p",
+   "k": "9ffc3a2ac046",
+   "en": "Let’s look at different APIs for the maps service."
+  },
+  {
+   "t": "p",
+   "k": "3faf2b3d920c",
+   "en": "Show the user’s current location on the map The currLocation function displays the user’s location on the map."
+  },
+  {
+   "t": "code",
+   "k": "0628cbee05da",
+   "en": "currLocation(location)"
+  },
+  {
+   "t": "p",
+   "k": "e73b44203c1d",
+   "en": "ParameterDescription locationThis depicts whether the user location is on or off. This call will establish a persistent connection between the client and the server, where the client will periodically update the server about its current location. If the location is false, the service requests the user to turn on their location."
+  },
+  {
+   "t": "p",
+   "k": "74c13323b317",
+   "en": "Find the optimal route The findRoute function helps find the optimal route between two points."
+  },
+  {
+   "t": "code",
+   "k": "5949bf0dc4ab",
+   "en": "findRoute(source, destination, transport_type)"
+  },
+  {
+   "t": "p",
+   "k": "09d90d91ec3b",
+   "en": "ParameterDescription sourceThis is the place (in text format) where the users want to start their journey. destinationThis is the place (in text format) where the users want to end their journey. transport_type This can be a bicycle, car, airplane, and so on. The default transport type is set to a car if the user (optional)doesn’t provide this parameter."
+  },
+  {
+   "t": "p",
+   "k": "5583b72035eb",
+   "en": "Get directions The directions function helps us get alerts in the form of texts or sounds that indicate when and where to turn next."
+  },
+  {
+   "t": "code",
+   "k": "1c4e960e4a01",
+   "en": "directions(curr_location, steps)"
+  },
+  {
+   "t": "p",
+   "k": "0cfaf8abff59",
+   "en": "ParameterDescription current_locationThis is the latitude/longitude value of the user's current location on the map. stepsThese are the steps the user should follow in order to reach their destination."
+  },
+  {
+   "t": "h1",
+   "k": "27ae096f5059",
+   "en": "Challenges of Google Maps' Design"
+  },
+  {
+   "t": "p",
+   "k": "1e5bab4e8fce",
+   "en": "Let's understand and resolve the key challenges in designing a system like Google Maps."
+  },
+  {
+   "t": "h2",
+   "k": "cef876b66931",
+   "en": "Meeting the challenges"
+  },
+  {
+   "t": "h3",
+   "k": "b06273ade235",
+   "en": "Scalability"
+  },
+  {
+   "t": "p",
+   "k": "acd7975c0dd0",
+   "en": "Scalability is about the ability to efficiently process a huge road network graph."
+  },
+  {
+   "t": "p",
+   "k": "11f68b50dcb7",
+   "en": "We have a graph with billions of vertices and edges, and the key challenges are inefficient loading, updating, and performing computations. For example, we have to traverse the whole graph to find the shortest path. This results in increased query time for the user. So, what could be the solution to this problem?"
+  },
+  {
+   "t": "p",
+   "k": "1309014e4d72",
+   "en": "The idea is to break down a large graph into smaller subgraphs, or partitions."
+  },
+  {
+   "t": "p",
+   "k": "974a3bb6e0f9",
+   "en": "The subgraphs can be processed and queried in parallel. As a result, the graph construction and query processing time will be greatly decreased. So, we divide the globe into small parts called segments. Each segment corresponds to a subgraph."
+  },
+  {
+   "t": "h3",
+   "k": "6a80eba8ec04",
+   "en": "Segment"
+  },
+  {
+   "t": "p",
+   "k": "09d775507c65",
+   "en": "A segment is a small area on which we can work easily. Finding paths within these segments works because the segment’s road network graph is small and can be loaded easily in the main memory, updated, and traversed. A city, for example, can be divided into hundreds of segments, each measuring 5×5 miles."
+  },
+  {
+   "t": "p",
+   "k": "b2367c4d600f",
+   "en": "Note: A segment is not necessarily a square. It can also be a polygon."
+  },
+  {
+   "t": "p",
+   "k": "5e60a8255e5c",
+   "en": "However, we are assuming square segments for ease of explanation."
+  },
+  {
+   "t": "p",
+   "k": "a1837d2bebc1",
+   "en": "Each segment has four coordinates that help determine which segment the user is in. Each coordinate consists of two values, the latitude and longitude."
+  },
+  {
+   "t": "p",
+   "k": "74c559f7f91e",
+   "en": "Let’s talk about finding paths between two locations within a segment. We have a graph representing the road network in that segment. Each intersection/junction acts as a vertex and each road acts as an edge. The graph is weighted, and there could be multiple weights on each edge—such as distance, time, and traffic—to find the optimal path. For a given source and destination, there can be multiple paths. We can use any of the graph algorithms on that segment’s graph to find the shortest paths. The most common shortest path algorithm is the Dijkstra’s algorithm."
+  },
+  {
+   "t": "p",
+   "k": "456eb2372ce6",
+   "en": "The traditional Dijkstra algorithm performs a guided search to find the shortest path. However, it comes at the cost of an increased query time. We have to set a limit on the query time because we wouldn’t want the user to wait too long to get their results. So, we’ll go with finding the optimal path within the given time cost."
+  },
+  {
+   "t": "p",
+   "k": "e90405c6296a",
+   "en": "The A* algorithm is an extension of the Dijkstra algorithm that uses heuristics to guide its search. Instead of finding the shortest path, A* finds the optimal path that is calculated by minimizing the following function. f(n)=g(n)+h(n)"
+  },
+  {
+   "t": "p",
+   "k": "b0dbd71bd2a4",
+   "en": "Here, n is the next node on the path, g(n) is the cost of the path from the start node to n, and h(n) is a heuristic function that estimates the cost of the cheapest path from n to the goal."
+  },
+  {
+   "t": "p",
+   "k": "c12a737c38ce",
+   "en": "Note: There are some algorithms that are specifically designed for road networks that focus on achieving shorter query time. These algorithms are A*, Arc flags, contraction hierarchies, transit node routing, reach-based routing, and hub labeling."
+  },
+  {
+   "t": "p",
+   "k": "92f367be4155",
+   "en": "After running the shortest path algorithm on the segment’s graph, we store the algorithm’s output in a distributed storage to avoid recalculation and cache the most requested routes. The algorithm’s output is the shortest distance in meters or miles between every two vertices in the graph, the time it takes to travel via the shortest path, and the list of vertices along every shortest path. All of the above processing (running the shortest path algorithm on the segment graph) is done offline (not on a user’s critical path)."
+  },
+  {
+   "t": "p",
+   "k": "d9ca0f537ec9",
+   "en": "The illustration above shows how we can find the shortest distance in terms of miles between two points. For example, the minimum distance (m) between points A and D is 11 miles by taking the path A->C->D. It has an ETA of 15 minutes."
+  },
+  {
+   "t": "p",
+   "k": "849e90c0dda6",
+   "en": "We’ve found the shortest path between two vertices. What if we have to find the path between two points that lie on the edges? What we do is find the vertices of the edge on which the points lie, calculate the distance of the point from the identified vertices, and choose the vertices that make the shorter total distance between the source and the destination. The distance from the source (and destination) to the nearest vertices is approximated using latitude/longitude values."
+  },
+  {
+   "t": "p",
+   "k": "641a54fe1a54",
+   "en": "We’re able to find the shortest paths within the segment. Let’s see what happens when the source and the destination belong to two different segments, and how we connect the segments."
+  },
+  {
+   "t": "h3",
+   "k": "d5ab81204f20",
+   "en": "Connect two segments"
+  },
+  {
+   "t": "p",
+   "k": "3a1998309412",
+   "en": "Each segment has a unique name and boundary coordinates. We can easily identify which location (latitude, longitude) lies in which segment. Given the source and the destination, we can find the segments in which they lie. For each segment, there are some boundary edges, which we call exit points. In the illustration below, we have four exit points, S4E1, S4E2, S4E3, and S4E4."
+  },
+  {
+   "t": "p",
+   "k": "58c64109fcfe",
+   "en": "Note: Besides the vertices we have inside the segment, we also consider the exit points of a segment as vertices and calculate the shortest path for these exit points. So for each segment, we calculate the shortest path between exit points in addition to the shortest path from the exit points to vertices inside the segment. Each vertex’s shortest path information from the segment’s exit points is cached."
+  },
+  {
+   "t": "p",
+   "k": "7f8985018a2f",
+   "en": "An exit point connects neighboring segments and is shared between them. In the illustration above, each exit point is connecting two segments and each is shared between two segments. For example, the exit point S4E1 is also an exit point for S1. Having all the exit points for each segment, we can connect the segments and find the shortest distance between two points in different segments. While connecting the segments, we don’t care about the inside segment graph. We just need exit points and the cached information about the exit points. We can visualize it as a graph made up of exiting vertices, as shown in the following illustration."
+  },
+  {
+   "t": "p",
+   "k": "e87512461364",
+   "en": "Since we can’t run the shortest path algorithm for all the segments throughout the globe, it’s critical to figure out how many segments we need to consider for our algorithm while traveling inter-segment. The aerial distance between the two places is used to limit the number of segments. With the source and destination points, we can find the aerial distance between them using the haversine formula."
+  },
+  {
+   "t": "p",
+   "k": "0f4d45b6fb13",
+   "en": "Suppose the aerial distance between the source and the destination is 10 kilometers. In that case, we can include segments that are at a distance of 10 kilometers from the source and destination in each direction. This is a significant improvement over the large graph."
+  },
+  {
+   "t": "p",
+   "k": "26600b54e102",
+   "en": "Once the number of segments is limited, we can constrain our graph so that the vertices of the graph are the exit points of each segment, and the calculated paths betweenthe exit points are the graph’s edges. All we have to do now is run the shortest path algorithm on this graph to find the route. The following illustration shows how we find the path between two points that lie in different segments."
+  },
+  {
+   "t": "p",
+   "k": "654611e0339e",
+   "en": "Let’s summarize how we met the challenge of scalability. We divided our problem so that instead of working on a large road network as a whole, we worked on parts (segments) of it. The queries for a specific part of the road network are processed on that part only, and for the queries that require processing more than one part of the network, we connect those parts, as we have shown above."
+  },
+  {
+   "t": "h3",
+   "k": "fed8610d530e",
+   "en": "ETA computation"
+  },
+  {
+   "t": "p",
+   "k": "e0579e068132",
+   "en": "For computing the ETA with reasonable accuracy, we collect the live location"
+  },
+  {
+   "t": "code",
+   "k": "e27d91150655",
+   "en": "data ((userID, timestamp,(latitude, longitude))) from the navigation service"
+  },
+  {
+   "t": "p",
+   "k": "0203e03990d8",
+   "en": "through a pub-sub system. With location data streams, we can calculate and predict traffic patterns on different roads. Some of the things that we can calculate are:"
+  },
+  {
+   "t": "p",
+   "k": "31fc46afecc7",
+   "en": "Traffic (high/medium/low) on different routes or roads."
+  },
+  {
+   "t": "p",
+   "k": "02d8aab3ce35",
+   "en": "The average speed of a vehicle on different roads."
+  },
+  {
+   "t": "p",
+   "k": "7db139ba5197",
+   "en": "The time intervals during which a similar traffic pattern repeats itself on a route or road. For example, highway X will have high traffic between 8 to 10 AM."
+  },
+  {
+   "t": "p",
+   "k": "8e872bc4be01",
+   "en": "The information above helps us provide a more accurate ETA. For example, if we know that the traffic will be high at a specific time on a particular road, the ETA should also be greater than usual."
+  },
+  {
+   "t": "h1",
+   "k": "44e5e6393f3c",
+   "en": "Detailed Design of Google Maps"
+  },
+  {
+   "t": "p",
+   "k": "997fb8ffcbc2",
+   "en": "Let's look into the detailed design of the maps system."
+  },
+  {
+   "t": "h2",
+   "k": "8575c60d6d2a",
+   "en": "Segment setup and request handling"
+  },
+  {
+   "t": "p",
+   "k": "654818ab6a01",
+   "en": "This section will describe how the segment data is stored in the database and how user requests are handled using the already stored data."
+  },
+  {
+   "t": "p",
+   "k": "a34d6df97a4e",
+   "en": "Starting with the storage schema, we discuss how the segments are added and hosted on the servers and also how the user requests are processed."
+  },
+  {
+   "t": "h3",
+   "k": "636805a26ba3",
+   "en": "Storage schema"
+  },
+  {
+   "t": "p",
+   "k": "0ee2d3ed59e4",
+   "en": "We store the following information for each segment:"
+  },
+  {
+   "t": "p",
+   "k": "806899d7ded7",
+   "en": "Key-value store:"
+  },
+  {
+   "t": "p",
+   "k": "f3e780e315e8",
+   "en": "The segment’s ID."
+  },
+  {
+   "t": "p",
+   "k": "b6b56639b300",
+   "en": "The serverID on which the segment is hosted."
+  },
+  {
+   "t": "p",
+   "k": "76c0eabde3ea",
+   "en": "In reality, each segment is a polygon, so we store boundary coordinates (latitude/longitude), possibly as a list."
+  },
+  {
+   "t": "p",
+   "k": "746e18174a8b",
+   "en": "A list of segment IDs of the neighbors segments."
+  },
+  {
+   "t": "p",
+   "k": "66e3d39436b5",
+   "en": "Graph database The road network inside the segment in the form of a graph."
+  },
+  {
+   "t": "p",
+   "k": "8f2fe0bbcc3e",
+   "en": "Relational DB We store the information to determine whether, at a particular hour of the day, the roads are congested. This later helps us decide whether or not to update the graph (weights) based on the live data. edgeID identifies the edge. hourRange tells us which hour of the day it is when there are typical road conditions (non-rush hour) on the road. rush is a Boolean value that depicts whether there is congestion or not on a specific road at a specific time."
+  },
+  {
+   "t": "li",
+   "k": "275436130b86",
+   "en": "Note:segID, serverID, and edgeID are unique IDs generated by a uniqueID generator (see the Sequencer lessons for details).",
+   "lead": "Note"
+  },
+  {
+   "t": "h3",
+   "k": "056f11827899",
+   "en": "Design"
+  },
+  {
+   "t": "p",
+   "k": "c877fd6a0562",
+   "en": "The following illustration consists of two workflows. One adds segments to the map and hosts them on the severs, while the other shows how the user request to find a path between two points is processed."
+  },
+  {
+   "t": "p",
+   "k": "f624057cdb2b",
+   "en": "Add segment"
+  },
+  {
+   "t": "li",
+   "k": "de5b2b745d76",
+   "en": "Each segment has its latitude/longitude boundary coordinates and the graph of its road network."
+  },
+  {
+   "t": "li",
+   "k": "94546c41dab2",
+   "en": "The segment adder processes the request to add the segment along with the segment information. The segment adder assigns a unique ID to each segment using a unique ID generator system."
+  },
+  {
+   "t": "li",
+   "k": "2d3263b865d6",
+   "en": "After assigning the ID to the segment, the segment adder forwards the segment information to the server allocator."
+  },
+  {
+   "t": "li",
+   "k": "d23682f5c18f",
+   "en": "The server allocator assigns a server to the segment, hosts that segment graph on that server, and returns the serverID to the segment adder."
+  },
+  {
+   "t": "li",
+   "k": "56325f55c7a2",
+   "en": "After the segment is assigned to the server, the segment adder stores the segment to server mapping in the key-value store. It helps in finding the appropriate servers to process user requests. It also stores each segment’s boundary latitude/longitude coordinates in a separate key-value object."
+  },
+  {
+   "t": "p",
+   "k": "06108cc98e1b",
+   "en": "Handle the user’s request"
+  },
+  {
+   "t": "li",
+   "k": "5ed36198fe37",
+   "en": "The user provides the source and the destination so that our service can find the path between them."
+  },
+  {
+   "t": "li",
+   "k": "8619b278f36b",
+   "en": "The latitude and longitude of the source and the destination are determined through a distributed search."
+  },
+  {
+   "t": "li",
+   "k": "d5ef02b6bfd1",
+   "en": "The latitude/longitude for the source and the destination are passed to the graph processing service that finds the segments in which the source and the destination latitude/longitude lie."
+  },
+  {
+   "t": "li",
+   "k": "1bb92131f1a2",
+   "en": "After finding the segment IDs, the graph processing service finds the servers that are hosting these segments from the key-value store."
+  },
+  {
+   "t": "li",
+   "k": "0f3b4d46b1f8",
+   "en": "The graph processing service connects to the relevant servers to find the shortest path between the source and the destination. If the source and the destination belong to the same segment, the graph processing service returns the shortest path by running the query only on a single segment."
+  },
+  {
+   "t": "p",
+   "k": "960f2ffcd353",
+   "en": "Otherwise, it will connect the segments from different servers, as we have seen in the previous lesson."
+  },
+  {
+   "t": "h2",
+   "k": "a401870b869c",
+   "en": "Improve estimations using live data"
+  },
+  {
+   "t": "p",
+   "k": "36a51a8d26df",
+   "en": "This section describes how we can improve the ETA estimation accuracy using live data. If we have a sequence of location data for different devices, we can find movement patterns and perform analytics to predict various factors that may influence a user’s trip. Google Maps uses a combination of GPS, Wi-Fi, and cell towers to track users’ locations. To collect this data, our maps system servers need to have a persistent connection with all the devices that have their location turned on. Below, we discuss the tools, techniques, and components involved in the process of improving estimations using live data."
+  },
+  {
+   "t": "p",
+   "k": "1408c309065f",
+   "en": "WebSocket is a communication protocol that allows users and servers to have a two-way, interactive communication session. This helps in the real-time transfer of data between user and server."
+  },
+  {
+   "t": "p",
+   "k": "315299858419",
+   "en": "The load balancer balances the connection load between different servers since there is a limit on the number of WebSocket connections per server. It connects some devices to server 1, some to server 2, and so on."
+  },
+  {
+   "t": "p",
+   "k": "75bd34b2a3e1",
+   "en": "A pub-sub system collects the location data streams (device, time, location) from all servers. The location data from pub-sub is read by a data analytics engine like Apache Spark. The data analytics engine uses data science techniques—such as machine learning, clustering, and so on—to measure and predict traffic on the roads, identify gatherings, hotspots, events, find out new roads, and so on. These analytics help our system improve ETAs."
+  },
+  {
+   "t": "li",
+   "k": "6b820590f3d9",
+   "en": "Note: The amount of traffic, road conditions, and hotspots directly affect average travel speed, which ultimately affects users’ ETAs.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "ee86de894d92",
+   "en": "The data analytics engine publishes the analytics data to a new pub-sub topic."
+  },
+  {
+   "t": "p",
+   "k": "87f6e1b725ce",
+   "en": "The map update service listens to the updates from the pub-sub topic for the analytics. It updates the segment graphs if there is a new road identified or if there is a change in the weight (average speed (traffic, road condition)) on the edges of the graph. Depending on the location, we know which segment the update belongs to. We find the routing server on which that segment is placed from the key-value store and update the graph on that server."
+  },
+  {
+   "t": "p",
+   "k": "d1fd3537bb6a",
+   "en": "Point to Ponder Many traffic conditions are transitory (like stopping at a signal), so updating the graph very often wouldn’t scale well because it requires excessive processing. What could be the solution to this problem?"
+  },
+  {
+   "t": "p",
+   "k": "581787a3ff1e",
+   "en": "Hide Answer To detect transitory and normal conditions, we keep two copies of all relevant data (weights): one for normal conditions and the other for transitory conditions. That way, we won’t have to do excessive processing."
+  },
+  {
+   "t": "p",
+   "k": "bb4a23faaee3",
+   "en": "The graph preprocessing service recalculates the new paths on the updated segment graph. We’ve seen how the paths are updated continuously in the background based on the live data."
+  },
+  {
+   "t": "p",
+   "k": "82deb5e5d5c1",
+   "en": "We’ve learned how the segments work, how a user finds the location between two points, and how the ETA's accuracy is improved by utilizing the live location data."
+  },
+  {
+   "t": "h1",
+   "k": "64eee5a38032",
+   "en": "Evaluation of Google Maps' Design"
+  },
+  {
+   "t": "p",
+   "k": "45d0394d5417",
+   "en": "Let’s look at how our map design meets the requirements."
+  },
+  {
+   "t": "h2",
+   "k": "f2c1b76db30d",
+   "en": "Availability"
+  },
+  {
+   "t": "p",
+   "k": "94efd80c74d2",
+   "en": "With a large road network graph hosted on a single server, we ran into these issues:"
+  },
+  {
+   "t": "p",
+   "k": "0943c8ebc755",
+   "en": "We couldn’t process user queries, since it was impossible to load such a large graph into the memory, making the system unavailable to the users."
+  },
+  {
+   "t": "p",
+   "k": "a335ebc3bd9a",
+   "en": "It wasn’t possible to make a persistent two-way connection (for navigation) between the server and millions of users per second."
+  },
+  {
+   "t": "p",
+   "k": "be310d2e3541",
+   "en": "It was also a single point of failure."
+  },
+  {
+   "t": "p",
+   "k": "8c8d5152f084",
+   "en": "We solved the above problems by dividing the world into small segments. Each small segment consists of a graph that can be easily loaded into a server’s memory. With segments, we completed these objectives:"
+  },
+  {
+   "t": "p",
+   "k": "2758a71ebfda",
+   "en": "We hosted each segment on a separate server, mitigating the issue of loading a large, global graph."
+  },
+  {
+   "t": "p",
+   "k": "f0325d6de6ca",
+   "en": "The load balancer divides the request load across different segment servers depending on the user’s area of search. It mitigates the issue of putting the burden on a single server, which was affecting the system’s availability."
+  },
+  {
+   "t": "p",
+   "k": "b04bc09d9036",
+   "en": "We didn’t discuss replication, but we can replicate each segment, which will help deal with a segment server as a single point of failure and distribute the request load for a segment to replicas."
+  },
+  {
+   "t": "li",
+   "k": "e2b72c54c692",
+   "en": "Note: Google Maps uses lazy loading of data, putting less burden on the system, which improves availability.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "a02c573e6316",
+   "en": "Lazy loading reduces initial load time by reducing the amount of content to load, saves bandwidth by delivering content to users when needed, and preserves server and client resources by rendering only some of the content."
+  },
+  {
+   "t": "h2",
+   "k": "b06273ade235",
+   "en": "Scalability"
+  },
+  {
+   "t": "p",
+   "k": "cce04c5a6a03",
+   "en": "We scaled our system for large road networks. Scalability can be seen in two ways:"
+  },
+  {
+   "t": "p",
+   "k": "c687c82ce135",
+   "en": "The ability of the system to handle an increasing amount of user requests."
+  },
+  {
+   "t": "p",
+   "k": "8041bffa90fc",
+   "en": "The ability of the system to work with more data (segments)."
+  },
+  {
+   "t": "p",
+   "k": "488c3c45c4a3",
+   "en": "We divided the world into small segments. Each segment is hosted on a different server in the distributed system. The user requests for different routes are served from the different segment servers. In this way, we can serve millions of user requests."
+  },
+  {
+   "t": "li",
+   "k": "63329a100c4a",
+   "en": "Note: It wouldn’t have been possible to serve millions of user requests if we had a single large graph spanning the whole road network. There would have been memory issues loading and processing a huge graph.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "098513ba75ba",
+   "en": "We can also add more segments easily because we don’t have to change the complete graph. We can further improve scalability by non-uniformly selecting the size of a segment—selecting smaller segment sizes in densely connected areas and bigger segments for the outskirts."
+  },
+  {
+   "t": "h2",
+   "k": "99a58f70714c",
+   "en": "Smaller response times"
+  },
+  {
+   "t": "p",
+   "k": "08cbf7b90ce2",
+   "en": "We’re running the user requests on small subgraphs. Processing a small subgraph of hundreds of vertices is far faster than a graph of millions of vertices. We can cache the processed small subgraph in the main memory and quickly respond to user requests. This is how our system responds to the user in less time."
+  },
+  {
+   "t": "p",
+   "k": "d4480a7a7172",
+   "en": "There’s another aspect that helps our system to respond quickly, and that is keeping the segment information in the key-value store. The key-value store helps different services to get the required information quickly."
+  },
+  {
+   "t": "p",
+   "k": "e6596ec75e18",
+   "en": "The graph processing service checks for the relevant segments in which the source and the destination latitude/longitude lie by querying the key-value store for the segmentID values."
+  },
+  {
+   "t": "p",
+   "k": "b31dcd3a143c",
+   "en": "For load-balancing user requests among different segment servers, the key-value store is queried for the serverID against the segment on which the graph processing should run for a specific request."
+  },
+  {
+   "t": "h2",
+   "k": "26de05a44d1e",
+   "en": "Accuracy"
+  },
+  {
+   "t": "p",
+   "k": "dfa0574ae228",
+   "en": "Besides the road data we had initially, we also captured the live location data of users, on which we performed analytics using data science techniques. Our system improves the accuracy of the results (path, ETA) using these analytics."
+  },
+  {
+   "t": "p",
+   "k": "a2cdcb9d9756",
+   "en": "Based on the analytics of the traffic patterns, the maps are updated, and the routes and ETA estimations are improved."
+  },
+  {
+   "t": "h2",
+   "k": "ffca82d594bf",
+   "en": "Meeting Non-functional Requirements"
+  },
+  {
+   "t": "li",
+   "k": "0ca1aa262894",
+   "en": "Load balance requests across different segment servers."
+  },
+  {
+   "t": "li",
+   "k": "a6d84f90db31",
+   "en": "Replicate segment servers."
+  },
+  {
+   "t": "p",
+   "k": "f2aee2a5b005",
+   "en": "Scalability•Partition the large graphs into small graphs to ease segment addition."
+  },
+  {
+   "t": "li",
+   "k": "08cee42acd7c",
+   "en": "Host the segments on different servers to enable serving more queries per second."
+  },
+  {
+   "t": "p",
+   "k": "2c90222cef30",
+   "en": "Less response time•Cache the processed graphs."
+  },
+  {
+   "t": "li",
+   "k": "7535c144e8d2",
+   "en": "Use a key-value store to quickly get the required information."
+  },
+  {
+   "t": "p",
+   "k": "21609b86d1e9",
+   "en": "Accuracy•Collect live data."
+  },
+  {
+   "t": "li",
+   "k": "2184a37733e0",
+   "en": "Perform data analytics."
+  },
+  {
+   "t": "h2",
+   "k": "6a38a38f03e4",
+   "en": "Conclusion"
+  },
+  {
+   "t": "p",
+   "k": "4561c3c8bf07",
+   "en": "Google Maps is one of the most widely used applications in the world, where users find the shortest route between two locations. A map system models the road network with a graph data structure. To find the route, the shortest path algorithm runs over the graph. We’ve seen scalability issues with a large graph of the road network. We solved the problem by splitting the world into small segments. Each segment consists of a small graph that can be loaded into the memory to find the paths quickly. We’ve also seen that the estimated time of arrival can be improved by analyzing the live location data."
+  }
+ ]
+}

@@ -1,0 +1,1377 @@
+{
+ "books": [
+  {
+   "id": "grokking",
+   "title": "Grokking Modern System Design Interview",
+   "titleVi": "Thiết kế hệ thống hiện đại cho phỏng vấn",
+   "author": "educative.io",
+   "note": "41 chương: nền tảng → 20 building block → 15 bài thiết kế thực tế.",
+   "chapters": [
+    {
+     "id": "001-introduction",
+     "num": "001",
+     "title": "Introduction",
+     "chars": 10026,
+     "blocks": 55
+    },
+    {
+     "id": "002-system-design-interviews",
+     "num": "002",
+     "title": "System Design Interviews",
+     "chars": 15056,
+     "blocks": 131
+    },
+    {
+     "id": "003-abstractions",
+     "num": "003",
+     "title": "Abstractions",
+     "chars": 14761,
+     "blocks": 97
+    },
+    {
+     "id": "004-non-functional-system-characteristics",
+     "num": "004",
+     "title": "Non-functional System Characteristics",
+     "chars": 12709,
+     "blocks": 93
+    },
+    {
+     "id": "005-back-of-the-envelope-calculations",
+     "num": "005",
+     "title": "Back-of-the-envelope Calculations",
+     "chars": 17512,
+     "blocks": 126
+    },
+    {
+     "id": "006-introduction-to-building-blocks-for-modern-system-design",
+     "num": "006",
+     "title": "Introduction to Building Blocks for Modern System Design",
+     "chars": 5829,
+     "blocks": 29
+    },
+    {
+     "id": "007-domain-name-system",
+     "num": "007",
+     "title": "Domain Name System",
+     "chars": 14603,
+     "blocks": 87
+    },
+    {
+     "id": "008-load-balancers",
+     "num": "008",
+     "title": "Load Balancers",
+     "chars": 22617,
+     "blocks": 142
+    },
+    {
+     "id": "009-databases",
+     "num": "009",
+     "title": "Databases",
+     "chars": 50926,
+     "blocks": 324
+    },
+    {
+     "id": "010-key-value-store",
+     "num": "010",
+     "title": "Key-value Store",
+     "chars": 33836,
+     "blocks": 196
+    },
+    {
+     "id": "011-content-delivery-network-cdn",
+     "num": "011",
+     "title": "Content Delivery Network (CDN)",
+     "chars": 40130,
+     "blocks": 251
+    },
+    {
+     "id": "012-sequencer",
+     "num": "012",
+     "title": "Sequencer",
+     "chars": 25695,
+     "blocks": 163
+    },
+    {
+     "id": "013-distributed-monitoring",
+     "num": "013",
+     "title": "Distributed Monitoring",
+     "chars": 16656,
+     "blocks": 91
+    },
+    {
+     "id": "014-monitor-server-side-errors",
+     "num": "014",
+     "title": "Monitor Server-side Errors",
+     "chars": 10902,
+     "blocks": 84
+    },
+    {
+     "id": "015-monitor-client-side-errors",
+     "num": "015",
+     "title": "Monitor Client-side Errors",
+     "chars": 10546,
+     "blocks": 62
+    },
+    {
+     "id": "016-distributed-cache",
+     "num": "016",
+     "title": "Distributed Cache",
+     "chars": 40604,
+     "blocks": 295
+    },
+    {
+     "id": "017-distributed-messaging-queue",
+     "num": "017",
+     "title": "Distributed/Messaging/Queue",
+     "chars": 35978,
+     "blocks": 198
+    },
+    {
+     "id": "018-pub-sub",
+     "num": "018",
+     "title": "Pub-sub",
+     "chars": 18189,
+     "blocks": 129
+    },
+    {
+     "id": "019-rate-limiter",
+     "num": "019",
+     "title": "Rate-Limiter",
+     "chars": 30568,
+     "blocks": 211
+    },
+    {
+     "id": "020-blob-store",
+     "num": "020",
+     "title": "Blob-Store",
+     "chars": 39256,
+     "blocks": 268
+    },
+    {
+     "id": "021-distributed-search",
+     "num": "021",
+     "title": "Distributed Search",
+     "chars": 39398,
+     "blocks": 262
+    },
+    {
+     "id": "022-distributed-logging",
+     "num": "022",
+     "title": "Distributed Logging",
+     "chars": 18515,
+     "blocks": 135
+    },
+    {
+     "id": "023-distributed-task-scheduler",
+     "num": "023",
+     "title": "Distributed Task Scheduler",
+     "chars": 29586,
+     "blocks": 170
+    },
+    {
+     "id": "024-sharded-counters",
+     "num": "024",
+     "title": "Sharded Counters",
+     "chars": 21466,
+     "blocks": 112
+    },
+    {
+     "id": "025-concluding-the-building-blocks-discussion",
+     "num": "025",
+     "title": "Concluding-the-Building-Blocks-Discussion",
+     "chars": 5928,
+     "blocks": 46
+    },
+    {
+     "id": "026-design-youtube",
+     "num": "026",
+     "title": "Design-YouTube",
+     "chars": 44707,
+     "blocks": 324
+    },
+    {
+     "id": "027-design-quora",
+     "num": "027",
+     "title": "Design-Quora",
+     "chars": 36410,
+     "blocks": 255
+    },
+    {
+     "id": "028-design-google-maps",
+     "num": "028",
+     "title": "Design-Google-Maps",
+     "chars": 37165,
+     "blocks": 249
+    },
+    {
+     "id": "029-design-a-proximity-service-yelp",
+     "num": "029",
+     "title": "Design-a-Proximity-Service-Yelp",
+     "chars": 29656,
+     "blocks": 239
+    },
+    {
+     "id": "030-design-uber",
+     "num": "030",
+     "title": "Design-Uber",
+     "chars": 31430,
+     "blocks": 254
+    },
+    {
+     "id": "031-design-twitter",
+     "num": "031",
+     "title": "Design-Twitter",
+     "chars": 59959,
+     "blocks": 372
+    },
+    {
+     "id": "032-design-newsfeed-system",
+     "num": "032",
+     "title": "Design-Newsfeed-System",
+     "chars": 20076,
+     "blocks": 156
+    },
+    {
+     "id": "033-design-instagram",
+     "num": "033",
+     "title": "Design-Instagram",
+     "chars": 20706,
+     "blocks": 164
+    },
+    {
+     "id": "034-design-a-url-shortening-service-tinyurl",
+     "num": "034",
+     "title": "Design-a-URL-Shortening-Service-TinyURL",
+     "chars": 35531,
+     "blocks": 276
+    },
+    {
+     "id": "035-design-a-web-crawler",
+     "num": "035",
+     "title": "Design-a-Web-Crawler",
+     "chars": 31765,
+     "blocks": 227
+    },
+    {
+     "id": "036-design-whatsapp",
+     "num": "036",
+     "title": "Design-WhatsApp",
+     "chars": 27757,
+     "blocks": 203
+    },
+    {
+     "id": "037-design-typeahead-suggestion",
+     "num": "037",
+     "title": "Design-Typeahead-Suggestion",
+     "chars": 25472,
+     "blocks": 160
+    },
+    {
+     "id": "038-design-a-collaborative-document-editing-service-google-docs",
+     "num": "038",
+     "title": "Design a Collaborative Document Editing Service / Google Docs",
+     "chars": 28954,
+     "blocks": 219
+    },
+    {
+     "id": "039-spectacular-failures",
+     "num": "039",
+     "title": "Spectacular Failures",
+     "chars": 24835,
+     "blocks": 130
+    },
+    {
+     "id": "040-conclusions",
+     "num": "040",
+     "title": "Conclusions",
+     "chars": 2407,
+     "blocks": 10
+    }
+   ]
+  },
+  {
+   "id": "alex-vol1",
+   "title": "System Design Interview – An Insider's Guide (Vol 1)",
+   "titleVi": "Phỏng vấn thiết kế hệ thống – Cẩm nang người trong nghề (Tập 1)",
+   "author": "Alex Xu",
+   "note": "16 chương kinh điển: từ scale 0 → hàng triệu user tới 13 bài thiết kế.",
+   "chapters": [
+    {
+     "id": "00-m-u",
+     "num": "00",
+     "title": "Mở đầu",
+     "chars": 1429,
+     "blocks": 6
+    },
+    {
+     "id": "01-forward",
+     "num": "01",
+     "title": "FORWARD",
+     "chars": 2406,
+     "blocks": 8
+    },
+    {
+     "id": "02-chapter-1-scale-from-zero-to-millions-of-users",
+     "num": "02",
+     "title": "CHAPTER 1: SCALE FROM ZERO TO MILLIONS OF USERS",
+     "chars": 28786,
+     "blocks": 165
+    },
+    {
+     "id": "03-chapter-2-back-of-the-envelope-estimation",
+     "num": "03",
+     "title": "CHAPTER 2: BACK-OF-THE-ENVELOPE ESTIMATION",
+     "chars": 5126,
+     "blocks": 43
+    },
+    {
+     "id": "04-chapter-3-a-framework-for-system-design-interviews",
+     "num": "04",
+     "title": "CHAPTER 3: A FRAMEWORK FOR SYSTEM DESIGN INTERVIEWS",
+     "chars": 12892,
+     "blocks": 96
+    },
+    {
+     "id": "05-chapter-4-design-a-rate-limiter",
+     "num": "05",
+     "title": "CHAPTER 4: DESIGN A RATE LIMITER",
+     "chars": 24625,
+     "blocks": 208
+    },
+    {
+     "id": "06-chapter-5-design-consistent-hashing",
+     "num": "06",
+     "title": "CHAPTER 5: DESIGN CONSISTENT HASHING",
+     "chars": 8362,
+     "blocks": 55
+    },
+    {
+     "id": "07-chapter-6-design-a-key-value-store",
+     "num": "07",
+     "title": "CHAPTER 6: DESIGN A KEY-VALUE STORE",
+     "chars": 22045,
+     "blocks": 164
+    },
+    {
+     "id": "08-chapter-7-design-a-unique-id-generator-in-distributed-system",
+     "num": "08",
+     "title": "CHAPTER 7: DESIGN A UNIQUE ID GENERATOR IN DISTRIBUTED SYSTEMS",
+     "chars": 8104,
+     "blocks": 78
+    },
+    {
+     "id": "09-chapter-8-design-a-url-shortener",
+     "num": "09",
+     "title": "CHAPTER 8: DESIGN A URL SHORTENER",
+     "chars": 10370,
+     "blocks": 95
+    },
+    {
+     "id": "10-chapter-9-design-a-web-crawler",
+     "num": "10",
+     "title": "CHAPTER 9: DESIGN A WEB CRAWLER",
+     "chars": 21569,
+     "blocks": 168
+    },
+    {
+     "id": "11-chapter-10-design-a-notification-system",
+     "num": "11",
+     "title": "CHAPTER 10: DESIGN A NOTIFICATION SYSTEM",
+     "chars": 14386,
+     "blocks": 129
+    },
+    {
+     "id": "12-chapter-11-design-a-news-feed-system",
+     "num": "12",
+     "title": "CHAPTER 11: DESIGN A NEWS FEED SYSTEM",
+     "chars": 9702,
+     "blocks": 110
+    },
+    {
+     "id": "13-chapter-12-design-a-chat-system",
+     "num": "13",
+     "title": "CHAPTER 12: DESIGN A CHAT SYSTEM",
+     "chars": 22073,
+     "blocks": 152
+    },
+    {
+     "id": "14-chapter-13-design-a-search-autocomplete-system",
+     "num": "14",
+     "title": "CHAPTER 13: DESIGN A SEARCH AUTOCOMPLETE SYSTEM",
+     "chars": 19263,
+     "blocks": 164
+    },
+    {
+     "id": "15-chapter-14-design-youtube",
+     "num": "15",
+     "title": "CHAPTER 14: DESIGN YOUTUBE",
+     "chars": 24862,
+     "blocks": 206
+    },
+    {
+     "id": "16-chapter-15-design-google-drive",
+     "num": "16",
+     "title": "CHAPTER 15: DESIGN GOOGLE DRIVE",
+     "chars": 23165,
+     "blocks": 190
+    },
+    {
+     "id": "17-chapter-16-the-learning-continues",
+     "num": "17",
+     "title": "CHAPTER 16: THE LEARNING CONTINUES",
+     "chars": 5845,
+     "blocks": 15
+    }
+   ]
+  },
+  {
+   "id": "alex-vol0",
+   "title": "System Design Interview – Vol 0 (ByteByteGo tuyển tập)",
+   "titleVi": "Phỏng vấn thiết kế hệ thống – Tập 0 (tuyển tập chủ đề ngắn)",
+   "author": "Alex Xu",
+   "note": "Hơn 70 chủ đề ngắn: HTTPS, SSO, Kafka, cache, unique ID, khoá lạc quan…",
+   "chapters": [
+    {
+     "id": "01-what-are-database-isolation-levels-what-are-they-used-for",
+     "num": "01",
+     "title": "What are database isolation levels? What are they used for?",
+     "chars": 1657,
+     "blocks": 10
+    },
+    {
+     "id": "02-what-is-iaas-paas-saas",
+     "num": "02",
+     "title": "What is IaaS/PaaS/SaaS?",
+     "chars": 1021,
+     "blocks": 8
+    },
+    {
+     "id": "03-most-popular-programming-languages",
+     "num": "03",
+     "title": "Most popular programming languages",
+     "chars": 750,
+     "blocks": 4
+    },
+    {
+     "id": "04-what-is-the-future-of-online-payments",
+     "num": "04",
+     "title": "What is the future of online payments?",
+     "chars": 1164,
+     "blocks": 8
+    },
+    {
+     "id": "05-what-is-sso-single-sign-on",
+     "num": "05",
+     "title": "What is SSO (Single Sign-On)?",
+     "chars": 2002,
+     "blocks": 15
+    },
+    {
+     "id": "06-how-to-store-passwords-safely-in-the-database",
+     "num": "06",
+     "title": "How to store passwords safely in the database?",
+     "chars": 1333,
+     "blocks": 8
+    },
+    {
+     "id": "07-how-does-https-work",
+     "num": "07",
+     "title": "How does HTTPS work?",
+     "chars": 1778,
+     "blocks": 11
+    },
+    {
+     "id": "08-how-to-learn-design-patterns",
+     "num": "08",
+     "title": "How to learn design patterns?",
+     "chars": 1563,
+     "blocks": 8
+    },
+    {
+     "id": "09-a-visual-guide-on-how-to-choose-the-right-database",
+     "num": "09",
+     "title": "A visual guide on how to choose the right Database",
+     "chars": 552,
+     "blocks": 2
+    },
+    {
+     "id": "10-do-you-know-how-to-generate-globally-unique-ids",
+     "num": "10",
+     "title": "Do you know how to generate globally unique IDs?",
+     "chars": 489,
+     "blocks": 4
+    },
+    {
+     "id": "11-how-does-twitter-work",
+     "num": "11",
+     "title": "How does Twitter work?",
+     "chars": 1126,
+     "blocks": 7
+    },
+    {
+     "id": "12-what-is-the-difference-between-process-and-thread",
+     "num": "12",
+     "title": "What is the difference between Process and Thread?",
+     "chars": 1695,
+     "blocks": 11
+    },
+    {
+     "id": "13-interview-question-design-google-docs",
+     "num": "13",
+     "title": "Interview Question: design Google Docs",
+     "chars": 954,
+     "blocks": 5
+    },
+    {
+     "id": "14-deployment-strategies",
+     "num": "14",
+     "title": "Deployment strategies",
+     "chars": 1735,
+     "blocks": 7
+    },
+    {
+     "id": "15-flowchart-of-how-slack-decides-to-send-a-notification",
+     "num": "15",
+     "title": "Flowchart of how slack decides to send a notification",
+     "chars": 343,
+     "blocks": 4
+    },
+    {
+     "id": "16-how-does-amazon-build-and-operate-the-software",
+     "num": "16",
+     "title": "How does Amazon build and operate the software?",
+     "chars": 846,
+     "blocks": 3
+    },
+    {
+     "id": "17-how-to-design-a-secure-web-api-access-for-your-website",
+     "num": "17",
+     "title": "How to design a secure web API access for your website?",
+     "chars": 1851,
+     "blocks": 13
+    },
+    {
+     "id": "18-how-do-microservices-collaborate-and-interact-with-each-othe",
+     "num": "18",
+     "title": "How do microservices collaborate and interact with each other?",
+     "chars": 1821,
+     "blocks": 14
+    },
+    {
+     "id": "19-what-are-the-differences-between-virtualization-vmware-and-c",
+     "num": "19",
+     "title": "What are the differences between Virtualization (VMware) and Containerization (Docker)?",
+     "chars": 1383,
+     "blocks": 4
+    },
+    {
+     "id": "20-which-cloud-provider-should-be-used-when-building-a-big-data",
+     "num": "20",
+     "title": "Which cloud provider should be used when building a big data solution?",
+     "chars": 807,
+     "blocks": 10
+    },
+    {
+     "id": "21-how-to-avoid-crawling-duplicate-urls-at-google-scale",
+     "num": "21",
+     "title": "How to avoid crawling duplicate URLs at Google scale?",
+     "chars": 1734,
+     "blocks": 10
+    },
+    {
+     "id": "22-why-is-a-solid-state-drive-ssd-fast",
+     "num": "22",
+     "title": "Why is a solid-state drive (SSD) fast?",
+     "chars": 2038,
+     "blocks": 12
+    },
+    {
+     "id": "23-handling-a-large-scale-outage",
+     "num": "23",
+     "title": "Handling a large-scale outage",
+     "chars": 1804,
+     "blocks": 11
+    },
+    {
+     "id": "24-aws-lambda-behind-the-scenes",
+     "num": "24",
+     "title": "AWS Lambda behind the scenes",
+     "chars": 1908,
+     "blocks": 12
+    },
+    {
+     "id": "25-http-1-0-http-1-1-http-2-0-http-3-0-quic",
+     "num": "25",
+     "title": "HTTP 1.0 -> HTTP 1.1 -> HTTP 2.0 -> HTTP 3.0 (QUIC).",
+     "chars": 1654,
+     "blocks": 7
+    },
+    {
+     "id": "26-how-to-scale-a-website-to-support-millions-of-users",
+     "num": "26",
+     "title": "How to scale a website to support millions of users?",
+     "chars": 1754,
+     "blocks": 13
+    },
+    {
+     "id": "27-devops-books",
+     "num": "27",
+     "title": "DevOps Books",
+     "chars": 932,
+     "blocks": 2
+    },
+    {
+     "id": "28-why-is-kafka-fast",
+     "num": "28",
+     "title": "Why is Kafka fast?",
+     "chars": 1111,
+     "blocks": 11
+    },
+    {
+     "id": "29-soap-vs-rest-vs-graphql-vs-rpc",
+     "num": "29",
+     "title": "SOAP vs REST vs GraphQL vs RPC.",
+     "chars": 444,
+     "blocks": 6
+    },
+    {
+     "id": "30-how-do-modern-browsers-work",
+     "num": "30",
+     "title": "How do modern browsers work?",
+     "chars": 332,
+     "blocks": 2
+    },
+    {
+     "id": "31-redis-vs-memcached",
+     "num": "31",
+     "title": "Redis vs Memcached",
+     "chars": 453,
+     "blocks": 2
+    },
+    {
+     "id": "32-optimistic-locking",
+     "num": "32",
+     "title": "Optimistic locking",
+     "chars": 1877,
+     "blocks": 10
+    },
+    {
+     "id": "33-cache-miss-attack",
+     "num": "33",
+     "title": "Cache miss attack",
+     "chars": 1121,
+     "blocks": 5
+    },
+    {
+     "id": "34-how-to-diagnose-a-mysterious-process-that-s-taking-too-much-",
+     "num": "34",
+     "title": "How to diagnose a mysterious process that’s taking too much CPU, memory, IO, etc?",
+     "chars": 519,
+     "blocks": 1
+    },
+    {
+     "id": "35-what-are-the-top-cache-strategies",
+     "num": "35",
+     "title": "What are the top cache strategies?",
+     "chars": 557,
+     "blocks": 2
+    },
+    {
+     "id": "36-upload-large-files",
+     "num": "36",
+     "title": "Upload large files",
+     "chars": 1714,
+     "blocks": 11
+    },
+    {
+     "id": "37-why-is-redis-so-fast",
+     "num": "37",
+     "title": "Why is Redis so Fast?",
+     "chars": 630,
+     "blocks": 7
+    },
+    {
+     "id": "38-swift-payment-network",
+     "num": "38",
+     "title": "SWIFT payment network",
+     "chars": 2222,
+     "blocks": 17
+    },
+    {
+     "id": "39-at-most-once-at-least-once-and-exactly-once",
+     "num": "39",
+     "title": "At-most once, at-least once, and exactly once",
+     "chars": 1708,
+     "blocks": 9
+    },
+    {
+     "id": "40-vertical-partitioning-and-horizontal-partitioning",
+     "num": "40",
+     "title": "Vertical partitioning and Horizontal partitioning",
+     "chars": 1874,
+     "blocks": 7
+    },
+    {
+     "id": "41-cdn",
+     "num": "41",
+     "title": "CDN",
+     "chars": 2457,
+     "blocks": 15
+    },
+    {
+     "id": "42-erasure-coding",
+     "num": "42",
+     "title": "Erasure coding",
+     "chars": 1490,
+     "blocks": 5
+    },
+    {
+     "id": "43-foreign-exchange-in-payment",
+     "num": "43",
+     "title": "Foreign exchange in payment",
+     "chars": 4088,
+     "blocks": 26
+    },
+    {
+     "id": "44-block-storage-file-storage-and-object-storage",
+     "num": "44",
+     "title": "Block storage, file storage and object storage",
+     "chars": 2562,
+     "blocks": 9
+    },
+    {
+     "id": "45-domain-name-system-dns-lookup",
+     "num": "45",
+     "title": "Domain Name System (DNS) lookup",
+     "chars": 1597,
+     "blocks": 16
+    },
+    {
+     "id": "46-what-happens-when-you-type-a-url-into-your-browser",
+     "num": "46",
+     "title": "What happens when you type a URL into your browser?",
+     "chars": 1431,
+     "blocks": 10
+    },
+    {
+     "id": "47-ai-coding-engine",
+     "num": "47",
+     "title": "AI Coding engine",
+     "chars": 910,
+     "blocks": 8
+    },
+    {
+     "id": "48-read-replica-pattern",
+     "num": "48",
+     "title": "Read replica pattern",
+     "chars": 1681,
+     "blocks": 15
+    },
+    {
+     "id": "49-read-replica-pattern",
+     "num": "49",
+     "title": "Read replica pattern",
+     "chars": 1422,
+     "blocks": 11
+    },
+    {
+     "id": "50-email-receiving-flow",
+     "num": "50",
+     "title": "Email receiving flow",
+     "chars": 1311,
+     "blocks": 11
+    },
+    {
+     "id": "51-email-sending-flow",
+     "num": "51",
+     "title": "Email sending flow",
+     "chars": 1839,
+     "blocks": 13
+    },
+    {
+     "id": "52-interview-question-design-gmail",
+     "num": "52",
+     "title": "Interview Question: Design Gmail",
+     "chars": 933,
+     "blocks": 6
+    },
+    {
+     "id": "53-map-rendering",
+     "num": "53",
+     "title": "Map rendering",
+     "chars": 2045,
+     "blocks": 7
+    },
+    {
+     "id": "54-interview-question-design-google-maps",
+     "num": "54",
+     "title": "Interview Question: Design Google Maps",
+     "chars": 1794,
+     "blocks": 6
+    },
+    {
+     "id": "55-pull-vs-push-models",
+     "num": "55",
+     "title": "Pull vs push models",
+     "chars": 1971,
+     "blocks": 5
+    },
+    {
+     "id": "56-money-movement",
+     "num": "56",
+     "title": "Money movement",
+     "chars": 2724,
+     "blocks": 16
+    },
+    {
+     "id": "57-reconciliation",
+     "num": "57",
+     "title": "Reconciliation",
+     "chars": 5005,
+     "blocks": 15
+    },
+    {
+     "id": "58-which-database-shall-i-use-for-the-metrics-collecting-system",
+     "num": "58",
+     "title": "Which database shall I use for the metrics collecting system?",
+     "chars": 4219,
+     "blocks": 11
+    },
+    {
+     "id": "59-metrics-monitoring-and-altering-system",
+     "num": "59",
+     "title": "Metrics monitoring and altering system",
+     "chars": 1420,
+     "blocks": 8
+    },
+    {
+     "id": "60-reconciliation",
+     "num": "60",
+     "title": "Reconciliation",
+     "chars": 2392,
+     "blocks": 10
+    },
+    {
+     "id": "61-big-data-papers",
+     "num": "61",
+     "title": "Big data papers",
+     "chars": 1434,
+     "blocks": 6
+    },
+    {
+     "id": "62-avoid-double-charge",
+     "num": "62",
+     "title": "Avoid double charge",
+     "chars": 1570,
+     "blocks": 8
+    },
+    {
+     "id": "63-system-design-interview-tip",
+     "num": "63",
+     "title": "System Design Interview Tip",
+     "chars": 529,
+     "blocks": 6
+    },
+    {
+     "id": "64-big-data-evolvement",
+     "num": "64",
+     "title": "Big data evolvement",
+     "chars": 1244,
+     "blocks": 6
+    },
+    {
+     "id": "65-quadtree",
+     "num": "65",
+     "title": "Quadtree",
+     "chars": 1552,
+     "blocks": 5
+    },
+    {
+     "id": "66-how-do-we-find-nearby-restaurants-on-yelp",
+     "num": "66",
+     "title": "How do we find nearby restaurants on Yelp?",
+     "chars": 1673,
+     "blocks": 9
+    },
+    {
+     "id": "67-how-does-a-modern-stock-exchange-achieve-microsecond-latency",
+     "num": "67",
+     "title": "How does a modern stock exchange achieve microsecond latency?",
+     "chars": 958,
+     "blocks": 3
+    },
+    {
+     "id": "68-match-buy-and-sell-orders",
+     "num": "68",
+     "title": "Match buy and sell orders",
+     "chars": 1282,
+     "blocks": 5
+    },
+    {
+     "id": "69-stock-exchange-design",
+     "num": "69",
+     "title": "Stock exchange design",
+     "chars": 1661,
+     "blocks": 10
+    },
+    {
+     "id": "70-design-a-payment-system",
+     "num": "70",
+     "title": "Design a payment system",
+     "chars": 1437,
+     "blocks": 13
+    },
+    {
+     "id": "71-design-a-flash-sale-system",
+     "num": "71",
+     "title": "Design a flash sale system",
+     "chars": 810,
+     "blocks": 8
+    },
+    {
+     "id": "72-back-of-the-envelope-estimation",
+     "num": "72",
+     "title": "Back-of-the-envelope estimation",
+     "chars": 2216,
+     "blocks": 7
+    }
+   ]
+  },
+  {
+   "id": "labs",
+   "title": "60 Days of System Design Questions",
+   "titleVi": "60 ngày câu hỏi thiết kế hệ thống",
+   "author": "Joud Awad",
+   "note": "Mỗi ngày một tình huống, bốn phương án, kèm phân tích vì sao ba cái kia sai.",
+   "chapters": [
+    {
+     "id": "01-60-days-of-system-design-questions",
+     "num": "01",
+     "title": "60 Days of System Design Questions",
+     "chars": 525,
+     "blocks": 6
+    },
+    {
+     "id": "02-decoupling-mobile-from-backend-services",
+     "num": "02",
+     "title": "Decoupling Mobile from Backend Services",
+     "chars": 2933,
+     "blocks": 26
+    },
+    {
+     "id": "03-killing-the-n-1-query-problem",
+     "num": "03",
+     "title": "Killing the N+1 Query Problem",
+     "chars": 2281,
+     "blocks": 17
+    },
+    {
+     "id": "04-rate-limiting-without-boundary-bursts",
+     "num": "04",
+     "title": "Rate Limiting Without Boundary Bursts",
+     "chars": 2562,
+     "blocks": 29
+    },
+    {
+     "id": "05-preventing-duplicate-payment-charges",
+     "num": "05",
+     "title": "Preventing Duplicate Payment Charges",
+     "chars": 4735,
+     "blocks": 31
+    },
+    {
+     "id": "06-choosing-a-database-sharding-strategy",
+     "num": "06",
+     "title": "Choosing a Database Sharding Strategy",
+     "chars": 1956,
+     "blocks": 26
+    },
+    {
+     "id": "07-safe-distributed-locks-for-cron-jobs",
+     "num": "07",
+     "title": "Safe Distributed Locks for Cron Jobs",
+     "chars": 4005,
+     "blocks": 29
+    },
+    {
+     "id": "08-event-ordering-in-a-message-queue",
+     "num": "08",
+     "title": "Event Ordering in a Message Queue",
+     "chars": 3034,
+     "blocks": 25
+    },
+    {
+     "id": "09-keeping-cache-and-database-in-sync",
+     "num": "09",
+     "title": "Keeping Cache and Database in Sync",
+     "chars": 3011,
+     "blocks": 25
+    },
+    {
+     "id": "10-splitting-read-and-write-data-models",
+     "num": "10",
+     "title": "Splitting Read and Write Data Models",
+     "chars": 3236,
+     "blocks": 21
+    },
+    {
+     "id": "11-distributed-transactions-across-services",
+     "num": "11",
+     "title": "Distributed Transactions Across Services",
+     "chars": 2645,
+     "blocks": 21
+    },
+    {
+     "id": "12-handling-webhook-retries-idempotently",
+     "num": "12",
+     "title": "Handling Webhook Retries Idempotently",
+     "chars": 4778,
+     "blocks": 29
+    },
+    {
+     "id": "13-indexing-a-high-ingest-table",
+     "num": "13",
+     "title": "Indexing a High-Ingest Table",
+     "chars": 3542,
+     "blocks": 31
+    },
+    {
+     "id": "14-managing-a-shared-connection-pool",
+     "num": "14",
+     "title": "Managing a Shared Connection Pool",
+     "chars": 5547,
+     "blocks": 36
+    },
+    {
+     "id": "15-safely-rolling-out-a-risky-change",
+     "num": "15",
+     "title": "Safely Rolling Out a Risky Change",
+     "chars": 2597,
+     "blocks": 22
+    },
+    {
+     "id": "16-fast-has-the-user-seen-this-checks",
+     "num": "16",
+     "title": "Fast “Has the User Seen This?” Checks",
+     "chars": 3993,
+     "blocks": 38
+    },
+    {
+     "id": "17-taming-a-hot-partition-key",
+     "num": "17",
+     "title": "Taming a Hot Partition Key",
+     "chars": 3198,
+     "blocks": 28
+    },
+    {
+     "id": "18-backpressure-on-an-overwhelmed-consumer",
+     "num": "18",
+     "title": "Backpressure on an Overwhelmed Consumer",
+     "chars": 2624,
+     "blocks": 23
+    },
+    {
+     "id": "19-surviving-a-cache-stampede",
+     "num": "19",
+     "title": "Surviving a Cache Stampede",
+     "chars": 4033,
+     "blocks": 31
+    },
+    {
+     "id": "20-read-your-writes-with-read-replicas",
+     "num": "20",
+     "title": "Read-Your-Writes with Read Replicas",
+     "chars": 2110,
+     "blocks": 22
+    },
+    {
+     "id": "21-containing-a-failing-downstream-dependency",
+     "num": "21",
+     "title": "Containing a Failing Downstream Dependency",
+     "chars": 5161,
+     "blocks": 35
+    },
+    {
+     "id": "22-choosing-a-real-time-streaming-transport",
+     "num": "22",
+     "title": "Choosing a Real-Time Streaming Transport",
+     "chars": 2748,
+     "blocks": 30
+    },
+    {
+     "id": "23-reliable-messaging-across-services",
+     "num": "23",
+     "title": "Reliable Messaging Across Services",
+     "chars": 3005,
+     "blocks": 29
+    },
+    {
+     "id": "24-feed-fanout-for-celebrity-accounts",
+     "num": "24",
+     "title": "Feed Fanout for Celebrity Accounts",
+     "chars": 2823,
+     "blocks": 27
+    },
+    {
+     "id": "25-paginating-large-result-sets-efficiently",
+     "num": "25",
+     "title": "Paginating Large Result Sets Efficiently",
+     "chars": 4027,
+     "blocks": 38
+    },
+    {
+     "id": "26-queue-backpressure-under-a-traffic-spike",
+     "num": "26",
+     "title": "Queue Backpressure Under a Traffic Spike",
+     "chars": 3916,
+     "blocks": 33
+    },
+    {
+     "id": "27-write-path-cache-consistency",
+     "num": "27",
+     "title": "Write-Path Cache Consistency",
+     "chars": 2248,
+     "blocks": 17
+    },
+    {
+     "id": "28-keeping-an-llm-s-answers-up-to-date",
+     "num": "28",
+     "title": "Keeping an LLM’s Answers Up to Date",
+     "chars": 3622,
+     "blocks": 30
+    },
+    {
+     "id": "29-choosing-a-vector-store-for-semantic-search",
+     "num": "29",
+     "title": "Choosing a Vector Store for Semantic Search",
+     "chars": 2877,
+     "blocks": 23
+    },
+    {
+     "id": "30-coordinating-a-multi-agent-workflow",
+     "num": "30",
+     "title": "Coordinating a Multi-Agent Workflow",
+     "chars": 3819,
+     "blocks": 34
+    },
+    {
+     "id": "31-choosing-a-file-storage-backend",
+     "num": "31",
+     "title": "Choosing a File Storage Backend",
+     "chars": 3161,
+     "blocks": 33
+    },
+    {
+     "id": "32-cutting-cross-region-latency",
+     "num": "32",
+     "title": "Cutting Cross-Region Latency",
+     "chars": 3139,
+     "blocks": 25
+    },
+    {
+     "id": "33-managing-secrets-and-credentials",
+     "num": "33",
+     "title": "Managing Secrets and Credentials",
+     "chars": 3373,
+     "blocks": 38
+    },
+    {
+     "id": "34-reconstructing-state-with-event-sourcing",
+     "num": "34",
+     "title": "Reconstructing State with Event Sourcing",
+     "chars": 3543,
+     "blocks": 34
+    },
+    {
+     "id": "35-improving-llm-classification-accuracy",
+     "num": "35",
+     "title": "Improving LLM Classification Accuracy",
+     "chars": 4002,
+     "blocks": 36
+    },
+    {
+     "id": "36-geospatial-find-nearby-drivers-at-scale",
+     "num": "36",
+     "title": "Geospatial “Find Nearby Drivers” at Scale",
+     "chars": 3454,
+     "blocks": 28
+    },
+    {
+     "id": "37-choosing-http-3-vs-http-2-at-the-edge",
+     "num": "37",
+     "title": "Choosing HTTP/3 vs HTTP/2 at the Edge",
+     "chars": 3006,
+     "blocks": 23
+    },
+    {
+     "id": "38-multi-writer-conflicts-in-collaborative-editing",
+     "num": "38",
+     "title": "Multi-Writer Conflicts in Collaborative Editing",
+     "chars": 4207,
+     "blocks": 33
+    },
+    {
+     "id": "39-fitting-a-large-document-into-an-llm",
+     "num": "39",
+     "title": "Fitting a Large Document into an LLM",
+     "chars": 3261,
+     "blocks": 27
+    },
+    {
+     "id": "40-preventing-concurrent-balance-overspend",
+     "num": "40",
+     "title": "Preventing Concurrent Balance Overspend",
+     "chars": 2985,
+     "blocks": 27
+    },
+    {
+     "id": "41-offloading-heavy-work-off-the-main-thread",
+     "num": "41",
+     "title": "Offloading Heavy Work Off the Main Thread",
+     "chars": 3524,
+     "blocks": 30
+    },
+    {
+     "id": "42-moving-from-batch-to-real-time-streaming",
+     "num": "42",
+     "title": "Moving from Batch to Real-Time Streaming",
+     "chars": 2910,
+     "blocks": 24
+    },
+    {
+     "id": "43-designing-memory-for-an-ai-agent",
+     "num": "43",
+     "title": "Designing Memory for an AI Agent",
+     "chars": 2632,
+     "blocks": 19
+    },
+    {
+     "id": "44-reliable-cdn-cache-invalidation-on-deploy",
+     "num": "44",
+     "title": "Reliable CDN Cache Invalidation on Deploy",
+     "chars": 2777,
+     "blocks": 23
+    },
+    {
+     "id": "45-syncing-offline-edits-without-data-loss",
+     "num": "45",
+     "title": "Syncing Offline Edits Without Data Loss",
+     "chars": 4511,
+     "blocks": 42
+    },
+    {
+     "id": "46-scaling-full-text-search",
+     "num": "46",
+     "title": "Scaling Full-Text Search",
+     "chars": 3511,
+     "blocks": 27
+    },
+    {
+     "id": "47-enforcing-structured-output-from-an-llm",
+     "num": "47",
+     "title": "Enforcing Structured Output from an LLM",
+     "chars": 4329,
+     "blocks": 29
+    },
+    {
+     "id": "48-incrementally-strangling-a-monolith",
+     "num": "48",
+     "title": "Incrementally Strangling a Monolith",
+     "chars": 3107,
+     "blocks": 28
+    },
+    {
+     "id": "49-how-an-agent-chooses-which-tools-to-call",
+     "num": "49",
+     "title": "How an Agent Chooses Which Tools to Call",
+     "chars": 3929,
+     "blocks": 34
+    },
+    {
+     "id": "50-controlling-data-warehouse-query-costs",
+     "num": "50",
+     "title": "Controlling Data-Warehouse Query Costs",
+     "chars": 4487,
+     "blocks": 40
+    },
+    {
+     "id": "51-serving-ml-models-at-high-throughput",
+     "num": "51",
+     "title": "Serving ML Models at High Throughput",
+     "chars": 3787,
+     "blocks": 39
+    },
+    {
+     "id": "52-isolating-noisy-tenants-in-multi-tenant-saas",
+     "num": "52",
+     "title": "Isolating Noisy Tenants in Multi-Tenant SaaS",
+     "chars": 3490,
+     "blocks": 27
+    },
+    {
+     "id": "53-versioning-an-api-without-breaking-clients",
+     "num": "53",
+     "title": "Versioning an API Without Breaking Clients",
+     "chars": 3866,
+     "blocks": 27
+    },
+    {
+     "id": "54-zero-downtime-schema-migrations",
+     "num": "54",
+     "title": "Zero-Downtime Schema Migrations",
+     "chars": 2892,
+     "blocks": 27
+    },
+    {
+     "id": "55-handling-embedding-drift-in-rag",
+     "num": "55",
+     "title": "Handling Embedding Drift in RAG",
+     "chars": 3660,
+     "blocks": 21
+    },
+    {
+     "id": "56-parallel-agents-with-shared-state",
+     "num": "56",
+     "title": "Parallel Agents with Shared State",
+     "chars": 3561,
+     "blocks": 36
+    },
+    {
+     "id": "57-tracking-long-running-async-jobs",
+     "num": "57",
+     "title": "Tracking Long-Running Async Jobs",
+     "chars": 3888,
+     "blocks": 18
+    },
+    {
+     "id": "58-consistency-for-payment-confirmation-reads",
+     "num": "58",
+     "title": "Consistency for Payment-Confirmation Reads",
+     "chars": 3453,
+     "blocks": 32
+    },
+    {
+     "id": "59-observability-for-llm-agent-pipelines",
+     "num": "59",
+     "title": "Observability for LLM Agent Pipelines",
+     "chars": 3958,
+     "blocks": 23
+    },
+    {
+     "id": "60-designing-idempotency-keys-for-payments",
+     "num": "60",
+     "title": "Designing Idempotency Keys for Payments",
+     "chars": 3969,
+     "blocks": 38
+    },
+    {
+     "id": "61-architecting-a-saas-platform-from-scratch",
+     "num": "61",
+     "title": "Architecting a SaaS Platform from Scratch",
+     "chars": 3885,
+     "blocks": 41
+    }
+   ]
+  }
+ ]
+}

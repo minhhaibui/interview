@@ -1,0 +1,63 @@
+{
+ "id": "36-upload-large-files",
+ "title": "Upload large files",
+ "titleKey": "b4228179a4b8",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "c01a62cf7957",
+   "en": "How can we optimize performance when we 𝐮𝐩𝐥𝐨𝐚𝐝 𝐥𝐚𝐫𝐠𝐞 𝐟𝐢𝐥𝐞𝐬 to object storage service such as S3?"
+  },
+  {
+   "t": "p",
+   "k": "6d5c4d6d2fc1",
+   "en": "Before we answer this question, let's take a look at why we need to optimize this process. Some files might be larger than a few GBs. It is possible to upload such a large object file directly, but it could take a long time. If the network connection fails in the middle of the upload, we have to start over. A better solution is to slice a large object into smaller parts and upload them independently. After all the parts are uploaded, the object store re-assembles the object from the parts. This process is called 𝐦𝐮𝐥𝐭𝐢𝐩𝐚𝐫𝐭 𝐮𝐩𝐥𝐨𝐚𝐝."
+  },
+  {
+   "t": "p",
+   "k": "15ecba1ca0c5",
+   "en": "The diagram below illustrates how multipart upload works: 74"
+  },
+  {
+   "t": "li",
+   "k": "62f27650e17a",
+   "en": "The client calls the object storage to initiate a multipart upload."
+  },
+  {
+   "t": "li",
+   "k": "2c4f76ac82e9",
+   "en": "The data store returns an uploadID, which uniquely identifies the upload."
+  },
+  {
+   "t": "li",
+   "k": "5fc965040cbb",
+   "en": "The client splits the large file into small objects and starts uploading."
+  },
+  {
+   "t": "p",
+   "k": "08edd08cad23",
+   "en": "Let’s assume the size of the file is 1.6GB and the client splits it into 8 parts, so each part is 200 MB in size. The client uploads the first part to the data store together with the uploadID it received in step 2."
+  },
+  {
+   "t": "li",
+   "k": "e97fa18efcbe",
+   "en": "When a part is uploaded, the data store returns an ETag, which is essentially the md5 checksum of that part. It is used to verify multipart uploads."
+  },
+  {
+   "t": "li",
+   "k": "a6e2360105f9",
+   "en": "After all parts are uploaded, the client sends a complete multipart upload request, which includes the uploadID, part numbers, and ETags."
+  },
+  {
+   "t": "li",
+   "k": "c76bd1c960c8",
+   "en": "The data store reassembles the object from its parts based on the part number. Since the object is really large, this process may take a few minutes. After reassembly is complete, it returns a success message to the client. — Check out our bestselling system design books."
+  },
+  {
+   "t": "p",
+   "k": "97a25f9fcb49",
+   "en": "Paperback:AmazonDigital:ByteByteGo. 75"
+  }
+ ]
+}

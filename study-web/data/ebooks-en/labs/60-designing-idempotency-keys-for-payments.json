@@ -1,0 +1,198 @@
+{
+ "id": "60-designing-idempotency-keys-for-payments",
+ "title": "Designing Idempotency Keys for Payments",
+ "titleKey": "b6d23497fc2a",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "ac69eb192650",
+   "en": "Your payment service charged a customer twice."
+  },
+  {
+   "t": "p",
+   "k": "6a16bf082780",
+   "en": "Same request. Different response code. Client retried. You had no dedup logic."
+  },
+  {
+   "t": "p",
+   "k": "9ba4136c0c31",
+   "en": "That's not a race condition. That's a missing design decision."
+  },
+  {
+   "t": "p",
+   "k": "a52ef67a7a81",
+   "en": "And the decision isn't whether to use idempotency keys. It's how you generate them."
+  },
+  {
+   "t": "p",
+   "k": "61f5ebd0937f",
+   "en": "Here's the scenario:"
+  },
+  {
+   "t": "p",
+   "k": "b1fb38d7eb8e",
+   "en": "Your API processes payments. Clients can and will retry on network failures. Your downstream calls (Stripe, Kafka, wallet credit) cannot be undone once triggered. A 500 or timeout on your side looks identical to a \"try again\" from the client's perspective."
+  },
+  {
+   "t": "p",
+   "k": "74372aad6702",
+   "en": "Which idempotency strategy do you go with?"
+  },
+  {
+   "t": "p",
+   "k": "97455472b322",
+   "en": "A) Client-generated keys Client sends a UUID with every request (Idempotency-Key: ). Your server stores key response in Redis→ with a 24h TTL. Duplicate request? Return cached response. No reprocessing."
+  },
+  {
+   "t": "p",
+   "k": "bc1b0c9d3ab5",
+   "en": "B) Server-generated keys Client calls POST /payments/init first. Server returns a one-time key. Client uses that key on the actual payment call. Server owns key lifecycle — rotation, expiry, scope."
+  },
+  {
+   "t": "p",
+   "k": "8716e186c1b1",
+   "en": "C) Deterministic key from business fields No UUID. Hash the fields that define uniqueness: sha256(customer_id + order_id + amount + currency)."
+  },
+  {
+   "t": "p",
+   "k": "15276b4f7f24",
+   "en": "Same business intent = same key. No client coordination needed."
+  },
+  {
+   "t": "p",
+   "k": "ea98882eb71d",
+   "en": "D) Outbox + idempotent consumer"
+  },
+  {
+   "t": "h3",
+   "k": "327e861a308e",
+   "en": "DAY 59 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "af2ee766406f",
+   "en": "A) Client-generated keys — GOLD STANDARD FOR EXTERNAL APIs✅ This is how Stripe does it. How Braintree does it. Reason: the client owns the intent, so the client owns the key."
+  },
+  {
+   "t": "p",
+   "k": "ca3b16142cf9",
+   "en": "The flow that actually works in production:"
+  },
+  {
+   "t": "li",
+   "k": "b66eb53d7048",
+   "en": "Write the key with status pending before processing (Redis SET NX)"
+  },
+  {
+   "t": "li",
+   "k": "7b7a28955422",
+   "en": "Process the payment"
+  },
+  {
+   "t": "li",
+   "k": "3919527b7e02",
+   "en": "Update key to completed with the full response body Write the key first. Not after. If you crash between the payment succeeding and the key write — you've charged the card with no dedup record. Next retry charges again."
+  },
+  {
+   "t": "p",
+   "k": "41e1e8778a82",
+   "en": "Key scoping matters: scope to (customer_id, key) not globally. TTL: 24h standard, 72h for aggressive retry clients. After expiry, same UUID = new request — document this."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "f6af9363192a",
+   "en": "B) Server-generated keys — RIGHT WHEN YOU DON'T TRUST CLIENTS✅ Two-step feels like overhead. It's actually a feature."
+  },
+  {
+   "t": "p",
+   "k": "8ce4ff64105a",
+   "en": "The init call gives you: pre-validation before money moves, audit trail at key issuance, protection against clients sending garbage UUIDs (v1 timestamps, sequential IDs, non-unique values), and full key lifecycle control server-side."
+  },
+  {
+   "t": "p",
+   "k": "c98542c6cb8b",
+   "en": "Where it shines: internal service-to-service APIs, regulated environments, anywhere key collision is a compliance issue."
+  },
+  {
+   "t": "p",
+   "k": "5d7c22869acd",
+   "en": "Where it hurts: mobile clients on flaky networks now have two calls that can fail independently. Retry complexity goes up, not down."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "p",
+   "k": "db780b3e07db",
+   "en": "C) Deterministic key — THE SENIOR ENGINEER TRAP❌ Looks clean. Falls apart on legitimate retries."
+  },
+  {
+   "t": "p",
+   "k": "e5ad7e9da1cc",
+   "en": "Same customer, same amount, same item — but a fresh order after a refund. Your hash matches the completed request. You return cached success for a brand new charge that should go through."
+  },
+  {
+   "t": "p",
+   "k": "a59ddead28cd",
+   "en": "Second failure mode: field serialization drift across SDK versions. SDK v1 orders fields differently than v2. Different hash. Your dedup window disappears silently."
+  },
+  {
+   "t": "p",
+   "k": "deb22a45871d",
+   "en": "Use deterministic keys for internal job dedup — cron tasks, batch pipelines, where business intent is truly unique. Never for customer-facing payment flows."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "p",
+   "k": "87a0fbe36ebb",
+   "en": "D) Outbox + idempotent consumer — STRONGEST FOR DISTRIBUTED SYSTEMS✅ The only option that makes the payment record and downstream event atomic."
+  },
+  {
+   "t": "p",
+   "k": "5f0a300663de",
+   "en": "The failure in A/B/C: Redis key write, DB write, and Stripe call are three separate operations. Crash between any two = inconsistent state."
+  },
+  {
+   "t": "p",
+   "k": "8f3a0cd9eb85",
+   "en": "The outbox fixes it:"
+  },
+  {
+   "t": "li",
+   "k": "c0eb915b71d4",
+   "en": "Write payment record + outbox event in one DB transaction"
+  },
+  {
+   "t": "li",
+   "k": "631ccd233f95",
+   "en": "Worker processes downstream (Stripe, Kafka) using the row ID as dedup token"
+  },
+  {
+   "t": "li",
+   "k": "b93f85f61396",
+   "en": "Downstream consumers deduplicate on event ID No separate key store. No Redis dependency. Exactly-once enforced at the DB layer."
+  },
+  {
+   "t": "p",
+   "k": "e071ec6fe819",
+   "en": "The cost: outbox table + reliable worker + idempotent consumers. Real infrastructure. Overkill at 100 payments/day. The only defensible architecture at 10K TPS with regulatory requirements."
+  },
+  {
+   "t": "h3",
+   "k": "eeebfb16d1e3",
+   "en": "DAY 60 · SYSTEM DESIGN"
+  }
+ ]
+}

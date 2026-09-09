@@ -1,0 +1,73 @@
+{
+ "id": "17-how-to-design-a-secure-web-api-access-for-your-website",
+ "title": "How to design a secure web API access for your website?",
+ "titleKey": "8483d2a7bd7c",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "bf7b16f1cd84",
+   "en": "When we open web API access to users, we need to make sure each API call is authenticated. This means the user must be who they claim to be."
+  },
+  {
+   "t": "p",
+   "k": "a0c913f1f1c3",
+   "en": "In this post, we explore two common ways:"
+  },
+  {
+   "t": "li",
+   "k": "c217c2f10d9f",
+   "en": "Token based authentication"
+  },
+  {
+   "t": "li",
+   "k": "495bcf32218f",
+   "en": "HMAC (Hash-based Message Authentication Code) authentication The diagram below illustrates how they work. 35 𝐓𝐨𝐤𝐞𝐧 𝐛𝐚𝐬𝐞𝐝 Step 1 - the user enters their password into the client, and the client sends the password to the Authentication Server. 36 Step 2 - the Authentication Server authenticates the credentials and generates a token with an expiry time."
+  },
+  {
+   "t": "p",
+   "k": "b584b9284ada",
+   "en": "Steps 3 and 4 - now the client can send requests to access server resources with the token in the HTTP header. This access is valid until the token expires."
+  },
+  {
+   "t": "p",
+   "k": "9713fc2e161e",
+   "en": "𝐇𝐌𝐀𝐂 𝐛𝐚𝐬𝐞𝐝 This mechanism generates a Message Authentication Code (signature) by using a hash function (SHA256 or MD5)."
+  },
+  {
+   "t": "p",
+   "k": "4163ae4f4639",
+   "en": "Steps 1 and 2 - the server generates two keys, one is Public APP ID (public key) and the other one is API Key (private key)."
+  },
+  {
+   "t": "p",
+   "k": "32b430730769",
+   "en": "Step 3 - we now generate a HMAC signature on the client side (hmac A). This signature is generated with a set of attributes listed in the diagram."
+  },
+  {
+   "t": "p",
+   "k": "5fd6148073a1",
+   "en": "Step 4 - the client sends requests to access server resources with hmac A in the HTTP header."
+  },
+  {
+   "t": "p",
+   "k": "2e713488b317",
+   "en": "Step 5 - the server receives the request which contains the request data and the authentication header. It extracts the necessary attributes from the request and uses the API key that’s stored on the server side to generate a signature (hmac B.)"
+  },
+  {
+   "t": "p",
+   "k": "4bf45d78488d",
+   "en": "Steps 6 and 7 - the server compares hmac A (generated on the client side) and hmac B (generated on the server side). If they are matched, the requested resource will be returned to the client."
+  },
+  {
+   "t": "p",
+   "k": "2f9a3ca0b265",
+   "en": "Question - How does HMAC authentication ensure data integrity? Why do we include “request timestamp” in HMAC signature generation? — Check out our bestselling system design books."
+  },
+  {
+   "t": "p",
+   "k": "ff9d1d18c1be",
+   "en": "Paperback:AmazonDigital:ByteByteGo. 37"
+  }
+ ]
+}

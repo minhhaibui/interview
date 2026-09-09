@@ -1,0 +1,1208 @@
+{
+ "id": "029-design-a-proximity-service-yelp",
+ "title": "Design-a-Proximity-Service-Yelp",
+ "titleKey": "3bd7185b6af6",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "c571b0fcbdff",
+   "en": "System Design: Yelp"
+  },
+  {
+   "t": "p",
+   "k": "28ea2a929dd1",
+   "en": "Learn about the requirements of a proximity service like Yelp."
+  },
+  {
+   "t": "h2",
+   "k": "df9f629796d0",
+   "en": "What is Yelp?"
+  },
+  {
+   "t": "p",
+   "k": "9cdb5b44165a",
+   "en": "Yelp is a one-stop platform for consumers to discover, connect, and transact with local businesses. With it, users can join a waitlist, make a reservation, schedule an appointment, or purchase goods easily. Yelp also provides information, photos, and reviews about local businesses."
+  },
+  {
+   "t": "p",
+   "k": "7171963f943f",
+   "en": "The user provides the name of a place or its GPS location, and the system finds places that are nearby. The user can also upload their opinions on this platform in the form of text, pictures, or ratings for a place they visited. Other location-based services include Foursquare and Google Nearby."
+  },
+  {
+   "t": "p",
+   "k": "808a15144a75",
+   "en": "Services based on proximity servers are helpful in finding nearby attractions such as restaurants, theaters, or recreational sites. Designing such a system is challenging because we have to efficiently find all the possible places in a given radius with minimum latency. This means that we have to narrow down all the locations in the world, which could be in the billions, and only pinpoint the relevant ones."
+  },
+  {
+   "t": "h2",
+   "k": "9cbc833d0b5f",
+   "en": "How will we design Yelp?"
+  },
+  {
+   "t": "p",
+   "k": "334d648cbb63",
+   "en": "Here is the breakdown of Yelp’s design:"
+  },
+  {
+   "t": "li",
+   "k": "f8f8c3addb01",
+   "en": "Requirements: In this lesson, we define the requirements and estimate the required servers, storage, and bandwidth of our system."
+  },
+  {
+   "t": "li",
+   "k": "7f5543ce2d33",
+   "en": "Design:In this lesson, we define the API design, the database schema, the components of our system, and the workflow of Yelp."
+  },
+  {
+   "t": "li",
+   "k": "85090c2865a0",
+   "en": "Design considerations: In this lesson, we dive deep into the design of the Yelp system."
+  },
+  {
+   "t": "li",
+   "k": "6f7b6524b13d",
+   "en": "Quiz: In this lesson, we take a quiz to test our knowledge of Yelp design."
+  },
+  {
+   "t": "p",
+   "k": "f3cf5ad5f1ea",
+   "en": "Let’s start our design by defining its requirements."
+  },
+  {
+   "t": "h1",
+   "k": "0b02bf84d7b4",
+   "en": "Requirements of Yelp’s Design"
+  },
+  {
+   "t": "p",
+   "k": "cb42f37e674f",
+   "en": "Learn about the requirements for a proximity service like Yelp."
+  },
+  {
+   "t": "h2",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "p",
+   "k": "9d0e1a59b012",
+   "en": "Let’s identify the requirements of our system."
+  },
+  {
+   "t": "h3",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "08989b440c8f",
+   "en": "User accounts: Users will have accounts where they’re able to perform different functionalities like log in, log out, add, delete, and update places’ information."
+  },
+  {
+   "t": "li",
+   "k": "29fe1d0c96fe",
+   "en": "Note: There can be two types of users: business owners who can add their places on the platform and other users who can search, view, and give a rating to a place.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "91c032a93588",
+   "en": "Feedback: The users should be able to add a review about a place. The review can consist of images, text, and a rating."
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "5c14761ad9c9",
+   "en": "High availability: The system should be highly available to the users."
+  },
+  {
+   "t": "p",
+   "k": "4924d15caa12",
+   "en": "Scalability: The system should be able to scale up and down, depending on the number of requests. The number of requests can vary depending on the time and number of days. For example, there are usually more searches made at lunchtime than at midnight. Similarly, during tourist season, our system will receive more requests as compared to in other months of the year."
+  },
+  {
+   "t": "p",
+   "k": "3fb979ae7783",
+   "en": "Consistency: The system should be consistent for the users. All the users should have a consistent view of the data regarding places, reviews, and images."
+  },
+  {
+   "t": "p",
+   "k": "994357936ae2",
+   "en": "Performance: Upon searching, the system should respond with suggestions with minimal latency."
+  },
+  {
+   "t": "h2",
+   "k": "a9be995c473a",
+   "en": "Resource estimation"
+  },
+  {
+   "t": "p",
+   "k": "7f7b0bb9bbd1",
+   "en": "Let’s assume that we have:"
+  },
+  {
+   "t": "p",
+   "k": "9e5c44ff2b02",
+   "en": "A total of 178 million unique users. 60 million daily active users."
+  },
+  {
+   "t": "p",
+   "k": "82ce99a2e21a",
+   "en": "500 million places."
+  },
+  {
+   "t": "h3",
+   "k": "7e7845b4ea66",
+   "en": "Number of servers estimation"
+  },
+  {
+   "t": "p",
+   "k": "3ca3c3242748",
+   "en": "We need to handle concurrent requests coming from 60 million daily active users. As we did in our discussion in the back-of-the-envelope lessons, we assume an RPS of 8,000."
+  },
+  {
+   "t": "p",
+   "k": "52871f0f580a",
+   "en": "N umber of daily active users =800060 million 7500 = servers RPS of a server Estimating the Number of Servers Number of Daily Active Users (in Mil 60 lions)"
+  },
+  {
+   "t": "p",
+   "k": "915c2f4d5af1",
+   "en": "RPS of a Server f Number of Servers Required"
+  },
+  {
+   "t": "h3",
+   "k": "5e7e60e98560",
+   "en": "Storage estimation"
+  },
+  {
+   "t": "p",
+   "k": "2e60fe17b100",
+   "en": "Let’s calculate the storage we need for our data. Let’s make the following assumptions:"
+  },
+  {
+   "t": "p",
+   "k": "acd37e666a5d",
+   "en": "We have a total of 500 million places."
+  },
+  {
+   "t": "p",
+   "k": "a9b67ac2002d",
+   "en": "For each place, we need 1,296 Bytes of storage."
+  },
+  {
+   "t": "p",
+   "k": "4c5ca934227d",
+   "en": "We have one photo attached to each place, so we have 500 million photos."
+  },
+  {
+   "t": "p",
+   "k": "2269227620bf",
+   "en": "For each photo, we need 280 Bytes of storage. Here, we consider the row 8000 7500 size of the photo entity in the table, which contains a link to the actual photo in the blob store."
+  },
+  {
+   "t": "p",
+   "k": "f94b9fee9b0c",
+   "en": "At least 1 million reviews of different places are added daily."
+  },
+  {
+   "t": "p",
+   "k": "6ffabbe0770d",
+   "en": "For each review, we need 537 Bytes of storage."
+  },
+  {
+   "t": "p",
+   "k": "218d9b7f119d",
+   "en": "We have a total of 178 million users."
+  },
+  {
+   "t": "p",
+   "k": "8da4e1cbb690",
+   "en": "For each user, we need 264 Bytes of storage."
+  },
+  {
+   "t": "li",
+   "k": "18768ed068b6",
+   "en": "Note: The Bytes used for each place, photo, review, and user are based on the database schema that we’ll discuss in the next lesson.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "3e4ed1d4d4f0",
+   "en": "The following calculater computes the total storage we need:"
+  },
+  {
+   "t": "p",
+   "k": "d376ce6bcb25",
+   "en": "Estimating Storage Requirements Size Required b Type of informa Count (in Millio Total Size (in GB y an Entity (in B tionns)s) ytes) f Place f Photo f Review f User f Total Storage Re"
+  },
+  {
+   "t": "li",
+   "k": "55c720071209",
+   "en": "53 quired"
+  },
+  {
+   "t": "p",
+   "k": "68af52d0471a",
+   "en": "1296 500 648 280 500 140 537 1 0.54 264 178 46.99"
+  },
+  {
+   "t": "h3",
+   "k": "10d00f179eb1",
+   "en": "Bandwidth estimation"
+  },
+  {
+   "t": "p",
+   "k": "6a3a359e997d",
+   "en": "To estimate the bandwidth requirements for Yelp, we categorize the bandwidth calculation of incoming and outgoing traffic."
+  },
+  {
+   "t": "p",
+   "k": "c80bce10968b",
+   "en": "For incoming traffic, let’s assume the following:"
+  },
+  {
+   "t": "p",
+   "k": "2235b1016b70",
+   "en": "On average, five places are added every day."
+  },
+  {
+   "t": "p",
+   "k": "1bcfd34cc081",
+   "en": "For each place, we take up 1,296 Bytes."
+  },
+  {
+   "t": "p",
+   "k": "b6e5f5c03d96",
+   "en": "A photo of size 3 MB is also attached with each place. This is the size of the photo that we save in the blob store."
+  },
+  {
+   "t": "p",
+   "k": "b069fbb95f09",
+   "en": "One million reviews of different places are added every day."
+  },
+  {
+   "t": "p",
+   "k": "77ad000c8ec9",
+   "en": "Each review, takes up 537 Bytes."
+  },
+  {
+   "t": "p",
+   "k": "27577b757916",
+   "en": "We divide the total size of information per day by 86,400 to convert it into per second bandwidth."
+  },
+  {
+   "t": "p",
+   "k": "1cb32ef7ef9e",
+   "en": "Estimating Incoming Bandwidth Requirements Average Number of Places Added Da 5 ily Storage Needed for Each Place (Byte 1296"
+  },
+  {
+   "t": "li",
+   "k": "b8949f6280e8",
+   "en": "Size of Photo (in MBs) f Total Size of Place Information (Byte 15006480"
+  },
+  {
+   "t": "li",
+   "k": "2b0fae115f3f",
+   "en": "Average Number of Reviews Added 1 Daily (in Millions)"
+  },
+  {
+   "t": "p",
+   "k": "1459fa2875a4",
+   "en": "Storage Needed for Each Review (By 537 tes) f Total Size of Reviews (Bytes) f Total Incoming Bandwidth (KBps) f Total Incoming Bandwidth (Kbps)"
+  },
+  {
+   "t": "p",
+   "k": "27b2457fdc14",
+   "en": "For outgoing traffic, let’s assume the following:"
+  },
+  {
+   "t": "p",
+   "k": "78f777e5d42f",
+   "en": "A single search returns 20 places on average."
+  },
+  {
+   "t": "p",
+   "k": "9fd2de503de4",
+   "en": "Each place has a single photo attached to it that has an average size of 3 MB."
+  },
+  {
+   "t": "p",
+   "k": "b110e647e3d3",
+   "en": "Every returned entry contains the place and photo information."
+  },
+  {
+   "t": "p",
+   "k": "3b6c2098c72b",
+   "en": "Considering that there are 60 million active daily users, we come to the following estimations: 3 537000000 6.39 51.12 Estimating Outgoing Bandwidth Requirements Average Number of Places Returned 20 on Each Search Request Size of Place (in Bytes)"
+  },
+  {
+   "t": "p",
+   "k": "0085856baae8",
+   "en": "Size of Photo (in MB) f Total Size of Place Information (Byte 60025920"
+  },
+  {
+   "t": "li",
+   "k": "1909572de291",
+   "en": "f Outgoing Bandwidth Required for a"
+  },
+  {
+   "t": "li",
+   "k": "f621da18c84a",
+   "en": "69 Single Request (Kbps) f Outgoing Bandwidth Required for a"
+  },
+  {
+   "t": "li",
+   "k": "b99387e80609",
+   "en": "52 Single Request (KBps)"
+  },
+  {
+   "t": "p",
+   "k": "93326fbd0a6a",
+   "en": "Daily Active Users (in Millions) f Total Outgoing Bandwidth Required 331200000 (Kbps) f Total Outgoing Bandwidth Required"
+  },
+  {
+   "t": "li",
+   "k": "ebc425943689",
+   "en": "2 (Gbps)"
+  },
+  {
+   "t": "p",
+   "k": "f83e2b409e2e",
+   "en": "We need a total of approximately of incoming traffic and 51 Kbps approximately of outgoing, assuming that the uploaded conte nt is not 331 Gbps compressed."
+  },
+  {
+   "t": "p",
+   "k": "768cde68e0a5",
+   "en": "Total bandwidth requirements = .51 Kbps + 331 Gbps ≈ 331 Gbps 1296 3 60"
+  },
+  {
+   "t": "h2",
+   "k": "cfa08fe6c777",
+   "en": "Building blocks we will use"
+  },
+  {
+   "t": "p",
+   "k": "b8113a0ddf0f",
+   "en": "The design process of Yelp utilizes many building blocks that have already been discussed in the initial chapters of the course. We’ll consider the following concepts while designing Yelp:"
+  },
+  {
+   "t": "figure",
+   "k": "508806c2f5be",
+   "en": "Cache Load balancer Blob storage Database"
+  },
+  {
+   "t": "p",
+   "k": "4da1ebde2f5f",
+   "en": "Caching: We’ll use the cache to store information about popular places."
+  },
+  {
+   "t": "p",
+   "k": "c70fc3d1b236",
+   "en": "Load balancer: We’ll use the load balancer to manage the large amount of requests."
+  },
+  {
+   "t": "p",
+   "k": "50bf91b16707",
+   "en": "Blob storage: We’ll store images in the blob storage."
+  },
+  {
+   "t": "p",
+   "k": "25f0f461c3a1",
+   "en": "Database: We’ll store information about places and users in the database."
+  },
+  {
+   "t": "p",
+   "k": "b8109298bd76",
+   "en": "We’ll also rely on Google Maps to understand the feature of searching for places within a particular radius."
+  },
+  {
+   "t": "h1",
+   "k": "bf0818eee16a",
+   "en": "Design of Yelp"
+  },
+  {
+   "t": "p",
+   "k": "b0eb4bb61692",
+   "en": "Learn to fulÞll the design requirements of the Yelp system."
+  },
+  {
+   "t": "li",
+   "k": "118b88c94b95",
+   "en": "We identified the requirements and calculated the estimations for our Yelp system in the previous lesson. In this lesson, we discuss the API design, go through the storage schema, and then dive into the details of the system’s building blocks and additional components."
+  },
+  {
+   "t": "h2",
+   "k": "58dbf879b581",
+   "en": "API design"
+  },
+  {
+   "t": "p",
+   "k": "7bb0d4d6e5c6",
+   "en": "Let’s discuss the API design for Yelp."
+  },
+  {
+   "t": "h3",
+   "k": "3559d7accf00",
+   "en": "Search"
+  },
+  {
+   "t": "p",
+   "k": "032203abd2c1",
+   "en": "We need to implement the search function. The API call for searching based on categories like “cafes” will be:"
+  },
+  {
+   "t": "code",
+   "k": "8fce11375d0d",
+   "en": "search(category, user_location, radius)"
+  },
+  {
+   "t": "code",
+   "k": "5ccbf9c9c5fc",
+   "en": "category"
+  },
+  {
+   "t": "p",
+   "k": "474a90e8a994",
+   "en": "restaurants, cinemas, cafes, and so on."
+  },
+  {
+   "t": "code",
+   "k": "6577bdf1e163",
+   "en": "user_location radius"
+  },
+  {
+   "t": "p",
+   "k": "7c2b61d2d218",
+   "en": "category."
+  },
+  {
+   "t": "p",
+   "k": "1facadf77ff9",
+   "en": "This process returns a JSON object that contains a list of all the possible items in the specified category that also fall within the specified radius. Each entry has a place name, address, category, rating, and thumbnail."
+  },
+  {
+   "t": "p",
+   "k": "2b9635364b26",
+   "en": "The API call for searching based on the name of a place like “Burger Hut” will be:"
+  },
+  {
+   "t": "code",
+   "k": "c66d708a4b6d",
+   "en": "search(name_of_place, user_location, radius)"
+  },
+  {
+   "t": "p",
+   "k": "b75381f00486",
+   "en": "Parameter"
+  },
+  {
+   "t": "code",
+   "k": "51e11ab6d635",
+   "en": "name_of_place"
+  },
+  {
+   "t": "p",
+   "k": "737eed4b3d2c",
+   "en": "This process returns a JSON object that contains information of the specified place."
+  },
+  {
+   "t": "h3",
+   "k": "5e97d915cb82",
+   "en": "Add a place"
+  },
+  {
+   "t": "p",
+   "k": "159116e550ea",
+   "en": "The API call for adding a place is below:"
+  },
+  {
+   "t": "code",
+   "k": "f1e1286f5212",
+   "en": "add_place(name_of_place, description_of_place, category, latitude, lon gitude, photo}"
+  },
+  {
+   "t": "p",
+   "k": "0ab443a74879",
+   "en": "Description This is the type of search the user makes—for exam This contains the location of the user who’s searching This is the specified radius where the user is trying Description This contains the name of the place that the user want Parameter"
+  },
+  {
+   "t": "code",
+   "k": "11c3b0736e94",
+   "en": "name_of_place description_of_place"
+  },
+  {
+   "t": "p",
+   "k": "9e9e396a4c51",
+   "en": "yummiest burgers\"."
+  },
+  {
+   "t": "code",
+   "k": "d55efdebb50d",
+   "en": "category latitude longitude photo"
+  },
+  {
+   "t": "p",
+   "k": "77015cb7c122",
+   "en": "This process returns a response saying that a place has been added, or an appropriate error if it fails to add a place."
+  },
+  {
+   "t": "h3",
+   "k": "9043c7e9bb49",
+   "en": "Add a review"
+  },
+  {
+   "t": "p",
+   "k": "159116e550ea",
+   "en": "The API call for adding a place is below:"
+  },
+  {
+   "t": "code",
+   "k": "eda322e3b703",
+   "en": "add_review(place_ID, user_ID, review_description, rating)"
+  },
+  {
+   "t": "p",
+   "k": "b75381f00486",
+   "en": "Parameter"
+  },
+  {
+   "t": "code",
+   "k": "fabfed2d1a73",
+   "en": "place_ID user_ID review_description"
+  },
+  {
+   "t": "p",
+   "k": "dc1de3a1ba22",
+   "en": "were superb\"."
+  },
+  {
+   "t": "code",
+   "k": "3c2d687ef032",
+   "en": "rating"
+  },
+  {
+   "t": "p",
+   "k": "969349d537f3",
+   "en": "This process returns a response that a review has been added, or an appropriate Description This contains the name of the place, for example, \"B This contains a description of the place. For exampl This specifies the category of the place—for exampl This tells us the latitude of the place. This tells us the longitude of the place. This contains photos of the place. There can be a sing Description This contains the ID of the place whose review is adde This contains the ID of the user who adds the review. This contains the review of the place—for example, \"th This contains the rating of the place—for example, 4 o error if it fails to add a review."
+  },
+  {
+   "t": "h2",
+   "k": "636805a26ba3",
+   "en": "Storage schema"
+  },
+  {
+   "t": "p",
+   "k": "ce99a8b22217",
+   "en": "Let’s define the storage schema for our system. A few of the tables we might need are “Place,” “Photos,” “Reviews,” and “Users.”"
+  },
+  {
+   "t": "p",
+   "k": "1837738a0399",
+   "en": "Let’s define the columns of the “Place” table:"
+  },
+  {
+   "t": "p",
+   "k": "43f96f4fd08a",
+   "en": "Place_ID: We use the sequencer to generate an 8 Bytes (64 bits) unique ID for a place."
+  },
+  {
+   "t": "li",
+   "k": "9d0dee27531e",
+   "en": "Note: We generate IDs using the unique ID generator.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "0460d0473c62",
+   "en": "Name_of_Place: This is a string that contains the name of the place. We use 256 Bytes for it."
+  },
+  {
+   "t": "p",
+   "k": "5a6c6a5c9a61",
+   "en": "Description_of_Place: This holds a description of the place. We use 1,000 Bytes for it."
+  },
+  {
+   "t": "p",
+   "k": "99eab8c0de03",
+   "en": "Category: This specifies the type of place like restaurants, cinemas, bookshops, and so on (8 Bytes)."
+  },
+  {
+   "t": "p",
+   "k": "1266ef0f412a",
+   "en": "Latitude: This stores the latitude of the location (8 Bytes)."
+  },
+  {
+   "t": "p",
+   "k": "87e4000fe3bd",
+   "en": "Longitude: This stores the longitude of the location (8 Bytes)."
+  },
+  {
+   "t": "p",
+   "k": "cfbbf7a4e251",
+   "en": "Photos: This contains the foreign key (8 Bytes) of another table “Photos,” which contains all the photos related to a particular place."
+  },
+  {
+   "t": "p",
+   "k": "b08bc4cdcc74",
+   "en": "Rating: This stores the rating of the place. It shows how many stars a place gets out of five. The rating is calculated based on the reviews it gets from the users."
+  },
+  {
+   "t": "p",
+   "k": "a17b549a17bb",
+   "en": "The columns mentioned above are the most important ones in the table. We can add more columns like “menu,” “address,” “opening and closing hours,” and so on. Therefore, keeping in mind the essential columns, the size of one row of our table will be:"
+  },
+  {
+   "t": "code",
+   "k": "d49ad11c67d1",
+   "en": "Size = 8 + 256 + 1000 + 8 + 8 + 8 + 8 = 1296 bytes"
+  },
+  {
+   "t": "p",
+   "k": "80b93c09118c",
+   "en": "Now let’s define the “Photos” table:"
+  },
+  {
+   "t": "p",
+   "k": "cc8ca3f9f388",
+   "en": "Photo_ID: We use the sequencer to generate a unique ID for a photo (8 Bytes or 64 bits)."
+  },
+  {
+   "t": "p",
+   "k": "fbdbfd2a6003",
+   "en": "Place_ID: We use the foreign key (8 Bytes) from the “Place” table to identify which photo belongs to which place."
+  },
+  {
+   "t": "p",
+   "k": "5883e1b9a756",
+   "en": "Photo_path: We store the photos in blob storage and save the photo’s path (256 Bytes) in this column."
+  },
+  {
+   "t": "code",
+   "k": "e0cb2430cdf2",
+   "en": "Size = 8 + 8 + 8 + 256 = 280 bytes"
+  },
+  {
+   "t": "p",
+   "k": "461ef7c481ee",
+   "en": "We need another table called “Reviews” to store the reviews, ratings, and photos of a place."
+  },
+  {
+   "t": "p",
+   "k": "6097e5c3fc83",
+   "en": "Review_ID: We use the sequencer to generate a unique ID of 8 Bytes (64 bits) for a review."
+  },
+  {
+   "t": "p",
+   "k": "6beecfdb3c97",
+   "en": "Place_ID: The foreign key (8 Bytes) from the “Place” table to determine which place the rating belongs to."
+  },
+  {
+   "t": "p",
+   "k": "411a299473ce",
+   "en": "User_ID: The foreign key (8 Bytes) from the “Users” table to identify which review belongs to which user."
+  },
+  {
+   "t": "p",
+   "k": "3dda6de9d038",
+   "en": "Review_description: This holds a description of the review. We use 512 Bytes for it."
+  },
+  {
+   "t": "p",
+   "k": "a4750736fc54",
+   "en": "Rating: This stores how many stars a place gets out of five (1 Byte)."
+  },
+  {
+   "t": "code",
+   "k": "04007d4c4cf5",
+   "en": "Size = 8 + 8 + 8 + 512 + 1 = 537 bytes"
+  },
+  {
+   "t": "p",
+   "k": "3023f1ee4779",
+   "en": "We use the “Users” table to store user information."
+  },
+  {
+   "t": "p",
+   "k": "1d2c8f8c4c82",
+   "en": "User_ID: We use the sequencer to generate a unique ID for a user (8 Bytes)."
+  },
+  {
+   "t": "p",
+   "k": "1ded77ff55a9",
+   "en": "User_name: This is a string that contains the user’s name. We use 256 Bytes for it."
+  },
+  {
+   "t": "code",
+   "k": "730ae1d3cd9a",
+   "en": "Size = 8 + 256 = 264 bytes"
+  },
+  {
+   "t": "li",
+   "k": "063e83c49afc",
+   "en": "Note: The INT in the following schema contains an 8-Byte ID that we generate using the unique ID generator.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "056f11827899",
+   "en": "Design"
+  },
+  {
+   "t": "h3",
+   "k": "c212f08ed115",
+   "en": "Components"
+  },
+  {
+   "t": "p",
+   "k": "8bcc82574c6a",
+   "en": "These are the components of our system:"
+  },
+  {
+   "t": "p",
+   "k": "8f0ce69a7060",
+   "en": "Segments producer: This component is responsible for communicating with the third-party world map data services (for example, Google Maps). It takes up that data and divides the world into smaller regions called segments. The segment producer helps us narrow down the number of places to be searched."
+  },
+  {
+   "t": "p",
+   "k": "9768d9f10a4c",
+   "en": "QuadTree servers: These are a set of servers that have trees that contain the places in the segments. A QuadTree server finds a list of places based on the given radius and the user’s provided location and returns that list to the user. This component mainly aids the search functionality."
+  },
+  {
+   "t": "p",
+   "k": "552276323c6c",
+   "en": "Aggregators: The QuadTrees accumulate all the places and send them to the aggregators. Then, the aggregators aggregate the results and return the search result to the user."
+  },
+  {
+   "t": "p",
+   "k": "adc695b7ca8e",
+   "en": "Read servers: We use a set of read servers that we use to handle all the read requests. Since we have more read requests, it’s efficient to separate these requests from the write requests. Each read server directs the search requests to the QuadTrees’ servers and returns the results to the user."
+  },
+  {
+   "t": "p",
+   "k": "8b8894ecccf6",
+   "en": "Write server: We use a set of write servers to handle all the write requests."
+  },
+  {
+   "t": "p",
+   "k": "b516fb9dec28",
+   "en": "Each write server handles the write requests of the user and updates the storage accordingly. Examples for write requests include adding a place, writing a comment, rating a place, and so on."
+  },
+  {
+   "t": "p",
+   "k": "c5e7c04b8c45",
+   "en": "Storage: We’ll use two types of storage to fulfill our diverse needs."
+  },
+  {
+   "t": "p",
+   "k": "4e206fc7043d",
+   "en": "SQL database: Our system will have different tables like “Users,” “Place,” “Reviews,” “Photos,” and others as described below. The data in these tables is inherently relational and structured. We need to perform queries like places a user visited, reviews they added, or view all the reviews of a specific place. It’s easy to perform such queries in a SQL-based database. We also want all users to have a consistent view of the data, and SQL-based databases are better suited for such use cases. We’ll use reliable and scalable databases, as is discussed in the Database building block."
+  },
+  {
+   "t": "p",
+   "k": "135fd797cd37",
+   "en": "Key-value stores: We’ll need to fetch the places in a segment efficiently. For that, we store the list of places against a segment ID in a key-value store to minimize searching time. We also save the QuadTree information in the key-value store, by storing the QuadTree data against a unique ID."
+  },
+  {
+   "t": "p",
+   "k": "8e924608c8a8",
+   "en": "Load balancer: A load balancer distributes users’ incoming requests to all the servers uniformly."
+  },
+  {
+   "t": "h3",
+   "k": "899531e0f885",
+   "en": "Workflow"
+  },
+  {
+   "t": "p",
+   "k": "3aeef2805c01",
+   "en": "The user puts in a search request. We find all the relevant places in the given radius, while considering the user’s location (latitude, longitude)."
+  },
+  {
+   "t": "p",
+   "k": "c32f53d389d3",
+   "en": "We explain the detailed workflow of our system in terms of the required functionalities below:"
+  },
+  {
+   "t": "p",
+   "k": "00f2907e5f16",
+   "en": "Searching a place: The load balancers route read requests to the read servers upon receiving them. The read servers direct them to the QuadTree servers to find all the places that fall within the given radius. The QuadTree servers then send the results to the aggregators to refine them and send them to the user."
+  },
+  {
+   "t": "p",
+   "k": "5fc3fd48a413",
+   "en": "Adding a place or feedback: The load balancers route the write requests to the write servers upon receiving them. Depending on the provided content, meaning the place information or review, the write servers add an entry in the relational database and put all the related images in the blob storage."
+  },
+  {
+   "t": "p",
+   "k": "478eed083c89",
+   "en": "Making segments: The segment’s producer splits the world map taken from the third-party map service into smaller segments. The places inside each segment are stored in a key-value store. Even though this is a one-time job, this process is repeated periodically for newer segments and places. Since the probability of new places being added is low, we update our segments every month."
+  },
+  {
+   "t": "h1",
+   "k": "721a359d519a",
+   "en": "Design Considerations of f elp"
+  },
+  {
+   "t": "h2",
+   "k": "0b397d42837f",
+   "en": "Introdo \u000btion"
+  },
+  {
+   "t": "p",
+   "k": "0620ed723eff",
+   "en": "We discussed the design, building blocks, components, and the entire workflow of our system in the previous lesson, which brought up a number of interesting questions that now need answering. For example, what approach do we use to find the places, or how do we rank places based on their popularity? This lesson addresses important design concerns like the ones we just mentioned. The table given below summarizes the goals of this lesson."
+  },
+  {
+   "t": "p",
+   "k": "0a7825c9887c",
+   "en": "Searching Using Segments Dynamic Segments Searching Using a QuadTree Space Estimations for a We estimate the storage required for a QuadTree."
+  },
+  {
+   "t": "h2",
+   "k": "de94f8210cfd",
+   "en": "Searching"
+  },
+  {
+   "t": "p",
+   "k": "d6306d69acdb",
+   "en": "From Google Maps, we were able to connect segments and meet the scalability challenge to process a large graph efficiently. The graph of the world had numerous nodes and vertices, and traversing them was time-consuming."
+  },
+  {
+   "t": "p",
+   "k": "b009e5afed27",
+   "en": "Therefore, we divided the whole world into smaller segments/subgraphs to process and query them simultaneously. The segmentation helps us improve the scalability of the system."
+  },
+  {
+   "t": "p",
+   "k": "52523fd86bf3",
+   "en": "Each segment will be of the size and will contain a list of places that5 × 5 miles Purpose This process divides the world into segments to optim We index the places to improve query performance and We search all the desired places by combining the seg We solve the static segment limitations using dynamic We explore the searching functionality using a QuadT We look into the options we can use to partition data. We look into how we’ll ensure the availability of the s We look into how we’ll insert the place in a QuadTree We rank the places of the system. We evaluate how our system fulfills the non-functional exist within it. We only search a few segments to locate destinations that are close by. We can use a given location and defined radius to find all the nearby segments and identify sites that are close."
+  },
+  {
+   "t": "p",
+   "k": "f2fadc153637",
+   "en": "Points to Ponder How will we find nearby places if we create a table for storing all places?"
+  },
+  {
+   "t": "p",
+   "k": "fcc23a42f773",
+   "en": "Hide H ( w er We can make a table of places that have Place_ID as a unique ID and store each place in it. The longitude and latitude columns help us specify the exact location. Indexing both of these columns can help us fetch data efficiently. We can specify each location as a pair of latitude (M) and longitude (N). We can also search for a place within a given radius of R by finding all the places between the latitude M-R and M+R and the longitude N-R and N+R. We can apply Dijkstra’s algorithm to find the distance between two points. 1 of 2 We can store all the places in a table and uniquely identify a segment by having a segment_ID. We can index each segment in the database. Now, we have limited the number of segments we need to search, so the query will be optimized and return results quickly."
+  },
+  {
+   "t": "h3",
+   "k": "64b8a3362000",
+   "en": "Improve data fetching"
+  },
+  {
+   "t": "p",
+   "k": "ec507d2c2fdd",
+   "en": "We use a key-value store for quick access to places in the segments. The key is the segment_ID, while the value contains the list of places in that segment. Let’s estimate how much space we need to store the indexes."
+  },
+  {
+   "t": "p",
+   "k": "b0ac9aeb79c9",
+   "en": "We can usually store a few MBs in the value of the key-value store. If we assume that each segment has 500 places then it will take up 500 × 1296 Bytes = 0.648MB, and we can easily store it as a value."
+  },
+  {
+   "t": "p",
+   "k": "917f789025b9",
+   "en": "The total area of the earth is around 200 million square miles, and the land surface area is about 60 million square miles. If we consider our radius to be ten miles, then we’ll have 6 million segments. An 8-Byte identifier will identify each segment."
+  },
+  {
+   "t": "p",
+   "k": "8da2c511e7d7",
+   "en": "Let’s calculate how much memory we need."
+  },
+  {
+   "t": "p",
+   "k": "9f4454116189",
+   "en": "Total Area of the Earth (Million Squa 60 re Miles)"
+  },
+  {
+   "t": "p",
+   "k": "984659b2946f",
+   "en": "Search Radius (Miles) f Number of Segments (Millions)"
+  },
+  {
+   "t": "p",
+   "k": "f251badbc38b",
+   "en": "Segment_ID (Bytes)"
+  },
+  {
+   "t": "p",
+   "k": "92f85f038f2a",
+   "en": "Place_ID (Bytes)"
+  },
+  {
+   "t": "p",
+   "k": "c206271afdb5",
+   "en": "Number of Places (Millions) f Total Space (TB)"
+  },
+  {
+   "t": "p",
+   "k": "8b5229880bd9",
+   "en": "A user may select a radius for searching places that aren’t present in a single segment. So, we need to combine multiple segments by connecting the segments to find locations within the specified radius—say, five miles."
+  },
+  {
+   "t": "p",
+   "k": "11c4b1947c51",
+   "en": "First, we constrain the number of segments. This reduces the graph size and makes the searching process optimizable. Then, we identify all the relevant locations, compute the distance from the searching point, and show it to the user. 10 6 8 8 500 4.048"
+  },
+  {
+   "t": "p",
+   "k": "bbaca5e410b1",
+   "en": "Points to Ponder Can you identify a problem with the current approach?"
+  },
+  {
+   "t": "p",
+   "k": "d3c15d5eecfc",
+   "en": "Hide H ( w er Our locations are not evenly distributed across segments, and this approach may still take a long time to run on segments with a lot of places. For example, in a city like New York, we can have lots of places even within a small radius because it is a densely-populated area. And for less populated areas, the same radius might not have enough places, and we might need to expand our radius to find more."
+  },
+  {
+   "t": "p",
+   "k": "f800ef391cd7",
+   "en": "We solve the problem of uneven distribution of places in a segment by dynamically sizing the segments. We do this by focusing on the number of places. We split a segment into four more segments if the number of places reaches a certain limit. We assume 500 places as our limit. While using this approach, we need to decide on the following questions:"
+  },
+  {
+   "t": "li",
+   "k": "98a9a744edc0",
+   "en": "How will we map the segments?"
+  },
+  {
+   "t": "li",
+   "k": "94d182828551",
+   "en": "How will we connect to other segments?"
+  },
+  {
+   "t": "p",
+   "k": "aca3dd95bc3d",
+   "en": "We use a QuadTree to manage our segments. Each node contains the information of a segment. If the number of places exceeds 500, then we split that segment into four more child nodes and divide the places between them. In this way, the leaf nodes will be those segments that can’t be broken down any further. Each leaf node will have a list of places in it too."
+  },
+  {
+   "t": "p",
+   "k": "1acd016c9b65",
+   "en": "We start searching from the root node and continue to visit the nodes to find our desired segment. We check every node to see if it has more child nodes. If a node has no more children, then we stop our search because that node is the required one. We also connect each child node with its neighboring nodes with a doubly-linked list. All the child nodes of all the parents nodes are connected through the doubly-linked list. This list allows us to find the neighboring segments when we can move forward and backward as per our requirement. After identifying the segments, we have the required PlaceID values of the places and we can search our database to find more details on them."
+  },
+  {
+   "t": "p",
+   "k": "086394dfefe0",
+   "en": "Point to Ponder Is there an alternative approach to find the neighboring segments?"
+  },
+  {
+   "t": "p",
+   "k": "80609273494c",
+   "en": "Hide H ( w er We can use the pointers of parent nodes to find the neighboring segments. In each node, we can keep a pointer that points towards the parent node. Every parent node has pointers to its children nodes, so we can use those to find the adjacent leaf nodes. We can extend our search by going up through the parent pointers."
+  },
+  {
+   "t": "p",
+   "k": "8205ecc25ff8",
+   "en": "In the following illustration, node F can find its neighboring node, G, by first going to the parent node, B, and then to G."
+  },
+  {
+   "t": "p",
+   "k": "1d4b77785f84",
+   "en": "The following slides show how the process of searching for a place works. If a node has the places we need, we stop there. Otherwise, we explore more nodes until we reach our search radius. After finding the node, we query the database for information related to the places and return the desired ones."
+  },
+  {
+   "t": "p",
+   "k": "7f18eb037cc2",
+   "en": "A ! ! \u0015 \u0017 \u0012 !eaf nodes in the ; # < ree are lin= ed, > \u001at li= e in a do \u0011 ! ? @ ! \u0013\u0014 = ed list"
+  },
+  {
+   "t": "p",
+   "k": "dae2cd518369",
+   "en": "W e sear\u0019 \u0017 \u0012 # or a \u0019afe and fo \u0014 # \u0015 \u0017 \u0012 \u0018eC \u0013\u0018ed n \u0011 \u0012 \u0018 \u0019afesE sa? , F G E \u0013\u0014 \u0015 \u0017 \u0012 \u001a \u0012 !eaf"
+  },
+  {
+   "t": "p",
+   "k": "62471ce6f007",
+   "en": "< \u0017 \u0012 !eaf node \u0016 \u0013! ! \u0012 J x !ore its neigh\u0011 $ \u0018 \u0013\u0014 \u001b \u0014 $ # \u0012 \u001a \u0015o L \u0014 # $ \u0018e \u0019afes"
+  },
+  {
+   "t": "h3",
+   "k": "ce576fd2e5ad",
+   "en": "Storage space estimation for Q c ad : rees"
+  },
+  {
+   "t": "p",
+   "k": "ebd7b1ab2e14",
+   "en": "Let’s calculate the storage we need for keeping QuadTrees:"
+  },
+  {
+   "t": "p",
+   "k": "44f96fbcea17",
+   "en": "We store the PlaceID, Latitude, and Longitude for each place in the node."
+  },
+  {
+   "t": "p",
+   "k": "63ba5d9aa696",
+   "en": "Each of these values is of the size 8 Bytes. For 500 million places, we need the following amount of storage for all places: 6 500 = 12 (8 + 8 + 8) × 10 × GB We’ll have 500 places in a single node. So, for 500 million places, we’ll need 500M 1 =M leaf nodes. 500 The QuadTree with 1 million leaf nodes has approximately 1/3rd of the leaf nodes of the internal nodes (all the nodes up the leaf level), and each internal node has four pointers to its child nodes. If we’ll assume 8 Bytes for each pointer, then we’ll need of space 1M ∗ 1/3 ∗ 4 ∗ 8 = 10.67 MB for the internal nodes."
+  },
+  {
+   "t": "p",
+   "k": "9e7d91eda3a9",
+   "en": "We can get the total space needed to store all the internal nodes by adding 12GB and , that is, approximately. MBGB We can easily store a QuadTree on a server."
+  },
+  {
+   "t": "p",
+   "k": "892ec6516770",
+   "en": "Let’s try the following calculator to calculate the storage needed for a QuadTree:"
+  },
+  {
+   "t": "p",
+   "k": "013b3a50e2dc",
+   "en": "C D E G H I J M 10.67 12.01 PlaceID, Latitude, and Longitude (By 24 tes)"
+  },
+  {
+   "t": "p",
+   "k": "588b13d7b7b5",
+   "en": "Total Number of Places (Millions) f Total Space Needed to Store All Plac 12 es (GB)"
+  },
+  {
+   "t": "p",
+   "k": "38584d3c768b",
+   "en": "Limit of Places for Each Segment f Number of Segments (Millions)"
+  },
+  {
+   "t": "p",
+   "k": "8c97a9bfe142",
+   "en": "Number of Pointers to Hold Childre 4 n Pointers Size of Each Pointer (Bytes) f Total Space to Store All Internal Nod"
+  },
+  {
+   "t": "li",
+   "k": "033992a2cf6b",
+   "en": "67 es (MB) f Total Space to Store QuadTrees (GB)"
+  },
+  {
+   "t": "h3",
+   "k": "1699bc7bd8fa",
+   "en": "Data partitioning"
+  },
+  {
+   "t": "p",
+   "k": "53948ff7de95",
+   "en": "Keeping 20% growth per year in mind, the number of places will increase. We can partition data on the following basis:"
+  },
+  {
+   "t": "li",
+   "k": "0faf7eed460d",
+   "en": "Regions: We can split our places into regions on the basis of zip codes. This way, all the places that belong to a specific region are stored on a single node. We store information on the region along with the place, so that we can query on the basis of regions too. We can use the user’s region to find the places in that specific region."
+  },
+  {
+   "t": "p",
+   "k": "5feae1c14026",
+   "en": "This data partitioning comes with a few challenges. For example, if a region becomes popular during tourist season, it can affect the performance of our 500 500 1 8 12.01 system. We might have numerous queries on the server that might result in slow responsiveness to user queries."
+  },
+  {
+   "t": "li",
+   "k": "9ae4bf224b49",
+   "en": "PlaceID: We can partition data on the basis of PlaceID instead of the region to avoid the query overload in popular seasons or rush hours. We can use a key-value store to store the places. In this case, the key is the PlaceID and the value contains the server in which that place is stored. This will make the process of fetching places more efficient."
+  },
+  {
+   "t": "p",
+   "k": "f910d89817ae",
+   "en": "So, we’ll opt for partitioning on the basis of places. Moreover, we’ll also use caches for popular places. The cache will have information about that particular place."
+  },
+  {
+   "t": "p",
+   "k": "424b14f92718",
+   "en": "Consider a scenario where multiple people in the same radius place a search request. If we have a single QuadTree, it’ll affect the availability of the users. So, we can’t rely on a single QuadTree. To cater to this problem, we replicate our QuadTrees on multiple servers to ensure availability. This allows us to distribute the read traffic and decrease the response time. QuadTrees are built on a server, so we can use the server ID as a key to identify the server on which the QuadTree is present. The value is the list of places that the QuadTree holds. The key-value store eases the rebuilding of the QuadTree in case we lose it."
+  },
+  {
+   "t": "p",
+   "k": "9162f896666d",
+   "en": "Point to Ponder How will the leader-follower approach help us in replication?"
+  },
+  {
+   "t": "p",
+   "k": "228aaa07e787",
+   "en": "Hide H ( w er We’ll have a single leader and two followers. The leader will have the QuadTree and it’ll handle all the write requests. It’ll update the followers about any change made to the QuadTrees synchronously, so there’ll be a chance of delay. The followers will handle all the read requests. In case a follower dies, we’ll choose another follower and replicate the data to it. If the leader is down, we‘ll choose any of the followers to step in as the leader. This way, we’ll be able to replicate our QuadTrees onto three servers."
+  },
+  {
+   "t": "h3",
+   "k": "51c854c6f069",
+   "en": "Insert a new place"
+  },
+  {
+   "t": "p",
+   "k": "0e25342b3ca0",
+   "en": "We insert a new place into the database as well as in our QuadTree. We find the segment of the new place if the QuadTree is distributed on different servers, and then we add it to that segment. We split the segment if required and update the QuadTree accordingly."
+  },
+  {
+   "t": "h3",
+   "k": "bbb593b1b99b",
+   "en": "U 7 nk popclar places"
+  },
+  {
+   "t": "p",
+   "k": "908fe475dd0d",
+   "en": "We need a service, a rating calculator, which calculates the overall rating of a service. We can store the rating of a place in the database and also in the QuadTree, along with the ID, latitude, and longitude of the place. The QuadTree returns the top 50 or 100 popular places within the given radius. The aggregator service determines the actual top places and returns them to the user."
+  },
+  {
+   "t": "li",
+   "k": "d54f248cc9c2",
+   "en": "Note: We don’t expect the rating to be updated within hours, as such frequent changes in QuadTrees or databases can be expensive. We update them once a day, when the load is minimal.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "f7ccaf9e4624",
+   "en": "Finalized design"
+  },
+  {
+   "t": "p",
+   "k": "7cc3451f7cb2",
+   "en": "We added a few new components to our design. We introduced caches to store popular places. This allows us to fetch the places much faster. Moreover, we also added a rating calculator that sorts the places based on their ratings. This will enhance user experience, since the places with a good rating will be displayed first."
+  },
+  {
+   "t": "p",
+   "k": "089e08e3c611",
+   "en": "The updated design of our system is shown below:"
+  },
+  {
+   "t": "h2",
+   "k": "90f0f88bf84f",
+   "en": "Evaluation"
+  },
+  {
+   "t": "p",
+   "k": "e162356bf717",
+   "en": "Let’s see how our system design fulfills our requirements."
+  },
+  {
+   "t": "p",
+   "k": "e8c7224eba04",
+   "en": "Availability: We partitioned the data into smaller segments instead of having to deal with a huge dataset consisting of all the places on the world map. This made our system highly available. We also replicated the QuadTrees data using key-value stores to ensure availability."
+  },
+  {
+   "t": "p",
+   "k": "598f79687e9a",
+   "en": "Scalability: We split the whole world into smaller dynamic segments. This allows us to search for a place within a specific radius and shorten our search area. We then used QuadTrees in which each child node holds a single segment. Upon adding or removing a place, we can restructure our QuadTrees. So, we were able to make our system scalable."
+  },
+  {
+   "t": "p",
+   "k": "10d6d7cbbfb2",
+   "en": "Performance: We reduced the latency by using caches. We cached all the famous and popular places, so request time was minimized."
+  },
+  {
+   "t": "p",
+   "k": "ee3e390ec9c7",
+   "en": "Consistency: The users have a consistent view of the data regarding places, reviews, and photos because we used reliable and fault-tolerant databases like key-value stores and relational databases."
+  },
+  {
+   "t": "h2",
+   "k": "05535ecff78e",
+   "en": "Summary"
+  },
+  {
+   "t": "p",
+   "k": "a8373694c220",
+   "en": "The proximity-based servers allow the user to search for a specific place or places nearby. The map data of the world is huge and dividing it into segments and finding the specific segment was a challenge in itself. So, we used QuadTrees to optimize our search and provided the user with a list of places with minimum latency."
+  }
+ ]
+}

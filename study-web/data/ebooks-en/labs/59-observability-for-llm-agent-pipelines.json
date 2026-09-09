@@ -1,0 +1,127 @@
+{
+ "id": "59-observability-for-llm-agent-pipelines",
+ "title": "Observability for LLM Agent Pipelines",
+ "titleKey": "b25aa0685d36",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "4c49105efc03",
+   "en": "It's 2am. Your LLM agent is on fire and every log says HTTP 200."
+  },
+  {
+   "t": "p",
+   "k": "97ccc8ea724c",
+   "en": "You shipped an AI-powered support agent 6 weeks ago. It calls tools, chains 4-5 prompts per request, hits vector search, calls back into your API. Users are complaining. Answers are wrong. Token bills are 3x what they were last week."
+  },
+  {
+   "t": "p",
+   "k": "65a31a933580",
+   "en": "You open your logs. Everything is green. You open your traces. You see one span called POST /chat that took 14 seconds. That's it. That's your entire visibility."
+  },
+  {
+   "t": "p",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:"
+  },
+  {
+   "t": "p",
+   "k": "60c93019b5d3",
+   "en": "NestJS API OpenAI (GPT-4o + GPT-4o-mini) + Anthropic (Claude Sonnet fallback)→ ~8,000 agent runs/day, each chains 3-7 LLM calls + 2-4 tool calls Token spend jumped from $180/day to $540/day this week, no idea which flow caused it Eval suite passes 94% in CI, prod users are hitting hallucinations you can't reproduce On-call engineer literally cannot answer \"why is this run slow / expensive / wrong?\""
+  },
+  {
+   "t": "p",
+   "k": "fb5d59fbb2c5",
+   "en": "You have one sprint to fix the visibility problem before the next incident. What do you instrument first?"
+  },
+  {
+   "t": "p",
+   "k": "a08838c25e61",
+   "en": "A) Structured trace IDs through every LLM + tool call, span-level token accounting, latency per hop — LangSmith, Helicone, or Arize as the backbone."
+  },
+  {
+   "t": "p",
+   "k": "b395927686d6",
+   "en": "B) LLM-as-judge eval pipeline running on a sample of prod traffic — assertion-based checks, ragas metrics, catch quality regressions before users do."
+  },
+  {
+   "t": "p",
+   "k": "c4bf81248baf",
+   "en": "C) Cost dashboards per model/agent/user with hard budget alerts — stop the token bleed first, everything else can wait."
+  },
+  {
+   "t": "p",
+   "k": "6b747472bdfb",
+   "en": "D) Custom middleware that logs every prompt in/out, model, latency, tokens to your own store — own your data, no vendor lock-in, query it however you want."
+  },
+  {
+   "t": "h3",
+   "k": "37ec4a9ae77b",
+   "en": "DAY 58 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "li",
+   "k": "f7bbb6ecd435",
+   "en": "Why A wins:",
+   "lead": "Why A wins"
+  },
+  {
+   "t": "p",
+   "k": "83c2bafb5975",
+   "en": "Every problem in the scenario is the same root cause — you can't see the shape of a single agent run."
+  },
+  {
+   "t": "p",
+   "k": "50a24deb3405",
+   "en": "Slow? Which of the 7 LLM calls was slow.→ Expensive? Which model on which step burned the tokens.→ Wrong? Which retrieval returned garbage that poisoned the next prompt.→ None of those questions have answers without a trace. And LLM traces aren't HTTP traces — you need span-level attributes: model name, prompt tokens, completion tokens, cost, tool name, retrieval doc IDs, and the actual prompt/response payload. That's what LangSmith, Helicone, Arize, and Langfuse give you out of the box."
+  },
+  {
+   "t": "p",
+   "k": "a35ed2e186bc",
+   "en": "Once you have it: the 14-second span opens into 7 sub-spans. You see the one that took 9s was a Claude fallback triggered by a rate limit. The $540/day spike is one user hammering an agent that recursively calls itself. The hallucinations correlate with retrievals that returned 0 chunks."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "74996b86f026",
+   "en": "Why B is the senior engineer trap:",
+   "lead": "Why B is the senior engineer trap"
+  },
+  {
+   "t": "p",
+   "k": "c5855b9d8e92",
+   "en": "Evals answer a different question: is quality trending up or down over time? They're not a debugging tool. When prod is on fire, \"78% correctness on last 200 samples\" tells you nothing about the request that broke. Worse — evals without tracing are unfalsifiable. When the score drops, you have no way to drill into failing samples to see why. Evals are step 2. They ride on top of traces."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "b08bc9446339",
+   "en": "Why C treats the symptom: \"Spend is up 3x\" is the same info you already had from the bill. Aggregate cost without span-level attribution just tells you the room is on fire without telling you which wall. You can't build per-agent, per-user cost attribution without instrumenting spans first. Budget alerts: yes, ship them. As your primary investment: you're solving the CFO's problem, not the on-call engineer's.",
+   "lead": "Why C treats the symptom"
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "43f5c01629d3",
+   "en": "Why D isn't actually pragmatic: \"Own your data, no vendor lock-in\" is the sentence that has cost more teams more months than almost any other. You'd need: schema for nested agent runs, trace tree visualizer, correlation IDs across async tool calls, sampling logic, retention, PII redaction, cost rollups. You just rebuilt Langfuse badly, in your spare time, while the incident is still open. Every serious LLM observability tool emits OpenTelemetry-compatible spans — switch vendors in a week if needed. Ship the vendor now, revisit self-hosting when you've earned that problem.",
+   "lead": "Why D isn't actually pragmatic"
+  },
+  {
+   "t": "h3",
+   "k": "dcd387c84aef",
+   "en": "DAY 59 · SYSTEM DESIGN"
+  }
+ ]
+}

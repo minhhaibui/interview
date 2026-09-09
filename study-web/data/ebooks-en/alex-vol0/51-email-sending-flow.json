@@ -1,0 +1,73 @@
+{
+ "id": "51-email-sending-flow",
+ "title": "Email sending flow",
+ "titleKey": "18491626ea1b",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "bdb37d76ed56",
+   "en": "In this post, we will take a closer look at the email sending flow."
+  },
+  {
+   "t": "li",
+   "k": "c0cb6e2f52eb",
+   "en": "A user writes an email on webmail and presses the “send” button."
+  },
+  {
+   "t": "p",
+   "k": "5d8658448ac7",
+   "en": "The request is sent to the load balancer."
+  },
+  {
+   "t": "li",
+   "k": "26811808649d",
+   "en": "The load balancer makes sure it doesn’t exceed the rate limit and routes traffic to web servers."
+  },
+  {
+   "t": "li",
+   "k": "68279f3e5899",
+   "en": "Web servers are responsible for: - Basic email validation. Each incoming email is checked against pre-defined rules such as email size limit. - Checking if the domain of the recipient’s email address is the same as the sender. If it is the same, email data is inserted to storage, cache, and object store directly. The recipient can fetch the email directly via the RESTful API. There is no need to go to step 4."
+  },
+  {
+   "t": "li",
+   "k": "fbecaf087fb7",
+   "en": "Message queues. 109"
+  },
+  {
+   "t": "li",
+   "k": "c4bdc827dc6e",
+   "en": "a. If basic email validation succeeds, the email data is passed to the outgoing queue."
+  },
+  {
+   "t": "li",
+   "k": "0557b6d87be2",
+   "en": "b. If basic email validation fails, the email is put in the error queue."
+  },
+  {
+   "t": "li",
+   "k": "ab0e7260dbc4",
+   "en": "SMTP outgoing workers pull events from the outgoing queue and make sure emails are spam and virus free."
+  },
+  {
+   "t": "li",
+   "k": "5ecf0c4ff77d",
+   "en": "The outgoing email is stored in the “Sent Folder” of the storage layer."
+  },
+  {
+   "t": "li",
+   "k": "c61729244195",
+   "en": "SMTP outgoing workers send the email to the recipient mail server."
+  },
+  {
+   "t": "p",
+   "k": "b6218edd3df9",
+   "en": "Each message in the outgoing queue contains all the metadata required to create an email. A distributed message queue is a critical component that allows asynchronous mail processing. By decoupling SMTP outgoing workers from the web servers, we can scale SMTP outgoing workers independently."
+  },
+  {
+   "t": "p",
+   "k": "6728547c7fc5",
+   "en": "We monitor the size of the outgoing queue very closely. If there are many emails stuck in the queue, we need to analyze the cause of the issue. Here are some possibilities: - The recipient’s mail server is unavailable. In this case, we need to retry sending the email at a later time. Exponential backoff might be a good retry strategy. - Not enough consumers to send emails. In this case, we may need more consumers to reduce the processing time. 110"
+  }
+ ]
+}

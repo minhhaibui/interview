@@ -1,0 +1,147 @@
+{
+ "id": "46-scaling-full-text-search",
+ "title": "Scaling Full-Text Search",
+ "titleKey": "81f34d8f9b94",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "21943b048609",
+   "en": "Your search box returns results in 80ms."
+  },
+  {
+   "t": "p",
+   "k": "286f2652c5df",
+   "en": "Then you add 50M more documents. Now it's 4 seconds."
+  },
+  {
+   "t": "p",
+   "k": "5d348f7f5544",
+   "en": "Your DBA says \"add an index.\" Your search engineer says \"that's not how this works.\""
+  },
+  {
+   "t": "p",
+   "k": "468dfaf37735",
+   "en": "They're both right — about different things."
+  },
+  {
+   "t": "p",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:"
+  },
+  {
+   "t": "p",
+   "k": "2535357625a9",
+   "en": "Platform: SaaS product, 100M documents Search fields: title, description, tags, partial phrases Current stack: PostgreSQL full-text search Current perf: p95 = 4.2s Target: sub-200ms at p99 Product is escalating. What do you do?"
+  },
+  {
+   "t": "p",
+   "k": "df25627a2a87",
+   "en": "Add GIN indexes on your PostgreSQL tsvector columns — no new infra, meaningful performance Cache the top 1,000 most common queries in Redis — free win for the majority of traffic. Move to Typesense or Meilisearch — simpler ops than Elasticsearch, built for search. gain."
+  },
+  {
+   "t": "h3",
+   "k": "a8366d3bf241",
+   "en": "DAY 45 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "li",
+   "k": "37cb8a054182",
+   "en": "Why A wins (Elasticsearch):",
+   "lead": "Why A wins (Elasticsearch)"
+  },
+  {
+   "t": "p",
+   "k": "1c50bd454592",
+   "en": "Elasticsearch is built on an inverted index. When you index a document, Elasticsearch tokenizes the text and writes posting lists: \"database\" [doc_1, doc_5, doc_23...], \"index\" [doc_2, doc_5,→→ doc_18...]. A query for \"database index\" does a fast posting-list intersection — not a table scan."
+  },
+  {
+   "t": "p",
+   "k": "f21519dd37fb",
+   "en": "At 100M documents, that intersection still runs in milliseconds because posting lists are stored in delta-compressed sorted form, Lucene segments are immutable (no row locking, no MVCC overhead), horizontal sharding is native (queries fan out in parallel), and BM25 scoring runs during retrieval — not after it."
+  },
+  {
+   "t": "p",
+   "k": "3da1c6f293a1",
+   "en": "Result: sub-100ms at p99, even at 100M+ docs, with proper shard sizing. Netflix, Uber, and GitHub all run some form of this at their search layer."
+  },
+  {
+   "t": "p",
+   "k": "ed07cdad379c",
+   "en": "The tradeoffs you accept: new infrastructure to operate (index lifecycle, shard rebalancing), write amplification from segment merging, and eventual consistency — by default, newly indexed docs aren't searchable for ~1 second."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "031a867422c1",
+   "en": "Why B is the trap answer (GIN indexes on PostgreSQL):",
+   "lead": "Why B is the trap answer (GIN indexes on PostgreSQL)"
+  },
+  {
+   "t": "p",
+   "k": "c851191fa1c3",
+   "en": "GIN indexes on tsvector are genuinely good. For 1M–5M documents, this is the right call — no new infra, no ops burden, real improvement."
+  },
+  {
+   "t": "p",
+   "k": "dd0cdcd7f9b6",
+   "en": "At 100M documents, you hit three walls: index size balloons (GIN is large — easily 40–80GB), PostgreSQL full-text has no native horizontal read scaling, and BM25 relevance scoring is bolted on, not native. You get from 4.2s down to maybe 500ms. You need 200ms. Close, but the wrong tool at this scale."
+  },
+  {
+   "t": "p",
+   "k": "a359bf21080a",
+   "en": "GIN is what you reach for before you need a dedicated search engine, not instead of one."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "feb5bb0d3ed1",
+   "en": "Why C misses the point (Redis cache):",
+   "lead": "Why C misses the point (Redis cache)"
+  },
+  {
+   "t": "p",
+   "k": "a847e5b495e6",
+   "en": "Caching top queries is a real optimization — but it's not a search architecture. Your top 1,000 queries might cover 40% of traffic. The other 60% hits the slow path. Worse: every document update invalidates your cache logic. You've added complexity without touching the tail latency product is actually complaining about."
+  },
+  {
+   "t": "p",
+   "k": "4d4c14821e10",
+   "en": "C is a band-aid. The p99 problem is still there the moment any user types something that isn't in the cache."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "62945811645c",
+   "en": "Why D is tempting but limited (Typesense / Meilisearch):",
+   "lead": "Why D is tempting but limited (Typesense / Meilisearch)"
+  },
+  {
+   "t": "p",
+   "k": "cef7114a6e9b",
+   "en": "Typesense and Meilisearch are excellent — simpler ops than Elasticsearch, great developer experience, built-in typo tolerance. For 10M–30M documents, D is a legitimate answer that wins on simplicity."
+  },
+  {
+   "t": "p",
+   "k": "93511d1bc7f8",
+   "en": "At 100M documents with strict p99 requirements and complex relevance tuning, you start hitting their limits: distributed indexing is less mature, fine-grained scoring customization is constrained, and operational tooling at scale is thinner than Elasticsearch's ecosystem. For a smaller product, D is the right call. At 100M with a p99 SLA, Elasticsearch is where you end up."
+  },
+  {
+   "t": "h3",
+   "k": "ee5c6dd847e4",
+   "en": "DAY 46 · SYSTEM DESIGN"
+  }
+ ]
+}

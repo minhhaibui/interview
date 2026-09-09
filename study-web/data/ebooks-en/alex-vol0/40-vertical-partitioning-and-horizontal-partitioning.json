@@ -1,0 +1,43 @@
+{
+ "id": "40-vertical-partitioning-and-horizontal-partitioning",
+ "title": "Vertical partitioning and Horizontal partitioning",
+ "titleKey": "f20c9f22f4c4",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "671687813620",
+   "en": "In many large-scale applications, data is divided into partitions that can be accessed separately. There are two typical strategies for partitioning data. 🔹 Vertical partitioning: it means some columns are moved to new tables. Each table contains the same number of rows but fewer columns (see diagram below). 🔹 Horizontal partitioning (often called sharding):it divides a table into multiple smaller tables. Each table is a separate data store, and it contains the same number of columns, but fewer rows (see diagram below). 82 Horizontal partitioning is widely used so let’s take a closer look."
+  },
+  {
+   "t": "p",
+   "k": "ad41c26936e3",
+   "en": "𝐑𝐨𝐮𝐭𝐢𝐧𝐠 𝐚𝐥𝐠𝐨𝐫𝐢𝐭𝐡𝐦 Routing algorithm decides which partition (shard) stores the data. 🔹 Range-based sharding. This algorithm uses ordered columns, such as integers, longs, timestamps, to separate the rows. For example, the diagram below uses the User ID column for range partition: User IDs 1 and 2 are in shard 1, User IDs 3 and 4 are in shard 2. 🔹 Hash-based sharding. This algorithm applies a hash function to one column or several columns to decide which row goes to which table."
+  },
+  {
+   "t": "p",
+   "k": "9254fda3aff3",
+   "en": "For example, the diagram below uses 𝐔𝐬𝐞𝐫 𝐈𝐃 𝐦𝐨𝐝 2 as a hash function. User IDs 1 and 3 are in shard 1, User IDs 2 and 4 are in shard 2."
+  },
+  {
+   "t": "p",
+   "k": "3e215a15ab4f",
+   "en": "𝐁𝐞𝐧𝐞𝐟𝐢𝐭𝐬 🔹 Facilitate horizontal scaling. Sharding facilitates the possibility of adding more machines to spread out the load. 🔹 Shorten response time. By sharding one table into multiple tables, queries go over fewer rows, and results are returned much more quickly."
+  },
+  {
+   "t": "p",
+   "k": "03624e274bae",
+   "en": "𝐃𝐫𝐚𝐰𝐛𝐚𝐜𝐤𝐬 🔹 The order by the operation is more complicated. Usually, we need to fetch data from different shards and sort the data in the application's code. 🔹 Uneven distribution. Some shards may contain more data than others (this is also called the hotspot)."
+  },
+  {
+   "t": "p",
+   "k": "11fd1eba3a71",
+   "en": "This topic is very big and I’m sure I missed a lot of important details."
+  },
+  {
+   "t": "p",
+   "k": "893375e67cfa",
+   "en": "What else do you think is important for data partitioning? 83"
+  }
+ ]
+}

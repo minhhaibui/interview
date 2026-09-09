@@ -1,0 +1,147 @@
+{
+ "id": "40-preventing-concurrent-balance-overspend",
+ "title": "Preventing Concurrent Balance Overspend",
+ "titleKey": "34e92d745d51",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "838cb4e507aa",
+   "en": "You have a payment system. Two users try to spend from the same wallet balance at the same time."
+  },
+  {
+   "t": "p",
+   "k": "4a3cda5903e5",
+   "en": "Both read $200. Both want to spend $150. Both see enough balance. Both write the deduction."
+  },
+  {
+   "t": "p",
+   "k": "0d47ae23fb05",
+   "en": "The wallet is now at -$100. How do you stop this? other commits. since you read it. Retry on conflict. commit time. handle it."
+  },
+  {
+   "t": "h3",
+   "k": "26b49224b082",
+   "en": "DAY 39 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "li",
+   "k": "57303c739638",
+   "en": "Why B wins (optimistic locking):",
+   "lead": "Why B wins (optimistic locking)"
+  },
+  {
+   "t": "p",
+   "k": "9433bf0bfe72",
+   "en": "You read the wallet row, grab the version number. When you write, you include a WHERE version = :read_version condition. If another transaction already updated the row, your WHERE matches zero rows — conflict detected, retry."
+  },
+  {
+   "t": "p",
+   "k": "29feefb3f669",
+   "en": "UPDATE wallets SET balance = balance - 150, version = version + 1 WHERE id = :wallet_id AND version = :read_version;"
+  },
+  {
+   "t": "p",
+   "k": "3823d82473fe",
+   "en": "If rows_affected = 0 conflict retry. No locks held during the read. At 10K TPS with low conflict→→ rates, this is significantly faster than pessimistic locking — you're only paying for retry cost on actual conflicts, not lock acquisition on every read."
+  },
+  {
+   "t": "p",
+   "k": "7ebe9fac9aca",
+   "en": "The catch: under HIGH contention (same hot wallet hit repeatedly), retry storms eat you alive. Hot wallets need Redis INCRBY with atomic decrement, or a queue in front of the wallet update."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "dcf01ba7c346",
+   "en": "Why A is the trap answer (pessimistic locking):",
+   "lead": "Why A is the trap answer (pessimistic locking)"
+  },
+  {
+   "t": "p",
+   "k": "62e09ffb7982",
+   "en": "SELECT FOR UPDATE works. It's correct. But it holds a row-level lock for the entire transaction — every concurrent write queues up."
+  },
+  {
+   "t": "p",
+   "k": "8f4dbc8ff34a",
+   "en": "At 10K TPS on a popular wallet, you've serialized all writes to a single queue. Throughput collapses."
+  },
+  {
+   "t": "p",
+   "k": "8e35962cb62e",
+   "en": "Lock wait timeouts cascade — failed transactions retry, adding more contention. You've built a self-reinforcing bottleneck."
+  },
+  {
+   "t": "p",
+   "k": "ea6c99006ca9",
+   "en": "Use pessimistic locking for low-concurrency paths (admin ops, batch jobs) where conflict probability is near 100%. Not for high-throughput payment writes."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "e79cc5f42bbf",
+   "en": "Why C is the silent failure (MVCC + default isolation):",
+   "lead": "Why C is the silent failure (MVCC + default isolation)"
+  },
+  {
+   "t": "p",
+   "k": "2c8ca7825de8",
+   "en": "This is the dangerous one. PostgreSQL defaults to READ COMMITTED. MVCC gives each transaction a consistent snapshot — but at READ COMMITTED, that snapshot refreshes per statement, not per transaction."
+  },
+  {
+   "t": "p",
+   "k": "eb28074616a1",
+   "en": "Two concurrent transactions both read $200, both pass the \"sufficient funds\" check, both commit. No conflict detected. Double spend in production."
+  },
+  {
+   "t": "p",
+   "k": "703f9b6ecefb",
+   "en": "MVCC prevents dirty reads. It does NOT prevent lost updates at READ COMMITTED. Most engineers assume MVCC = safe from concurrent writes. It doesn't."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "8a19e8edd58a",
+   "en": "Why D is almost always the wrong default (SERIALIZABLE):",
+   "lead": "Why D is almost always the wrong default (SERIALIZABLE)"
+  },
+  {
+   "t": "p",
+   "k": "1c3052b1a561",
+   "en": "Theoretically correct — the database guarantees transactions behave as if they ran serially. No anomalies."
+  },
+  {
+   "t": "p",
+   "k": "a95800b93dab",
+   "en": "The problem: PostgreSQL's SSI tracks read-write dependencies across transactions. Under high concurrency, serialization failures spike — transactions abort and retry even when there was no actual conflict. Real throughput penalty at scale."
+  },
+  {
+   "t": "p",
+   "k": "65ca64030691",
+   "en": "Right for complex financial workflows where correctness > throughput (end-of-day reconciliation)."
+  },
+  {
+   "t": "p",
+   "k": "f735d6b699b7",
+   "en": "Wrong default for a high-throughput per-transaction API. requestIdleCallback + time-slicing — chunk the parse into 5ms slices, yield between rows, let the"
+  },
+  {
+   "t": "h3",
+   "k": "d6a886b268b6",
+   "en": "DAY 40 · SYSTEM DESIGN"
+  }
+ ]
+}

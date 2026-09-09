@@ -1,0 +1,143 @@
+{
+ "id": "54-zero-downtime-schema-migrations",
+ "title": "Zero-Downtime Schema Migrations",
+ "titleKey": "3070a27e6f08",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "4334f9094b46",
+   "en": "Your migration ran fine in staging."
+  },
+  {
+   "t": "p",
+   "k": "e9aabcd8f8bc",
+   "en": "Then you ran it in production."
+  },
+  {
+   "t": "p",
+   "k": "cafd7fbbeb1b",
+   "en": "The app went down."
+  },
+  {
+   "t": "p",
+   "k": "9f5c4310f3e5",
+   "en": "Not because the SQL was wrong. Because you ran it on a live table with 40 million rows while 8 services were actively writing to it."
+  },
+  {
+   "t": "p",
+   "k": "be398dce4d09",
+   "en": "Your setup: → PostgreSQL. users table. 40M rows. Active writes from 8 services. → Product request: split full_name into first_name + last_name. → You have a 2-hour maintenance window tonight."
+  },
+  {
+   "t": "p",
+   "k": "f5bbacd09099",
+   "en": "The engineering question: how do you ship this without downtime?"
+  },
+  {
+   "t": "p",
+   "k": "a6aa83f84a90",
+   "en": "A) Run ALTER TABLE to drop full_name and add first_name + last_name in a single migration during the maintenance window."
+  },
+  {
+   "t": "p",
+   "k": "fb1c6a9da366",
+   "en": "B) Add first_name + last_name as nullable columns first backfill update all services to write to both→→ → drop full_name only after everything is migrated."
+  },
+  {
+   "t": "p",
+   "k": "bfb0cf3386c5",
+   "en": "C) Create a new users_v2 table with the target schema dual-write to both tables flip the read pointer→→ → drain the old table."
+  },
+  {
+   "t": "p",
+   "k": "822c11e6abd9",
+   "en": "D) Add a DB view that aliases full_name as first_name || ' ' || last_name let each service migrate off it→ at its own pace."
+  },
+  {
+   "t": "h3",
+   "k": "f1dab19e6469",
+   "en": "DAY 53 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "f4fa35fe4e00",
+   "en": "Why B is correct Two phases."
+  },
+  {
+   "t": "p",
+   "k": "26251d71f05a",
+   "en": "Phase 1 — Expand: add first_name and last_name as nullable columns. On PostgreSQL, adding a nullable column with no default is a metadata-only operation — near-instant, no lock. Backfill in small batches (rate-limited, no row lock escalation). Update services to write to both columns simultaneously."
+  },
+  {
+   "t": "p",
+   "k": "fc5c8467990c",
+   "en": "Phase 2 — Contract: once every service is writing to the new columns and reads are fully migrated, drop full_name. You control the timing."
+  },
+  {
+   "t": "p",
+   "k": "433997d2bce5",
+   "en": "The key property: every step is independently reversible. If something breaks after Phase 1, you stop — the old column still exists, old services still work."
+  },
+  {
+   "t": "p",
+   "k": "c5bc708a8069",
+   "en": "Slower than A? Yes. 3am pages? Zero."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "a0ad811a653b",
+   "en": "Why A will get you paged ALTER TABLE on a live table acquires an ACCESS EXCLUSIVE lock in PostgreSQL. It blocks every read and write for the duration. On a 40M row table with active traffic, that lock holds for minutes — not seconds. Your 8 services time out. The queue backs up. Alerts fire."
+  },
+  {
+   "t": "p",
+   "k": "a96af66504c8",
+   "en": "CONCURRENTLY helps for index creation. It doesn't help for column drops or renames. The maintenance window doesn't save you — the lock is the problem, not the timing."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "p",
+   "k": "c8f9ebcd4616",
+   "en": "Why C is overkill Shadow table + dual-write works. But it requires a dual-write layer in every service, an atomic read-pointer flip, and a drain/cleanup phase for the old table."
+  },
+  {
+   "t": "p",
+   "k": "3d37b534cd9a",
+   "en": "Worth it for genuine structural rewrites — new primary key, re-partitioning, changing storage engines."
+  },
+  {
+   "t": "p",
+   "k": "bb218a2a616c",
+   "en": "For a column split on a single table? That's 3 weeks of engineering for a 3-day problem."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "p",
+   "k": "53369e8ca3de",
+   "en": "Why D defers the problem A view aliasing full_name buys time. Useful as a transition layer inside Option B. But PostgreSQL write-through views only work on simple single-table views with no joins or aggregates. You still need to backfill the real columns eventually."
+  },
+  {
+   "t": "p",
+   "k": "f81abac85218",
+   "en": "It defers the migration. It doesn't replace it."
+  },
+  {
+   "t": "h3",
+   "k": "c2dc235e1009",
+   "en": "DAY 54 · SYSTEM DESIGN"
+  }
+ ]
+}

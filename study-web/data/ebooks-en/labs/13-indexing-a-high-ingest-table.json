@@ -1,0 +1,163 @@
+{
+ "id": "13-indexing-a-high-ingest-table",
+ "title": "Indexing a High-Ingest Table",
+ "titleKey": "7520104db06d",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "5f52cab7f477",
+   "en": "Your events table on PostgreSQL 15 just crossed 200M rows."
+  },
+  {
+   "t": "p",
+   "k": "545da88af796",
+   "en": "Ingestion runs at 8K writes/sec from a Kafka consumer. P99 write latency was 12ms — now it's 140ms and climbing."
+  },
+  {
+   "t": "p",
+   "k": "26861ce43d95",
+   "en": "The dashboard team is screaming. Their query filters on (tenant_id, event_type, created_at) and scans 40M rows per request. They want an index. Yesterday."
+  },
+  {
+   "t": "p",
+   "k": "f34e23d1e021",
+   "en": "You check pg_stat_user_indexes. The table already has 4 indexes. Each new write touches every one of them. Add a fifth and your ingestion lag becomes ingestion failure."
+  },
+  {
+   "t": "p",
+   "k": "ebdd5617601f",
+   "en": "But 92% of dashboard queries hit a single tenant's last 7 days of signup events. A tiny slice of a huge table."
+  },
+  {
+   "t": "p",
+   "k": "ca4df9361545",
+   "en": "What do you do?"
+  },
+  {
+   "t": "p",
+   "k": "514d6d0ce3fe",
+   "en": "A) Add a composite B-tree on (tenant_id, event_type, created_at). Standard answer, covers the query, done."
+  },
+  {
+   "t": "p",
+   "k": "f694657fce06",
+   "en": "B) Add a covering index with INCLUDE (user_id, payload) so the query never hits the heap. Index-only scan."
+  },
+  {
+   "t": "p",
+   "k": "982ece7d436c",
+   "en": "C) Stop adding indexes to the primary. Spin up a read replica and route the dashboard there. Keep writes lean."
+  },
+  {
+   "t": "p",
+   "k": "ad224dde3348",
+   "en": "D) Add a partial index — same columns, but WHERE event_type = 'signup' AND created_at > now() -interval '7 days'. Only the hot slice gets indexed."
+  },
+  {
+   "t": "h3",
+   "k": "aaf26c1b760f",
+   "en": "DAY 12 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "9c113938aac1",
+   "en": "Answer: D — Partial Index ✅ Here's why, and why the other three trick smart engineers."
+  },
+  {
+   "t": "p",
+   "k": "279e8cb993c0",
+   "en": "Why D wins (Partial Index) 92% of your queries hit one tenant's last 7 days of signup events. A partial index only indexes rows that match its WHERE clause — everything else writes to the table without touching this index at all."
+  },
+  {
+   "t": "p",
+   "k": "0eccfc6b093a",
+   "en": "The math: if signup events are ~4% of the stream and the 7-day window covers ~5% of the table, your partial index covers roughly 0.2% of rows. Inserts that don't match the predicate cost you nothing on this index. The write amplification is almost entirely gone."
+  },
+  {
+   "t": "p",
+   "k": "cabc9a4d0400",
+   "en": "PostgreSQL's planner uses the partial index for any query whose WHERE clause is a subset of the index predicate. Your dashboard query gets full coverage. Reads stay fast, writes stay alive."
+  },
+  {
+   "t": "p",
+   "k": "8beac6bf2a02",
+   "en": "The catch: when the dashboard team wants 30 days instead of 7, you rebuild. That's a known cost, not a hidden one."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "17def4cb5425",
+   "en": "Why B is the trap (Covering Index with INCLUDE)"
+  },
+  {
+   "t": "p",
+   "k": "f1e283612046",
+   "en": "This fools senior engineers more than any other option. An index-only scan looks gorgeous in EXPLAIN. The problem is what you stuffed into INCLUDE."
+  },
+  {
+   "t": "p",
+   "k": "70d1d9e9b51d",
+   "en": "That payload column is probably a JSONB blob averaging a few KB. Every insert now writes the row to the heap and writes a fat index entry containing the full payload. Every UPDATE to user_id or payload rewrites the index entry. You didn't reduce write cost — you multiplied it."
+  },
+  {
+   "t": "p",
+   "k": "8123c7709611",
+   "en": "At 8K writes/sec on a table that's already index-heavy, a covering index with JSONB inside is how you turn 140ms p99 into 800ms p99. INCLUDE is the right call for narrow columns on read-heavy tables."
+  },
+  {
+   "t": "p",
+   "k": "d9d260e5a99c",
+   "en": "This is neither."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "p",
+   "k": "6534a25af40c",
+   "en": "Why A is wrong (Full composite B-tree)"
+  },
+  {
+   "t": "p",
+   "k": "64f9be2d74b0",
+   "en": "A (tenant_id, event_type, created_at) index will make the dashboard fast. It will also index every single one of your 8K writes/sec across all tenants and all event types. You're paying full write cost to serve a query that hits 0.2% of the data. That's the definition of a bad tradeoff."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "p",
+   "k": "4eac62f45172",
+   "en": "Why C is wrong (Read replica)"
+  },
+  {
+   "t": "p",
+   "k": "411d67475d9a",
+   "en": "The indexes still have to exist somewhere. Put them on the replica and it falls behind replaying WAL while maintaining indexes. Put them on the primary and you're back to the original problem."
+  },
+  {
+   "t": "p",
+   "k": "f6be6f4d97e4",
+   "en": "Read replicas solve \"my primary can't serve all the reads.\" They don't solve \"my write path is bottlenecked by index maintenance.\""
+  },
+  {
+   "t": "p",
+   "k": "c53117177f86",
+   "en": "PgBouncer transaction mode for everyone PgBouncer session mode for the workers + transaction mode for the REST API"
+  },
+  {
+   "t": "h3",
+   "k": "05194e4e9699",
+   "en": "DAY 13 · SYSTEM DESIGN"
+  }
+ ]
+}

@@ -1,0 +1,123 @@
+{
+ "id": "44-reliable-cdn-cache-invalidation-on-deploy",
+ "title": "Reliable CDN Cache Invalidation on Deploy",
+ "titleKey": "5e7e76df0b76",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "d1dae6a9e83c",
+   "en": "Your CDN saved you from explaining a 400ms load time to your VP."
+  },
+  {
+   "t": "p",
+   "k": "6810d434cac7",
+   "en": "Then your deploy shipped. And nobody got the fix."
+  },
+  {
+   "t": "p",
+   "k": "389879d97c36",
+   "en": "Here's what happened:"
+  },
+  {
+   "t": "p",
+   "k": "4d68c7953c3b",
+   "en": "Your edge nodes were still serving the old JS bundle — TTL hadn't expired. You triggered a cache purge manually. But you hit the wrong environment. Prod kept serving the stale version for 6 more hours."
+  },
+  {
+   "t": "p",
+   "k": "b37b57745afe",
+   "en": "You need a CDN configuration that handles invalidation reliably under deploy pressure. Which one do you pick?"
+  },
+  {
+   "t": "p",
+   "k": "d0277380ba7d",
+   "en": "A) Anycast routing + stale-while-revalidate + event-driven purge via API on deploy B) Unicast routing + aggressive TTLs + manual cache purge via dashboard C) Anycast routing + long TTLs + tag-based invalidation via API D) Anycast routing + short TTLs + no invalidation strategy (let caches expire naturally)"
+  },
+  {
+   "t": "h3",
+   "k": "f5a425300494",
+   "en": "DAY 43 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "b3e39b55d37a",
+   "en": "A — Anycast + stale-while-revalidate + event-driven purge — the right answer Anycast advertises the same IP from multiple PoPs. BGP routes each user to the closest edge automatically. Tokyo user hits Tokyo — not Virginia."
+  },
+  {
+   "t": "p",
+   "k": "7f095affc1a6",
+   "en": "Stale-while-revalidate: serve the cached version immediately, fetch a fresh copy in the background."
+  },
+  {
+   "t": "p",
+   "k": "c2faf6a2fa2a",
+   "en": "Users never wait on a cache miss to resolve."
+  },
+  {
+   "t": "p",
+   "k": "878112aa2c1a",
+   "en": "Event-driven purge: your CI/CD pipeline fires a Cloudflare or CloudFront API call on every deploy, targeting exactly the changed assets. No manual steps. No wrong-env clicks. No 2 AM mistakes."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "4e8846b74dc6",
+   "en": "C — Anycast + long TTLs + tag-based invalidation — solid, but has a trap Tag-based invalidation (Cloudflare Cache-Tag, Fastly surrogate keys) lets you group objects and purge entire logical groups in one API call. New product images? Invalidate tag:product-images. Clean and surgical."
+  },
+  {
+   "t": "p",
+   "k": "29aafffd3602",
+   "en": "The trap: long TTLs work perfectly when your deploy pipeline is robust. But if your invalidation API call fails silently during an incident — when you're moving the fastest — you're serving the wrong version for hours with no TTL fallback to save you."
+  },
+  {
+   "t": "p",
+   "k": "5cb4f9bdc50a",
+   "en": "Option A's stale-while-revalidate degrades more gracefully when your pipeline gets messy."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "p",
+   "k": "83f60c571bc0",
+   "en": "B — Unicast + aggressive TTLs + manual purge Unicast means one edge region. Your Tokyo users are routing to Virginia. You've deployed a CDN and you're routing past it."
+  },
+  {
+   "t": "p",
+   "k": "be9aa359dfd4",
+   "en": "Manual dashboard purges during a deploy: someone will forget, click the wrong environment, or skip it entirely at 2 AM. Aggressive TTLs shrink the damage window — they don't make invalidation reliable."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "p",
+   "k": "586b205250d3",
+   "en": "D — Short TTLs, no invalidation \"Short TTLs = always fresh\" is the most expensive misconception in CDN config."
+  },
+  {
+   "t": "p",
+   "k": "929aa12a0173",
+   "en": "Every TTL expiry is a potential cache stampede. 200k RPS at peak, TTL expires on a hot endpoint, every PoP fires a simultaneous request to your origin. You go from 0 to 200k RPS in 2 seconds."
+  },
+  {
+   "t": "p",
+   "k": "463bb406b31d",
+   "en": "And you have zero control for hotfixes. You just wait for the TTLs to drain."
+  },
+  {
+   "t": "h3",
+   "k": "427e375d8591",
+   "en": "DAY 44 · SYSTEM DESIGN"
+  }
+ ]
+}

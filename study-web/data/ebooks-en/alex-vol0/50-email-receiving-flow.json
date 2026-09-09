@@ -1,0 +1,63 @@
+{
+ "id": "50-email-receiving-flow",
+ "title": "Email receiving flow",
+ "titleKey": "2d6781e588bd",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "ebe7eecf18db",
+   "en": "The following diagram demonstrates the email receiving flow."
+  },
+  {
+   "t": "li",
+   "k": "d0d75d9b3c03",
+   "en": "Incoming emails arrive at the SMTP load balancer."
+  },
+  {
+   "t": "li",
+   "k": "4c99edf2d314",
+   "en": "The load balancer distributes traffic among SMTP servers. Email acceptance policy can be configured and applied at the SMTP-connection level. For example, invalid emails are bounced to avoid unnecessary email processing."
+  },
+  {
+   "t": "li",
+   "k": "0a5e5c415dfb",
+   "en": "If the attachment of an email is too large to put into the queue, we can put it into the attachment store (s3)."
+  },
+  {
+   "t": "li",
+   "k": "877909db33f5",
+   "en": "Emails are put in the incoming email queue. The queue decouples mail processing workers from SMTP servers so they can be scaled independently. Moreover, the queue serves as a buffer in case the email volume surges."
+  },
+  {
+   "t": "li",
+   "k": "9f9c42cadf46",
+   "en": "Mail processing workers are responsible for a lot of tasks, including filtering out spam mails, stopping viruses, etc. The following steps assume an email passed the validation."
+  },
+  {
+   "t": "li",
+   "k": "c932b9f9ab47",
+   "en": "The email is stored in the mail storage, cache, and object data store. 107"
+  },
+  {
+   "t": "li",
+   "k": "684a3904e8f1",
+   "en": "If the receiver is currently online, the email is pushed to real-time servers."
+  },
+  {
+   "t": "li",
+   "k": "223d503889be",
+   "en": "Real-time servers are WebSocket servers that allow clients to receive new emails in real-time."
+  },
+  {
+   "t": "li",
+   "k": "a4f7082105fc",
+   "en": "For offline users, emails are stored in the storage layer. When a user comes back online, the webmail client connects to web servers via RESTful API."
+  },
+  {
+   "t": "li",
+   "k": "a1c0ea000ffe",
+   "en": "Web servers pull new emails from the storage layer and return them to the client. 108"
+  }
+ ]
+}

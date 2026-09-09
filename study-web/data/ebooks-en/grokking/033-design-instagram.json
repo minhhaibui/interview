@@ -1,0 +1,831 @@
+{
+ "id": "033-design-instagram",
+ "title": "Design-Instagram",
+ "titleKey": "ef092d557a5d",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "746452e2357d",
+   "en": "System Design: Instagram"
+  },
+  {
+   "t": "p",
+   "k": "a4a653e517f6",
+   "en": "Get introduced to Instagram to kickstart its design."
+  },
+  {
+   "t": "h2",
+   "k": "17d835b5807a",
+   "en": "What is Instagram?"
+  },
+  {
+   "t": "p",
+   "k": "714c331a0e83",
+   "en": "Instagram is a free social networking application that allows users to post photos and short videos. Users can add a caption for each post and utilize hashtags or location-based geotags to index them and make them searchable within the application. A user’s Instagram posts display in their followers’ feeds and can be seen by the general public if they are tagged with hashtags or geotags. Alternatively, users can choose to make their profile private, which limits access to those who have chosen to follow them."
+  },
+  {
+   "t": "p",
+   "k": "bdecf3174845",
+   "en": "The expansion in the number of users requires more resources (servers, databases, and so on) over time. Knowing the users’ growth rate helps us predict the resources to scale our system accordingly. The following illustration shows the Instagram user base in different countries as of January 2022 (source:"
+  },
+  {
+   "t": "p",
+   "k": "72c9cba4387f",
+   "en": "Statista)."
+  },
+  {
+   "t": "h2",
+   "k": "863fc260af5e",
+   "en": "How will we design Instagram?"
+  },
+  {
+   "t": "p",
+   "k": "435ea66333cc",
+   "en": "We have divided the design of Instagram into four lessons:"
+  },
+  {
+   "t": "li",
+   "k": "bc6d57ca62c4",
+   "en": "Requirements: This lesson will put forth the functional and non-functional requirements of Instagram. It will also estimate the resources required to achieve these requirements."
+  },
+  {
+   "t": "li",
+   "k": "e1db71989615",
+   "en": "Design: This lesson will explain the workflow and usage of each component, API design and database schema."
+  },
+  {
+   "t": "li",
+   "k": "9f761d31657d",
+   "en": "Detailed design: In this lesson, we’ll explore the components of our Instagram design in detail and discuss various approaches to generate timelines. Moreover, we’ll also evaluate our proposed design."
+  },
+  {
+   "t": "li",
+   "k": "9f5a9db5a0b2",
+   "en": "Quiz: This lesson will test our understanding of the Instagram design."
+  },
+  {
+   "t": "h1",
+   "k": "590997b77f33",
+   "en": "Requirements of Instagram’s Design"
+  },
+  {
+   "t": "p",
+   "k": "a78ef2b56338",
+   "en": "Learn about the requirements and computational needs for the Instagram service."
+  },
+  {
+   "t": "h2",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "p",
+   "k": "9440f82409d0",
+   "en": "We’ll concentrate on some important features of Instagram to make this design simple. Let’s list down the requirements for our system:"
+  },
+  {
+   "t": "h3",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "070408ac42c8",
+   "en": "Post photos and videos: The users can post photos and videos on Instagram."
+  },
+  {
+   "t": "p",
+   "k": "b8850571cd92",
+   "en": "Follow and unfollow users: The users can follow and unfollow other users on Instagram."
+  },
+  {
+   "t": "p",
+   "k": "9b826870ce2d",
+   "en": "Like or dislike posts: The users can like or dislike posts of the accounts they follow."
+  },
+  {
+   "t": "p",
+   "k": "d5ac7c08414a",
+   "en": "Search photos and videos: The users can search photos and videos based on captions and location."
+  },
+  {
+   "t": "p",
+   "k": "291daccf2407",
+   "en": "Generate news feed: The users can view the news feed consisting of the photos and videos (in chronological order) from all the users they follow."
+  },
+  {
+   "t": "p",
+   "k": "dddf33304fa3",
+   "en": "Users can also view suggested and promoted photos in their news feed."
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "cc076d037bc8",
+   "en": "Scalability: The system should be scalable to handle millions of users in terms of computational resources and storage."
+  },
+  {
+   "t": "p",
+   "k": "139c946ed104",
+   "en": "Latency: The latency to generate a news feed should be low."
+  },
+  {
+   "t": "p",
+   "k": "a7687b0be194",
+   "en": "Availability: The system should be highly available."
+  },
+  {
+   "t": "p",
+   "k": "a322f1849480",
+   "en": "Durability Any uploaded content (photos and videos) should never get lost."
+  },
+  {
+   "t": "p",
+   "k": "f118dd3e4a1d",
+   "en": "Consistency: We can compromise a little on consistency. It is acceptable if the content (photos or videos) takes time to show in followers’ feeds located in a distant region."
+  },
+  {
+   "t": "p",
+   "k": "162831926531",
+   "en": "Reliability: The system must be able to tolerate hardware and software failures."
+  },
+  {
+   "t": "h2",
+   "k": "a9be995c473a",
+   "en": "Resource estimation"
+  },
+  {
+   "t": "p",
+   "k": "22a6f6309cc2",
+   "en": "Our system is read-heavy because service users spend substantially more time browsing the feeds of others than creating and posting new content. Our focus will be to design a system that can fetch the photos and videos on time. There is no restriction on the number of photos or videos that users can upload, meaning efficient storage management should be a primary consideration in the design of this system. Instagram supports around a billion users globally who share 95 million photos and videos on Instagram per day. We’ll calculate the resources and design our system based on the requirements."
+  },
+  {
+   "t": "p",
+   "k": "434a6b1c0549",
+   "en": "Let’s assume the following:"
+  },
+  {
+   "t": "p",
+   "k": "81ec7cbc930b",
+   "en": "We have 1 billion users, with 500 million as daily active users."
+  },
+  {
+   "t": "p",
+   "k": "279742602671",
+   "en": "Assume 60 million photos and 35 million videos are shared on Instagram per day."
+  },
+  {
+   "t": "p",
+   "k": "2e0547740949",
+   "en": "We can consider 3 MB as the maximum size of each photo and 150 MB as the maximum size of each video uploaded on Instagram."
+  },
+  {
+   "t": "p",
+   "k": "299e8de7cc2e",
+   "en": "On average, each user sends 20 requests (of any type) per day to our service."
+  },
+  {
+   "t": "h3",
+   "k": "5e7e60e98560",
+   "en": "Storage estimation"
+  },
+  {
+   "t": "p",
+   "k": "9479d0e0308d",
+   "en": "We need to estimate the storage capacity, bandwidth, and the number of servers to support such an enormous number of users and content."
+  },
+  {
+   "t": "p",
+   "k": "0eab2342c609",
+   "en": "The storage per day will be: 60 million photos/day * 3 MB = 180 TeraBytes / day 35 million videos/day * 150 MB = 5250 TB / day Total content size = 180 + 5250 = 5430 TB The total space required for a year: 5430 TB/day * 365 (days a year) = 1981950 TB = 1981.95 PetaBytes"
+  },
+  {
+   "t": "p",
+   "k": "bf22fc75a9eb",
+   "en": "Besides photos and videos, we have ignored comments, status sharing data, and so on. Moreover, we also have to store users’ information and post metadata, for example, userID, photo, and so on. So, to be precise, we need more than 5430 TB/day, but to keep our design simple, let’s stick to the 5430 TB/day."
+  },
+  {
+   "t": "h3",
+   "k": "10d00f179eb1",
+   "en": "Bandwidth estimation"
+  },
+  {
+   "t": "p",
+   "k": "c154f77c9ed0",
+   "en": "According to the estimate of our storage capacity, our service will get 5430 TB of data each day, which will give us: 5430 TB/(24 * 60* 60) = 5430 TB/86400 sec ~= 62.84 GB/s ~= 502.8 Gbps Since each incoming photo and video needs to reach the users’ followers, let’s say the ratio of readers to writers is 100:1. As a result, we need 100 times more bandwidth than incoming bandwidth. Let’s assume the following:"
+  },
+  {
+   "t": "p",
+   "k": "40787e5279e4",
+   "en": "Incoming bandwidth ~= 502.8 Gbps Required outgoing bandwidth ~= 100 * 502.8 Gbps ~= 50.28 Tbps"
+  },
+  {
+   "t": "p",
+   "k": "cf5126e20e56",
+   "en": "Outgoing bandwidth is fairly high. We can use compression to reduce the media size substantially. Moreover, we’ll place content close to the users via CDN and other caches in IXP and ISPs to serve the content at high speed and low latency."
+  },
+  {
+   "t": "h3",
+   "k": "7e7845b4ea66",
+   "en": "Number of servers estimation"
+  },
+  {
+   "t": "p",
+   "k": "42d43db6618a",
+   "en": "We need to handle concurrent requests coming from 500 million daily active users. Let’s assume that a typical Instagram server handles 100 requests per second:"
+  },
+  {
+   "t": "p",
+   "k": "f7df3cc1a12e",
+   "en": "Requests by each user per day = 20 Queries handled by a server per second = 100 Queries handled by a server per day = 100 * 60 * 60 * 24 = 8640000 Number of active users∗Requests by each user per day = Queries handled per server a day 1157 servers approx This calculation shows that we need 1157 servers to handle queries in our Instagram system."
+  },
+  {
+   "t": "p",
+   "k": "70b3dda27e40",
+   "en": "Let’s analyze how the number of photos per day affects the storage and bandwidth requirements. For this purpose, try to change values in the following table to compute the estimates. We have set 20 requests by each user per day in the following calculation:"
+  },
+  {
+   "t": "p",
+   "k": "2e81413f0388",
+   "en": "RequirementsCalculations Number of photos per day (in millio 60 ns)"
+  },
+  {
+   "t": "p",
+   "k": "6ed3f4938266",
+   "en": "Size of each photo (in MB)3 Number of videos per day (in millio 35 ns)"
+  },
+  {
+   "t": "p",
+   "k": "99e480d37ea6",
+   "en": "Size of each video (in MB)150 Number of daily active users (in mill 500 ions)"
+  },
+  {
+   "t": "p",
+   "k": "633091771994",
+   "en": "Number of requests a server can ha 8640000 ndle per day f Storage estimation per day (in TB)5430 f Incoming bandwidth (Gb/s)502.8 f Number of servers needed1157"
+  },
+  {
+   "t": "h2",
+   "k": "cfa08fe6c777",
+   "en": "Building blocks we will use"
+  },
+  {
+   "t": "p",
+   "k": "9fc35cdc3d27",
+   "en": "In the next lesson, we’ll focus on the high-level design of Instagram. The design will utilize many building blocks that have been discussed in the initial chapters also. We’ll use the following building blocks in our design:"
+  },
+  {
+   "t": "p",
+   "k": "49b47f0c57e7",
+   "en": "A load balancer at various layers will ensure smooth requests distribution among available servers."
+  },
+  {
+   "t": "p",
+   "k": "40fc2ac9be0d",
+   "en": "A database is used to store the user and accounts metadata and relationship among them."
+  },
+  {
+   "t": "p",
+   "k": "71e50eac74b6",
+   "en": "Blob storage is needed to store the various types of content such as photos, videos, and so on."
+  },
+  {
+   "t": "p",
+   "k": "4305c8b69fc9",
+   "en": "A task scheduler schedules the events on the database such as removing the entries whose time to live exceeds the limit."
+  },
+  {
+   "t": "p",
+   "k": "300b1f8fa018",
+   "en": "A cache stores the most frequent content related requests."
+  },
+  {
+   "t": "p",
+   "k": "eea9b063f42d",
+   "en": "CDN is used to effectively deliver content to end users which reduces delay and burden on end-servers."
+  },
+  {
+   "t": "p",
+   "k": "9e87279f0fa2",
+   "en": "In the next lesson, we’ll discuss the high-level design of the Instagram system."
+  },
+  {
+   "t": "h1",
+   "k": "5715cec92fb1",
+   "en": "Design of Instagram"
+  },
+  {
+   "t": "p",
+   "k": "c513c0f22cce",
+   "en": "Learn the high-level design of Instagram and understand its data model."
+  },
+  {
+   "t": "h2",
+   "k": "f0e860766605",
+   "en": "High-level design"
+  },
+  {
+   "t": "p",
+   "k": "68ee753d3401",
+   "en": "Our system should allow us to upload, view, and search images and videos at a high level. To upload images and videos, we need to store them, and upon fetching, we need to retrieve the data from the storage. Moreover, the users should also be allowed to follow each other."
+  },
+  {
+   "t": "h2",
+   "k": "58dbf879b581",
+   "en": "API design"
+  },
+  {
+   "t": "p",
+   "k": "1b295589a1aa",
+   "en": "This section describes APIs invoked by the users to perform different tasks (upload, like, and view photos/videos) on Instagram. We’ll implement REST APIs for these tasks. Let’s develop APIs for each of the following features:"
+  },
+  {
+   "t": "h3",
+   "k": "2f1162db1468",
+   "en": "Post photos or videos"
+  },
+  {
+   "t": "p",
+   "k": "fb87bd9e56c0",
+   "en": "The POST method is used to post photos/videos to the server from the user through the /postMedia API. The /postMedia API is as follows:"
+  },
+  {
+   "t": "code",
+   "k": "73a708c3bde5",
+   "en": "postMedia(userID, media_type, list_of_hashtags, caption)"
+  },
+  {
+   "t": "p",
+   "k": "2280a3277dfc",
+   "en": "Parameter Description media_type It indicates the type of media (photo or video) in a post. list_of_hashtags It represents all hashtags (maximum limit 30 hashtags) in a post. caption It is a text (maximum limit is 2,200 characters) in a user’s post."
+  },
+  {
+   "t": "h3",
+   "k": "1fbe5611a85f",
+   "en": "Follow and unfollow users"
+  },
+  {
+   "t": "p",
+   "k": "f91ce882d69b",
+   "en": "The /followUser API is used when a user follows other users on Instagram. The /followUser API is as follows:"
+  },
+  {
+   "t": "code",
+   "k": "4dc54d0c6359",
+   "en": "followUser(userID, target_userID)"
+  },
+  {
+   "t": "p",
+   "k": "17414077dd86",
+   "en": "Parameter Description target_userID It indicates the user to be followed."
+  },
+  {
+   "t": "p",
+   "k": "7272478b18d9",
+   "en": "The /unfollowUser API uses the same parameters when a user unfollows someone on Instagram."
+  },
+  {
+   "t": "h3",
+   "k": "8000520bfe78",
+   "en": "Like or dislike posts"
+  },
+  {
+   "t": "p",
+   "k": "5b911882d885",
+   "en": "The /likePost API is used when users like someone’s post on Instagram."
+  },
+  {
+   "t": "code",
+   "k": "1f85cefacfe3",
+   "en": "likePost(userID, post_id)"
+  },
+  {
+   "t": "p",
+   "k": "28d73a68fbbd",
+   "en": "Parameter Description post_id It specifies the post's unique ID."
+  },
+  {
+   "t": "p",
+   "k": "6e6247608b4a",
+   "en": "The /dislikePost API uses the same parameters when a user dislikes someone’s post on Instagram."
+  },
+  {
+   "t": "h3",
+   "k": "099904b83662",
+   "en": "Search photos or videos"
+  },
+  {
+   "t": "p",
+   "k": "b82aec958542",
+   "en": "The GET method is used when the user searches any photos or videos using a keyword or hashtag. The /searchPhotos API is as follows:"
+  },
+  {
+   "t": "code",
+   "k": "75bc9a9a6516",
+   "en": "searchPhotos(userID, keyword)"
+  },
+  {
+   "t": "p",
+   "k": "172b93719d09",
+   "en": "Parameter Description keyword It indicates the string (username, hashtag, and places) typed by the user in the search bar."
+  },
+  {
+   "t": "li",
+   "k": "eaed047bdffd",
+   "en": "Note: Instagram shows the posts with the highest reach (those with more likes and views) upon searching for a particular key. For example, if a user does a location-based search using “London, United Kingdom,\"",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "7e59eebd07b9",
+   "en": "Instagram will show the posts in order with maximum to minimum reach. Instead of showing all the posts, the data will be loaded upon scrolling."
+  },
+  {
+   "t": "h3",
+   "k": "43895dd3ed0d",
+   "en": "Generate news feed"
+  },
+  {
+   "t": "p",
+   "k": "0add51c8a5b2",
+   "en": "The GET method is used when users view their news feed through the"
+  },
+  {
+   "t": "code",
+   "k": "b50feec3d438",
+   "en": "/viewNewsfeed API. The /viewNewsfeed API is as follows: viewNewsfeed(userID, generate_timeline)"
+  },
+  {
+   "t": "p",
+   "k": "f4adb55ce516",
+   "en": "Parameter Description generate_timeline It indicates the time when a user requests news feed generation."
+  },
+  {
+   "t": "p",
+   "k": "63d9d0360406",
+   "en": "Instagram shows the posts that are not seen by the user between the last news feed request and the current news feed request."
+  },
+  {
+   "t": "h2",
+   "k": "636805a26ba3",
+   "en": "Storage schema"
+  },
+  {
+   "t": "p",
+   "k": "97528fdccb25",
+   "en": "Let’s define our data model now:"
+  },
+  {
+   "t": "h3",
+   "k": "5cce70d4cd43",
+   "en": "Relational or non-relational database"
+  },
+  {
+   "t": "p",
+   "k": "6b92c8b1cd37",
+   "en": "It is essential to choose the right kind of database for our Instagram system, but which is the right choice — SQL or NoSQL? Our data is inherently relational, and we need an order for the data (posts should appear in chronological order) and no data loss even in case of failures (data durability). Moreover, in our case, we would benefit from relational queries like fetching the followers or images based on a user ID. Hence, SQL-based databases fulfill these requirements."
+  },
+  {
+   "t": "p",
+   "k": "9ac68ff497f2",
+   "en": "So, we’ll opt for a relational database and store our relevant data in that database."
+  },
+  {
+   "t": "h3",
+   "k": "e5b1ed0304f9",
+   "en": "Define tables"
+  },
+  {
+   "t": "p",
+   "k": "23f7dd908c4e",
+   "en": "On a basic level, we need the following tables:"
+  },
+  {
+   "t": "p",
+   "k": "fa955a2b7656",
+   "en": "Users: This stores all user-related data such as ID, name, email, bio, location, date of account creation, time of the last login, and so on."
+  },
+  {
+   "t": "p",
+   "k": "935aeadf8b83",
+   "en": "Followers: This stores the relations of users. In Instagram, we have a unidirectional relationship, for example, if user A accepts a follow request from user B, user B can view user A’s post, but vice versa is not valid."
+  },
+  {
+   "t": "p",
+   "k": "19a14de67dfe",
+   "en": "Photos: This stores all photo-related information such as ID, location, caption, time of creation, and so on. We also need to keep the user ID to determine which photo belongs to which user. The user ID is a foreign key from the users table."
+  },
+  {
+   "t": "p",
+   "k": "b259e9bb6b3e",
+   "en": "Videos: This stores all video-related information such as ID, location, caption, time of creation, and so on. We also need to keep the user ID to determine which video belongs to which user. The user ID is a foreign key from the users table."
+  },
+  {
+   "t": "p",
+   "k": "3c9114e96f61",
+   "en": "Point to Ponder Where should we store the photos and videos?"
+  },
+  {
+   "t": "p",
+   "k": "f97e728e38cb",
+   "en": "Hide Answer We’ll store the photos and videos in a blob store (like S3) and save the path of the photo or video in the table as it is efficient to save larger data in a distributed storage."
+  },
+  {
+   "t": "p",
+   "k": "9d91da81da46",
+   "en": "The following illustration visualizes the data model:"
+  },
+  {
+   "t": "h3",
+   "k": "11f5585aa317",
+   "en": "Data estimation"
+  },
+  {
+   "t": "p",
+   "k": "58ebadef64a1",
+   "en": "Let’s figure out how much data each table will store. The column per row size (in bytes) in the following calculator shows the data per row of each table. It also calculates the storage needed for the specified counts. For example, the storage required for 500 million users is 111000 MB, 2000 MB for 250 followers of a single user, 23640 MB for 60 million photos, and 13790 MB for 35 million videos."
+  },
+  {
+   "t": "p",
+   "k": "0752941becc4",
+   "en": "You can change the values in the calculator to observe the change in storage needed. This gives us an estimate of how fast data will increase in our tables."
+  },
+  {
+   "t": "p",
+   "k": "7fa0aeec1776",
+   "en": "Per row size (in Count in MillionStorage Needed Table Name bytes)s(in MBs) f Users 222 500 111000 f Followers 8 250 2000 f Photos 394 60 23640 f Videos 394 35 13790"
+  },
+  {
+   "t": "li",
+   "k": "2e228c18d3c6",
+   "en": "Note: Most modern services use both SQL and NoSQL stores. Instagram officially uses a combination of SQL (PostgreSQL) and No-SQL (Cassandra) databases. The loosely structured data like timeline generation is usually stored in No-SQL, while relational data is saved in SQL-based storage.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "1d015d226bdf",
+   "en": "In the next lesson, we’ll identify more components to tweak our design."
+  },
+  {
+   "t": "h1",
+   "k": "d8428da65d2f",
+   "en": "Detailed Design of Instagram"
+  },
+  {
+   "t": "p",
+   "k": "85237f1da111",
+   "en": "Explore the design of Instagram in detail and understand the interaction of various components."
+  },
+  {
+   "t": "h2",
+   "k": "0ecd90776ded",
+   "en": "Add more components"
+  },
+  {
+   "t": "p",
+   "k": "f583f889ffbf",
+   "en": "Let’s add a few more components to our design:"
+  },
+  {
+   "t": "p",
+   "k": "40c0e14e9e7a",
+   "en": "Load balancer: To balance the load of the requests from the end users."
+  },
+  {
+   "t": "p",
+   "k": "ce1fc923537d",
+   "en": "Application servers: To host our service to the end users."
+  },
+  {
+   "t": "p",
+   "k": "33f9d6388f08",
+   "en": "Relational database: To store our data."
+  },
+  {
+   "t": "p",
+   "k": "73a570c665ee",
+   "en": "Blob storage: To store the photos and videos uploaded by the users."
+  },
+  {
+   "t": "h2",
+   "k": "aca83b9f084b",
+   "en": "Upload, view, and search a photo"
+  },
+  {
+   "t": "p",
+   "k": "69f17125a365",
+   "en": "The client requests to upload the photo, load balancer passes the request to any of the application servers, which adds an entry to the database. An update that the photo is stored successfully is sent to the user. If an error is encountered, the user is communicated about it as well."
+  },
+  {
+   "t": "p",
+   "k": "883e14870f29",
+   "en": "The photo viewing process is also similar to the above-mentioned flow. The client requests to view a photo, and an appropriate photo that matches the request is fetched from the database and shown to the user. The client can also provide a keyword to search for a specific image."
+  },
+  {
+   "t": "p",
+   "k": "7787942c2807",
+   "en": "The read requests are more than write requests and it takes time to upload the content in the system. It is efficient if we separate the write (uploads) and read services. The multiple services operated by many servers handle the relevant requests. The read service performs the tasks of fetching the required content for the user, while the write service helps upload content to the system."
+  },
+  {
+   "t": "p",
+   "k": "249584341469",
+   "en": "We also need to cache the data to handle millions of reads. It improves the user experience by making the fetching process fast. We’ll also opt for lazy loading, which minimizes the client’s waiting time. It allows us to load the content when the user scrolls and therefore save the bandwidth and focus on loading the content the user is currently viewing. It improves the latency to view or search a particular photo or video on Instagram."
+  },
+  {
+   "t": "p",
+   "k": "ca991c26f9c5",
+   "en": "The updated design is as follows:"
+  },
+  {
+   "t": "h2",
+   "k": "df938a3fd237",
+   "en": "Generate a timeline"
+  },
+  {
+   "t": "p",
+   "k": "8ede4e52db67",
+   "en": "Now our task is to generate a user-specific timeline. Let’s explore various approaches and the advantages and disadvantages to opt for the appropriate strategy."
+  },
+  {
+   "t": "h3",
+   "k": "8707e2ff358f",
+   "en": "The pull approach"
+  },
+  {
+   "t": "p",
+   "k": "404cdbb5e843",
+   "en": "When a user opens their Instagram, we send a request for timeline generation."
+  },
+  {
+   "t": "p",
+   "k": "b22ca6fa2de1",
+   "en": "First, we fetch the list of people the user follows, get the photos they recently posted, store them in queues, and display them to the user. But this approach is slow to respond as we generate a timeline every time the user opens Instagram."
+  },
+  {
+   "t": "p",
+   "k": "b987e1a03927",
+   "en": "We can substantially reduce user-perceived latency by generating the timeline offline. For example, we define a service that fetches the relevant data for the user before, and as the person opens Instagram, it displays the timeline. This decreases the latency rate to show the timeline. Let’s take a look at the slides below to understand the problem and its solution."
+  },
+  {
+   "t": "p",
+   "k": "90057f46a02c",
+   "en": "Point to Ponder What are the shortcomings of the pull approach?"
+  },
+  {
+   "t": "p",
+   "k": "750d24495875",
+   "en": "Hide Answer Instagram is a read-heavy system. Many people don’t post any photos and instead just view others’ posts. So, the calls we make to fetch the recent posts from every follower will usually return nothing. Hence, we should keep in mind that it is not a write-heavy system and should develop a possible solution to cater to it."
+  },
+  {
+   "t": "h3",
+   "k": "b23da7059256",
+   "en": "The push approach"
+  },
+  {
+   "t": "p",
+   "k": "a023b6696b35",
+   "en": "In a push approach, every user is responsible for pushing the content they posted to the people’s timelines who are following them. In the previous approach, we pulled the post from each follower, but in the current approach, we push the post to each follower."
+  },
+  {
+   "t": "p",
+   "k": "416edd1aee2b",
+   "en": "Now we only need to fetch the data that is pushed towards that particular user to generate the timeline. The push approach has stopped a lot of requests that return empty results when followed users have no post in a specified time."
+  },
+  {
+   "t": "p",
+   "k": "bbd907d5555b",
+   "en": "Point to Ponder What are the shortcomings of the push approach?"
+  },
+  {
+   "t": "p",
+   "k": "05fac17632d0",
+   "en": "Hide Answer Consider an account that belongs to a celebrity, like Cristiano Ronaldo, who has over 400 million followers. So if he posts a photo or a video, we will push the links of the photo/video to 400 million+ users, which is inefficient."
+  },
+  {
+   "t": "h3",
+   "k": "2d0d1d5a073b",
+   "en": "Hybrid approach"
+  },
+  {
+   "t": "p",
+   "k": "b2dae07758b4",
+   "en": "Let’s split our users into two categories:"
+  },
+  {
+   "t": "p",
+   "k": "fb3524abb759",
+   "en": "Push-based users: The users who have a followers count of hundreds or thousands."
+  },
+  {
+   "t": "p",
+   "k": "c74ec96e7286",
+   "en": "Pull-based users: The users who are celebrities and have followers count of a hundred thousand or millions."
+  },
+  {
+   "t": "p",
+   "k": "fe472fd875d1",
+   "en": "The timeline service pulls the data from pull-based followers and adds it to the user’s timeline. The push-based users push their posts to the timeline service of their followers so the timeline service can add to the user’s timeline."
+  },
+  {
+   "t": "p",
+   "k": "0ebe5476af54",
+   "en": "We have used the method which generates the timeline, but where do we store the timeline? We store a user’s timeline against a userID in a key-value store."
+  },
+  {
+   "t": "p",
+   "k": "308e2f9d3975",
+   "en": "Upon request, we fetch the data from the key-value store and show it to the user."
+  },
+  {
+   "t": "p",
+   "k": "945754af2e33",
+   "en": "The key is userID, while the value is timeline content (links to photos and videos). Because the storage size of the value is often limited to a few MegaBytes, we can store the timeline data in a blob and put the link to the blob in the value of the key as we approach the size limit."
+  },
+  {
+   "t": "p",
+   "k": "772cfd908c30",
+   "en": "We can add a new feature called story to our Instagram. In the story feature, the users can add a photo that stays available for others to view for 24 hours only."
+  },
+  {
+   "t": "p",
+   "k": "161b44f492c5",
+   "en": "We can do this by maintaining an option in the table where we can store a story’s duration. We can set it to 24 hours, and the task scheduler deletes the entries whose time exceeds the 24 hours limit."
+  },
+  {
+   "t": "h2",
+   "k": "f7ccaf9e4624",
+   "en": "Finalized design"
+  },
+  {
+   "t": "p",
+   "k": "9a1606f69223",
+   "en": "We’ll also use CDN (content delivery network) in our design. We can keep images and videos of celebrities in CDN which make it easier for the followers to fetch them. The load balancer first routes the read request to the nearest CDN, if the requested content is not available there, then it forwards the request to the particular read application server (see the “load balancing chapter” for the details). The CDN helps our system to be available to millions of concurrent users and minimizes latency."
+  },
+  {
+   "t": "p",
+   "k": "aa3e085a3e7a",
+   "en": "The final design is given below:"
+  },
+  {
+   "t": "p",
+   "k": "2235e581fb91",
+   "en": "Point to Ponder How can we count millions of interactions (like or view) on a celebrity post?"
+  },
+  {
+   "t": "p",
+   "k": "70d3de97b088",
+   "en": "Hide Answer We can use sharded counters to count the number of multiple interactions for a particular user. Each counter has a number of shards distributed across various edge servers to reduce the load on the application server and latency. Users nearest to the edge server get the updated count frequently on a specific post compared to those in distant regions."
+  },
+  {
+   "t": "h2",
+   "k": "632228dd05b1",
+   "en": "Ensure non-functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "338c5961c00d",
+   "en": "Scalability: We can add more servers to application service layers to make the scalability better and handle numerous requests from the clients. We can also increase the number of databases to store the growing users’ data."
+  },
+  {
+   "t": "p",
+   "k": "7af8dd9a3222",
+   "en": "Latency: The use of cache and CDNs have reduced the content fetching time."
+  },
+  {
+   "t": "p",
+   "k": "157171971bc9",
+   "en": "Availability: We have made the system available to the users by using the storage and databases that are replicated across the globe."
+  },
+  {
+   "t": "li",
+   "k": "df34144cc0be",
+   "en": "Durability: We have persistent storage that maintains the backup of the data so any uploaded content (photos and videos) never gets lost.",
+   "lead": "Durability"
+  },
+  {
+   "t": "p",
+   "k": "bc9a0a3dfcf8",
+   "en": "Consistency: We have used storage like blob stores and databases to keep our data consistent globally."
+  },
+  {
+   "t": "p",
+   "k": "a0687da35c09",
+   "en": "Reliability: Our databases handle replication and redundancy, so our system stays reliable and data is not lost. The load balancing layer routes requests around failed servers."
+  },
+  {
+   "t": "h2",
+   "k": "6a38a38f03e4",
+   "en": "Conclusion"
+  },
+  {
+   "t": "p",
+   "k": "1d1b857e8fb2",
+   "en": "This design problem highlights that we can provide major services by connecting our building blocks appropriately. The scalable and fault-tolerant building blocks enable us to concentrate on use-case-specific issues (such as the efficient formation of timelines)."
+  }
+ ]
+}

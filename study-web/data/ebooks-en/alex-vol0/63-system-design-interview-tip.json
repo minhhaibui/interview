@@ -1,0 +1,38 @@
+{
+ "id": "63-system-design-interview-tip",
+ "title": "System Design Interview Tip",
+ "titleKey": "bbe1c4283426",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "28c081f9b9ee",
+   "en": "One pro tip for acing a system design interview is to read the engineering blog of the company you are interviewing with. You can get a good sense of what technology they use, why the technology was chosen over others, and learn what issues are important to engineers."
+  },
+  {
+   "t": "p",
+   "k": "ac7b8bac3418",
+   "en": "For example, here are 4 blog posts Twitter Engineering recommends:"
+  },
+  {
+   "t": "li",
+   "k": "0f208bceb069",
+   "en": "The Infrastructure Behind Twitter: Scale"
+  },
+  {
+   "t": "li",
+   "k": "5b85a543c540",
+   "en": "Discovery and Consumption of Analytics Data at Twitter"
+  },
+  {
+   "t": "li",
+   "k": "ca8dfc56fa58",
+   "en": "The what and why of product experimentation at Twitter"
+  },
+  {
+   "t": "li",
+   "k": "121de4739994",
+   "en": "Twitter experimentation: technical overview 139"
+  }
+ ]
+}

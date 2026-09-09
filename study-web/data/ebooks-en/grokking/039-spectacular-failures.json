@@ -1,0 +1,660 @@
+{
+ "id": "039-spectacular-failures",
+ "title": "Spectacular Failures",
+ "titleKey": "f40f75a01add",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "aef19fcdba51",
+   "en": "Introduction to Distributed System Failures"
+  },
+  {
+   "t": "p",
+   "k": "100faf7343b5",
+   "en": "Learn about the failures in distributed systems and the importance of independent vantage points."
+  },
+  {
+   "t": "h2",
+   "k": "26aca7941a99",
+   "en": "Introduction"
+  },
+  {
+   "t": "p",
+   "k": "2e93797e01e4",
+   "en": "Once in a while, we encounter the failure of a service that’s a household name, and individuals and businesses react to them. As system designers, we might wonder how carefully designed services that have been perfected over years by experienced teams can also fail."
+  },
+  {
+   "t": "p",
+   "k": "cd8596692b4f",
+   "en": "This chapter discusses some of the major failures of well-known services and the measures that can be taken to mitigate such failures."
+  },
+  {
+   "t": "p",
+   "k": "07162d608b21",
+   "en": "The following two factors contribute to failures:"
+  },
+  {
+   "t": "p",
+   "k": "e1b704a08254",
+   "en": "Diverse users: Most services have a vibrant user community, and as their needs evolve, so do the software products. If a software doesn’t update in the way it provides new features and services, it will become stable over time. However, it might not have the features customers want."
+  },
+  {
+   "t": "p",
+   "k": "60f391c942f1",
+   "en": "Complex systems: Systems are complex, and they usually have emergent properties where the sum of system components is more complex than the individual pieces."
+  },
+  {
+   "t": "h2",
+   "k": "3a0aa36a4b87",
+   "en": "Types of failure in distributed systems"
+  },
+  {
+   "t": "p",
+   "k": "adfbd53cb43e",
+   "en": "Most modern services are designed in such a way that failures are contained, and others might be localized for some users. Let’s explore the types of failures we can observe in the distributed systems."
+  },
+  {
+   "t": "p",
+   "k": "29705381dd8d",
+   "en": "System failure: A software or hardware failure is the most common cause of system failure. The contents in the primary memory are lost when a system fails. However, the data in secondary storage or replicas remains unaffected. The system reboots during such a breakdown."
+  },
+  {
+   "t": "p",
+   "k": "31c0e54cdd42",
+   "en": "Method failure: Such failures suspend the working of distributed systems."
+  },
+  {
+   "t": "p",
+   "k": "1268ff97c2de",
+   "en": "It may also make the system execute the processes incorrectly or enter a deadlock state."
+  },
+  {
+   "t": "p",
+   "k": "d61765bab1c5",
+   "en": "Communication medium failure: Such failures occur when one component or service of a system can’t reach the other internal or external entities."
+  },
+  {
+   "t": "p",
+   "k": "1ad0daf6d77b",
+   "en": "Secondary storage failure: In such failures, the secondary storage or replicas are down. The data in these nodes becomes inaccessible, so primary nodes need to generate another replica to ensure reliability and fault tolerance."
+  },
+  {
+   "t": "h2",
+   "k": "7b4784a06911",
+   "en": "Vantage points"
+  },
+  {
+   "t": "p",
+   "k": "63d7e07ce236",
+   "en": "Something is always failing for large services. It’s preferred to have a graceful degradation so that only a small portion of users are impacted for a short time."
+  },
+  {
+   "t": "p",
+   "k": "da577e943e70",
+   "en": "Therefore, we need globally dispersed vantage points to independently see the service status."
+  },
+  {
+   "t": "li",
+   "k": "6141fb9d05ab",
+   "en": "Note: Many independent services, such as Downdetector, exist for crowd-sourced problem reporting. It’s interesting to note that if we visit such a service and see the status of our favorite applications, we’ll see that there’s always someone in the world facing some service problem.",
+   "lead": "Note"
+  },
+  {
+   "t": "h3",
+   "k": "79f657a1146f",
+   "en": "Importance of independent service providers"
+  },
+  {
+   "t": "p",
+   "k": "51e1769fb62b",
+   "en": "One of the design goals of the original Internet was to provide resilience so that if one part fails, the rest can still operate."
+  },
+  {
+   "t": "p",
+   "k": "4ad8d86ceead",
+   "en": "With the emergence of a handful of service providers over the last decade, critics have raised concerns about such centralization and the potential impacts of failures. Most companies provide some kind of dashboard to enable users to see the service status. However, some failures might even knock out these dashboards. Affected companies then communicate to their customers via services like Twitter to announce the updates. Independent third-party services are valuable for failure detection and status dissemination."
+  },
+  {
+   "t": "li",
+   "k": "b4f40d530363",
+   "en": "Note: The broader concept here is to use independent failure domains. A failure domain is a concept where anything failing inside a domain or network shouldn’t affect other components and services in other domains. At times, we say that two domains are independent if they’re outside the blast radius of each other.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "28bcd9f929c7",
+   "en": "In the following lessons, we’ll discuss the failures of well-known services by giant companies, the causes of failures, and what mitigation techniques can be used to avoid these failures. Although failures are a great way to learn what went wrong and what the original designers could do to avoid such failures, we’d like to prevent them from occurring at all."
+  },
+  {
+   "t": "h1",
+   "k": "01ef8535ead1",
+   "en": "Facebook, WhatsApp, Instagram, Oculus Outage"
+  },
+  {
+   "t": "p",
+   "k": "344d1d93e860",
+   "en": "Learn the causes of a major Facebook outage and how to avoid them."
+  },
+  {
+   "t": "p",
+   "k": "e28cff313d0c",
+   "en": "According to one estimate, this outage cost Facebook about $100 million in revenue losses and many billions due to the declining stock of the company."
+  },
+  {
+   "t": "h2",
+   "k": "e91756f57d3c",
+   "en": "The sequence of events"
+  },
+  {
+   "t": "p",
+   "k": "ec06830fd2e8",
+   "en": "The following sequence of events led to the outage of Facebook and its accompanied services:"
+  },
+  {
+   "t": "p",
+   "k": "23fcf059bdbd",
+   "en": "A routine maintenance system was needed to find out the spare capacity on Facebook’s backbone network."
+  },
+  {
+   "t": "p",
+   "k": "5c571dc0568c",
+   "en": "Due to a configuration error, the maintenance system disconnected all the data centers from each other on the backbone network. Earlier, an automated configuration review tool was used to look for any issues in the configuration, but tools like these aren’t perfect. In this specific case, the review tool missed the problems present in a configuration."
+  },
+  {
+   "t": "p",
+   "k": "f3cc44bf55a5",
+   "en": "The authoritative domain name systems (DNSs) of Facebook had a health check rule that if it couldn’t reach Facebook’s internal data centers, it would stop replying to client DNS queries by withdrawing the routes."
+  },
+  {
+   "t": "p",
+   "k": "8cefe4971cbc",
+   "en": "When the networks routes where Facebook’s authoritative DNS was hosted were withdrawn, all cached mapping of human-readable names to IPs soon timed out at all public DNS resolvers. When a client resolves www.facebook.com, the DNS resolver first goes to one of the root DNS servers, which provides a list of authoritative DNS servers for .com. The resolver connects to one of them, and then they provide IPs for the authoritative DNS servers for Facebook. However, after route withdrawal, it was impossible to reach them."
+  },
+  {
+   "t": "p",
+   "k": "de0ab9cc32fd",
+   "en": "Then, no one was able to reach Facebook and its subsidiaries."
+  },
+  {
+   "t": "p",
+   "k": "59e75ee9adcd",
+   "en": "The slides below depict the events in pictorial form."
+  },
+  {
+   "t": "h2",
+   "k": "36847a298bc3",
+   "en": "Analysis"
+  },
+  {
+   "t": "p",
+   "k": "3525c4f46dbc",
+   "en": "Some of the key takeaways from the series of events shown above are the following:"
+  },
+  {
+   "t": "p",
+   "k": "1991f6978341",
+   "en": "From common activity to catastrophe: The withdrawal or addition of the network routes is a relatively common activity. The confluence of bugs (first a faulty configuration, and then a bug in an audit tool not able to detect such a problem) triggered a chain of events, which resulted in cascading failures. A cascading failure is when one failure can trigger another failure, ultimately bringing the whole system down."
+  },
+  {
+   "t": "p",
+   "k": "81ed4acea243",
+   "en": "Reasons for slow restoration: It might seem odd that it took six hours to restore the service. Wasn’t it easy to reannounce the withdrawn routes? At the scale that Facebook is operating on, rarely is anything done manually, and there are automated systems to perform changes. The internal tools probably relied on the DNS infrastructure, and when all data centers are offline from the backbone, it would have been virtually impossible to use those tools. Manual intervention would have been necessary. Manually bootstrapping a system of this scale isn’t easy. The usual physical and digital security mechanisms that were in place made it a slow process to intervene manually."
+  },
+  {
+   "t": "p",
+   "k": "3a350629f2f8",
+   "en": "Low probability events can occur: In retrospect, it might seem odd that authoritative DNS systems disconnect themselves if internal data centers aren’t accessible. This is another example where a very rare event, such as none of the data centers being accessible, happened, triggering another event."
+  },
+  {
+   "t": "p",
+   "k": "41fc5588bdb6",
+   "en": "Pitfalls of automation: Facebook has been an early advocate of automating network configuration changes, effectively saying that software can do a better job of running the network than humans, who are more prone to errors. However, software can have bugs, such as this one."
+  },
+  {
+   "t": "h2",
+   "k": "96fe15f66a04",
+   "en": "Lessons learned"
+  },
+  {
+   "t": "p",
+   "k": "e81533a9a689",
+   "en": "Ready operations team: There can be a hidden single point of failure in complex systems. The best defense against such faults is to have the operations team ready for such an occurrence through regular training."
+  },
+  {
+   "t": "p",
+   "k": "95d89e17e664",
+   "en": "Thinking clearly under high-stress situations becomes necessary to deal with such events."
+  },
+  {
+   "t": "p",
+   "k": "3cde8bb6c1cf",
+   "en": "Simple system design: As systems get bigger, they become more complex, and they have emergent behaviors. To understand the overall behavior of the system, it might not be sufficient to understand only the behavior of its components. Cascading failures can arise. This is one reason to keep the system design as simple as possible for the current needs and evolve the design slowly. Unfortunately, there’s no perfect solution to deal with this problem. We should accept the possibility of such failures, perform continuous monitoring, have the ability to solve issues when they arise, and learn from the failures to improve the system."
+  },
+  {
+   "t": "p",
+   "k": "931d35fdf240",
+   "en": "Contingency plan: Some third-party services rely on Facebook for single sign-on. When the outage occurred, third-party services were up and running, but their clients were unable to use them because Facebook’s login facility was also unavailable. This is another example of assuming that some service will always remain available and of a hidden single point of failure."
+  },
+  {
+   "t": "p",
+   "k": "05949bfa8383",
+   "en": "Hosting DNS to independent third-party providers: There are a few services that are so robustly designed and perfected over time that their clients start assuming that the service is and will always be 100% available."
+  },
+  {
+   "t": "p",
+   "k": "a2bd9e07e9b5",
+   "en": "The DNS is one such service, and it has been very carefully crafted."
+  },
+  {
+   "t": "p",
+   "k": "d54d3179ae1e",
+   "en": "Designers often assume that it will never fail. Hosting DNS to independent third-party providers might be a way to guard against such problems. DNS allows multiple authoritative servers, and an organization might have many at different places. Although, we should note that DNS at Facebook’s scale isn’t simple, is tightly connected to their backbone infrastructure, and changes frequently. Delegating such a piece to an independent third party is expensive, and it might reveal internal service details. So, there can be a trade-off between business and robustness needs."
+  },
+  {
+   "t": "p",
+   "k": "808667b1ccd9",
+   "en": "Trade-offs: There can be some surprising trade-offs. An example here is the need for data security and the need for rapid manual repair. Because so many physical and digital safeguards were in place, manual intervention was slow. This is a catch-22 situation—lowering security needs can cause immense trouble, and slow repair for such events can also make it hard for the companies. The hope is that the need for such repairs is a very rare event."
+  },
+  {
+   "t": "p",
+   "k": "a84f84c71aa4",
+   "en": "Surge in load: The failure of large players disrupts the entire Internet."
+  },
+  {
+   "t": "p",
+   "k": "4c48f4d70b81",
+   "en": "Third-party public resolvers, such as Google and Cloudflare, saw a surge in the load due to unsuccessful DNS retries."
+  },
+  {
+   "t": "p",
+   "k": "2c1598f3f6e0",
+   "en": "Resuming the service: Restarting a large service isn’t as simple as flipping a switch. When the load suddenly becomes almost zero, turning them up suddenly may lead to a many megawatt uptick in power usage. This might even cause issues for the electric grid. Complex systems usually have a steady state, and if they go out of that steady state, care must be taken to bring them back."
+  },
+  {
+   "t": "p",
+   "k": "0439852c70ba",
+   "en": "Point to Ponder What can we do to safeguard against the kinds of faults experienced by Facebook?"
+  },
+  {
+   "t": "p",
+   "k": "13bde7b8482b",
+   "en": "Hide Answer Some possible solutions can look like the following:"
+  },
+  {
+   "t": "p",
+   "k": "5fb93c80658b",
+   "en": "Network verification has recently gained momentum and has shown promise in catching bugs early on. Such tools use an abstract model of the infrastructure."
+  },
+  {
+   "t": "p",
+   "k": "d880b4a619d2",
+   "en": "There can be more than one layer of auditing. Second layers might use a simulator to make sure that after the configuration changes, critical network infrastructures remain available from multiple global vantage points."
+  },
+  {
+   "t": "p",
+   "k": "ef8f885ed2a8",
+   "en": "Every effort should be taken to reduce the scope of a configuration change to avoid cascading effects."
+  },
+  {
+   "t": "p",
+   "k": "9ab5baef8606",
+   "en": "Critical infrastructure might be programmed in such a way that if something bad happens, it could return to the last known good state. This is easier said than done owing to the sheer number of components."
+  },
+  {
+   "t": "h1",
+   "k": "38333eeddfce",
+   "en": "AWS Kinesis Outage Affecting Many Organizations"
+  },
+  {
+   "t": "p",
+   "k": "a436eb24bf43",
+   "en": "Learn the causes and analysis of a major AWS Kinesis outage."
+  },
+  {
+   "t": "h2",
+   "k": "f0c8eb6f723c",
+   "en": "Sequence of events"
+  },
+  {
+   "t": "p",
+   "k": "ed77acf9aa60",
+   "en": "According to Amazon, the event was triggered by adding a small capacity to the AWS front-end fleet of servers, scheduled from 2:44 a.m. PST to 3:47"
+  },
+  {
+   "t": "li",
+   "k": "c234d98cd71b",
+   "en": "m. PST."
+  },
+  {
+   "t": "p",
+   "k": "f5ae43ee8a1a",
+   "en": "The addition of the new capacity caused all the servers in the fleet to exceed the maximum number of threads that are allowed by an operating system configuration."
+  },
+  {
+   "t": "p",
+   "k": "1868a9d6aa12",
+   "en": "Due to exceeding the limit on threads, cache construction was failing to complete, and front-end servers were ending with useless shard maps that left them unable to route requests to back-end clusters."
+  },
+  {
+   "t": "p",
+   "k": "13dcbe4f2bd1",
+   "en": "Other primary Amazon services also stopped working, including Amazon Cognito and CloudWatch."
+  },
+  {
+   "t": "p",
+   "k": "46058566ef4e",
+   "en": "Kinesis Data Streams is used by Amazon Cognito to gather and analyze API usage patterns. Because of the long-running issue with Kinesis Data Streams, a hidden error in the buffering code—which is required for Cognito services—caused the Cognito web servers to start blocking on the backlogged Kinesis Data Stream buffers. As a result, Cognito customers witnessed an increase in API failures and latencies for Cognito user pools and identity pools, making it impossible for external users to authenticate or receive temporary AWS credentials."
+  },
+  {
+   "t": "p",
+   "k": "65a4d8243f37",
+   "en": "CloudWatch uses Kinesis Data Streams to process metrics and log data. The PutMetricData and PutLogEvents APIs in CloudWatch encountered higher error rates and latencies, and alerts were set to INSUFFICIENT DATA. The great majority of metrics were unable to be processed due to higher error rates and latencies. When CloudWatch was experiencing these greater issues, internal and external clients couldn’t persist all metric data to the CloudWatch service."
+  },
+  {
+   "t": "p",
+   "k": "8b4427969a77",
+   "en": "Due to the problems with CloudWatch metrics, two services were also impacted. First, AutoScaling policies that rely on CloudWatch measurements suffered delays. Second, Lambda experienced the effect."
+  },
+  {
+   "t": "p",
+   "k": "8a720d30a6ca",
+   "en": "Currently, posting metric data to CloudWatch is required as a part of Lambda function invocation. If CloudWatch is unavailable, Lambda metric agents are meant to buffer metric data locally for a period of time. The metric data buffering became so large that it generated memory congestion on the underlying service hosts utilized for Lambda function invocations, leading to higher error rates."
+  },
+  {
+   "t": "p",
+   "k": "16192344674b",
+   "en": "Increased API failures and event processing delays plagued CloudWatch Events and EventBridge. EventBridge is used by Elastic Container Service (ECS) and Elastic Kubernetes Service (EKS) to drive internal processes for managing client clusters and jobs. This has an impact on new cluster provisioning, existing cluster scaling, and task deprovisioning."
+  },
+  {
+   "t": "p",
+   "k": "e8f283f0791e",
+   "en": "Apart from the service issues, Amazon also experienced delays in communicating service status to their customers. Amazon uses two dashboards for communication with their customers, Service Health Dashboard and Personal Health Dashboard. The Service Health Dashboard informs all customers of events, such as the current one. It was down because of its dependency on Cognito, which was impacted by this event."
+  },
+  {
+   "t": "p",
+   "k": "1bb708f71520",
+   "en": "Apart from the disruption in the Amazon services, this also had a ripple effect on thousands of third-party online services, applications, and websites. This includes Adobe Spark, Acorns, Coinbase, Washington Post, and hundreds of such services."
+  },
+  {
+   "t": "h2",
+   "k": "36847a298bc3",
+   "en": "Analysis"
+  },
+  {
+   "t": "p",
+   "k": "a262e7a5fbdf",
+   "en": "Complexity of enhancing scalability: We’ve been stressing the need for horizontal scalability in all of our design problems. This outage event shows that in practice, adding more capacity to a serving cluster so that we don’t deny any client requests can be challenging and can have unintended side effects."
+  },
+  {
+   "t": "p",
+   "k": "f82e49b95b95",
+   "en": "The need for a trained team: Training the production team to deal with such unforeseen situations is a challenging task, but it’s worth it and can result in expedited recovery. In addition, randomly restarting the front-end servers and suspecting that the memory pressure causes the problem alludes to the challenges of reaching the root causes under the stress of time."
+  },
+  {
+   "t": "p",
+   "k": "c680667adde0",
+   "en": "Reading from authoritative servers during bootstrap: During the bootstrap process, it’s a good idea to take data from the authoritative metadata store rather than from the front-end servers to reduce the impact of such failures."
+  },
+  {
+   "t": "p",
+   "k": "5d7231798355",
+   "en": "Identification of faults in initial stages: There’s a need for automated processes to identify the causes of failure within the initial stages of its occurrence."
+  },
+  {
+   "t": "p",
+   "k": "656f81648bb7",
+   "en": "Proper testing mechanisms can reduce the severity of the fault: The new capacity that’s causing the servers in the fleet to exceed the maximum number of threads is a potential bug that should have been fixed earlier than before restarting the servers. This reflects the inability to properly test the system. There should be a kind of simulator to test all cases before deploying additional capacity into the fleet."
+  },
+  {
+   "t": "p",
+   "k": "56f4c7bf5315",
+   "en": "Finding potential bugs before planned events: The issue with Kinesis Data Streams triggered a latent bug in the buffering code that caused the Cognito web servers to begin to block on the backlogged Kinesis Data Stream buffers. The potential bugs should be identified and fixed before critical planned events, such as adding capacity or software and hardware maintenance."
+  },
+  {
+   "t": "p",
+   "k": "807402426003",
+   "en": "Adopting automated processes for resource allocation: The Cognito team sought to reduce the effect of the Kinesis faults in the early phases of the event by providing extra capacity and therefore boosting their ability to buffer calls to Kinesis. Instead of manually assigning capacity, there should be an automated system to increase or reallocate capacity in such events."
+  },
+  {
+   "t": "h2",
+   "k": "96fe15f66a04",
+   "en": "Lessons learned"
+  },
+  {
+   "t": "p",
+   "k": "be13f1f4990d",
+   "en": "Testing: Proper testing and identifying the potential bugs are essential. In this case, the number of threads exceeding a maximum limit defined by the operating system seems to be a possible bug."
+  },
+  {
+   "t": "p",
+   "k": "5104f9a61f37",
+   "en": "Ready operations team: A bug bringing an overall system to a halt is the single point of failure, which is possible in a complex system. The production team should be trained and ready for such events."
+  },
+  {
+   "t": "p",
+   "k": "d0be539d5515",
+   "en": "Reducing number of servers: To get significant headroom in the thread count used as the total threads, there’s a need to move to more powerful CPU and memory servers. This will reduce the total number of servers and the threads required by each server to communicate across the fleet."
+  },
+  {
+   "t": "p",
+   "k": "e52ac70b11c5",
+   "en": "Having fewer servers means that each server maintains fewer threads."
+  },
+  {
+   "t": "p",
+   "k": "1df5ce12c8ed",
+   "en": "Amazon is adding fine-grained alarming for thread consumption in the service."
+  },
+  {
+   "t": "p",
+   "k": "16a037f42c7b",
+   "en": "Front-end fleet changes: Several changes are required to radically improve the cold start time for the front-end fleet. Moreover, the front-end server cache needs to be moved to a dedicated fleet."
+  },
+  {
+   "t": "p",
+   "k": "4c680c705d53",
+   "en": "Avoiding recurrent failures: To avoid recurrent failures in the future, extensive AWS services, like CloudWatch and others, must be moved to a separate, partitioned front-end fleet."
+  },
+  {
+   "t": "p",
+   "k": "9c8e3edbbe68",
+   "en": "Point to Ponder What possible measures should Amazon have adopted to safeguard against the kind of failures they faced in Kinesis Data Streams?"
+  },
+  {
+   "t": "p",
+   "k": "351f3c1c78f0",
+   "en": "Hide Answer Possible solutions Dividing the region into independent failure domains would have reduced the blast radius of the event and made it possible for the production team to quickly recover from the problem."
+  },
+  {
+   "t": "p",
+   "k": "bbcf7ea9b19b",
+   "en": "They should have a system like Facebook’s Resource Allowance System for capacity reservation at the time of planned and unplanned events."
+  },
+  {
+   "t": "p",
+   "k": "6866fc82b0f6",
+   "en": "Building an application across multiple clouds or AWS regions would have made it easier for the affected customers to recover quickly."
+  },
+  {
+   "t": "p",
+   "k": "804175cbf506",
+   "en": "There’s a need to uncouple services to an extreme extent to eliminate cross-dependency issues."
+  },
+  {
+   "t": "p",
+   "k": "2ca9c3211149",
+   "en": "Failures in a complex system are inevitable. However, some important services like the status dashboard should be hosted on different servers, either inside the service or in some third-party’s infrastructure."
+  },
+  {
+   "t": "h1",
+   "k": "1919508aa24f",
+   "en": "AWS Wide Spread Outage"
+  },
+  {
+   "t": "p",
+   "k": "5468799f5fc0",
+   "en": "Learn how an AWS outage halted services for individual users and businesses across the globe."
+  },
+  {
+   "t": "h2",
+   "k": "26aca7941a99",
+   "en": "Introduction"
+  },
+  {
+   "t": "p",
+   "k": "cbea931e0fbc",
+   "en": "Several Amazon services and other services that depend on AWS were disrupted by an outage incident that spanned more than eight hours on Tuesday, December 7, 2021, at approximately 7:35 a.m. PST. The incident impacted everything from home consumer products to numerous commercial services."
+  },
+  {
+   "t": "p",
+   "k": "b8460763334a",
+   "en": "This hours-long outage made headlines in the popular media, such as this one from the Financial Times: “From angry Adele fans to broken robot vacuums:"
+  },
+  {
+   "t": "p",
+   "k": "cd0e790fccd1",
+   "en": "AWS outage ripples through the US.” The outage affected millions of users worldwide, including individuals who were using the AWS online stores and other businesses that relied heavily on AWS for providing their services."
+  },
+  {
+   "t": "p",
+   "k": "bea6cf922696",
+   "en": "The disruption caused by AWS emphasized the need for a decentralized Internet where services don’t rely on a small number of giant companies. According to Gartner, 80% of the cloud market is handled by just five companies. Amazon, with a 41% share of the cloud computing market, is the largest."
+  },
+  {
+   "t": "p",
+   "k": "46f70a991735",
+   "en": "Outages like the one above remind us of famous Lamport’s quip: “A distributed system is one in which the failure of a computer you didn’t even know existed can render your own computer unusable.”"
+  },
+  {
+   "t": "h2",
+   "k": "f0c8eb6f723c",
+   "en": "Sequence of events"
+  },
+  {
+   "t": "p",
+   "k": "fa207f9d1686",
+   "en": "An automated action to expand the capacity of one of the AWS services near the main AWS network elicited unusual behavior from a significant number of customers within the internal network."
+  },
+  {
+   "t": "p",
+   "k": "41a343f41297",
+   "en": "As a result, there was a significant increase in connection activity, which swamped the networking equipment that connected the internal network to the main AWS network."
+  },
+  {
+   "t": "p",
+   "k": "086fcb31ecc6",
+   "en": "Communication between these networks got delayed. These delays enhanced latency and failures for services interacting between these networks, leading to a rise in retries and ping requests."
+  },
+  {
+   "t": "p",
+   "k": "f07a56ed4f08",
+   "en": "As a result, the devices connecting the two networks experienced constant overload and performance difficulties."
+  },
+  {
+   "t": "p",
+   "k": "bff7a2c5255c",
+   "en": "This overload instantly affected the availability of real-time monitoring data for AWS internal operations teams, hampering their ability to identify and remedy the cause of the congestion."
+  },
+  {
+   "t": "p",
+   "k": "dedbf34a6e09",
+   "en": "Operators relied on logs to figure out what was going on and initially observed heightened internal DNS failures."
+  },
+  {
+   "t": "p",
+   "k": "035c9633f175",
+   "en": "The following slides show the series of events that led to the outage."
+  },
+  {
+   "t": "h2",
+   "k": "36847a298bc3",
+   "en": "Analysis"
+  },
+  {
+   "t": "p",
+   "k": "5b49d52dddd8",
+   "en": "Hampered AWS services: The networking difficulties affected a variety of AWS services, impacting customers that utilized these service capabilities."
+  },
+  {
+   "t": "p",
+   "k": "2bf95381a9b7",
+   "en": "Since the primary AWS network remained unaffected, certain client applications that don’t depend on these capabilities suffered relatively minor consequences as a result of this occurrence. AWS users, such as Amazon RDS, EMR, and Workspaces, were unable to generate new resources due to the inability of the system to launch new EC2 instances."
+  },
+  {
+   "t": "p",
+   "k": "fe4f770a57bf",
+   "en": "Impaired control plane: Apart from the AWS services, the AWS control planes that are used for establishing and managing AWS resources were also impacted. These control planes take advantage of internal network-hosted services. For example, EC2 instances weren’t affected by this event, but EC2 APIs suffered from increased latency and error rates."
+  },
+  {
+   "t": "p",
+   "k": "e55036876c84",
+   "en": "Slow restoration: Since DNS is the basis for all communication across the web, operators focused on moving the internal DNS traffic away from congested areas of the network in order to improve availability. However, since monitoring services were unavailable, operators had to identify and disable major sources of traffic manually. This further improved the availability of services."
+  },
+  {
+   "t": "p",
+   "k": "5ac58faf09e4",
+   "en": "Elastic Load Balancers (ELB): Current Elastic Load Balancers were unaffected by the incident. However, the rising API error rates and latencies for the ELB APIs resulted in longer provisioning times for new load balancers."
+  },
+  {
+   "t": "h2",
+   "k": "96fe15f66a04",
+   "en": "Lessons learned"
+  },
+  {
+   "t": "p",
+   "k": "e243961cc8b5",
+   "en": "Independent communication system: While the intention of having an internal network that’s separate from the main network is the right idea, they weren’t truly independent. A sequence of events highlighted their dependency. Finding such dependencies is crucial to truly benefit from independent networks for internal service use and external client use."
+  },
+  {
+   "t": "p",
+   "k": "3d343f0b1c92",
+   "en": "Contingency plan: Although AWS takes measures to prepare its infrastructure for sudden surges in customer requests or power usage, the organization still found itself in a difficult situation due to the unusual severity of the failure. Investing in greater risk-based contingency planning benefits organizations during times of crisis."
+  },
+  {
+   "t": "p",
+   "k": "20bae7e6e104",
+   "en": "Ready operations team: A bug bringing an overall system to a halt is a single point of failure, which is possible in a complex system. The production team should be trained and ready for such events."
+  },
+  {
+   "t": "p",
+   "k": "05adfc585339",
+   "en": "Multiple cloud computing providers: Organizations can replicate their operations among many cloud computing providers so that no single failure knocks them out of action. However, this is easier said than done."
+  },
+  {
+   "t": "p",
+   "k": "05e25b8b6544",
+   "en": "An alternative approach is to employ different regions of the same provider for various purposes."
+  },
+  {
+   "t": "p",
+   "k": "c9f018028924",
+   "en": "Testing: Carrying out proper testing and identifying the potential bugs are both essential. In this case, overwhelming the network devices resulted in communication delays between these networks."
+  },
+  {
+   "t": "p",
+   "k": "d5a0207b45db",
+   "en": "Point to Ponder What can we do to safeguard against the series of faults experienced by Amazon?"
+  },
+  {
+   "t": "p",
+   "k": "4851e6230117",
+   "en": "Hide Answer We suggest the following solutions:"
+  },
+  {
+   "t": "p",
+   "k": "d557c648547e",
+   "en": "End-to-end transparency at each layer gives the information required to run the sites and services properly."
+  },
+  {
+   "t": "p",
+   "k": "6866fc82b0f6",
+   "en": "Building an application across multiple clouds or AWS regions would have made it easier for the affected customers to recover quickly."
+  },
+  {
+   "t": "p",
+   "k": "804175cbf506",
+   "en": "There’s a need to uncouple services to an extreme extent to eliminate cross-dependency issues."
+  }
+ ]
+}

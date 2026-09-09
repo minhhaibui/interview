@@ -1,0 +1,137 @@
+{
+ "id": "08-event-ordering-in-a-message-queue",
+ "title": "Event Ordering in a Message Queue",
+ "titleKey": "a2484c1e6d67",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "38259b0534c0",
+   "en": "Your order service publishes 3 events per order: created, paid, cancelled."
+  },
+  {
+   "t": "p",
+   "k": "9b80b7caaa0c",
+   "en": "Standard SQS queue, 5 consumers, ~2K orders/minute at peak."
+  },
+  {
+   "t": "p",
+   "k": "3f3954cabb20",
+   "en": "Last night, prod alerted: 47 orders stuck in \"cancelled\" state with no \"created\" record. Customers got refunded for orders that were never marked as placed. Finance is not happy."
+  },
+  {
+   "t": "p",
+   "k": "f04c03161454",
+   "en": "You dig in. The order was placed, paid, and cancelled within 400ms. Three messages hit SQS in order."
+  },
+  {
+   "t": "p",
+   "k": "51150523f49a",
+   "en": "Three consumers picked them up in parallel. \"cancelled\" got processed first. State machine rejected \"created\" as invalid. Data is now wrong."
+  },
+  {
+   "t": "p",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:"
+  },
+  {
+   "t": "p",
+   "k": "026cebf600a3",
+   "en": "OrderService SQS (standard) 5 workers Postgres→→→ Events: order.created order.paid order.cancelled→→ Problem: workers process in parallel, SQS standard doesn't guarantee order, downstream state machine breaks when events arrive out of sequence."
+  },
+  {
+   "t": "p",
+   "k": "98ef6002b5db",
+   "en": "You have until Monday. What do you do?"
+  },
+  {
+   "t": "p",
+   "k": "7177cd14e022",
+   "en": "Switch to SQS FIFO + MessageGroupId per order_id — let AWS handle ordering per order. Keep standard SQS, add a sequence number + reorder buffer in the consumer — hold out-of- Replace the event stream with a Saga — each step waits for the previous step's completion signal Add an event version/timestamp and make the state machine idempotent + order-agnostic — order events until the earlier ones arrive. before firing the next. reject stale transitions, accept any arrival order."
+  },
+  {
+   "t": "h3",
+   "k": "d9d84ba4b469",
+   "en": "DAY 07 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "78fbaa74f064",
+   "en": "✅ Answer: A — SQS FIFO + MessageGroupId per order_id"
+  },
+  {
+   "t": "li",
+   "k": "f7bbb6ecd435",
+   "en": "Why A wins:",
+   "lead": "Why A wins"
+  },
+  {
+   "t": "p",
+   "k": "e647a2b43cb8",
+   "en": "You don't need global ordering — you need per-order ordering. Set MessageGroupId = order_id. FIFO guarantees messages with the same group ID are delivered in exact send order, with only one consumer processing that group at a time. Your 2K orders/min still fan out across 5 workers — throughput is unchanged. Order #12345's created paid cancelled always lands in sequence.→→ Cost: a few ms latency. Ship it Monday."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "dbd737bbbc48",
+   "en": "Why B is the trap (reorder buffer):",
+   "lead": "Why B is the trap (reorder buffer)"
+  },
+  {
+   "t": "p",
+   "k": "96bac87d9b7c",
+   "en": "Fools senior engineers on the whiteboard. You'd end up building: in-memory buffer per order_id + TTL logic + dead-letter path for gaps + crash recovery + stuck buffer monitoring. You just rebuilt FIFO in app code. With more bugs. And you own every edge case. B is valid only when you can't use FIFO (e.g. Kafka with a taken partition key). That's not this situation."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "e045a0d339ff",
+   "en": "Why C is wrong (Saga):",
+   "lead": "Why C is wrong (Saga)"
+  },
+  {
+   "t": "p",
+   "k": "fdb50cecf23f",
+   "en": "Saga is for long-running distributed transactions with compensating actions (book flight charge→ card reserve hotel). Your problem is a →state stream for one entity — not a multi-service transaction."
+  },
+  {
+   "t": "p",
+   "k": "7d8d053abcf9",
+   "en": "Forcing it into a Saga turns async events into sync RPC, increases coupling, and still doesn't fix ordering."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "5c523a4b309a",
+   "en": "Why D is wrong (event versioning):",
+   "lead": "Why D is wrong (event versioning)"
+  },
+  {
+   "t": "p",
+   "k": "62f207ef9d2f",
+   "en": "Partially works — but you'd drop legitimate events. \"cancelled\" arrives first, moves state forward, then \"created\" gets rejected. DB says order is cancelled with no creation record. To make D work correctly you need full event sourcing (6-month rewrite, not a Monday fix)."
+  },
+  {
+   "t": "p",
+   "k": "748d187de288",
+   "en": "Write-through — every write hits cache and Postgres in the same transaction. Cache is never"
+  },
+  {
+   "t": "h3",
+   "k": "d3248bf68a79",
+   "en": "DAY 08 · SYSTEM DESIGN"
+  }
+ ]
+}

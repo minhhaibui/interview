@@ -1,0 +1,38 @@
+{
+ "id": "52-interview-question-design-gmail",
+ "title": "Interview Question: Design Gmail",
+ "titleKey": "33058c85a0ef",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "b80f33d6d47c",
+   "en": "One picture is worth more than a thousand words. In this post, we will take a look at what happens when Alice sends an email to Bob."
+  },
+  {
+   "t": "li",
+   "k": "f7a005a5d310",
+   "en": "Alice logs in to her Outlook client, composes an email, and presses “send”. The email is sent to the Outlook mail server. The communication protocol between the Outlook client and mail server is SMTP."
+  },
+  {
+   "t": "li",
+   "k": "f7f571fe02f2",
+   "en": "Outlook mail server queries the DNS (not shown in the diagram) to find the address of the recipient’s SMTP server. In this case, it is Gmail’s SMTP server. Next, it transfers the email to the Gmail mail server. The communication protocol between the mail servers is SMTP."
+  },
+  {
+   "t": "li",
+   "k": "8dd950f69c70",
+   "en": "The Gmail server stores the email and makes it available to Bob, the recipient. 111"
+  },
+  {
+   "t": "li",
+   "k": "8617b2e40457",
+   "en": "Gmail client fetches new emails through the IMAP/POP server when Bob logs in to Gmail."
+  },
+  {
+   "t": "p",
+   "k": "38a5bf7cd3aa",
+   "en": "Please keep in mind this is a highly simplified design. Hope it sparks your interest and curiosity:) I'll explain each component in more depth in the future. 112"
+  }
+ ]
+}

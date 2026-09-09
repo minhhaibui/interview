@@ -1,0 +1,147 @@
+{
+ "id": "52-isolating-noisy-tenants-in-multi-tenant-saas",
+ "title": "Isolating Noisy Tenants in Multi-Tenant SaaS",
+ "titleKey": "caf039279383",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "98fd5ddcf6d5",
+   "en": "You're building a B2B SaaS product. 50 enterprise customers. Each one wants their data isolated. Some are on free plans. A few are paying $50k/year and demanding SLA guarantees."
+  },
+  {
+   "t": "p",
+   "k": "4b2233156c9c",
+   "en": "Your current setup: → One database. One schema. A tenant_id column on every table. → One app server handling all traffic. → A free-tier customer running a badly-written bulk export just hammered your DB for 40 seconds. A paying enterprise customer's checkout flow timed out."
+  },
+  {
+   "t": "p",
+   "k": "a4939219fb4c",
+   "en": "Your investors are not happy. Neither is that enterprise customer."
+  },
+  {
+   "t": "p",
+   "k": "718bc579f19e",
+   "en": "The engineering question: how do you isolate tenants without rebuilding the whole product?"
+  },
+  {
+   "t": "p",
+   "k": "f3581f29d9cb",
+   "en": "A) Keep one shared DB — add row-level security + query budgets per tenant to enforce limits."
+  },
+  {
+   "t": "p",
+   "k": "892bb766e987",
+   "en": "B) Schema-per-tenant — every customer gets their own schema in the same Postgres instance, migrations run per-schema."
+  },
+  {
+   "t": "p",
+   "k": "bcb17d369f12",
+   "en": "C) Database-per-tenant (silo model) — each enterprise customer gets a dedicated DB. Free tier stays pooled."
+  },
+  {
+   "t": "p",
+   "k": "f2906ddc755f",
+   "en": "D) Middleware bridge — route requests to tenant-specific DB clusters based on a tenant registry, free tier stays on shared pool."
+  },
+  {
+   "t": "h3",
+   "k": "7bbb73505713",
+   "en": "DAY 51 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "li",
+   "k": "721ae17357d2",
+   "en": "Why D wins (Middleware bridge — hybrid model):",
+   "lead": "Why D wins (Middleware bridge — hybrid model)"
+  },
+  {
+   "t": "p",
+   "k": "5a2f2a8c3042",
+   "en": "This is the pattern Salesforce, HubSpot, and every mature B2B SaaS converges on eventually."
+  },
+  {
+   "t": "p",
+   "k": "cbacb21e61d1",
+   "en": "The architecture: → Free/small tenants shared pool DB (cost-efficient, acceptable risk)→ → Mid-tier tenants schema-per-tenant in a shared Postgres cluster→ → Enterprise tenants dedicated DB cluster (full isolation, SLA-able)→ A tenant registry (Redis or a lightweight service) maps tenant_id connection config at request time.→ Your app server doesn't care which model a tenant uses — it asks the registry and gets a connection string back."
+  },
+  {
+   "t": "p",
+   "k": "a4de2042a3e1",
+   "en": "The payoff: → Noisy neighbor is contained. A runaway free-tier export can only hurt other free-tier tenants. → Enterprise customers can't touch each other. Period. → You can migrate a tenant up the isolation ladder as they grow — without touching app code. → GDPR deletion is one DB drop for enterprise tenants, not a cascade delete across shared tables."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "54f04033f8e5",
+   "en": "Why A fails (Row-level security + query budgets):",
+   "lead": "Why A fails (Row-level security + query budgets)"
+  },
+  {
+   "t": "p",
+   "k": "640ddc196154",
+   "en": "RLS works. Query budgets can work. But they share the same DB process. A tenant that opens 500 connections, triggers a table lock, or fills the WAL — that bleeds into every other tenant on the instance. You can throttle CPU, but you can't throttle I/O blast radius once it's in the buffer pool."
+  },
+  {
+   "t": "p",
+   "k": "d51101519e96",
+   "en": "This is the band-aid answer. Fine at 5 tenants. Falls apart at 50."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "fcc0cde29403",
+   "en": "Why B is dangerous (Schema-per-tenant):",
+   "lead": "Why B is dangerous (Schema-per-tenant)"
+  },
+  {
+   "t": "p",
+   "k": "7efbfbb9f475",
+   "en": "Schema-per-tenant sounds clean. It is, until: → 300 tenants need a migration. That's 300 sequential DDL operations on one Postgres instance."
+  },
+  {
+   "t": "p",
+   "k": "d74d9380202f",
+   "en": "Migration windows become a multi-hour risk event. → At 500 tenants you're burning connection slots faster than you can PgBounce your way out. → One long-running query in schema_tenant_247 still holds locks on shared system tables. Noisy neighbor hasn't gone away — you just can't see it as clearly."
+  },
+  {
+   "t": "p",
+   "k": "2d0024ded42a",
+   "en": "Schema-per-tenant is a local maximum. You hit Postgres scaling walls before you hit the point where it pays off."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "245153b5095a",
+   "en": "Why C is too expensive too early (Full silo):",
+   "lead": "Why C is too expensive too early (Full silo)"
+  },
+  {
+   "t": "p",
+   "k": "84bf6c6b75fc",
+   "en": "The silo model is the correct isolation model for enterprise customers. But applying it to all tenants — including a free tier with 1,000 accounts — means 1,000 Postgres instances. That's $40k/month in RDS costs before you've made a dollar."
+  },
+  {
+   "t": "p",
+   "k": "77b62c9f4acf",
+   "en": "Full silo for everyone is the right endgame for the top 5% of your customer base. Applying it everywhere is overengineering."
+  },
+  {
+   "t": "h3",
+   "k": "2ff71d73f292",
+   "en": "DAY 52 · SYSTEM DESIGN"
+  }
+ ]
+}

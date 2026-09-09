@@ -1,0 +1,1038 @@
+{
+ "id": "15-chapter-14-design-youtube",
+ "title": "CHAPTER 14: DESIGN YOUTUBE",
+ "titleKey": "60f551ebc01f",
+ "book": "alex-vol1",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "c88cab5a858e",
+   "en": "In this chapter, you are asked to design YouTube. The solution to this question can be applied to other interview questions like designing a video sharing platform such as Netflix and Hulu."
+  },
+  {
+   "t": "p",
+   "k": "3af9a1524d68",
+   "en": "Figure 14-1 shows the YouTube homepage."
+  },
+  {
+   "t": "p",
+   "k": "7a13bbe488ff",
+   "en": "YouTube looks simple: content creators upload videos and viewers click play. Is it really that simple? Not really. There are lots of complex technologies underneath the simplicity. Let us look at some impressive statistics, demographics, and fun facts of YouTube in 2020 [1] [2]."
+  },
+  {
+   "t": "li",
+   "k": "e7795f83b072",
+   "en": "Total number of monthly active users: 2 billion."
+  },
+  {
+   "t": "li",
+   "k": "e771e793716d",
+   "en": "Number of videos watched per day: 5 billion."
+  },
+  {
+   "t": "li",
+   "k": "cfdb2cb2dcf5",
+   "en": "73% of US adults use YouTube."
+  },
+  {
+   "t": "li",
+   "k": "6bd3cf2fd4ca",
+   "en": "50 million creators on YouTube."
+  },
+  {
+   "t": "li",
+   "k": "6533d3dadc66",
+   "en": "YouTube’s Ad revenue was $15.1 billion for the full year 2019, up 36% from 2018."
+  },
+  {
+   "t": "li",
+   "k": "2b83c90578f2",
+   "en": "YouTube is responsible for 37% of all mobile internet traffic."
+  },
+  {
+   "t": "li",
+   "k": "c90244b15e57",
+   "en": "YouTube is available in 80 different languages."
+  },
+  {
+   "t": "p",
+   "k": "f7e7686857d3",
+   "en": "From these statistics, we know YouTube is enormous, global and makes a lot of money."
+  },
+  {
+   "t": "h2",
+   "k": "cdb2072eee15",
+   "en": "Step 1 - Understand the problem and establish design scope"
+  },
+  {
+   "t": "p",
+   "k": "e33ede5abc5c",
+   "en": "As revealed in Figure 14-1, besides watching a video, you can do a lot more on YouTube. For example, comment, share, or like a video, save a video to playlists, subscribe to a channel, etc. It is impossible to design everything within a 45- or 60-minute interview. Thus, it is important to ask questions to narrow down the scope."
+  },
+  {
+   "t": "p",
+   "k": "a31e6cc55679",
+   "en": "Candidate: What features are important?"
+  },
+  {
+   "t": "p",
+   "k": "ca1c5e0fa945",
+   "en": "Interviewer: Ability to upload a video and watch a video."
+  },
+  {
+   "t": "p",
+   "k": "b4f0bb0c8d60",
+   "en": "Candidate: What clients do we need to support?"
+  },
+  {
+   "t": "p",
+   "k": "aac8e1b03468",
+   "en": "Interviewer: Mobile apps, web browsers, and smart TV."
+  },
+  {
+   "t": "p",
+   "k": "33c2c04863fa",
+   "en": "Candidate: How many daily active users do we have?"
+  },
+  {
+   "t": "h3",
+   "k": "24003840782f",
+   "en": "Interviewer: 5 million"
+  },
+  {
+   "t": "p",
+   "k": "0ed4aa6718d6",
+   "en": "Candidate: What is the average daily time spent on the product?"
+  },
+  {
+   "t": "p",
+   "k": "3121f6e4030d",
+   "en": "Interviewer: 30 minutes."
+  },
+  {
+   "t": "p",
+   "k": "1391d908933b",
+   "en": "Candidate: Do we need to support international users?"
+  },
+  {
+   "t": "p",
+   "k": "57cb50dba3c8",
+   "en": "Interviewer: Yes, a large percentage of users are international users."
+  },
+  {
+   "t": "p",
+   "k": "5b0eba6767b0",
+   "en": "Candidate: What are the supported video resolutions?"
+  },
+  {
+   "t": "p",
+   "k": "4953947416d1",
+   "en": "Interviewer: The system accepts most of the video resolutions and formats."
+  },
+  {
+   "t": "p",
+   "k": "8d5ab2348b95",
+   "en": "Candidate: Is encryption required?"
+  },
+  {
+   "t": "h3",
+   "k": "109cdd8736c4",
+   "en": "Interviewer: Yes"
+  },
+  {
+   "t": "p",
+   "k": "0ff9239b41df",
+   "en": "Candidate: Any file size requirement for videos?"
+  },
+  {
+   "t": "p",
+   "k": "5b7e0b874d0d",
+   "en": "Interviewer: Our platform focuses on small and medium-sized videos. The maximum allowed video size is 1GB."
+  },
+  {
+   "t": "p",
+   "k": "8b5e76e50e37",
+   "en": "Candidate: Can we leverage some of the existing cloud infrastructures provided by Amazon, Google, or Microsoft?"
+  },
+  {
+   "t": "p",
+   "k": "b063a1085221",
+   "en": "Interviewer: That is a great question. Building everything from scratch is unrealistic for most companies, it is recommended to leverage some of the existing cloud services."
+  },
+  {
+   "t": "p",
+   "k": "4a74bf69c615",
+   "en": "In the chapter, we focus on designing a video streaming service with the following features:"
+  },
+  {
+   "t": "li",
+   "k": "10e4b2e972f3",
+   "en": "Ability to upload videos fast"
+  },
+  {
+   "t": "li",
+   "k": "2dbc76064b16",
+   "en": "Smooth video streaming"
+  },
+  {
+   "t": "li",
+   "k": "e6f4395e391d",
+   "en": "Ability to change video quality"
+  },
+  {
+   "t": "li",
+   "k": "facfbe38ffb1",
+   "en": "Low infrastructure cost"
+  },
+  {
+   "t": "li",
+   "k": "d11a8cf7c439",
+   "en": "High availability, scalability, and reliability requirements"
+  },
+  {
+   "t": "li",
+   "k": "d9158d6d864d",
+   "en": "Clients supported: mobile apps, web browser, and smart TV"
+  },
+  {
+   "t": "h2",
+   "k": "b3f31ee7c5b5",
+   "en": "Back of the envelope estimation"
+  },
+  {
+   "t": "p",
+   "k": "37fdb6b8d43f",
+   "en": "The following estimations are based on many assumptions, so it is important to communicate with the interviewer to make sure she is on the same page."
+  },
+  {
+   "t": "li",
+   "k": "102243cf673c",
+   "en": "Assume the product has 5 million daily active users (DAU)."
+  },
+  {
+   "t": "li",
+   "k": "62dd15d06c27",
+   "en": "Users watch 5 videos per day."
+  },
+  {
+   "t": "li",
+   "k": "f37fe88f30d9",
+   "en": "10% of users upload 1 video per day."
+  },
+  {
+   "t": "li",
+   "k": "763545e79ceb",
+   "en": "Assume the average video size is 300 MB."
+  },
+  {
+   "t": "li",
+   "k": "37b85f720324",
+   "en": "Total daily storage space needed: 5 million * 10% * 300 MB = 150TB"
+  },
+  {
+   "t": "li",
+   "k": "dd4dcbc86b61",
+   "en": "CDN cost."
+  },
+  {
+   "t": "li",
+   "k": "a214b8e6dc3f",
+   "en": "When cloud CDN serves a video, you are charged for data transferred out of the CDN."
+  },
+  {
+   "t": "li",
+   "k": "e124dfa7f1d0",
+   "en": "Let us use Amazon’s CDN CloudFront for cost estimation (Figure 14-2) [3]. Assume 100% of traffic is served from the United States. The average cost per GB is $0.02."
+  },
+  {
+   "t": "p",
+   "k": "266e92c198b0",
+   "en": "For simplicity, we only calculate the cost of video streaming."
+  },
+  {
+   "t": "li",
+   "k": "e602b4458436",
+   "en": "5 million * 5 videos * 0.3GB * $0.02 = $150,000 per day."
+  },
+  {
+   "t": "p",
+   "k": "93ac4c00f045",
+   "en": "From the rough cost estimation, we know serving videos from the CDN costs lots of money."
+  },
+  {
+   "t": "p",
+   "k": "3aa8e2eeb634",
+   "en": "Even though cloud providers are willing to lower the CDN costs significantly for big customers, the cost is still substantial. We will discuss ways to reduce CDN costs in deep dive."
+  },
+  {
+   "t": "h2",
+   "k": "21ec56b45561",
+   "en": "Step 2 - Propose high-level design and get buy-in"
+  },
+  {
+   "t": "p",
+   "k": "3ec643664d75",
+   "en": "As discussed previously, the interviewer recommended leveraging existing cloud services instead of building everything from scratch. CDN and blob storage are the cloud services we will leverage. Some readers might ask why not building everything by ourselves? Reasons are listed below:"
+  },
+  {
+   "t": "li",
+   "k": "e83133443e00",
+   "en": "System design interviews are not about building everything from scratch. Within the limited time frame, choosing the right technology to do a job right is more important than explaining how the technology works in detail. For instance, mentioning blob storage for storing source videos is enough for the interview. Talking about the detailed design for blob storage could be an overkill."
+  },
+  {
+   "t": "li",
+   "k": "5d3089a1f674",
+   "en": "Building scalable blob storage or CDN is extremely complex and costly. Even large companies like Netflix or Facebook do not build everything themselves. Netflix leverages Amazon’s cloud services [4], and Facebook uses Akamai’s CDN [5]."
+  },
+  {
+   "t": "p",
+   "k": "00216ae1eb2d",
+   "en": "At the high-level, the system comprises three components (Figure 14-3)."
+  },
+  {
+   "t": "p",
+   "k": "dd164fb5d67e",
+   "en": "Client: You can watch YouTube on your computer, mobile phone, and smartTV."
+  },
+  {
+   "t": "p",
+   "k": "91b29eb18c60",
+   "en": "CDN: Videos are stored in CDN. When you press play, a video is streamed from the CDN."
+  },
+  {
+   "t": "p",
+   "k": "8bd6a1bdfc7f",
+   "en": "API servers: Everything else except video streaming goes through API servers. This includes feed recommendation, generating video upload URL, updating metadata database and cache, user signup, etc."
+  },
+  {
+   "t": "p",
+   "k": "0d6b3b37a633",
+   "en": "In the question/answer session, the interviewer showed interests in two flows:"
+  },
+  {
+   "t": "li",
+   "k": "872ef3a30c11",
+   "en": "Video uploading flow"
+  },
+  {
+   "t": "li",
+   "k": "221146b0a789",
+   "en": "Video streaming flow We will explore the high-level design for each of them."
+  },
+  {
+   "t": "h2",
+   "k": "872ef3a30c11",
+   "en": "Video uploading flow"
+  },
+  {
+   "t": "p",
+   "k": "f10fd7b2622c",
+   "en": "Figure 14-4 shows the high-level design for the video uploading."
+  },
+  {
+   "t": "p",
+   "k": "6a1aacc82d56",
+   "en": "It consists of the following components:"
+  },
+  {
+   "t": "li",
+   "k": "0bf4d2356cec",
+   "en": "User: A user watches YouTube on devices such as a computer, mobile phone, or smart TV."
+  },
+  {
+   "t": "li",
+   "k": "8c7bbb525896",
+   "en": "Load balancer: A load balancer evenly distributes requests among API servers."
+  },
+  {
+   "t": "li",
+   "k": "6f1e3728f507",
+   "en": "API servers: All user requests go through API servers except video streaming."
+  },
+  {
+   "t": "li",
+   "k": "0b8e89e3f22f",
+   "en": "Metadata DB: Video metadata are stored in Metadata DB. It is sharded and replicated to meet performance and high availability requirements."
+  },
+  {
+   "t": "li",
+   "k": "3c7b1f7fc70f",
+   "en": "Metadata cache: For better performance, video metadata and user objects are cached."
+  },
+  {
+   "t": "li",
+   "k": "d7ab6e853b42",
+   "en": "Original storage: A blob storage system is used to store original videos. A quotation in Wikipedia regarding blob storage shows that: “A Binary Large Object (BLOB) is a collection of binary data stored as a single entity in a database management system” [6]."
+  },
+  {
+   "t": "li",
+   "k": "bc5a23b5e6ca",
+   "en": "Transcoding servers: Video transcoding is also called video encoding. It is the process of converting a video format to other formats (MPEG, HLS, etc), which provide the best video streams possible for different devices and bandwidth capabilities."
+  },
+  {
+   "t": "li",
+   "k": "438fbe21b08f",
+   "en": "Transcoded storage: It is a blob storage that stores transcoded video files."
+  },
+  {
+   "t": "li",
+   "k": "c0c5cd864af7",
+   "en": "CDN: Videos are cached in CDN. When you click the play button, a video is streamed from the CDN."
+  },
+  {
+   "t": "li",
+   "k": "d9a912b8af82",
+   "en": "Completion queue: It is a message queue that stores information about video transcoding completion events."
+  },
+  {
+   "t": "li",
+   "k": "2c86c11bb6f4",
+   "en": "Completion handler: This consists of a list of workers that pull event data from the completion queue and update metadata cache and database."
+  },
+  {
+   "t": "p",
+   "k": "af1eddfe9680",
+   "en": "Now that we understand each component individually, let us examine how the video uploading flow works. The flow is broken down into two processes running in parallel."
+  },
+  {
+   "t": "li",
+   "k": "e326d3fd1e0f",
+   "en": "Upload the actual video."
+  },
+  {
+   "t": "li",
+   "k": "28e4dd13f835",
+   "en": "Update video metadata. Metadata contains information about video URL, size, resolution, format, user info, etc."
+  },
+  {
+   "t": "h3",
+   "k": "e4702a2f3eb3",
+   "en": "Flow a: upload the actual video"
+  },
+  {
+   "t": "p",
+   "k": "73b76e1d5192",
+   "en": "Figure 14-5 shows how to upload the actual video. The explanation is shown below:"
+  },
+  {
+   "t": "li",
+   "k": "1e5fb448e5c9",
+   "en": "Videos are uploaded to the original storage."
+  },
+  {
+   "t": "li",
+   "k": "11f24e758fe9",
+   "en": "Transcoding servers fetch videos from the original storage and start transcoding."
+  },
+  {
+   "t": "li",
+   "k": "1286288f6f54",
+   "en": "Once transcoding is complete, the following two steps are executed in parallel: 3a. Transcoded videos are sent to transcoded storage. 3b. Transcoding completion events are queued in the completion queue. 3a.1. Transcoded videos are distributed to CDN. 3b.1. Completion handler contains a bunch of workers that continuously pull event data from the queue. 3b.1.a. and 3b.1.b. Completion handler updates the metadata database and cache when video transcoding is complete."
+  },
+  {
+   "t": "li",
+   "k": "3fb35e591f8e",
+   "en": "API servers inform the client that the video is successfully uploaded and is ready for streaming."
+  },
+  {
+   "t": "h3",
+   "k": "4bab22ac179c",
+   "en": "Flow b: update the metadata"
+  },
+  {
+   "t": "p",
+   "k": "0adfabd3e45d",
+   "en": "While a file is being uploaded to the original storage, the client in parallel sends a request to update the video metadata as shown in Figure 14-6. The request contains video metadata, including file name, size, format, etc. API servers update the metadata cache and database."
+  },
+  {
+   "t": "h2",
+   "k": "3ec5b6319530",
+   "en": "Video streaming flow"
+  },
+  {
+   "t": "p",
+   "k": "a22d886cc505",
+   "en": "Whenever you watch a video on YouTube, it usually starts streaming immediately and you do not wait until the whole video is downloaded. Downloading means the whole video is copied to your device, while streaming means your device continuously receives video streams from remote source videos. When you watch streaming videos, your client loads a little bit of data at a time so you can watch videos immediately and continuously."
+  },
+  {
+   "t": "p",
+   "k": "dc621151dc9d",
+   "en": "Before we discuss video streaming flow, let us look at an important concept: streaming protocol. This is a standardized way to control data transfer for video streaming. Popular streaming protocols are:"
+  },
+  {
+   "t": "li",
+   "k": "e8e87c65fc90",
+   "en": "MPEG–DASH. MPEG stands for “Moving Picture Experts Group” and DASH stands for \"Dynamic Adaptive Streaming over HTTP\"."
+  },
+  {
+   "t": "li",
+   "k": "a50090f2dbe8",
+   "en": "Apple HLS. HLS stands for “HTTP Live Streaming”."
+  },
+  {
+   "t": "li",
+   "k": "cd652db5ca96",
+   "en": "Microsoft Smooth Streaming."
+  },
+  {
+   "t": "li",
+   "k": "97b009c3c507",
+   "en": "Adobe HTTP Dynamic Streaming (HDS)."
+  },
+  {
+   "t": "p",
+   "k": "b69def912e09",
+   "en": "You do not need to fully understand or even remember those streaming protocol names as they are low-level details that require specific domain knowledge. The important thing here is to understand that different streaming protocols support different video encodings and playback players. When we design a video streaming service, we have to choose the right streaming protocol to support our use cases. To learn more about streaming protocols, here is an excellent article [7]."
+  },
+  {
+   "t": "p",
+   "k": "c8ba5ef692fc",
+   "en": "Videos are streamed from CDN directly. The edge server closest to you will deliver the video. Thus, there is very little latency. Figure 14-7 shows a high level of design for video streaming."
+  },
+  {
+   "t": "h2",
+   "k": "5008c4b3d7bc",
+   "en": "Step 3 - Design deep dive"
+  },
+  {
+   "t": "h2",
+   "k": "bcd037021ead",
+   "en": "Video transcoding"
+  },
+  {
+   "t": "p",
+   "k": "ec1ca4c56e26",
+   "en": "When you record a video, the device (usually a phone or camera) gives the video file a certain format. If you want the video to be played smoothly on other devices, the video must be encoded into compatible bitrates and formats. Bitrate is the rate at which bits are processed over time. A higher bitrate generally means higher video quality. High bitrate streams need more processing power and fast internet speed."
+  },
+  {
+   "t": "p",
+   "k": "f0dc39f948b4",
+   "en": "Video transcoding is important for the following reasons:"
+  },
+  {
+   "t": "li",
+   "k": "e4b39a45b4de",
+   "en": "Raw video consumes large amounts of storage space. An hour-long high definition video recorded at 60 frames per second can take up a few hundred GB of space."
+  },
+  {
+   "t": "li",
+   "k": "5528bcf6fdc5",
+   "en": "Many devices and browsers only support certain types of video formats. Thus, it is important to encode a video to different formats for compatibility reasons."
+  },
+  {
+   "t": "li",
+   "k": "aa1335339d16",
+   "en": "To ensure users watch high-quality videos while maintaining smooth playback, it is a good idea to deliver higher resolution video to users who have high network bandwidth and lower resolution video to users who have low bandwidth."
+  },
+  {
+   "t": "li",
+   "k": "6c5fd82cb7a8",
+   "en": "Network conditions can change, especially on mobile devices. To ensure a video is played continuously, switching video quality automatically or manually based on network conditions is essential for smooth user experience."
+  },
+  {
+   "t": "p",
+   "k": "49cbe60b7363",
+   "en": "Many types of encoding formats are available; however, most of them contain two parts:"
+  },
+  {
+   "t": "li",
+   "k": "a471dff0cf55",
+   "en": "Container: This is like a basket that contains the video file, audio, and metadata. You can tell the container format by the file extension, such as .avi, .mov, or .mp4."
+  },
+  {
+   "t": "li",
+   "k": "4c21aeb0bf75",
+   "en": "Codecs: These are compression and decompression algorithms aim to reduce the video size while preserving the video quality. The most used video codecs are H.264, VP9, and HEVC."
+  },
+  {
+   "t": "h2",
+   "k": "b6c2ee3ae3a0",
+   "en": "Directed acyclic graph (DAG) model"
+  },
+  {
+   "t": "p",
+   "k": "517106c79e27",
+   "en": "Transcoding a video is computationally expensive and time-consuming. Besides, different content creators may have different video processing requirements. For instance, some content creators require watermarks on top of their videos, some provide thumbnail images themselves, and some upload high definition videos, whereas others do not."
+  },
+  {
+   "t": "p",
+   "k": "49809a12b0bc",
+   "en": "To support different video processing pipelines and maintain high parallelism, it is important to add some level of abstraction and let client programmers define what tasks to execute. For example, Facebook’s streaming video engine uses a directed acyclic graph (DAG) programming model, which defines tasks in stages so they can be executed sequentially or parallelly [8]. In our design, we adopt a similar DAG model to achieve flexibility and parallelism. Figure 14-8 represents a DAG for video transcoding."
+  },
+  {
+   "t": "p",
+   "k": "7f4c56f1ae6f",
+   "en": "In Figure 14-8, the original video is split into video, audio, and metadata. Here are some of the tasks that can be applied on a video file:"
+  },
+  {
+   "t": "li",
+   "k": "bd1db7990f57",
+   "en": "Inspection: Make sure videos have good quality and are not malformed."
+  },
+  {
+   "t": "li",
+   "k": "d87f6837a0c6",
+   "en": "Video encodings: Videos are converted to support different resolutions, codec, bitrates, etc. Figure 14-9 shows an example of video encoded files."
+  },
+  {
+   "t": "li",
+   "k": "d136c0d26058",
+   "en": "Thumbnail. Thumbnails can either be uploaded by a user or automatically generated by the system."
+  },
+  {
+   "t": "li",
+   "k": "86842c7d99b8",
+   "en": "Watermark: An image overlay on top of your video contains identifying information about your video."
+  },
+  {
+   "t": "h2",
+   "k": "0d2d4309dc01",
+   "en": "Video transcoding architecture"
+  },
+  {
+   "t": "h3",
+   "k": "f5b3e476fd10",
+   "en": "Preprocessor"
+  },
+  {
+   "t": "p",
+   "k": "38ce641cbaa0",
+   "en": "The preprocessor has 4 responsibilities:"
+  },
+  {
+   "t": "li",
+   "k": "9ffc3f98f337",
+   "en": "Video splitting. Video stream is split or further split into smaller Group of Pictures (GOP) alignment. GOP is a group/chunk of frames arranged in a specific order. Each chunk is an independently playable unit, usually a few seconds in length."
+  },
+  {
+   "t": "li",
+   "k": "8328d80beda6",
+   "en": "Some old mobile devices or browsers might not support video splitting. Preprocessor split videos by GOP alignment for old clients."
+  },
+  {
+   "t": "li",
+   "k": "ee3b9f0bf562",
+   "en": "DAG generation. The processor generates DAG based on configuration files client programmers write. Figure 14-12 is a simplified DAG representation which has 2 nodes and 1 edge:"
+  },
+  {
+   "t": "p",
+   "k": "f26e33116c42",
+   "en": "This DAG representation is generated from the two configuration files below (Figure 14-13):"
+  },
+  {
+   "t": "li",
+   "k": "9fa727d0feea",
+   "en": "Cache data. The preprocessor is a cache for segmented videos. For better reliability, the preprocessor stores GOPs and metadata in temporary storage. If video encoding fails, the system could use persisted data for retry operations."
+  },
+  {
+   "t": "h3",
+   "k": "cfdaca8076dd",
+   "en": "DAG scheduler"
+  },
+  {
+   "t": "p",
+   "k": "1cff5fccc104",
+   "en": "As shown in Figure 14-15, the original video is split into three stages: Stage 1: video, audio, and metadata. The video file is further split into two tasks in stage 2: video encoding and thumbnail. The audio file requires audio encoding as part of the stage 2 tasks."
+  },
+  {
+   "t": "h3",
+   "k": "9f70d14fc58e",
+   "en": "Resource manager"
+  },
+  {
+   "t": "p",
+   "k": "0f8b10e0e8ed",
+   "en": "The resource manager is responsible for managing the efficiency of resource allocation. It contains 3 queues and a task scheduler as shown in Figure 14-17."
+  },
+  {
+   "t": "li",
+   "k": "422eb0e474fd",
+   "en": "Task queue: It is a priority queue that contains tasks to be executed."
+  },
+  {
+   "t": "li",
+   "k": "f00d77544fbc",
+   "en": "Worker queue: It is a priority queue that contains worker utilization info."
+  },
+  {
+   "t": "li",
+   "k": "b4d360e51dc3",
+   "en": "Running queue: It contains info about the currently running tasks and workers running the tasks."
+  },
+  {
+   "t": "li",
+   "k": "3349afe0edf8",
+   "en": "Task scheduler: It picks the optimal task/worker, and instructs the chosen task worker to execute the job."
+  },
+  {
+   "t": "p",
+   "k": "e064a0e9ff1b",
+   "en": "The resource manager works as follows:"
+  },
+  {
+   "t": "li",
+   "k": "50e8511b11cb",
+   "en": "The task scheduler gets the highest priority task from the task queue."
+  },
+  {
+   "t": "li",
+   "k": "afd7ea315900",
+   "en": "The task scheduler gets the optimal task worker to run the task from the worker queue."
+  },
+  {
+   "t": "li",
+   "k": "fcd8638c4dff",
+   "en": "The task scheduler instructs the chosen task worker to run the task."
+  },
+  {
+   "t": "li",
+   "k": "676e9e5f5066",
+   "en": "The task scheduler binds the task/worker info and puts it in the running queue."
+  },
+  {
+   "t": "li",
+   "k": "6bfc35133f9b",
+   "en": "The task scheduler removes the job from the running queue once the job is done."
+  },
+  {
+   "t": "h3",
+   "k": "06c78b1329e0",
+   "en": "Task workers"
+  },
+  {
+   "t": "p",
+   "k": "5541e8370056",
+   "en": "Task workers run the tasks which are defined in the DAG. Different task workers may run different tasks as shown in Figure 14-19."
+  },
+  {
+   "t": "h3",
+   "k": "b898f1fe9d88",
+   "en": "Temporary storage"
+  },
+  {
+   "t": "p",
+   "k": "35098cebc691",
+   "en": "Multiple storage systems are used here. The choice of storage system depends on factors like data type, data size, access frequency, data life span, etc. For instance, metadata is frequently accessed by workers, and the data size is usually small. Thus, caching metadata in memory is a good idea. For video or audio data, we put them in blob storage. Data in temporary storage is freed up once the corresponding video processing is complete."
+  },
+  {
+   "t": "h3",
+   "k": "2e65ca7812be",
+   "en": "Encoded video"
+  },
+  {
+   "t": "p",
+   "k": "39b441faee84",
+   "en": "Encoded video is the final output of the encoding pipeline. Here is an example of the output: funny_720p.mp4."
+  },
+  {
+   "t": "h2",
+   "k": "37cde03ab32b",
+   "en": "System optimizations"
+  },
+  {
+   "t": "h3",
+   "k": "46861cf70963",
+   "en": "Speed optimization: parallelize video uploading"
+  },
+  {
+   "t": "p",
+   "k": "be8407d0ae46",
+   "en": "Uploading a video as a whole unit is inefficient. We can split a video into smaller chunks by GOP alignment as shown in Figure 14-22."
+  },
+  {
+   "t": "p",
+   "k": "1c96642167fd",
+   "en": "This allows fast resumable uploads when the previous upload failed. The job of splitting a video file by GOP can be implemented by the client to improve the upload speed as shown in Figure 14-23."
+  },
+  {
+   "t": "h3",
+   "k": "09ef791b48b6",
+   "en": "Speed optimization: place upload centers close to users"
+  },
+  {
+   "t": "p",
+   "k": "42779d77c587",
+   "en": "Another way to improve the upload speed is by setting up multiple upload centers across the globe (Figure 14-24). People in the United States can upload videos to the North America upload center, and people in China can upload videos to the Asian upload center. To achieve this, we use CDN as upload centers."
+  },
+  {
+   "t": "h3",
+   "k": "5778e52b6ac9",
+   "en": "Speed optimization: parallelism everywhere"
+  },
+  {
+   "t": "p",
+   "k": "89061d862f79",
+   "en": "Achieving low latency requires serious efforts. Another optimization is to build a loosely coupled system and enable high parallelism."
+  },
+  {
+   "t": "p",
+   "k": "cb7297228b22",
+   "en": "Our design needs some modifications to achieve high parallelism. Let us zoom in to the flow of how a video is transferred from original storage to the CDN. The flow is shown in Figure 14-25, revealing that the output depends on the input of the previous step. This dependency makes parallelism difficult."
+  },
+  {
+   "t": "p",
+   "k": "c9215ad01ea2",
+   "en": "To make the system more loosely coupled, we introduced message queues as shown in Figure 14-26. Let us use an example to explain how message queues make the system more loosely coupled."
+  },
+  {
+   "t": "li",
+   "k": "bfa9d12c6db7",
+   "en": "Before the message queue is introduced, the encoding module must wait for the output of the download module."
+  },
+  {
+   "t": "li",
+   "k": "26af27b7e8d1",
+   "en": "After the message queue is introduced, the encoding module does not need to wait for the output of the download module anymore. If there are events in the message queue, the encoding module can execute those jobs in parallel."
+  },
+  {
+   "t": "h3",
+   "k": "98d08eb4fa68",
+   "en": "Safety optimization: pre-signed upload URL"
+  },
+  {
+   "t": "p",
+   "k": "7bc7ae10d166",
+   "en": "Safety is one of the most important aspects of any product. To ensure only authorized users upload videos to the right location, we introduce pre-signed URLs as shown in Figure 14-27."
+  },
+  {
+   "t": "p",
+   "k": "df348bfe6f94",
+   "en": "The upload flow is updated as follows:"
+  },
+  {
+   "t": "li",
+   "k": "b247143c4a50",
+   "en": "The client makes a HTTP request to API servers to fetch the pre-signed URL, which gives the access permission to the object identified in the URL. The term pre-signed URL is used by uploading files to Amazon S3. Other cloud service providers might use a different name. For instance, Microsoft Azure blob storage supports the same feature, but call it “Shared Access Signature” [10]."
+  },
+  {
+   "t": "li",
+   "k": "65ea4eae57b7",
+   "en": "API servers respond with a pre-signed URL."
+  },
+  {
+   "t": "li",
+   "k": "08a8fae7abbf",
+   "en": "Once the client receives the response, it uploads the video using the pre-signed URL."
+  },
+  {
+   "t": "h3",
+   "k": "22da48ff00e6",
+   "en": "Safety optimization: protect your videos"
+  },
+  {
+   "t": "p",
+   "k": "d52151f14aa4",
+   "en": "Many content makers are reluctant to post videos online because they fear their original videos will be stolen. To protect copyrighted videos, we can adopt one of the following three safety options:"
+  },
+  {
+   "t": "li",
+   "k": "59d5ac7bbe1a",
+   "en": "Digital rights management (DRM) systems: Three major DRM systems are Apple FairPlay, Google Widevine, and Microsoft PlayReady."
+  },
+  {
+   "t": "li",
+   "k": "c4ac9bbc44ad",
+   "en": "AES encryption: You can encrypt a video and configure an authorization policy. The encrypted video will be decrypted upon playback. This ensures that only authorized users can watch an encrypted video."
+  },
+  {
+   "t": "li",
+   "k": "562b2a3c0d7a",
+   "en": "Visual watermarking: This is an image overlay on top of your video that contains identifying information for your video. It can be your company logo or company name."
+  },
+  {
+   "t": "h3",
+   "k": "ef9981c32697",
+   "en": "Cost-saving optimization"
+  },
+  {
+   "t": "p",
+   "k": "93b7a3298a1f",
+   "en": "CDN is a crucial component of our system. It ensures fast video delivery on a global scale."
+  },
+  {
+   "t": "p",
+   "k": "7de3c6347d46",
+   "en": "However, from the back of the envelope calculation, we know CDN is expensive, especially when the data size is large. How can we reduce the cost?"
+  },
+  {
+   "t": "p",
+   "k": "6d775e2ce8e7",
+   "en": "Previous research shows that YouTube video streams follow long-tail distribution [11] [12]."
+  },
+  {
+   "t": "p",
+   "k": "1596bb3f9d42",
+   "en": "It means a few popular videos are accessed frequently but many others have few or no viewers. Based on this observation, we implement a few optimizations:"
+  },
+  {
+   "t": "li",
+   "k": "6f65a87cdb5a",
+   "en": "Only serve the most popular videos from CDN and other videos from our high capacity storage video servers (Figure 14-28)."
+  },
+  {
+   "t": "li",
+   "k": "a4bf745805c9",
+   "en": "For less popular content, we may not need to store many encoded video versions. Short videos can be encoded on-demand."
+  },
+  {
+   "t": "li",
+   "k": "aa823e8ae858",
+   "en": "Some videos are popular only in certain regions. There is no need to distribute these videos to other regions."
+  },
+  {
+   "t": "li",
+   "k": "eb9a6cd84e97",
+   "en": "Build your own CDN like Netflix and partner with Internet Service Providers (ISPs)."
+  },
+  {
+   "t": "p",
+   "k": "d9f3a561f5f2",
+   "en": "Building your CDN is a giant project; however, this could make sense for large streaming companies. An ISP can be Comcast, AT&T, Verizon, or other internet providers. ISPs are located all around the world and are close to users. By partnering with ISPs, you can improve the viewing experience and reduce the bandwidth charges."
+  },
+  {
+   "t": "p",
+   "k": "07584b6de239",
+   "en": "All those optimizations are based on content popularity, user access pattern, video size, etc. It is important to analyze historical viewing patterns before doing any optimization. Here are some of the interesting articles on this topic: [12] [13]."
+  },
+  {
+   "t": "h2",
+   "k": "f0a7a174240c",
+   "en": "Error handling"
+  },
+  {
+   "t": "p",
+   "k": "0d0b63232541",
+   "en": "For a large-scale system, system errors are unavoidable. To build a highly fault-tolerant system, we must handle errors gracefully and recover from them fast. Two types of errors exist:"
+  },
+  {
+   "t": "li",
+   "k": "0dd32652e42d",
+   "en": "Recoverable error. For recoverable errors such as video segment fails to transcode, the general idea is to retry the operation a few times. If the task continues to fail and the system believes it is not recoverable, it returns a proper error code to the client."
+  },
+  {
+   "t": "li",
+   "k": "1ca94a7d7f08",
+   "en": "Non-recoverable error. For non-recoverable errors such as malformed video format, the system stops the running tasks associated with the video and returns the proper error code to the client."
+  },
+  {
+   "t": "p",
+   "k": "bf5c46e301e9",
+   "en": "Typical errors for each system component are covered by the following playbook:"
+  },
+  {
+   "t": "li",
+   "k": "0e90547c3c26",
+   "en": "Upload error: retry a few times."
+  },
+  {
+   "t": "li",
+   "k": "666561191fec",
+   "en": "Split video error: if older versions of clients cannot split videos by GOP alignment, the entire video is passed to the server. The job of splitting videos is done on the server-side."
+  },
+  {
+   "t": "li",
+   "k": "670d5af11ba4",
+   "en": "Transcoding error: retry."
+  },
+  {
+   "t": "li",
+   "k": "f09691801a59",
+   "en": "Preprocessor error: regenerate DAG diagram."
+  },
+  {
+   "t": "li",
+   "k": "51a1485d60f7",
+   "en": "DAG scheduler error: reschedule a task."
+  },
+  {
+   "t": "li",
+   "k": "40835426268d",
+   "en": "Resource manager queue down: use a replica."
+  },
+  {
+   "t": "li",
+   "k": "303a79ecf0dd",
+   "en": "Task worker down: retry the task on a new worker."
+  },
+  {
+   "t": "li",
+   "k": "972fc0fcd40b",
+   "en": "API server down: API servers are stateless so requests will be directed to a different API server."
+  },
+  {
+   "t": "li",
+   "k": "4aedc0dad2a6",
+   "en": "Metadata cache server down: data is replicated multiple times. If one node goes down, you can still access other nodes to fetch data. We can bring up a new cache server to replace the dead one."
+  },
+  {
+   "t": "li",
+   "k": "11fbf48e726b",
+   "en": "Metadata DB server down:"
+  },
+  {
+   "t": "li",
+   "k": "3afef0dbc19a",
+   "en": "Master is down. If the master is down, promote one of the slaves to act as the new master."
+  },
+  {
+   "t": "li",
+   "k": "37a509a84e26",
+   "en": "Slave is down. If a slave goes down, you can use another slave for reads and bring up another database server to replace the dead one."
+  },
+  {
+   "t": "h2",
+   "k": "02a33876c958",
+   "en": "Step 4 - Wrap up"
+  },
+  {
+   "t": "p",
+   "k": "d41264ce1563",
+   "en": "In this chapter, we presented the architecture design for video streaming services like YouTube. If there is extra time at the end of the interview, here are a few additional points:"
+  },
+  {
+   "t": "li",
+   "k": "468f1345b9c0",
+   "en": "Scale the API tier: Because API servers are stateless, it is easy to scale API tier horizontally."
+  },
+  {
+   "t": "li",
+   "k": "7e2ad0174601",
+   "en": "Scale the database: You can talk about database replication and sharding."
+  },
+  {
+   "t": "li",
+   "k": "8f629acc1cc7",
+   "en": "Live streaming: It refers to the process of how a video is recorded and broadcasted in real time. Although our system is not designed specifically for live streaming, live streaming and non-live streaming have some similarities: both require uploading, encoding, and streaming. The notable differences are:"
+  },
+  {
+   "t": "li",
+   "k": "e05a8d2985a9",
+   "en": "Live streaming has a higher latency requirement, so it might need a different streaming protocol."
+  },
+  {
+   "t": "li",
+   "k": "3927508afa19",
+   "en": "Live streaming has a lower requirement for parallelism because small chunks of data are already processed in real-time."
+  },
+  {
+   "t": "li",
+   "k": "8c11d4ee3044",
+   "en": "Live streaming requires different sets of error handling. Any error handling that takes too much time is not acceptable."
+  },
+  {
+   "t": "li",
+   "k": "6587acf99c13",
+   "en": "Video takedowns: Videos that violate copyrights, pornography, or other illegal acts shall be removed. Some can be discovered by the system during the upload process, while others might be discovered through user flagging."
+  },
+  {
+   "t": "p",
+   "k": "71b8b7a68128",
+   "en": "Congratulations on getting this far! Now give yourself a pat on the back. Good job!"
+  },
+  {
+   "t": "p",
+   "k": "18e000c3212c",
+   "en": "[1] YouTube by the numbers: https://www.omnicoreagency.com/youtube-statistics/ [2] 2019 YouTube Demographics: https://blog.hubspot.com/marketing/youtube-demographics [3] Cloudfront Pricing: https://aws.amazon.com/cloudfront/pricing/ [4] Netflix on AWS: https://aws.amazon.com/solutions/case-studies/netflix/ [5] Akamai homepage: https://www.akamai.com/ [6] Binary large object: https://en.wikipedia.org/wiki/Binary_large_object [7] Here’s What You Need to Know About Streaming Protocols: https://www.dacast.com/blog/streaming-protocols/ [8] SVE: Distributed Video Processing at Facebook Scale: https://www.cs.princeton.edu/~wlloyd/papers/sve-sosp17.pdf [9] Weibo video processing architecture (in Chinese): https://www.upyun.com/opentalk/399.html [10] Delegate access with a shared access signature: https://docs.microsoft.com/en-us/rest/api/storageservices/delegate-access-with-shared-access-signature [11] YouTube scalability talk by early YouTube employee: https://www.youtube.com/watch? v=w5WVu624fY8 [12] Understanding the characteristics of internet short video sharing: A youtube-based measurement study. https://arxiv.org/pdf/0707.3670.pdf [13] Content Popularity for Open Connect: https://netflixtechblog.com/content-popularity-for-open-connect-b86d56f613b"
+  }
+ ]
+}

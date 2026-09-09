@@ -1,0 +1,137 @@
+{
+ "id": "32-cutting-cross-region-latency",
+ "title": "Cutting Cross-Region Latency",
+ "titleKey": "dd9247fce973",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "c4197ca2c57f",
+   "en": "Your e-commerce platform just crossed 2M daily active users. 70% are in the US, 30% in Europe."
+  },
+  {
+   "t": "p",
+   "k": "cab6d7b71b11",
+   "en": "Latency complaints are piling up from European users — 380ms average round-trip to your US-East region."
+  },
+  {
+   "t": "p",
+   "k": "352cf21cca41",
+   "en": "Support tickets are up 40%. Black Friday is in 6 weeks."
+  },
+  {
+   "t": "p",
+   "k": "660e7c803615",
+   "en": "Your infrastructure: single AWS us-east-1 region, RDS PostgreSQL (primary), Redis cache, 12 microservices behind an API Gateway."
+  },
+  {
+   "t": "p",
+   "k": "a3343d6ab9e9",
+   "en": "You need to get European latency under 80ms. The engineering team is debating four approaches."
+  },
+  {
+   "t": "p",
+   "k": "d920327cc5a1",
+   "en": "Here's your constraint: you cannot afford a full database rewrite, and you need this shipped before Black Friday."
+  },
+  {
+   "t": "p",
+   "k": "46907ac2ccd4",
+   "en": "A) Active-Active multi-region — deploy the full stack in eu-west-1, use a distributed database (CockroachDB or Aurora Global), route users to the nearest region. Writes go to both regions simultaneously."
+  },
+  {
+   "t": "p",
+   "k": "a2450ff52c5f",
+   "en": "B) Active-Passive with read replicas — keep us-east-1 as primary, spin up eu-west-1 as a hot standby with read replicas. European reads go local, writes still go to US. Failover in minutes if US goes down."
+  },
+  {
+   "t": "p",
+   "k": "14eaadf3a069",
+   "en": "C) CDN + Edge caching — keep the single region, push static assets and cacheable API responses to CloudFront edge nodes in Europe. No database changes."
+  },
+  {
+   "t": "p",
+   "k": "044bec4832f9",
+   "en": "D) Active-Active with eventual consistency — deploy full stack in both regions, allow each region to own its writes, sync asynchronously. Accept that a European user might see a US write 200ms late."
+  },
+  {
+   "t": "h3",
+   "k": "4c09a399e8f2",
+   "en": "DAY 31 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "li",
+   "k": "668610674fb8",
+   "en": "Why B wins:",
+   "lead": "Why B wins"
+  },
+  {
+   "t": "p",
+   "k": "bca01b189081",
+   "en": "The constraint is the answer. You can't rewrite the database, and you have 6 weeks."
+  },
+  {
+   "t": "p",
+   "k": "dcebd4efe326",
+   "en": "European users are complaining about read latency — browsing products, checking order status, loading their profile. Those are reads. An RDS read replica in eu-west-1 costs you 1–2 days of infra work and immediately moves European reads to ~15ms instead of 380ms. Writes still go to us-east-1 (acceptable — users tolerate slightly higher write latency for checkout). Replication lag is typically under 100ms."
+  },
+  {
+   "t": "p",
+   "k": "e8cb433b8ebb",
+   "en": "Active-passive also gives you a real failover story: US goes down promote EU replica in minutes.→"
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "2e9faaafd557",
+   "en": "Why A is the trap (Active-Active + distributed DB):",
+   "lead": "Why A is the trap (Active-Active + distributed DB)"
+  },
+  {
+   "t": "p",
+   "k": "cbb3a6c4585f",
+   "en": "This is the \"correct at scale\" answer that kills teams before Black Friday. Migrating from RDS PostgreSQL to CockroachDB or Aurora Global under a 6-week deadline is a multi-quarter project — distributed transactions, global clock skew, new failure modes to test. Right architecture for the long term. Wrong answer for the problem as stated."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "e37855c3bb66",
+   "en": "Why C is wrong (CDN + Edge caching):",
+   "lead": "Why C is wrong (CDN + Edge caching)"
+  },
+  {
+   "t": "p",
+   "k": "19c9b598a996",
+   "en": "CDN solves static asset latency — images, JS, CSS. It does nothing for dynamic reads (user cart, order history, account data) and zero for write latency. It's a layer you add on top of a real solution, not instead of one. Partial credit, not the answer."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "53c3564bb3fb",
+   "en": "Why D is dangerous (Active-Active + eventual consistency):",
+   "lead": "Why D is dangerous (Active-Active + eventual consistency)"
+  },
+  {
+   "t": "p",
+   "k": "75bb8e6bde29",
+   "en": "Most honest version of multi-region — and the most dangerous to deploy without prep. Eventual consistency across regions means a European user places an order and your US region sees a different inventory count for 200ms. For limited stock = oversell. For checkout = duplicate charges. Conflict resolution is a product problem disguised as an infra problem."
+  },
+  {
+   "t": "h3",
+   "k": "5c6e377bf46a",
+   "en": "DAY 32 · SYSTEM DESIGN"
+  }
+ ]
+}

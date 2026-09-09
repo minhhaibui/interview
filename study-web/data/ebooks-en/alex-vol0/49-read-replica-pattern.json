@@ -1,0 +1,63 @@
+{
+ "id": "49-read-replica-pattern",
+ "title": "Read replica pattern",
+ "titleKey": "d97b97f01f7a",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "ba196ae24ad2",
+   "en": "In this post, we talk about a simple yet commonly used database design pattern (setup): 𝐑𝐞𝐚𝐝 𝐫𝐞𝐩𝐥𝐢𝐜𝐚 𝐩𝐚𝐭𝐭𝐞𝐫𝐧."
+  },
+  {
+   "t": "p",
+   "k": "11e69d339e5d",
+   "en": "In this setup, all data-modifying commands like insert, delete, or update are sent to the primary DB, and reads are sent to read replicas."
+  },
+  {
+   "t": "p",
+   "k": "42c7de667346",
+   "en": "The diagram below illustrates the setup:"
+  },
+  {
+   "t": "li",
+   "k": "e8cf84cf215b",
+   "en": "When Alice places an order on amazon.com, the request is sent to Order Service."
+  },
+  {
+   "t": "li",
+   "k": "c4e3eadf5884",
+   "en": "Order Service creates a record about the order in the primary DB (write). Data is replicated to two replicas."
+  },
+  {
+   "t": "li",
+   "k": "9316f98207ed",
+   "en": "Alice views the order details. Data is served from a replica (read)."
+  },
+  {
+   "t": "li",
+   "k": "6a46a1269707",
+   "en": "Alice views the recent order history. Data is served from a replica (read)."
+  },
+  {
+   "t": "p",
+   "k": "0b9c0cbd25f6",
+   "en": "There is one major problem in this setup: 𝐫𝐞𝐩𝐥𝐢𝐜𝐚𝐭𝐢𝐨𝐧 𝐥𝐚𝐠. 105 Under certain circumstances (network delay, server overload, etc.), data in replicas might be seconds or even minutes behind. In this case, if Alice immediately checks the order status (query is served by the replica) after the order is placed, she might not see the order at all."
+  },
+  {
+   "t": "p",
+   "k": "2f1ab9df4cd4",
+   "en": "This leaves Alice confused. In this case, we need “read-after-write” consistency."
+  },
+  {
+   "t": "p",
+   "k": "8b0aa7b3ffff",
+   "en": "Possible solutions to mitigate this problem: 1⃣ Latency sensitive reads are sent to the primary database. 2⃣ Reads that immediately follow writes are routed to the primary database. 3⃣A relational DB generally provides a way to checkif a replica is caught up with the primary. If data is up to date, query the replica."
+  },
+  {
+   "t": "p",
+   "k": "88fa48470ef8",
+   "en": "Otherwise, fail the read request or read from the primary. 106"
+  }
+ ]
+}

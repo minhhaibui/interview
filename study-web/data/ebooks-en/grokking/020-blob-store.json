@@ -1,0 +1,1382 @@
+{
+ "id": "020-blob-store",
+ "title": "Blob-Store",
+ "titleKey": "42529476d377",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "1cc70debba67",
+   "en": "System Design: A Blob Store"
+  },
+  {
+   "t": "p",
+   "k": "4a90478043c4",
+   "en": "Get an introduction to the blob store and get ready to design it."
+  },
+  {
+   "t": "h1",
+   "k": "2e043f9b9216",
+   "en": "What is a blob store?"
+  },
+  {
+   "t": "p",
+   "k": "8b6be92da6ea",
+   "en": "Blob store is a storage solution for unstructured data. We can store photos, audio, videos, binary executable codes, or other multimedia items in a blob store."
+  },
+  {
+   "t": "p",
+   "k": "3896478c5678",
+   "en": "Every type of data is stored as a blob. It follows a flat data organization pattern where there are no hierarchies, that is, directories, sub-directories, and so on."
+  },
+  {
+   "t": "p",
+   "k": "6d05b8582eeb",
+   "en": "Mostly, it’s used by applications with a particular business requirement called write once, read many (WORM), which states that data can only be written once and that no one can change it. Just like in Microsoft Azure, the blobs are created once and read many times. Additionally, these blobs can’t be deleted until a specified interval, and they also can’t be modified to protect critical data."
+  },
+  {
+   "t": "li",
+   "k": "e2cf69e15af4",
+   "en": "Note: It isn’t necessary for all applications to have this WORM requirement. However, we are assuming that the blobs that are written can’t be modified. Instead of modifying, we can upload a new version of a blob if needed.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "742a0f06dd56",
+   "en": "Why do we use a blob store?"
+  },
+  {
+   "t": "p",
+   "k": "b178f2b246bc",
+   "en": "Blob store is an important component of many data-intensive applications, such as YouTube, Netflix, Facebook, and so on. The table below displays the blob storage used by some of the most well-known applications. These applications generate a huge amount of unstructured data every day. They require a storage solution that is easily scalable, reliable, and highly available, so that they can store large media files. Since the amount of data continuously increases, these applications need to store an unlimited number of blobs. According to some estimates, YouTube requires more than a petabyte of additional storage per day."
+  },
+  {
+   "t": "p",
+   "k": "540269bd264b",
+   "en": "In a system like YouTube, a video is stored in multiple resolutions. Additionally, the video in all resolutions is replicated many times across different data centers and regions for availability purposes. That’s why the total storage required per video is not equal to the size of the uploaded video."
+  },
+  {
+   "t": "p",
+   "k": "4e7c95fa0441",
+   "en": "SystemBlob Store NetflixS3 YouTubeGoogle Cloud Storage FacebookTectonic"
+  },
+  {
+   "t": "h2",
+   "k": "1c1c0e161300",
+   "en": "How do we design a blob store system?"
+  },
+  {
+   "t": "p",
+   "k": "dc1c5a12a86a",
+   "en": "We have divided the design of the blob store into five lessons and a quiz."
+  },
+  {
+   "t": "li",
+   "k": "996fde1f745d",
+   "en": "Requirements: In this lesson, we identify the functional and non-functional requirements of a blob store. We also estimate the resources required by our blob store system."
+  },
+  {
+   "t": "li",
+   "k": "0e85d913b00e",
+   "en": "Design: This lesson presents us with a high-level design, the API design, and a detailed design of the blob store, while explaining the details of all the components and the workflow."
+  },
+  {
+   "t": "li",
+   "k": "0a414c457b22",
+   "en": "Design considerations: In this lesson, we discuss some important aspects of design. For example, we learn about the database schema, partitioning strategy, blob indexing, pagination, and replication."
+  },
+  {
+   "t": "li",
+   "k": "1ec5abfd4a11",
+   "en": "Evaluation: In this lesson, we evaluate our blob store based on our requirements."
+  },
+  {
+   "t": "li",
+   "k": "d6853516de74",
+   "en": "Quiz: In this lesson, we assess understanding of the blob store design."
+  },
+  {
+   "t": "p",
+   "k": "019d8af99892",
+   "en": "Let’s start with the requirements of a blob store system."
+  },
+  {
+   "t": "h1",
+   "k": "d413fdb6f880",
+   "en": "Requirements of a Blob Store's Design"
+  },
+  {
+   "t": "p",
+   "k": "edf3eefa25fb",
+   "en": "Identify the requirements of and make estimations for the blob store."
+  },
+  {
+   "t": "h2",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "h3",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "c0c81a929c0c",
+   "en": "Create a container: The users should be able to create containers in order to group blobs. For example, if an application wants to store user-specific data, it should be able to store blobs for different user accounts in different containers. Additionally, a user may want to group video blobs and separate them from a group of image blobs. A single blob store user can create many containers, and each container can have many blobs, as shown in the following illustration. For the sake of simplicity, we assume that we can’t create a container inside a container."
+  },
+  {
+   "t": "li",
+   "k": "b9bae51ab99e",
+   "en": "Put data: The blob store should allow users to upload blobs to the created containers.",
+   "lead": "Put data"
+  },
+  {
+   "t": "li",
+   "k": "50b909de4632",
+   "en": "Get data: The system should generate a URL for the uploaded blob, so that the user can access that blob later through this URL.",
+   "lead": "Get data"
+  },
+  {
+   "t": "li",
+   "k": "4c6bce330384",
+   "en": "Delete data: The users should be able to delete a blob. If the user wants to keep the data for a specified period of time (retention time), our system should support this functionality.",
+   "lead": "Delete data"
+  },
+  {
+   "t": "li",
+   "k": "57d0d2757f8d",
+   "en": "List blobs: The user should be able to get a list of blobs inside a specific container.",
+   "lead": "List blobs"
+  },
+  {
+   "t": "li",
+   "k": "cd4a28e1da06",
+   "en": "Delete a container: The users should be able to delete a container and all the blobs inside it.",
+   "lead": "Delete a container"
+  },
+  {
+   "t": "li",
+   "k": "0802afe83ffe",
+   "en": "List containers: The system should allow the users to list all the containers under a specific account.",
+   "lead": "List containers"
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "li",
+   "k": "b7bcbea0016b",
+   "en": "Availability: Our system should be highly available.",
+   "lead": "Availability"
+  },
+  {
+   "t": "li",
+   "k": "0647768891ee",
+   "en": "Durability: The data, once uploaded, shouldn’t be lost unless users explicitly delete that data.",
+   "lead": "Durability"
+  },
+  {
+   "t": "li",
+   "k": "f5d9d90b47f7",
+   "en": "Scalability: The system should be capable of handling billions of blobs.",
+   "lead": "Scalability"
+  },
+  {
+   "t": "p",
+   "k": "04212a48555b",
+   "en": "Throughput: For transferring gigabytes of data, we should ensure a high data throughput."
+  },
+  {
+   "t": "li",
+   "k": "b8920caef0d2",
+   "en": "Reliability: Since failures are a norm in distributed systems, our design should detect and recover from failures promptly.",
+   "lead": "Reliability"
+  },
+  {
+   "t": "li",
+   "k": "a1a89f4dc910",
+   "en": "Consistency: The system should be strongly consistent. Different users should see the same view of a blob.",
+   "lead": "Consistency"
+  },
+  {
+   "t": "h2",
+   "k": "a9be995c473a",
+   "en": "Resource estimation"
+  },
+  {
+   "t": "p",
+   "k": "80bc35444203",
+   "en": "Let’s estimate the total number of servers, storage, and bandwidth required by a blob storage system. Because blobs can have all sorts of data, mentioning all of those types of data in our estimation may not be practical. Therefore, we’ll use YouTube as an example, which stores videos and thumbnails on the blob store."
+  },
+  {
+   "t": "p",
+   "k": "46be14b84b4f",
+   "en": "Furthermore, we’ll make the following assumptions to complete our estimations."
+  },
+  {
+   "t": "li",
+   "k": "bc68bdb2b070",
+   "en": "Assumptions:",
+   "lead": "Assumptions"
+  },
+  {
+   "t": "p",
+   "k": "16b945ede8f5",
+   "en": "The number of daily active users who upload or watch videos is five million."
+  },
+  {
+   "t": "p",
+   "k": "9e8c49bfa500",
+   "en": "The number of requests per second that a single blob store server can handle is 500."
+  },
+  {
+   "t": "p",
+   "k": "14e5e2c5b26d",
+   "en": "The average size of a video is 50 MB."
+  },
+  {
+   "t": "p",
+   "k": "472351ea39f1",
+   "en": "The average size of a thumbnail is 20 KB."
+  },
+  {
+   "t": "p",
+   "k": "d658b659a461",
+   "en": "The number of videos uploaded per day is 250,000."
+  },
+  {
+   "t": "p",
+   "k": "4d2145a0a0ac",
+   "en": "The number of read requests by a single user per day is 20."
+  },
+  {
+   "t": "h3",
+   "k": "7e7845b4ea66",
+   "en": "Number of servers estimation"
+  },
+  {
+   "t": "p",
+   "k": "97b9201c757b",
+   "en": "From our assumptions, we use the number of daily active users (DAUs) and queries a blob store server can handle per second. The number of servers that we require is calculated using the formula given below:"
+  },
+  {
+   "t": "p",
+   "k": "cb71f338469f",
+   "en": "Number of active users =10K servers Queries handled per server"
+  },
+  {
+   "t": "h3",
+   "k": "5e7e60e98560",
+   "en": "Storage estimation"
+  },
+  {
+   "t": "p",
+   "k": "0516413c726f",
+   "en": "Considering the assumptions written above, we use the formula given below to compute the total storage required by YouTube in one day:"
+  },
+  {
+   "t": "p",
+   "k": "24dd4281a020",
+   "en": "Totalstorage/day=No. of videos/day×(Storage/video+ Storage/thumbnail)"
+  },
+  {
+   "t": "p",
+   "k": "961ea1db567a",
+   "en": "Putting the numbers from above into the formula gives us 12.51 TB/day, which is the approximate storage required by YouTube per day for keeping a single copy of the uploaded video in a single resolution."
+  },
+  {
+   "t": "p",
+   "k": "1c89d3aea068",
+   "en": "Total Storage Required to Store Videos and Thumbnails Uploaded Per Day on YouTube No. of videos peStorage per videStorage per thuTotal storage pe r dayo (MB)mbnail (KB)r day (TB) f"
+  },
+  {
+   "t": "li",
+   "k": "b7eb6c689c03",
+   "en": "51"
+  },
+  {
+   "t": "h3",
+   "k": "10d00f179eb1",
+   "en": "Bandwidth estimation"
+  },
+  {
+   "t": "p",
+   "k": "aadf45128879",
+   "en": "Let’s estimate the bandwidth required for uploading data to and retrieving data from the blob store."
+  },
+  {
+   "t": "p",
+   "k": "cb63903c3a8e",
+   "en": "Incoming traffic: To estimate the bandwidth required for incoming traffic, we consider the total data uploaded per day, which indirectly means the total storage needed per day that we calculated above. The amount of data transferred to the servers per second can be computed using the following formula:"
+  },
+  {
+   "t": "p",
+   "k": "b4493c7788a5",
+   "en": "Totalstorage_day Totalbandwidth= 24×60×60 Bandwidth Required for Uploading Videos on YouTube Total storage per day ( Seconds in a dayBandwidth (Gb/s)"
+  },
+  {
+   "t": "p",
+   "k": "2b5f96b97952",
+   "en": "TB) f"
+  },
+  {
+   "t": "li",
+   "k": "5a10fd62ff6e",
+   "en": "51864001.16 Outgoing traffic: Since the blob store is a read-intensive store, most of the bandwidth is required for outgoing traffic. Considering the aforementioned assumptions, we calculate the bandwidth required for outgoing traffic using the following formula:"
+  },
+  {
+   "t": "p",
+   "k": "4972ccbf40d0",
+   "en": "Totalbandwidth= No. of active users×No. of requests×Totaldata_size /day/user/day Seconds in a day Bandwidth Required for Downloading Videos on YouTube No. of active useNo. of requests Bandwidth requ Data size (MB) rs per dayper userired (Gb/s) f"
+  },
+  {
+   "t": "li",
+   "k": "6fb84aed32fa",
+   "en": "96"
+  },
+  {
+   "t": "h2",
+   "k": "cfa08fe6c777",
+   "en": "Building blocks we will use"
+  },
+  {
+   "t": "p",
+   "k": "ae55b08481dc",
+   "en": "We use the following building blocks in the design of our blob store system:"
+  },
+  {
+   "t": "li",
+   "k": "ec2ac62b9d60",
+   "en": "Rate Limiter: A rate limiter is required to control the users’ interaction with the system.",
+   "lead": "Rate Limiter"
+  },
+  {
+   "t": "li",
+   "k": "66268340cf2b",
+   "en": "Load balancer: A load balancer is needed to distribute the request load onto different servers.",
+   "lead": "Load balancer"
+  },
+  {
+   "t": "li",
+   "k": "8010accd683c",
+   "en": "Database: A database is used to store metadata information for the blobs.",
+   "lead": "Database"
+  },
+  {
+   "t": "li",
+   "k": "2ed02d51f4e8",
+   "en": "Monitoring: Monitoring is needed to inspect storage devices and the space available on them in order to add storage on time if needed.",
+   "lead": "Monitoring"
+  },
+  {
+   "t": "p",
+   "k": "b89bdbdc385c",
+   "en": "In this lesson, we discussed the requirements and estimations of the blob store system. We’ll design the blob store system in the next lesson, all while following the delineated requirements."
+  },
+  {
+   "t": "h1",
+   "k": "4919bfbf5f45",
+   "en": "Design of a Blob Store"
+  },
+  {
+   "t": "p",
+   "k": "f944ce8d7f1c",
+   "en": "Learn how to incorporate certain requirements into the design of a blob store."
+  },
+  {
+   "t": "h2",
+   "k": "f0e860766605",
+   "en": "High-level design"
+  },
+  {
+   "t": "p",
+   "k": "0cc1ae88e0f7",
+   "en": "Let’s identify and connect the components of a blob store system. At a high level, the components are clients, front-end servers, and storage disks."
+  },
+  {
+   "t": "figure",
+   "k": "6910d6d59cba",
+   "en": "Clients Front-end server Storage disks"
+  },
+  {
+   "t": "p",
+   "k": "a1fb838f53cb",
+   "en": "The client’s requests are received at the front-end servers that process the request. The front-end servers store the client’s blob onto the storage disks attached to them."
+  },
+  {
+   "t": "h2",
+   "k": "58dbf879b581",
+   "en": "API design"
+  },
+  {
+   "t": "p",
+   "k": "cf26ebaffc63",
+   "en": "Let’s look into the API design of the blob store. All of the functions below can only be performed by a registered and authenticated user. For the sake of brevity, we don’t include functionalities like registration and authentication of users."
+  },
+  {
+   "t": "p",
+   "k": "58343a85f881",
+   "en": "Create container The createContainer operation creates a new container under the logged-in account from which this request is being generated."
+  },
+  {
+   "t": "code",
+   "k": "d3f9dfc21191",
+   "en": "createContainer(containerName)"
+  },
+  {
+   "t": "p",
+   "k": "f14f6b7dd152",
+   "en": "ParameterDescription containerNameThis is the name of the container. It should be unique within a storage account."
+  },
+  {
+   "t": "p",
+   "k": "2ff661103c1f",
+   "en": "Upload blobs The client’s data is stored in the form of Bytes in the blob store. The data can be put into a container with the following code:"
+  },
+  {
+   "t": "code",
+   "k": "2258970b35ba",
+   "en": "putBlob(containerPath, blobName, data)"
+  },
+  {
+   "t": "p",
+   "k": "e791b10e1b17",
+   "en": "ParameterDescription containerPathThis is the path of the container in which we upload the blob. It consists of the"
+  },
+  {
+   "t": "code",
+   "k": "1261f2dffc64",
+   "en": "containerID."
+  },
+  {
+   "t": "p",
+   "k": "6d7720a61775",
+   "en": "blobNameThis is the name of the blob. It should be unique within a container, otherwise our system will give the blob that was uploaded later a version number. dataThis is a file that the user wants to upload to the blob store."
+  },
+  {
+   "t": "li",
+   "k": "751eb46aa6b5",
+   "en": "Note: This API is just a logical way to spell out needs. We might use a multistep streaming call for actual implementation if the data size is very large.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "8e96a98fcdba",
+   "en": "Download blobs Blobs are identified by their unique name or ID."
+  },
+  {
+   "t": "code",
+   "k": "088ee952c0dd",
+   "en": "getBlob(blobPath)"
+  },
+  {
+   "t": "p",
+   "k": "0560e84cfc33",
+   "en": "ParameterDescription blobPathThis is the fully qualified path of the data or file, including its unique ID."
+  },
+  {
+   "t": "p",
+   "k": "990a1930446e",
+   "en": "Delete blob The deleteBlob operation marks the specified blob for deletion. The actual blob is deleted during garbage collection."
+  },
+  {
+   "t": "code",
+   "k": "fb9e2c47f5a9",
+   "en": "deleteBlob(blobPath)"
+  },
+  {
+   "t": "p",
+   "k": "4b58296723c6",
+   "en": "ParameterDescription blobPathThis is the path of the blob that the user wants to delete."
+  },
+  {
+   "t": "p",
+   "k": "a5f726790b9c",
+   "en": "List blobs The listBlobs operation returns a list of blobs under the specified container or path."
+  },
+  {
+   "t": "code",
+   "k": "65369428bc2b",
+   "en": "listBlobs(containerPath)"
+  },
+  {
+   "t": "p",
+   "k": "9777d4530e2c",
+   "en": "ParameterDescription containerPathThis is the path to the container from which the user wants to get the list of blobs."
+  },
+  {
+   "t": "p",
+   "k": "e75a04ec43f6",
+   "en": "Delete container The deleteContainer operation marks the specified container for deletion. The container and any blobs in it are deleted later during garbage collection."
+  },
+  {
+   "t": "code",
+   "k": "52bf8e7bbab7",
+   "en": "deleteContainer(containerPath)"
+  },
+  {
+   "t": "p",
+   "k": "223e13831007",
+   "en": "ParameterDescription containerPathThis is the path to the container that the user wants to delete."
+  },
+  {
+   "t": "p",
+   "k": "229080bd909f",
+   "en": "List containers The listContainers operation returns a list of the containers under the specified user’s blob store account."
+  },
+  {
+   "t": "code",
+   "k": "176329d5ede8",
+   "en": "listContainers(accountID)"
+  },
+  {
+   "t": "p",
+   "k": "eaa8aa79e0cf",
+   "en": "ParameterDescription accountIDThis is the ID of the user who wants to list their containers."
+  },
+  {
+   "t": "p",
+   "k": "82a81d09bb27",
+   "en": "Note: The APIs used to retrieve blobs provide metadata containing size, version number, access privileges, name, and so on."
+  },
+  {
+   "t": "h2",
+   "k": "674535ec930b",
+   "en": "Detailed design"
+  },
+  {
+   "t": "h3",
+   "k": "c212f08ed115",
+   "en": "Components"
+  },
+  {
+   "t": "p",
+   "k": "8237bf433a9c",
+   "en": "Here is a list of components that we use in the blob store design:"
+  },
+  {
+   "t": "li",
+   "k": "23e7db2f91a4",
+   "en": "Client: This is a user or program that performs any of the API functions that are specified.",
+   "lead": "Client"
+  },
+  {
+   "t": "li",
+   "k": "17bb2ade98a8",
+   "en": "Rate limiter: A rate limiter limits the number of requests based on the user’s subscription or limits the number of requests from the same IP address at the same time. It doesn’t allow users to exceed the predefined limit.",
+   "lead": "Rate limiter"
+  },
+  {
+   "t": "li",
+   "k": "f0ff0d150728",
+   "en": "Load balancer: A load balancer distributes incoming network traffic among a group of servers. It’s also used to reroute requests to different regions depending on the location of the user, different data centers within the same region, or different servers within the same data center. DNS load balancing can be used to reroute the requests among different regions based on the location of the user.",
+   "lead": "Load balancer"
+  },
+  {
+   "t": "li",
+   "k": "698e234a0532",
+   "en": "Front-end servers: Front-end servers forward the users’ requests for adding or deleting data to the appropriate storage servers.",
+   "lead": "Front-end servers"
+  },
+  {
+   "t": "li",
+   "k": "fe3b06957d99",
+   "en": "Data nodes: Data nodes hold the actual blob data. It’s also possible that they contain a part of the blob’s data. Blobs are split into small, fixed-size pieces called chunks. A data node can accommodate all of the chunks of a blob or at least some of them.",
+   "lead": "Data nodes"
+  },
+  {
+   "t": "li",
+   "k": "7c79d885280a",
+   "en": "Manager node: A manager node is the core component that manages all data nodes. It stores information about storage paths and the access privileges of blobs. There are two types of access privileges: private and public. A private access privilege means that the blob is only accessible by the account containing that blob. A public access privilege means that anyone can access that blob.",
+   "lead": "Manager node"
+  },
+  {
+   "t": "li",
+   "k": "09427211b453",
+   "en": "Note: Each of the data nodes in the cluster send the manager node a heartbeat and a chunk report regularly. The presence of a heartbeat indicates that the data node is operational. A chunk report lists all the chunks on a data node. If a data node fails to send a heartbeat, the manager node considers that node dead and then processes the user requests on the replica nodes. The manager node maintains a log of pending operations that should be replayed on the dead data node when it recovers.",
+   "lead": "Note"
+  },
+  {
+   "t": "li",
+   "k": "720d3995e292",
+   "en": "Metadata storage: Metadata storage is a distributed database that’s used by the manager node to store all the metadata. Metadata consists of account metadata, container metadata, and blob metadata.",
+   "lead": "Metadata storage"
+  },
+  {
+   "t": "p",
+   "k": "3b0de0cfafff",
+   "en": "Account metadata contains the account information for each user and the containers held by each account."
+  },
+  {
+   "t": "p",
+   "k": "c9c460b0e8e8",
+   "en": "Container metadata consists of the list of the blobs in each container."
+  },
+  {
+   "t": "p",
+   "k": "d34bc516f166",
+   "en": "Blob metadata consists of where each blob is stored. The blob metadata is discussed in detail in the next lesson."
+  },
+  {
+   "t": "li",
+   "k": "481076091282",
+   "en": "Monitoring service: A monitoring service monitors the data nodes and the manager node. It alerts the administrator in case of disk failures that require human intervention. It also gets information about the total available space left on the disks to alert administrators to add more disks.",
+   "lead": "Monitoring service"
+  },
+  {
+   "t": "li",
+   "k": "1abba74f69f5",
+   "en": "Administrator: An administrator is responsible for handling notifications from the monitoring services and conducting routine checkups of the overall service to ensure reliability.",
+   "lead": "Administrator"
+  },
+  {
+   "t": "p",
+   "k": "b332152cd4c5",
+   "en": "The architecture of how these components interconnect is shown in the diagram below:"
+  },
+  {
+   "t": "h3",
+   "k": "899531e0f885",
+   "en": "Workflow"
+  },
+  {
+   "t": "p",
+   "k": "80ce820cf813",
+   "en": "We describe the workflow based on the basic operations we can perform on a blob store. We assume that the user has successfully logged in and a container has already been created. A unique ID is assigned to each user and container."
+  },
+  {
+   "t": "p",
+   "k": "92e4c18050ac",
+   "en": "The user performs the following operations in a specific container."
+  },
+  {
+   "t": "p",
+   "k": "5b1066e261f3",
+   "en": "Write a blob"
+  },
+  {
+   "t": "li",
+   "k": "95d157070745",
+   "en": "The client generates the upload blob request. If the client’s request successfully passes through the rate limiter, the load balancer forwards the client’s request to one of the front-end servers. The front-end server then requests the manager node for the data nodes it should contact to store the blob."
+  },
+  {
+   "t": "li",
+   "k": "54cac2cfb550",
+   "en": "The manager node assigns the blob a unique ID using a unique ID generator system. It then splits the large-size blob into smaller, fixed-size chunks and assigns each chunk a data node where that chunk is eventually stored. The manager node determines the amount of storage space that’s available on the data nodes using a free-space management system."
+  },
+  {
+   "t": "li",
+   "k": "756731e30e4c",
+   "en": "After determining the mapping of chunks to data nodes, the front-end servers write the chunks to the assigned data nodes."
+  },
+  {
+   "t": "li",
+   "k": "3b60d42e699f",
+   "en": "We replicate each chunk for redundancy purposes. All choices regarding chunk replication are made at the manager node. Hence, the manager node also allocates the storage and data nodes for storing replicas."
+  },
+  {
+   "t": "li",
+   "k": "adb2225cfed8",
+   "en": "The manager node stores the blob metadata in the metadata storage. We discuss the blob’s metadata schema in detail in the next lesson."
+  },
+  {
+   "t": "li",
+   "k": "b0c9f815fac8",
+   "en": "After writing the blob, a fully qualified path of the blob is returned to the client. The path consists of the user ID, container ID where the user has added the blob, the blob ID, and the access level of the blob."
+  },
+  {
+   "t": "p",
+   "k": "49c4ce11e0b4",
+   "en": "Point to Ponder What does the manager node do if a user concurrently writes two blobs with the same name inside the same container?"
+  },
+  {
+   "t": "p",
+   "k": "8147c6298e6b",
+   "en": "Hide Answer The manager node serializes such operations and assigns a version number to the blob that’s uploaded later."
+  },
+  {
+   "t": "p",
+   "k": "5d4eecdf708c",
+   "en": "Reading a blob"
+  },
+  {
+   "t": "li",
+   "k": "d6ded42b5bc8",
+   "en": "When a read request for a blob reaches the front-end server, it asks the manager node for that blob’s metadata."
+  },
+  {
+   "t": "li",
+   "k": "c3c864ad54e4",
+   "en": "The manager node first checks whether that blob is private or public, based on the path of the blob and whether we’re authorized to transfer that blob or not."
+  },
+  {
+   "t": "li",
+   "k": "c1d273a26eb4",
+   "en": "After authorizing the blob, the manager node looks for the chunks for that blob in the metadata and looks at their mappings to data nodes. The manager node returns the chunks and their mappings (data nodes) to the client."
+  },
+  {
+   "t": "li",
+   "k": "ed3915e3a474",
+   "en": "The client then reads the chunk data from the data nodes."
+  },
+  {
+   "t": "li",
+   "k": "3cbebb7117a6",
+   "en": "Note: The metadata information for reading the blob is cached at the client machine, so that the next time a client wants to read the same blob, we won’t have to burden the manager node. Additionally, the client’s read operation will be faster the next time.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "767f3b6cee07",
+   "en": "Point to Ponder Suppose the manager node moves data from one data node to another because of an impending disk failure. The user will now have stale information if they use the cached metadata to access the data. How do we handle such situations?"
+  },
+  {
+   "t": "p",
+   "k": "f09a022d2f24",
+   "en": "Hide Answer In such cases, the client calls fail. The client then flushes the cache and fetches new metadata information from the manager node."
+  },
+  {
+   "t": "p",
+   "k": "bb4aeb9cf414",
+   "en": "Deleting a blob Upon receiving a delete blob request, the manager node marks that blob as deleted in the metadata, and frees up the space later using a garbage collector. We learn more about garbage collectors in the next lesson."
+  },
+  {
+   "t": "p",
+   "k": "20a5320e729a",
+   "en": "Point to Ponder Can the manager node be considered a single point of failure? If yes, then how can we cope with this problem?"
+  },
+  {
+   "t": "p",
+   "k": "c18472ac48b5",
+   "en": "Hide Answer Yes, because the manager node is the central point of a blob store and is a single point of failure. Therefore, we have to have a backup or shadow server in place of a manager node."
+  },
+  {
+   "t": "p",
+   "k": "0499ca9ddf2d",
+   "en": "The technique that we use for this is called checkpointing, meaning we take snapshots of the data at different time intervals. A snapshot captures the state, data, hardware configuration of the running manager node, and messages in transit between the manager and data nodes. It maintains the operation log in an external storage area or snapshot repository. If the manager node fails, an automated system or the administrator uses the snapshot to restart that manager node from the state it failed at and replays the operation log."
+  },
+  {
+   "t": "p",
+   "k": "c9f53ae3c0f9",
+   "en": "In the next lesson, we talk about the design considerations of a blob store."
+  },
+  {
+   "t": "h1",
+   "k": "2c360ff6e7fa",
+   "en": "Design Considerations of a Blob Store"
+  },
+  {
+   "t": "p",
+   "k": "386c095d31a0",
+   "en": "Learn more details about the different design aspects of the blob store."
+  },
+  {
+   "t": "h3",
+   "k": "26aca7941a99",
+   "en": "Introduction"
+  },
+  {
+   "t": "p",
+   "k": "22663ed416b7",
+   "en": "Even though we discussed the design of the blob store system and its major components in detail in the previous lesson, a number of interesting questions still require answers. For example, how do we store large blobs? Do we store them in the same disk, in the same machine, or do we divide those blobs into chunks? How many replicas of a blob should be made to ensure reliability and availability? How do we search for and retrieve blobs quickly? These are just some of the questions that might come up."
+  },
+  {
+   "t": "p",
+   "k": "42eaa42c55f2",
+   "en": "This lesson addresses these important design concerns. The table below summarizes the goals of this lesson."
+  },
+  {
+   "t": "h2",
+   "k": "121166c490b6",
+   "en": "Summary of the Lesson"
+  },
+  {
+   "t": "p",
+   "k": "480e0881e09b",
+   "en": "SectionPurpose Blob metadataThis is the metadata that’s maintained to ensure efficient storage and retrieval of blobs."
+  },
+  {
+   "t": "p",
+   "k": "69ba28e6a633",
+   "en": "PartitioningThis determines how blobs are partitioned among different data nodes."
+  },
+  {
+   "t": "p",
+   "k": "8c8915b219a0",
+   "en": "Blob indexingThis shows us how to efficiently search for blobs."
+  },
+  {
+   "t": "p",
+   "k": "da66e2e54986",
+   "en": "PaginationThis teaches us how to conceive a method for the retrieval of a limited number of blobs to ensure improved readability and loading time."
+  },
+  {
+   "t": "p",
+   "k": "996e324c277c",
+   "en": "Garbage collectionThis teaches us how to delete blobs without sacrificing performance."
+  },
+  {
+   "t": "p",
+   "k": "f028423360e2",
+   "en": "StreamingThis teaches us how to stream large files chunk-by-chunk to facilitate interactivity for users."
+  },
+  {
+   "t": "p",
+   "k": "da021b018e14",
+   "en": "CachingThis shows us how to improve response time and throughput."
+  },
+  {
+   "t": "p",
+   "k": "41f377903386",
+   "en": "Before we answer the questions listed above, let’s look at how we create layers of abstractions for the user to hide the internal complexity of a blob store. These abstraction layers help us make design-related decisions as well."
+  },
+  {
+   "t": "p",
+   "k": "aa8a96133100",
+   "en": "There are three layers of abstractions:"
+  },
+  {
+   "t": "li",
+   "k": "8a0420427125",
+   "en": "User account: Users uniquely get identified on this layer through their account_ID. Blobs uploaded by users are maintained in their containers."
+  },
+  {
+   "t": "li",
+   "k": "ebce9429ffdf",
+   "en": "Container: Each user has a set of containers that are all uniquely identified by a container_ID. These containers contain blobs."
+  },
+  {
+   "t": "li",
+   "k": "7f90f5638196",
+   "en": "Blob: This layer contains information about blobs that are uniquely identified by their blob_ID. This layer maintains information about the metadata of blobs that’s vital for achieving the availability and reliability of the system."
+  },
+  {
+   "t": "p",
+   "k": "131678321385",
+   "en": "We can take routing, storage, and sharding decisions on the basis of these layers."
+  },
+  {
+   "t": "p",
+   "k": "4f7d270edf70",
+   "en": "The table below summarizes these layers."
+  },
+  {
+   "t": "h2",
+   "k": "480e5a774f53",
+   "en": "Layered Information"
+  },
+  {
+   "t": "p",
+   "k": "bffcd3fc5019",
+   "en": "LevelUniquely identified InformationSharded by by"
+  },
+  {
+   "t": "code",
+   "k": "bea7cbbffec4",
+   "en": "User’s blob store account_IDlist of containers_ID valuesaccount_ID"
+  },
+  {
+   "t": "p",
+   "k": "ca20728d35f0",
+   "en": "account"
+  },
+  {
+   "t": "code",
+   "k": "166ff6495865",
+   "en": "Containercontainer_IDList of blob_ID values container_ID"
+  },
+  {
+   "t": "p",
+   "k": "6e8daf4a4540",
+   "en": "Blobblob_ID{list of chunks, chunkInfo: blob_ID data node ID's,.. }"
+  },
+  {
+   "t": "li",
+   "k": "d48505458a7b",
+   "en": "Note: We generate unique IDs for user accounts, containers, and blobs using a unique ID generator.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "1ee3af592fc5",
+   "en": "Besides storing the actual blob data, we have to maintain some metadata for managing the blob storage. Let’s see what that data is."
+  },
+  {
+   "t": "h2",
+   "k": "604d658936ed",
+   "en": "Blob metadata"
+  },
+  {
+   "t": "p",
+   "k": "fe64f7611feb",
+   "en": "When a user uploads a blob, it’s split into small-sized chunks in order to be able to support the storage of large files that can’t fit in one contiguous location, in one data node, or in one block of a disk associated with that data node. The chunks for a single blob are then stored on different data nodes that have enough storage space available to store these chunks. There are billions of blobs that are kept in storage. The manager node has to store all the information about the blob’s chunks and where they are stored, so that it can retrieve the chunks on reads. The manager node assigns an ID to each chunk."
+  },
+  {
+   "t": "p",
+   "k": "c708c4a39a10",
+   "en": "The information about a blob consists of chunk IDs and the name of the assigned data node for each chunk. We split the blobs into equal-sized chunks. Chunks are replicated to enable them to deal with data node failure. Hence, we also store the replica IDs for each chunk. We have access to all this information pertaining to each blob."
+  },
+  {
+   "t": "p",
+   "k": "38fc8d0a08ae",
+   "en": "Let’s say we have a blob of 128 MB, and we split it into two chunks of 64 MB each. The metadata for this blob is shown in the following table:"
+  },
+  {
+   "t": "h2",
+   "k": "604d658936ed",
+   "en": "Blob Metadata"
+  },
+  {
+   "t": "p",
+   "k": "d9a5c8264845",
+   "en": "ChunkDatanode IDReplica 1 Replica 2 IDReplica 3 ID ID 1d1b1r1b1r2b1r3b1 2d1b2r1b2r2b2r3b2"
+  },
+  {
+   "t": "li",
+   "k": "2eff992bdccc",
+   "en": "Note: As designers, we need to choose a reasonable size for the blob data chunk. We can decide to keep our chosen chunk size fixed for the whole blob store (meaning we don’t want to allow applications to use different chunk sizes for different files to reduce our implementation complexity).",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "1f13b79fa2ed",
+   "en": "If we make the chunk size too small, it will increase the metadata size (often per chunk), which is not favorable for our single manager-based design. And if we choose a chunk size too large, the underlying disks might not be able to write data in contiguous locations, and we might get lower read/write performance. Therefore, we need to come up with a reasonable chunk size that satisfies both our applications’ needs and can give good performance from the underlying hardware. There are multiple variables that can impact the read/write performance, such as chunk size, underlying storage type (rotating disks or flash disk), workload characteristics (sequential read/write or random read/write, full data block vs. streaming read/write operations), etc. Assuming we are using rotating disks, where a sector is a unit of read and write, it is beneficial to make the chunk size an integer multiple of the sector size."
+  },
+  {
+   "t": "p",
+   "k": "7f2f5798727b",
+   "en": "We maintain three replicas for each block. When writing a blob, the manager node identifies the data and the replica nodes using its free space management system. Besides handling data node failure, the replica nodes are also used to serve read/write requests, so that the primary node is not overloaded."
+  },
+  {
+   "t": "p",
+   "k": "568b15a2e9d8",
+   "en": "In the example above, the blob size is a multiple of the chunk size, so the manager node can determine how many Bytes to read for each chunk."
+  },
+  {
+   "t": "p",
+   "k": "0cc66253e86e",
+   "en": "Point to Ponder What if the blob size isn’t a multiple of our configured chunk size? How does the manager node know how many Bytes to read for the last chunk?"
+  },
+  {
+   "t": "p",
+   "k": "de0afde558b9",
+   "en": "Hide Answer If the blob size isn’t a multiple of the chunk size, the last chunk won’t be full."
+  },
+  {
+   "t": "p",
+   "k": "247098e56507",
+   "en": "The manager node also keeps the size of each blob to determine the number of Bytes to read for the last chunk."
+  },
+  {
+   "t": "h2",
+   "k": "4671c8a9c083",
+   "en": "Partition data"
+  },
+  {
+   "t": "p",
+   "k": "9dd34459f5ef",
+   "en": "We talked about the different levels of abstraction in aBlob Path blob store—the account layer, the container layer, andA001/001c908/001c908b001/public the blob layer. There are billions of blobs that are stored and read. There is a large number of data nodes on which we store these blobs. If we look for the data nodes that contain specific blobs out of all of the data nodes, it would be a very slow process. Instead, we can group data nodes and call each group a partition. We maintain a partition map table that contains a list of all the blobs in each partition. If we distribute the blobs on different partitions independent of their container IDs and account IDs, we encounter a problem, as shown in the following illustration:"
+  },
+  {
+   "t": "p",
+   "k": "3ed45a5bf50d",
+   "en": "Partitioning based on the blob IDs causes certain problems. For example, the blobs under a specific container or account may reside in different partitions that add overhead while reading or listing the blobs linked to a particular account or a particular container."
+  },
+  {
+   "t": "p",
+   "k": "4c87cb0a3472",
+   "en": "To overcome the problem described above, we can partition the blobs based on the complete path of the blob. The partition key here is the combination of the account ID, container ID, and blob ID. This helps in co-locating the blobs for a single user on the same partition server, which enhances performance."
+  },
+  {
+   "t": "li",
+   "k": "e1dc043fb69e",
+   "en": "Note: The partition mappings are maintained by the manager node, and these mappings are stored in the distributed metadata storage.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "23c60a5a1fc6",
+   "en": "Blob indexing"
+  },
+  {
+   "t": "p",
+   "k": "41c7e247ddb8",
+   "en": "Finding specific blobs in a sea of blobs becomes more difficult and time-consuming with an increase in the number of blobs that are uploaded to the storage. The blob index solves the problem of blob management and querying."
+  },
+  {
+   "t": "p",
+   "k": "73bcb240af91",
+   "en": "To populate the blob index, we define key-value tag attributes on the blobs while uploading the blobs. We use multiple tags, like container name, blob name, upload date and time, and some other categories like the image or video blob, and so on."
+  },
+  {
+   "t": "p",
+   "k": "f0ebaf9c5631",
+   "en": "As shown in the following illustration, a blob indexing engine reads the new tags, indexes them, and exposes them to a searchable blob index:"
+  },
+  {
+   "t": "p",
+   "k": "cafbfc826155",
+   "en": "We can categorize blobs as well as sort blobs using indexing. Let’s see how we utilize indexing in pagination."
+  },
+  {
+   "t": "h2",
+   "k": "a867a1c5456e",
+   "en": "Pagination for listing"
+  },
+  {
+   "t": "p",
+   "k": "09e80fcb4bea",
+   "en": "Listing is about returning a list of blobs to the user, depending on the user’s entered prefix. A prefix is a character or string that returns the blobs whose name begins with that particular character or string."
+  },
+  {
+   "t": "p",
+   "k": "e8791dae15d9",
+   "en": "Users may want to list all the blobs associated with a specific account, all the blobs present inside a specific container, or they may want to list some public blobs based on a prefix. The problem is that this list could be very long. We can’t return the whole list to the user in one go. So, we have to return the list of the blobs in parts."
+  },
+  {
+   "t": "p",
+   "k": "70da1f26f09b",
+   "en": "Let’s say a user wants a list of blobs associated with their account and there are a total of 2,000 blobs associated with that account."
+  },
+  {
+   "t": "p",
+   "k": "c113afdf2e45",
+   "en": "Searching, returning, and loading too container2/table.json many blobs at once affects container3/myVideo.mp4 performance. This is where paging becomes important. We can return the first five results and give users a nextPrevious Next button. On each click of the next button, it returns the next five results."
+  },
+  {
+   "t": "p",
+   "k": "75105543a2c3",
+   "en": "This is called pagination."
+  },
+  {
+   "t": "p",
+   "k": "07929c16d783",
+   "en": "The application owners set the number of results to return depending on these factors:"
+  },
+  {
+   "t": "p",
+   "k": "af2092580321",
+   "en": "How much time they assume the users should wait for query response."
+  },
+  {
+   "t": "p",
+   "k": "c15ffaec3aff",
+   "en": "How many results they can return in that time. We have shown five results per page, which is a very small number. We use this number just for visualization purposes."
+  },
+  {
+   "t": "p",
+   "k": "9fbb8958c075",
+   "en": "Point to Ponder How do we decide which five blobs to return first out of the 2,000 blobs total?"
+  },
+  {
+   "t": "p",
+   "k": "62e1d12acda1",
+   "en": "Hide Answer Here, we utilize indexing to sort and categorize the blobs. We should do this beforehand, while we store the blobs. Otherwise, it becomes challenging at the time of returning the list to the user. There could be millions or billions of blobs and we can’t sort them quickly when the list request is received."
+  },
+  {
+   "t": "p",
+   "k": "1085900f19b9",
+   "en": "For pagination, we need a continuation token as a starting point for the part of the list that’s returned next. A continuation token is a string token that’s included in the response of a query if the total number of queried results exceeds the maximum number of results that we can return at once. As a result, it serves as a pointer, allowing the re-query to pick up where we left off."
+  },
+  {
+   "t": "h2",
+   "k": "7ddb9625261f",
+   "en": "Replication"
+  },
+  {
+   "t": "p",
+   "k": "9d4f4b6c1ed0",
+   "en": "Replication is carried out on two levels to support availability and strong consistency. To keep the data strongly consistent, we synchronously replicate data among the nodes that are used to serve the read requests, right after performing the write operation. To achieve availability, we can replicate data to different regions or data centers after performing the write operation. We don’t serve the read request from the other data center or regions until we have not replicated data there."
+  },
+  {
+   "t": "p",
+   "k": "e9b74d2778c6",
+   "en": "These are the two levels of replication:"
+  },
+  {
+   "t": "h3",
+   "k": "93e09f74250f",
+   "en": "Synchronous replication within a storage cluster"
+  },
+  {
+   "t": "p",
+   "k": "2150d03d7042",
+   "en": "A storage cluster is made up of N racks of storage nodes, each of which is configured as a fault domain with redundant networking and power."
+  },
+  {
+   "t": "p",
+   "k": "7feec3fcb3ac",
+   "en": "We ensure that every data written into a storage cluster is kept durable within that storage cluster. The manager node maintains enough data replicas across the nodes in distinct fault domains to ensure data durability inside the cluster in the event of a disk, node, or rack failure."
+  },
+  {
+   "t": "li",
+   "k": "4d3ed9f1ddef",
+   "en": "Note: This intra-cluster replication is done on the critical path of the client’s write requests.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "9ec0a62bce8b",
+   "en": "Success can be returned to the client once a write has been synchronously replicated inside that storage cluster. This allows for quick writes because:"
+  },
+  {
+   "t": "p",
+   "k": "e11deb97a4ae",
+   "en": "We replicate data within a storage cluster where all the nodes are nearby, thus reducing the latency."
+  },
+  {
+   "t": "p",
+   "k": "491f897e9fcb",
+   "en": "We use in-lined data copying where we use redundant network paths to copy data to all the replicas in parallel."
+  },
+  {
+   "t": "h3",
+   "k": "7b9aa02e7f3c",
+   "en": "Asynchronous replication across data centers and region"
+  },
+  {
+   "t": "p",
+   "k": "e269c3c2fbb8",
+   "en": "The blob store’s data centers are present in different regions—for example, Asia-Pacific, Europe, eastern US, and more. In each region, we have more than one data center placed at different locations, so that if one data center goes down, we have other data centers in the same region to step in and serve the user requests."
+  },
+  {
+   "t": "p",
+   "k": "65656f605ff2",
+   "en": "There are a minimum of three data centers within each region, each separated by miles to protect against local events like fires, floods, and so on."
+  },
+  {
+   "t": "p",
+   "k": "a9ee38a84d50",
+   "en": "The number of copies of a blob is called the replication factor. Most of the time, a replication factor of three is sufficient."
+  },
+  {
+   "t": "p",
+   "k": "061e23ea447c",
+   "en": "We keep four copies of a blob. One is the local copy within the data center in the primary region to protect against server rack and drive failures. The second copy of the blob is placed in the other data center within the same region to protect against fire or flooding in the data center. The third copy is placed in the data center of a different region to protect against regional disasters."
+  },
+  {
+   "t": "h2",
+   "k": "1cc15751a5b1",
+   "en": "Garbage collection while deleting a blob"
+  },
+  {
+   "t": "p",
+   "k": "602d7b531149",
+   "en": "Since the blob chunks are placed at different data nodes, deleting from many different nodes takes time, and holding a client until that’s done is not a viable option. Due to real-time latency optimization, we don’t actually remove the blob from the blob store against a delete request. Instead, we just mark a blob as “DELETED” in the metadata to make it inaccessible to the user. The blob is removed later after responding to the user’s delete request."
+  },
+  {
+   "t": "p",
+   "k": "d50d54c5dacc",
+   "en": "Marking the blob as deleted, but not actually deleting it at the moment, causes internal metadata inconsistencies, meaning that things continue to take up storage space that should be free. These metadata inconsistencies have no impact on the user. For example, for a blob marked as deleted in the metadata, we still have the entries for that blob’s chunks in the metadata. The data nodes are still holding on to that blob’s chunks. Therefore, we have a service called a garbage collector that cleans up metadata inconsistencies later. The deletion of a blob causes the chunks associated with that blob to be freed. However, there could be an appreciable time delay between the time a blob is deleted by a user and the time of the corresponding increase in free space in the blob store. We can bear this appreciable time delay because, in return, we have a real-time fast response benefit for the user’s delete blob request."
+  },
+  {
+   "t": "p",
+   "k": "c3dc1aa8eba0",
+   "en": "The whole deletion process is shown in the following illustration:"
+  },
+  {
+   "t": "h2",
+   "k": "b0978b06ebb8",
+   "en": "Stream a file"
+  },
+  {
+   "t": "p",
+   "k": "f381208d004a",
+   "en": "To stream a file, we need to define how many Bytes are allowed to be read at one time. Let’s say we read X number of Bytes each time. The first time we read the first X Bytes starting from the 0th Byte (0 to X−1) and the next time, we read the next X Bytes (X to 2X−1)."
+  },
+  {
+   "t": "p",
+   "k": "f001cf3bbb0e",
+   "en": "Point to Ponder How do we know which Bytes we have read first and which Bytes we have to read next?"
+  },
+  {
+   "t": "p",
+   "k": "4ec729e788c2",
+   "en": "Hide Answer We can use an offset value to keep track of the Byte from which we need to start reading again."
+  },
+  {
+   "t": "h2",
+   "k": "5b53f192516d",
+   "en": "Cache the blob store"
+  },
+  {
+   "t": "p",
+   "k": "33624d5d3e59",
+   "en": "Caching can take place at multiple levels. Below are some examples:"
+  },
+  {
+   "t": "p",
+   "k": "2c45bae38969",
+   "en": "The metadata for a blob’s chunks is cached on the client side when it’s read for the first time. The client can go directly to the data nodes without communicating to the manager node to read the same blob a second time."
+  },
+  {
+   "t": "p",
+   "k": "1a3d1610f054",
+   "en": "At the front-end servers, we cache the partition map and use it to determine which partition server to forward each request to."
+  },
+  {
+   "t": "p",
+   "k": "22caeaf982e7",
+   "en": "The frequently accessed chunks are cached at the manager node, which helps us stream large objects efficiently. It also reduces disk I/O."
+  },
+  {
+   "t": "li",
+   "k": "88f7074757f3",
+   "en": "Note: The caching of the blob store is usually done using CDN. The Azure blob store service cache the publicly accessible blob in Azure Content Delivery Network until that blob’s TTL (time-to-live) elapses. The origin server defines the TTL, and CDN determines it from the Cache-Control header in the HTTP response from the origin server.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "f33a9abf3847",
+   "en": "We covered the design factors that should be taken into account while designing a blob store. Now, we’ll evaluate what we designed."
+  },
+  {
+   "t": "h1",
+   "k": "da3fc300e7db",
+   "en": "Evaluation of a Blob Store's Design"
+  },
+  {
+   "t": "p",
+   "k": "0e221cb70df6",
+   "en": "Examine how our blob store design fulﬁlls its requirements."
+  },
+  {
+   "t": "h2",
+   "k": "f2c1b76db30d",
+   "en": "Availability"
+  },
+  {
+   "t": "p",
+   "k": "154904f364ca",
+   "en": "The replication part of our design makes the system available. For reading the data, we keep four replicas for each blob. Having replicas, we can distribute the request load. If one node fails, the other replica node can serve the request."
+  },
+  {
+   "t": "p",
+   "k": "63ff86e4eba3",
+   "en": "Moreover, our replica placement strategy handles a whole data center failure and can even handle the situation of region unavailability due to natural disasters. We ensure that enough replicas are available at any point in time using our monitoring service, which makes a copy of the data in a timely manner if the number of failed replicas exceeds the specified threshold."
+  },
+  {
+   "t": "p",
+   "k": "f663dbc8c8c3",
+   "en": "For write requests, we replicate the data within the cluster in a fault-tolerant way and quickly respond to the user, making the system available for write requests."
+  },
+  {
+   "t": "p",
+   "k": "63fb3dbbf62b",
+   "en": "To keep the manager node available, we keep a backup of its state. In the case of a manager-node failure, we start a new instance of the manager node, initializing it from the saved state."
+  },
+  {
+   "t": "h2",
+   "k": "c6649247ee71",
+   "en": "Durability"
+  },
+  {
+   "t": "p",
+   "k": "cc220c3c47da",
+   "en": "The replication and monitoring services ensure the durability of the data. The data, once uploaded, is synchronously replicated within a storage cluster. If data loss occurs at one node, we can recover the data from the other nodes. The monitoring service monitors the storage disks. If any disk fails, the monitoring service alerts the administrators to change the disk and sends messages to the manager node to copy the content on that disk on to the other available disk or the newly added disk. The manager node then updates the mapping accordingly."
+  },
+  {
+   "t": "h2",
+   "k": "b06273ade235",
+   "en": "Scalability"
+  },
+  {
+   "t": "p",
+   "k": "b1e4760507c8",
+   "en": "The partitioning and splitting of blobs into small-sized chunks helps us scale for billions of blob requests. Blobs are partitioned into separate ranges and served by different partition servers. The partition mappings specify which partition server will serve which particular blob range requests. Partitioning also provides automatic load balancing between partition servers to fulfill the blobs’ traffic needs."
+  },
+  {
+   "t": "p",
+   "k": "4b618eb2ff78",
+   "en": "Our system is horizontally scalable for storage. As need for storage arises, we add more data nodes. At some point, though, our manager node can become a bottleneck. A single manager node can handle 10,000 queries per second (QPS)."
+  },
+  {
+   "t": "p",
+   "k": "266c13c33556",
+   "en": "Point to Ponder How can we further scale when our manager server hits its limits and we can’t improve its computational abilities by vertical scaling?"
+  },
+  {
+   "t": "p",
+   "k": "046e823357da",
+   "en": "Hide Answer We can make two independent instances of our system. Each instance will have its own manager node and a set of data nodes. Deployment of a system similar to ours has been shown to scale up to a few petabytes."
+  },
+  {
+   "t": "p",
+   "k": "ab3a22255ead",
+   "en": "Therefore, making additional instances can help us scale further."
+  },
+  {
+   "t": "p",
+   "k": "88c959419f10",
+   "en": "For further scaling inside a single instance, we need a new, more complicated design."
+  },
+  {
+   "t": "h2",
+   "k": "31eee010484c",
+   "en": "Throughput"
+  },
+  {
+   "t": "p",
+   "k": "76b1eac90199",
+   "en": "We save chunks of a blob on different data nodes that distribute the requests for a blob to multiple machines. Parallel fetching of chunks from multiple data nodes helps us achieve high throughput."
+  },
+  {
+   "t": "p",
+   "k": "e9b673a07a42",
+   "en": "Additionally, caching at different layers— the client side, front-end servers, and the manager node—improves our throughput and reduces latency."
+  },
+  {
+   "t": "h2",
+   "k": "844e392a5d6c",
+   "en": "Reliability"
+  },
+  {
+   "t": "p",
+   "k": "ddbe2109f701",
+   "en": "We achieve reliability through our monitoring techniques. For example, the heartbeat protocol keeps the manager node updated on the status of data nodes."
+  },
+  {
+   "t": "p",
+   "k": "77859743020c",
+   "en": "This enables the manager node to request data from reliable nodes only."
+  },
+  {
+   "t": "p",
+   "k": "44351872d94d",
+   "en": "Furthermore, it takes necessary precautions to ensure reliable service. For example, the failure of a node triggers the manager node to request an additional replica node."
+  },
+  {
+   "t": "p",
+   "k": "69db7b822bae",
+   "en": "The monitoring services also alert the administrators to change faulty hardware like failed disks or broken network links or switches. To ensure a reliable service, the manager node keeps track of the available space on the disk. If the available space left reaches a certain threshold, an alert is sent to the administrators to add new disks."
+  },
+  {
+   "t": "h2",
+   "k": "028944e40958",
+   "en": "Consistency"
+  },
+  {
+   "t": "p",
+   "k": "e956b38416e5",
+   "en": "We synchronously replicate the disk data blocks inside a storage cluster upon a write request, making the data strongly consistent inside the storage cluster. This is done on the user’s critical path. We serve the subsequent read requests on this data from the same storage cluster until we haven’t replicated this data in another data center and or on other storage clusters."
+  },
+  {
+   "t": "p",
+   "k": "64446292b99d",
+   "en": "After responding to the write request and replicating data within the storage cluster, we asynchronously replicate blobs in the data centers placed far away or in other regions to ensure availability."
+  },
+  {
+   "t": "h2",
+   "k": "6a38a38f03e4",
+   "en": "Conclusion"
+  },
+  {
+   "t": "p",
+   "k": "00323f535e02",
+   "en": "We saw that a blob store is designed to store large-sized and unstructured data."
+  }
+ ]
+}

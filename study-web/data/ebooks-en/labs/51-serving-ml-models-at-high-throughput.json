@@ -1,0 +1,207 @@
+{
+ "id": "51-serving-ml-models-at-high-throughput",
+ "title": "Serving ML Models at High Throughput",
+ "titleKey": "0bde4dc9b6fd",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "18bb2472d689",
+   "en": "Your ML team trained a model that hits 94% accuracy in the notebook."
+  },
+  {
+   "t": "p",
+   "k": "739df6fbb86f",
+   "en": "Then you deploy it."
+  },
+  {
+   "t": "p",
+   "k": "74082a8d6b70",
+   "en": "Peak traffic: 3,000 inference requests/second."
+  },
+  {
+   "t": "p",
+   "k": "3af9dc789a86",
+   "en": "P99 latency shoots to 4.2 seconds."
+  },
+  {
+   "t": "p",
+   "k": "17fc45102bd0",
+   "en": "GPU utilization: 23%."
+  },
+  {
+   "t": "p",
+   "k": "2c7bead6f3b3",
+   "en": "The model works. The serving layer is the bottleneck."
+  },
+  {
+   "t": "p",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:"
+  },
+  {
+   "t": "li",
+   "k": "f4a8a60e0b18",
+   "en": "PyTorch model, ~6B params"
+  },
+  {
+   "t": "li",
+   "k": "618c12ea0ffa",
+   "en": "Single A100 GPU, 80GB VRAM"
+  },
+  {
+   "t": "li",
+   "k": "94a67a40c979",
+   "en": "FastAPI wrapper calling model.predict() one request at a time"
+  },
+  {
+   "t": "li",
+   "k": "2ef35bbbc002",
+   "en": "No batching, FP32 weights, no quantization Users are hitting timeouts. GPUs are sitting mostly idle. Your infra bill is climbing."
+  },
+  {
+   "t": "p",
+   "k": "91aacdc6dfc8",
+   "en": "What do you fix first?"
+  },
+  {
+   "t": "p",
+   "k": "1643d59b4edd",
+   "en": "A) Enable dynamic batching — buffer incoming requests, group into batches, process in one forward pass."
+  },
+  {
+   "t": "p",
+   "k": "2f2b6a9c16af",
+   "en": "B) Quantize the model to INT8 — reduce weight precision from 32-bit to 8-bit, shrink memory footprint and speed up inference."
+  },
+  {
+   "t": "p",
+   "k": "e482898df725",
+   "en": "C) Switch to tensor parallelism — split the model across multiple GPUs, distribute the compute."
+  },
+  {
+   "t": "p",
+   "k": "a44b377b7670",
+   "en": "D) Add a request queue + async workers — decouple HTTP receiving from model inference, process jobs in background."
+  },
+  {
+   "t": "h3",
+   "k": "9d1cee5ade40",
+   "en": "DAY 50 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "aab925bd0b40",
+   "en": "Answer: A — Dynamic Batching ✅ Here's the breakdown:"
+  },
+  {
+   "t": "li",
+   "k": "d2acb44d1ad2",
+   "en": "Why A wins (Dynamic Batching):",
+   "lead": "Why A wins (Dynamic Batching)"
+  },
+  {
+   "t": "p",
+   "k": "575336e1ce56",
+   "en": "The smoking gun is the combination: 3K RPS, P99 = 4.2s, GPU utilization = 23%."
+  },
+  {
+   "t": "p",
+   "k": "6e964367349b",
+   "en": "GPU utilization at 23% tells you the GPU is starving. It's not overloaded — it's bored. Every request is arriving one at a time, paying the full GPU kernel launch overhead, then idling while the next request trickles in. GPUs are built for parallelism. They want 256 inputs to process simultaneously, not 1."
+  },
+  {
+   "t": "p",
+   "k": "42b776f3a561",
+   "en": "Dynamic batching buffers requests for a few milliseconds (say, 50ms), collects 32–128 of them, and fires a single forward pass. That same GPU that was at 23% utilization can jump to 85–90%. Latency improves because batch throughput dramatically outpaces sequential per-request calls, even with the small buffer wait."
+  },
+  {
+   "t": "p",
+   "k": "5d25fc0754d0",
+   "en": "This is exactly how NVIDIA Triton Inference Server, TorchServe, and vLLM (for LLMs) work by default."
+  },
+  {
+   "t": "p",
+   "k": "99b2e689116a",
+   "en": "Batching is the first thing you reach for when GPU util is low and RPS is high."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "d5a2d152f420",
+   "en": "Why B is the trap answer (INT8 Quantization):",
+   "lead": "Why B is the trap answer (INT8 Quantization)"
+  },
+  {
+   "t": "p",
+   "k": "58f1a42d5596",
+   "en": "Quantization is legitimate and valuable — but it solves a different problem. It reduces model size (~4x smaller) and speeds up individual forward passes. If you were memory-constrained or couldn't fit the model at all, quantization is critical. But this model fits comfortably in 80GB VRAM and the GPU isn't saturated."
+  },
+  {
+   "t": "p",
+   "k": "c804e6eb2802",
+   "en": "INT8 quantization also introduces precision loss you need to validate carefully, and the speedup on a modern A100 for a 6B param model in isolation is modest — maybe 1.5–2x. That doesn't fix 3K RPS with sequential inference. You'll still have sequential execution, just slightly faster per call."
+  },
+  {
+   "t": "p",
+   "k": "47abe4228723",
+   "en": "The right order: batch first, quantize second (for memory or cost, not latency emergencies)."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "537a39632bbe",
+   "en": "Why C is wrong here (Tensor Parallelism):",
+   "lead": "Why C is wrong here (Tensor Parallelism)"
+  },
+  {
+   "t": "p",
+   "k": "108a83953f30",
+   "en": "Tensor parallelism splits model layers across multiple GPUs using NVLink or interconnects. It reduces per-request latency for very large models that don't fit on one device, or when you need sub-100ms latency on a single huge model."
+  },
+  {
+   "t": "p",
+   "k": "a9df769508f1",
+   "en": "But this is a 6B param model on an 80GB A100 — it fits. Tensor parallelism adds coordination overhead and complexity, and it doesn't help when the bottleneck is sequential request processing."
+  },
+  {
+   "t": "p",
+   "k": "7f8b788b3cfb",
+   "en": "You'd also need 2+ GPUs, which inflates cost before you've even tried the cheap fix."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "d964056906c0",
+   "en": "Why D is wrong (Async Queue + Workers):",
+   "lead": "Why D is wrong (Async Queue + Workers)"
+  },
+  {
+   "t": "p",
+   "k": "9f66471b6144",
+   "en": "An async queue decouples HTTP from inference and prevents timeout failures — that's a reliability win. But it doesn't improve GPU utilization or actual throughput. You're still processing one request at a time, just asynchronously. Users now get job IDs instead of timeouts, but the wall-clock wait is the same or worse."
+  },
+  {
+   "t": "p",
+   "k": "ee8462ffeb62",
+   "en": "Queuing without batching is adding a lobby to a slow restaurant. It hides the congestion — it doesn't fix it."
+  },
+  {
+   "t": "h3",
+   "k": "dbb4652a0a70",
+   "en": "DAY 51 · SYSTEM DESIGN"
+  }
+ ]
+}

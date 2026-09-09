@@ -1,0 +1,1885 @@
+{
+ "id": "031-design-twitter",
+ "title": "Design-Twitter",
+ "titleKey": "203a4b7141d2",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "a7b20bb9b5e4",
+   "en": "System Design: Twitter"
+  },
+  {
+   "t": "p",
+   "k": "3c8931a91477",
+   "en": "Get an overview of Twitter and a brief description of what we’ll learn in this chapter."
+  },
+  {
+   "t": "h2",
+   "k": "8a1621dae39b",
+   "en": "Twitter"
+  },
+  {
+   "t": "p",
+   "k": "7f9a1660a482",
+   "en": "Twitter is a free microblogging social network where registered users post messages called “Tweets”. Users can also like, reply to, and retweet public tweets. Twitter has about 397 million users as of 2021 that is proliferating with time. One of the main reasons for its popularity is the vast sharing of the breaking news on the platform. Another important reason is that Twitter allows us to engage with and learn from people belonging to different communities and cultures."
+  },
+  {
+   "t": "p",
+   "k": "00457db0d837",
+   "en": "The illustration below shows the country-wise userbase of Twitter as of January 2022 (source: Statista), where the US is taking the lead. Such statistics are important when we design our infrastructure because it allows us to allocate more capacity to the users of a specific region, and traffic served from near specific users."
+  },
+  {
+   "t": "h2",
+   "k": "358798e3271b",
+   "en": "How will we design Twitter?"
+  },
+  {
+   "t": "p",
+   "k": "92bcf56890a9",
+   "en": "We’ll divide Twitter’s design into four sections:"
+  },
+  {
+   "t": "li",
+   "k": "aae5a8e814f5",
+   "en": "Requirements: This lesson describes the functional and non-functional requirements of Twitter. We’ll also estimate multiple aspects of Twitter, such as storage, bandwidth, and computational resources."
+  },
+  {
+   "t": "li",
+   "k": "52a4c7c815f4",
+   "en": "Design: We’ll discuss the high-level design of Twitter in this lesson. We also briefly explain the API design and identify the significant components of the Twitter architecture. Moreover, we will discuss how to manage the Top-k problem, such as Tweets liked or viewed by millions of users on Twitter."
+  },
+  {
+   "t": "li",
+   "k": "d360132b7ea3",
+   "en": "Client-side load balancers: This lesson discusses how Twitter performs load balancing for its microservices system to manage billions of requests between various services’ instances. Furthermore, we also see why Twitter uses a customized load-balancing technique instead of other commonly used approaches."
+  },
+  {
+   "t": "li",
+   "k": "63b1a624dfcb",
+   "en": "Quiz: Finally, we’ll reinforce major concepts of Twitter design with a quiz."
+  },
+  {
+   "t": "p",
+   "k": "f802b2baadc9",
+   "en": "Let’s begin with defining Twitter’s requirements."
+  },
+  {
+   "t": "h1",
+   "k": "1ae4d55d7cf5",
+   "en": "Requirements of Twitter’s Design"
+  },
+  {
+   "t": "p",
+   "k": "281f0f3c3deb",
+   "en": "Understand the requirements and estimation for Twitter's design."
+  },
+  {
+   "t": "h2",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "h3",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "040266f08cbd",
+   "en": "Post Tweets: Registered users can post one or more Tweets on Twitter."
+  },
+  {
+   "t": "p",
+   "k": "ea3ce70f4d82",
+   "en": "Delete Tweets: Registered users can delete one or more of their Tweets on Twitter."
+  },
+  {
+   "t": "p",
+   "k": "35005c86683c",
+   "en": "Like or dislike Tweets: Registered users can like and dislike public and their own Tweets on Twitter."
+  },
+  {
+   "t": "p",
+   "k": "f2f1801cd1b9",
+   "en": "Reply to Tweets: Registered users can reply to the public Tweets on Twitter."
+  },
+  {
+   "t": "p",
+   "k": "cb707d6bf748",
+   "en": "Search Tweets: Registered users can search Tweets by typing keywords, hashtags, or usernames in the search bar on Twitter."
+  },
+  {
+   "t": "p",
+   "k": "d2ee1803c9ef",
+   "en": "View user or home timeline: Registered users can view the user’s timeline, which contains their own Tweets. They can also view the home’s timeline, which contains followers’ Tweets on Twitter."
+  },
+  {
+   "t": "p",
+   "k": "5114677df857",
+   "en": "Follow or unfollow the account: Registered users can follow or unfollow other users on Twitter."
+  },
+  {
+   "t": "p",
+   "k": "179bee072790",
+   "en": "Retweet a Tweet: Registered users can Retweet public Tweets of other users on Twitter."
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "78161eb7645d",
+   "en": "Availability: Many people and organizations use Twitter to communicate time-sensitive information (service outage messages). Therefore, our service must be highly available and have a good uptime percentage."
+  },
+  {
+   "t": "p",
+   "k": "d5f613bbbe60",
+   "en": "Latency: The latency to show the most recent top Tweets in the home timeline could be a little high. However, near real-time services, such as Tweet distribution to followers, must have low latency."
+  },
+  {
+   "t": "p",
+   "k": "38f373efeb4f",
+   "en": "Scalability: The workload on Twitter is read-heavy, where we have many readers and relatively few writers, which eventually requires the scalability of computational resources. Some estimates suggest a 1:1000 write-to-read ratio for Twitter. Although the Tweet is limited to 280 characters, and the video clip is limited to 140s by default, we need high storage capacity to store and deliver Tweets posted by public figures to their millions of followers."
+  },
+  {
+   "t": "p",
+   "k": "2948e06c81c1",
+   "en": "Reliability: All Tweets remain on Twitter. This means that Twitter never deletes its content. So there should be a promising strategy to prevent the loss or damage of the uploaded content."
+  },
+  {
+   "t": "p",
+   "k": "474008d3eb66",
+   "en": "Consistency: There’s a possibility that a user on the east coast of the US does not get an immediate status (like, reply, and so on.) update on the Tweet, which is liked or Retweeted by a user on the west coast of the US."
+  },
+  {
+   "t": "p",
+   "k": "dd41057ce74a",
+   "en": "However, the user on the west coast of the US needs an immediate status update on his like or reply. An effective technique is needed to offer rapid feedback to the user (who liked someone’s post), then to other specified users in the same region, and finally to all worldwide users linked to the Tweet."
+  },
+  {
+   "t": "p",
+   "k": "75da3a180c09",
+   "en": "Furthermore, we must identify which essential resources must be estimated in the Twitter design. We used Twitter as an example in our Back-of-the-Envelope chapter, so we won’t repeat that exercise here."
+  },
+  {
+   "t": "h2",
+   "k": "cfa08fe6c777",
+   "en": "Building blocks we will use"
+  },
+  {
+   "t": "p",
+   "k": "0644b3d58f0f",
+   "en": "Twitter’s design utilizes the following building blocks that we discussed in the initial chapters."
+  },
+  {
+   "t": "p",
+   "k": "c239ee2d3537",
+   "en": "DNS is the service that maps human-friendly Twitter domain names to machine-readable IP addresses."
+  },
+  {
+   "t": "p",
+   "k": "806013605cf0",
+   "en": "Load balancers distribute the read/write requests among the respective services."
+  },
+  {
+   "t": "p",
+   "k": "856761a7825c",
+   "en": "Sequencers generate the unique IDs for the Tweets."
+  },
+  {
+   "t": "p",
+   "k": "fdcb13964009",
+   "en": "Databases store the metadata of Tweets and users."
+  },
+  {
+   "t": "p",
+   "k": "91f385be884b",
+   "en": "Blob stores store the images and video clips attached with the Tweets."
+  },
+  {
+   "t": "p",
+   "k": "24049901470a",
+   "en": "Key-value stores are used for multiple purposes such as indexing, identifying the specified counter to update its value, identifying the Tweets of a particular user and many more."
+  },
+  {
+   "t": "p",
+   "k": "c821c6fd9c31",
+   "en": "Pub-sub is used for real-time processing such as elimination of redundant data, organizing data, and much more."
+  },
+  {
+   "t": "p",
+   "k": "34af0e7d70ee",
+   "en": "Sharded counters help to handle the count of multiple features such as viewing, liking, Retweeting, and so on,. of the accounts with millions of followers."
+  },
+  {
+   "t": "p",
+   "k": "913ffe6029ec",
+   "en": "A cache is used to store the most requested and recent data in RAM to give users a quick response."
+  },
+  {
+   "t": "p",
+   "k": "fc864e37b353",
+   "en": "CDN helps end users to access the data with low latency."
+  },
+  {
+   "t": "p",
+   "k": "07ec9ccc10da",
+   "en": "Monitoring analyses all outgoing and incoming traffic, identifies the redundancy in the storage system, figures out the failed node, and so on."
+  },
+  {
+   "t": "p",
+   "k": "a25259e9f28a",
+   "en": "In the next lesson, we’ll discuss the design of the Twitter system."
+  },
+  {
+   "t": "h1",
+   "k": "e387e4d041f2",
+   "en": "High-level Design of Twitter"
+  },
+  {
+   "t": "p",
+   "k": "14b0c6a480e4",
+   "en": "Understand the high-level design of the Twitter service."
+  },
+  {
+   "t": "h2",
+   "k": "ca1db4abf0f5",
+   "en": "User-system interaction"
+  },
+  {
+   "t": "p",
+   "k": "1ab3ef75042c",
+   "en": "Let’s begin with the high-level design of our Twitter system. We’ll initially highlight and discuss the building blocks, as well as other components, in the context of the Twitter problem briefly. Later on, we’ll dive deep into a few components in this chapter."
+  },
+  {
+   "t": "p",
+   "k": "8d71e01baa49",
+   "en": "Users post Tweets delivered to the server through the load balancer. Then, the system stores it in persistent storage."
+  },
+  {
+   "t": "p",
+   "k": "18a4ab8702e2",
+   "en": "DNS provides the specified IP address to the end user to start communication with the requested service."
+  },
+  {
+   "t": "p",
+   "k": "77c0f5921c95",
+   "en": "CDN is situated near the users to provide requested data with low latency."
+  },
+  {
+   "t": "p",
+   "k": "0cb4d5202f39",
+   "en": "When users search for a specified term or tag, the system first searches in the CDN proxy servers containing the most frequently requested content."
+  },
+  {
+   "t": "p",
+   "k": "cce1e77b675f",
+   "en": "Load balancer chooses the operational application server based on traffic load on the available servers and the user requests."
+  },
+  {
+   "t": "p",
+   "k": "566c661b2c80",
+   "en": "Storage system represents the various types of storage (SQL-based and NoSQL-based) in the above illustration. We’ll discuss significant storage systems later in this chapter."
+  },
+  {
+   "t": "p",
+   "k": "68752a027770",
+   "en": "We have detailed chapters on DNS, CDN, specified storage systems (Databases, Key-value store, Blob store), and Load balancers in our building blocks section."
+  },
+  {
+   "t": "p",
+   "k": "119b936d91f5",
+   "en": "We’ll focus on further details specific to the Twitter service in the coming lessons. Let’s first understand the service API."
+  },
+  {
+   "t": "h2",
+   "k": "58dbf879b581",
+   "en": "API design"
+  },
+  {
+   "t": "p",
+   "k": "71964fd27b61",
+   "en": "This section will focus on designing various APIs regarding the functionalities we are providing. We learn how users request various services through APIs."
+  },
+  {
+   "t": "p",
+   "k": "21eb45c4be44",
+   "en": "We’ll only concentrate on the significant parameters of the APIs that are relevant to our design. Although the front-end server can call another API or add more parameters in the API received from the end users to fulfill the given request, we consider all relevant arguments specified for the particular request in a single API. Let’s develop APIs for each of the following features:"
+  },
+  {
+   "t": "h3",
+   "k": "ccc5afb74423",
+   "en": "Post Tweet"
+  },
+  {
+   "t": "p",
+   "k": "1db66a942e34",
+   "en": "The POST method is used to send the Tweet to the server from the user through"
+  },
+  {
+   "t": "code",
+   "k": "7649004e4b9f",
+   "en": "the /postTweet API. postTweet(user_id, access_type, tweet_type, content, tweet_length, med ia_field, post_time, tweet_location, list_of_used_hashtags, list_of_ta gged_people)"
+  },
+  {
+   "t": "p",
+   "k": "c828fdb9d25d",
+   "en": "Let’s discuss a few of the parameters:"
+  },
+  {
+   "t": "p",
+   "k": "224d2e7a8ce7",
+   "en": "Parameter Description user_id It indicates the unique ID of the user who posted the Tweet. access_type It tells us whether the Tweet is protected (that is, only visible to followers) or public. tweet_type It indicates whether the Tweet is text-based, video-clip based, image(s)-based, or consisting of different types. content It specifies the Tweet’s actual content (text). tweet_length It represents the text length in the Tweet. In the case of video, it tells us the duration and size of a video. media_field It specifies the type of media (image, video, GIF, and so on) delivered in each Tweet."
+  },
+  {
+   "t": "p",
+   "k": "bc8b73e8b66e",
+   "en": "The rest of the parameters are self-explanatory."
+  },
+  {
+   "t": "li",
+   "k": "b3e99a1f0747",
+   "en": "Note: Twitter uses the Snowflake service to generate unique IDs for Tweets. We have a detailed chapter (Sequencer) that explains this service.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "11dbc3ca1002",
+   "en": "Points to Ponder At most, how many hashtags can a Tweet have?"
+  },
+  {
+   "t": "p",
+   "k": "90a774c4a195",
+   "en": "Hide Answer The text limit is 280 characters in a Tweet. So, users can use the hashtag(s) such that text length (including plain text, any links, and hashtags) does not exceed the limit of 280 characters. 1 of 2"
+  },
+  {
+   "t": "h3",
+   "k": "01e1993eb15f",
+   "en": "Like or dislike Tweet"
+  },
+  {
+   "t": "p",
+   "k": "877ffac1d2b6",
+   "en": "The /likeTweet API is used when users like public Tweets."
+  },
+  {
+   "t": "code",
+   "k": "f8536bd8a919",
+   "en": "likeTweet(user_id, tweet_id, tweeted_user_id, user_location)"
+  },
+  {
+   "t": "p",
+   "k": "8f58b8b1316c",
+   "en": "Parameter Description user_id It indicates the unique ID of the user who liked the Tweet. tweet_id It indicates the Tweet's unique ID. tweeted_user_id This is the unique ID of the user who posted the Tweet. user_location It denotes the location of the user who liked the Tweet."
+  },
+  {
+   "t": "p",
+   "k": "9540e93c2f72",
+   "en": "The parameters above are also used in the /dislikeTweet API when users dislike others’ Tweets."
+  },
+  {
+   "t": "h3",
+   "k": "a40881f145b8",
+   "en": "Reply to Tweet"
+  },
+  {
+   "t": "p",
+   "k": "583d9b0324bd",
+   "en": "The /replyTweet API is used when users reply to public Tweets."
+  },
+  {
+   "t": "code",
+   "k": "e51d043f2d55",
+   "en": "replyTweet(user_id, tweet_id, tweeted_user_id, reply_type, reply_lengt h)"
+  },
+  {
+   "t": "p",
+   "k": "6f6238e1216f",
+   "en": "The reply_type and reply_length parameters are the same as tweet_type and tweet_length respectively."
+  },
+  {
+   "t": "h3",
+   "k": "cf8d44003574",
+   "en": "Search Tweet"
+  },
+  {
+   "t": "p",
+   "k": "67ea8e5312a6",
+   "en": "When the user searches any keyword in the home timeline, the GET method is used. The following is the /searchTweet API:"
+  },
+  {
+   "t": "code",
+   "k": "5a64f3f7c18d",
+   "en": "searchTweet(user_id, search_term, max_result, exclude, media_field, ex pansions, sort_order, next_token, user_location)"
+  },
+  {
+   "t": "p",
+   "k": "e612514bbc27",
+   "en": "Some new parameters introduced in this case are:"
+  },
+  {
+   "t": "p",
+   "k": "d2bbdeab9e95",
+   "en": "Parameter Description search_term It is a string containing the search keyword or phrase. max_result It is the number of Tweets returned per response page. By default, the Tweets per response is 10. exclude It specifies what to exclude from the returned Tweets, that is, replies and retweets. The maximum limit on returned Tweets is 3200, but when we exclude replies, the maximum limit is reduced to 800 Tweets. media_field It specifies the media (image, video, GIF) delivered in each returned Tweet. expansions It enables us to request additional data objects in the returned Tweets, such as any mentioned user, referenced Tweet, attached media, attached places objects, and so on. sort_order It specifies the order in which Tweets are returned. By default, it will return the most recent Tweets first. next_token It is used to get the next page of results. For instance, if max_result the result set contains 200 Tweets, then the value of next_token is directly pulled from the response to request the next page containing the following 100 Tweets. The last result (page) will not have a next_token."
+  },
+  {
+   "t": "h3",
+   "k": "0ec6d1505497",
+   "en": "Response"
+  },
+  {
+   "t": "p",
+   "k": "b2d55ee2ca15",
+   "en": "Let’s look at a sample response in JSON format. The id is the user’s unique ID who posted the Tweet and the text is the Tweet’s content. The result_count is the count of the returned Tweet, which we set in the max_result in the request."
+  },
+  {
+   "t": "p",
+   "k": "c8834768c6a0",
+   "en": "Here, we’re displaying the default fields only."
+  },
+  {
+   "t": "code",
+   "k": "3a9cfe27258a",
+   "en": "{ \"data\": [ { \"id\": \"7300333948034441183\", \"text\": \"This is a most matched Tweet\" }, { \"id\": \"6498431343154916376\", \"text\": \"This is next to most matched Tweet\" }, : : : { \"id\": \"6427456107642019844\", \"text\": \"This is the last matched Tweet in the current page of the result. } ], \"meta\": { \"newest_id\": \"7300333948034441183\", \"oldest_id\": \"6427456107642019844\", \"result_count\": 10 } }"
+  },
+  {
+   "t": "li",
+   "k": "3a052f4b3e0e",
+   "en": "Note: Twitter performs various types of searches. The following are two of them:",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "26719b2ec3ba",
+   "en": "One search type returns the result of the last seven days, which all registered users usually use."
+  },
+  {
+   "t": "p",
+   "k": "bc112983a0f0",
+   "en": "The other type returns all matching results on all Tweets ever posted (remind that service does not delete a posted Tweet)."
+  },
+  {
+   "t": "p",
+   "k": "41b8f856013b",
+   "en": "Indeed, matches can contain the first Tweet on Twitter. This search is usually used for academic research."
+  },
+  {
+   "t": "h3",
+   "k": "a60e462b5550",
+   "en": "View home_timeline"
+  },
+  {
+   "t": "p",
+   "k": "f077871393c7",
+   "en": "The GET method is suitable when users view their home timelines through the"
+  },
+  {
+   "t": "code",
+   "k": "dfb57b0f7fb3",
+   "en": "/viewHome_timeline API. viewHome_timeline(user_id, tweets_count, max_result, exclude, next_tok en, user_location)"
+  },
+  {
+   "t": "p",
+   "k": "411bf4064f51",
+   "en": "In the /viewUser_timeline API, we’ll exclude the user_location to get the user timeline."
+  },
+  {
+   "t": "p",
+   "k": "d7f166269a12",
+   "en": "The max_rsult parameter determines the number of tweets a client application can show the user. The server sends the max_result number of tweets in each response. Further, the server will also send a paginated list_of_followers to reduce the client latency."
+  },
+  {
+   "t": "p",
+   "k": "90a3e0f44f6d",
+   "en": "Point to Ponder Which parameter in the viewHome_timeline method is the most relevant when deciding which promoted ads (Tweets) to be returned in response?"
+  },
+  {
+   "t": "p",
+   "k": "5e27be48eea7",
+   "en": "Hide Answer The decision to send specified promoted ads is made on the user_location parameter. For example, the user belongs to the NewYork city, so most probably it gets promoted ads associated or originated in that region."
+  },
+  {
+   "t": "h3",
+   "k": "80ee36f6b0d7",
+   "en": "Follow the account"
+  },
+  {
+   "t": "p",
+   "k": "e27667ef057a",
+   "en": "The /followAccount API is used when users follow someone’s account on Twitter."
+  },
+  {
+   "t": "code",
+   "k": "2f037ceeeaef",
+   "en": "followAccount(account_id, followed_account_id)"
+  },
+  {
+   "t": "p",
+   "k": "6f23c01998fe",
+   "en": "Parameter Description account_id It specifies the unique ID of a user who follows that account on Twitter. followed_account_id It indicates the unique ID of the account that the user follows."
+  },
+  {
+   "t": "p",
+   "k": "49915fe7b6f8",
+   "en": "The /unfollowAccount API will use the same parameters when a user unfollows someone’s account on Twitter."
+  },
+  {
+   "t": "h3",
+   "k": "5e19e6e8ae96",
+   "en": "Retweet a Tweet"
+  },
+  {
+   "t": "p",
+   "k": "616fd113a4db",
+   "en": "When a registered user Retweets (re-posts) someone’s Tweet on Twitter, the following /retweet API is called:"
+  },
+  {
+   "t": "code",
+   "k": "03b01905fed1",
+   "en": "retweet(user_id, tweet_id, retweet_user_id)"
+  },
+  {
+   "t": "p",
+   "k": "8f83b7c10fef",
+   "en": "The same parameters will be required in the /undoRetweet API when users undo a Retweet of someone’s Tweet."
+  },
+  {
+   "t": "h1",
+   "k": "803a95516a65",
+   "en": "Detailed Design of Twitter"
+  },
+  {
+   "t": "p",
+   "k": "f0df69e0e542",
+   "en": "Take a deep dive into the detailed design of Twitter."
+  },
+  {
+   "t": "h2",
+   "k": "b246db06f4c5",
+   "en": "Storage system"
+  },
+  {
+   "t": "p",
+   "k": "9548c380babc",
+   "en": "Storage is one of the core components in every real-time system. Although we have a detailed chapter on storage systems, here, we’ll focus on the storage system used by Twitter specifically. Twitter uses various storage models for different services to take full advantage of each model. We’ll discuss each storage model and see how Twitter shifted from various databases, platforms, and tools to other ones and how Twitter benefits from all of these."
+  },
+  {
+   "t": "p",
+   "k": "215cfa1e9f73",
+   "en": "The content in this lesson is primarily influenced by Twitter’s technical blogs, though the analysis is ours."
+  },
+  {
+   "t": "p",
+   "k": "45a921de95cf",
+   "en": "Google Cloud: In Twitter, HDFS (Hadoop Distributed File System) consists of tens of thousands of servers to host over 300PB data. The data stores in HDFS are mostly compressed by the LZO (data compression algorithm) because LZO works efficiently in Hadoop. This data includes logs (client events, Tweet events, and timeline events), MySQL and Manhattan (discussed later) backups, ad targeting and analytics, user engagement predictions, social graph analysis, and so on. In 2018, Twitter decided to shift data from Hadoop clusters to the Google Cloud to better analyze and manage the data. This shift is named a partly cloudy strategy. Initially, they migrated Ad-hoc clusters (occasional analysis) and cold storage clusters (less accessed and less frequently used data), while the real-time and production Hadoop clusters remained. The big data is stored in the BigQuery (Google cloud service), a fully managed and highly scalable serverless data warehouse. Twitter uses the Presto (distributed SQL query engine) to access data from Google Cloud (BigQuery, Ad-hoc clusters, Google cloud storage, and so on)."
+  },
+  {
+   "t": "p",
+   "k": "c69cad2cb42b",
+   "en": "Manhattan: On Twitter, users were growing rapidly, and it needed a scalable solution to increase the throughput. Around 2010, Twitter used Cassandra (a distributed wide-column store) to replace MySQL but could not fully replace it due to some shortcomings in the Cassandra store. In April 2014, Twitter launched its own general-purpose real-time distributed key-value store, called Manhattan, and deprecated Cassandra. Manhattan stores the backend for Tweets, Twitter accounts, direct messages, and so on."
+  },
+  {
+   "t": "p",
+   "k": "2e141cf9f836",
+   "en": "Twitter runs several clusters depending on the use cases, such as smaller clusters for non-common or read-only and bigger for heavy read/write traffic (millions of QPS). Initially, Manhattan had also provided the time-series (view, like, and so on.) counters service that the MetricsDB now provides. Manhattan uses RocksDB as a storage engine responsible for storing and retrieving data within a particular node."
+  },
+  {
+   "t": "p",
+   "k": "bbd9cc081e97",
+   "en": "Blobstore: Around 2012, Twitter built the Blobstore storage system to store photos attached to Tweets. Now, it also stores videos, binary files, and other objects. After a specified period, the server checkpoints the in-memory data to the Blobstore as durable storage. We have a detailed chapter on the Blob Store, which can help you understand what it is and how it works."
+  },
+  {
+   "t": "p",
+   "k": "bd4943238569",
+   "en": "SQL-based databases: Twitter uses MySQL and PostgreSQL, where it needs strong consistency, ads exchange, and managing ads campaigns. Twitter also uses Vertica to query commonly aggregated datasets and Tableau dashboards. Around 2012, Twitter also built the Gizzard framework on top of MySQL for sharding, which is done by partitioning and replication. We have a detailed discussion on relational stores in our Databases chapter."
+  },
+  {
+   "t": "p",
+   "k": "c00cdb237fc4",
+   "en": "Kafka and Cloud dataflow: Twitter evaluates around 400 billion real-time events and generates petabytes of data every day. For this, it processes events using Kafka on-premise and uses Google Dataflow jobs to handle deduping and real-time aggregation on Google Cloud. After aggregation, the results are stored for ad-hoc analysis to BigQuery (data warehouse) and the serving system to the Bigtable (NoSQL database). Twitter converts Kafka topics into Cloud Pub-sub topics using an event processor, which helps avoid data loss and provides more scalability. See the Pub-sub chapter for a deep dive into this."
+  },
+  {
+   "t": "p",
+   "k": "7924dc9a2422",
+   "en": "FlockDB: A relationship refers to a user’s followers, who the user follows, whose notifications the user has to receive, and so on. Twitter stores this relationship in the form of a graph. Twitter used FlockDB, a graph database tuned for huge adjacency lists, rapid reads and writes, and so on, along with graph-traversal operations. We have a chapter on Databases and Newsfeed that discuss graph storage in detail."
+  },
+  {
+   "t": "p",
+   "k": "e676473a6d94",
+   "en": "Apache Lucene: Twitter constructed a search service that indexes about a trillion records and responds to requests within 100 milliseconds. Around 2019, Twitter’s search engine had an indexing latency (time to index the new tweets) of roughly 15 seconds. Twitter uses Apache Lucene for real-time search, which uses an inverted index. Twitter stores a real-time index (recent Tweets during the past week) in RAM for low latency and quick updates. The full index is a hundred times larger than the real-time index."
+  },
+  {
+   "t": "p",
+   "k": "ddd70aaf1a03",
+   "en": "However, Twitter performs batch processing for the full indexes. See the Distributed Search chapter to deep dive into how indexing works."
+  },
+  {
+   "t": "p",
+   "k": "e7d3f52eb449",
+   "en": "The solution based on the “one size fits all” approach is infrequently effective."
+  },
+  {
+   "t": "p",
+   "k": "bb230d120fa2",
+   "en": "Real-time applications always focus on providing the right tool for the job, which needs to understand all possible use cases. Lastly, everything has upsides and downsides and should be applied with a sense of reality."
+  },
+  {
+   "t": "h2",
+   "k": "b03592806efa",
+   "en": "Cache"
+  },
+  {
+   "t": "p",
+   "k": "be720dd1c3bc",
+   "en": "As we know, caches help to reduce the latency and increase the throughput."
+  },
+  {
+   "t": "p",
+   "k": "f7ae1c7b31a8",
+   "en": "Caching is mainly utilized for storage (heavy read traffic), computation (real-time stream processing and machine learning), and transient data (rate limiters)."
+  },
+  {
+   "t": "p",
+   "k": "6cee9b6111b5",
+   "en": "Twitter has been used as multi-tenant (multiple instances of an application have the shared environment) Twitter Memcached (Twemcache) and Redis (Nighthawk) clusters for caching. Due to some issues such as unexpected performance, debugging difficulties, and other operational hassles in the existing cache system (Twemcache and Nighthawk), Twitter has started to use the Pelikan cache. This cache gives high-throughput and low latency. Pelikan uses many types of back-end servers such as the peliken_twemcache replacement of Twitter’s Twemcache server, the peliken_slimcache replacement of Twitter’s Memcached/Redis server, and so on. To dive deep, we have a detailed chapter on an In-memory Cache. Let’s have a look at the below illustration representing the relationship of application servers with distributed Pelikan cache."
+  },
+  {
+   "t": "li",
+   "k": "b1f4bb71a6c1",
+   "en": "Note: Pelikan also introduced another back-end server named Segcache, which is extremely scalable and memory-efficient for small objects. Typically, the median size of the small object is between 200 to 300 bytes in a large-scale application’s cache. Most solutions (Memcache and Redis) have a high size (56 bytes) of metadata with each object. This signifies that the metadata takes up more than one-third of the memory.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "14af72e9f95b",
+   "en": "Pelikan reduced metadata size per object to 38 bytes. Segcache also received NSDI Community Award and is used as an experimental server as of 2021."
+  },
+  {
+   "t": "h2",
+   "k": "34a102152608",
+   "en": "Observability"
+  },
+  {
+   "t": "p",
+   "k": "229ac4cf2fb3",
+   "en": "Real-time applications use thousands of servers that provide multiple services."
+  },
+  {
+   "t": "p",
+   "k": "70afab530a80",
+   "en": "Monitoring resources and their communication inside or outside the system is complex. We can use various tools to monitor services’ health, such as providing alerts and support for multiple issues. Our alert system notifies broken or degraded services triggered by the set metrics. We can also use the dynamic configuration library that deploys and updates the configuration for multiple services without restarting the service. This library leverages the ZooKeeper (discussed later) for the configuration as a source of truth. Twitter used the LonLens service that delivers visualization and analytics of service logs. Later, it was replaced by Splunk Enterprise, a central logging system."
+  },
+  {
+   "t": "p",
+   "k": "02427f400561",
+   "en": "Tracing billions of requests is challenging in large-scale real-time applications."
+  },
+  {
+   "t": "p",
+   "k": "03a1c997bf97",
+   "en": "Twitter uses Zipkin, a distributed tracing system, to trace each request (spent time and request count) for multiple services. Zipkin selects a portion of all the requests and attaches a lightweight trace identifier. This sampling also reduces the tracing overhead. Zipkin receives data through the Scribe (real-time log data aggregation) server and stores it in the key-value stores with few indexes."
+  },
+  {
+   "t": "p",
+   "k": "8c0c344214bf",
+   "en": "Most real-time applications use ZooKeeper to store critical data. It can also provide multiple services such as distributed locking and leader election in the distribution system. Twitter uses ZooKeeper to store service registry, Manhattan clusters’ topology information, metadata, and so on. Twitter also uses it for the leader election on the various systems."
+  },
+  {
+   "t": "h2",
+   "k": "948f45ce90ef",
+   "en": "Real-world complex problems"
+  },
+  {
+   "t": "p",
+   "k": "10c770cb5e09",
+   "en": "Twitter has millions of accounts, and some accounts (public figures) have millions of followers. When these accounts post Tweets, millions of followers of the respective account engage with their Tweets in a short time. The problem becomes big when the system handles the billions of interactions (such as views and likes) on these Tweets. This problem is also known as the heavy hitter problem. For this, we need millions of counters to count various operations on Tweets."
+  },
+  {
+   "t": "p",
+   "k": "de0aa839b6b6",
+   "en": "Moreover, a single counter for each specific operation on the particular Tweet is not enough. It’s challenging to handle millions of increments or decrements requests against a particular Tweet in a single counter. Therefore, we need multiple distributed counters to manage burst write requests (increments or decrements) against various interactions on celebrities’ Tweets. Each counter has several shards working on different computational units. These distributed counters are known as sharded counters. These counters also help in another real-time problem named the Top-k problem. Let’s discuss an example of Twitter’s Top-k problems: trends and timeline."
+  },
+  {
+   "t": "p",
+   "k": "6ef9e5841288",
+   "en": "Trends: Twitter shows Top-k trends (hashtags or keywords) locally and globally."
+  },
+  {
+   "t": "p",
+   "k": "ea0440b48243",
+   "en": "Here, “locally” refers to when a topic or hashtag is used within the exact location where the requested user is active. Alternatively, “globally” refers to when the particular hashtag is used worldwide. There is a possibility that users from some regions are not using a specific hashtag in their Tweets but get this hashtag in their trends timeline. Hashtags with the maximum frequency (counts) become trends both locally and globally. Furthermore, Twitter shows various promoted trends (known as “paid trends”) in specified regions under trends. The below slides represent hashtags in the sliding window selected as Top-k trends over time."
+  },
+  {
+   "t": "p",
+   "k": "bafd55bb8e18",
+   "en": "Timeline: Twitter shows two types of timelines: home and user timelines. Here, we’ll discuss the home timeline that displays a stream of Tweets posted by the followed accounts. The decision to show Top-k Tweets in the timeline includes followed accounts Tweets and Tweets that are liked or Retweeted by the followed accounts. There’s also another category of promoted Tweets displayed in the home timeline."
+  },
+  {
+   "t": "p",
+   "k": "93ed28291032",
+   "en": "Sharded counters solve the discussed problems efficiently. We can also place shards of the specified counter near the user to reduce latency and increase overall performance like CDN. Another benefit we can get is a frequent response to the users when they interact (like or view) with a Tweet. The nearest servers managing various shards of the respective counters are continuously updating the like or view counts with short refresh intervals. We should note, however, that the near real-time counts will update on the Tweets with a long refresh interval. The reason is the application server waits for multiple counts submitted by the various servers placed in different regions. We have a detailed chapter on Sharded Counters, explaining how it works in real-time applications."
+  },
+  {
+   "t": "h2",
+   "k": "9544e711a4d5",
+   "en": "The complete design overview"
+  },
+  {
+   "t": "p",
+   "k": "377d30a80f1b",
+   "en": "This section will discuss what happens in the back-end system when the end users generate multiple requests. The following are the steps:"
+  },
+  {
+   "t": "p",
+   "k": "ceeaee81aa11",
+   "en": "First, end users get the address of the nearest load balancer from the local DNS."
+  },
+  {
+   "t": "p",
+   "k": "36648b18fd1a",
+   "en": "Load balancer routes end users’ requests to the appropriate servers according to the requested services. Here, we’ll discuss the Tweet, timeline, and search services."
+  },
+  {
+   "t": "p",
+   "k": "f15fbe679a93",
+   "en": "Tweet service: When end users perform any operation, such as posting a Tweet or liking other Tweets, the load balancers forward these requests to the server handling the Tweet service. Consider an example where users post Tweets on Twitter using the /postTweet API. The server (Tweet service) receives the requests and performs multiple operations. It identifies the attachments (image, video) in the Tweet and stores them in the Blobstore. Text in the Tweets, user information, and all metadata are stored in the different databases (Manhattan, MySQL, PostgreSQL, Vertica). Meanwhile, real-time processing, such as pulling Tweets, user interactions data, and many other metrics from the real-time streams and client logs, is achieved in the Apache Kafka."
+  },
+  {
+   "t": "p",
+   "k": "22ed2282846b",
+   "en": "Later, the data is moved to the cloud pub-sub through an event processor. Next, data is transferred for deduping and aggregation to the BigQuery through Cloud Dataflow. Finally, data is stored in the Google Cloud Bigtable, which is fully managed, easily scalable, and sorted keys."
+  },
+  {
+   "t": "p",
+   "k": "f47cc820f62a",
+   "en": "Timeline service: Assume the user sends a home timeline request using the /viewHome_timeline API. In this case, the request is forwarded to the nearest CDN containing static data. If the requested data is not found, it’s sent to the server providing timeline services."
+  },
+  {
+   "t": "p",
+   "k": "cb57beb99c1b",
+   "en": "This service fetches data from different databases or stores and returns the Top-k Tweets. This service collects various interactions counts of Tweets from different sharded counters to decide the Top-k Tweets. In a similar way, we will obtain the Top-k trends attached in the response to the timeline request."
+  },
+  {
+   "t": "p",
+   "k": "88a60b8ad953",
+   "en": "Search service: When users type any keyword(s) in the search bar on Twitter, the search request is forwarded to the respective server using the /searchTweet API. It first looks into the RAM in Apache Lucene to get real-time Tweets (Tweets that have been published recently)."
+  },
+  {
+   "t": "p",
+   "k": "5d880b2ee554",
+   "en": "Then, this server looks up in the index server and finds all Tweets that contain the requested keyword(s). Next, it considers multiple factors, such as time, or location, to rank the discovered Tweets. In the end, it returns the top Tweets."
+  },
+  {
+   "t": "p",
+   "k": "5ed90173f9d0",
+   "en": "We can use the Zipkin tracing system that performs sampling on requests."
+  },
+  {
+   "t": "p",
+   "k": "8b3717110e01",
+   "en": "Moreover, we can use ZooKeeper to maintain different data, including configuration information, distributed synchronization, naming registry, and so on."
+  },
+  {
+   "t": "h1",
+   "k": "d8e182ebe09a",
+   "en": "Client-side Load Balancer for Twitter"
+  },
+  {
+   "t": "p",
+   "k": "7d3cf212400c",
+   "en": "Let's understand how Twitter performs client-side load balancing."
+  },
+  {
+   "t": "h2",
+   "k": "26aca7941a99",
+   "en": "Introduction"
+  },
+  {
+   "t": "p",
+   "k": "44fe73425521",
+   "en": "In the previous lesson, we conceived the design of Twitter using a dedicated load balancer. Although this method works, and we’ve employed it in other designs, it may not be the optimal choice for Twitter. This is because Twitter offers a variety of services on a large scale, using numerous instances and dedicated load-balancers are not a suitable choice for such systems. To understand the concept better, let’s understand the history of Twitter’s design."
+  },
+  {
+   "t": "h3",
+   "k": "6b31d98a9226",
+   "en": "Twitter’s design history"
+  },
+  {
+   "t": "p",
+   "k": "e3334417f0e1",
+   "en": "The initial design of Twitter included a monolithic (Ruby on Rails) application with a MySQL database. As Twitter scaled, the number of services increased and the MySQL database was sharded. A monolithic application design like this is a disaster because of the following reasons:"
+  },
+  {
+   "t": "p",
+   "k": "61c3ac68130a",
+   "en": "A large number of developers work on the same codebase, which makes it difficult to update individual services."
+  },
+  {
+   "t": "p",
+   "k": "021285f0e321",
+   "en": "One service’s upgrade process may lead to the breaking of another."
+  },
+  {
+   "t": "p",
+   "k": "67fa3a1e11b6",
+   "en": "Hardware costs grow because a single machine performs numerous services."
+  },
+  {
+   "t": "p",
+   "k": "3c13fbf296ed",
+   "en": "Recovery from failures is both time-consuming and complex."
+  },
+  {
+   "t": "p",
+   "k": "1bdf53084603",
+   "en": "With the way Twitter has evolved, the only way out was many microservices where each service can be served through hundreds or thousands of instances."
+  },
+  {
+   "t": "h3",
+   "k": "ba35ed48b903",
+   "en": "Client-side load balancing"
+  },
+  {
+   "t": "p",
+   "k": "0f1a540185e5",
+   "en": "In a client-side load balancing technique, there’s no dedicated intermediate load-balancing infrastructure between any two services with a large number of instances. A node requesting a set of nodes for a service has a built-in load balancer. We refer to the requesting node or service as a client. The client can use a variety of techniques to select a suitable instance to request the service."
+  },
+  {
+   "t": "p",
+   "k": "7cc76fec27fc",
+   "en": "The illustration below depicts the concept of client-side load balancing. Every new arriving service or instance will register itself with a service registry so that other services are aware of its existence"
+  },
+  {
+   "t": "p",
+   "k": "6414ccc5cf81",
+   "en": "In the diagram above, Service A has to choose a relatively less-burdened instance of Service B. Therefore, it will make use of the load balancer component inside it to choose the most suitable instance of Service B. Using the same client-side load balancing method, Service B will talk to other services. It’s clear that Service A is the client when it is calling Service B, whereas Service B is the client when it is talking to Service C and D. As a result, there will be no central entity doing load balancing. Instead, every node will do load balancing of its own."
+  },
+  {
+   "t": "p",
+   "k": "47e773620da8",
+   "en": "Advantages: Using client-side load-balancing has the following benefits."
+  },
+  {
+   "t": "p",
+   "k": "51ed06c9869a",
+   "en": "Less hardware infrastructure/layers are required to do load balancing."
+  },
+  {
+   "t": "p",
+   "k": "48a31b2de01e",
+   "en": "Network latency will be reduced because of no intermediate hop."
+  },
+  {
+   "t": "p",
+   "k": "d9d2a6fce952",
+   "en": "Client-side load balancers eliminate bandwidth bottlenecks. On the other hand, in a dedicated load balancing layer, all requests go through a single machine that can choke if traffic multiplies."
+  },
+  {
+   "t": "p",
+   "k": "80b8303f732a",
+   "en": "Fewer points of failure in the overall system."
+  },
+  {
+   "t": "p",
+   "k": "2b9a1e47d3f1",
+   "en": "There is no end users queue waiting for the resource (server) for the particular services because many load balancers are routing the traffic."
+  },
+  {
+   "t": "p",
+   "k": "daeea088b589",
+   "en": "Eventually, it increases the quality of experience (QoE)."
+  },
+  {
+   "t": "p",
+   "k": "046758e5d35e",
+   "en": "Many real-world applications like Twitter, Yelp, Netflix, and others use client-side load balancing. We’ll discuss the client-side load balancing techniques used by Twitter in the next section."
+  },
+  {
+   "t": "h2",
+   "k": "90de29c78a8a",
+   "en": "Client-side load balancing in Twitter"
+  },
+  {
+   "t": "p",
+   "k": "f7f5d641c3c2",
+   "en": "Twitter uses a client-side load balancer referred to as deterministic aperture that is part of a larger RPC framework called Finagle. Finagle is a protocol-agnostic, open-source, and asynchronous RPC library."
+  },
+  {
+   "t": "li",
+   "k": "c9dbb55ffb43",
+   "en": "Note: Consider the following question. What does the client-side load balancer of Twitter balance on? That is, what parameters are used to fairly balance the load across different servers?",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "71d0ee7d2c5e",
+   "en": "Twitter primarily uses two distributions to measure the effectiveness of a load balancer:"
+  },
+  {
+   "t": "li",
+   "k": "d893e6f9ee1d",
+   "en": "The distribution of requests (OSI layer 7)"
+  },
+  {
+   "t": "li",
+   "k": "43ca597af238",
+   "en": "The distribution of sessions (OSI layer 5)"
+  },
+  {
+   "t": "p",
+   "k": "2f55a44e866b",
+   "en": "Although requests are the key metric, sessions are an important attribute for achieving a fair distribution. Therefore, we’ll develop techniques for fair distribution of requests as well as sessions. Let’s start with the simple technique of Power of Two Random Choices (P2C) for request distribution first."
+  },
+  {
+   "t": "h3",
+   "k": "0742217da46a",
+   "en": "Request distribution using P2C"
+  },
+  {
+   "t": "p",
+   "k": "0615118836b8",
+   "en": "The P2C technique for request distribution gives uniform request distribution as long as sessions are uniformly distributed. In P2C, the system randomly picks two unique instances (servers) against each request, and selects the one with the least amount of load. Let’s look at the illustration below to understand P2C."
+  },
+  {
+   "t": "p",
+   "k": "530179cbe591",
+   "en": "P2C is based on the simple idea that comparison between two randomly selected nodes provides load distribution that is exponentially better than random selection Now that we’ve established how to distribute requests fairly, let’s explore different techniques of session distribution."
+  },
+  {
+   "t": "h3",
+   "k": "243eb1412e00",
+   "en": "Session distribution"
+  },
+  {
+   "t": "p",
+   "k": "76b351185488",
+   "en": "Solution 1: We’ll start our discussion with the Mesh topology. Using this approach, each client (load balancer) starts a session with all of the given instances of a service. The illustration below represents the concept of mesh topology."
+  },
+  {
+   "t": "p",
+   "k": "09394af3ca46",
+   "en": "Obviously, this method is fair because the sessions are evenly distributed."
+  },
+  {
+   "t": "p",
+   "k": "2d17e57055e5",
+   "en": "However, the even distribution of sessions comes at a very high cost, especially when scaled to thousands of servers. Apart from that, some unhealthy or stale sessions may lead to failures."
+  },
+  {
+   "t": "p",
+   "k": "467681912dd4",
+   "en": "Solution 2: To solve the problem of scalability with solution 1, Twitter devised another solution called random aperture. This technique randomly chooses a subset of servers for session establishment."
+  },
+  {
+   "t": "p",
+   "k": "0a190460249d",
+   "en": "Of course, random selection will reduce the number of established sessions as we can see in the diagram above. However, the question is, how many servers will be chosen randomly? This is not an easy question to answer and the answer varies, depending on the request concurrency of a client."
+  },
+  {
+   "t": "p",
+   "k": "1ec9400a4fb4",
+   "en": "To answer the question above, Twitter installed a feedback controller inside the random aperture that decides the subset size based on the client’s load. As a result, we’re able to reduce the session load and ensure scalability. However, this solution isn’t fair. We can see the imbalance in the illustration above such that Server 4 has no session whereas Server 0 has three sessions."
+  },
+  {
+   "t": "p",
+   "k": "3f9530dcbd96",
+   "en": "This imbalance creates problems such as idle servers, high load on a few servers, and so on. Therefore, we need a solution that is both fair and scalable."
+  },
+  {
+   "t": "p",
+   "k": "2c27d68b7167",
+   "en": "Solution 3: We learned from solution 2 that we can scale by subsetting the number of session establishments. However, we failed to do the session distribution fairly. To resolve the problem, Twitter came up with a deterministic aperture solution. The key benefits of this approach are:"
+  },
+  {
+   "t": "p",
+   "k": "b9078c6b4175",
+   "en": "Little coordination is required between clients and servers to converge on a solution."
+  },
+  {
+   "t": "p",
+   "k": "0e1f5996cdac",
+   "en": "Minimal disruption occurs if there are any changes in the number of clients or server instances for whatever reason."
+  },
+  {
+   "t": "p",
+   "k": "5005f4b3e1f8",
+   "en": "For this solution, we represent clients and servers in a ring with equally distanced intervals, where each object on the ring represents the node or server labeled with a number. The illustration below shows what Twitter refers to as the discrete ring coordinates (that is, a specific point on the ring)."
+  },
+  {
+   "t": "p",
+   "k": "920d29b0dde9",
+   "en": "Now, we compose client and server rings to derive a relationship between them."
+  },
+  {
+   "t": "p",
+   "k": "9dea5ff20aae",
+   "en": "We’ve also defined an aperture size of 3. Each client will create a session with three servers in the ring. Clients select a server by circulating clockwise in the ring. This approach is similar to consistent hashing, except that here we guarantee equal distribution of servers across the ring. Let’s see the illustration below where clients have sessions with servers chosen from the given list of servers, respectively."
+  },
+  {
+   "t": "p",
+   "k": "528d8fb9fd40",
+   "en": "In the diagram above, client 0 establishes sessions with servers 4, 5, and 0. Client 1 establishes sessions with servers 0, 1, and 2, whereas Client 2 establishes sessions with servers 2, 3, and 4. When the aperture rotates or moves in the given subset of arrays of the same size, each client’s service has new servers available to create sessions. The number of sessions established per server is shown in the figure below."
+  },
+  {
+   "t": "p",
+   "k": "20fad368ac9f",
+   "en": "We can see that there’s no idle server or server with a high load in the histogram graph above. Thus, we achieved a fair distribution for the clients belonging to the same service. It’s clear that we’ve half resolved the problem by improving the session distribution among servers as compared to the random aperture (solution 02). However, the problem of unfair distribution can escalate as the number of clients grows. In that case, some servers will get crowded when more than one client (service) talks to the back-end servers. Let’s see the illustration below to understand the problem."
+  },
+  {
+   "t": "p",
+   "k": "533fc3fb4cde",
+   "en": "The illustration above depicts that the problem compounded as we increased the number of clients (services). The solution is continuous ring coordinates where we derive relationships between clients and servers using overlapping ring slices, rather than specific points on the rings. The important thing here is that the overlapping of rings can be partial since servers on the ring may not have enough instances to divide among the clients equally. Let’s look at the illustration below."
+  },
+  {
+   "t": "p",
+   "k": "d800d2a3d1c8",
+   "en": "The illustration above shows that clients 0 and 1 (symmetrically) share the same server (server 1). It means that there is fractional overlapping concerning the ring coordinates. However, this overlapping can lead to asymmetric sharing as well. Symmetric or asymmetric, the load balancing can be done through P2C. For instance, in the diagram above, servers 1 and 3 will receive half the load that server 2 gets. This means that a server can receive more or less load, depending on its overlapped slice size with a client."
+  },
+  {
+   "t": "p",
+   "k": "be8a408cd163",
+   "en": "Now, we know how to map clients to the subset of the servers. We’ll use P2C with continuous ring coordinates. The client will pick points (coordinations) in its range instead of picking the instance of the server. The selection process of clients to create sessions with backend servers are as follows:"
+  },
+  {
+   "t": "li",
+   "k": "05d0a58a311a",
+   "en": "Pick two coordinates (offset, offset + width) within its range and map these coordinates to the discrete instances (servers)."
+  },
+  {
+   "t": "li",
+   "k": "7aaaf9b99c2c",
+   "en": "Select the one instance with the most negligible load from two chosen instances (P2C) by its degree of intersection."
+  },
+  {
+   "t": "li",
+   "k": "1fb36bad3574",
+   "en": "Note: Continuous aperture is scalable and fair at the cost of an additional session over boundary node due to partial overlapping. It is also able to achieve little coordination and minimal disruption.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "b8788a00f8ff",
+   "en": "Let’s look at the below table to get an overview of the discussed approaches."
+  },
+  {
+   "t": "h2",
+   "k": "c10e3ae947ef",
+   "en": "Summary of Solutions for Session Distribution"
+  },
+  {
+   "t": "p",
+   "k": "c0e47b1f5b91",
+   "en": "ApproachScalabilityFair distribution Mesh topology Random aperture Deterministic apertureweak (discrete ring)"
+  },
+  {
+   "t": "p",
+   "k": "80319a3442b8",
+   "en": "Deterministic aperture (continuous ring)"
+  },
+  {
+   "t": "h2",
+   "k": "6a38a38f03e4",
+   "en": "Conclusion"
+  },
+  {
+   "t": "p",
+   "k": "5e6637d0f284",
+   "en": "This design problem highlights that tweaking the performance of common building blocks and utilizing the right (rich) combination of them is necessary for real-world services. Our needs from one service to the next will dictate which design point we choose in our solution space. In this chapter, we saw examples of how Twitter uses a combination of data stores and custom algorithms for load-balancing."
+  },
+  {
+   "t": "h1",
+   "k": "3a633c77473e",
+   "en": "System Design: Newsfeed System"
+  },
+  {
+   "t": "p",
+   "k": "ef469b4b36c8",
+   "en": "Learn about the basics of designing the newsfeed system."
+  },
+  {
+   "t": "h2",
+   "k": "364be994fc3d",
+   "en": "What is a newsfeed?"
+  },
+  {
+   "t": "p",
+   "k": "d23dacbe3fc8",
+   "en": "A newsfeed of any social media platform (Twitter, Facebook, Instagram) is a list of stories generated by entities that a user follows. It contains text, images, videos, and other activities such as likes, comments, shares, advertisements, and many more. This list is continuously updated and presented to the relevant users on the user’s home page. Similarly, a newsfeed system also displays the newsfeed to users from friends, followers, groups, and other pages, including a user’s own posts."
+  },
+  {
+   "t": "p",
+   "k": "ad629b7510a7",
+   "en": "A newsfeed is essential for social media platform users because it keeps them informed about the latest industry developments, current affairs, and relevant information. It also provides them additional reasons to return and connect with a platform on a regular basis. Billions of users use such platforms. The challenging task is to provide a personalized newsfeed in real-time while keeping the system scalable and highly available."
+  },
+  {
+   "t": "p",
+   "k": "2d0dda9fdfce",
+   "en": "This chapter will discuss the high-level and detailed design of a newsfeed system for a social platform like Facebook, Twitter, Instagram, etc."
+  },
+  {
+   "t": "h2",
+   "k": "8b80778dab95",
+   "en": "How will we design the newsfeed system?#"
+  },
+  {
+   "t": "p",
+   "k": "b999de9b558f",
+   "en": "We have divided the design of the newsfeed system into the following three lessons:"
+  },
+  {
+   "t": "li",
+   "k": "6b6afe76eaa8",
+   "en": "Requirements: In this lesson, we’ll identify the functional and non-functional requirements. We’ll also estimate the resource requirements to provide a personalized newsfeed to billions of users each day."
+  },
+  {
+   "t": "li",
+   "k": "391b97bfdc79",
+   "en": "Design: We’ll discuss the high-level and detailed design of the newsfeed system in this lesson. We’ll also describe the API design and database schema for our proposed design. Moreover, this lesson will also help us to rank newsfeed to provide a better experience to users."
+  },
+  {
+   "t": "li",
+   "k": "f89fc8ec672d",
+   "en": "Evaluation: In this lesson, we’ll evaluate the design of the newsfeed system based on the non-functional requirements. We’ll also take a quiz to assess our understanding of the design of the newsfeed system."
+  },
+  {
+   "t": "p",
+   "k": "4eae6dff2c9b",
+   "en": "Let’s list down the requirements for designing our version of the newsfeed system."
+  },
+  {
+   "t": "h1",
+   "k": "4338c7fa15bc",
+   "en": "Requirements of a Newsfeed System’s Design"
+  },
+  {
+   "t": "p",
+   "k": "4fa0b5e9961e",
+   "en": "Get introduced to the requirements and estimation to design a newsfeed system."
+  },
+  {
+   "t": "h2",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "h3",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "li",
+   "k": "27f70cdc6f3f",
+   "en": "Newsfeed generation: The system will generate newsfeeds based on pages, groups, and followers that a user follows. A user may have many friends and followers. Therefore, the system should be capable of generating feeds from all friends and followers. The challenge here is that there is potentially a huge amount of content. Our system needs to decide which content to pick for the user and rank it further to decide which to show first.",
+   "lead": "Newsfeed generation"
+  },
+  {
+   "t": "li",
+   "k": "cb5c85af9c8e",
+   "en": "Newsfeed contents: The newsfeed may contain text, images, and videos.",
+   "lead": "Newsfeed contents"
+  },
+  {
+   "t": "li",
+   "k": "65e7ea460ff3",
+   "en": "Newsfeed display: The system should affix new incoming posts to the newsfeed for all active users based on some ranking mechanism. Once ranked, we show content to a user with higher-ranked first.",
+   "lead": "Newsfeed display"
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "li",
+   "k": "93f542006d43",
+   "en": "Scalability: Our proposed system should be highly scalable to support the ever-increasing number of users on any platform, such as Twitter, Facebook, and Instagram.",
+   "lead": "Scalability"
+  },
+  {
+   "t": "li",
+   "k": "68585e335e2c",
+   "en": "Fault tolerance: As the system should be handling a large amount of data; therefore, partition tolerance (system availability in the events of network failure between the system’s components) is necessary.",
+   "lead": "Fault tolerance"
+  },
+  {
+   "t": "li",
+   "k": "1a6b8044d4fd",
+   "en": "Availability: The service must be highly available to keep the users engaged with the platform. The system can compromise strong consistency for availability and fault tolerance, according to the PACELC theorem.",
+   "lead": "Availability"
+  },
+  {
+   "t": "li",
+   "k": "c639e1cd601f",
+   "en": "Low latency: The system should provide newsfeeds in real-time. Hence, the maximum latency should not be greater than 2 seconds.",
+   "lead": "Low latency"
+  },
+  {
+   "t": "h2",
+   "k": "a9be995c473a",
+   "en": "Resource estimation"
+  },
+  {
+   "t": "p",
+   "k": "3ff9133933d1",
+   "en": "Let’s assume the platform for which the newsfeed system is designed has 1 billion users per day, out of which, on average, 500 million are daily active users."
+  },
+  {
+   "t": "p",
+   "k": "724d05dd04f0",
+   "en": "Also, each user has 300 friends and follows 250 pages on average. Based on the assumed statistics, let’s look at the traffic, storage, and servers estimation."
+  },
+  {
+   "t": "h3",
+   "k": "1248dd2b4671",
+   "en": "Traffic estimation"
+  },
+  {
+   "t": "p",
+   "k": "4acbdded74c7",
+   "en": "Let’s assume that each daily active user opens the application (or social media page) 10 times a day. The total number of requests per day would be: 500M×10=5 billions request per day ≈58K requests per second."
+  },
+  {
+   "t": "h3",
+   "k": "5e7e60e98560",
+   "en": "Storage estimation"
+  },
+  {
+   "t": "p",
+   "k": "c8f3201da3d7",
+   "en": "Let’s assume that the feed will be generated offline and rendered upon a request."
+  },
+  {
+   "t": "p",
+   "k": "fec64a2cdf3b",
+   "en": "Also, we’ll precompute the top 200 posts for each user. Let’s calculate storage estimates for users’ metadata, posts containing text, and media content."
+  },
+  {
+   "t": "li",
+   "k": "9007ec04c5b7",
+   "en": "Users’ metadata storage estimation: Suppose the storage required for one user’s metadata is 50 KB. For 1 billion users, we would need 1B×50KB=50TB."
+  },
+  {
+   "t": "p",
+   "k": "6444eeca64dc",
+   "en": "We can tweak the estimated numbers and calculate the storage for our desired numbers in the following calculator:"
+  },
+  {
+   "t": "p",
+   "k": "ebbc295fc869",
+   "en": "Storage Estimation for the Users' Metadata."
+  },
+  {
+   "t": "p",
+   "k": "1002354fcd12",
+   "en": "Number of users (in billion)1 Required storage for one users' met 50 adata (in KBs) f Total storage required for all users (i 50 n TBs)"
+  },
+  {
+   "t": "li",
+   "k": "634ea2b72605",
+   "en": "Textual post’s storage estimation: All posts could contain some text, we assume it’s 50KB on average. The storage estimation for the top 200 posts for 500 million users would be: 200×500M×50KB=5PB"
+  },
+  {
+   "t": "li",
+   "k": "f6265d2424ce",
+   "en": "Media content storage estimate: Along with text, a post can also contain media content. Therefore, we assume that 1/5th posts have videos and 4/5th include images. The assumed average image size is 200KB and the video size is 2MB."
+  },
+  {
+   "t": "p",
+   "k": "7d1cd64a954a",
+   "en": "Storage estimate for 200 posts of one user: 14 (200×2MB×)+(200×200KB×)=80MB+32MB=112MB 55 Total storage required for 500 million users’ posts: 112MB×500M=56PB So we’ll need at least 56PB of blob storage to store the media content."
+  },
+  {
+   "t": "p",
+   "k": "301f42d6b614",
+   "en": "Storage Estimation of Posts Containing Text and Media Content."
+  },
+  {
+   "t": "p",
+   "k": "37ba59c9a05b",
+   "en": "Number of active users (in million)500 Maximum allowed text storage per 50 post (in KBs)"
+  },
+  {
+   "t": "p",
+   "k": "ae64197dcbae",
+   "en": "Number of precomputed posts per u 200 ser (top N) f Storage required for textual posts (i 5 n PBs) f Total required media content storag 56 e for active users (in PBs)"
+  },
+  {
+   "t": "h3",
+   "k": "7e7845b4ea66",
+   "en": "Number of servers estimation"
+  },
+  {
+   "t": "p",
+   "k": "9f5c49e6374f",
+   "en": "Considering the above traffic and storage estimation, let’s estimate the required number of servers for smooth operations. Recall that a single typical server can serve 8000 requests per second (RPS). Since our system will have approximately 500 million daily active users (DAU). Therefore, according to estimation in Back-of-the-Envelope Calculations chapter, the number of servers we would require is:"
+  },
+  {
+   "t": "p",
+   "k": "280fe5736a71",
+   "en": "DAU500M ==62500 servers."
+  },
+  {
+   "t": "p",
+   "k": "153c413ebb5e",
+   "en": "ServerRPS8000"
+  },
+  {
+   "t": "p",
+   "k": "ebadb560fa37",
+   "en": "Servers Estimation Number of active users (in million)500 RPS of a server8000 f Number of servers required62500"
+  },
+  {
+   "t": "h2",
+   "k": "cfa08fe6c777",
+   "en": "Building blocks we will use"
+  },
+  {
+   "t": "p",
+   "k": "bceffa6eefb4",
+   "en": "The design of newsfeed system utilizes the following building blocks:"
+  },
+  {
+   "t": "p",
+   "k": "6ecdc10de018",
+   "en": "Database(s) is required to store the posts from different entities and the generated personalized newsfeed. It is also used to store users’ metadata and their relationships with other entities, such as friends and followers."
+  },
+  {
+   "t": "p",
+   "k": "5f758dbc0f23",
+   "en": "Cache is an important building block to keep the frequently accessed data, whether posts and newsfeeds or users’ metadata."
+  },
+  {
+   "t": "p",
+   "k": "1c29fda2c9e7",
+   "en": "Blob storage is essential to store media content, for example, images and videos."
+  },
+  {
+   "t": "p",
+   "k": "86d7d0550c0d",
+   "en": "CDN effectively delivers content to end-users reducing delay and burden on back-end servers."
+  },
+  {
+   "t": "p",
+   "k": "f304d12e42b0",
+   "en": "Load balancers are necessary to distribute millions of incoming clients’ requests for newsfeed among the pool of available servers."
+  },
+  {
+   "t": "p",
+   "k": "fed7276cbe1c",
+   "en": "In the next lesson, we’ll focus on the high-level and detailed design of the newsfeed system."
+  },
+  {
+   "t": "h1",
+   "k": "533a9ad894f2",
+   "en": "Design of a Newsfeed System"
+  },
+  {
+   "t": "p",
+   "k": "6302b8ace7be",
+   "en": "Learn how to design a newsfeed system."
+  },
+  {
+   "t": "h2",
+   "k": "643653f4df53",
+   "en": "High-level design of a newsfeed system"
+  },
+  {
+   "t": "p",
+   "k": "e53af0e0e492",
+   "en": "Primarily, the newsfeed system is responsible for the following two tasks:"
+  },
+  {
+   "t": "li",
+   "k": "579c86789bb3",
+   "en": "Feed generation: The newsfeed is generated by aggregating friends’ and followers’ posts (or feed items) based on some ranking mechanism."
+  },
+  {
+   "t": "li",
+   "k": "a4ad9c722c83",
+   "en": "Feed publishing: When a feed is published, the relevant data is written into the cache and database. This data could be textual or any media content. A post containing the data from friends and followers is populated to a user’s newsfeed."
+  },
+  {
+   "t": "p",
+   "k": "4050d24a7356",
+   "en": "Let’s move to the high-level design of our newsfeed system. It consists of the above two essential parts, shown in the following figure:"
+  },
+  {
+   "t": "p",
+   "k": "26d46ae1e5da",
+   "en": "Let’s discuss the main components shown in the high-level design:"
+  },
+  {
+   "t": "li",
+   "k": "3c90bedfb53b",
+   "en": "User(s): Users can make a post with some content or request their newsfeed."
+  },
+  {
+   "t": "li",
+   "k": "fb3b4e1a83a2",
+   "en": "Load balancer: It redirects traffic to one of the web servers."
+  },
+  {
+   "t": "li",
+   "k": "8d6ceb32762a",
+   "en": "Web servers: The web servers encapsulate the back-end services and work as an intermediate layer between users and various services. Apart from enforcing authentication and rate-limiting, web servers are responsible to redirect traffic to other back-end services."
+  },
+  {
+   "t": "li",
+   "k": "69d6ee8962fd",
+   "en": "Notification service: It informs the newsfeed generation service whenever a new post is available from one’s friends or followers, and sends a push notification."
+  },
+  {
+   "t": "li",
+   "k": "4579741cb220",
+   "en": "Newsfeed generation service: This service generates newsfeeds from the posts of followers/friends of a user and keeps them in the newsfeed cache."
+  },
+  {
+   "t": "li",
+   "k": "655b50d7d33b",
+   "en": "Newsfeed publishing service: This service is responsible for publishing newsfeeds to a users’ timeline from the newsfeed cache. It also appends a thumbnail of the media content from the blob storage and its link to the newsfeed intended for a user."
+  },
+  {
+   "t": "li",
+   "k": "547ea0db47cf",
+   "en": "Post-service: Whenever a user requests to create a post, the post-service is called, and the created post is stored on the post database and corresponding cache. The media content in the post is stored in the blob storage."
+  },
+  {
+   "t": "h3",
+   "k": "58dbf879b581",
+   "en": "API design"
+  },
+  {
+   "t": "p",
+   "k": "7ea190fc84b8",
+   "en": "APIs are the primary ways for clients to communicate with servers. Usually, newsfeed APIs are HTTP-based that allow clients to perform actions, including posting a status, retrieving newsfeeds, adding friends, and so on. We aim to generate and get a user’s newsfeed; therefore, the following APIs are essential:"
+  },
+  {
+   "t": "h3",
+   "k": "2d9c4af2c266",
+   "en": "Generate user’s newsfeed"
+  },
+  {
+   "t": "p",
+   "k": "d58cf0f0ab21",
+   "en": "The following API is used to generate a user’s newsfeed:"
+  },
+  {
+   "t": "code",
+   "k": "8ba4126dd7ab",
+   "en": "generateNewsfeed(user_id)"
+  },
+  {
+   "t": "p",
+   "k": "a06b5a7b0838",
+   "en": "This API takes users’ IDs, and determines their friends and followers. This API generates newsfeeds that consist of several posts. Since internal system components use this API, therefore, it can be called offline to pre-generate newsfeeds for users. The pre-generated newsfeeds are stored on persistent storage and associated cache."
+  },
+  {
+   "t": "p",
+   "k": "97f88a380204",
+   "en": "The following parameter is used in this API call:"
+  },
+  {
+   "t": "p",
+   "k": "60233dcb8b61",
+   "en": "ParameterDescription user_idA unique identification of the user for whom the newsfeed is generated."
+  },
+  {
+   "t": "h3",
+   "k": "2316cbdb4e5b",
+   "en": "Get user’s newsfeed"
+  },
+  {
+   "t": "p",
+   "k": "270f6a4fc656",
+   "en": "The following API is used to get a user’s newsfeed:"
+  },
+  {
+   "t": "code",
+   "k": "8786e6d60b75",
+   "en": "getNewsfeed(user_id, count)"
+  },
+  {
+   "t": "p",
+   "k": "bd3c69c95f08",
+   "en": "The getNewsfeed(.) API call returns a JSON object consisting of a list of posts."
+  },
+  {
+   "t": "p",
+   "k": "8fecce47bdfa",
+   "en": "The following parameters are used for this API:"
+  },
+  {
+   "t": "p",
+   "k": "8866f7a47bac",
+   "en": "ParameterDescription user_idA unique identification of the user for whom the system will fetch the newsfeed. countThe number of feed items (posts) that will be retrieved per request."
+  },
+  {
+   "t": "h2",
+   "k": "636805a26ba3",
+   "en": "Storage schema"
+  },
+  {
+   "t": "p",
+   "k": "3c1e5da163f3",
+   "en": "The database relations for the newsfeed system are as follows:"
+  },
+  {
+   "t": "li",
+   "k": "90eaca6a1ec3",
+   "en": "User: This relation contains data about a user. A user can also be a follower or friend of other users.",
+   "lead": "User"
+  },
+  {
+   "t": "li",
+   "k": "f0ca0768b8a9",
+   "en": "Entity: This relation stores data related to any entity, such as pages, groups, and so on.",
+   "lead": "Entity"
+  },
+  {
+   "t": "li",
+   "k": "5662a4229b5e",
+   "en": "Feed_item: The data about posts created by users is stored in this relation.",
+   "lead": "Feed_item"
+  },
+  {
+   "t": "li",
+   "k": "b32b8dbef52a",
+   "en": "Media: The information about the media content is stored in this relation.",
+   "lead": "Media"
+  },
+  {
+   "t": "p",
+   "k": "74c330cc39d6",
+   "en": "We use a graph database to store relationships between users, friends, and followers. For this purpose, we follow the property graph model. We can think of a graph database consisting of two relational tables:"
+  },
+  {
+   "t": "li",
+   "k": "69a93f36ab71",
+   "en": "For vertices that represent users"
+  },
+  {
+   "t": "li",
+   "k": "16a6c47f0215",
+   "en": "For edges that denotes relationships among them Therefore, we follow a relational schema for the graph store, as shown in the following figure. The schema uses the PostgreSQL JSON data type to store the properties of each vertex (user) or edge (relationship)."
+  },
+  {
+   "t": "p",
+   "k": "1b891a8ab785",
+   "en": "An alternative representation of a User can be shown in the graph database below. Where the Users_ID remains the same and attributes are stored in a JSON file format."
+  },
+  {
+   "t": "p",
+   "k": "e4d8c1a52be2",
+   "en": "The following figure demonstrates how graph can be represented using the relational schema:"
+  },
+  {
+   "t": "h2",
+   "k": "674535ec930b",
+   "en": "Detailed design"
+  },
+  {
+   "t": "p",
+   "k": "959a0f794cdb",
+   "en": "Let’s explore the design of the newsfeed system in detail."
+  },
+  {
+   "t": "p",
+   "k": "b54fdb2f84ae",
+   "en": "As discussed earlier, there are two parts of the newsfeed system; newsfeed publishing and newsfeed generation. Therefore, we’ll discuss both parts, starting with the newsfeed generation service."
+  },
+  {
+   "t": "h3",
+   "k": "7ce6af3dbc31",
+   "en": "The newsfeed generation service"
+  },
+  {
+   "t": "p",
+   "k": "f6ef98b3188e",
+   "en": "Newsfeed is generated by aggregated posts (or feed items) from the user’s friends, followers, and other entities (pages and groups)."
+  },
+  {
+   "t": "p",
+   "k": "32c73405d201",
+   "en": "In our proposed design, the newsfeed generation service is responsible for generating the newsfeed. When a request from a user (say Alice) to retrieve a newsfeed is received at web servers, the web server either:"
+  },
+  {
+   "t": "p",
+   "k": "4153bece5a73",
+   "en": "Calls the newsfeed generation service to generate feeds because some users don’t often visit the platform, so their feeds are generated on their request."
+  },
+  {
+   "t": "p",
+   "k": "0d4aca8c71dd",
+   "en": "It fetches the pre-generated newsfeed for active users who visit the platform frequently."
+  },
+  {
+   "t": "p",
+   "k": "63d47be2c820",
+   "en": "The following steps are performed in sequence to generate a newsfeed for Alice:"
+  },
+  {
+   "t": "li",
+   "k": "80d098c28d73",
+   "en": "The newsfeed generation service retrieves IDs of all users and entities that Alice follows from the graph database."
+  },
+  {
+   "t": "li",
+   "k": "fa522a725baf",
+   "en": "When the IDs are retrieved from the graph database, the next step is to get their friends’ (followers and entities) information from the user cache, which is regularly updated whenever the users database gets updated/modified."
+  },
+  {
+   "t": "li",
+   "k": "531ef1ad5643",
+   "en": "In this step, the service retrieves the latest, most popular, and relevant posts for those IDs from the post cache. These are the posts that we might be able to display on Alice’s newsfeed."
+  },
+  {
+   "t": "li",
+   "k": "88c7f7aabe17",
+   "en": "The ranking service ranks posts based on their relevance to Alice. This represents Alice’s current newsfeed."
+  },
+  {
+   "t": "li",
+   "k": "db6d60991c01",
+   "en": "The newsfeed is stored in the the newsfeed cache from which top N posts are published to Alice’s timeline. (The publishing process is discussed in detail in the following section)."
+  },
+  {
+   "t": "li",
+   "k": "2bd599a41341",
+   "en": "In the end, whenever Alice reaches the end of her timeline, the next top N posts are fetched to her screen from the newsfeed cache."
+  },
+  {
+   "t": "p",
+   "k": "226db498462c",
+   "en": "The process is illustrated in the following figure:"
+  },
+  {
+   "t": "p",
+   "k": "38189668ea1e",
+   "en": "Point to Ponder The creation and storage of newsfeeds for each user in the cache requires an enormous amount of memory (step 5 in the above section)."
+  },
+  {
+   "t": "p",
+   "k": "a2c40ec650a4",
+   "en": "Is there any way to reduce this memory consumption?"
+  },
+  {
+   "t": "p",
+   "k": "d330fbaebb91",
+   "en": "Hide Answer A memory-efficient way would be to store just the mapping between users and their corresponding posts in a table in the cache, that is., < Post_ID, User_ID>. During the feed publishing phase, the system will retrieve posts from the post database and generate the newsfeed for a user who follows another user with User_ID."
+  },
+  {
+   "t": "h3",
+   "k": "d910869bc734",
+   "en": "The newsfeed publishing service"
+  },
+  {
+   "t": "p",
+   "k": "960897db762f",
+   "en": "At this stage, the newsfeeds are generated for users from their respective friends, followers, and entities and are stored in the form of <Post_ID, User_ID> in the news feed cache."
+  },
+  {
+   "t": "p",
+   "k": "ba6944c7a854",
+   "en": "Now the question is how the newsfeeds generated for Alice will be published to her timeline?"
+  },
+  {
+   "t": "p",
+   "k": "d6c5237ece82",
+   "en": "The newsfeed publishing service fetches a list of post IDs from the newsfeed cache. The data fetched from the newsfeed cache is a tuple of post and user IDs, that is., <Post_ID, User_ID>. Therefore, the complete data about posts and users are retrieved from the users and posts cache to create an entirely constructed newsfeed."
+  },
+  {
+   "t": "p",
+   "k": "e21dcdebbd7a",
+   "en": "In the last step, the fully constructed newsfeed is sent to the client (Alice) using one of the fan-out approaches. The popular newsfeed and media content are also stored in CDN for fast retrieval."
+  },
+  {
+   "t": "p",
+   "k": "f1241b2fe085",
+   "en": "Point to Ponder How is the newsfeed of the friends and followers updated when a user creates a new post?"
+  },
+  {
+   "t": "p",
+   "k": "8287283ddc42",
+   "en": "Hide Answer When a user, say Bob, creates a new post, it is stored in the post database and cache. In the next step, the newsfeed generation service generates a newsfeed for Bob’s friends and followers, and the newsfeed cache is updated. The updated newsfeed is delivered to the corresponding users on the next page/screen refresh event."
+  },
+  {
+   "t": "h3",
+   "k": "9e9c324ce4db",
+   "en": "The newsfeed ranking service"
+  },
+  {
+   "t": "p",
+   "k": "70f48f96140f",
+   "en": "Often we see the relevant and important posts on the top of our newsfeed whenever we log in to our social media accounts. This ranking involves multiple advanced ranking and recommendation algorithms."
+  },
+  {
+   "t": "p",
+   "k": "26188355d18c",
+   "en": "In our design, the newsfeed ranking service consists of these algorithms working on various features, such as, a user’s past history, likes, dislikes, comments, clicks, and many more. These algorithms also perform the following functions:"
+  },
+  {
+   "t": "p",
+   "k": "88795a56e185",
+   "en": "Select “candidates” posts to show in a newsfeed."
+  },
+  {
+   "t": "p",
+   "k": "591fac481739",
+   "en": "Eliminate posts including misinformation or clickbait from the candidate posts."
+  },
+  {
+   "t": "p",
+   "k": "3ae81143fea2",
+   "en": "Create a list of friends a user frequently interacts with."
+  },
+  {
+   "t": "p",
+   "k": "7d4bb67309cb",
+   "en": "Choose topics on which a user spent more time."
+  },
+  {
+   "t": "p",
+   "k": "f67a45746110",
+   "en": "The ranking system considers all the above points to predict relevant and important posts for a user."
+  },
+  {
+   "t": "h3",
+   "k": "8e1be7f31e75",
+   "en": "Posts ranking and newsfeed construction"
+  },
+  {
+   "t": "p",
+   "k": "1aaba9524154",
+   "en": "The post database contains posts published by different users. Assume that there are 10 posts in the database published by 5 different users. We aim to rank only 4 posts out of 10 for a user (say Bob) who follows those five different users. We perform the following to rank each post and create a newsfeed for Bob:"
+  },
+  {
+   "t": "li",
+   "k": "883e5ce35bb6",
+   "en": "Various features such as likes, comments, shares, category, duration, etc and so on, are extracted from each post."
+  },
+  {
+   "t": "li",
+   "k": "928c98837bc9",
+   "en": "Based on Bob’s previous history, stored in the user database, the relevance is calculated for each post via different ranking and machine learning algorithms."
+  },
+  {
+   "t": "li",
+   "k": "1bdba69b142e",
+   "en": "A relevance score is assigned, say from 1 to 5, where 1 shows the least relevant post and 5 means highly relevant post."
+  },
+  {
+   "t": "li",
+   "k": "5e9f4b4f4d38",
+   "en": "The top 4 posts are selected out of 10 based on the assigned scores."
+  },
+  {
+   "t": "li",
+   "k": "7242fe1f82fe",
+   "en": "The top 4 posts are combined and presented on Bob’s timeline in decreasing order of the score assigned."
+  },
+  {
+   "t": "p",
+   "k": "7d40ce0998b9",
+   "en": "The following figure shows the top 4 posts published on Bob’s timeline:"
+  },
+  {
+   "t": "p",
+   "k": "6fca823759b3",
+   "en": "Newsfeed ranking with various machine learning and ranking algorithms is a computationally intensive task. In our design, the ranking service ranks posts and constructs newsfeeds. This service consists of big-data processing systems that might utilize specialized hardware like graphics processing units (GPUs) and tensor processing units (TPUs)."
+  },
+  {
+   "t": "li",
+   "k": "47928c309e80",
+   "en": "Note: According to Facebook: “For each person on Facebook, we need to evaluate thousands of features to determine what that person might find most relevant to predict what each of those people wants to see in their feed.”",
+   "lead": "Note: According to Facebook"
+  },
+  {
+   "t": "p",
+   "k": "c22c677e9889",
+   "en": "This implies that we need enormous computational power and sophisticated learning algorithms to incorporate all the features to get good quality feed in a reasonably short time."
+  },
+  {
+   "t": "h2",
+   "k": "87e82be7e7dd",
+   "en": "Putting everything together"
+  },
+  {
+   "t": "p",
+   "k": "330695993509",
+   "en": "The following figure combines all the services related to the detailed design of the newsfeed system:"
+  },
+  {
+   "t": "p",
+   "k": "0f18416241b5",
+   "en": "In this lesson, we discussed the design of the newsfeed system, its database schema, and the newsfeed ranking system. In the next lesson, we’ll evaluate our system’s requirements."
+  },
+  {
+   "t": "h1",
+   "k": "d378c5b75de3",
+   "en": "Evaluation of a Newsfeed System’s Design"
+  },
+  {
+   "t": "h2",
+   "k": "682946f90c1f",
+   "en": "Fulfill requirements"
+  },
+  {
+   "t": "li",
+   "k": "b541ded114c9",
+   "en": "Scalability: The proposed system is scalable to handle an ever-increasing number of users. The required resources, including load balancers, web servers, and other relevant servers, are added/removed on demand."
+  },
+  {
+   "t": "li",
+   "k": "2ab6f8a62a1f",
+   "en": "Fault tolerance: The replication of data consisting of users’ metadata, posts, and newsfeed makes the system fault-tolerant. Moreover, the redundant resources are always there to handle the failure of a server or its component."
+  },
+  {
+   "t": "li",
+   "k": "2335cd043599",
+   "en": "Availability: The system is highly available by providing redundant servers and replicating data on them. When a user gets disconnected due to some fault in the server, the session is re-created via a load balancer with a different server. Moreover, the data (users metadata, posts, and newsfeeds) is stored on different and redundant database clusters, which provides high availability and durability."
+  },
+  {
+   "t": "li",
+   "k": "8c7b5332f41a",
+   "en": "Low latency: We can minimize the system’s latency at various levels by:"
+  },
+  {
+   "t": "p",
+   "k": "ee1f014cef92",
+   "en": "Geographically distributed servers and the cache associated with them. This way, we bring the service close to users."
+  },
+  {
+   "t": "p",
+   "k": "baa3bcbd56a3",
+   "en": "Using CDNs for frequently accessed newsfeeds and media content."
+  },
+  {
+   "t": "h2",
+   "k": "a39e9f28f787",
+   "en": "Quiz on the newsfeed system’s design"
+  },
+  {
+   "t": "p",
+   "k": "d148e15e6b30",
+   "en": "Test your understanding of the concepts related to the design of the newsfeed system with a quiz."
+  },
+  {
+   "t": "p",
+   "k": "812b068b5fed",
+   "en": "Which component is responsible for storing relationships between users, their friends, and followers?"
+  },
+  {
+   "t": "h2",
+   "k": "05535ecff78e",
+   "en": "Summary"
+  },
+  {
+   "t": "p",
+   "k": "81c2c5bbb1bf",
+   "en": "In this chapter, we learned to design a newsfeed system at scale. Our design ranked enormous user data to show carefully curated content to the user for better user experience and engagement. Our newsfeed design is general enough that it can be used in many places such as Twitter feeds, Facebook posts, YouTube and Instagram recommendations, News applications, and so on."
+  }
+ ]
+}

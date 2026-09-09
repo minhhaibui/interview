@@ -1,0 +1,142 @@
+{
+ "id": "02-decoupling-mobile-from-backend-services",
+ "title": "Decoupling Mobile from Backend Services",
+ "titleKey": "4b326d3e21fe",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "08c4a6e0f34e",
+   "en": "our mobile app talks to 3 backend services directly."
+  },
+  {
+   "t": "p",
+   "k": "3e0e4885d9bd",
+   "en": "A 4th one ships next sprint. The mobile team is already drowning."
+  },
+  {
+   "t": "p",
+   "k": "b4e15d8bb47b",
+   "en": "Every new service means a new domain to whitelist, a new auth scheme to wire, and a new error shape to parse. You're asked to reduce coupling before NotificationService lands."
+  },
+  {
+   "t": "p",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:"
+  },
+  {
+   "t": "p",
+   "k": "77f3467f4b6e",
+   "en": "Mobile UserService (→users.api.com)"
+  },
+  {
+   "t": "p",
+   "k": "4bdaac2c7343",
+   "en": "Mobile OrderService (→orders.api.com)"
+  },
+  {
+   "t": "p",
+   "k": "2899e90702cf",
+   "en": "Mobile PaymentService (→payments.api.com) …and NotificationService next sprint."
+  },
+  {
+   "t": "p",
+   "k": "e1c04afd9176",
+   "en": "The client is doing routing the backend should be doing. What do you do?"
+  },
+  {
+   "t": "p",
+   "k": "82e90b3a7af5",
+   "en": "Put a Load Balancer in front of all services — single IP, distributed traffic. Switch to GraphQL Federation — one unified schema the client queries."
+  },
+  {
+   "t": "h3",
+   "k": "936650adfc2f",
+   "en": "DAY 01 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "li",
+   "k": "f1a6650ba46c",
+   "en": "Why A wins (API Gateway):",
+   "lead": "Why A wins (API Gateway)"
+  },
+  {
+   "t": "p",
+   "k": "46957bfd05ba",
+   "en": "One domain. One auth flow. One error contract. The client stops caring that UserService, OrderService, and PaymentService live on different hosts — the gateway hides them behind api.yourapp.com/users, /orders, /payments. When NotificationService ships next sprint, you add one route. The mobile app ships zero changes. That's what \"future-proof\" actually means at the transport layer: new services cost nothing on the client side."
+  },
+  {
+   "t": "p",
+   "k": "16f9b2d96e80",
+   "en": "It also centralizes the things you don't want scattered across 4 codebases: authN/authZ, rate limiting, request logging, TLS termination, versioning. Netflix, Stripe, and every mature fintech run some form of this."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "7a922c752bee",
+   "en": "Why B is the trap answer (BFF):",
+   "lead": "Why B is the trap answer (BFF)"
+  },
+  {
+   "t": "p",
+   "k": "335f2eef8d89",
+   "en": "BFF is a legitimate pattern — and it's close enough to fool a lot of senior engineers. But BFF solves a different problem: data shape per client type. Mobile needs a slim payload, web needs a richer one."
+  },
+  {
+   "t": "p",
+   "k": "e782a696e04b",
+   "en": "BFF gives each client its own backend that aggregates and reshapes data."
+  },
+  {
+   "t": "p",
+   "k": "5dc05a88a41f",
+   "en": "In this scenario, the pain isn't payload shape — it's domain sprawl and coupling. Putting a BFF here trades 4 URLs for 1 URL + 1 extra service you own end-to-end. That's the wrong tradeoff."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "7f9ba8e51d8f",
+   "en": "Why C is wrong (Load Balancer):",
+   "lead": "Why C is wrong (Load Balancer)"
+  },
+  {
+   "t": "p",
+   "k": "d0d0a4be05c5",
+   "en": "A load balancer distributes traffic across identical instances of the same service. It doesn't route between different services on different domains. Putting an LB in front of UserService + OrderService doesn't make sense — it has no concept of \"send /orders here and /users there.\" That's application-layer routing, which is exactly what an API Gateway does."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "4a8c91579eec",
+   "en": "Why D is wrong here (GraphQL Federation):",
+   "lead": "Why D is wrong here (GraphQL Federation)"
+  },
+  {
+   "t": "p",
+   "k": "0c0b6b49c07e",
+   "en": "GraphQL Federation solves schema unification, not transport-layer coupling. You'd still need a gateway in front of the federation, and you'd rewrite every backend service to expose a GraphQL subgraph. That's a multi-quarter migration to solve a problem you can fix in a sprint with a gateway."
+  },
+  {
+   "t": "p",
+   "k": "8091f9a04eb0",
+   "en": "Eager-load the relation — include: { customer: true } on the Prisma query. One JOIN, done. Add a DataLoader in front of the customer lookup — batches the 50 IDs into one WHERE id IN Cache the customer by ID in Redis — every lookup hits cache first, DB only on miss."
+  },
+  {
+   "t": "h3",
+   "k": "94f02345f62f",
+   "en": "DAY 02 · SYSTEM DESIGN"
+  }
+ ]
+}

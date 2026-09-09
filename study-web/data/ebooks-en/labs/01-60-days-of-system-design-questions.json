@@ -1,0 +1,38 @@
+{
+ "id": "01-60-days-of-system-design-questions",
+ "title": "60 Days of System Design Questions",
+ "titleKey": "d3bf74f51c6e",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "9a7a9c29ca5b",
+   "en": "A question-a-day workbook — scenario, four options, and the reasoning behind the right call."
+  },
+  {
+   "t": "h3",
+   "k": "67f579976343",
+   "en": "AUTHOR CONTENTS FORMAT FOLLOW"
+  },
+  {
+   "t": "h1",
+   "k": "4a756ca07e94",
+   "en": "Contents"
+  },
+  {
+   "t": "h3",
+   "k": "e41af5018f36",
+   "en": "Day 01 Day 03 Day 05 Day 07 Day 09 Day 11 Day 13 Day 15 Day 17 Day 19 Day 21 Day 23 Day 25 Day 27 Day 29 Day 31 Day 33 Day 35 Day 37 Day 39 Day 41 Day 43 Day 45 Day 47 Day 49 Day 51 Day 53 Day 55 Day 57 Day 59"
+  },
+  {
+   "t": "p",
+   "k": "b8b4a0db0b48",
+   "en": "Add an API Gateway — single entry point, all services hide behind one domain. Build a BFF (Backend for Frontend) — a dedicated aggregation layer tailored for mobile."
+  },
+  {
+   "t": "h3",
+   "k": "eb1b6adbc907",
+   "en": "DAY 01 · SYSTEM DESIGN"
+  }
+ ]
+}

@@ -1,0 +1,127 @@
+{
+ "id": "18-backpressure-on-an-overwhelmed-consumer",
+ "title": "Backpressure on an Overwhelmed Consumer",
+ "titleKey": "147c098289c2",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "0608ccc01e26",
+   "en": "Your Kafka consumer is processing 800 events/sec."
+  },
+  {
+   "t": "p",
+   "k": "96174593fd38",
+   "en": "The producer just hit 5,000 events/sec and it's not slowing down."
+  },
+  {
+   "t": "p",
+   "k": "c985b94bc628",
+   "en": "Lag chart: 12 minutes behind and climbing. Consumer memory: 89% and rising. The on-call alert just fired."
+  },
+  {
+   "t": "p",
+   "k": "ba6650205931",
+   "en": "You have ~4 minutes before the JVM starts GC-thrashing and the pod gets OOM-killed."
+  },
+  {
+   "t": "p",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:"
+  },
+  {
+   "t": "p",
+   "k": "1860b51936c6",
+   "en": "Producer Kafka topic (5K events/sec, growing)→ Consumer spring-kafka @KafkaListener, batch=500, processes ~800 events/sec→ Downstream Postgres write + external HTTP call (the real bottleneck)→ SLA events must be processed, not silently dropped→ The consumer can't keep up. The producer doesn't know it. What do you do?"
+  },
+  {
+   "t": "p",
+   "k": "7d1b166cfd6d",
+   "en": "Block the producer — make the consumer signal \"slow down,\" apply backpressure upstream until Buffer harder — bigger in-memory queue, larger batch size, scale the consumer to absorb the Rate-limit + load-shed — cap consumption rate, route the overflow to a DLQ or secondary topic it catches up. spike. for later replay."
+  },
+  {
+   "t": "h3",
+   "k": "18d983530e71",
+   "en": "DAY 17 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "ddef47fef0eb",
+   "en": "Answer: D — Rate-limit + load-shed ✅"
+  },
+  {
+   "t": "li",
+   "k": "66aa32556f82",
+   "en": "Why D wins:",
+   "lead": "Why D wins"
+  },
+  {
+   "t": "p",
+   "k": "31f830b5a6c1",
+   "en": "The SLA says events must be processed — not dropped, not blocked. That kills A and B immediately."
+  },
+  {
+   "t": "p",
+   "k": "95b1ac2f7d89",
+   "en": "Cap the consumer's intake at ~1K/sec with headroom, route overflow to a durable secondary topic (events.overflow) with its own consumer group that drains during off-peak. Producer keeps producing. Primary consumer keeps a steady heartbeat. Overflow gets processed later. That's graceful degradation. Stripe and Shopify publish architecture posts on this exact pattern."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "5214f2d44bb7",
+   "en": "Why B is the trap answer:",
+   "lead": "Why B is the trap answer"
+  },
+  {
+   "t": "p",
+   "k": "8823b11ae3d0",
+   "en": "This is what fools senior engineers. Backpressure-as-blocking works in Reactor, RxJava, Akka — because the protocol carries the signal. Kafka is pull-based and decoupled. The producer doesn't know your consumer exists. There's no socket-level backpressure signal flowing upstream. Engineers from gRPC streaming or RxJava reach for B because it worked there. In a brokered, decoupled, log-based system — it doesn't apply."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "aa4153d6ff7a",
+   "en": "Why A is wrong:",
+   "lead": "Why A is wrong"
+  },
+  {
+   "t": "p",
+   "k": "ff07a69c23fd",
+   "en": "Drops events. SLA says \"must be processed, not silently dropped.\" Done."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "f1cecd3a1143",
+   "en": "Why C is wrong:",
+   "lead": "Why C is wrong"
+  },
+  {
+   "t": "p",
+   "k": "e66c81bdb7d5",
+   "en": "Buffering is a delay tactic. A bigger buffer absorbs a 30-second spike — not a sustained 5K/sec input on an 800/sec consumer. The math: you're 4,200 events behind per second. A 1M-event buffer buys ~4 minutes. Then you're back where you started, but now with a memory exhaustion problem. And the real bottleneck is the external HTTP call — scaling consumers 5x doesn't help if downstream rate-limits you at request #51."
+  },
+  {
+   "t": "p",
+   "k": "a5584001d3e7",
+   "en": "Mutex lock — only one request queries the DB to rebuild the cache, the rest wait behind it."
+  },
+  {
+   "t": "h3",
+   "k": "50c84f6e5b4c",
+   "en": "DAY 18 · SYSTEM DESIGN"
+  }
+ ]
+}

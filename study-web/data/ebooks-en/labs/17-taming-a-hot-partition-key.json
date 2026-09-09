@@ -1,0 +1,149 @@
+{
+ "id": "17-taming-a-hot-partition-key",
+ "title": "Taming a Hot Partition Key",
+ "titleKey": "d359911efa2b",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "a86865d87f56",
+   "en": "You're running a multi-tenant analytics pipeline on DynamoDB. 200 tenants, 12K writes/sec total."
+  },
+  {
+   "t": "p",
+   "k": "e34fbc512589",
+   "en": "Everything is fine — until it isn't."
+  },
+  {
+   "t": "p",
+   "k": "c8221ddfe5e4",
+   "en": "One tenant onboards a massive customer overnight. Their event volume 100x's. Now that one tenant is hitting 9K writes/sec on a single partition key. The other 199 tenants sit idle."
+  },
+  {
+   "t": "p",
+   "k": "8ab1efd61dd0",
+   "en": "ProvisionedThroughputExceeded errors start firing. P99 write latency spikes from 8ms to 400ms. Your on-call gets paged. Everyone is getting throttled because of one key."
+  },
+  {
+   "t": "li",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:",
+   "lead": "Here's the setup"
+  },
+  {
+   "t": "li",
+   "k": "24ce8c26639a",
+   "en": "Table: events (DynamoDB, on-demand capacity)"
+  },
+  {
+   "t": "li",
+   "k": "356150f862ee",
+   "en": "PK: tenant_id · SK: event_timestamp"
+  },
+  {
+   "t": "li",
+   "k": "c11e42d0dba9",
+   "en": "Hot tenant: ~9K WPS · All other tenants: ~15 WPS each"
+  },
+  {
+   "t": "li",
+   "k": "0ed1ed51e532",
+   "en": "Single partition key absorbing all 9K writes — DynamoDB's per-partition limit is the wall Classic hot partition. What do you do?"
+  },
+  {
+   "t": "p",
+   "k": "cc2b0d78b5df",
+   "en": "Jitter the writes — add randomized delay (0–500ms) on the producer client. Partition splitting — bump table WCU and let DynamoDB auto-split the hot partition. Time-bucket the key — change PK to tenant_id#YYYY-MM-DD-HH."
+  },
+  {
+   "t": "h3",
+   "k": "0f6c2365421d",
+   "en": "DAY 16 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "fe848473de58",
+   "en": "A — Write Sharding (THE RIGHT ANSWER)"
+  },
+  {
+   "t": "p",
+   "k": "005efa4b959f",
+   "en": "DynamoDB hashes the partition key to decide which physical shard handles the write. One PK value = one shard = one wall. When that tenant hits 9K WPS, the shard caps out."
+  },
+  {
+   "t": "p",
+   "k": "385ce0ca9a5a",
+   "en": "The fix: append a random suffix at write time — tenant_id#0 through tenant_id#9. Now the hash function sees 10 different keys and distributes writes across 10 logical partitions (~900 WPS each, well under the limit). Throttling stops, P99 drops back to single digits."
+  },
+  {
+   "t": "p",
+   "k": "a97a7aaa8275",
+   "en": "The read cost: scatter-gather across all 10 suffixes to query that tenant's data. For a write-heavy analytics pipeline, that's the right tradeoff."
+  },
+  {
+   "t": "p",
+   "k": "4f123e6d040e",
+   "en": "This is literally the pattern AWS documents as the canonical fix for hot partitions."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "799066ab3964",
+   "en": "C — Partition Splitting (SENIOR ENGINEER TRAP)"
+  },
+  {
+   "t": "p",
+   "k": "6d77589b0c68",
+   "en": "DynamoDB does auto-split partitions — so this sounds right. But the split is based on throughput, not key cardinality. If one PK value generates 9K WPS, all those writes still hash to the same destination after the split. You can't split a single key across two physical shards."
+  },
+  {
+   "t": "p",
+   "k": "c6cc48874200",
+   "en": "You'll see the partition split in CloudWatch, assume the problem is fixed, and then get paged again 10 minutes later. It's the answer that survives the design doc and dies in the war room."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "p",
+   "k": "eeaf03b811ce",
+   "en": "B — Jitter the writes Jitter is a real pattern — it solves the thundering herd problem, where N clients fire requests at the same millisecond and create a spike. Spreading those over 500ms smooths the burst."
+  },
+  {
+   "t": "p",
+   "k": "fc07af8b8339",
+   "en": "But a hot partition is a sustained 9K WPS, not a burst. Adding delay doesn't reduce the rate — DynamoDB still sees 9K WPS on the same partition. You just made every write slower for zero benefit."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "p",
+   "k": "0610180623f9",
+   "en": "D — Time-bucket the key tenant_id#2026-05-21-14 is a real pattern for time-series data — it keeps per-bucket size manageable and enables efficient TTL expiry."
+  },
+  {
+   "t": "p",
+   "k": "d4395b2ac0e0",
+   "en": "But at any given hour, you still have one partition key absorbing all 9K WPS for that tenant. You renamed the hot partition to a hot time bucket. Same problem, new name. Plus now your reads have to query 24 different PKs for a day's worth of data."
+  },
+  {
+   "t": "p",
+   "k": "a8b34d5d6f46",
+   "en": "Drop events on the floor — fail fast, return early, let the lag burn down. The system stays alive."
+  },
+  {
+   "t": "h3",
+   "k": "ac5c6e7089a4",
+   "en": "DAY 17 · SYSTEM DESIGN"
+  }
+ ]
+}

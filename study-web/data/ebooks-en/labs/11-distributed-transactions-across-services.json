@@ -1,0 +1,117 @@
+{
+ "id": "11-distributed-transactions-across-services",
+ "title": "Distributed Transactions Across Services",
+ "titleKey": "8657048470d9",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "f6ea0661a9d1",
+   "en": "Order #4471 just hit your system at 14:02. The flow:"
+  },
+  {
+   "t": "li",
+   "k": "f27acf460212",
+   "en": "OrderService creates the order (Postgres) ✅"
+  },
+  {
+   "t": "li",
+   "k": "91b97ba6e9f8",
+   "en": "PaymentService charges $89.50 to Stripe ✅"
+  },
+  {
+   "t": "li",
+   "k": "5066f9b68d68",
+   "en": "InventoryService tries to reserve the SKU fails (oversold by 3 units)→"
+  },
+  {
+   "t": "li",
+   "k": "8253fe17f940",
+   "en": "ShippingService never gets called You're now holding the customer's money, no inventory to ship, and an order stuck in PENDING. In a monolith you'd wrap all 4 in a transaction and ROLLBACK. You can't do that across 4 services with 4 databases."
+  },
+  {
+   "t": "p",
+   "k": "804779fe36a2",
+   "en": "What do you reach for? compensating events backward through the chain. dispatches compensations on failure."
+  },
+  {
+   "t": "p",
+   "k": "3d62ae51ee44",
+   "en": "Two-Phase Commit (2PC) — coordinator locks all 4 services in PREPARE, then commits Outbox + eventual consistency — each service writes locally + an outbox row, a relay publishes atomically (or aborts). events async, downstream services converge."
+  },
+  {
+   "t": "h3",
+   "k": "f57738f75490",
+   "en": "DAY 10 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "0906a4716aef",
+   "en": "✅ Answer: B — Orchestration Saga"
+  },
+  {
+   "t": "li",
+   "k": "b0874524394f",
+   "en": "Why B wins: 4-step checkout with strict ordering + per-step compensations = exactly what an orchestrator is built for. Stand up a CheckoutSaga state machine (Temporal, AWS Step Functions, Camunda, or hand-rolled). It calls each service in order: OrderService PaymentService InventoryService →→→ ShippingService. Each step has a registered compensation: CancelOrder, RefundPayment, ReleaseInventory. When Inventory fails, the orchestrator walks backward and refunds automatically.",
+   "lead": "Why B wins"
+  },
+  {
+   "t": "p",
+   "k": "5dd179b5e496",
+   "en": "State is durable, observable, replayable. At 3am you open the orchestrator UI and see exactly which step failed with full inputs/outputs."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "4e76b723720c",
+   "en": "Why A is the trap (Choreography):",
+   "lead": "Why A is the trap (Choreography)"
+  },
+  {
+   "t": "p",
+   "k": "bad397ccee7c",
+   "en": "Elegant on paper. Falls apart at 4+ steps with branching compensations. The business logic for \"what happens when inventory fails after payment succeeded\" gets smeared across 3 services that all need to know each other's failure modes. Nobody owns the flow. No single place to see \"what is the state of order #4471?\" At 3am you're piecing it together from events across 4 Kafka topics. Choreography is right for loose, fire-and-forget side effects — not sequential checkouts with specific compensations."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "008895369112",
+   "en": "Why C is wrong (2PC):",
+   "lead": "Why C is wrong (2PC)"
+  },
+  {
+   "t": "p",
+   "k": "698e1c59c40a",
+   "en": "Stripe doesn't speak 2PC. Neither does any shipping carrier API. Beyond that, 2PC holds locks during PREPARE — one slow service stalls everything. At checkout volumes, the lock contention alone takes you down. Textbook answer that dies on contact with reality."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "601fea300339",
+   "en": "Why D is wrong (Outbox):",
+   "lead": "Why D is wrong (Outbox)"
+  },
+  {
+   "t": "p",
+   "k": "3565b231afb2",
+   "en": "Outbox is infrastructure, not a saga. It solves how to reliably publish events after a local DB commit. It doesn't define step ordering, doesn't define compensations, doesn't answer what happens when Inventory fails. You'd still need a saga on top of it."
+  },
+  {
+   "t": "h3",
+   "k": "74e21fd61d4d",
+   "en": "DAY 11 · SYSTEM DESIGN"
+  }
+ ]
+}

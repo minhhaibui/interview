@@ -1,0 +1,173 @@
+{
+ "id": "38-multi-writer-conflicts-in-collaborative-editing",
+ "title": "Multi-Writer Conflicts in Collaborative Editing",
+ "titleKey": "cef7b9a56d98",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "8c64c13d0f52",
+   "en": "Two users edit the same document at 9:03 AM."
+  },
+  {
+   "t": "p",
+   "k": "5a249d8835ed",
+   "en": "No locking. No coordination. Just two clients writing to the same record."
+  },
+  {
+   "t": "p",
+   "k": "d0abd666308a",
+   "en": "Both changes hit your server 300ms apart. One lands first. The other overwrites it."
+  },
+  {
+   "t": "p",
+   "k": "4eb79adcd718",
+   "en": "User A's work is gone. They never get an error. They just… lose their change."
+  },
+  {
+   "t": "p",
+   "k": "751028b76d33",
+   "en": "This is the multi-writer conflict problem. Every collaborative system hits it eventually. Your choices:"
+  },
+  {
+   "t": "p",
+   "k": "61707a2618b0",
+   "en": "A) Last-Write-Wins (LWW) — highest timestamp takes the record. Loser's change disappears silently."
+  },
+  {
+   "t": "p",
+   "k": "1d199fedfe56",
+   "en": "B) Vector Clocks — track causality per replica, detect conflicting versions, surface them to the application for resolution."
+  },
+  {
+   "t": "p",
+   "k": "974eb33a29dc",
+   "en": "C) CRDTs (Conflict-free Replicated Data Types) — data structures that mathematically merge concurrent writes without coordination."
+  },
+  {
+   "t": "p",
+   "k": "28f823a760c6",
+   "en": "D) Operational Transformation (OT) — transform each operation relative to concurrent operations before applying, keeping intent intact."
+  },
+  {
+   "t": "h3",
+   "k": "bbecae2e3131",
+   "en": "DAY 37 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "07bf361d15b5",
+   "en": "Answer: C — CRDTs (but the real answer depends on your conflict model — full breakdown below)"
+  },
+  {
+   "t": "p",
+   "k": "c3dff4a228c0",
+   "en": "C — CRDTs wins at scale CRDTs are data structures designed so any two replicas can always be merged — mathematically, without coordination. The key insight: if operations are commutative, associative, and idempotent, conflicts structurally can't exist."
+  },
+  {
+   "t": "p",
+   "k": "33cc71dae414",
+   "en": "Examples:"
+  },
+  {
+   "t": "li",
+   "k": "039e876caedc",
+   "en": "G-Counter: only increments. Merge = take max per replica. Always converges."
+  },
+  {
+   "t": "li",
+   "k": "7c11db06c507",
+   "en": "LWW-Element-Set: union of adds + removes with timestamps."
+  },
+  {
+   "t": "li",
+   "k": "c5d0111ca5a3",
+   "en": "RGA / YATA (sequence CRDTs): each character gets a unique ID, concurrent inserts are deterministically ordered — this is collaborative text editing."
+  },
+  {
+   "t": "p",
+   "k": "eb8cc581f07a",
+   "en": "Figma's canvas runs on CRDTs. Notion's block model is CRDT-based. At millions of concurrent writers across distributed regions, every node converges independently — zero coordination required."
+  },
+  {
+   "t": "p",
+   "k": "36a9359aa616",
+   "en": "The catch: CRDTs constrain your data model. Not everything maps cleanly. Some operations (like moving a file between directories) are notoriously hard to express without losing intent."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "827727ecb47e",
+   "en": "D — Operational Transformation (OT) impressive but hard⚠ OT was Google Docs' original approach. When two operations arrive concurrently, you transform each one relative to the other before applying it. User A inserts at position 5, User B deletes at position 3 simultaneously — OT adjusts A's insert position to account for B's delete. Intent preserved."
+  },
+  {
+   "t": "p",
+   "k": "7f9c705cf3ff",
+   "en": "That's why Google Docs felt magical in 2009."
+  },
+  {
+   "t": "p",
+   "k": "31b214dee8af",
+   "en": "But OT is operationally brutal. The transformation functions are notoriously hard to get right — the original OT papers had bugs. Every new operation type adds transformation pairs that grow quadratically. OT also requires a centralized server to sequence operations; it doesn't distribute cleanly."
+  },
+  {
+   "t": "p",
+   "k": "5c9a11a592cf",
+   "en": "Modern Google Docs has moved toward a hybrid incorporating CRDT-like ideas. OT alone doesn't scale to full distribution."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "p",
+   "k": "3d1704f07428",
+   "en": "B — Vector Clocks honest but incomplete⚠ Vector clocks track causality. Each write carries a version vector — one counter per replica. When two writes have no causal relationship (neither \"happened before\" the other), you know you have a conflict. Both versions surface to the application layer, which resolves them."
+  },
+  {
+   "t": "p",
+   "k": "b57ca6b6ac2e",
+   "en": "Amazon's internal Dynamo used this. It's correct and transparent. The problem: conflict resolution is now your job. You write merge logic for every data type. For shopping carts it's manageable (union the items). For arbitrary documents? It breaks down fast."
+  },
+  {
+   "t": "p",
+   "k": "63f8cf2c8263",
+   "en": "Vector clocks tell you where conflicts are. They don't tell you how to fix them."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "p",
+   "k": "7c5cbcc134c4",
+   "en": "A — Last-Write-Wins (LWW) dangerous❌ Simple. Brutally simple. Highest timestamp wins. The loser's change vanishes — no error, no notification, just gone."
+  },
+  {
+   "t": "p",
+   "k": "e89b41d91b73",
+   "en": "Cassandra defaults to this. For append-only workloads (metrics, event logs, telemetry) it's totally fine."
+  },
+  {
+   "t": "p",
+   "k": "c7570ff12fe1",
+   "en": "For anything a human edited? It's silent data loss with a timestamp attached. The treacherous part: users never get an error. Their work just stops being there."
+  },
+  {
+   "t": "p",
+   "k": "d393f0bcb9f8",
+   "en": "Chunk the document into fixed-size pieces and embed each one — retrieve the top-k at query Use a sliding window — process the document in overlapping chunks, stitch the outputs together. Summarize each section progressively — feed the running summary forward as context. Truncate to the most recent tokens and hope the answer is near the end."
+  },
+  {
+   "t": "h3",
+   "k": "538b8135df40",
+   "en": "DAY 38 · SYSTEM DESIGN"
+  }
+ ]
+}

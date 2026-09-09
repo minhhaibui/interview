@@ -1,0 +1,97 @@
+{
+ "id": "27-write-path-cache-consistency",
+ "title": "Write-Path Cache Consistency",
+ "titleKey": "c74de5e079d7",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "30b216554f53",
+   "en": "Your cache and DB are out of sync. Again."
+  },
+  {
+   "t": "p",
+   "k": "6803ea5efa01",
+   "en": "A user updates their profile. The cache still serves the old name for the next 10 minutes. Support gets a ticket. You patch it with a cache flush. It happens again next week."
+  },
+  {
+   "t": "p",
+   "k": "0236725867ed",
+   "en": "You're asked to fix write consistency before it becomes a customer-facing incident."
+  },
+  {
+   "t": "p",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:"
+  },
+  {
+   "t": "p",
+   "k": "b78368880c86",
+   "en": "NestJS API PostgreSQL (source of truth) + Redis (cache)→ ~600 req/s reads, ~80 req/s writes at peak Current pattern: write to DB, manually invalidate cache key on success 3 incidents this month — all traced back to stale cache after writes You need a strategy that survives race conditions, retries, and partial failures What do you change? consistent."
+  },
+  {
+   "t": "p",
+   "k": "3990a51fd04c",
+   "en": "Write-behind — write to cache first, async flush to DB. Fast writes, eventual persistence. Write-around — skip the cache on writes entirely. Write to DB only. Cache fills on next read miss. Dual-write with an outbox — write to DB + publish an event. A consumer updates the cache from the event log."
+  },
+  {
+   "t": "h3",
+   "k": "18098407d41b",
+   "en": "DAY 26 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "0383e7c4fde4",
+   "en": "Answer: D — Dual-write with an outbox The core problem isn't \"which order to write in\" — it's \"what happens when one write succeeds and the other fails?\""
+  },
+  {
+   "t": "li",
+   "k": "8d9cd5d7d5f2",
+   "en": "Why D wins: Every naive dual-write has the same race condition: write to DB, write to cache, crash between the two stale cache indefinitely. The outbox makes the cache update a →consequence of the DB write, not a sibling operation. One atomic DB transaction: record + outbox event. A consumer updates Redis from the event. Also gives you replay — if Redis goes down and comes back, re-process the outbox.",
+   "lead": "Why D wins"
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "bb88f63d0510",
+   "en": "Why A fails (Write-through): Looks safest. Is the most dangerous at scale. Two synchronous I/Os on every write. If Redis is slow, your write API is slow. If Redis is down, do you block the user? You've made Redis a hard dependency of your write path.",
+   "lead": "Why A fails (Write-through)"
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "b9c9af716daf",
+   "en": "Why B fails (Write-behind): Fast, but: if the async worker crashes before DB flush, that write is gone.",
+   "lead": "Why B fails (Write-behind)"
+  },
+  {
+   "t": "p",
+   "k": "6e7b3df677f1",
+   "en": "Acceptable for analytics counters. Never acceptable for a source of truth."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "9cbd74e84b6d",
+   "en": "Why C is a partial fix (Write-around): Solves stale cache by not writing to cache at all. Clean — but read-after-write is broken under replica lag, and high-write workloads tank your cache hit rate.",
+   "lead": "Why C is a partial fix (Write-around)"
+  },
+  {
+   "t": "h3",
+   "k": "ef582eb39800",
+   "en": "DAY 27 · SYSTEM DESIGN"
+  }
+ ]
+}

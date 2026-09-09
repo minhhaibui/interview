@@ -1,0 +1,829 @@
+{
+ "id": "012-sequencer",
+ "title": "Sequencer",
+ "titleKey": "8d8fccdc9788",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "c7792a433187",
+   "en": "System Design: Sequencer"
+  },
+  {
+   "t": "p",
+   "k": "4263e95b7d51",
+   "en": "Understand the basics of designing a sequencer."
+  },
+  {
+   "t": "h2",
+   "k": "5f191134dde6",
+   "en": "Motivation"
+  },
+  {
+   "t": "p",
+   "k": "6a7adfd9892e",
+   "en": "There can be millions of events happening per second in a large distributed system. Commenting on a post on Facebook, sharing a Tweet, and posting a picture on Instagram are just a few examples of such events. We need a mechanism to distinguish these events from each other. One such mechanism is the assignment of globally unique IDs to each of these events."
+  },
+  {
+   "t": "p",
+   "k": "38dde640d70d",
+   "en": "Assigning a primary key to an entry in a database is another use case of a unique ID. Usually, the auto-increment feature in databases fulfills this requirement."
+  },
+  {
+   "t": "p",
+   "k": "cd368de6e534",
+   "en": "However, that feature won’t work for a distributed database, where different nodes independently generate the identifiers. For this case, we need a unique ID generator that acts as a primary key in a distributed setting—for example, a horizontally-sharded table."
+  },
+  {
+   "t": "p",
+   "k": "db58e7891bb6",
+   "en": "A unique ID helps us identify the flow of an event in the logs and is useful for debugging. A real-world example of unique ID usage is Facebook’s end-to-end performance tracing and analysis system, Canopy. Canopy uses TraceID to identify an event uniquely across the execution path that may potentially perform hundreds of microservices to fulfill one user request."
+  },
+  {
+   "t": "h2",
+   "k": "3555a3004d2b",
+   "en": "How do we design a sequencer?"
+  },
+  {
+   "t": "p",
+   "k": "f51f0ee6b029",
+   "en": "We’ve divided the sequencer’s comprehensive design into the following two lessons:"
+  },
+  {
+   "t": "li",
+   "k": "6883c02a778c",
+   "en": "Design of a Unique ID Generator: After enlisting the requirements of the design, we discuss three ways to generate unique IDs: using UUID, using a database, and using a range handler."
+  },
+  {
+   "t": "li",
+   "k": "320e3f22e6b1",
+   "en": "Unique IDs with Causality: In this lesson, we incorporate an additional factor of time in the generation of IDs and explain the process by taking causality into consideration."
+  },
+  {
+   "t": "p",
+   "k": "19855d5c8f48",
+   "en": "Unique IDs are important for identifying events and objects within a distributed system. However, designing a unique ID generator within a distributed system is challenging. In the next lesson, let’s look at the requirements for a distributed unique ID generation system."
+  },
+  {
+   "t": "h1",
+   "k": "830914ea8818",
+   "en": "Design of a Unique ID Generator"
+  },
+  {
+   "t": "p",
+   "k": "ccc4d4e83da0",
+   "en": "Learn how to design a system that generates a unique ID."
+  },
+  {
+   "t": "h2",
+   "k": "08e58695b4f3",
+   "en": "Requirements for unique identifiers"
+  },
+  {
+   "t": "p",
+   "k": "0ef0525058eb",
+   "en": "The requirements for our system are as follows:"
+  },
+  {
+   "t": "p",
+   "k": "21f323c179a0",
+   "en": "Uniqueness: We need to assign unique identifiers to different events for identification purposes."
+  },
+  {
+   "t": "p",
+   "k": "dde8b5f3505a",
+   "en": "Scalability: The ID generation system should generate at least a billion unique IDs per day."
+  },
+  {
+   "t": "p",
+   "k": "3c38d01131ce",
+   "en": "Availability: Since multiple events happen even at the level of nanoseconds, our system should generate IDs for all the events that occur. 64-bit numeric ID: We restrict the length to 64 bits because this bit size is enough for many years in the future. Let’s calculate the number of years after which our ID range will wrap around. 6419 Total numbers available = 2 = 1.8446744 x 10 9 Estimated number of events per day = 1 billion = 10 9 Number of events per year = 365 billion = 365×10 64 2 Number of years to deplete identifier range = 9 = 50,539,024.8595 365×10 years 64 bits should be enough for a unique ID length considering these calculations."
+  },
+  {
+   "t": "p",
+   "k": "5a76710bd4ab",
+   "en": "Let’s dive into the possible solutions for the problem mentioned above."
+  },
+  {
+   "t": "h2",
+   "k": "cc946ec4cebe",
+   "en": "First solution: UUID"
+  },
+  {
+   "t": "p",
+   "k": "cd0104b25a79",
+   "en": "A straw man solution for our design uses UUIDs (universally unique IDs). This is a 128-bit number and it looks like 123e4567e89b12d3a456426614174000 in 38 hexadecimal. It gives us about 10 numbers. UUIDs have different versions. We opt for version 4, which generates a pseudorandom number."
+  },
+  {
+   "t": "p",
+   "k": "1f93577aaa45",
+   "en": "Each server can generate its own ID and assign the ID to its respective event. No coordination is needed for UUID since it’s independent of the server. Scaling up and down is easy with UUID, and this system is also highly available."
+  },
+  {
+   "t": "p",
+   "k": "d5df71a89271",
+   "en": "Furthermore, it has a low probability of collisions. The design for this approach is given below:"
+  },
+  {
+   "t": "p",
+   "k": "7e84fb3416c5",
+   "en": "Point to Ponder (Select all that apply.) What are the pros of using the UUID approach?"
+  },
+  {
+   "t": "h3",
+   "k": "85d0c6044e05",
+   "en": "Cons"
+  },
+  {
+   "t": "p",
+   "k": "4831238ead3f",
+   "en": "Using 128-bit numbers as primary keys makes the primary-key indexing slower, which results in slow inserts. A workaround might be to interpret an ID as a hex string instead of a number. However, non-numeric identifiers might not be suitable for many use cases. The ID isn’t of 64-bit size. Moreover, there’s a chance of duplication. Although this chance is minimal, we can’t claim UUID to be deterministically unique. Additionally, UUIDs given to clients over time might not be monotonically increasing. The following table summarizes the requirements we have fulfilled using UUID:"
+  },
+  {
+   "t": "h2",
+   "k": "2aadc2504038",
+   "en": "Requirements Filled with UUID"
+  },
+  {
+   "t": "p",
+   "k": "b6707c9ee633",
+   "en": "UniqueScalableAvailable64-bit numeric ID Using UUID"
+  },
+  {
+   "t": "h2",
+   "k": "f518b02c33d4",
+   "en": "Second solution: using a database"
+  },
+  {
+   "t": "p",
+   "k": "4f3f0a2735f4",
+   "en": "Let’s try mimicking the auto-increment feature of a database. Consider a central database that provides a current ID and then increments the value by one. We can use the current ID as a unique identifier for our events."
+  },
+  {
+   "t": "p",
+   "k": "31a42a655d15",
+   "en": "Point to Ponder What can be a potential problem of using a central database?"
+  },
+  {
+   "t": "p",
+   "k": "1ad72cddbef0",
+   "en": "Hide Answer This design has a considerable problem: a single point of failure."
+  },
+  {
+   "t": "p",
+   "k": "a657fa6daf10",
+   "en": "Reliance on one database can severely affect a system. The entire system will stop working if the central database goes down."
+  },
+  {
+   "t": "p",
+   "k": "948466479834",
+   "en": "To cater to the problem of a single point of failure, we modify the conventional auto-increment feature that increments by one. Instead of incrementing by one, let’s rely on a value m, where m equals the number of database servers we have."
+  },
+  {
+   "t": "p",
+   "k": "e890a25dc292",
+   "en": "Each server generates an ID, and the following ID adds m to the previous value."
+  },
+  {
+   "t": "p",
+   "k": "95a45edcab9b",
+   "en": "This method is scalable and prevents the duplication of IDs. The following image provides a visualization of how a unique ID is generated using a database:"
+  },
+  {
+   "t": "h3",
+   "k": "b0d891163365",
+   "en": "Pros"
+  },
+  {
+   "t": "p",
+   "k": "0a4bd6429aae",
+   "en": "This approach is scalable. We can add more servers, and the value of m will be updated accordingly."
+  },
+  {
+   "t": "h3",
+   "k": "85d0c6044e05",
+   "en": "Cons"
+  },
+  {
+   "t": "p",
+   "k": "a60cae063e94",
+   "en": "Though this method is somewhat scalable, it’s difficult to scale for multiple data centers. The task of adding and removing a server can result in duplicate IDs."
+  },
+  {
+   "t": "p",
+   "k": "d3672d1f9986",
+   "en": "For example, suppose m=3, and server A generates the unique IDs 1, 4, and 7."
+  },
+  {
+   "t": "p",
+   "k": "8ea0fbb2506a",
+   "en": "Server B generates the IDs 2, 5, and 8, while server C generates the IDs 3, 6, and"
+  },
+  {
+   "t": "li",
+   "k": "45aded0c378d",
+   "en": "Server B faces downtime due to some failure. Now, the value m is updated to 2."
+  },
+  {
+   "t": "p",
+   "k": "dd6c75e10984",
+   "en": "Server A generates 9 as its following unique ID, but this ID has already been generated by server C. Therefore, the IDs aren’t unique anymore."
+  },
+  {
+   "t": "p",
+   "k": "500e81a12f0e",
+   "en": "The table below highlights the limitations of our solution. A unique ID generation system shouldn’t be a single point of failure (SPOF). It should be scalable and available."
+  },
+  {
+   "t": "h2",
+   "k": "f20f7809e5e1",
+   "en": "Requirements Filled by UUID versus Using a Database"
+  },
+  {
+   "t": "p",
+   "k": "f5d98ab0c10a",
+   "en": "UniqueScalableAvailable64-bit numeric ID Using UUID Using a database"
+  },
+  {
+   "t": "h2",
+   "k": "d8303c528983",
+   "en": "Third solution: using a range handler"
+  },
+  {
+   "t": "p",
+   "k": "566f11cd3053",
+   "en": "Let’s try to overcome the problems identified in the previous methods. We can use ranges in a central server. Suppose we have multiple ranges for one to two billion, such as 1 to 1,000,000; 1,000,001 to 2,000,000; and so on. In such a case, a central microservice can provide a range to a server upon request."
+  },
+  {
+   "t": "p",
+   "k": "f5445a32214e",
+   "en": "Any server can claim a range when it needs it for the first time or if it runs out of the range. Suppose a server has a range, and now it keeps the start of the range in a local variable. Whenever a request for an ID is made, it provides the local variable value to the requestor and increments the value by one."
+  },
+  {
+   "t": "p",
+   "k": "5f0e8ddeff6c",
+   "en": "Let’s say server 1 claims the number range 300,001 to 400,000. After this range claim, the user ID 300,001 is assigned to the first request. The server then returns 300,002 to the next user, incrementing its current position within the range. This continues until user ID 400,000 is released by the server. The application server then queries the central server for the next available range and repeats this process."
+  },
+  {
+   "t": "p",
+   "k": "4892e75218b1",
+   "en": "This resolves the problem of the duplication of user IDs. Each application server can respond to requests concurrently. We can add a load balancer over a set of servers to mitigate the load of requests."
+  },
+  {
+   "t": "p",
+   "k": "8058f2d9f838",
+   "en": "We use a microservice called range handler that keeps a record of all the taken and available ranges. The status of each range can determine if a range is available or not. The state—that is, which server has what range assigned to it— can be saved on a replicated storage."
+  },
+  {
+   "t": "p",
+   "k": "ea99fcf4e971",
+   "en": "This microservice can become a single point of failure, but a failover server acts as the savior in that case. The failover server hands out ranges when the main server is down. We can recover the state of available and unavailable ranges from the latest checkpoint of the replicated store."
+  },
+  {
+   "t": "h3",
+   "k": "b0d891163365",
+   "en": "Pros"
+  },
+  {
+   "t": "p",
+   "k": "476450d7f491",
+   "en": "This system is scalable, available, and yields user IDs that have no duplicates."
+  },
+  {
+   "t": "p",
+   "k": "b3e6b0e1a907",
+   "en": "Moreover, we can maintain this range in 64 bits, which is numeric."
+  },
+  {
+   "t": "h3",
+   "k": "85d0c6044e05",
+   "en": "Cons"
+  },
+  {
+   "t": "p",
+   "k": "a11a6c9fd6df",
+   "en": "We lose a significant range when a server dies and can only provide a new range once it’s live again. We can overcome this shortcoming by allocating shorter ranges to the servers, although ranges should be large enough to serve identifiers for a while."
+  },
+  {
+   "t": "p",
+   "k": "0ac8758027e1",
+   "en": "The following table sums up what this approach fulfills for us:"
+  },
+  {
+   "t": "h2",
+   "k": "32ff0e711994",
+   "en": "Requirements Filled by These Three Options"
+  },
+  {
+   "t": "p",
+   "k": "64b655d59bdc",
+   "en": "UniqueScalableAvailable64-bit numeric ID Using UUID Using a database Using a range handler We developed a solution that provides us with a unique ID, which we can assign to various events and even use as a primary key. But what if we add a requirement that the ID is time sortable too?"
+  },
+  {
+   "t": "h1",
+   "k": "b377818c0f7c",
+   "en": "Unique IDs with Causality"
+  },
+  {
+   "t": "p",
+   "k": "f3dc3a9f39e5",
+   "en": "Learn how to use the time to generate a unique ID and also maintain the causality of events."
+  },
+  {
+   "t": "h2",
+   "k": "c322aa059c17",
+   "en": "Causality"
+  },
+  {
+   "t": "p",
+   "k": "3ade1abd3a48",
+   "en": "In the previous lesson,we generated unique IDs to differentiate between various events. Apart from having unique identifiers for events, we’re also interested in finding the sequence of these events. Let’s consider an example where Peter and John are two Twitter users. John posts a comment (event A), and Peter replies to John’s comment (event B). Event B is dependent on event A and can’t happen before it. The events are not concurrent here."
+  },
+  {
+   "t": "p",
+   "k": "c253e9bedd7c",
+   "en": "We can also have concurrent events—that is, two events that occur independently of each other. For example, if Peter and John comment on two different Tweets, there’s no happened-before relationship or causality between them. It’s essential to identify the dependence of one event over the other but not in the case of concurrent events."
+  },
+  {
+   "t": "li",
+   "k": "19e6f7d4941a",
+   "en": "Note: The scenario described above can also be handled by assigning a unique ID and encoding the dependence of events using a social graph.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "b035c2099538",
+   "en": "We might also use a separate time data structure and a simple unique ID."
+  },
+  {
+   "t": "p",
+   "k": "e162ac56adf6",
+   "en": "However, we want a unique ID to do double duty—provide unique identification and also help with the causality of events."
+  },
+  {
+   "t": "p",
+   "k": "04a2b081f16f",
+   "en": "The following slides provide a visualization of concurrent and nonconcurrent events."
+  },
+  {
+   "t": "p",
+   "k": "9e52d5dcafdb",
+   "en": "Some applications need the events to have unique identifiers and carry any relevant causality information. An example of this is giving an identifier to the concurrent writes of a key into a key-value store to implement the last-write-wins strategy."
+  },
+  {
+   "t": "p",
+   "k": "72ba15e8d321",
+   "en": "We can either use logical or physical clocks to infer causality. Some systems have additional requirements where we want event identifiers’ causality to map wall-clock time. An example of this is a financial application that complies with the European MiFID regulations. MiFID requires clocks to be within 100 microseconds of UTC to detect anomalies during high-volume/high-speed market trades."
+  },
+  {
+   "t": "li",
+   "k": "0ef2c8fae904",
+   "en": "Note: There are many subtleties associated with logical or physical clocks. We can refer to the text below titled “Time in a Distributed System” to refresh our concepts of time.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "90002393f7b9",
+   "en": "We use time to determine the sequence of events in our life. For example, if Sam took a bath at 6 a.m. and ate breakfast at 7:00 a.m., we can determine that Sam took a bath before breakfast by the time stamps of each event. Time stamps, therefore, can be used to maintain causality."
+  },
+  {
+   "t": "h2",
+   "k": "e4ea404eeb5d",
+   "en": "Use UNIX time stamps"
+  },
+  {
+   "t": "p",
+   "k": "9e865876183f",
+   "en": "UNIX time stamps are granular to the millisecond and can be used to distinguish different events. We have an ID-generating server that can generate one ID in a single millisecond. Any request to generate a unique ID is routed to that server, which returns a time stamp and then returns a unique ID. The ability to generate an ID in milliseconds allows us to generate a thousand identifiers per second."
+  },
+  {
+   "t": "p",
+   "k": "983da760e5e5",
+   "en": "This means we can get 24(hour)∗60(min/hour)∗60(sec/min)∗1000(ID/sec)=86400000IDs in a day. That’s less than a billion per day."
+  },
+  {
+   "t": "li",
+   "k": "ffef635d3367",
+   "en": "Note: Connect to the following terminal to view the UNIX time stamp in milliseconds.",
+   "lead": "Note"
+  },
+  {
+   "t": "h3",
+   "k": "fa826abcea18",
+   "en": "Click to Connect..."
+  },
+  {
+   "t": "p",
+   "k": "3d323fb0ffd1",
+   "en": "Our system works well with generating IDs, but it poses a crucial problem. The ID-generating server is a single point of failure (SPOF), and we need to handle it."
+  },
+  {
+   "t": "p",
+   "k": "8533fa411ff3",
+   "en": "To cater to SPOF, we can add more servers. Each server generates a unique ID for every millisecond. To make the overall identifier unique across the system, we attach the server ID with the UNIX time stamp. Then, we add a load balancer to distribute the traffic more efficiently. The design of a unique ID generator using a UNIX time stamps is given below:"
+  },
+  {
+   "t": "h3",
+   "k": "b0d891163365",
+   "en": "Pros"
+  },
+  {
+   "t": "p",
+   "k": "214864343586",
+   "en": "This approach is simple, scalable, and easy to implement. It also enables multiple servers to handle concurrent requests."
+  },
+  {
+   "t": "h3",
+   "k": "85d0c6044e05",
+   "en": "Cons"
+  },
+  {
+   "t": "p",
+   "k": "3ed159f577b7",
+   "en": "For two concurrent events, the same time stamp is returned and the same ID can be assigned to them. This way, the IDs are no longer unique."
+  },
+  {
+   "t": "h2",
+   "k": "b9d3c2bffd9d",
+   "en": "Requirements Fulfilled by Each Approach"
+  },
+  {
+   "t": "p",
+   "k": "4ae200bda005",
+   "en": "Unique Scalable Available 64-bit numeric ID Using UUID Using a database Using a range handler Using UNIX time weak stamps"
+  },
+  {
+   "t": "h2",
+   "k": "099e25a70954",
+   "en": "Twitter Snowflake"
+  },
+  {
+   "t": "p",
+   "k": "ccbdeca79168",
+   "en": "Let’s try to use time efficiently. We can use some bits out of our targetted 64 bits for storing time and the remaining for other information. An overview of division is below:"
+  },
+  {
+   "t": "p",
+   "k": "201170c14ea3",
+   "en": "The explanation of the bits division is as follows:"
+  },
+  {
+   "t": "li",
+   "k": "7fb7513b0515",
+   "en": "Sign bit: A single bit is assigned as a sign bit, and its value will always be zero."
+  },
+  {
+   "t": "p",
+   "k": "adc4f62170e0",
+   "en": "It makes the overall number positive. Doing so helps to ensure that any programming environment using these identifiers interprets them as positive integers."
+  },
+  {
+   "t": "li",
+   "k": "72a0bd6df319",
+   "en": "Time stamp: 41 bits are assigned for milliseconds. The Twitter Snowflake default epoch will be used. Its value is 1288834974657, which is equivalent to November 4, 2010, 01:42:54 UTC. We can initiate our own epoch when our system will be deployed, say January 1, 2022, at 12 midnight can be the start of our epoch from zero. The maximum time to deplete this range is shown below:"
+  },
+  {
+   "t": "p",
+   "k": "c2847967e97d",
+   "en": "Time to range depletion = 41 2identifiers ~= 365(days/year)∗24(hours/day)∗60(minutes/hour)∗60(seconds/minut)∗1000(identifier/sec) 69 years The above calculations give us 69 years before we need a new algorithm to generate IDs. As we saw earlier, if we can generate 1,000 identifiers per second, we aren’t able to get our target of a billion identifiers per day. Though now, in the Snowflake proposal, we have ample identifiers available when we utilize worker ID and machine local sequence numbers. 10"
+  },
+  {
+   "t": "li",
+   "k": "fca70745a05c",
+   "en": "Worker number: The worker number is 10 bits. It gives us 2 = 1,024 worker IDs. The server creating the unique ID for its events will attach its ID."
+  },
+  {
+   "t": "li",
+   "k": "508fd3978f56",
+   "en": "Sequence number: The sequence number is 12 bits. For every ID generated on 12 the server, the sequence number is incremented by one. It gives us 2 = 4,096 unique sequence numbers. We’ll reset it to zero when it reaches 4,096. This number adds a layer to avoid duplication."
+  },
+  {
+   "t": "p",
+   "k": "d1b27205e247",
+   "en": "The following slides show the conversion of the time stamp to UTC."
+  },
+  {
+   "t": "h3",
+   "k": "b0d891163365",
+   "en": "Pros"
+  },
+  {
+   "t": "p",
+   "k": "f58ea10ab136",
+   "en": "Twitter Snowflake uses the time stamp as the first component. Therefore, they’re time sortable. The ID generator is highly available as well."
+  },
+  {
+   "t": "h3",
+   "k": "85d0c6044e05",
+   "en": "Cons"
+  },
+  {
+   "t": "p",
+   "k": "751022a727dc",
+   "en": "IDs generated in a dead period are a problem. The dead period is when no request for generating an ID is made to the server. These IDs will be wasted since they take up identifier space. The unique range possible will deplete earlier than expected and create gaps in our global set of user IDs."
+  },
+  {
+   "t": "p",
+   "k": "b15360c63d8d",
+   "en": "Point to Ponder Can you find another shortcoming in the design shown above?"
+  },
+  {
+   "t": "p",
+   "k": "2ffb89d48878",
+   "en": "Hide Answer The physical clocks are unreliable. For such clocks, the error can be 17 seconds per day. If we measure time using these on a server, the time drifts away."
+  },
+  {
+   "t": "p",
+   "k": "4e6bb47e1136",
+   "en": "Considering a single server, we won’t be affected by the drifting away of time since all transactions land on a single server. But in a distributed environment, the clocks won’t remain synced."
+  },
+  {
+   "t": "p",
+   "k": "8c67992a171a",
+   "en": "Due to the unreliability of measuring accurate time, no matter how often we synchronize these clocks with each other or other clocks with accurate measurement methods, there will always be skew between the various clocks involved in a distributed system."
+  },
+  {
+   "t": "p",
+   "k": "32a1115df2b3",
+   "en": "Another weak point of this system is its reliance on time. NTP can affect the working of this system. If the clock on one of the servers drifts two seconds in the future, other servers are two seconds behind. The NTP clock recognizes it and recalibrates its clock. Now, all serves will be aligned. However, in that drifting process, IDs could have been generated for a time that hasn’t occurred yet, and now we’ll have a pair of possible nonconcurrent events with the same time stamp. Lastly, the causality of our events won’t be maintained."
+  },
+  {
+   "t": "li",
+   "k": "238fbd5d8b44",
+   "en": "Note: The Network Time Protocol (NTP) is a networking protocol for clock synchronization between computer systems over packet-switched, variable-latency data networks. NTP intends to synchronize all participating computers within a few milliseconds of Coordinated Universal Time (UTC). It mitigates the effects of variable network latency.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "935af7fe7690",
+   "en": "Having accurate time still remains an issue. We can read a machine’s time-of-day clock with microsecond or even nanosecond resolution. Even with this fine-grained measurement, the risks of NTP remain. Since we can’t rely on physical clocks, let’s put logical clocks to use."
+  },
+  {
+   "t": "p",
+   "k": "edc9fd8edcbf",
+   "en": "The following table gives an overview of the requirements that have been fulfilled using different design approaches."
+  },
+  {
+   "t": "h2",
+   "k": "b9d3c2bffd9d",
+   "en": "Requirements Fulfilled by Each Approach"
+  },
+  {
+   "t": "p",
+   "k": "b9c64d8e5ac2",
+   "en": "Unique Scalable Available 64-bit numeric ID Using UUID Using a database Using a range handler Using UNIX time weak stamps Using Twitter Snowflake"
+  },
+  {
+   "t": "h2",
+   "k": "869678aed7b3",
+   "en": "Using logical clocks"
+  },
+  {
+   "t": "p",
+   "k": "0619ef82f283",
+   "en": "We can utilize logical clocks (Lamport and vector clocks) that need monotonically increasing identifiers for events."
+  },
+  {
+   "t": "h3",
+   "k": "df30941e9eb9",
+   "en": "Lamport clocks"
+  },
+  {
+   "t": "p",
+   "k": "f51c6d2bed18",
+   "en": "In Lamport clocks, each node has its counter. All of the system’s nodes are equipped with a numeric counter that begins at zero when first activated. Before executing an event, the numeric counter is incremented by one. The message sent from this event to another node has the counter value. When the other node receives the message, it first updates its logical clock by taking the maximum of its clock value. Then, it takes the one sent in a message and then executes the message."
+  },
+  {
+   "t": "p",
+   "k": "aea609086f48",
+   "en": "Lamport clocks provide a unique partial ordering of events using the happened-before relationship. We can also get a total ordering of events by tagging unique node/process identifiers, though such ordering isn’t unique and will change with a different assignment of node identifiers. However, we should note that Lamport clocks don’t allow us to infer causality at the global level. This means we can’t simply compare two clock values on any server to infer happened-before relationship. Vector clocks overcome this shortcoming."
+  },
+  {
+   "t": "h3",
+   "k": "ee2ac896e6be",
+   "en": "Vector clocks"
+  },
+  {
+   "t": "p",
+   "k": "4989ad2eabec",
+   "en": "Vector clocks maintain causal history—that is, all information about the happened-before relationships of events. So, we must choose an efficient data structure to capture the causal history of each event."
+  },
+  {
+   "t": "p",
+   "k": "f9b5fcadb215",
+   "en": "Consider the design shown below. We’ll generate our ID by concatenating relevant information, just like the Twitter snowflake, with the following division:"
+  },
+  {
+   "t": "p",
+   "k": "7fb7513b0515",
+   "en": "Sign bit: A single bit is assigned as a sign bit, and its value will always be zero."
+  },
+  {
+   "t": "p",
+   "k": "99af4758f3f1",
+   "en": "Vector clock: This is 53 bits and the counters of each node."
+  },
+  {
+   "t": "p",
+   "k": "1ee65f6ced91",
+   "en": "Worker number: This is 10 bits. It gives us 2^{10} = 1,024 worker IDs."
+  },
+  {
+   "t": "p",
+   "k": "f5dde611cfce",
+   "en": "The following slides explain the unique ID generation using vector clocks, where the nodes A, B, and C reside in a data center."
+  },
+  {
+   "t": "li",
+   "k": "e1d02274ffe9",
+   "en": "Note: In the following slides, we haven’t converted the data to bits for the sake of understanding. The pattern we’ll use for the unique ID is the following:",
+   "lead": "Note"
+  },
+  {
+   "t": "code",
+   "k": "0318224a2a0d",
+   "en": "[vector-clock][worker-id]"
+  },
+  {
+   "t": "p",
+   "k": "cf1af0c2fe73",
+   "en": "Our approach with vector clocks works. However, in order to completely capture causality, a vector clock must be at least n nodes in size. As a result, when the total number of participating nodes is enormous, vector clocks require a significant amount of storage. Some systems nowadays, such as web applications, treat every browser as a client of the system. Such information increases the ID length significantly, making it difficult to handle, store, use, and scale."
+  },
+  {
+   "t": "h2",
+   "k": "b9d3c2bffd9d",
+   "en": "Requirements Fulfilled by Each Approach"
+  },
+  {
+   "t": "p",
+   "k": "4a4e0c225ed2",
+   "en": "Hide Answer Since we don’t have a global clock, even if each node can assign unique time stamps to the events happening, these time stamps will come from clocks running at different rates. This would make it harder to compare them, and they won’t be unique."
+  },
+  {
+   "t": "p",
+   "k": "235ef0f782ef",
+   "en": "However, if we have a global clock that gives us time upon request and is always accurate, then we can maintain the causality of events, as well as a unique ID. Such a clock would be significantly valuable, but time is tricky to handle in distributed systems."
+  },
+  {
+   "t": "h2",
+   "k": "d45a13ea2f2d",
+   "en": "TrueTime API"
+  },
+  {
+   "t": "p",
+   "k": "6bd285abf751",
+   "en": "Google’s TrueTime API in Spanner is an interesting option. Instead of a particular time stamp, it reports an interval of time. When asking for the current time, we get back two values: the earliest and latest ones. These are the earliest possible and latest possible time stamps."
+  },
+  {
+   "t": "p",
+   "k": "ec362c8cde26",
+   "en": "Based on its uncertainty calculations, the clock knows that the actual current time is somewhere within that interval. The width of the interval depends, among other things, on how long it has been since the local quartz clock was last synchronized with a more accurate clock source."
+  },
+  {
+   "t": "p",
+   "k": "4a75c343e3ed",
+   "en": "Google deploys a GPS receiver or atomic clock in each data center, and clocks are synchronized within about 7 ms. This allows Spanner to keep the clock uncertainty to a minimum. The uncertainty of the interval is represented as epsilon."
+  },
+  {
+   "t": "p",
+   "k": "a923d5211ea2",
+   "en": "The following slides explain how TrueTime’s time master servers work with GPS and atomic clocks in multiple data centers."
+  },
+  {
+   "t": "p",
+   "k": "c8ee39658fcf",
+   "en": "The following slides explain how time is calculated when the client asks to give TrueTime."
+  },
+  {
+   "t": "p",
+   "k": "34f9e0b4358d",
+   "en": "Spanner guarantees that two confidence intervals don’t overlap (that is, Aearliest < Alatest < Bearliest < Blatest), then B definitely happened after A."
+  },
+  {
+   "t": "p",
+   "k": "3302e91caa75",
+   "en": "We generate our unique ID using TrueTime intervals. Let’s say the earliest interval is TE, the latest is TL, and the uncertainty is ε. We use TE in milliseconds as a time stamp in our unique ID."
+  },
+  {
+   "t": "p",
+   "k": "121c1d0006ad",
+   "en": "Time stamp: The time stamp is 41 bits. We use TE as a time stamp."
+  },
+  {
+   "t": "p",
+   "k": "b3146171748c",
+   "en": "Uncertainty: The uncertainty is four bits. Since the maximum uncertainty is claimed to be 6–10 ms, we’ll use four bits for storing it. 10 Worker number: This is 10 bits. It gives us 2 = 1,024 worker IDs."
+  },
+  {
+   "t": "p",
+   "k": "b4db3e12566c",
+   "en": "Sequence number: This is eight bits. For every ID generated on the server, 8 the sequence number is incremented by one. It gives us 2 = 256 combinations. We’ll reset it to zero when it reaches 256."
+  },
+  {
+   "t": "h3",
+   "k": "b0d891163365",
+   "en": "Pros"
+  },
+  {
+   "t": "p",
+   "k": "a15de989f13e",
+   "en": "TrueTime satisfies all the requirements. We’re able to generate a globally unique 64-bit identifier. The causality of events is maintained. The approach is scalable and highly available."
+  },
+  {
+   "t": "h3",
+   "k": "85d0c6044e05",
+   "en": "Cons"
+  },
+  {
+   "t": "p",
+   "k": "33da49e5892e",
+   "en": "If two intervals overlap, then we’re unsure in what order A and B occurred. It’s possible that they’re concurrent events, but a 100% guarantee can’t be given."
+  },
+  {
+   "t": "p",
+   "k": "265c57b97fbb",
+   "en": "Additionally, Spanner is expensive because it ensures high database consistency."
+  },
+  {
+   "t": "p",
+   "k": "082f301135ea",
+   "en": "The dollar cost of a Spanner-like system is also high due to its elaborate infrastructure needs and monitoring."
+  },
+  {
+   "t": "p",
+   "k": "4a963406d662",
+   "en": "The updated table provides the comparison between the different system designs for generating a unique ID."
+  },
+  {
+   "t": "h2",
+   "k": "b9d3c2bffd9d",
+   "en": "Requirements Fulfilled by Each Approach"
+  },
+  {
+   "t": "h2",
+   "k": "05535ecff78e",
+   "en": "Summary"
+  },
+  {
+   "t": "p",
+   "k": "57622fbf623b",
+   "en": "We want to avoid duplicate identifiers. Consider what will happen if duplicate payment or purchase orders are generated."
+  },
+  {
+   "t": "p",
+   "k": "86d498341c33",
+   "en": "UUIDs provide probabilistic guarantees about the keys’ non-collision."
+  },
+  {
+   "t": "p",
+   "k": "967b0c284071",
+   "en": "Deterministically getting non-collision guarantees might need consensus among different distributed entities or stores and read from the replicated store."
+  },
+  {
+   "t": "p",
+   "k": "47ad421a79fb",
+   "en": "As key length becomes large, it often causes slower tuple updates in a database. Therefore, identifiers should be big enough but not too big."
+  },
+  {
+   "t": "p",
+   "k": "ac2c13bca17d",
+   "en": "Often, it’s desirable that no one is able to guess the next ID. Otherwise, undesirable data leaks can happen, and the organization’s competitors may learn how many orders were processed in a day by simply looking at order IDs. Adding a few random numbers to the bits of the identifier make it hard to guess, although this comes at a performance cost."
+  },
+  {
+   "t": "p",
+   "k": "d6e8503c388f",
+   "en": "We can use simple counters for generating unique IDs if we don’t want to relate ID to time. Fetching time stamps is slower than simple counters."
+  },
+  {
+   "t": "p",
+   "k": "57aa7fee9f88",
+   "en": "Fetching time stamps is slower than simple counters, though this requires that we store generated IDs persistently. The counter needs to be stored in the database. Storage comes with its own issues. These include multiple concurrent writes becoming overwhelming for the database and the database being the single point of failure."
+  },
+  {
+   "t": "p",
+   "k": "ed5208bd37e1",
+   "en": "For some distributed databases, such as Spanner, it can hurt to generate monotonically increasing or decreasing IDs. Google reports the following: “In fact, using monotonically increasing (or decreasing) values as row keys does not follow best practices in Spanner because it creates hotspots in the database, leading to a reduction in performance.”"
+  },
+  {
+   "t": "li",
+   "k": "3f316e6615c9",
+   "en": "Note: Globally ordering events is an expensive procedure. A feature that was fast and simple in a centralized database (auto-increment based ID) becomes slow and complicated in its distributed counterpart due to some fundamental constraints (such as consensus, which is difficult among remote entities).",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "94bbb63615c6",
+   "en": "For example, Spanner, a geographically distributed database, reports that “if a read-update transaction on a single cell (one column in a single row) has a latency of 10 milliseconds (ms), then the maximum theoretical frequency of issuing of sequence values is 100 per second."
+  },
+  {
+   "t": "p",
+   "k": "288f72b1428f",
+   "en": "This maximum applies to the entire database, regardless of the number of client application instances, or the number of nodes in the database."
+  },
+  {
+   "t": "p",
+   "k": "dcf51da52efb",
+   "en": "This is because a single node always manages a single row.” If we could compromise on the requirements for global orderings and gapless identifiers, we would be able to get many identifiers in a shorter time, that is, a better performance."
+  }
+ ]
+}

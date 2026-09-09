@@ -1,0 +1,117 @@
+{
+ "id": "10-splitting-read-and-write-data-models",
+ "title": "Splitting Read and Write Data Models",
+ "titleKey": "4f25c1057942",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "68cba2490c6b",
+   "en": "Your orders service is a Postgres monolith doing 8K writes/min and 40K reads/min."
+  },
+  {
+   "t": "p",
+   "k": "90682d75abd7",
+   "en": "Same tables. Same schema. Everything's grinding."
+  },
+  {
+   "t": "p",
+   "k": "8ee6262fab35",
+   "en": "The write side needs a normalized schema — orders, line_items, payments, shipments, addresses. Clean FKs, ACID, no duplicated data. The read side wants the opposite — the dashboard joins 7 tables to render one order card, and the reporting queries are lighting up the CPU at 85% every morning at 9am."
+  },
+  {
+   "t": "p",
+   "k": "ce56f53ac82c",
+   "en": "You've already tuned indexes. You've already added caching. The fundamental problem isn't hardware — the read model and the write model want different shapes of the same data, and you've been pretending they're the same thing for two years."
+  },
+  {
+   "t": "p",
+   "k": "60e630049e0b",
+   "en": "Here's the decision on the table: (ElasticSearch / a flat Postgres read DB), eventual consistency between them."
+  },
+  {
+   "t": "p",
+   "k": "ef8eb899874c",
+   "en": "Keep one DB, one model — denormalize the write schema itself (flatten line_items into orders, Keep the schema, add GraphQL + DataLoader — batch the N+1 reads at the query layer, leave duplicate customer data) so reads stop joining. the DB alone."
+  },
+  {
+   "t": "h3",
+   "k": "f7d1be6a799b",
+   "en": "DAY 09 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "720dc47284a9",
+   "en": "✅ Answer: A — Full CQRS"
+  },
+  {
+   "t": "li",
+   "k": "f7bbb6ecd435",
+   "en": "Why A wins:",
+   "lead": "Why A wins"
+  },
+  {
+   "t": "p",
+   "k": "0aac51a630a9",
+   "en": "The pain isn't \"reads are slow\" — it's that the write side wants a normalized schema and the read side wants a denormalized one, and you're forcing them to share. No amount of hardware fixes a schema shape mismatch. Write side stays clean: orders, line_items, payments, all normalized, ACID, FK-enforced. Read side is a projection: a flat order_view table (or Elasticsearch index) where every order card renders from one row, zero joins. Projector keeps them in sync (outbox Kafka read-model→→ updater, or CDC). You eat eventual consistency — the dashboard might lag by a few hundred ms. For 95% of reads (dashboards, reports, search), that's invisible. For the 5% that needs strong consistency (user's own order confirmation), read from the write side directly."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "99f6dc10c2d3",
+   "en": "Why B is the trap (Read replicas):",
+   "lead": "Why B is the trap (Read replicas)"
+  },
+  {
+   "t": "p",
+   "k": "fa35939ea6c3",
+   "en": "B fixes read load. Not read shape. The 7-table join is still a 7-table join — it just runs on different hardware. You've moved the CPU bill, not removed it. Latency drops for 6 months while traffic grows, then you're back where you started with 3 replicas all running the same expensive joins. B is right when the joins are structurally fine but the primary is overwhelmed. Wrong when the joins themselves are the problem."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "9adf17e4c4de",
+   "en": "Why C is wrong (Denormalize the write model):",
+   "lead": "Why C is wrong (Denormalize the write model)"
+  },
+  {
+   "t": "p",
+   "k": "d6e8dfa94d40",
+   "en": "Every line-item change now rewrites the order row. Every address update cascades through every order ever placed. Write amplification compounds at 8K writes/min. Schema ossifies — adding a field to line_items means migrating millions of denormalized rows. Classic \"avoid the architecture conversation\" move. Buys a quarter, mortgages two."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "9b98dafc8a49",
+   "en": "Why D is wrong (GraphQL + DataLoader):",
+   "lead": "Why D is wrong (GraphQL + DataLoader)"
+  },
+  {
+   "t": "p",
+   "k": "77944a7842f9",
+   "en": "DataLoader batches API calls, not joins. The 7-table join happens in the database, not in the application. 3 months of GraphQL migration later, reads are exactly as slow as before. Right answer when clients are the problem. Wrong answer when the DB schema is."
+  },
+  {
+   "t": "p",
+   "k": "28060b800c23",
+   "en": "Choreography Saga — each service publishes events, the next reacts, failures trigger Orchestration Saga — a central orchestrator (a state machine) calls each service in order and"
+  },
+  {
+   "t": "h3",
+   "k": "edb4a41c1a4f",
+   "en": "DAY 10 · SYSTEM DESIGN"
+  }
+ ]
+}

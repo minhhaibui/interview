@@ -1,0 +1,1110 @@
+{
+ "id": "038-design-a-collaborative-document-editing-service-google-docs",
+ "title": "Design a Collaborative Document Editing Service / Google Docs",
+ "titleKey": "dcd620fa790f",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "73c70a8546f7",
+   "en": "System Design: Google Docs"
+  },
+  {
+   "t": "p",
+   "k": "9a4adb82d4ae",
+   "en": "Learn what collaborative document editing is and what plan to follow for designing such a service."
+  },
+  {
+   "t": "h2",
+   "k": "e1cad14b3808",
+   "en": "Problem statement"
+  },
+  {
+   "t": "p",
+   "k": "78d7cecb8429",
+   "en": "Imagine two students are preparing a report on a project they’ve just completed."
+  },
+  {
+   "t": "p",
+   "k": "90a4a4402250",
+   "en": "Since the students live apart, the first student asks the second student to start writing the report, and the first student will improve the received copy. Although quite motivated, the students soon understand that such a collaboration is disorganized. The following illustration shows how tedious the process can get."
+  },
+  {
+   "t": "p",
+   "k": "e6128a0fd86b",
+   "en": "The scenario above is one example that leads to time wastage and frustration when users collaborate on a document by exchanging files with each other."
+  },
+  {
+   "t": "h2",
+   "k": "b5f73ebb0b0f",
+   "en": "Google Docs"
+  },
+  {
+   "t": "p",
+   "k": "067ccc53aade",
+   "en": "To combat the problem above, we can use an online collaborative document editing service like Google Docs. Some advantages of using an online document editing service instead of a desktop application are as follows:"
+  },
+  {
+   "t": "p",
+   "k": "ef40b8b27efd",
+   "en": "Users can review and comment on a document while it’s being edited."
+  },
+  {
+   "t": "p",
+   "k": "0a69afbefea8",
+   "en": "There are no special hardware specifications required to get the latest features. A machine that can run a browser will suffice."
+  },
+  {
+   "t": "p",
+   "k": "74d662dc0c49",
+   "en": "It's possible to work from any location."
+  },
+  {
+   "t": "p",
+   "k": "d19ebbb8d049",
+   "en": "Unlike local desktop editors, users can view long-term document history and restore an older version if need be."
+  },
+  {
+   "t": "p",
+   "k": "42b9253ff377",
+   "en": "The service is free of cost."
+  },
+  {
+   "t": "p",
+   "k": "59eb745d5be7",
+   "en": "Other than Google docs, some popular online editing services include Etherpad, Microsoft Office 365, Slite, and many others."
+  },
+  {
+   "t": "h2",
+   "k": "e44083867ea1",
+   "en": "Designing Google Docs"
+  },
+  {
+   "t": "p",
+   "k": "11f5413fe2dd",
+   "en": "A collaborative document editing service can be designed in two ways:"
+  },
+  {
+   "t": "p",
+   "k": "0764adcdae15",
+   "en": "It could be designed as a centralized facility using client-server architecture to provide document editing service to all users."
+  },
+  {
+   "t": "p",
+   "k": "16df37b9c2ee",
+   "en": "It could be designed using peer-to-peer technology to collaborate on a single document."
+  },
+  {
+   "t": "p",
+   "k": "f2671b467247",
+   "en": "Most commercial solutions focus on client-service architecture to have finer control. Therefore, we’ll focus on designing a service using the client service architecture. Let’s see how we will progress in this chapter."
+  },
+  {
+   "t": "li",
+   "k": "dd3794f14b7e",
+   "en": "Note: According to a survey, 64% of people use Google Docs for document editing at least once a week.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "c5d2bff59dfe",
+   "en": "How will we design Google Docs?#"
+  },
+  {
+   "t": "p",
+   "k": "356c32faa52e",
+   "en": "We've divided the design problem into four stages:"
+  },
+  {
+   "t": "li",
+   "k": "c59cfc3a3520",
+   "en": "Requirements for Google Docs’ Design: This lesson will focus on establishing the requirements for designing a collaborative document editing service. We’ll also quantify the infrastructure requirements in this stage."
+  },
+  {
+   "t": "li",
+   "k": "43c450b05cf9",
+   "en": "Google Docs’ Design: The goal of this lesson is to come up with a design that fulfills the requirements of the service. This lesson will explain why a component is used and how it integrates with other components to fulfill functional requirements."
+  },
+  {
+   "t": "li",
+   "k": "357da22b442f",
+   "en": "Concurrency in Collaborative Editing: Online document editing services have to resolve conflicts between users editing the same portion of a document. This lesson covers the type of problems that can arise and the techniques used to resolve such conflicts."
+  },
+  {
+   "t": "li",
+   "k": "ce8a24e8561d",
+   "en": "Evaluating Google Docs’ Design: The main objective of this lesson is to evaluate our design for non-functional requirements. Mainly, we see if our design is performant, consistent, available, and scalable."
+  },
+  {
+   "t": "p",
+   "k": "232524437d79",
+   "en": "Let’s begin with a look at our requirements."
+  },
+  {
+   "t": "h1",
+   "k": "26062d6b9a3a",
+   "en": "Requirements of Google Docs’ Design"
+  },
+  {
+   "t": "p",
+   "k": "fa0435b2ce1a",
+   "en": "Learn about the requirements for designing a collaborative editing service."
+  },
+  {
+   "t": "h2",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "h3",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "f7937a8e36a7",
+   "en": "The activities a user will be able to perform using our collaborative document editing service are listed below:"
+  },
+  {
+   "t": "p",
+   "k": "d76f470f9526",
+   "en": "Document collaboration: Multiple users should be able to edit a document simultaneously. Also, a large number of users should be able to view a document."
+  },
+  {
+   "t": "p",
+   "k": "0bfe88fdb7b6",
+   "en": "Conflict resolution: The system should push the edits done by one user to all the other collaborators. The system should also resolve conflicts between users if they’re editing the same portion of the document."
+  },
+  {
+   "t": "p",
+   "k": "8b47ccac9a8d",
+   "en": "Suggestions: The user should get suggestions about completing frequently used words, phrases, and keywords in a document, as well as suggestions about fixing grammatical mistakes."
+  },
+  {
+   "t": "p",
+   "k": "deb2217b8685",
+   "en": "View count: Editors of the document should be able to see the view count of the document."
+  },
+  {
+   "t": "p",
+   "k": "d8f486175805",
+   "en": "History: The user should be able to see the history of collaboration on the document."
+  },
+  {
+   "t": "p",
+   "k": "155240e8b1ec",
+   "en": "A real-world document editor also has to have functions like document creation, deletion, and managing user access. We focus on the core functionalities listed above, but we also discuss the possibility of other functionalities in the lessons ahead."
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional Requirements"
+  },
+  {
+   "t": "p",
+   "k": "7f2844c2656f",
+   "en": "Latency: Different users can be connected to collaborate on the same document. Maintaining low latency is challenging for users connected from different regions."
+  },
+  {
+   "t": "p",
+   "k": "cec175731a14",
+   "en": "Consistency: The system should be able to resolve conflicts between users editing the document concurrently, thereby enabling a consistent view of the document. At the same time, users in different regions should see the updated state of the document. Maintaining consistency is important for users connected to both the same and different zones."
+  },
+  {
+   "t": "p",
+   "k": "e954e0b18e99",
+   "en": "Availability: The service should be available at all times and show robustness against failures."
+  },
+  {
+   "t": "p",
+   "k": "d4f177622d6e",
+   "en": "Scalability: A large number of users should be able to use the service at the same time. They can either view the same document or create new documents."
+  },
+  {
+   "t": "h2",
+   "k": "a9be995c473a",
+   "en": "Resource estimation"
+  },
+  {
+   "t": "p",
+   "k": "bf47db200d79",
+   "en": "Let’s make some resource estimations based on the following assumptions:"
+  },
+  {
+   "t": "p",
+   "k": "f2218d3f8c65",
+   "en": "We assume that there are 80 million daily active users (DAU)."
+  },
+  {
+   "t": "p",
+   "k": "20a0c8207a90",
+   "en": "The maximum number of users able to edit a document concurrently is 20."
+  },
+  {
+   "t": "p",
+   "k": "00a4a23d2433",
+   "en": "The size of a textual document is 100 KB."
+  },
+  {
+   "t": "p",
+   "k": "42f3d0867a9d",
+   "en": "Thirty percent of all the documents contain images, whereas only 2% of documents contain videos."
+  },
+  {
+   "t": "p",
+   "k": "d839669f8c11",
+   "en": "The collective storage required by images in a document is 800 KB, whereas each video is 3 MB."
+  },
+  {
+   "t": "p",
+   "k": "c4dcedbed461",
+   "en": "A user creates one document in one day."
+  },
+  {
+   "t": "p",
+   "k": "52442d4063df",
+   "en": "Based on these assumptions, we’ll make the following estimations."
+  },
+  {
+   "t": "h3",
+   "k": "5e7e60e98560",
+   "en": "Storage estimation"
+  },
+  {
+   "t": "p",
+   "k": "189da96758b2",
+   "en": "Considering that each user is able to create one document a day, there are a total of 80 million documents created each day. Below, we estimate the storage required for one day:"
+  },
+  {
+   "t": "li",
+   "k": "bfc2fec784c0",
+   "en": "Note: We can adjust the values in the table below to see how the storage requirement estimations change.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "e29b816fc89c",
+   "en": "Estimation for Storage Requirements Number of documents 1per day created by each user Number of active users80Million !"
+  },
+  {
+   "t": "p",
+   "k": "4a097f5e2f0d",
+   "en": "Number of documents 80Million in a day !"
+  },
+  {
+   "t": "p",
+   "k": "561c5c496b13",
+   "en": "Storage required for te 8TB xtual content per day !"
+  },
+  {
+   "t": "p",
+   "k": "c7079c932209",
+   "en": "Storage required for i"
+  },
+  {
+   "t": "li",
+   "k": "333d7a5c2f11",
+   "en": "2TB mages per day !"
+  },
+  {
+   "t": "p",
+   "k": "b3575150e1eb",
+   "en": "Storage required for vi"
+  },
+  {
+   "t": "li",
+   "k": "2424555c9531",
+   "en": "8TB deo content per day !"
+  },
+  {
+   "t": "p",
+   "k": "89e82959346c",
+   "en": "Total storage required 32TB per day Total number of documents in a day: 80M×1document=80M documents in a day Storage for each textual document: 80M×100KBs=8TBs Storage required for images for one day: 80M×30 ×800KBs=19.2 TBs (Thirty percent of documents 100 contain images.)"
+  },
+  {
+   "t": "p",
+   "k": "1e584015aead",
+   "en": "Storage required for video content for one day: 80M×2 ×3MBs=4.8 TBs (Two percent of documents contain 100 videos.)"
+  },
+  {
+   "t": "p",
+   "k": "07c10aaf0b5c",
+   "en": "Total storage required for one day is as follows: 8+19.2+4.8=32 TBs per day"
+  },
+  {
+   "t": "li",
+   "k": "ac7c49513954",
+   "en": "Note: Although our functional requirements state that we should keep a history of documents, we didn’t include storage requirements for historical data for the sake of brevity.",
+   "lead": "Note"
+  },
+  {
+   "t": "h3",
+   "k": "10d00f179eb1",
+   "en": "Bandwidth estimation"
+  },
+  {
+   "t": "p",
+   "k": "7a5445154223",
+   "en": "Incoming traffic: Assuming that 32 TB of data are uploaded per day to the network of a collaborative editing service, the network requirement for incoming traffic will be the following: 32 TB ×8=3Gbps approximately 86400 Outgoing traffic: To estimate outgoing traffic bandwidth, we’ll assume the number of documents viewed by a user each day. Let’s consider that a typical user views five documents per day. Then, the following calculations apply:"
+  },
+  {
+   "t": "li",
+   "k": "55bee64bd9f8",
+   "en": "Note: We can adjust the values in the table below to see how the calculations change.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "bca963f4c1e0",
+   "en": "Number of documents 5per day viewed by users Number of active users80Million !"
+  },
+  {
+   "t": "p",
+   "k": "382ed79afe0f",
+   "en": "Number of documents 400Million viewed in a day !"
+  },
+  {
+   "t": "p",
+   "k": "e2e8f15a44c1",
+   "en": "Number of documents 4630per second viewed in a second !"
+  },
+  {
+   "t": "p",
+   "k": "b8d53f31533e",
+   "en": "Bandwidth required fo Gigabits per second(Gb r textual content per se3.704 ps) cond !"
+  },
+  {
+   "t": "p",
+   "k": "8d443cd1f076",
+   "en": "Bandwidth for image-b ased content per secon8.89Gbps d !"
+  },
+  {
+   "t": "p",
+   "k": "594988384688",
+   "en": "Bandwidth for video c"
+  },
+  {
+   "t": "li",
+   "k": "e340c446caab",
+   "en": "22Gbps ontent per second !"
+  },
+  {
+   "t": "p",
+   "k": "e8bd8151f315",
+   "en": "Total outgoing bandwi"
+  },
+  {
+   "t": "li",
+   "k": "eb5172030906",
+   "en": "81Gbps dth required Total documents viewed per day by all users: 80M×5=400M documents viewed per day 400M3 Documents viewed per second: =4.6×10 documents viewed 86400 per second Calculating the bandwidth required for textual content: 3"
+  },
+  {
+   "t": "li",
+   "k": "8bfc4a95dc10",
+   "en": "6×10×100KB×8=3.7Gbps Calculating the bandwidth required for image-based content: 3"
+  },
+  {
+   "t": "li",
+   "k": "05b938ddefe1",
+   "en": "6×10×30 ×800KB×8=8.8Gbps 100 Calculating the bandwidth required for video content: 3"
+  },
+  {
+   "t": "li",
+   "k": "260532173b0a",
+   "en": "6×10×2 ×3MB×8=2.2Gbps 100 Total outgoing bandwidth: 3.7+8.8+2.2=14.7Gbps"
+  },
+  {
+   "t": "li",
+   "k": "1508daa9ae81",
+   "en": "Note: The total bandwidth required is equal to the sum of incoming and outgoing traffic. =3+14.7≈18Gbps approximately.",
+   "lead": "Note"
+  },
+  {
+   "t": "h3",
+   "k": "7e7845b4ea66",
+   "en": "Number of servers estimation"
+  },
+  {
+   "t": "p",
+   "k": "1f3675c6e74b",
+   "en": "Let’s assume that one user is able to generate 100 requests per day. Keeping in mind the number of daily active users, the number of requests per second (RPS) will be the following: 8000M 100×80M==92.6 thousands/sec. 86400 Number of RPS Requests by a user100per day Number of DAU80Million !"
+  },
+  {
+   "t": "p",
+   "k": "b66fb94d963c",
+   "en": "RPS92.6Thousands per second We discussed in the Back of the Envelope lesson that RPS isn’t sufficient information to calculate the number of servers. We’ll use the following approximation for server count."
+  },
+  {
+   "t": "p",
+   "k": "20e606dcf708",
+   "en": "To estimate the number of servers required to fulfill the requests of 80 million users, we simply divide the number of users by the number of requests a server can handle. In the “Back of the Envelope” lesson, we discussed that our reference server can handle 8,000 requests per second. So, we see the following:"
+  },
+  {
+   "t": "p",
+   "k": "59a359cc5612",
+   "en": "Number of daily active users80M ==10,000 Queries handled per second8000 Informally, the equation above assumes that one server can handle 8,000 users."
+  },
+  {
+   "t": "h2",
+   "k": "cfa08fe6c777",
+   "en": "Building blocks we will use"
+  },
+  {
+   "t": "p",
+   "k": "6e1b9da65956",
+   "en": "We’ll use the following building blocks in designing the collaborative document editing service."
+  },
+  {
+   "t": "p",
+   "k": "be5b2a3555e4",
+   "en": "Load balancers will be the first point of contact for users."
+  },
+  {
+   "t": "p",
+   "k": "6c617b694f3e",
+   "en": "Databases will be needed to store several things including textual content, history of documents, user data, etc. For this purpose, we may need different types of databases."
+  },
+  {
+   "t": "p",
+   "k": "24a850a967b5",
+   "en": "Pub-sub systems can complete tasks that can't be performed right away."
+  },
+  {
+   "t": "p",
+   "k": "55a63b4f700a",
+   "en": "We'll complete a number of tasks asynchronously in our design. Therefore, we'll use a pub-sub system."
+  },
+  {
+   "t": "p",
+   "k": "e12988354138",
+   "en": "Caching will help us improve the performance of our design."
+  },
+  {
+   "t": "p",
+   "k": "35076c9be445",
+   "en": "Blob storage will store large files, such as images and videos."
+  },
+  {
+   "t": "p",
+   "k": "08e5f0f98907",
+   "en": "A Queueing system will queue editing operations requested by different users. Because many editing requests can’t be performed simultaneously, we have to temporarily put them in a queue."
+  },
+  {
+   "t": "p",
+   "k": "d8514bbd52f8",
+   "en": "A CDN can store frequently accessed media in a document. We can also put read-only documents that are frequently requested in a CDN."
+  },
+  {
+   "t": "h1",
+   "k": "105832a022f5",
+   "en": "Design of Google Docs"
+  },
+  {
+   "t": "p",
+   "k": "0620735e9b7b",
+   "en": "Let's understand how we can design the collaborative document editing service using various components."
+  },
+  {
+   "t": "h2",
+   "k": "056f11827899",
+   "en": "Design"
+  },
+  {
+   "t": "p",
+   "k": "f3d2f844e852",
+   "en": "We’ll complete our design in two steps. In the first step, we’ll explain different components and building blocks and the reason for their choice in our design."
+  },
+  {
+   "t": "h3",
+   "k": "c212f08ed115",
+   "en": "Components"
+  },
+  {
+   "t": "p",
+   "k": "c0c1dc405840",
+   "en": "We’ve utilized the following set of components to complete our design:"
+  },
+  {
+   "t": "p",
+   "k": "3245200d020a",
+   "en": "API gateway: Different client requests will get intercepted through the API gateway. Depending on the request, it’s possible to forward a single request to multiple components, reject a request, or reply instantly using an already cached response, all through the API gateway. Edit requests, comments on a document, notifications, authentication, and data storing requests will all go through the API gateway."
+  },
+  {
+   "t": "p",
+   "k": "e81509f2ff5e",
+   "en": "Application servers: The application servers will run business logic and tasks that generally require computational power. For instance, some documents may be converted from one file type to another (for example, from a PDF to a Word document) or support features like import and export. It’s also central to the attribute collection for the recommendation engine."
+  },
+  {
+   "t": "p",
+   "k": "df1be6a4c933",
+   "en": "Data stores: Various data stores will be used to fulfill our requirements."
+  },
+  {
+   "t": "p",
+   "k": "b579c31ae54b",
+   "en": "We’ll employ a relational database for saving users’ information and document-related information for imposing privilege restrictions. We can use NoSQL for storing user comments for quicker access. To save the edit history of documents, we can use a time series database. We’ll use blob storage to store videos and images within a document. Finally, we can use distributed cache like Redis and a CDN to provide end users good performance. We use Redis specifically to store different data structures, including user sessions, features for the typeahead service, and frequently accessed documents. The CDN stores frequently accessed documents and heavy objects, like images and videos."
+  },
+  {
+   "t": "p",
+   "k": "267548a0de75",
+   "en": "Processing queue: Since document editing requires frequently sending small-sized data (usually characters) to the server, it’s a good idea to queue this data for periodic batch processing. We’ll add characters, images, videos, and comments to the processing queue. Using an HTTP call for sending every minor character is inefficient. Therefore, we’ll use WebSockets to reduce overhead and observe live changes to the document by different users."
+  },
+  {
+   "t": "p",
+   "k": "601018618c12",
+   "en": "Other components: Other components include the session servers that maintain the user’s session information. We’ll manage document access privileges through the session servers. Essentially, there will also be configuration, monitoring, pub-sub, and logging services that will handle tasks like monitoring and electing leaders in case of server failures, queueing tasks like user notifications, and logging debugging information."
+  },
+  {
+   "t": "p",
+   "k": "a0dd37ef51ec",
+   "en": "The illustration below provides a depiction of how different components and building blocks coordinate to provide the service."
+  },
+  {
+   "t": "p",
+   "k": "434fa905be01",
+   "en": "Quiz Why should we use WebSockets instead of HTTP methods? Why are WebSockets optimal for this kind of communication?"
+  },
+  {
+   "t": "p",
+   "k": "3211308c45ec",
+   "en": "Hide Answer WebSockets offer us the following characteristics:"
+  },
+  {
+   "t": "p",
+   "k": "3ddddd44a16a",
+   "en": "They have a long-lasting connection between clients and servers."
+  },
+  {
+   "t": "p",
+   "k": "4ef8f2e04b28",
+   "en": "They enable full-duplex communication. That is, we can simultaneously communicate from client to server and vice versa."
+  },
+  {
+   "t": "p",
+   "k": "3ffb9034bdeb",
+   "en": "There’s no overhead of HTTP request or response headers."
+  },
+  {
+   "t": "p",
+   "k": "eba1ed88ad58",
+   "en": "The lightweight nature of WebSockets reduces the latency and allows the server to push changes to clients as soon as they are available. 1 of 3"
+  },
+  {
+   "t": "h3",
+   "k": "899531e0f885",
+   "en": "Workflow"
+  },
+  {
+   "t": "p",
+   "k": "911703d4eba0",
+   "en": "In the following steps, we’ll explain how different requests will get entertained after they reach the API gateway:"
+  },
+  {
+   "t": "p",
+   "k": "46602548f69b",
+   "en": "Collaborative editing and conflict resolution: Each request gets forwarded to the operations queue. This is where conflicts get resolved between different collaborators of the same document. If there are no conflicts, the data is batched and stored in the time series database via session servers. Data like videos and images get compressed for storage optimization, while characters are processed right away."
+  },
+  {
+   "t": "p",
+   "k": "da0609dca2d2",
+   "en": "History: It’s possible to recover different versions of the document with the help of a time series database. Different versions can be compared using DIFF operations that compare the versions and identify the differences to recover older versions of the same document."
+  },
+  {
+   "t": "p",
+   "k": "f156740cbdf5",
+   "en": "Asynchronous operations: Notifications, emails, view counts, and comments are asynchronous operations that can be queued through a pub-sub component like Kafka. The API gateway generates these requests and forwards them to the pub-sub module. Users sharing documents can generate notifications through this process."
+  },
+  {
+   "t": "p",
+   "k": "203c04416411",
+   "en": "Suggestions: Suggestions are in the form of the typeahead service that offers autocomplete suggestions for typically used words and phrases. The typeahead service can also extract attributes and keywords from within the document and provide suggestions to the user. Since the number of words can be high, we’ll use a NoSQL database for this purpose. In addition, most frequently used words and phrases will be stored in a caching system like Redis."
+  },
+  {
+   "t": "p",
+   "k": "f0ff98587d82",
+   "en": "Import and export documents: The application servers perform a number of important tasks, including importing and exporting documents."
+  },
+  {
+   "t": "p",
+   "k": "9816a0f06f5e",
+   "en": "Application servers also convert documents from one format to another."
+  },
+  {
+   "t": "p",
+   "k": "3f6d87770cf1",
+   "en": "For example, a .doc or .docx document can be converted in to .pdf or vice versa. Application servers are also responsible for feature extraction for the typeahead service."
+  },
+  {
+   "t": "li",
+   "k": "7b92fc43340a",
+   "en": "Note: Our use of WebSockets speeds up the overall performance and enables us to facilitate chatting between users who are collaborating on the same document. If we combine WebSockets with a Redis-like cache, it’s possible to develop an effective chatting feature.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "20459aed99c9",
+   "en": "Quiz We’re implementing view counters through an asynchronous method, which means that the number of views of a document may be outdated."
+  },
+  {
+   "t": "p",
+   "k": "611d928c8f3f",
+   "en": "Could we use sharded counters or Redis counters to get effective results?"
+  },
+  {
+   "t": "p",
+   "k": "ebebb7de29e2",
+   "en": "Hide Answer Both solutions (sharded counters or Redis counters) will work, though they seem excessive for counting views on documents."
+  },
+  {
+   "t": "p",
+   "k": "ee719d17e267",
+   "en": "To provide near real-time view counting, we can use a streaming pub-sub system, such as Kafka, where a topic can be based on a document identifier. 1 of 2"
+  },
+  {
+   "t": "h1",
+   "k": "751093d9dee7",
+   "en": "Concurrency in Collaborative Editing"
+  },
+  {
+   "t": "p",
+   "k": "215a9947e319",
+   "en": "Let’s explore different methods of conﬂict resolution in concurrent collaboration on a document."
+  },
+  {
+   "t": "h2",
+   "k": "eb5ae5f6c09f",
+   "en": "Introduction#"
+  },
+  {
+   "t": "p",
+   "k": "1ec54ad56a91",
+   "en": "We’ve discussed the design for a collaborative document editing service, but we haven’t addressed how we’ll deal with concurrent changes in the document by different users. However, before discussing concurrency issues, we need to understand the collaborative text editor."
+  },
+  {
+   "t": "h2",
+   "k": "fff8da47facb",
+   "en": "What is a document editor?"
+  },
+  {
+   "t": "p",
+   "k": "ac80645d3db9",
+   "en": "A document is a composition of characters in a specific order. Each character has a value and a positional index. The character can be a letter, a number, an enter (↵), or a space. An index represents the character’s position within the ordered list of characters."
+  },
+  {
+   "t": "p",
+   "k": "216d65850641",
+   "en": "The job of the text or document editor is to perform operations like insert(), delete(), edit(), and more on the characters within the document. A depiction of a document and how the editor will perform these operations is below."
+  },
+  {
+   "t": "h2",
+   "k": "5219d75b045a",
+   "en": "Concurrency issues"
+  },
+  {
+   "t": "p",
+   "k": "74e953fe4a03",
+   "en": "Collaboration on the same document by different users can lead to concurrency issues. Conflicts may arise whenever multiple users edit the same portion of a document. Since users have a local copy of the document, the final status of the document may be different at the server from what the users see at their end."
+  },
+  {
+   "t": "p",
+   "k": "62bf72b9e2f3",
+   "en": "After the server pushes the updated version, users discover the unexpected outcome."
+  },
+  {
+   "t": "h3",
+   "k": "f1f0188d7e74",
+   "en": "Example 1"
+  },
+  {
+   "t": "p",
+   "k": "82c585703e7d",
+   "en": "Let’s consider a scenario where two users want to add some characters at the same positional index. Below, we’ve depicted how two users modifying the same sentence can lead to conflicting results:"
+  },
+  {
+   "t": "p",
+   "k": "31acedf60d23",
+   "en": "As shown above, two users are trying to modify the same sentence, “Educative by developers.” Both users are performing insert() at index 10. The two possibilities are as follows:"
+  },
+  {
+   "t": "p",
+   "k": "44a5528dc4fe",
+   "en": "The phrase “for developers” overwrites “platform.” This leads to an outcome of “for developers.”"
+  },
+  {
+   "t": "p",
+   "k": "0f6cbcc08e6f",
+   "en": "The phrase “platform” overlaps “for developers.” This leads to an outcome of “platformlopers.”"
+  },
+  {
+   "t": "p",
+   "k": "9528ec390fa5",
+   "en": "This example shows that operations applied in a different order don’t hold the commutative property."
+  },
+  {
+   "t": "h3",
+   "k": "d92d43a269b8",
+   "en": "Example 2"
+  },
+  {
+   "t": "p",
+   "k": "1e38aad79b18",
+   "en": "Let’s look at another simple example where two users are trying to delete the same character from a word. Let’s use the word “EEDUCATIVE.” Because the word has an extra “E,” both the users would want to remove the extra character."
+  },
+  {
+   "t": "p",
+   "k": "2367003eec1b",
+   "en": "Below, we see how an unexpected result can occur:"
+  },
+  {
+   "t": "p",
+   "k": "68a77701f281",
+   "en": "This second example shows that different users applying the same operation won’t be idempotent. So, conflict resolution is necessary where multiple collaborators are editing the same portion of the document at the same time."
+  },
+  {
+   "t": "p",
+   "k": "a84ea3d1c20b",
+   "en": "From the examples above, we understand that a solution to concurrency issues in collaborative editing should respect two rules:"
+  },
+  {
+   "t": "p",
+   "k": "5188e40b0c41",
+   "en": "Commutativity: The order of applied operations shouldn’t affect the end result."
+  },
+  {
+   "t": "p",
+   "k": "f9520a8c3baf",
+   "en": "Idempotency: Similar operations that have been repeated should apply only once."
+  },
+  {
+   "t": "p",
+   "k": "a769d723f3ff",
+   "en": "Below, we identify two well-known techniques for conflict resolution."
+  },
+  {
+   "t": "h2",
+   "k": "8ff67d392271",
+   "en": "Techniques for conflict resolution"
+  },
+  {
+   "t": "p",
+   "k": "21018b45407f",
+   "en": "Let’s discuss two leading technologies that are used for conflict resolution in collaborative editing."
+  },
+  {
+   "t": "h3",
+   "k": "fb9fdc2086ac",
+   "en": "Operational transformation"
+  },
+  {
+   "t": "p",
+   "k": "87da3fa746a9",
+   "en": "Operational transformation (OT) is a technique that’s widely used for conflict resolution in collaborative editing. OT emerged in 1989 and has improved throughout the years. It’s a lock-free and non-blocking approach for conflict resolution. If operations between collaborators conflict, OT resolves conflicts and pushes the correct converged state to end users. As a result, OT provides consistency for users."
+  },
+  {
+   "t": "p",
+   "k": "0c4dc5edb65b",
+   "en": "OT performs operations using the positional index method to resolve conflicts, such as the ones we discussed above. OT resolves the problems above by holding commutativity and idempotency."
+  },
+  {
+   "t": "p",
+   "k": "37ba0b5073f9",
+   "en": "Collaborative editors based on OT are consistent if they have the following two properties:"
+  },
+  {
+   "t": "p",
+   "k": "5afb0c8ce9a7",
+   "en": "Causality preservation: If operation a happened before operation b, then operation a is executed before operation b."
+  },
+  {
+   "t": "p",
+   "k": "324e2a7452c0",
+   "en": "Convergence: All document replicas at different clients will eventually be identical."
+  },
+  {
+   "t": "p",
+   "k": "cde3225f8750",
+   "en": "The properties above are a part of the CC consistency model, which is a model for consistency maintenance in collaborative editing."
+  },
+  {
+   "t": "p",
+   "k": "69b6c220131c",
+   "en": "The research community has proposed various consistency models over the years. Some of them are specific to collaborative editing, while others are specific to OT algorithms. The key consistency models are the following:"
+  },
+  {
+   "t": "p",
+   "k": "f1251af7ffd3",
+   "en": "CC model: As we defined above, this includes causality preservation and convergence."
+  },
+  {
+   "t": "p",
+   "k": "2f7cacf8c914",
+   "en": "CCI model: This includes causality preservation, convergence, and intention preservation."
+  },
+  {
+   "t": "p",
+   "k": "dafa9f263d26",
+   "en": "Other models include the CSM (causality, single-operation effects, and multi-operation effects) model and the CA (causality and admissibility) model."
+  },
+  {
+   "t": "p",
+   "k": "bdd1c8998d6b",
+   "en": "Various consistency models are suggested, and usually, the newer ones are supersets of the earlier ones. Because there are so many proposed algorithms, discussing them is beyond the scope of our lesson. Interested readers can find more details here."
+  },
+  {
+   "t": "p",
+   "k": "7e5b5f7fe402",
+   "en": "OT has two disadvantages:"
+  },
+  {
+   "t": "p",
+   "k": "d9a186c9e187",
+   "en": "Each operation to characters may require changes to the positional index."
+  },
+  {
+   "t": "p",
+   "k": "9800dc0b309e",
+   "en": "This means that operations are order dependent on each other."
+  },
+  {
+   "t": "p",
+   "k": "c3fd4206d609",
+   "en": "It’s challenging to develop and implement."
+  },
+  {
+   "t": "p",
+   "k": "c5824d1d65f7",
+   "en": "Operational transformation is a set of complex algorithms, and its correct implementation has proved challenging for real-world applications. For example, the Google Wave team took two years to implement an OT algorithm."
+  },
+  {
+   "t": "h3",
+   "k": "b46e56b0226f",
+   "en": "Conflict-free Replicated Data Type (CRDT)"
+  },
+  {
+   "t": "p",
+   "k": "26fc65085694",
+   "en": "The Conflict-free Replicated Data Type (CRDT) was developed in an effort to improve OT. A CRDT has a complex data structure but a simplified algorithm."
+  },
+  {
+   "t": "p",
+   "k": "62491a4a8dcc",
+   "en": "A CRDT satisfies both commutativity and idempotency by assigning two key properties to each character:"
+  },
+  {
+   "t": "p",
+   "k": "4c9463a43088",
+   "en": "It assigns a globally unique identity to each character."
+  },
+  {
+   "t": "p",
+   "k": "954d7c447d31",
+   "en": "It globally orders each character."
+  },
+  {
+   "t": "p",
+   "k": "4bf3b7e4d3e6",
+   "en": "Each operation now has an updated data structure:"
+  },
+  {
+   "t": "p",
+   "k": "3ebce74c4202",
+   "en": "The SiteID uniquely identifies a user’s site requesting an operation with a Value and a PositionalIndex. The value of PositionalIndex can be in fractions for two main reasons."
+  },
+  {
+   "t": "p",
+   "k": "7416964bfd46",
+   "en": "The PositionalIndex of other characters won’t change because of certain operations."
+  },
+  {
+   "t": "p",
+   "k": "bb10e63bd548",
+   "en": "The order dependency of operations between different users will be avoided."
+  },
+  {
+   "t": "p",
+   "k": "10cc974b3ae2",
+   "en": "The example below depicts that a user from site ID 123e4567-e89b-12d3 is inserting a character with a value of A at a PositionalIndex of 1.5. Although a new character is added, the positional indexes of existing characters are preserved using fractional indices. Therefore, the order dependency between operations is avoided. As shown below, an insert() between O and T didn’t affect the position of T."
+  },
+  {
+   "t": "p",
+   "k": "ddd83a2d3b83",
+   "en": "CRDTs ensure strong consistency between users. Even if some users are offline, the local replicas at end users will converge when they come back online."
+  },
+  {
+   "t": "li",
+   "k": "d51992c07f2c",
+   "en": "Note: OT and CRDTs are good solutions for conflict resolution in collaborative editing, but our use of WebSockets makes it possible to highlight a collaborator’s cursor. Other users will anticipate the position of a collaborator’s next operation and naturally avoid conflict.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "f1bcf8b1abb1",
+   "en": "Quiz Why can’t we use locks to synchronize between users?"
+  },
+  {
+   "t": "p",
+   "k": "d5bda55d5aa9",
+   "en": "Hide Answer Locks require us to segment documents into small sections where users could lock a portion and edit it. This will help developers come up with an easy solution and avoid complexities like OT and CRDTs. However, this also leads to poor user experience. For example, two users may want to add characters to the same section of the document, but their operations may not necessarily conflict."
+  },
+  {
+   "t": "p",
+   "k": "2a52b3c528be",
+   "en": "A lock is a good choice for services like Google Sheets. This is because the document is divided into equal sizes of small cells, and only one user can add or edit the contents of a specific cell. 1 of 2"
+  },
+  {
+   "t": "h1",
+   "k": "b4539711231b",
+   "en": "Evaluation of Google Docs’ Design"
+  },
+  {
+   "t": "h2",
+   "k": "028944e40958",
+   "en": "Consistency"
+  },
+  {
+   "t": "p",
+   "k": "45d02775208a",
+   "en": "We’ve looked at how we’ll achieve strong consistency for conflict resolution in a document through two technologies: operational transformation (OT) and Conflict-free Resolution Data Types (CRDTs). In addition, a time series database enables us to preserve the order of events. Once OT or CRDT has resolved any conflicts, the final result is saved in the database. This helps us achieve consistency in terms of individual operations."
+  },
+  {
+   "t": "p",
+   "k": "94fad39ec834",
+   "en": "Quiz Why should we use strong consistency instead of eventual consistency for conflict resolution in a collaborative document editing service?"
+  },
+  {
+   "t": "p",
+   "k": "9def945e65f1",
+   "en": "Hide Answer From Amazon’s Dynamo system, we learn that if we use eventual consistency for conflict resolution, we might have multiple versions of a document that are eventually reconciled, either automatically or manually. In the case of automatic reconciliation, the document might update abruptly, which defeats the purpose of collaboration. The second case, manual resolution, is tedious labor that we want to avoid."
+  },
+  {
+   "t": "h2",
+   "k": "c3b9a01442e0",
+   "en": "Latency"
+  },
+  {
+   "t": "p",
+   "k": "7008f1138fdc",
+   "en": "Latency may feel like a challenge, specifically when two users are distant from each other or the server. However, users maintain a replica of documents at their end while data is being propagated through WebSockets to end-servers."
+  },
+  {
+   "t": "p",
+   "k": "40dcffdff4a4",
+   "en": "Therefore, user-perceived latency will be low. Apart from this, users mostly tend to write textual data in a document that’s small. Therefore, dissemination of data among different servers within the same facility and among different data centers or zones will be carried out with low latency. Also, files like videos and images can be stored in CDNs for quick serving because this content doesn’t change frequently."
+  },
+  {
+   "t": "p",
+   "k": "84fb0d4140b8",
+   "en": "Practically speaking, there will be a limited number of readers and writers of an online document. For readers specifically, latency won’t be an issue because the document will be loaded only once. So, most readers can be served from the same data center. For writers, an optimal zone should be selected as the centralized location between collaborators of the same document. However, for popular documents, asynchronous replication will be an effective method to achieve good performance and low latency for a large number of users. In general, achieving strong consistency becomes a challenge when replication is asynchronous."
+  },
+  {
+   "t": "h2",
+   "k": "f2c1b76db30d",
+   "en": "Availability"
+  },
+  {
+   "t": "p",
+   "k": "df73649cf3a8",
+   "en": "Since we use WebSockets, our WebSocket servers can connect users to the session maintenance servers that will determine if a user is actively viewing or collaborating on a document. Therefore, keeping multiple WebSocket servers will increase the availability of the design. Lastly, we employ caching services and CDNs to improve availability in case of failures."
+  },
+  {
+   "t": "p",
+   "k": "be13ddb657cd",
+   "en": "However, at the moment, we haven't devised a disaster recovery management scheme."
+  },
+  {
+   "t": "h2",
+   "k": "56475db499f5",
+   "en": "Fulfilling Non-functional Requirements"
+  },
+  {
+   "t": "li",
+   "k": "cace19fd1df5",
+   "en": "Concurrency techniques like OT and CRDTs"
+  },
+  {
+   "t": "li",
+   "k": "eb8869e9c8a5",
+   "en": "Usage of time series database for maintaining the order of operations"
+  },
+  {
+   "t": "li",
+   "k": "2d2b63502d60",
+   "en": "Replication between data centers Latency •Employing WebSockets"
+  },
+  {
+   "t": "li",
+   "k": "da4fa1cb0b90",
+   "en": "Asynchronous replication of data"
+  },
+  {
+   "t": "li",
+   "k": "457a5ec09f35",
+   "en": "Choosing optimal location for document creation and serving"
+  },
+  {
+   "t": "li",
+   "k": "f849b0098bec",
+   "en": "Using CDNs for serving videos and images"
+  },
+  {
+   "t": "li",
+   "k": "a37644a18576",
+   "en": "Using Redis to store different data structures including CRDTs"
+  },
+  {
+   "t": "li",
+   "k": "74e3afd80c34",
+   "en": "Appropriate NoSQL databases for the required functionality Availability •Replication of components to avoid SPOFs"
+  },
+  {
+   "t": "li",
+   "k": "8f06abbfeff2",
+   "en": "Using multiple WebSocket servers for users that may occasionally disconnect"
+  },
+  {
+   "t": "li",
+   "k": "13dc15d2a0b0",
+   "en": "Component isolation improves availability"
+  },
+  {
+   "t": "li",
+   "k": "98dcd47bd35f",
+   "en": "Implementing disaster recovery protocols like backup, replication to different zones, and global server load balancing"
+  },
+  {
+   "t": "li",
+   "k": "ff567f35db37",
+   "en": "Using monitoring and configuration services Scalability •Different data stores for different purposes enable scalability"
+  },
+  {
+   "t": "li",
+   "k": "fdca7d2495f4",
+   "en": "Horizontal sharding of RDBMS"
+  },
+  {
+   "t": "li",
+   "k": "e00884f82f71",
+   "en": "CDNs capable of handling a large number of requests for big files"
+  },
+  {
+   "t": "h2",
+   "k": "b06273ade235",
+   "en": "Scalability"
+  },
+  {
+   "t": "p",
+   "k": "56b969bb18fe",
+   "en": "Since we've used microservice architecture, we can easily scale each component individually in case the number of requests on the operations queue exceeds its capacity. We can use multiple operations queues. In that case, each operations queue will be responsible for a single document. We can forward operations requested by different users that are associated with a single document to a specific queue. The number of spawned queues will be equal to the number of active documents. As a result, we’re able to achieve horizontal scalability."
+  },
+  {
+   "t": "h2",
+   "k": "6a38a38f03e4",
+   "en": "Conclusion"
+  },
+  {
+   "t": "p",
+   "k": "2bfd197d0e2e",
+   "en": "In this chapter, we designed an online collaborative document editing service. In our design, we provided features like collaborative editing, keeping version history for reverting to older versions, giving users suggestions on frequently used terms and phrases, and view counts of a document. We also assessed the possibility of adding a chatting feature between users collaborating on the same document. A unique aspect of the design was the conflict resolution between concurrent editing operations by different users. We solved the concurrency issues through OT and CRDT."
+  }
+ ]
+}

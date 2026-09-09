@@ -1,0 +1,38 @@
+{
+ "id": "29-soap-vs-rest-vs-graphql-vs-rpc",
+ "title": "SOAP vs REST vs GraphQL vs RPC.",
+ "titleKey": "26f5b6c64c4d",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "efe8147dcf2b",
+   "en": "The diagram below illustrates the API timeline and API styles comparison."
+  },
+  {
+   "t": "p",
+   "k": "867524f566ef",
+   "en": "Over time, different API architectural styles are released. Each of them has its own patterns of standardizing data exchange."
+  },
+  {
+   "t": "p",
+   "k": "201873b12750",
+   "en": "You can check out the use cases of each style in the diagram."
+  },
+  {
+   "t": "p",
+   "k": "3e31726856c3",
+   "en": "Source:https://lnkd.in/gFgi33RYI combined a fewdiagrams together."
+  },
+  {
+   "t": "p",
+   "k": "07333a41b1fa",
+   "en": "The credit all goes to AltexSoft. — Check out our bestselling system design books."
+  },
+  {
+   "t": "p",
+   "k": "d2acfa6054b4",
+   "en": "Paperback:AmazonDigital:ByteByteGo. 62"
+  }
+ ]
+}

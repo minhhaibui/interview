@@ -1,0 +1,1144 @@
+{
+ "id": "035-design-a-web-crawler",
+ "title": "Design-a-Web-Crawler",
+ "titleKey": "7483b1ccbb91",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "087234c16863",
+   "en": "System Design: Web Crawler"
+  },
+  {
+   "t": "p",
+   "k": "aac8dd185683",
+   "en": "Learn about the web crawler service."
+  },
+  {
+   "t": "h2",
+   "k": "26aca7941a99",
+   "en": "Introduction"
+  },
+  {
+   "t": "p",
+   "k": "2e106213f5a3",
+   "en": "A web crawler is an Internet bot that systematically scours the world wide web (WWW) for content, starting its operation from a pool of seed URLs. This process of acquiring content from the WWW is called crawling. It further saves the crawled content in the data stores. The process of efficiently saving data for subsequent use is called storing."
+  },
+  {
+   "t": "p",
+   "k": "6bab59adfdf3",
+   "en": "This is the first step that’s performed by search engines; the stored data is used for indexing and ranking purposes. This specific design problem is limited to web crawlers and doesn’t include explanations of the later stages of indexing and ranking in the search engines."
+  },
+  {
+   "t": "h3",
+   "k": "c39e8e223ef7",
+   "en": "Additional benefits"
+  },
+  {
+   "t": "p",
+   "k": "93156dc23d56",
+   "en": "The additional utilities of a web crawler are as follows:"
+  },
+  {
+   "t": "p",
+   "k": "d47c817cc5e9",
+   "en": "Web pages testing: We use web crawlers to check the validity of the links and structures of web pages."
+  },
+  {
+   "t": "p",
+   "k": "5bc55afec0eb",
+   "en": "Web page monitoring: We use web crawlers to monitor the content or structure updates on web pages."
+  },
+  {
+   "t": "p",
+   "k": "67d3a017ef8a",
+   "en": "Site mirroring: Web crawlers are an effective way to mirror popular websites."
+  },
+  {
+   "t": "p",
+   "k": "ffd9f16f420e",
+   "en": "Copyright infringement check: Web crawlers fetch content and check for copyright infringement issues."
+  },
+  {
+   "t": "p",
+   "k": "024517828ebd",
+   "en": "The output of the crawling process is the data that’s the input for the subsequent processing phases—data cleaning, indexing, page relevance using algorithms like page ranks, and analytics. To learn about some of these subsequent stages, refer to our chapter on distributed search."
+  },
+  {
+   "t": "h2",
+   "k": "c6f5db97f624",
+   "en": "How will we design a Web crawler?"
+  },
+  {
+   "t": "p",
+   "k": "b116288ca046",
+   "en": "This chapter consists of four lessons that encompass the overall design of the web crawler system:"
+  },
+  {
+   "t": "li",
+   "k": "518eb36b2196",
+   "en": "Requirements: This lesson enlists the functional and non-functional requirements of the system and estimates calculations for various system parameters."
+  },
+  {
+   "t": "li",
+   "k": "4eea33c0bf13",
+   "en": "Design: This lesson analyzes a bottom-up approach for a web-crawling service. We get a detailed overview of all the individual components leading to a combined operational mechanism to meet the requirements."
+  },
+  {
+   "t": "li",
+   "k": "0ae36cb0c15d",
+   "en": "Improvements: This lesson provides all the design improvements required to counter shortcomings, especially the crawler traps. These crawler traps include links with query parameters, internal links redirection, links holding infinite calendar pages, links for dynamic content generation, and links containing cyclic directories."
+  },
+  {
+   "t": "li",
+   "k": "96044344395e",
+   "en": "Evaluation: This lesson provides an in-depth evaluation of our design choices to check if they meet all the standards and requirements we expect from our design."
+  },
+  {
+   "t": "p",
+   "k": "80ef3e82273f",
+   "en": "Let’s begin with defining the requirements of a web crawler."
+  },
+  {
+   "t": "h1",
+   "k": "7b6fd975c67d",
+   "en": "Requirements of a Web Crawler's Design"
+  },
+  {
+   "t": "p",
+   "k": "e40e938c0eb2",
+   "en": "Learn about the design requirements of a web crawler."
+  },
+  {
+   "t": "h2",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "h3",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "ed87d1318344",
+   "en": "These are the functionalities a user must be able to perform:"
+  },
+  {
+   "t": "p",
+   "k": "182e05c1fb85",
+   "en": "Crawling: The system should scour the WWW, spanning from a queue of seed URLs provided initially by the system administrator."
+  },
+  {
+   "t": "p",
+   "k": "5860d79a7a52",
+   "en": "Points to Ponder Where do we get these seed URLs from?"
+  },
+  {
+   "t": "p",
+   "k": "694e3fa4379a",
+   "en": "Hide Answer There are two possible ways to create or gather seed URLs:"
+  },
+  {
+   "t": "li",
+   "k": "ac2c47fb21b8",
+   "en": "We can manually create them"
+  },
+  {
+   "t": "li",
+   "k": "c6bb9e401883",
+   "en": "We can scan the IP addresses for the presence of web servers These seed URLs must be of good quality. 1 of 3 Storing: The system should be able to extract and store the content of a URL in a blob store. This makes that URL and its content processable by the search engines for indexing and ranking purposes."
+  },
+  {
+   "t": "p",
+   "k": "8367342710d9",
+   "en": "Scheduling: Since crawling is a process that’s repeated, the system should have regular scheduling to update its blob stores’ records."
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "33fc746655bc",
+   "en": "Scalability: The system should inherently be distributed and multithreaded, because it has to fetch hundreds of millions of web documents."
+  },
+  {
+   "t": "p",
+   "k": "b05d776ec9f6",
+   "en": "Extensibility: Currently, our design supports HTTP(S) communication protocol and text files storage facilities. For augmented functionality, it should also be extensible for different network communication protocols, able to add multiple modules to process, and store various file formats."
+  },
+  {
+   "t": "p",
+   "k": "e11ed99cc0fa",
+   "en": "Consistency: Since our system involves multiple crawling workers, having data consistency among all of them is necessary."
+  },
+  {
+   "t": "p",
+   "k": "9f9e2c12acae",
+   "en": "In the general context, data consistency means the reliability and accuracy of data across a system or dataset. In the web crawler’s context, it refers to the adherence of all the workers to a specific set of rules in their attempt to generate consistent crawled data."
+  },
+  {
+   "t": "p",
+   "k": "7b6da918dd65",
+   "en": "Performance: The system should be smart enough to limit its crawling to a domain, either by time spent or by the count of the visited URLs of that domain. This process is called self-throttling. The URLs crawled per second and the throughput of the content crawled should be optimal."
+  },
+  {
+   "t": "p",
+   "k": "ff659621a27e",
+   "en": "Websites usually host a robot.txt file, which communicates domain-specified limitations to the crawler. The crawler should adhere to these limitations by all means."
+  },
+  {
+   "t": "p",
+   "k": "4e3ee304b880",
+   "en": "Improved user interface—customized scheduling: Besides the default recrawling, which is a functional requirement, the system should also support the functionality to perform non-routine customized crawling on the system administrator’s demands."
+  },
+  {
+   "t": "h2",
+   "k": "a9be995c473a",
+   "en": "Resource estimation"
+  },
+  {
+   "t": "p",
+   "k": "3a681cbb1463",
+   "en": "We need to estimate various resource requirements for our design."
+  },
+  {
+   "t": "p",
+   "k": "65f0f481f0b4",
+   "en": "Assumptions These are the assumptions we’ll use when estimating our resource requirements:"
+  },
+  {
+   "t": "p",
+   "k": "4924d8ded534",
+   "en": "There are a total of 5 billion web pages."
+  },
+  {
+   "t": "p",
+   "k": "241e156372e0",
+   "en": "The text content per webpage is 2070 KB."
+  },
+  {
+   "t": "p",
+   "k": "c0f24f8ee8c2",
+   "en": "The metadata for one web page is 500 Bytes."
+  },
+  {
+   "t": "h3",
+   "k": "5e7e60e98560",
+   "en": "Storage estimation"
+  },
+  {
+   "t": "p",
+   "k": "7e17afeef763",
+   "en": "The collective storage required to store the textual content of 5 billion web pages is: Total storage per crawl=5 Billion×(2070 KB+500B)=10.35PB"
+  },
+  {
+   "t": "h3",
+   "k": "1e983522e156",
+   "en": "Traversal time"
+  },
+  {
+   "t": "p",
+   "k": "a3c42e02acea",
+   "en": "Total traversal time=5 Billion×60 ms=0.3 Billion seconds="
+  },
+  {
+   "t": "li",
+   "k": "d2cffa431d71",
+   "en": "5 years It’ll take approximately 9.5 years to traverse the whole Internet while using one instance of crawling, but we want to achieve our goal in one day. We can accomplish this by designing our system to support multi-worker architecture and divide the tasks among multiple workers running on different servers."
+  },
+  {
+   "t": "h3",
+   "k": "a2f448e50ab7",
+   "en": "Number of servers estimation for multi-worker architecture"
+  },
+  {
+   "t": "p",
+   "k": "bd7fb8e4d4a3",
+   "en": "Let’s calculate the number of servers required to finish crawling in one day."
+  },
+  {
+   "t": "p",
+   "k": "2b700c6440d7",
+   "en": "Assume that there is only one worker per server."
+  },
+  {
+   "t": "p",
+   "k": "d793912e97de",
+   "en": "No. of days required by 1 server to complete the task=9.5 years× 365 days≈3468 days One server takes 3,468 days to complete the task."
+  },
+  {
+   "t": "p",
+   "k": "f6b17c9bda67",
+   "en": "How many servers would we need to complete this same task in one day?"
+  },
+  {
+   "t": "p",
+   "k": "f08bb31c86c6",
+   "en": "We would need 3,468 servers to complete the same task in just one day."
+  },
+  {
+   "t": "p",
+   "k": "7cb219e3beab",
+   "en": "If there are a n number of threads per server, we’ll divide 3,468 by n. For example, if one server is capable of executing ten threads at a time, then 3468 the number of servers is reduced to ≈347servers 10"
+  },
+  {
+   "t": "h3",
+   "k": "10d00f179eb1",
+   "en": "Bandwidth estimation"
+  },
+  {
+   "t": "p",
+   "k": "ed00ccfdd780",
+   "en": "Since we want to process 10.35PB of data per day the total bandwidth required would be:"
+  },
+  {
+   "t": "li",
+   "k": "4a4f342b74d0",
+   "en": "35PB ≈120GB/sec≈960Gb/sec 86400sec 960Gb/sec is the total required bandwidth. Now, assume that the task is distributed equally among 3468 servers to accomplish the task in one day. Thus, the per server bandwidth would be: 960Gb/sec ≈277Mb/sec per server 3468 server"
+  },
+  {
+   "t": "figure",
+   "k": "2c26d72db76a",
+   "en": "Total bandwidth = 960 GbpsTotal bandwidth per server = 277 Mbps"
+  },
+  {
+   "t": "p",
+   "k": "9f3cc060a674",
+   "en": "Let's play around with the initial assumptions and see how the estimates change in the following calculator:"
+  },
+  {
+   "t": "p",
+   "k": "c35ad53e1fe5",
+   "en": "Estimates Calculator for the Web Crawler Number of Webpages5Billion Text Content per Webp 2070KB age Metadata per Webpage500Bytes f Total Storage10.35PB f Total Traversal Time o"
+  },
+  {
+   "t": "li",
+   "k": "bac956145017",
+   "en": "5Years n One Server f Servers Required to Pe rform Traversal in One3468Servers Day f Bandwidth Estimate958.33Gb/sec"
+  },
+  {
+   "t": "h2",
+   "k": "cfa08fe6c777",
+   "en": "Building blocks we will use"
+  },
+  {
+   "t": "p",
+   "k": "5abe4398f84a",
+   "en": "Here is the list of the main building blocks we’ll use in our design:"
+  },
+  {
+   "t": "figure",
+   "k": "0c60516cf18b",
+   "en": "SchedulerDNS resolver Cache Blob store"
+  },
+  {
+   "t": "p",
+   "k": "09beeed066cb",
+   "en": "Scheduler is used to schedule crawling events on the URLs that are stored in its database."
+  },
+  {
+   "t": "p",
+   "k": "4b6f50f41606",
+   "en": "DNS is needed to get the IP address resolution of the web pages."
+  },
+  {
+   "t": "p",
+   "k": "28d62304d798",
+   "en": "Cache is utilized in storing fetched documents for quick access by all the processing modules."
+  },
+  {
+   "t": "p",
+   "k": "e37802d1ee0a",
+   "en": "Blob store’s main application is to store the crawled content."
+  },
+  {
+   "t": "p",
+   "k": "4b2e7696c05f",
+   "en": "Besides these basic building blocks, our design includes some additional components as well:"
+  },
+  {
+   "t": "p",
+   "k": "3a4ce689ecaa",
+   "en": "The HTML fetcher establishes a network communication connection between the crawler and the web hosts."
+  },
+  {
+   "t": "p",
+   "k": "ef212fa6c4c7",
+   "en": "The service host manages the crawling operation among the workers."
+  },
+  {
+   "t": "p",
+   "k": "bf0102dd058b",
+   "en": "The extractor extracts the"
+  },
+  {
+   "t": "figure",
+   "k": "59109baba779",
+   "en": "embedded URLs and theExtractor Duplicate eliminator"
+  },
+  {
+   "t": "p",
+   "k": "73e6316eee12",
+   "en": "document from the web page."
+  },
+  {
+   "t": "p",
+   "k": "c268fb92d877",
+   "en": "The duplicate eliminator performs dedup testing on the incoming URLs and the documents."
+  },
+  {
+   "t": "p",
+   "k": "d93e0e8659bc",
+   "en": "In the next lesson, we’ll focus on the high-level and detailed design of a web crawler."
+  },
+  {
+   "t": "h1",
+   "k": "3d623785660b",
+   "en": "Design of a Web Crawler"
+  },
+  {
+   "t": "p",
+   "k": "0b2925e58047",
+   "en": "Get an overview of the building blocks and components of the web crawler system, and learn about the interaction that takes place between them during the design process of a web crawler."
+  },
+  {
+   "t": "h2",
+   "k": "056f11827899",
+   "en": "Design"
+  },
+  {
+   "t": "h3",
+   "k": "c212f08ed115",
+   "en": "Components"
+  },
+  {
+   "t": "p",
+   "k": "a0874a8c82ec",
+   "en": "Here are the details of the building blocks and the components needed for our design:"
+  },
+  {
+   "t": "p",
+   "k": "3c9663ff4db5",
+   "en": "Scheduler: This is one of the key building blocks that schedules URLs for crawling. It’s composed of two units: a priority queue and a relational database."
+  },
+  {
+   "t": "li",
+   "k": "32d1ad6fe08a",
+   "en": "A priority queue (URL frontier): The queue hosts URLs that are made ready for crawling based on the two properties associated with each entry: priority and updates frequency."
+  },
+  {
+   "t": "li",
+   "k": "b4f48d6b7348",
+   "en": "Relational database: It stores all the URLs along with the two associated parameters mentioned above. The database gets populated by new requests from the following two input streams:"
+  },
+  {
+   "t": "p",
+   "k": "151b08b20442",
+   "en": "The user’s added URLs, which include seed and runtime added URLs."
+  },
+  {
+   "t": "p",
+   "k": "4b73166b699b",
+   "en": "The crawler’s extracted URLs."
+  },
+  {
+   "t": "p",
+   "k": "ae4fdf6b46fc",
+   "en": "Points to Ponder Can we estimate the size of the priority queue? What are the pros and cons of a centralized and distributed priority queue."
+  },
+  {
+   "t": "p",
+   "k": "df3b11256d8b",
+   "en": "Hide Answer Assumption: Let’s assume that at any point, we have roughly one million URLs in the URL frontier to be crawled upon."
+  },
+  {
+   "t": "p",
+   "k": "eff069f01c62",
+   "en": "Let’s calculate the size of the priority queue needed to store all of these URLs."
+  },
+  {
+   "t": "p",
+   "k": "d890e7c6485b",
+   "en": "Size of priority queue=1 million URLs×2048 Bytes="
+  },
+  {
+   "t": "li",
+   "k": "4695f5af232b",
+   "en": "048 GB"
+  },
+  {
+   "t": "li",
+   "k": "bfde7df66427",
+   "en": "048 GB is a reasonable amount of space for a queue, indicating that we might not need to implement a distributed mechanism for the URL frontier."
+  },
+  {
+   "t": "p",
+   "k": "32d84f723ebf",
+   "en": "However, a centralized queue has limited read/write bandwidth and is a single point of failure. Therefore, having a sub-queue for each worker will be the best approach."
+  },
+  {
+   "t": "p",
+   "k": "2c638947d227",
+   "en": "If we use our distributed queue, all workers can get data out of the same queue if they want. But having independent queues can further optimize the crawling process, especially in the case of high priority and more frequent crawls like those news websites that need more than regular workers to do the frequent crawling. This approach will inherently facilitate the case of increasing queue size."
+  },
+  {
+   "t": "p",
+   "k": "23f2950939e8",
+   "en": "Having a single queue is beneficial for the deduplication of redundant links and better for the overall crawler resources. We’ll handle the recrawling priority and frequency another way, as explained in the next sections, for which we need the distribution mechanism. 1 of 2 DNS resolver: The web crawler needs a DNS resolver to map hostnames to IP addresses for HTML content fetching. Since DNS lookup is a time-consuming process, a better approach is to create a customized DNS resolver and cache frequently-used IP addresses within their time-to-live because they’re bound to change after their time-to-live."
+  },
+  {
+   "t": "p",
+   "k": "853113e40f3d",
+   "en": "How does the crawler handle URLs with variable priorities?"
+  },
+  {
+   "t": "p",
+   "k": "a986b3556c52",
+   "en": "Hide Answer The crawler has to be vigilant enough at each stage to differentiate between various priority levels of URLs."
+  },
+  {
+   "t": "p",
+   "k": "2a18630a1d6d",
+   "en": "Let’s see how the crawler design handles such cases stage by stage:"
+  },
+  {
+   "t": "li",
+   "k": "639f00366576",
+   "en": "Since we implement our URL frontier as a priority queue of a scheduler, it automatically handles the placement based on parameter values. We have chosen the fault tolerance and periodicity parameters as priority indicators for our URLs."
+  },
+  {
+   "t": "p",
+   "k": "7b7be3838850",
+   "en": "The assignment of these parameters depends on the nature of the web pages’ content. If it is a news web page, crawling through it multiple times in a day is appropriate and required for our index to be up-to-date. Any ordinary web page with occasional updates happening might have a standard visit frequency of, let’s say, two weeks."
+  },
+  {
+   "t": "li",
+   "k": "8db92e68bc06",
+   "en": "Similarly, at the HTML-fetcher level where the crawler is communicating with the host server based on the robots.txt guidelines, it can communicate the concerned parameter’s value for the fetched URLs back to the scheduler in the storing phase."
+  },
+  {
+   "t": "p",
+   "k": "a428d0a6eefa",
+   "en": "Instead of having indicators associated with the URLs, another solution can be to have separate queues for different priorities. We can then dequeue from these queues based on the priorities assigned to them."
+  },
+  {
+   "t": "p",
+   "k": "3efaa9479d29",
+   "en": "This approach just requires the URL placement in the respective queue and doesn’t need scripts to schedule based on the extra parameters associated."
+  },
+  {
+   "t": "p",
+   "k": "c3bf4100d3a6",
+   "en": "It all depends on the scale of our crawling application."
+  },
+  {
+   "t": "p",
+   "k": "488a6f04d60e",
+   "en": "Service host: This component acts as the brain of the crawler and is composed of worker instances. For simplicity, we will refer to this whole component or a single worker as a crawler. There are three main tasks that this service host/crawler performs:"
+  },
+  {
+   "t": "li",
+   "k": "980551fc3fb1",
+   "en": "It handles the multi-worker architecture of the crawling operation."
+  },
+  {
+   "t": "p",
+   "k": "27c0bb771b12",
+   "en": "Based on the availability, each worker communicates with the URL frontier to dequeue the next available URL for crawling."
+  },
+  {
+   "t": "li",
+   "k": "8397d12393b9",
+   "en": "Each worker is responsible for acquiring the DNS resolutions of the incoming URLs from the DNS resolver."
+  },
+  {
+   "t": "li",
+   "k": "ee2dd6be47c8",
+   "en": "Each worker acts as a gateway between the scheduler and the HTML fetcher by sending the necessary DNS resolution information to the HTML fetcher for communication initiation."
+  },
+  {
+   "t": "p",
+   "k": "53b426434b41",
+   "en": "Extractor: Once the HTML fetcher gets the web page, the next step is to extract two things from the webpage: URLs and the content. The extractor sends the extracted URLs directly and the content with the document input stream (DIS) to the duplicate eliminator. DIS is a cache that’s used to store the extracted document, so that other components can access and process it. Over here, we can use Redis as our cache choice because of its advanced data structure functionality."
+  },
+  {
+   "t": "p",
+   "k": "846c908eeb9b",
+   "en": "Once it’s verified that the duplicates are absent in the data stores, the extractor sends the URLs to the task scheduler that contains the URL frontier and stores the content in blob storage for indexing purposes."
+  },
+  {
+   "t": "p",
+   "k": "d16f2e1b47a7",
+   "en": "Duplicate eliminator: Since the web is all interconnected, the probability of two different URLs referring to the same web page or different URLs referring to various web pages having the same content is evident. The crawler needs a component to perform a dedup test to eliminate the risk of exploiting resources by storing and processing the same content twice. The duplicate eliminator calculates the checksum value of each extracted URL and compares it against the URLs checksum data store. If found, it discards the extracted URL. Otherwise, it adds a new entry to the database with the calculated checksum value."
+  },
+  {
+   "t": "p",
+   "k": "d9f30d9e956a",
+   "en": "The duplicate eliminator repeats the same process with the extracted content and adds the new webpage’s checksum value in the document checksum data store for future matchings."
+  },
+  {
+   "t": "p",
+   "k": "4c3d3f251aea",
+   "en": "Our proposed design for the duplicate eliminator can be made robust against these two issues:"
+  },
+  {
+   "t": "li",
+   "k": "c094c8ccfd77",
+   "en": "By using URL redirection, the new URL can pass through the URL dedup test. But, the second stage of the document dedup wouldn’t allow content duplication in the blob storage."
+  },
+  {
+   "t": "li",
+   "k": "684170c89d8a",
+   "en": "By changing just one Byte in a document, the checksum of the modified document is going to come out different than the original one."
+  },
+  {
+   "t": "p",
+   "k": "aeb206eed6ea",
+   "en": "Blob store: Since a web crawler is the backbone of a search engine, storing and indexing the fetched content and relevant metadata is immensely important. The design needs to have a distributed storage, such as a blob store, because we need to store large volumes of unstructured data."
+  },
+  {
+   "t": "p",
+   "k": "a7c426c367ee",
+   "en": "The following illustration shows the pictorial representation of the overall web crawler design:"
+  },
+  {
+   "t": "h3",
+   "k": "899531e0f885",
+   "en": "Workflow"
+  },
+  {
+   "t": "li",
+   "k": "05d6af465aa1",
+   "en": "Assignment to a worker: The crawler (service host) initiates the process by loading a URL from the URL frontier’s priority queue and assigns it to the available worker."
+  },
+  {
+   "t": "li",
+   "k": "674157a1522b",
+   "en": "DNS resolution: The worker sends the incoming URL for DNS resolution."
+  },
+  {
+   "t": "p",
+   "k": "6052286286cf",
+   "en": "Before resolving the URL, the DNS resolver checks the cache and returns the requested IP address if it’s found. Otherwise, it determines the IP address, sends it back to the worker instance of the crawler, and stores the result in the cache."
+  },
+  {
+   "t": "p",
+   "k": "96d90d63170c",
+   "en": "The implementation of the URL frontier—dequeuing the URLs from a FIFO priority queue and enqueuing all the extracted URLs back into the queue rather than crawling them one after another—ensures that we are crawling the web in a breadth-first search (BFS) rather than a depth-first-search (DFS) manner."
+  },
+  {
+   "t": "p",
+   "k": "8b740d78ffde",
+   "en": "Point to Ponder Can we use DFS instead of BFS?"
+  },
+  {
+   "t": "p",
+   "k": "97ee903318ec",
+   "en": "Show Answer"
+  },
+  {
+   "t": "li",
+   "k": "652e8d2178b4",
+   "en": "Communication initiation by the HTML fetcher: The worker forwards the URL and the associated IP address to the HTML fetcher, which initiates the communication between the crawler and the host server."
+  },
+  {
+   "t": "li",
+   "k": "a41070a0db69",
+   "en": "Content extraction: Once the worker establishes the communication, it extracts the URLs and the HTML document from the web page and places the document in a cache for other components to process it."
+  },
+  {
+   "t": "li",
+   "k": "453fe60eef8a",
+   "en": "Dedup testing: The worker sends the extracted URLs and the document for dedup testing to the duplicate eliminator. The duplicate eliminator calculates and compares the checksum of both the URL and the document with the checksum values that have already been stored."
+  },
+  {
+   "t": "p",
+   "k": "a88ab0b733c4",
+   "en": "The duplicate eliminator discards the incoming request in case of a match."
+  },
+  {
+   "t": "p",
+   "k": "d14f403ba90b",
+   "en": "If there’s no match, it places the newly-calculated checksum values in the respective data stores and gives the go-ahead to the extractor to store the content."
+  },
+  {
+   "t": "li",
+   "k": "802f93d5dee3",
+   "en": "Content storing: The extractor sends the newly-discovered URLs to the scheduler, which stores them in the database and sets the values for the priority and recrawl frequency variables."
+  },
+  {
+   "t": "p",
+   "k": "482111e04eaf",
+   "en": "The extractor also writes the required portions of the newly discovered document—currently in the DIS—into the database."
+  },
+  {
+   "t": "li",
+   "k": "007c82cc1c59",
+   "en": "Recrawling: Once a cycle is complete, the crawler goes back to the first point and repeats the same process until the URL frontier queue is empty."
+  },
+  {
+   "t": "p",
+   "k": "28b4a029a7d5",
+   "en": "The URLs stored in the scheduler’s database have priority and periodicity assigned to them. Enqueuing new URLs into the URL frontier depends on these two factors."
+  },
+  {
+   "t": "li",
+   "k": "f7416d63faaa",
+   "en": "Note: Because of multiple instances of each service and microservices architecture, our design can make use of client-side load balancing (see Client-side Load Balancer for Twitter).",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "9e4f6f2b84de",
+   "en": "The following slideshow gives a detailed overview of the web crawler workflow:"
+  },
+  {
+   "t": "p",
+   "k": "cf781b7537f7",
+   "en": "Point to Ponder How frequently does the crawler need to re-crawl?"
+  },
+  {
+   "t": "p",
+   "k": "1464e9d134e1",
+   "en": "Hide Answer Since crawling is not a one-time activity, the crawler needs to plan its default revisits with a suitable frequency. Let’s define this frequency of revisits as two weeks. The crawler revisits all the standard priority URLs every two weeks. Once the crawler visits a URL, it re-appends the same URL into the URL frontier with a default next visit time that’s equal to two weeks."
+  },
+  {
+   "t": "p",
+   "k": "8bb6934157e3",
+   "en": "The default revisit-time is application-dependent rather than system-dependent, so we change this variable to cater to our needs. It’s a compelling case of assigning the priority comparator to URLs. Our system can predict the content change on a website using predictive analysis of the previous content changes. This way we can confidently assign the priority and revisit-time to each URL. For example, our analysis might show frequent changes on news websites and our crawler might suggest revisiting them on a high priority after every five minutes."
+  },
+  {
+   "t": "p",
+   "k": "7d4605bab157",
+   "en": "In the next lesson, we’ll explore some shortcomings in our design and their potential workarounds."
+  },
+  {
+   "t": "h1",
+   "k": "89139cc179a0",
+   "en": "Design Improvements of a Web Crawler"
+  },
+  {
+   "t": "p",
+   "k": "6d4b1a495bc1",
+   "en": "Identify the web crawler's design shortcomings and challenges, and make improvements accordingly."
+  },
+  {
+   "t": "h2",
+   "k": "26aca7941a99",
+   "en": "Introduction"
+  },
+  {
+   "t": "p",
+   "k": "9ff2f3ff3f93",
+   "en": "This lesson gives us a detailed rundown of the improvements that are required to enhance the functionality, performance, and security of our web crawler design. We have divided this lesson into two sections:"
+  },
+  {
+   "t": "li",
+   "k": "bf0c70915c83",
+   "en": "Functionality and performance enhancement design improvements— extensibility and multi-worker architecture."
+  },
+  {
+   "t": "li",
+   "k": "ee0cfb626f54",
+   "en": "Security-enhancement design improvements—crawler traps."
+  },
+  {
+   "t": "p",
+   "k": "050dee992cea",
+   "en": "Let’s dive into these sections."
+  },
+  {
+   "t": "h2",
+   "k": "e615e8105ae4",
+   "en": "Design improvements"
+  },
+  {
+   "t": "p",
+   "k": "69f498fee6a0",
+   "en": "Our current design is simplistic and has some inherent shortcomings and challenges. Let’s highlight them one by one and make some adjustments to our design along the way."
+  },
+  {
+   "t": "p",
+   "k": "f63fd4fe01b7",
+   "en": "Shortcoming: Currently, our design supports the HTTP protocol and only extracts textual content. This leads to the question of how we can extend our crawler to facilitate multiple communication protocols and extract various types of files."
+  },
+  {
+   "t": "p",
+   "k": "b24080e3805e",
+   "en": "Adjustment: Since we have two separate components for serving communication handling and extracting, HTML Fetcher and Extractor, let’s discuss their modifications one by one."
+  },
+  {
+   "t": "li",
+   "k": "237b417f8220",
+   "en": "HTML Fetcher: We have only discussed the HTTP module in this component so far because of the widely-used HTTP URLs scheme. We can easily extend our design to incorporate other communication protocols like File Transfer Protocol (FTP). The workflow will then have an intermediary step where the crawler invokes the concerned communication module based on the URL’s scheme. The subsequent steps will remain the same."
+  },
+  {
+   "t": "li",
+   "k": "a0d751d09468",
+   "en": "Extractor: Currently, we only extract the textual content from the downloaded document placed in the Document Input Stream (DIS)."
+  },
+  {
+   "t": "p",
+   "k": "d74f7c675b11",
+   "en": "This document contains other file types as well, for example, images and videos. If we wish to extract other content from the stored document, we need to add new modules with functionalities to process those media types. Since we use a blob store for content storage, storing the newly-extracted content comprising text, images, and videos won’t be a problem."
+  },
+  {
+   "t": "p",
+   "k": "f98874f89021",
+   "en": "Shortcoming: The current design doesn’t explain how the multi-worker concept integrates into this system."
+  },
+  {
+   "t": "p",
+   "k": "aa19b5235efd",
+   "en": "Adjustment: Every worker needs a URL to work on from the priority queue. Different websites require different times for workers to finish crawling, so each worker will dequeue a new URL upon its availability."
+  },
+  {
+   "t": "p",
+   "k": "91196adba89c",
+   "en": "There are several ways to achieve this multi-worker architecture for our system. Some of them are as follows:"
+  },
+  {
+   "t": "li",
+   "k": "f1f23a62cb42",
+   "en": "Domain level log: The crawler assigns one whole domain to a worker."
+  },
+  {
+   "t": "p",
+   "k": "5b705277a52f",
+   "en": "All the URLs branching out of the initial URL are the responsibility of the same crawler. We ensure this by caching the hash of the hostname against the worker ID for guaranteed future assignment to the same worker. This also helps us avoid any redundant crawling of that domain’s web pages by any worker."
+  },
+  {
+   "t": "p",
+   "k": "692908c73384",
+   "en": "This approach is best-suited for achieving reverse URL indexing, which involves traversing the web address directories in a reversed order. It ensures the storage efficiency of the URL storing process for later use and prevents extensive repetitive string matching processes for duplication testing."
+  },
+  {
+   "t": "li",
+   "k": "5f6438bd3f53",
+   "en": "Range division: The range of URLs given to each crawler; the crawler distributes a range of URLs from the priority queue among workers to avoid clashes. Like the previous approach, the crawler must hash the range associated with each worker."
+  },
+  {
+   "t": "li",
+   "k": "baab46fd5c22",
+   "en": "Per URL crawling: Queue all the URLs; a worker takes a URL and enqueues the subsequently found URLs into the priority queue. Those new URLs are readily available to crawl through for other workers. To avoid enqueuing multiple similar links that direct to the same web page, we calculate the checksum of the canonicalized URL."
+  },
+  {
+   "t": "h2",
+   "k": "32f0db4fae88",
+   "en": "Crawler traps"
+  },
+  {
+   "t": "h3",
+   "k": "94172256b168",
+   "en": "Classification"
+  },
+  {
+   "t": "p",
+   "k": "7193a3013e7f",
+   "en": "Mostly, web crawler traps are the result of poor website structuring, such as:"
+  },
+  {
+   "t": "p",
+   "k": "a0a562a838de",
+   "en": "URLs with query parameters: These query parameters can hold an immense amount of values, all while generating a large number of useless web pages for a single domain: HTTP://www.abc.com?query."
+  },
+  {
+   "t": "p",
+   "k": "d45148191e00",
+   "en": "URLs with internal links: These links redirect in the same domain and can create an infinite cycle of redirection between the web pages of a single domain, making the crawler crawl the same content over and over again."
+  },
+  {
+   "t": "p",
+   "k": "9c15c93d82fb",
+   "en": "URLs with infinite calendar pages: These have never-ending combinations of web pages based on the varying date values, and can create a large number of pointless web pages for a single domain."
+  },
+  {
+   "t": "p",
+   "k": "b4b1b16ef620",
+   "en": "URLs for the dynamic content generation: These are query-based and can generate a massive number of web pages based on the dynamic content resulting from these queries. Such URLs might become a never-ending crawl on a single domain."
+  },
+  {
+   "t": "p",
+   "k": "85d8233ac37b",
+   "en": "URLs with repeated/cyclic directories: They form an indefinite loop of redirections. For example,"
+  },
+  {
+   "t": "code",
+   "k": "4b6fe5ea6d8d",
+   "en": "HTTP://www.abc.com/first/second/first/second/...."
+  },
+  {
+   "t": "p",
+   "k": "a1340a496a55",
+   "en": "These crawler traps might be detrimental to the crawler, but they also seriously affect the website’s SEO ranking."
+  },
+  {
+   "t": "h3",
+   "k": "2b4a5042819e",
+   "en": "Identification"
+  },
+  {
+   "t": "p",
+   "k": "38ddb59d61af",
+   "en": "It’s essential to categorize the crawling traps to correctly identify them and think of design adjustments accordingly."
+  },
+  {
+   "t": "p",
+   "k": "172e13468f51",
+   "en": "There are mainly two layers to the process of identifying a crawler trap:"
+  },
+  {
+   "t": "li",
+   "k": "a1648ce38015",
+   "en": "Analyzing the URL scheme: The URLs with a poor URL structure, for example, those with cyclic directories:"
+  },
+  {
+   "t": "code",
+   "k": "f199696b17a8",
+   "en": "HTTP://www.abc.com/first/second/first/second/... will create crawler"
+  },
+  {
+   "t": "p",
+   "k": "409932725da1",
+   "en": "traps. Hence, filtering such URLs beforehand will rescue our crawler resources."
+  },
+  {
+   "t": "li",
+   "k": "85f48cbacd7c",
+   "en": "Analyzing the total number of web pages against a domain: An impossibly large number of web pages against a domain in the URL frontier is a strong indicator of a crawler trap. So, limiting the crawl at such a domain will be of utmost importance."
+  },
+  {
+   "t": "p",
+   "k": "ffea031acc1e",
+   "en": "Crawling is a resource and time-consuming task, and it’s of extreme importance to efficiently avoid crawler traps in order to achieve timely and helpful crawling."
+  },
+  {
+   "t": "p",
+   "k": "725eb963d10e",
+   "en": "Once the crawler starts communicating with the server for downloading the web page content, there are multiple factors that it needs to take into consideration, mainly at the HTML-fetcher level. Let’s go over these factors individually."
+  },
+  {
+   "t": "li",
+   "k": "c61c609a6d93",
+   "en": "The crawler must implement an application-layer logic to counter the crawler traps. This logic might be based on the observed number of web pages exceeding a specified threshold."
+  },
+  {
+   "t": "p",
+   "k": "8c0868dca8de",
+   "en": "The crawler must be intelligent enough to limit its crawling at a specific domain after a finite amount of time or web page visits. A crawler should smartly exit a web page and store that URL as a no-go area for future traversals to ensure performance effectiveness."
+  },
+  {
+   "t": "li",
+   "k": "9e9ae0a40814",
+   "en": "When initiating communication with the web server, the crawler needs to fetch a file named robots.txt. This file contains the dos and don’ts for a crawler listed by the web masters. Adhering to this document is an integral part of the crawling process. It also allows the crawler to access certain domain-specified web pages prioritized for crawling, without limiting its access to specific web pages."
+  },
+  {
+   "t": "p",
+   "k": "5af22ff8a44d",
+   "en": "Another essential component of this document is the revisit frequency instructions for the crawler. A popular website might demand a frequent revisit, contrary to a website that rarely updates its content. This standard of websites communicating with the web crawlers is called the Robots Exclusion Protocol. This protocol prevents the crawlers from unnecessarily spending crawling resources on uncrawlable web pages."
+  },
+  {
+   "t": "p",
+   "k": "8dd15fb9aec7",
+   "en": "The robots.txt file doesn’t protect crawlers from malicious or intended crawler traps. The other explained mechanisms must handle those traps."
+  },
+  {
+   "t": "li",
+   "k": "4e6c6ff10944",
+   "en": "Since each domain has a limited incoming and outgoing bandwidth allocation, the crawler needs to be polite enough to limit its crawling at a specific domain. Instead of having a static crawl speed for every domain, a better approach is to adjust the crawl speed based on a domain’s Time to First Byte (TTFB) value. The higher the TTFB value, the slower the server."
+  },
+  {
+   "t": "p",
+   "k": "74224d87d95d",
+   "en": "And so, crawling that domain too fast might lead to more time-out requests and incomplete crawling."
+  },
+  {
+   "t": "p",
+   "k": "63a7ad7ab650",
+   "en": "These modifications in the design will ensure a crawler capable of avoiding crawler traps and hence optimizing resources’ usage."
+  },
+  {
+   "t": "h1",
+   "k": "9e0a0f0ddcbf",
+   "en": "Evaluation of Web Crawler's Design"
+  },
+  {
+   "t": "h2",
+   "k": "641ad32aa042",
+   "en": "Reviewing design requirements"
+  },
+  {
+   "t": "h3",
+   "k": "b06273ade235",
+   "en": "Scalability"
+  },
+  {
+   "t": "p",
+   "k": "a96ee3f33f01",
+   "en": "The system is scalable to handle the ever-increasing number of URLs. It includes all the required resources, including schedulers, web crawler workers, HTML fetchers, extractors, and blob stores, which are added/removed on demand."
+  },
+  {
+   "t": "p",
+   "k": "1b0398816d7f",
+   "en": "In the case of a distributed URL frontier, the system utilizes consistent hashing to distribute the hostnames among various crawling workers, where each worker is running on a server. With this, adding or removing a crawler server isn’t a problem."
+  },
+  {
+   "t": "h3",
+   "k": "1ff9d8064a89",
+   "en": "Extensibility and modularity"
+  },
+  {
+   "t": "p",
+   "k": "5686b2501006",
+   "en": "To achieve this extensibility, we only need to add additional modules for the newly required communication protocols in the HTML fetcher. The respective modules will then be responsible for making and maintaining the required communications with the host servers."
+  },
+  {
+   "t": "p",
+   "k": "c06f6f92285a",
+   "en": "Along the same lines, we expect our design to extend its functionality for other MIME types as well. The modular approach for different MIME schemes facilitates this requirement. The worker will call the associated MIME’s processing module to extract the content from the document stored in the DIS."
+  },
+  {
+   "t": "h3",
+   "k": "028944e40958",
+   "en": "Consistency"
+  },
+  {
+   "t": "p",
+   "k": "15d411078766",
+   "en": "Our system consists of several crawling workers. Data consistency among crawled content is crucial. So, to avoid data inconsistency and crawl duplication, our system computes the checksums of URLs and documents and compares them with the existing checksums of the URLs and documents in the URL and document checksum data stores, respectively."
+  },
+  {
+   "t": "p",
+   "k": "427d63840f06",
+   "en": "Apart from deduplication, to ensure the data consistency by fault-tolerance conditions, all the servers can checkpoint their states to a backup service, such as Amazon S3 or an offline disk, regularly."
+  },
+  {
+   "t": "h3",
+   "k": "476ee0f6af1d",
+   "en": "Performance"
+  },
+  {
+   "t": "p",
+   "k": "81b99894311c",
+   "en": "Our web crawler’s performance depends on the following factors:"
+  },
+  {
+   "t": "p",
+   "k": "94f8170d1599",
+   "en": "URLs crawled per second: We can improve this factor by adding new workers to the system."
+  },
+  {
+   "t": "p",
+   "k": "70e1ab903cad",
+   "en": "Utilizing blob storage for content storing: This ensures higher throughput for the massive amount of unstructured data. It also indicates a fast retrieval of the stored content, because a single blob can support up to 500 requests per second."
+  },
+  {
+   "t": "p",
+   "k": "dc6a601b726f",
+   "en": "Efficient implementation of the robots.txt file guideline: We can implement this performance factor by having an application-layer logic of setting the highest precedence of robots.txt guidelines while crawling."
+  },
+  {
+   "t": "p",
+   "k": "9c7e8499b1f0",
+   "en": "Self-throttling: We can have various application-level checks to ensure that our web crawler doesn’t hamper the performance of the website host servers by exhausting their resources."
+  },
+  {
+   "t": "h2",
+   "k": "56475db499f5",
+   "en": "Fulfilling Non-functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "5b595b462ecb",
+   "en": "RequirementTechniques Scalability•Addition/removal of different servers based on the increase/decrease in load"
+  },
+  {
+   "t": "li",
+   "k": "3ae052afa14d",
+   "en": "Consistent hashing to manage server's addition and removal"
+  },
+  {
+   "t": "li",
+   "k": "cd96e236229d",
+   "en": "Regular backup of the servers in Amazon S3 backup service to achieve fault tolerance Extensibility and Modularity•Addition of a newer communication protocol module in the HTML fetcher"
+  },
+  {
+   "t": "li",
+   "k": "e6afa27ec751",
+   "en": "Addition of new MIME schemes while processing the downloaded document in DIS Consistency•Calculation and comparison of checksums of URLs and Documents in the respective data stores Performance•Increasing the number of workers performing the crawl"
+  },
+  {
+   "t": "li",
+   "k": "0e59f85b7ccf",
+   "en": "Blob stores for storing the content"
+  },
+  {
+   "t": "li",
+   "k": "bb0c1d830030",
+   "en": "High priority to robots.txt file guidelines while crawling"
+  },
+  {
+   "t": "li",
+   "k": "d91538288181",
+   "en": "Self-throttle at a domain while crawling Scheduling•Pre-defined default recrawl frequency, or"
+  },
+  {
+   "t": "li",
+   "k": "c7a99a6217f6",
+   "en": "Separate queues and their associated frequencies for various priority URLs"
+  },
+  {
+   "t": "h3",
+   "k": "86e8628e95b0",
+   "en": "Scheduling"
+  },
+  {
+   "t": "p",
+   "k": "ca23ecec848a",
+   "en": "As was established previously, we may need to recrawl URLs on various frequencies. These frequencies are determined by the application of the URL.We can determine the frequency of recrawl in two different ways:"
+  },
+  {
+   "t": "li",
+   "k": "0ac27b5b3bb7",
+   "en": "We can assign a default or a specific recrawling frequency to each URL."
+  },
+  {
+   "t": "p",
+   "k": "84986a53860e",
+   "en": "This assignment depends on the application of the URL defining the priority. A default frequency is assigned to the standard-priority URLs and a higher recrawl frequency is given to the higher-priority URLs."
+  },
+  {
+   "t": "p",
+   "k": "56e861ac1d08",
+   "en": "Based on each URL’s associated recrawl frequency, we can decide to enqueue URLs in the priority queue from the scheduler’s database. The priority defines the place of a URL in the queue."
+  },
+  {
+   "t": "li",
+   "k": "67953b11fee1",
+   "en": "The second method is to have separate queues for various priority URLs, use URLs from high-priority queues first, and subsequently move to the lower-priority URLs."
+  },
+  {
+   "t": "h2",
+   "k": "6a38a38f03e4",
+   "en": "Conclusion"
+  },
+  {
+   "t": "p",
+   "k": "3454d9bc7611",
+   "en": "The web crawler system entails a multi-worker design that uses a microservices architecture. Besides achieving the basic crawling functionality, our design provides insights into the potential shortcomings and challenges associated with our design and further rectifies them with appropriate design modifications. The noteworthy features of our design are as follows:"
+  },
+  {
+   "t": "li",
+   "k": "18b26249a63a",
+   "en": "Identification and design modification for crawler traps"
+  },
+  {
+   "t": "li",
+   "k": "a5306a9d763b",
+   "en": "Extensibility of HTML fetching and content extraction modules"
+  }
+ ]
+}

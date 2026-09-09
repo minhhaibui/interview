@@ -1,0 +1,723 @@
+{
+ "id": "008-load-balancers",
+ "title": "Load Balancers",
+ "titleKey": "3bf875b6cceb",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "5b897e67da94",
+   "en": "Introduction to Load Balancers"
+  },
+  {
+   "t": "p",
+   "k": "0b0ab10e1461",
+   "en": "Learn about the basics of load balancers and the services offered by them."
+  },
+  {
+   "t": "h2",
+   "k": "80c45d78ff4d",
+   "en": "What is load balancing?"
+  },
+  {
+   "t": "p",
+   "k": "6f134cb50975",
+   "en": "Millions of requests could arrive per second in a typical data center. To serve these requests, thousands (or a hundred thousand) servers work together to share the load of incoming requests."
+  },
+  {
+   "t": "li",
+   "k": "c2bbf8b65187",
+   "en": "Note: Here, it’s important that we consider how the incoming requests will be divided among all the available servers.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "fe17feed7de2",
+   "en": "A load balancer (LB) is the answer to the question. The job of the load balancer is to fairly divide all clients’ requests among the pool of available servers. Load balancers perform this job to avoid overloading or crashing servers."
+  },
+  {
+   "t": "p",
+   "k": "cf1d4f65b0b6",
+   "en": "The load balancing layer is the first point of contact within a data center after the firewall. A load balancer may not be required if a service entertains a few hundred or even a few thousand requests per second. However, for increasing client requests, load balancers provide the following capabilities:"
+  },
+  {
+   "t": "p",
+   "k": "1a8c188bf090",
+   "en": "Scalability: By adding servers, the capacity of the application/service can be increased seamlessly. Load balancers make such upscaling or downscaling transparent to the end users."
+  },
+  {
+   "t": "p",
+   "k": "a97b8f90a01d",
+   "en": "Availability: Even if some servers go down or suffer a fault, the system still remains available. One of the jobs of the load balancers is to hide faults and failures of servers."
+  },
+  {
+   "t": "p",
+   "k": "868791a070be",
+   "en": "Performance: Load balancers can forward requests to servers with a lesser load so the user can get a quicker response time. This not only improves performance but also improves resource utilization."
+  },
+  {
+   "t": "p",
+   "k": "44f037b656e0",
+   "en": "Here’s an abstract depiction of how load balancers work:"
+  },
+  {
+   "t": "h2",
+   "k": "2d3f3f81e855",
+   "en": "Placing load balancers"
+  },
+  {
+   "t": "p",
+   "k": "d4c0a8f2c3dc",
+   "en": "Generally, LBs sit between clients and servers. Requests go through to servers and back to clients via the load balancing layer. However, that isn’t the only point where load balancers are used."
+  },
+  {
+   "t": "p",
+   "k": "1fec7eae162a",
+   "en": "Let’s consider the three well-known groups of servers. That is the web, the application, and the database servers. To divide the traffic load among the available servers, load balancers can be used between the server instances of these three services in the following way:"
+  },
+  {
+   "t": "p",
+   "k": "088a022eacca",
+   "en": "Place LBs between end users of the application and web servers/application gateway."
+  },
+  {
+   "t": "p",
+   "k": "3170611decae",
+   "en": "Place LBs between the web servers and application servers that run the business/application logic."
+  },
+  {
+   "t": "p",
+   "k": "5eff31df3101",
+   "en": "Place LBs between the application servers and database servers."
+  },
+  {
+   "t": "p",
+   "k": "6d7562a6a564",
+   "en": "In reality, load balancers can be potentially used between any two services with multiple instances within the design of a system."
+  },
+  {
+   "t": "h2",
+   "k": "c2183004a84e",
+   "en": "Services offered by load balancers"
+  },
+  {
+   "t": "p",
+   "k": "af7f576344d3",
+   "en": "LBs not only enable services to be scalable, available, and highly performant, they offer some key services like the following:"
+  },
+  {
+   "t": "p",
+   "k": "b773d5233da6",
+   "en": "Health checking: LBs use the heartbeat protocol to monitor the health and, therefore, reliability of end-servers. Another advantage of health checking is the improved user experience."
+  },
+  {
+   "t": "p",
+   "k": "fda9ea36ae66",
+   "en": "TLS termination: LBs reduce the burden on end-servers by handling TLS termination with the client."
+  },
+  {
+   "t": "p",
+   "k": "b4ada5493dcd",
+   "en": "Predictive analytics: LBs can predict traffic patterns through analytics performed over traffic passing through them or using statistics of traffic obtained over time."
+  },
+  {
+   "t": "p",
+   "k": "f06f702b8428",
+   "en": "Reduced human intervention: Because of LB automation, reduced system administration efforts are required in handling failures."
+  },
+  {
+   "t": "p",
+   "k": "dd37698dba1d",
+   "en": "Service discovery: An advantage of LBs is that the clients’ requests are forwarded to appropriate hosting servers by inquiring about the service registry."
+  },
+  {
+   "t": "p",
+   "k": "72507aaa1b93",
+   "en": "Security: LBs may also improve security by mitigating attacks like denial-of-service (DoS) at different layers of the OSI model (layers 3, 4, and 7)."
+  },
+  {
+   "t": "p",
+   "k": "75592ad60a1e",
+   "en": "As a whole, load balancers provide flexibility, reliability, redundancy, and efficiency to the overall design of the system."
+  },
+  {
+   "t": "p",
+   "k": "10d8fb6fa843",
+   "en": "Food for thought What if load balancers fail? Are they not a single point of failure (SPOF)?"
+  },
+  {
+   "t": "p",
+   "k": "aef70c365386",
+   "en": "Hide Answer Load balancers are usually deployed in pairs as a means of disaster recovery. If one load balancer fails, and there’s nothing to failover to, the overall service will go down. Generally, to maintain high availability, enterprises use clusters of load balancers that use heartbeat communication to check the health of load balancers at all times. On failure of primary LB, the backup can take over. But, if the entire cluster fails, manual rerouting can also be performed in case of emergencies."
+  },
+  {
+   "t": "p",
+   "k": "30318928294f",
+   "en": "In the coming lessons, we’ll see how load balancers can be used in complex applications and which type of load balancer is appropriate for which use case."
+  },
+  {
+   "t": "h1",
+   "k": "52b8b2f8d3dc",
+   "en": "Global and Local Load Balancing"
+  },
+  {
+   "t": "p",
+   "k": "f18db86b0710",
+   "en": "Understand how global and local load balancing is performed."
+  },
+  {
+   "t": "h2",
+   "k": "26aca7941a99",
+   "en": "Introduction"
+  },
+  {
+   "t": "p",
+   "k": "8dbc9e751c5b",
+   "en": "From the previous lesson, it may seem like load balancing is performed only within the data center. However, load balancing is required at a global and a local scale. Let’s understand the function of each of the two:"
+  },
+  {
+   "t": "p",
+   "k": "4e92a64c92a5",
+   "en": "Global server load balancing (GSLB): GSLB involves the distribution of traffic load across multiple geographical regions."
+  },
+  {
+   "t": "p",
+   "k": "5f9d3fb7d97f",
+   "en": "Local load balancing: This refers to load balancing achieved within a data center. This type of load balancing focuses on improving efficiency and better resource utilization of the hosting servers in a data center."
+  },
+  {
+   "t": "p",
+   "k": "f7d443f57dd7",
+   "en": "Let’s understand each of the two techniques below."
+  },
+  {
+   "t": "h2",
+   "k": "0f80c4ec19a6",
+   "en": "Global server load balancing"
+  },
+  {
+   "t": "p",
+   "k": "4b17e9f8b0cc",
+   "en": "GSLB ensures that globally arriving traffic load is intelligently forwarded to a data center. For example, power or network failure in a data center requires that all the traffic be rerouted to another data center. GSLB takes forwarding decisions based on the users’ geographic locations, the number of hosting servers in different locations, the health of data centers, and so on."
+  },
+  {
+   "t": "p",
+   "k": "2be084018e8a",
+   "en": "In the next lesson, we’ll also learn how GSLB offers automatic zonal failover."
+  },
+  {
+   "t": "p",
+   "k": "0a1ffe1bdc19",
+   "en": "GSLB service can be installed on-premises or obtained through Load Balancing as a Service (LBaaS)."
+  },
+  {
+   "t": "p",
+   "k": "b85833c2a8b1",
+   "en": "The illustration below shows that the GSLB can forward requests to three different data centers. Each local load balancing layer within a data center will maintain a control plane connection with the GSLB providing information about the health of the LBs and the server farm. GSLB uses this information to drive traffic decisions and forward traffic load based on each region’s configuration and monitoring information."
+  },
+  {
+   "t": "p",
+   "k": "129897d5e551",
+   "en": "Now, we’ll discuss how the domain name system (DNS) can perform GSLB."
+  },
+  {
+   "t": "h3",
+   "k": "4cb4fdb26f4e",
+   "en": "Load balancing in DNS"
+  },
+  {
+   "t": "p",
+   "k": "7b7f552c183f",
+   "en": "We understand that DNS can respond with multiple IP addresses for a DNS query. In the lesson on DNS, we discussed that it’s possible to do load balancing through DNS while looking at the output of nslookup. DNS uses a simple technique of reordering the list of IP addresses in response to each DNS query."
+  },
+  {
+   "t": "p",
+   "k": "847b2e3e71fe",
+   "en": "Therefore, different users get a reordered IP address list. It results in users visiting a different server to entertain their requests. In this way, DNS distributes the load of requests on different data centers. This is performing GSLB. In particular, DNS uses round-robin to perform load balancing as shown below:"
+  },
+  {
+   "t": "p",
+   "k": "a1a0dfc308a9",
+   "en": "As shown above, round-robin in DNS forwards clients to data centers in a strict circular order. However, round-robin has the following limitations:"
+  },
+  {
+   "t": "p",
+   "k": "873e03c109be",
+   "en": "Different ISPs have a different number of users. An ISP serving many customers will provide the same cached IP to its clients, resulting in uneven load distribution on end-servers."
+  },
+  {
+   "t": "p",
+   "k": "38b66299254b",
+   "en": "Because the round-robin load-balancing algorithm doesn’t consider any end-server crashes, it keeps on distributing the IP address of the crashed servers until the TTL of the cached entries expires. Availability of the service, in that case, can take a hit due to DNS-level load balancing."
+  },
+  {
+   "t": "p",
+   "k": "541dd166507f",
+   "en": "Despite its limitations, round-robin is still widely used by many DNS service providers. Furthermore, DNS uses short TTL for cached entries to do effective load balancing among different data centers."
+  },
+  {
+   "t": "li",
+   "k": "4e9dff3039f2",
+   "en": "Note: DNS isn’t the only form of GSLB. Application delivery controllers (ADCs) and cloud-based load balancing (discussed later) are better ways to do GSLB.",
+   "lead": "Note"
+  },
+  {
+   "t": "h3",
+   "k": "dc9f0fa144c7",
+   "en": "The need for local load balancers"
+  },
+  {
+   "t": "p",
+   "k": "d0895c8af485",
+   "en": "DNS plays a vital role in balancing the load, but it suffers from the following limitations:"
+  },
+  {
+   "t": "p",
+   "k": "2886097aea88",
+   "en": "The small size of the DNS packet (512 Bytes) isn’t enough to include all possible IP addresses of the servers."
+  },
+  {
+   "t": "p",
+   "k": "aea4cc9ea294",
+   "en": "There’s limited control over the client’s behavior. Clients may select arbitrarily from the received set of IP addresses. Some of the received IP addresses may belong to busy data centers."
+  },
+  {
+   "t": "p",
+   "k": "b76f5538edc0",
+   "en": "Clients can’t determine the closest address to establish a connection with."
+  },
+  {
+   "t": "p",
+   "k": "bcc3f83982c0",
+   "en": "Although DNS geolocation and anycasting-like solutions can be implemented, they aren’t trivial solutions."
+  },
+  {
+   "t": "p",
+   "k": "57c87080d35a",
+   "en": "In case of failures, recovery can be slow through DNS because of the caching mechanism, especially when TTL values are longer."
+  },
+  {
+   "t": "p",
+   "k": "f7b4b07593a8",
+   "en": "To solve some of the above problems, we need another layer of load balancing in the form of local LB. In the next lesson, we’ll discuss different details about local load balancers."
+  },
+  {
+   "t": "h2",
+   "k": "d66fef613c31",
+   "en": "What is local load balancing?"
+  },
+  {
+   "t": "p",
+   "k": "c50611aee9c2",
+   "en": "Local load balancers reside within a data center. They behave like a reverse proxy and make their best effort to divide incoming requests among the pool of available servers. Incoming clients’ requests seamlessly connect to the LB that uses a virtual IP address (VIP)."
+  },
+  {
+   "t": "p",
+   "k": "667e5a7b5088",
+   "en": "Point to Ponder Can DNS be considered a global server load balancer (GSLB)?"
+  },
+  {
+   "t": "p",
+   "k": "ea9386ec4335",
+   "en": "Hide Answer Yes, there are actually two ways of doing global traffic management (GTM):"
+  },
+  {
+   "t": "p",
+   "k": "8660a0db14eb",
+   "en": "GTM through ADCs: Some ADCs implement GSLB. In that case, ADCs have a real-time view of the hosting servers and forward requests based on the health and capacity of the data center."
+  },
+  {
+   "t": "p",
+   "k": "60dd1b3125a6",
+   "en": "GTM through DNS: DNS does GSLB by analyzing the IP location of the client. For each user requesting IP for a domain name (for example, www.educative.io), DNS-based GSLB forwards the IP address of the data center geographically closer to the requesting IP location."
+  },
+  {
+   "t": "p",
+   "k": "94a8e472f8e2",
+   "en": "In the next lesson, we’ll explore some advanced details of local load balancers."
+  },
+  {
+   "t": "h1",
+   "k": "6562543bd38f",
+   "en": "Advanced Details of Load Balancers"
+  },
+  {
+   "t": "p",
+   "k": "1bbce5b7c23e",
+   "en": "Understand load balancers and their usage within a system."
+  },
+  {
+   "t": "h2",
+   "k": "e6ef5c2388aa",
+   "en": "Algorithms of load balancers"
+  },
+  {
+   "t": "p",
+   "k": "b1d5d9b87b06",
+   "en": "Load balancers distribute client requests according to an algorithm. Some well-known algorithms are given below:"
+  },
+  {
+   "t": "p",
+   "k": "9688bae4658b",
+   "en": "Round-robin scheduling: In this algorithm, each request is forwarded to a server in the pool in a repeating sequential manner."
+  },
+  {
+   "t": "p",
+   "k": "399ca59c2132",
+   "en": "Weighted round-robin: If some servers have a higher capability of serving clients’ requests, then it’s preferred to use a weighted round-robin algorithm. In a weighted round-robin algorithm, each node is assigned a weight. LBs forward clients’ requests according to the weight of the node."
+  },
+  {
+   "t": "p",
+   "k": "6903e68f6bb6",
+   "en": "The higher the weight, the higher the number of assignments."
+  },
+  {
+   "t": "p",
+   "k": "398fa8ff9134",
+   "en": "Least connections: In certain cases, even if all the servers have the same capacity to serve clients, uneven load on certain servers is still a possibility."
+  },
+  {
+   "t": "p",
+   "k": "3c48357df904",
+   "en": "For example, some clients may have a request that requires longer to serve."
+  },
+  {
+   "t": "p",
+   "k": "de3aa5c5ba30",
+   "en": "Or some clients may have subsequent requests on the same connection. In that case, we can use algorithms like least connections where newer arriving requests are assigned to servers with fewer existing connections."
+  },
+  {
+   "t": "p",
+   "k": "d85a4d9aa8f2",
+   "en": "LBs keep a state of the number and mapping of existing connections in such a scenario. We’ll discuss more about state maintenance later in the lesson."
+  },
+  {
+   "t": "p",
+   "k": "bb8298a9e339",
+   "en": "Least response time: In performance-sensitive services, algorithms such as least response time are required. This algorithm ensures that the server with the least response time is requested to serve the clients."
+  },
+  {
+   "t": "p",
+   "k": "e4ea73d50df3",
+   "en": "IP hash: Some applications provide a different level of service to users based on their IP addresses. In that case, hashing the IP address is performed to assign users’ requests to servers."
+  },
+  {
+   "t": "p",
+   "k": "f0faafe96b4d",
+   "en": "URL hash: It may be possible that some services within the application are provided by specific servers only. In that case, a client requesting service from a URL is assigned to a certain cluster or set of servers. The URL hashing algorithm is used in those scenarios."
+  },
+  {
+   "t": "p",
+   "k": "b2aaad0bf024",
+   "en": "There are other algorithms also, like randomized or weighted least connections algorithms."
+  },
+  {
+   "t": "h3",
+   "k": "232e3b42d79d",
+   "en": "Static versus dynamic algorithms"
+  },
+  {
+   "t": "p",
+   "k": "b3260e17bb78",
+   "en": "Algorithms can be static or dynamic depending on the machine’s state. Let’s look at each of the categories individually:"
+  },
+  {
+   "t": "p",
+   "k": "448166e292b0",
+   "en": "Static algorithms don’t consider the changing state of the servers. Therefore, task assignment is carried out based on existing knowledge about the server’s configuration. Naturally, these algorithms aren’t complex, and they get implemented in a single router or commodity machine where all the requests arrive."
+  },
+  {
+   "t": "p",
+   "k": "60aa37cc20bd",
+   "en": "Dynamic algorithms are algorithms that consider the current or recent state of the servers. Dynamic algorithms maintain state by communicating with the server, which adds a communication overhead. State maintenance makes the design of the algorithm much more complicated."
+  },
+  {
+   "t": "p",
+   "k": "59d98898a0d2",
+   "en": "Dynamic algorithms require different load balancing servers to communicate with each other to exchange information. Therefore, dynamic algorithms can be modular because no single entity will do the decision-making. Although this adds complexity to dynamic algorithms, it results in improved forwarding decisions. Finally, dynamic algorithms monitor the health of the servers and forward requests to active servers only."
+  },
+  {
+   "t": "li",
+   "k": "1b1af0e2eb36",
+   "en": "Note: In practice, dynamic algorithms provide far better results because they maintain a state of serving hosts and are, therefore, worth the effort and complexity.",
+   "lead": "Note"
+  },
+  {
+   "t": "h3",
+   "k": "78316c2e2fdb",
+   "en": "Stateful versus stateless LBs"
+  },
+  {
+   "t": "p",
+   "k": "a16294711b49",
+   "en": "While static and dynamic algorithms are required to consider the health of the hosting servers, a state is maintained to hold session information of different clients with hosting servers."
+  },
+  {
+   "t": "p",
+   "k": "f2a521883386",
+   "en": "If the session information isn’t kept at a lower layer (distributed cache or database), load balancers are used to keep the session information. Below, we describe two ways of handling session maintenance through LBs:"
+  },
+  {
+   "t": "p",
+   "k": "9b39a542925d",
+   "en": "Stateful Stateless"
+  },
+  {
+   "t": "h3",
+   "k": "8b6d1103e7ad",
+   "en": "Stateful load balancing"
+  },
+  {
+   "t": "p",
+   "k": "83241ec37c90",
+   "en": "As the name indicates, stateful load balancing involves maintaining a state of the sessions established between clients and hosting servers. The stateful LB incorporates state information in its algorithm to perform load balancing."
+  },
+  {
+   "t": "p",
+   "k": "82c5fe767379",
+   "en": "Essentially, the stateful LBs retain a data structure that maps incoming clients to hosting servers. Stateful LBs increase complexity and limit scalability because session information of all the clients is maintained across all the load balancers."
+  },
+  {
+   "t": "p",
+   "k": "bb26eb0632d6",
+   "en": "That is, load balancers share their state information with each other to make forwarding decisions."
+  },
+  {
+   "t": "h3",
+   "k": "6174e9f018e5",
+   "en": "Stateless load balancing"
+  },
+  {
+   "t": "p",
+   "k": "a30d994a7bd7",
+   "en": "Stateless load balancing maintains no state and is, therefore, faster and lightweight. Stateless LBs use consistent hashing to make forwarding decisions."
+  },
+  {
+   "t": "p",
+   "k": "d4e461929021",
+   "en": "However, if infrastructure changes (for example, a new application server joining), stateless LBs may not be as resilient as stateful LBs because consistent hashing alone isn’t enough to route a request to the correct application server."
+  },
+  {
+   "t": "p",
+   "k": "1fbfc6d7a1f7",
+   "en": "Therefore, a local state may still be required along with consistent hashing."
+  },
+  {
+   "t": "h2",
+   "k": "e730797317ca",
+   "en": "Types of load balancers"
+  },
+  {
+   "t": "p",
+   "k": "6f3f00e9030d",
+   "en": "Depending on the requirements, load balancing can be performed at the network/transport and application layer of the open systems interconnection (OSI) layers."
+  },
+  {
+   "t": "p",
+   "k": "0885628dff23",
+   "en": "Layer 4 load balancers: Layer 4 refers to the load balancing performed on the basis of transport protocols like TCP and UDP . These types of LBs maintain connection/session with the clients and ensure that the same (TCP/UDP) communication ends up being forwarded to the same back-end server. Even though TLS termination is performed at layer 7 LBs, some layer 4 LBs also support it."
+  },
+  {
+   "t": "p",
+   "k": "b3c285c54b63",
+   "en": "Layer 7 load balancers: Layer 7 load balancers are based on the data of application layer protocols. It’s possible to make application-aware forwarding decisions based on HTTP headers, URLs, cookies, and other application-specific data—for example, user ID. Apart from performing TLS termination, these LBs can take responsibilities like rate limiting users, HTTP routing, and header rewriting."
+  },
+  {
+   "t": "li",
+   "k": "220dc2db0ead",
+   "en": "Note: Layer 7 load balancers are smart in terms of inspection. However layer 4 load balancers are faster in terms of processing.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "a9649a5d21ae",
+   "en": "Load balancer deployment"
+  },
+  {
+   "t": "p",
+   "k": "e9fb12fab65e",
+   "en": "We discussed the trade-offs of load balancing performed at different OSI layers."
+  },
+  {
+   "t": "p",
+   "k": "8e8e7475dad2",
+   "en": "In practice, however, a single layer LB isn’t enough for a large data center. In fact, multiple layers of load balancers coordinate to take informed forwarding decisions. A traditional data center may have a three-tier LB as shown below:"
+  },
+  {
+   "t": "h3",
+   "k": "8946d27dbbad",
+   "en": "Tier-0 and tier-1 LBs"
+  },
+  {
+   "t": "p",
+   "k": "cd6b3665b5f1",
+   "en": "If DNS can be considered as the tier-0 load balancer, equal cost multipath (ECMP) routers are the tier-1 LBs. From the name of ECMP , it’s evident that this layer divides incoming traffic on the basis of IP or some other algorithm like round-robin or weighted round-robin. Tier-1 LBs will balance the load across different paths to higher tiers of load balancers."
+  },
+  {
+   "t": "p",
+   "k": "b8d05d1ed368",
+   "en": "ECMP routers play a vital role in the horizontal scalability of the higher-tier LBs."
+  },
+  {
+   "t": "h3",
+   "k": "f403aa3849ff",
+   "en": "Tier-2 LBs"
+  },
+  {
+   "t": "p",
+   "k": "0ed02de430fa",
+   "en": "To achieve this goal, a technique like consistent hashing can be utilized. But in case of any changes to the infrastructure, consistent hashing may not be enough."
+  },
+  {
+   "t": "p",
+   "k": "1d0565b28a7d",
+   "en": "Therefore, we have to maintain a local or global state as we’ll see in the coming sections of the lesson."
+  },
+  {
+   "t": "p",
+   "k": "74fed869ee83",
+   "en": "Tier-2 load balancers can be considered the glue between tier-1 and tier-3 LBs."
+  },
+  {
+   "t": "p",
+   "k": "d200e61f116f",
+   "en": "Excluding tier-2 LBs could result in erroneous forwarding decisions in case of failures or dynamic scaling of LBs."
+  },
+  {
+   "t": "h3",
+   "k": "708ed6d52fcd",
+   "en": "Tier-3 LBs"
+  },
+  {
+   "t": "p",
+   "k": "541c0c727e59",
+   "en": "Layer 7 LBs provide services at tier 3. Since these LBs are in direct contact with the back-end servers, they perform health monitoring of servers at HTTP level."
+  },
+  {
+   "t": "p",
+   "k": "f68f43ab5fd7",
+   "en": "This tier enables scalability by evenly distributing requests among the set of healthy back-end servers and provides high availability by monitoring the health of servers directly. This tier also reduces the burden on end-servers by handling low-level details like TCP-congestion control protocols, the discovery of Path MTU (maximum transmission unit), the difference in application protocol between client and back-end servers, and so on. The idea is to leave the computation and data serving to the application servers and effectively utilize load balancing commodity machines for trivial tasks. In some cases, layer 7 LBs are at the same level as the service hosts."
+  },
+  {
+   "t": "p",
+   "k": "f73948476b04",
+   "en": "To summarize, tier 1 balances the load among the load balancers themselves. Tier 2 enables a smooth transition from tier 1 to tier 3 in case of failures, whereas tier 3 does the actual load balancing between back-end servers. Each tier performs other tasks to reduce the burden on end-servers."
+  },
+  {
+   "t": "h3",
+   "k": "36ed0eb40b43",
+   "en": "Practical example"
+  },
+  {
+   "t": "p",
+   "k": "b154be50ee30",
+   "en": "Let’s look at an example where requests from a client come in and get forwarded to different application servers based on the application data inside the client’s network packets."
+  },
+  {
+   "t": "p",
+   "k": "52de95532492",
+   "en": "Let’s look at the illustration above in the following steps:"
+  },
+  {
+   "t": "li",
+   "k": "4b314d5e3759",
+   "en": "R1 indicates request 1 coming through one of the ECMP routers (tier-1 LBs)."
+  },
+  {
+   "t": "li",
+   "k": "66dcaa35cb4f",
+   "en": "ECMP routers forward R1 to any of the three available tier-2 LBs using a round-robin algorithm. Tier-2 LBs take a hash of the source IP address (IPc ) and forward the packet to the next tier of LBs."
+  },
+  {
+   "t": "li",
+   "k": "f00bae275630",
+   "en": "Tier-3, upon receiving the packet, offloads TLS and reads the HTTP(S) data."
+  },
+  {
+   "t": "p",
+   "k": "edc4117819f1",
+   "en": "By observing the requested URL, it forwards the request to the server handling requests for slides."
+  },
+  {
+   "t": "p",
+   "k": "025b923c1b69",
+   "en": "R2 takes the same path but a different end-server because the requested URL contains document instead of slides. Tier-3 LBs are preconfigured to forward requests to application servers based on the application data. For instance, a typical HAProxy server can have the following configuration in tier-3 LBs:"
+  },
+  {
+   "t": "code",
+   "k": "745361419bf3",
+   "en": "1modemode HTTP //define which mode the LB will work on, TCP for tier-2 LBs HTTP //define which mode the LB will work on, TCP for tier-2 LBs 2acl slidesApp path_end -i /presentation //define a category of applications if the path ends in /pre 3use_backend slidesServers if slidesApp // use a set of backend servers if the request arrives for s 4backend slidesServers // listing servers serving slidesApp 5server slides1 192.168.12.1:80 //using slides1 server to serve slidesApp."
+  },
+  {
+   "t": "p",
+   "k": "340effc5a254",
+   "en": "Quiz After a request reaches a back-end server, should the response be routed back through each tier of the load balancers?"
+  },
+  {
+   "t": "p",
+   "k": "b3ff37e67eda",
+   "en": "Show Answer 1 of 4"
+  },
+  {
+   "t": "h2",
+   "k": "ced9a4778cfa",
+   "en": "Implementation of load balancers"
+  },
+  {
+   "t": "p",
+   "k": "adef9ad16c79",
+   "en": "Different kinds of load balancers can be implemented depending on the number of incoming requests, organization, and application-specific requirements:"
+  },
+  {
+   "t": "h3",
+   "k": "2f862ee634f2",
+   "en": "Hardware load balancers"
+  },
+  {
+   "t": "p",
+   "k": "f4b1942f0be9",
+   "en": "Load balancers were introduced in the 1990s as hardware devices. Hardware load balancers work as stand-alone devices and are quite expensive."
+  },
+  {
+   "t": "p",
+   "k": "1fdcee55d5fb",
+   "en": "Nonetheless, they have their performance benefits and are able to handle a lot of concurrent users. Configuration of hardware-based solutions is problematic because it requires additional human resources. Therefore, they aren’t the go-to solutions even for large enterprises that can afford them. Availability can be an issue with hardware load balancers because additional hardware will be required to failover to in case of failures. Finally, hardware LBs can have higher maintenance/operational costs and compatibility issues making them less flexible. Not to mention that hardware LBs have vendor locks as well."
+  },
+  {
+   "t": "h3",
+   "k": "bfac206e5486",
+   "en": "Software load balancers"
+  },
+  {
+   "t": "p",
+   "k": "65481f704421",
+   "en": "Software load balancers are becoming increasingly popular because of their flexibility, programmability, and cost-effectiveness. That’s all possible because they’re implemented on commodity hardware. Software LBs scale well as requirements grow. Availability won’t be an issue with software LBs because small additional costs are required to implement shadow load balancers on commodity hardware. Additionally, software LBs can provide predictive analysis that can help prepare for future traffic patterns."
+  },
+  {
+   "t": "h3",
+   "k": "76a8fd21d2e2",
+   "en": "Cloud load balancers"
+  },
+  {
+   "t": "p",
+   "k": "b8734c62cb6a",
+   "en": "With the advent of the field of cloud computing, Load Balancers as a Service (LBaaS) has been introduced. This is where cloud owners provide load balancing services. Users pay according to their usage or the service-level agreement (SLA) with the cloud provider. Cloud-based LBs may not necessarily replace a local on-premise load balancing facility, but they can perform global traffic management between different zones. Primary advantages of such load balancers include ease of use, management, metered cost, flexibility in terms of usage, auditing, and monitoring services to improve business decisions. An example of how cloud-based LBs can provide GSLB is given below:"
+  },
+  {
+   "t": "li",
+   "k": "5feb0393d9ae",
+   "en": "Note: Another interesting implementation of load balancers comes in the form of client-side load balancing. Client-side load balancing is suited where there are numerous services, each with many instances (such as load balancing in Twitter). Our focus, however, is on traditional load balancers because most three-tier applications employ these in their design.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "6a38a38f03e4",
+   "en": "Conclusion"
+  },
+  {
+   "t": "p",
+   "k": "aaba58b17464",
+   "en": "LBs have come a long way to become a service offered in the cloud, starting since their inception in the form of hardware. They’re a key component of any enterprise-level service. Horizontal scalability of hosting servers will always require a good load balancing layer capable of providing load balancing, session maintenance, TLS offloading, service discovery, and more."
+  }
+ ]
+}

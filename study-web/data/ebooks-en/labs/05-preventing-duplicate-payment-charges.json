@@ -1,0 +1,167 @@
+{
+ "id": "05-preventing-duplicate-payment-charges",
+ "title": "Preventing Duplicate Payment Charges",
+ "titleKey": "5441bd357015",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "99e4d781565d",
+   "en": "A user taps \"Pay $499\" on checkout."
+  },
+  {
+   "t": "p",
+   "k": "0aa1b7e6295e",
+   "en": "The spinner hangs. They tap it again. And once more."
+  },
+  {
+   "t": "p",
+   "k": "7127f8e74e0a",
+   "en": "Three requests hit your Payments API. Two of them actually succeed. The customer is charged $1,497 and opens a support ticket before your on-call even sees the alert."
+  },
+  {
+   "t": "p",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:"
+  },
+  {
+   "t": "p",
+   "k": "2f9cfb34538a",
+   "en": "Mobile POST /payments { orderId: \"ord_8821\", amount: 499 }→ Network stalls on the first request client retries twice→ Your service receives 3 near-identical POSTs within 4 seconds Stripe gets charged 3 times. Your DB writes 3 payment rows."
+  },
+  {
+   "t": "p",
+   "k": "185eaaa8a1fb",
+   "en": "You have one sprint to make sure a retried request never double-charges again. What do you do? problem solved."
+  },
+  {
+   "t": "p",
+   "k": "cd093cb414f8",
+   "en": "Require the client to send an Idempotency-Key header; store the key + response and return the Put a distributed lock (Redis SETNX) around the payment handler keyed by orderId — only one Wrap the charge + DB write in a database transaction with SERIALIZABLE isolation — cached result on retry. request processes at a time. concurrent writes can't both commit."
+  },
+  {
+   "t": "h3",
+   "k": "5d18e730901a",
+   "en": "DAY 04 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "e58b77dab111",
+   "en": "Answer: B — Idempotency-Key header ✅ Here's why, and why the other three are the exact mistakes I've seen in real post-mortems:"
+  },
+  {
+   "t": "li",
+   "k": "8189391c55f9",
+   "en": "Why B wins (Idempotency-Key):",
+   "lead": "Why B wins (Idempotency-Key)"
+  },
+  {
+   "t": "p",
+   "k": "495f34331b36",
+   "en": "The client generates a UUID before the first request and attaches it as Idempotency-Key: 7f3e... on every retry of that same logical operation. Your server does the work once, stores {key response} in→ a durable store (Postgres, DynamoDB, Redis with persistence — not plain Redis), and on any retry with the same key, it returns the original response without re-executing the charge."
+  },
+  {
+   "t": "p",
+   "k": "160ec4d812f8",
+   "en": "Critical detail most people miss: you cache the full response (status code + body), not just \"I saw this key.\" If retry #2 arrives while retry #1 is still processing, you make it wait or return a 409 — never let two executions race with the same key."
+  },
+  {
+   "t": "p",
+   "k": "9490a9f1d1e0",
+   "en": "This is exactly what Stripe (Idempotency-Key), PayPal (PayPal-Request-Id), Shopify, and AWS (ClientRequestToken on half their APIs) all ship. It's the only approach that handles the full failure matrix: network retries, client-triggered retries, load balancer retries, and \"the request succeeded but the response got lost\" — which is the nastiest case and the one the other three options silently fail on."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "7288f0482a33",
+   "en": "Why A is the trap answer (unique constraint on orderId):",
+   "lead": "Why A is the trap answer (unique constraint on orderId)"
+  },
+  {
+   "t": "p",
+   "k": "6c9eb1a35eff",
+   "en": "This is the answer I've seen in 4 different production codebases, and it's wrong for a subtle reason."
+  },
+  {
+   "t": "p",
+   "k": "b4181fede80e",
+   "en": "A unique constraint stops the second insert from committing — good. But what about the first charge to Stripe? In most implementations, you call Stripe's API first, then insert the payment row. So request #1 charges Stripe, DB insert succeeds. Request #2 charges Stripe again, then the DB insert fails with a constraint violation. The customer is now charged twice. Your DB looks clean. Your logs say \"duplicate order prevented.\""
+  },
+  {
+   "t": "p",
+   "k": "7ab105a7dad1",
+   "en": "Even if you flip the order (insert first, charge second), you've just moved the race condition — now retry #2 fails at the DB, but if retry #1 crashes between insert and charge, you have a payment row with no actual charge. Worse than double-charging. Silent money loss."
+  },
+  {
+   "t": "p",
+   "k": "d9da694f7383",
+   "en": "A unique constraint is a great defense-in-depth layer. It is not the primary mechanism."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "3c030b280761",
+   "en": "Why C is wrong (distributed lock):",
+   "lead": "Why C is wrong (distributed lock)"
+  },
+  {
+   "t": "p",
+   "k": "847f5ed4b458",
+   "en": "A Redis lock on orderId serializes the 3 retries so only one runs at a time. Sounds clean. But it only solves the concurrent case. It doesn't help with sequential retries that arrive after the lock has already been released and the response was lost in transit."
+  },
+  {
+   "t": "p",
+   "k": "e82ce46a6c2f",
+   "en": "Request #1 acquires lock, charges Stripe, releases lock, returns 200 — but the 200 never reaches the client because the connection died. Client retries 30 seconds later. The lock is long gone. You charge again."
+  },
+  {
+   "t": "p",
+   "k": "3f873e37c4f3",
+   "en": "Distributed locks are for preventing concurrent execution. Idempotency is for preventing repeated execution across time. Different problems."
+  },
+  {
+   "t": "p",
+   "k": "5b175ee81268",
+   "en": "Also: distributed locks are famously hard to get right. Martin Kleppmann's \"How to do distributed locking\" post exists for a reason. Don't reach for one unless you actually need the concurrency guarantee."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "e87f84f89c46",
+   "en": "Why D is wrong (SERIALIZABLE transaction):",
+   "lead": "Why D is wrong (SERIALIZABLE transaction)"
+  },
+  {
+   "t": "p",
+   "k": "ef371299f795",
+   "en": "SERIALIZABLE isolation is about protecting the database from concurrent-write anomalies. It has nothing to say about the external side effect — the charge to Stripe. Your transaction can roll back and your DB can be pristine, but the HTTP POST to Stripe already went out, and that money is gone."
+  },
+  {
+   "t": "p",
+   "k": "5c740306e65c",
+   "en": "This is the most common conceptual bug in the \"make payments safe\" category: treating the database as the boundary of correctness when the real boundary is the external side effect. The moment you call Stripe, the universe has changed. Your DB transaction can't un-change it."
+  },
+  {
+   "t": "p",
+   "k": "402c1b38c8ca",
+   "en": "Hash sharding on order_id — even distribution, no hotspots."
+  },
+  {
+   "t": "h3",
+   "k": "c06f5a15994d",
+   "en": "DAY 05 · SYSTEM DESIGN"
+  }
+ ]
+}

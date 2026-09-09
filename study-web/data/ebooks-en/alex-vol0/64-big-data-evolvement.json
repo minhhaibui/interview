@@ -1,0 +1,38 @@
+{
+ "id": "64-big-data-evolvement",
+ "title": "Big data evolvement",
+ "titleKey": "17917e123f2e",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "2712b078f23b",
+   "en": "I hope everyone has a great time with friends and family during the holidays. If you are looking for some readings, classic engineering papers are a good start."
+  },
+  {
+   "t": "p",
+   "k": "f0a83137cbc0",
+   "en": "A lot of times when we are busy with work, we only focus on scattered information, telling us “how” and “what” to get ourimmediate needs to get things done."
+  },
+  {
+   "t": "p",
+   "k": "e0781297d5c4",
+   "en": "However, reading the classics helps us know “why”behind the scenes, and teaches us how to solve problems, make better decisions, or even contribute to open source projects."
+  },
+  {
+   "t": "p",
+   "k": "e737f5b31737",
+   "en": "Let’s takebig dataas an example."
+  },
+  {
+   "t": "p",
+   "k": "47e23d096e6b",
+   "en": "Big data area has progressed a lot over the past 20 years. It started from 3 Google papers (see the links in the comment), which tackled real engineering challenges at Google scale: - GFS (2003) - big data storage - MapReduce (2004) - calculation model - BigTable (2006) - online services The diagram below shows the functionalities and limitations of the 3 techniques, and how they evolve over time into two streams: OLTP and OLAP. Each evolved product was trying to solve the limitations of the 140 last generation. For example, “Hive - support SQL” means Hive was trying to solve the lack of SQL in MapReduce."
+  },
+  {
+   "t": "p",
+   "k": "a5a26049a4f4",
+   "en": "If you want to learn more, you can refer to the papers for details. What other classics would you recommend? 141"
+  }
+ ]
+}

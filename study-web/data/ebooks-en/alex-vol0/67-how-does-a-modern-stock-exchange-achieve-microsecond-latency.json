@@ -1,0 +1,23 @@
+{
+ "id": "67-how-does-a-modern-stock-exchange-achieve-microsecond-latency",
+ "title": "How does a modern stock exchange achieve microsecond latency?",
+ "titleKey": "722a65b7c2c8",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "9732ec7e5bca",
+   "en": "The principal is:"
+  },
+  {
+   "t": "p",
+   "k": "3efb03f3b777",
+   "en": "𝐃𝐨 𝐥𝐞𝐬𝐬 𝐨𝐧 𝐭𝐡𝐞 𝐜𝐫𝐢𝐭𝐢𝐜𝐚𝐥 𝐩𝐚𝐭𝐡！ - Fewer tasks on the critical path - Less time on each task - Fewer network hops - Less disk usage For the stock exchange, the critical path is: -𝐬𝐭𝐚𝐫𝐭: an order comes into the order manager - mandatory risk checks - the order gets matched and the execution is sent back - 𝐞𝐧𝐝: the execution comes out of the order manager Other non-critical tasks should be removed from the critical path."
+  },
+  {
+   "t": "p",
+   "k": "4b744c6d049f",
+   "en": "We put together a design as shown in the diagram: 147 - deploy all the components in a single giant server (no containers) - use shared memory as an event bus to communicate among the components, no hard disk - key components like Order Manager and Matching Engine are single-threaded on the critical path, and each pinned to a CPU so that there is𝐧𝐨 𝐜𝐨𝐧𝐭𝐞𝐱𝐭 𝐬𝐰𝐢𝐭𝐜𝐡and 𝐧𝐨𝐥𝐨𝐜𝐤𝐬 - the single-threaded application loop executes tasks one by one in sequence - other components listen on the event bus and react accordingly 148"
+  }
+ ]
+}

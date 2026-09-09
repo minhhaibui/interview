@@ -1,0 +1,63 @@
+{
+ "id": "23-handling-a-large-scale-outage",
+ "title": "Handling a large-scale outage",
+ "titleKey": "3e82543556a9",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "79c0dc3bc6dc",
+   "en": "This is a true story about handling a large-scale outage written by Staff Engineers at Discord Sahn Lam."
+  },
+  {
+   "t": "p",
+   "k": "e2af46cca05d",
+   "en": "About 10 years ago, I witnessed the most impactful UI bugs in my career."
+  },
+  {
+   "t": "p",
+   "k": "6b9544b2445b",
+   "en": "It was 9PM on a Friday. I was on the team responsible for one of the largest social games at the time. It had about 30 million DAU. I just so happened to glance at the operational dashboard before shutting down for the night."
+  },
+  {
+   "t": "p",
+   "k": "8555c96b0c37",
+   "en": "Every line on the dashboard was at zero."
+  },
+  {
+   "t": "p",
+   "k": "adefb6e1933d",
+   "en": "At that very moment, I got a phone call from my boss. He said the entire game was down. Firefighting mode. Full on."
+  },
+  {
+   "t": "p",
+   "k": "bf808122c384",
+   "en": "Everything had shut down. Every single instance on AWS was terminated. HA proxy instances, PHP web servers, MySQL databases, Memcache nodes, everything."
+  },
+  {
+   "t": "p",
+   "k": "d9f128f30d93",
+   "en": "It took 50 people 10 hours to bring everything back up. It was quite a feat. That in itself is a story for another day."
+  },
+  {
+   "t": "p",
+   "k": "2d1facb07190",
+   "en": "We used a cloud management software vendor to manage our AWS deployment. This was before Infrastructure as Code was a thing. There was no Terraform. It was so early in cloud computing and we were so big that AWS required an advanced warning before we scaled up."
+  },
+  {
+   "t": "p",
+   "k": "3123f7101c40",
+   "en": "What had gone wrong? The software vendor had introduced a bug that week in their confirmation dialog flow. When terminating a subset of nodes in the UI, it would correctly show in the confirmation dialog box the list of nodes to be terminated, but under the hood, it terminated everything."
+  },
+  {
+   "t": "p",
+   "k": "1478871f507c",
+   "en": "Shortly before 9PM that fateful evening, one of our poor SREs fulfilled our routine request and terminated an unused Memcache pool. I could only imagine the horror and the phone conversation that ensured. 49 What kind of code structure could allow this disastrous bug to slip through? We could only guess. We never received a full explanation."
+  },
+  {
+   "t": "p",
+   "k": "0af65a68bd14",
+   "en": "What are some of the most impactful software bugs you encountered in your career? 50"
+  }
+ ]
+}

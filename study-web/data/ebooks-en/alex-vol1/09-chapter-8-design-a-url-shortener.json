@@ -1,0 +1,483 @@
+{
+ "id": "09-chapter-8-design-a-url-shortener",
+ "title": "CHAPTER 8: DESIGN A URL SHORTENER",
+ "titleKey": "fdd6465ffec7",
+ "book": "alex-vol1",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "4f3ae38b2cf3",
+   "en": "In this chapter, we will tackle an interesting and classic system design interview question: designing a URL shortening service like tinyurl."
+  },
+  {
+   "t": "h2",
+   "k": "cdb2072eee15",
+   "en": "Step 1 - Understand the problem and establish design scope"
+  },
+  {
+   "t": "p",
+   "k": "832e9e4428a0",
+   "en": "System design interview questions are intentionally left open-ended. To design a well-crafted system, it is critical to ask clarification questions."
+  },
+  {
+   "t": "p",
+   "k": "4902943f6986",
+   "en": "Candidate: Can you give an example of how a URL shortener work?"
+  },
+  {
+   "t": "p",
+   "k": "7d4d2bcaa9b3",
+   "en": "Interviewer: Assume URL https://www.systeminterview.com/q=chatsystem&c=loggedin&v=v3&l=long is the original URL. Your service creates an alias with shorter length: https://tinyurl.com/ y7keocwj. If you click the alias, it redirects you to the original URL."
+  },
+  {
+   "t": "p",
+   "k": "bf84662cbf66",
+   "en": "Candidate: What is the traffic volume?"
+  },
+  {
+   "t": "p",
+   "k": "319f2584bd87",
+   "en": "Interviewer: 100 million URLs are generated per day."
+  },
+  {
+   "t": "p",
+   "k": "7b3cc2fb88ab",
+   "en": "Candidate: How long is the shortened URL?"
+  },
+  {
+   "t": "p",
+   "k": "813e1253d719",
+   "en": "Interviewer: As short as possible."
+  },
+  {
+   "t": "p",
+   "k": "f57e1e3b6f21",
+   "en": "Candidate: What characters are allowed in the shortened URL?"
+  },
+  {
+   "t": "p",
+   "k": "c51e9863e97b",
+   "en": "Interviewer: Shortened URL can be a combination of numbers (0-9) and characters (a-z, A-Z)."
+  },
+  {
+   "t": "p",
+   "k": "10506a99493a",
+   "en": "Candidate: Can shortened URLs be deleted or updated?"
+  },
+  {
+   "t": "p",
+   "k": "6a0cc4966458",
+   "en": "Interviewer: For simplicity, let us assume shortened URLs cannot be deleted or updated."
+  },
+  {
+   "t": "p",
+   "k": "1745c1d3c06a",
+   "en": "Here are the basic use cases:"
+  },
+  {
+   "t": "li",
+   "k": "639880c579f2",
+   "en": "URL shortening: given a long URL => return a much shorter URL"
+  },
+  {
+   "t": "li",
+   "k": "414e9a475be0",
+   "en": "URL redirecting: given a shorter URL => redirect to the original URL"
+  },
+  {
+   "t": "li",
+   "k": "d1ef6d6e6197",
+   "en": "High availability, scalability, and fault tolerance considerations"
+  },
+  {
+   "t": "h2",
+   "k": "b3f31ee7c5b5",
+   "en": "Back of the envelope estimation"
+  },
+  {
+   "t": "li",
+   "k": "249c5bd409cd",
+   "en": "Write operation: 100 million URLs are generated per day."
+  },
+  {
+   "t": "li",
+   "k": "7dda9467c4bb",
+   "en": "Write operation per second: 100 million / 24 /3600 = 1160"
+  },
+  {
+   "t": "li",
+   "k": "cb32505b6ccf",
+   "en": "Read operation: Assuming ratio of read operation to write operation is 10:1, read operation per second: 1160 * 10 = 11,600"
+  },
+  {
+   "t": "li",
+   "k": "47763d5499c3",
+   "en": "Assuming the URL shortener service will run for 10 years, this means we must support 100 million * 365 * 10 = 365 billion records."
+  },
+  {
+   "t": "li",
+   "k": "5490e80665aa",
+   "en": "Assume average URL length is 100."
+  },
+  {
+   "t": "li",
+   "k": "1dc73b05102b",
+   "en": "Storage requirement over 10 years: 365 billion * 100 bytes * 10 years = 365 TB It is important for you to walk through the assumptions and calculations with your interviewer so that both of you are on the same page."
+  },
+  {
+   "t": "h2",
+   "k": "21ec56b45561",
+   "en": "Step 2 - Propose high-level design and get buy-in"
+  },
+  {
+   "t": "h2",
+   "k": "2cd0b1b1def8",
+   "en": "API Endpoints"
+  },
+  {
+   "t": "p",
+   "k": "20e76295c842",
+   "en": "API endpoints facilitate the communication between clients and servers. We will design the APIs REST-style. If you are unfamiliar with restful API, you can consult external materials, such as the one in the reference material [1]. A URL shortener primary needs two API endpoints."
+  },
+  {
+   "t": "li",
+   "k": "983971ea1bb3",
+   "en": "URL shortening. To create a new short URL, a client sends a POST request, which contains one parameter: the original long URL. The API looks like this:"
+  },
+  {
+   "t": "p",
+   "k": "3ffc9377d1d4",
+   "en": "POST api/v1/data/shorten"
+  },
+  {
+   "t": "li",
+   "k": "bff220befd8f",
+   "en": "request parameter: {longUrl: longURLString}"
+  },
+  {
+   "t": "li",
+   "k": "59e697525e72",
+   "en": "return shortURL"
+  },
+  {
+   "t": "li",
+   "k": "e2c2751f41b6",
+   "en": "URL redirecting. To redirect a short URL to the corresponding long URL, a client sends a GET request. The API looks like this:"
+  },
+  {
+   "t": "p",
+   "k": "4b5a267142fd",
+   "en": "GET api/v1/shortUrl"
+  },
+  {
+   "t": "li",
+   "k": "be3fdc88559b",
+   "en": "Return longURL for HTTP redirection"
+  },
+  {
+   "t": "h2",
+   "k": "e922b71991b2",
+   "en": "URL redirecting"
+  },
+  {
+   "t": "p",
+   "k": "78921ac05faf",
+   "en": "Figure 8-1 shows what happens when you enter a tinyurl onto the browser. Once the server receives a tinyurl request, it changes the short URL to the long URL with 301 redirect."
+  },
+  {
+   "t": "p",
+   "k": "729e104e3f36",
+   "en": "The detailed communication between clients and servers is shown in Figure 8-2."
+  },
+  {
+   "t": "p",
+   "k": "db85525d1019",
+   "en": "One thing worth discussing here is 301 redirect vs 302 redirect. 301 redirect. A 301 redirect shows that the requested URL is “permanently” moved to the long URL. Since it is permanently redirected, the browser caches the response, and subsequent requests for the same URL will not be sent to the URL shortening service."
+  },
+  {
+   "t": "p",
+   "k": "b3252836415f",
+   "en": "Instead, requests are redirected to the long URL server directly. 302 redirect. A 302 redirect means that the URL is “temporarily” moved to the long URL, meaning that subsequent requests for the same URL will be sent to the URL shortening service first. Then, they are redirected to the long URL server."
+  },
+  {
+   "t": "p",
+   "k": "b2d691635aeb",
+   "en": "Each redirection method has its pros and cons. If the priority is to reduce the server load, using 301 redirect makes sense as only the first request of the same URL is sent to URL shortening servers. However, if analytics is important, 302 redirect is a better choice as it can track click rate and source of the click more easily."
+  },
+  {
+   "t": "p",
+   "k": "54cc0cc57d67",
+   "en": "The most intuitive way to implement URL redirecting is to use hash tables. Assuming the hash table stores <shortURL, longURL> pairs, URL redirecting can be implemented by the following:"
+  },
+  {
+   "t": "li",
+   "k": "e4dd1a639166",
+   "en": "Get longURL: longURL = hashTable.get(shortURL)"
+  },
+  {
+   "t": "li",
+   "k": "86c8b4f3b4c9",
+   "en": "Once you get the longURL, perform the URL redirect."
+  },
+  {
+   "t": "h2",
+   "k": "9cf204056dc3",
+   "en": "URL shortening"
+  },
+  {
+   "t": "li",
+   "k": "cf125b2060d7",
+   "en": "Each longURL must be hashed to one hashValue."
+  },
+  {
+   "t": "li",
+   "k": "55c59f090a71",
+   "en": "Each hashValue can be mapped back to the longURL."
+  },
+  {
+   "t": "h2",
+   "k": "5008c4b3d7bc",
+   "en": "Step 3 - Design deep dive"
+  },
+  {
+   "t": "h2",
+   "k": "de26407535de",
+   "en": "Data model"
+  },
+  {
+   "t": "p",
+   "k": "8b6a618e4c6e",
+   "en": "In the high-level design, everything is stored in a hash table. This is a good starting point; however, this approach is not feasible for real-world systems as memory resources are limited and expensive. A better option is to store <shortURL, longURL> mapping in a relational database. Figure 8-4 shows a simple database table design. The simplified version of the table contains 3 columns: id, shortURL, longURL."
+  },
+  {
+   "t": "h2",
+   "k": "9081d1399d06",
+   "en": "Hash function"
+  },
+  {
+   "t": "p",
+   "k": "defc46fcc438",
+   "en": "Hash function is used to hash a long URL to a short URL, also known as hashValue."
+  },
+  {
+   "t": "h3",
+   "k": "7cc708a86ab6",
+   "en": "Hash value length"
+  },
+  {
+   "t": "p",
+   "k": "32b1ed40dc69",
+   "en": "The hashValue consists of characters from [0-9, a-z, A-Z], containing 10 + 26 + 26 = 62 possible characters. To figure out the length of hashValue, find the smallest n such that 62^n ≥ 365 billion. The system must support up to 365 billion URLs based on the back of the envelope estimation. Table 8-1 shows the length of hashValue and the corresponding maximal number of URLs it can support."
+  },
+  {
+   "t": "p",
+   "k": "838df8c889be",
+   "en": "When n = 7, 62 ^ n = ~3.5 trillion, 3.5 trillion is more than enough to hold 365 billion URLs, so the length of hashValue is 7."
+  },
+  {
+   "t": "h3",
+   "k": "c88b38ba7607",
+   "en": "Hash + collision resolution"
+  },
+  {
+   "t": "p",
+   "k": "431a1b1d6cea",
+   "en": "To shorten a long URL, we should implement a hash function that hashes a long URL to a 7-character string. A straightforward solution is to use well-known hash functions like CRC32, MD5, or SHA-1. The following table compares the hash results after applying different hash functions on this URL: https://en.wikipedia.org/wiki/Systems_design."
+  },
+  {
+   "t": "p",
+   "k": "902ae0ebe538",
+   "en": "As shown in Table 8-2, even the shortest hash value (from CRC32) is too long (more than 7 characters). How can we make it shorter?"
+  },
+  {
+   "t": "p",
+   "k": "3154bbb6bfe3",
+   "en": "The first approach is to collect the first 7 characters of a hash value; however, this method can lead to hash collisions. To resolve hash collisions, we can recursively append a new predefined string until no more collision is discovered. This process is explained in Figure 8-"
+  },
+  {
+   "t": "li",
+   "k": "cc5708d237fc",
+   "en": "This method can eliminate collision; however, it is expensive to query the database to check if a shortURL exists for every request. A technique called bloom filters [2] can improve performance. A bloom filter is a space-efficient probabilistic technique to test if an element is a member of a set. Refer to the reference material [2] for more details."
+  },
+  {
+   "t": "h3",
+   "k": "71a7c44b2949",
+   "en": "Base 62 conversion"
+  },
+  {
+   "t": "p",
+   "k": "8c3571189724",
+   "en": "Base conversion is another approach commonly used for URL shorteners. Base conversion helps to convert the same number between its different number representation systems. Base 62 conversion is used as there are 62 possible characters for hashValue. Let us use an example to explain how the conversion works: convert 1115710 to base 62 representation (1115710 represents 11157 in a base 10 system)."
+  },
+  {
+   "t": "li",
+   "k": "383645e5badb",
+   "en": "From its name, base 62 is a way of using 62 characters for encoding. The mappings are: 0-0, ..., 9-9, 10-a, 11-b, ..., 35-z, 36-A, ..., 61-Z, where ‘a’ stands for 10, ‘Z’ stands for 61, etc."
+  },
+  {
+   "t": "li",
+   "k": "cbc4a55f620a",
+   "en": "1115710 = 2 x 62 + 55 x 62+ 59 x 62 = [2, 55, 59] -> [2, T, X] in base 62 representation. Figure 8-6 shows the conversation process."
+  },
+  {
+   "t": "li",
+   "k": "8df573d75aff",
+   "en": "Thus, the short URL is https://tinyurl.com /2TX"
+  },
+  {
+   "t": "h3",
+   "k": "672cf652aa36",
+   "en": "Comparison of the two approaches"
+  },
+  {
+   "t": "p",
+   "k": "ba415cdbc1ff",
+   "en": "Table 8-3 shows the differences of the two approaches."
+  },
+  {
+   "t": "h2",
+   "k": "f78a2c6c3d20",
+   "en": "URL shortening deep dive"
+  },
+  {
+   "t": "li",
+   "k": "a8fb99f2e60b",
+   "en": "longURL is the input."
+  },
+  {
+   "t": "li",
+   "k": "dab70e3b8e41",
+   "en": "The system checks if the longURL is in the database."
+  },
+  {
+   "t": "li",
+   "k": "c4fd3cdf75b3",
+   "en": "If it is, it means the longURL was converted to shortURL before. In this case, fetch the shortURL from the database and return it to the client."
+  },
+  {
+   "t": "li",
+   "k": "53720201418e",
+   "en": "If not, the longURL is new. A new unique ID (primary key) Is generated by the unique ID generator."
+  },
+  {
+   "t": "li",
+   "k": "52a82be845d5",
+   "en": "Convert the ID to shortURL with base 62 conversion."
+  },
+  {
+   "t": "li",
+   "k": "3bf364204a26",
+   "en": "Create a new database row with the ID, shortURL, and longURL."
+  },
+  {
+   "t": "p",
+   "k": "808fb3920e23",
+   "en": "To make the flow easier to understand, let us look at a concrete example."
+  },
+  {
+   "t": "li",
+   "k": "c3a5049910e4",
+   "en": "Assuming the input longURL is: https://en.wikipedia.org/wiki/Systems_design"
+  },
+  {
+   "t": "li",
+   "k": "b5035e26c962",
+   "en": "Unique ID generator returns ID: 2009215674938."
+  },
+  {
+   "t": "li",
+   "k": "50b404e3ab60",
+   "en": "Convert the ID to shortURL using the base 62 conversion. ID (2009215674938) is converted to “zn9edcu”."
+  },
+  {
+   "t": "li",
+   "k": "1fd3d2df9d82",
+   "en": "Save ID, shortURL, and longURL to the database as shown in Table 8-4."
+  },
+  {
+   "t": "p",
+   "k": "47bf3b585214",
+   "en": "The distributed unique ID generator is worth mentioning. Its primary function is to generate globally unique IDs, which are used for creating shortURLs. In a highly distributed environment, implementing a unique ID generator is challenging. Luckily, we have already discussed a few solutions in “Chapter 7: Design A Unique ID Generator in Distributed Systems”. You can refer back to it to refresh your memory."
+  },
+  {
+   "t": "h2",
+   "k": "ddd28bdbb261",
+   "en": "URL redirecting deep dive"
+  },
+  {
+   "t": "p",
+   "k": "bfff668f6a6e",
+   "en": "The flow of URL redirecting is summarized as follows:"
+  },
+  {
+   "t": "li",
+   "k": "04469eb334ef",
+   "en": "A user clicks a short URL link: https://tinyurl.com/zn9edcu"
+  },
+  {
+   "t": "li",
+   "k": "bc8e39e6231d",
+   "en": "The load balancer forwards the request to web servers."
+  },
+  {
+   "t": "li",
+   "k": "8e04254f1bd6",
+   "en": "If a shortURL is already in the cache, return the longURL directly."
+  },
+  {
+   "t": "li",
+   "k": "0f986c54d670",
+   "en": "If a shortURL is not in the cache, fetch the longURL from the database. If it is not in the database, it is likely a user entered an invalid shortURL."
+  },
+  {
+   "t": "li",
+   "k": "6d6ee6ec03af",
+   "en": "The longURL is returned to the user."
+  },
+  {
+   "t": "h2",
+   "k": "02a33876c958",
+   "en": "Step 4 - Wrap up"
+  },
+  {
+   "t": "p",
+   "k": "be2903a9b77b",
+   "en": "If there is extra time at the end of the interview, here are a few additional talking points."
+  },
+  {
+   "t": "li",
+   "k": "0771bff2a057",
+   "en": "Rate limiter: A potential security problem we could face is that malicious users send an overwhelmingly large number of URL shortening requests. Rate limiter helps to filter out requests based on IP address or other filtering rules. If you want to refresh your memory about rate limiting, refer to “Chapter 4: Design a rate limiter”."
+  },
+  {
+   "t": "li",
+   "k": "8cf7e3d98d99",
+   "en": "Web server scaling: Since the web tier is stateless, it is easy to scale the web tier by adding or removing web servers."
+  },
+  {
+   "t": "li",
+   "k": "7205450b6f1b",
+   "en": "Database scaling: Database replication and sharding are common techniques."
+  },
+  {
+   "t": "li",
+   "k": "a31b4bf38132",
+   "en": "Analytics: Data is increasingly important for business success. Integrating an analytics solution to the URL shortener could help to answer important questions like how many people click on a link? When do they click the link? etc."
+  },
+  {
+   "t": "li",
+   "k": "62f868b7b7c6",
+   "en": "Availability, consistency, and reliability. These concepts are at the core of any large system’s success. We discussed them in detail in Chapter 1, please refresh your memory on these topics."
+  },
+  {
+   "t": "p",
+   "k": "71b8b7a68128",
+   "en": "Congratulations on getting this far! Now give yourself a pat on the back. Good job!"
+  },
+  {
+   "t": "p",
+   "k": "ac96f446b773",
+   "en": "[1] A RESTful Tutorial: https://www.restapitutorial.com/index.html [2] Bloom filter: https://en.wikipedia.org/wiki/Bloom_filter"
+  }
+ ]
+}

@@ -1,0 +1,198 @@
+{
+ "id": "25-paginating-large-result-sets-efficiently",
+ "title": "Paginating Large Result Sets Efficiently",
+ "titleKey": "51c038293431",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "85c8313507d2",
+   "en": "Your API returns 10 million orders."
+  },
+  {
+   "t": "p",
+   "k": "1eca54c93aaa",
+   "en": "The frontend asks for \"page 5.\""
+  },
+  {
+   "t": "p",
+   "k": "7a7d6545ed55",
+   "en": "Offset 40, limit 10. Simple enough — until your DBA messages you at 2 AM."
+  },
+  {
+   "t": "p",
+   "k": "a428174636fc",
+   "en": "Query time: 4.2 seconds. Table scans climbing. Prod is lagging."
+  },
+  {
+   "t": "p",
+   "k": "60d5342844ac",
+   "en": "Here's the stack: PostgreSQL, 50M rows in orders, sorted by created_at DESC. Users can filter by status."
+  },
+  {
+   "t": "p",
+   "k": "5e56b99f0d42",
+   "en": "You're paginating an admin dashboard used by 200 concurrent support agents."
+  },
+  {
+   "t": "p",
+   "k": "bc63b075b306",
+   "en": "Offset pagination worked fine at 10K rows. At 50M, it's reading and discarding 40 million rows just to return 10."
+  },
+  {
+   "t": "p",
+   "k": "20eefe104ac3",
+   "en": "You need to fix this before the next sprint ships the customer-facing version — which will have 10x the traffic."
+  },
+  {
+   "t": "p",
+   "k": "91df756e32c2",
+   "en": "Here's your setup:"
+  },
+  {
+   "t": "li",
+   "k": "878e8f1b1a73",
+   "en": "Table: orders — 50M rows, indexed on created_at, user_id, status"
+  },
+  {
+   "t": "li",
+   "k": "07d98a2e4797",
+   "en": "Query: sorted by created_at DESC, filtered by status"
+  },
+  {
+   "t": "li",
+   "k": "a4acb1dd37ae",
+   "en": "Client: needs \"previous/next\" navigation + jump-to-page Cursor pagination — encode the last seen created_at + id into a token, use it as a WHERE clause Keyset pagination — paginate using WHERE (created_at, id) < (last_created_at, last_id) directly Deferred join — fetch the IDs first with offset, then join back to get full rows Keep offset pagination but add a covering index on (status, created_at, id)"
+  },
+  {
+   "t": "li",
+   "k": "619a4df2bf0b",
+   "en": "SLA: p99 < 200ms Four engineers propose four different approaches: anchor"
+  },
+  {
+   "t": "h3",
+   "k": "934f9f8a600c",
+   "en": "DAY 24 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "97b74bcf49f5",
+   "en": "Option A — Cursor pagination CORRECT✅ Encode the last seen (created_at, id) into an opaque token. On the next request, decode it and use WHERE created_at < :last_ts OR (created_at = :last_ts AND id < :last_id) as your anchor."
+  },
+  {
+   "t": "p",
+   "k": "9eadf6eb9914",
+   "en": "Why this wins here:"
+  },
+  {
+   "t": "li",
+   "k": "f6e5bf699e5e",
+   "en": "Query always hits the index at the anchor point — no scan, no discard"
+  },
+  {
+   "t": "li",
+   "k": "74ef67dfd461",
+   "en": "p99 stays flat whether you're on page 1 or page 50,000"
+  },
+  {
+   "t": "li",
+   "k": "5a5445666f12",
+   "en": "Works with the status filter: WHERE status = 'pending' AND (created_at, id) < (anchor)"
+  },
+  {
+   "t": "li",
+   "k": "02b07e5a95c0",
+   "en": "The cursor is position-stable: new rows inserted before your cursor don't shift your page The UX tradeoff: no jump-to-page. Only previous/next. But this is the right tradeoff for the dashboard. Support agents navigate sequentially. Nobody needs \"jump to page 3,847.\""
+  },
+  {
+   "t": "p",
+   "k": "3e1c245737aa",
+   "en": "At 50M rows with concurrent filters, cursor pagination is the only approach that hits p99 < 200ms reliably."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "8d39c0c71e52",
+   "en": "Option B — Keyset pagination Keyset looks identical to cursor on the surface. The difference is subtle: keyset is a query pattern, cursor is a product decision."
+  },
+  {
+   "t": "p",
+   "k": "f24f1692f892",
+   "en": "Keyset uses WHERE (created_at, id) < (val1, val2) as a SQL construct. Cursor wraps that into an encoded token the client can't inspect or manipulate."
+  },
+  {
+   "t": "p",
+   "k": "991377acaded",
+   "en": "Here's where it falls apart: the status filter breaks row-tuple comparison in most query planners."
+  },
+  {
+   "t": "p",
+   "k": "8b40ae7c5224",
+   "en": "WHERE status = 'pending' AND (created_at, id) < (anchor) doesn't use a composite index efficiently in PostgreSQL when the equality column (status) isn't part of the tuple comparison. You end up with a partial index scan that degrades under high cardinality filters."
+  },
+  {
+   "t": "p",
+   "k": "fa2506a5d6de",
+   "en": "Cursor pagination handles this by encoding the full WHERE context, not just the positional anchor."
+  },
+  {
+   "t": "p",
+   "k": "7bd88f91ed29",
+   "en": "That's the gap. It's subtle, and it's the thing that bites you in production three months after you ship it...."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "p",
+   "k": "ff3195c0d08a",
+   "en": "Option C — Deferred join"
+  },
+  {
+   "t": "code",
+   "k": "7565fd02daad",
+   "en": "SELECT o.* FROM orders o JOIN ( SELECT id FROM orders WHERE status = 'pending' ORDER BY created_at DESC OFFSET 500000 LIMIT 10 ) ids ON o.id = ids.id"
+  },
+  {
+   "t": "p",
+   "k": "3bd284efeb85",
+   "en": "This is a legitimate optimization for offset pagination. The inner query fetches only IDs (fits in index, much faster), then the outer join fetches full rows for just 10 records."
+  },
+  {
+   "t": "p",
+   "k": "f2dd28099f97",
+   "en": "It's real. It works. Shopify uses a version of this."
+  },
+  {
+   "t": "p",
+   "k": "3bc3af6474af",
+   "en": "But: you still pay O(offset) cost on the inner query at deep pages. It helps — it does not solve. At page 50,000, you're still scanning 500,000 index entries. You shaved 80% of the cost and kept 20% of the problem."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "p",
+   "k": "1bfb26d450c6",
+   "en": "Option D — Covering index Adding CREATE INDEX ON orders(status, created_at DESC, id DESC) is a good idea regardless of which approach you pick. It removes heap fetches for status-filtered queries."
+  },
+  {
+   "t": "p",
+   "k": "fab88a1f370d",
+   "en": "But an index doesn't change the algorithmic complexity of OFFSET. It makes your table scans faster, not shorter. This is the \"throw hardware at it\" answer. It buys you time, not a solution."
+  },
+  {
+   "t": "h3",
+   "k": "9888dfed94ae",
+   "en": "DAY 25 · SYSTEM DESIGN"
+  }
+ ]
+}

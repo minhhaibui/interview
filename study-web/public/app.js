@@ -302,6 +302,7 @@ function updateNavActive(name) {
 
 // Các tab có LƯU TIẾN ĐỘ → cần đăng nhập (chỉ áp dụng khi đã cấu hình Firebase).
 // Tab 📚 Tài liệu để mở tự do cho người chưa đăng nhập còn đọc nội dung.
+// 📕 Ebook cố ý KHÔNG gate: chỉ là nội dung để đọc, như 📚 Tài liệu.
 const GATED_VIEWS = new Set(['today', 'flashcards', 'writing', 'english', 'core', 'code', 'coding', 'mock', 'star', 'design', 'plan', 'dashboard']);
 let authResolved = false; // true sau lần onAuthStateChanged đầu tiên
 const viewGated = name => syncReady && GATED_VIEWS.has(name);
@@ -344,6 +345,7 @@ function switchView(name) {
   if (name === 'english') renderEnglish();
   if (name === 'core') renderCore();
   if (name === 'star') renderStar();
+  if (name === 'ebook') renderEbook();
   if (name === 'design') renderDesign();
   if (name === 'plan') renderPlan();
   if (name === 'dashboard') renderDashboard();
@@ -4560,6 +4562,8 @@ const PREP_KEYS = ['prep-progress', 'prep-quiz-scores', 'prep-srs', 'prep-last-d
   'prep-star-drafts', 'prep-star-history', 'prep-ft-size', 'prep-quiz-wrong', 'prep-interview-date',
   'prep-capstone', 'prep-dict-lang', 'prep-quiz-pinned', 'prep-exam-history', 'prep-fc-lang', 'prep-iv-plan', 'prep-iv-secq', 'prep-iv-seen',
   'prep-doc-notes', 'prep-remind-time',
+  // 📕 Ebook: chương đã đọc + chế độ song ngữ + chỗ đang đọc dở.
+  'prep-ebook-read', 'prep-ebook-mode', 'prep-ebook-last',
   'prep-en-iv-history', 'prep-en-iv-cfg', 'prep-en-iv-seen',
   // 🔤 Tiếng Anh Core: những NGÀY đã học xong của lộ trình 30 ngày. Thiếu key này thì máy khác
   // vẫn thấy "Ngày 1" dù đã học mấy hôm — lịch cả tháng là tiến độ thật, phải sync.
@@ -8312,7 +8316,7 @@ function quizNextButton() {
 }
 
 function initShortcuts() {
-  const order = ['today', 'docs', 'flashcards', 'writing', 'core', 'english', 'code', 'coding', 'design', 'mock', 'star', 'plan', 'dashboard'];
+  const order = ['today', 'docs', 'flashcards', 'writing', 'core', 'english', 'code', 'ebook', 'coding', 'design', 'mock', 'star', 'plan', 'dashboard'];
   document.addEventListener('keydown', e => {
     if (onboardOpen() || shortcutsOpen() || gsearchOpen()) return; // hộp thoại đang mở → không nhảy tab phía sau
     if (e.repeat) return; // giữ phím (key-repeat) không spam chuyển tab / nhấp nháy bảng phím tắt

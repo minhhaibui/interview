@@ -1,0 +1,428 @@
+{
+ "id": "014-monitor-server-side-errors",
+ "title": "Monitor Server-side Errors",
+ "titleKey": "36bab663d587",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "9db29206be53",
+   "en": "Design of a Monitoring System"
+  },
+  {
+   "t": "p",
+   "k": "1a573573b79c",
+   "en": "Learn about the initial design of a generic monitoring system."
+  },
+  {
+   "t": "h2",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "p",
+   "k": "66f109f97324",
+   "en": "Let’s sum up what we want our monitoring system to do for us:"
+  },
+  {
+   "t": "p",
+   "k": "280e82d020b6",
+   "en": "Monitor critical local processes on a server for crashes."
+  },
+  {
+   "t": "p",
+   "k": "5b11504e2e8f",
+   "en": "Monitor any anomalies in the use of CPU/memory/disk/network bandwidth by a process on a server."
+  },
+  {
+   "t": "p",
+   "k": "43ec4cea0cb4",
+   "en": "Monitor overall server health, such as CPU, memory, disk, network bandwidth, average load, and so on."
+  },
+  {
+   "t": "p",
+   "k": "bc9808dd7f51",
+   "en": "Monitor hardware component faults on a server, such as memory failures, failing or slowing disk, and so on."
+  },
+  {
+   "t": "p",
+   "k": "d19f121ec6ae",
+   "en": "Monitor the server’s ability to reach out-of-server critical services, such as network file systems and so on."
+  },
+  {
+   "t": "p",
+   "k": "140685bf9461",
+   "en": "Monitor all network switches, load balancers, and any other specialized hardware inside a data center."
+  },
+  {
+   "t": "p",
+   "k": "4dac5b590e4f",
+   "en": "Monitor power consumption at the server, rack, and data center levels."
+  },
+  {
+   "t": "p",
+   "k": "f03698607796",
+   "en": "Monitor any power events on the servers, racks, and data center."
+  },
+  {
+   "t": "p",
+   "k": "081e57a4c75b",
+   "en": "Monitor routing information and DNS for external clients."
+  },
+  {
+   "t": "p",
+   "k": "aa6cd566f670",
+   "en": "Monitor network links and paths’ latency inside and across the data centers."
+  },
+  {
+   "t": "p",
+   "k": "8a7a5e288d61",
+   "en": "Monitor network status at the peering points."
+  },
+  {
+   "t": "p",
+   "k": "b1d45f24e23d",
+   "en": "Monitor overall service health that might span multiple data centers—for example, a CDN and its performance."
+  },
+  {
+   "t": "p",
+   "k": "0199b843b04a",
+   "en": "AWS: https://health.aws.amazon.com/health/status Azure: https://status.azure.com/en-us/status Google: https://status.cloud.google.com/"
+  },
+  {
+   "t": "h1",
+   "k": "986aa1920e02",
+   "en": "Building block we will use"
+  },
+  {
+   "t": "p",
+   "k": "a570515aaae6",
+   "en": "The design of distributed monitoring will consist of the following building block:"
+  },
+  {
+   "t": "p",
+   "k": "4eb7729a981d",
+   "en": "Blob storage: We’ll use blob storage to store our information about metrics."
+  },
+  {
+   "t": "h2",
+   "k": "f0e860766605",
+   "en": "High-level design"
+  },
+  {
+   "t": "p",
+   "k": "8acc6b1ccad2",
+   "en": "The high-level components of our monitoring service are the following:"
+  },
+  {
+   "t": "p",
+   "k": "a1581b7c11b8",
+   "en": "Storage: A time-series database stores metrics data, such as the current CPU use or the number of exceptions in an application."
+  },
+  {
+   "t": "p",
+   "k": "5534d30a054f",
+   "en": "Data collector service: This fetches the relevant data from each service and saves it in the storage."
+  },
+  {
+   "t": "p",
+   "k": "786c0ca9034b",
+   "en": "Querying service: This is an API that can query on the time-series database and return the relevant information."
+  },
+  {
+   "t": "p",
+   "k": "86326ffacb1d",
+   "en": "Let’s dive deep into the components mentioned above in the next lesson."
+  },
+  {
+   "t": "h1",
+   "k": "1ce20cfe2eba",
+   "en": "Detailed Design of a Monitoring System"
+  },
+  {
+   "t": "p",
+   "k": "2225324f0785",
+   "en": "Learn the details of designing a monitoring system and understand its pros and cons."
+  },
+  {
+   "t": "h2",
+   "k": "3d48292e4d27",
+   "en": "Storage"
+  },
+  {
+   "t": "p",
+   "k": "c560a17b8ca6",
+   "en": "We’ll use time-series databases to save the data locally on the server where our monitoring service is running. Then, we’ll integrate it with a separate storage node. We’ll use blob storage to store our metrics."
+  },
+  {
+   "t": "p",
+   "k": "dcd5dd06beb2",
+   "en": "We need to store metrics and know which action to perform if a metric has reached a particular value. For example, if CPU usage exceeds 90%, we generate an alert to the end user so the alert receiver can do take the necessary steps, such as allocate more resources to scale. For this purpose, we need another storage area that will contain the rules and actions. Let’s call it a rules database."
+  },
+  {
+   "t": "p",
+   "k": "5729de53f632",
+   "en": "Upon any violation of the rules, we can take appropriate action."
+  },
+  {
+   "t": "p",
+   "k": "aabb0b905175",
+   "en": "Here, we have identified two more components in our design—that is, a rules and action database and a storage node (a blob store)."
+  },
+  {
+   "t": "h2",
+   "k": "6e8dc47f8783",
+   "en": "Data collector"
+  },
+  {
+   "t": "p",
+   "k": "c11fec09d5ab",
+   "en": "We need a monitoring system to update us about our several data centers. We can stay updated if the information about our processes reaches us, which is possible through logging. We’ll choose a pull strategy. Then, we’ll extract our relevant metrics from the logs of the application. As discussed in our logging design, we used a distributed messaging queue. The message in the queue has the service name, ID, and a short description of the log. This will help us identify the metric and its information for a specific service. Exposing the relevant metrics to the data collector is necessary for monitoring any service so that our data collector can get the metrics from the service and store them into the time-series database."
+  },
+  {
+   "t": "p",
+   "k": "18c0c22a3fca",
+   "en": "A real-world example of a monitoring system based on the pull-based approach is DigitalOcean. It monitors millions of machines that are dispersed globally."
+  },
+  {
+   "t": "p",
+   "k": "41a1bd21e235",
+   "en": "Point to Ponder What are some drawbacks of using a push-based approach?"
+  },
+  {
+   "t": "p",
+   "k": "34a73b17d6f0",
+   "en": "Hide Answer The push-based monitoring tool collects metric data from the applications and servers and sends it to a central collection platform."
+  },
+  {
+   "t": "p",
+   "k": "6c26e9adfb70",
+   "en": "Each microservice sends its metrics to the monitoring system, resulting in a heavy traffic load on the infrastructure. This is how monitoring might become a bottleneck for business operations. The monitoring can be near real-time. However, if appropriate care isn’t taken, it can overwhelm the infrastructure with continual push requests from all services, resulting in network floods. We must also install daemons on each of these targets to send metrics to the monitoring server, which requires additional work."
+  },
+  {
+   "t": "h3",
+   "k": "cf04f1b4c047",
+   "en": "Service discoverer"
+  },
+  {
+   "t": "p",
+   "k": "85eec9f1c7e8",
+   "en": "The data collector is responsible for fetching metrics from the services it monitors. This way, the monitoring system doesn’t need to keep a track of services. Instead, it can find them using discoverer service. We’ll save the relative information of the services we have to monitor. We’ll use a service discovery solution and integrate with several platforms and tools, including EC2, Kubernetes, and Consul. This will allow us to discover which services we have to monitor. Similar dynamic discovery can be used for newly commissioned hardware."
+  },
+  {
+   "t": "p",
+   "k": "20623524f033",
+   "en": "Let’s add our newly identified component to our existing design."
+  },
+  {
+   "t": "h2",
+   "k": "0960a57b6765",
+   "en": "Querying service"
+  },
+  {
+   "t": "p",
+   "k": "7596bc500a98",
+   "en": "We want a service to access the database and fetch the relevant query results."
+  },
+  {
+   "t": "p",
+   "k": "cfbd8a413f9f",
+   "en": "We need this because we want to view the errors like values of a particular node’s memory usage, or send an alert if a metric exceeds the set limit. Let’s add the two components we need along with querying."
+  },
+  {
+   "t": "h3",
+   "k": "01d43ae9e76b",
+   "en": "Alert Manager"
+  },
+  {
+   "t": "p",
+   "k": "7d1f3ed283c6",
+   "en": "The alert manager is responsible for sending alerts upon violations of set rules."
+  },
+  {
+   "t": "p",
+   "k": "f2015d5427ff",
+   "en": "It can send alerts as an email, a Slack message, and so on."
+  },
+  {
+   "t": "h3",
+   "k": "f90453ec712c",
+   "en": "Dashboard"
+  },
+  {
+   "t": "p",
+   "k": "506f70cfe4b1",
+   "en": "We can set dashboards by using the collected metrics to display the required information—for example, the number of requests in the current week."
+  },
+  {
+   "t": "p",
+   "k": "67d8c7dcbd96",
+   "en": "Let’s add the components discussed above, which completes our design of the monitoring system."
+  },
+  {
+   "t": "p",
+   "k": "7f1f1e85730b",
+   "en": "Our all-in-one monitoring service works for actively tracking systems and services. It collects and stores data, and it supports searches, graphs, and alerts."
+  },
+  {
+   "t": "h2",
+   "k": "b0d891163365",
+   "en": "Pros"
+  },
+  {
+   "t": "p",
+   "k": "f30f6a366caa",
+   "en": "The design of our monitoring service ensures the smooth working of the operations and keeps an eye on signs of impending problems."
+  },
+  {
+   "t": "p",
+   "k": "491322d6f6d0",
+   "en": "Our design avoids overloading the network traffic by fetching the data itself."
+  },
+  {
+   "t": "p",
+   "k": "e2414bffd766",
+   "en": "The monitoring service provides higher availability."
+  },
+  {
+   "t": "h2",
+   "k": "85d0c6044e05",
+   "en": "Cons"
+  },
+  {
+   "t": "p",
+   "k": "ba4bc9f7ab5d",
+   "en": "The system seems scalable, but managing more servers to monitor can be a problem. For example, we have a dedicated server responsible for running the monitoring service. It can be a single point of failure (SPOF). To cater to SPOF, we can have a failover server for our monitoring system. Then, we also need to maintain consistency between actual and failover servers."
+  },
+  {
+   "t": "p",
+   "k": "8d5eb84ba69a",
+   "en": "However, such a design will also hit a scalability ceiling as the number of servers further increase."
+  },
+  {
+   "t": "p",
+   "k": "67aaae295005",
+   "en": "Monitoring collects an enormous amount of data 24/7, and keeping it forever might not be feasible. We need a policy and mechanisms to delete unwanted data periodically to efficiently utilize the resources."
+  },
+  {
+   "t": "p",
+   "k": "bdcd43839ab0",
+   "en": "Let’s think of a way to overcome the problems with our monitoring service."
+  },
+  {
+   "t": "h2",
+   "k": "23cd7d2120d8",
+   "en": "Improving our design"
+  },
+  {
+   "t": "p",
+   "k": "7b5049569ec0",
+   "en": "We want to improve our design so that our system can scale better and decide what data to keep and what to delete. Let’s see how the push-based approach works. In a push-based approach, the application pushes its data to the monitoring system."
+  },
+  {
+   "t": "p",
+   "k": "76cb97f6c853",
+   "en": "We used a pull-based strategy to avoid network congestion. This also allows the applications to be free of the aspect that they have to send the relevant monitoring data of to the system. Instead, the monitoring system fetches or pulls the data itself. To cater to scaling needs, we need to apply a push-based approach too. We’ll use a hybrid approach by combining our pull-based strategy with the push-based strategy."
+  },
+  {
+   "t": "p",
+   "k": "b13522b814d0",
+   "en": "We’ll keep using a pull-based strategy for several servers within a data center."
+  },
+  {
+   "t": "p",
+   "k": "52ba7a889836",
+   "en": "We’ll also assign several monitoring servers for hundreds or thousands of servers within a data center—let’s say one server monitoring 5,000 servers. We’ll call them secondary monitoring servers."
+  },
+  {
+   "t": "p",
+   "k": "294a89f44363",
+   "en": "Now, we’ll apply the push-based strategy. The secondary monitoring systems will push their data to a primary data center server. The primary data center server will push its data to a global monitoring service responsible for checking all the data centers spread globally."
+  },
+  {
+   "t": "p",
+   "k": "82e33c8a78aa",
+   "en": "We’ll use blob storage to store our excessive data, apply elastic search, and view our relevant stats using a visualizer. As our servers or data centers increase, we’ll add more monitoring systems. The design for this is given below."
+  },
+  {
+   "t": "p",
+   "k": "e1220ce735ad",
+   "en": "Note: Using a hierarchy of systems for scaling is a common design pattern in system design. By increasing nodes on a level or introducing additional levels in the hierarchy, we get the ability to scale according to our current needs."
+  },
+  {
+   "t": "p",
+   "k": "19606f2f56e4",
+   "en": "Points to Ponder What happens if a local or global monitoring system is down?"
+  },
+  {
+   "t": "p",
+   "k": "332f821bb75f",
+   "en": "Hide Answer We can store the data locally and wait for the system to be up and running again. But there’s a limit for the local data storage. So, either we delete previous data or we don’t store new data. To make a decision, relevant policies need to be created. 1 of 2 Humans need to consume enormous amounts of data, and even after different kinds of data summarizations, the data can still be huge. Next, we’ll tackle how to present enormous data to human administrators."
+  },
+  {
+   "t": "h1",
+   "k": "0d9c13421048",
+   "en": "Visualize Data in a Monitoring System"
+  },
+  {
+   "t": "p",
+   "k": "d6d4f1588b17",
+   "en": "Learn a novel way to visualize an enormous amount of monitoring data."
+  },
+  {
+   "t": "p",
+   "k": "a5751cfa85aa",
+   "en": "A heat map is a data visualization technique that shows the magnitude of a phenomenon in two dimensions by using colors."
+  },
+  {
+   "t": "h2",
+   "k": "53ae1424a8e2",
+   "en": "Using heat maps to troubleshoot"
+  },
+  {
+   "t": "p",
+   "k": "ee4490074414",
+   "en": "We’ll identify if a server is down by using heat maps. Each rack of servers is named and is sorted by data center, then cluster, then row, so problems common at any of these levels are readily apparent."
+  },
+  {
+   "t": "p",
+   "k": "f6ea030ce5e7",
+   "en": "A heat map depicting the operational state of a large number of components is an effective method. The health of each component is indicated by the color of each cell in a big matrix. Nodes with green cells operate within permitted parameters, while nodes with red cells are nonresponsive on multiple tries."
+  },
+  {
+   "t": "p",
+   "k": "1ad5191f8f20",
+   "en": "Below, we have a heat map displaying the server’s state."
+  },
+  {
+   "t": "p",
+   "k": "ac059574b241",
+   "en": "We can use heat maps for the globally distributed systems and continuously share the health information of a server. We can use one bit (one for live, zero for dead). For 1,000,000 servers, we have 125 KB of data. We can quickly find out which server is down by the red color and focus on the problematic parts."
+  },
+  {
+   "t": "p",
+   "k": "4bda726ff551",
+   "en": "We can create similar heat maps to get a bird’s-eye view of any resource, like filesystems, networking switches, links, and so on."
+  },
+  {
+   "t": "h2",
+   "k": "05535ecff78e",
+   "en": "Summary"
+  },
+  {
+   "t": "p",
+   "k": "cb22607248f9",
+   "en": "Monitoring systems are critical in distributed systems because they help in analyzing the system and alerting the stakeholders if a problem occurs."
+  },
+  {
+   "t": "p",
+   "k": "2a2f6e7740d7",
+   "en": "We can make a monitoring system scalable using a hybrid of the push and pull methods."
+  },
+  {
+   "t": "p",
+   "k": "5d57974e5e3d",
+   "en": "Heat maps are a powerful tool for visualization and help us learn about the health of thousands of servers in a compact space."
+  }
+ ]
+}

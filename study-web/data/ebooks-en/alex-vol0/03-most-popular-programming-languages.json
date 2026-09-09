@@ -1,0 +1,28 @@
+{
+ "id": "03-most-popular-programming-languages",
+ "title": "Most popular programming languages",
+ "titleKey": "3e90d149d0bc",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "452adfde046f",
+   "en": "Programming languages come and go. Some stand the test of time."
+  },
+  {
+   "t": "p",
+   "k": "10e4dbdee485",
+   "en": "Some already are shooting stars and some are rising rapidly on the horizon."
+  },
+  {
+   "t": "p",
+   "k": "fae7076727ad",
+   "en": "I draw a diagram by putting the top 38 most commonly used programming languages in one place, sorted by year. Data source:"
+  },
+  {
+   "t": "p",
+   "k": "1a266db310c3",
+   "en": "StackOverflow survey. 1 JavaScript 2 HTML/CSS 3 Python 4 SQL 5 Java 6 Node 7 TypeScript 8 C 9 Bash/Shell 10 C 11 PHP 7 12 C 13 PowerShell 14 Go 15 Kotlin 16 Rust 17 Ruby 18 Dart 19 Assembly 20 Swift 21 R 22 VBA 23 Matlab 24 Groovy 25 Objective-C 26 Scala 27 Perl 28 Haskell 29 Delphi 30 Clojure 31 Elixir 32 LISP 33 Julia 34 F 35 Erlang 36 APL 37 Crystal 38 COBOL Over to you: what’s the first programming language you learned? And what are the other languages you learned over the years? 8"
+  }
+ ]
+}

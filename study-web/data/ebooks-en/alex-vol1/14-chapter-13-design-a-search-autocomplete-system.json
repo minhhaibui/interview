@@ -1,0 +1,828 @@
+{
+ "id": "14-chapter-13-design-a-search-autocomplete-system",
+ "title": "CHAPTER 13: DESIGN A SEARCH AUTOCOMPLETE SYSTEM",
+ "titleKey": "d1f7c03633b2",
+ "book": "alex-vol1",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "0729ba18f9a3",
+   "en": "When searching on Google or shopping at Amazon, as you type in the search box, one or more matches for the search term are presented to you. This feature is referred to as autocomplete, typeahead, search-as-you-type, or incremental search. Figure 13-1 presents an example of a Google search showing a list of autocompleted results when “dinner” is typed into the search box. Search autocomplete is an important feature of many products. This leads us to the interview question: design a search autocomplete system, also called “design top k” or “design top k most searched queries”."
+  },
+  {
+   "t": "h2",
+   "k": "cdb2072eee15",
+   "en": "Step 1 - Understand the problem and establish design scope"
+  },
+  {
+   "t": "p",
+   "k": "ad121b6c54ec",
+   "en": "The first step to tackle any system design interview question is to ask enough questions to clarify requirements. Here is an example of candidate-interviewer interaction:"
+  },
+  {
+   "t": "p",
+   "k": "c5ca769ab407",
+   "en": "Candidate: Is the matching only supported at the beginning of a search query or in the middle as well?"
+  },
+  {
+   "t": "p",
+   "k": "457b979adf90",
+   "en": "Interviewer: Only at the beginning of a search query."
+  },
+  {
+   "t": "p",
+   "k": "843e0fca984a",
+   "en": "Candidate: How many autocomplete suggestions should the system return?"
+  },
+  {
+   "t": "h3",
+   "k": "6f6caae1f9a7",
+   "en": "Interviewer: 5"
+  },
+  {
+   "t": "p",
+   "k": "5e1fd18dcfd3",
+   "en": "Candidate: How does the system know which 5 suggestions to return?"
+  },
+  {
+   "t": "p",
+   "k": "11c64e8bf7d3",
+   "en": "Interviewer: This is determined by popularity, decided by the historical query frequency."
+  },
+  {
+   "t": "p",
+   "k": "b7efdb1b28a3",
+   "en": "Candidate: Does the system support spell check?"
+  },
+  {
+   "t": "p",
+   "k": "ab46a34a7d5f",
+   "en": "Interviewer: No, spell check or autocorrect is not supported."
+  },
+  {
+   "t": "p",
+   "k": "3916eddd43e1",
+   "en": "Candidate: Are search queries in English?"
+  },
+  {
+   "t": "p",
+   "k": "9c39eec8caf2",
+   "en": "Candidate: Do we allow capitalization and special characters?"
+  },
+  {
+   "t": "p",
+   "k": "71eb20453370",
+   "en": "Interviewer: No, we assume all search queries have lowercase alphabetic characters."
+  },
+  {
+   "t": "p",
+   "k": "9b6be2c332fd",
+   "en": "Candidate: How many users use the product?"
+  },
+  {
+   "t": "p",
+   "k": "28c3f609076b",
+   "en": "Interviewer: 10 million DAU."
+  },
+  {
+   "t": "h3",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "p",
+   "k": "1e68532341d2",
+   "en": "Here is a summary of the requirements:"
+  },
+  {
+   "t": "li",
+   "k": "cf63c4071a84",
+   "en": "Fast response time: As a user types a search query, autocomplete suggestions must show up fast enough. An article about Facebook’s autocomplete system [1] reveals that the system needs to return results within 100 milliseconds. Otherwise it will cause stuttering."
+  },
+  {
+   "t": "li",
+   "k": "622ce37eb3c4",
+   "en": "Relevant: Autocomplete suggestions should be relevant to the search term."
+  },
+  {
+   "t": "li",
+   "k": "ef72616e0f84",
+   "en": "Sorted: Results returned by the system must be sorted by popularity or other ranking models."
+  },
+  {
+   "t": "li",
+   "k": "a2bab8f057d9",
+   "en": "Scalable: The system can handle high traffic volume."
+  },
+  {
+   "t": "li",
+   "k": "d8baf7dbc575",
+   "en": "Highly available: The system should remain available and accessible when part of the system is offline, slows down, or experiences unexpected network errors."
+  },
+  {
+   "t": "h2",
+   "k": "b3f31ee7c5b5",
+   "en": "Back of the envelope estimation"
+  },
+  {
+   "t": "li",
+   "k": "4d8f58fc13ab",
+   "en": "Assume 10 million daily active users (DAU)."
+  },
+  {
+   "t": "li",
+   "k": "74dc255ad13b",
+   "en": "An average person performs 10 searches per day."
+  },
+  {
+   "t": "li",
+   "k": "98bd7b0cb8f6",
+   "en": "20 bytes of data per query string:"
+  },
+  {
+   "t": "li",
+   "k": "57864485f6b0",
+   "en": "Assume we use ASCII character encoding. 1 character = 1 byte"
+  },
+  {
+   "t": "li",
+   "k": "34ad4eb8343f",
+   "en": "Assume a query contains 4 words, and each word contains 5 characters on average."
+  },
+  {
+   "t": "li",
+   "k": "3fc4e81aed9e",
+   "en": "That is 4 x 5 = 20 bytes per query."
+  },
+  {
+   "t": "li",
+   "k": "a124a3717f22",
+   "en": "For every character entered into the search box, a client sends a request to the backend for autocomplete suggestions. On average, 20 requests are sent for each search query. For example, the following 6 requests are sent to the backend by the time you finish typing “dinner”. search?q=d search?q=di search?q=din search?q=dinn search?q=dinne search?q=dinner"
+  },
+  {
+   "t": "li",
+   "k": "f1400ff5ff4d",
+   "en": "~24,000 query per second (QPS) = 10,000,000 users * 10 queries / day * 20 characters / 24 hours / 3600 seconds."
+  },
+  {
+   "t": "li",
+   "k": "c87ad0f1287b",
+   "en": "Peak QPS = QPS * 2 = ~48,000"
+  },
+  {
+   "t": "li",
+   "k": "64b7ed506395",
+   "en": "Assume 20% of the daily queries are new. 10 million * 10 queries / day * 20 byte per query * 20% = 0.4 GB. This means 0.4GB of new data is added to storage daily."
+  },
+  {
+   "t": "h2",
+   "k": "21ec56b45561",
+   "en": "Step 2 - Propose high-level design and get buy-in"
+  },
+  {
+   "t": "p",
+   "k": "c8afbaff700b",
+   "en": "At the high-level, the system is broken down into two:"
+  },
+  {
+   "t": "li",
+   "k": "51038d60b970",
+   "en": "Data gathering service: It gathers user input queries and aggregates them in real-time."
+  },
+  {
+   "t": "p",
+   "k": "a35f7efc35cd",
+   "en": "Real-time processing is not practical for large data sets; however, it is a good starting point. We will explore a more realistic solution in deep dive."
+  },
+  {
+   "t": "li",
+   "k": "449cc5de063f",
+   "en": "Query service: Given a search query or prefix, return 5 most frequently searched terms."
+  },
+  {
+   "t": "h2",
+   "k": "4d80ec08f570",
+   "en": "Data gathering service"
+  },
+  {
+   "t": "p",
+   "k": "00e3f6e72407",
+   "en": "Let us use a simplified example to see how data gathering service works. Assume we have a frequency table that stores the query string and its frequency as shown in Figure 13-2. In the beginning, the frequency table is empty. Later, users enter queries “twitch”, “twitter”, “twitter,” and “twillo” sequentially. Figure 13-2 shows how the frequency table is updated."
+  },
+  {
+   "t": "h2",
+   "k": "2aac2ea83672",
+   "en": "Query service"
+  },
+  {
+   "t": "p",
+   "k": "759d19a526fa",
+   "en": "Assume we have a frequency table as shown in Table 13-1. It has two fields."
+  },
+  {
+   "t": "li",
+   "k": "d39d2c30d680",
+   "en": "Query: it stores the query string."
+  },
+  {
+   "t": "li",
+   "k": "39d246465ca0",
+   "en": "Frequency: it represents the number of times a query has been searched."
+  },
+  {
+   "t": "p",
+   "k": "b94e18d40412",
+   "en": "When a user types “tw” in the search box, the following top 5 searched queries are displayed (Figure 13-3), assuming the frequency table is based on Table 13-1."
+  },
+  {
+   "t": "p",
+   "k": "de78a469a718",
+   "en": "To get top 5 frequently searched queries, execute the following SQL query:"
+  },
+  {
+   "t": "p",
+   "k": "62d5d4d90cc0",
+   "en": "This is an acceptable solution when the data set is small. When it is large, accessing the database becomes a bottleneck. We will explore optimizations in deep dive."
+  },
+  {
+   "t": "h2",
+   "k": "5008c4b3d7bc",
+   "en": "Step 3 - Design deep dive"
+  },
+  {
+   "t": "li",
+   "k": "f4f6c09dee25",
+   "en": "Trie data structure"
+  },
+  {
+   "t": "li",
+   "k": "4d80ec08f570",
+   "en": "Data gathering service"
+  },
+  {
+   "t": "li",
+   "k": "2aac2ea83672",
+   "en": "Query service"
+  },
+  {
+   "t": "li",
+   "k": "89d371ceb5c6",
+   "en": "Scale the storage"
+  },
+  {
+   "t": "li",
+   "k": "8d6a0dcb3299",
+   "en": "Trie operations"
+  },
+  {
+   "t": "h2",
+   "k": "f4f6c09dee25",
+   "en": "Trie data structure"
+  },
+  {
+   "t": "p",
+   "k": "d76755d841b1",
+   "en": "Relational databases are used for storage in the high-level design. However, fetching the top 5 search queries from a relational database is inefficient. The data structure trie (prefix tree) is used to overcome the problem. As trie data structure is crucial for the system, we will dedicate significant time to design a customized trie. Please note that some of the ideas are from articles [2] and [3]."
+  },
+  {
+   "t": "p",
+   "k": "81ad80b41c8f",
+   "en": "Understanding the basic trie data structure is essential for this interview question. However, this is more of a data structure question than a system design question. Besides, many online materials explain this concept. In this chapter, we will only discuss an overview of the trie data structure and focus on how to optimize the basic trie to improve response time."
+  },
+  {
+   "t": "p",
+   "k": "4023724578c5",
+   "en": "Trie (pronounced “try”) is a tree-like data structure that can compactly store strings. The name comes from the word retrieval, which indicates it is designed for string retrieval operations. The main idea of trie consists of the following:"
+  },
+  {
+   "t": "li",
+   "k": "18a2d39160f4",
+   "en": "A trie is a tree-like data structure."
+  },
+  {
+   "t": "li",
+   "k": "d535cf8eaf1b",
+   "en": "The root represents an empty string."
+  },
+  {
+   "t": "li",
+   "k": "c5769b264b8f",
+   "en": "Each node stores a character and has 26 children, one for each possible character. To save space, we do not draw empty links."
+  },
+  {
+   "t": "li",
+   "k": "422cc76fa9d1",
+   "en": "Each tree node represents a single word or a prefix string."
+  },
+  {
+   "t": "p",
+   "k": "f0750554b2b0",
+   "en": "Figure 13-5 shows a trie with search queries “tree”, “try”, “true”, “toy”, “wish”, “win”."
+  },
+  {
+   "t": "p",
+   "k": "7de4ea8e2005",
+   "en": "Search queries are highlighted with a thicker border."
+  },
+  {
+   "t": "p",
+   "k": "e38874d42a72",
+   "en": "Basic trie data structure stores characters in nodes. To support sorting by frequency, frequency info needs to be included in nodes. Assume we have the following frequency table."
+  },
+  {
+   "t": "p",
+   "k": "6151b3a3b0da",
+   "en": "After adding frequency info to nodes, updated trie data structure is shown in Figure 13-6."
+  },
+  {
+   "t": "p",
+   "k": "bd11b04b7b20",
+   "en": "How does autocomplete work with trie? Before diving into the algorithm, let us define some terms."
+  },
+  {
+   "t": "li",
+   "k": "cde1579eed64",
+   "en": "p: length of a prefix"
+  },
+  {
+   "t": "li",
+   "k": "90d7c1b730d4",
+   "en": "n: total number of nodes in a trie"
+  },
+  {
+   "t": "li",
+   "k": "1f686433d469",
+   "en": "c: number of children of a given node Steps to get top k most searched queries are listed below:"
+  },
+  {
+   "t": "li",
+   "k": "744d3cf875c6",
+   "en": "Find the prefix. Time complexity: O(p)."
+  },
+  {
+   "t": "li",
+   "k": "3c68cc9d0f8f",
+   "en": "Traverse the subtree from the prefix node to get all valid children. A child is valid if it can form a valid query string. Time complexity: O(c)"
+  },
+  {
+   "t": "li",
+   "k": "055e07c91e92",
+   "en": "Sort the children and get top k. Time complexity: O(clogc)"
+  },
+  {
+   "t": "p",
+   "k": "eca5d2eca634",
+   "en": "Let us use an example as shown in Figure 13-7 to explain the algorithm. Assume k equals to 2 and a user types “tr” in the search box. The algorithm works as follows:"
+  },
+  {
+   "t": "li",
+   "k": "19aa95acdfbd",
+   "en": "Step 1: Find the prefix node “tr”."
+  },
+  {
+   "t": "li",
+   "k": "1b0cdbb20bb0",
+   "en": "Step 2: Traverse the subtree to get all valid children. In this case, nodes [tree: 10], [true: 35], [try: 29] are valid."
+  },
+  {
+   "t": "li",
+   "k": "80e6fed55e8e",
+   "en": "Step 3: Sort the children and get top 2. [true: 35] and [try: 29] are the top 2 queries with prefix “tr”."
+  },
+  {
+   "t": "p",
+   "k": "e712be16fc1f",
+   "en": "The time complexity of this algorithm is the sum of time spent on each step mentioned above:"
+  },
+  {
+   "t": "h3",
+   "k": "8a886f8456e4",
+   "en": "O(p) + O(c) + O(clogc)"
+  },
+  {
+   "t": "p",
+   "k": "473e958c4d1d",
+   "en": "The above algorithm is straightforward. However, it is too slow because we need to traverse the entire trie to get top k results in the worst-case scenario. Below are two optimizations:"
+  },
+  {
+   "t": "li",
+   "k": "55f7aef6a943",
+   "en": "Limit the max length of a prefix"
+  },
+  {
+   "t": "li",
+   "k": "7c198373d152",
+   "en": "Cache top search queries at each node Let us look at these optimizations one by one."
+  },
+  {
+   "t": "h3",
+   "k": "55f7aef6a943",
+   "en": "Limit the max length of a prefix"
+  },
+  {
+   "t": "p",
+   "k": "5330c0d86efa",
+   "en": "Users rarely type a long search query into the search box. Thus, it is safe to say p is a small integer number, say 50. If we limit the length of a prefix, the time complexity for “Find the prefix” can be reduced from O(p) to O(small constant), aka O(1)."
+  },
+  {
+   "t": "h3",
+   "k": "c8e4ba81bc5a",
+   "en": "Cache top search queries at each node"
+  },
+  {
+   "t": "p",
+   "k": "18fcde1b866d",
+   "en": "To avoid traversing the whole trie, we store top k most frequently used queries at each node."
+  },
+  {
+   "t": "p",
+   "k": "7840da7c9903",
+   "en": "Since 5 to 10 autocomplete suggestions are enough for users, k is a relatively small number."
+  },
+  {
+   "t": "p",
+   "k": "5e726eabc7ca",
+   "en": "In our specific case, only the top 5 search queries are cached."
+  },
+  {
+   "t": "p",
+   "k": "76ad226dbeeb",
+   "en": "By caching top search queries at every node, we significantly reduce the time complexity to retrieve the top 5 queries. However, this design requires a lot of space to store top queries at every node. Trading space for time is well worth it as fast response time is very important."
+  },
+  {
+   "t": "p",
+   "k": "5e394944b729",
+   "en": "Figure 13-8 shows the updated trie data structure. Top 5 queries are stored on each node. For example, the node with prefix “be” stores the following: [best: 35, bet: 29, bee: 20, be: 15, beer: 10]."
+  },
+  {
+   "t": "p",
+   "k": "4de2108091bb",
+   "en": "Let us revisit the time complexity of the algorithm after applying those two optimizations:"
+  },
+  {
+   "t": "li",
+   "k": "e259bc6e19f8",
+   "en": "Find the prefix node. Time complexity: O(1)"
+  },
+  {
+   "t": "li",
+   "k": "315e4a14db75",
+   "en": "Return top k. Since top k queries are cached, the time complexity for this step is O(1)."
+  },
+  {
+   "t": "p",
+   "k": "429c2e4f7ba1",
+   "en": "As the time complexity for each of the steps is reduced to O(1), our algorithm takes only O(1) to fetch top k queries."
+  },
+  {
+   "t": "h2",
+   "k": "4d80ec08f570",
+   "en": "Data gathering service"
+  },
+  {
+   "t": "p",
+   "k": "9e0fefedad66",
+   "en": "In our previous design, whenever a user types a search query, data is updated in real-time."
+  },
+  {
+   "t": "p",
+   "k": "d5d5febeb845",
+   "en": "This approach is not practical for the following two reasons:"
+  },
+  {
+   "t": "li",
+   "k": "ee6685e90f4e",
+   "en": "Users may enter billions of queries per day. Updating the trie on every query significantly slows down the query service."
+  },
+  {
+   "t": "li",
+   "k": "c73f84804f0d",
+   "en": "Top suggestions may not change much once the trie is built. Thus, it is unnecessary to update the trie frequently."
+  },
+  {
+   "t": "p",
+   "k": "58d5b81221fd",
+   "en": "To design a scalable data gathering service, we examine where data comes from and how data is used. Real-time applications like Twitter require up to date autocomplete suggestions."
+  },
+  {
+   "t": "p",
+   "k": "9b93b406cf4f",
+   "en": "However, autocomplete suggestions for many Google keywords might not change much on a daily basis."
+  },
+  {
+   "t": "p",
+   "k": "fb0dd7fd13b8",
+   "en": "Despite the differences in use cases, the underlying foundation for data gathering service remains the same because data used to build the trie is usually from analytics or logging services."
+  },
+  {
+   "t": "p",
+   "k": "bf188cf230cc",
+   "en": "Figure 13-9 shows the redesigned data gathering service. Each component is examined one by one."
+  },
+  {
+   "t": "p",
+   "k": "60679c4a1f8a",
+   "en": "Analytics Logs. It stores raw data about search queries. Logs are append-only and are not indexed. Table 13-3 shows an example of the log file."
+  },
+  {
+   "t": "p",
+   "k": "d6975afa091a",
+   "en": "Aggregators. The size of analytics logs is usually very large, and data is not in the right format. We need to aggregate data so it can be easily processed by our system."
+  },
+  {
+   "t": "p",
+   "k": "6bbc8ba6bb59",
+   "en": "Depending on the use case, we may aggregate data differently. For real-time applications such as Twitter, we aggregate data in a shorter time interval as real-time results are important."
+  },
+  {
+   "t": "p",
+   "k": "a796419c3389",
+   "en": "On the other hand, aggregating data less frequently, say once per week, might be good enough for many use cases. During an interview session, verify whether real-time results are important. We assume trie is rebuilt weekly."
+  },
+  {
+   "t": "h3",
+   "k": "15c940714377",
+   "en": "Aggregated Data."
+  },
+  {
+   "t": "p",
+   "k": "a09382241246",
+   "en": "Table 13-4 shows an example of aggregated weekly data. “time” field represents the start time of a week. “frequency” field is the sum of the occurrences for the corresponding query in that week."
+  },
+  {
+   "t": "p",
+   "k": "b0effe080b8b",
+   "en": "Workers. Workers are a set of servers that perform asynchronous jobs at regular intervals."
+  },
+  {
+   "t": "p",
+   "k": "4d7a3a28f235",
+   "en": "They build the trie data structure and store it in Trie DB."
+  },
+  {
+   "t": "p",
+   "k": "0adf8d9c3c32",
+   "en": "Trie Cache. Trie Cache is a distributed cache system that keeps trie in memory for fast read."
+  },
+  {
+   "t": "p",
+   "k": "a50206a350fa",
+   "en": "It takes a weekly snapshot of the DB."
+  },
+  {
+   "t": "p",
+   "k": "717666b83e12",
+   "en": "Trie DB. Trie DB is the persistent storage. Two options are available to store the data:"
+  },
+  {
+   "t": "li",
+   "k": "22d899126061",
+   "en": "Document store: Since a new trie is built weekly, we can periodically take a snapshot of it, serialize it, and store the serialized data in the database. Document stores like MongoDB [4] are good fits for serialized data."
+  },
+  {
+   "t": "li",
+   "k": "1ad27e7c1eca",
+   "en": "Key-value store: A trie can be represented in a hash table form [4] by applying the following logic:"
+  },
+  {
+   "t": "li",
+   "k": "6625dbb1e18b",
+   "en": "Every prefix in the trie is mapped to a key in a hash table."
+  },
+  {
+   "t": "li",
+   "k": "ede89422fd7f",
+   "en": "Data on each trie node is mapped to a value in a hash table."
+  },
+  {
+   "t": "p",
+   "k": "cbddd68a7eb1",
+   "en": "Figure 13-10 shows the mapping between the trie and hash table."
+  },
+  {
+   "t": "p",
+   "k": "1c5a42b31a36",
+   "en": "In Figure 13-10, each trie node on the left is mapped to the <key, value> pair on the right. If you are unclear how key-value stores work, refer to Chapter 6: Design a key-value store."
+  },
+  {
+   "t": "h2",
+   "k": "2aac2ea83672",
+   "en": "Query service"
+  },
+  {
+   "t": "p",
+   "k": "ab904c248e6b",
+   "en": "Figure 13-11 shows the improved design as previous design is inefficient."
+  },
+  {
+   "t": "li",
+   "k": "3b95b9e38e2d",
+   "en": "A search query is sent to the load balancer."
+  },
+  {
+   "t": "li",
+   "k": "e55c44aa1829",
+   "en": "The load balancer routes the request to API servers."
+  },
+  {
+   "t": "li",
+   "k": "3bd36ace0267",
+   "en": "API servers get trie data from Trie Cache and construct autocomplete suggestions for the client."
+  },
+  {
+   "t": "li",
+   "k": "65ffe90f640b",
+   "en": "In case the data is not in Trie Cache, we replenish data back to the cache. This way, all subsequent requests for the same prefix are returned from the cache. A cache miss can happen when a cache server is out of memory or offline."
+  },
+  {
+   "t": "p",
+   "k": "d1f1a2858a40",
+   "en": "Query service requires lightning-fast speed. We propose the following optimizations:"
+  },
+  {
+   "t": "li",
+   "k": "288645536d70",
+   "en": "AJAX request. For web applications, browsers usually send AJAX requests to fetch autocomplete results. The main benefit of AJAX is that sending/receiving a request/response does not refresh the whole web page."
+  },
+  {
+   "t": "li",
+   "k": "80ae9320d159",
+   "en": "Browser caching. For many applications, autocomplete search suggestions may not change much within a short time. Thus, autocomplete suggestions can be saved in browser cache to allow subsequent requests to get results from the cache directly. Google search engine uses the same cache mechanism. Figure 13-12 shows the response header when you type “system design interview” on the Google search engine. As you can see, Google caches the results in the browser for 1 hour. Please note: “private” in cache-control means results are intended for a single user and must not be cached by a shared cache. “max-age=3600” means the cache is valid for 3600 seconds, aka, an hour."
+  },
+  {
+   "t": "li",
+   "k": "7f806aa343d8",
+   "en": "Data sampling: For a large-scale system, logging every search query requires a lot of processing power and storage. Data sampling is important. For instance, only 1 out of every N requests is logged by the system."
+  },
+  {
+   "t": "h2",
+   "k": "8d6a0dcb3299",
+   "en": "Trie operations"
+  },
+  {
+   "t": "p",
+   "k": "cc995f285824",
+   "en": "Trie is a core component of the autocomplete system. Let us look at how trie operations (create, update, and delete) work."
+  },
+  {
+   "t": "h3",
+   "k": "9b7c68a918b1",
+   "en": "Create"
+  },
+  {
+   "t": "p",
+   "k": "a48467200120",
+   "en": "Trie is created by workers using aggregated data. The source of data is from Analytics Log/DB."
+  },
+  {
+   "t": "h3",
+   "k": "0a25ba599131",
+   "en": "Update"
+  },
+  {
+   "t": "p",
+   "k": "0e6c1436b5ba",
+   "en": "There are two ways to update the trie."
+  },
+  {
+   "t": "p",
+   "k": "025eb8d5d973",
+   "en": "Option 1: Update the trie weekly. Once a new trie is created, the new trie replaces the old one."
+  },
+  {
+   "t": "p",
+   "k": "e756e88fe19f",
+   "en": "Option 2: Update individual trie node directly. We try to avoid this operation because it is slow. However, if the size of the trie is small, it is an acceptable solution. When we update a trie node, its ancestors all the way up to the root must be updated because ancestors store top queries of children. Figure 13-13 shows an example of how the update operation works. On the left side, the search query “beer” has the original value 10. On the right side, it is updated to 30. As you can see, the node and its ancestors have the “beer” value updated to 30."
+  },
+  {
+   "t": "h3",
+   "k": "9485989ff514",
+   "en": "Delete"
+  },
+  {
+   "t": "p",
+   "k": "ba99ec612505",
+   "en": "We have to remove hateful, violent, sexually explicit, or dangerous autocomplete suggestions. We add a filter layer (Figure 13-14) in front of the Trie Cache to filter out unwanted suggestions. Having a filter layer gives us the flexibility of removing results based on different filter rules. Unwanted suggestions are removed physically from the database asynchronically so the correct data set will be used to build trie in the next update cycle."
+  },
+  {
+   "t": "h2",
+   "k": "89d371ceb5c6",
+   "en": "Scale the storage"
+  },
+  {
+   "t": "p",
+   "k": "4ab25a8daf01",
+   "en": "Now that we have developed a system to bring autocomplete queries to users, it is time to solve the scalability issue when the trie grows too large to fit in one server."
+  },
+  {
+   "t": "p",
+   "k": "3d98f6237bed",
+   "en": "Since English is the only supported language, a naive way to shard is based on the first character. Here are some examples."
+  },
+  {
+   "t": "li",
+   "k": "7682069a362c",
+   "en": "If we need two servers for storage, we can store queries starting with ‘a’ to ‘m’ on the first server, and ‘n’ to ‘z’ on the second server."
+  },
+  {
+   "t": "li",
+   "k": "d2d831ee9b64",
+   "en": "If we need three servers, we can split queries into ‘a’ to ‘i’, ‘j’ to ‘r’ and ‘s’ to ‘z’."
+  },
+  {
+   "t": "p",
+   "k": "5f25ced77a13",
+   "en": "Following this logic, we can split queries up to 26 servers because there are 26 alphabetic characters in English. Let us define sharding based on the first character as first level sharding. To store data beyond 26 servers, we can shard on the second or even at the third level. For example, data queries that start with ‘a’ can be split into 4 servers: ‘aa-ag’, ‘ah-an’, ‘ao-au’, and ‘av-az’."
+  },
+  {
+   "t": "p",
+   "k": "448e356e258b",
+   "en": "At the first glance this approach seems reasonable, until you realize that there are a lot more words that start with the letter ‘c’ than ‘x’. This creates uneven distribution."
+  },
+  {
+   "t": "p",
+   "k": "13df475fce9a",
+   "en": "To mitigate the data imbalance problem, we analyze historical data distribution pattern and apply smarter sharding logic as shown in Figure 13-15. The shard map manager maintains a lookup database for identifying where rows should be stored. For example, if there are a similar number of historical queries for ‘s’ and for ‘u’, ‘v’, ‘w’, ‘x’, ‘y’ and ‘z’ combined, we can maintain two shards: one for ‘s’ and one for ‘u’ to ‘z’."
+  },
+  {
+   "t": "h2",
+   "k": "02a33876c958",
+   "en": "Step 4 - Wrap up"
+  },
+  {
+   "t": "p",
+   "k": "f9b179a3971a",
+   "en": "After you finish the deep dive, your interviewer might ask you some follow up questions."
+  },
+  {
+   "t": "h3",
+   "k": "e2f5b2767de3",
+   "en": "Interviewer: How do you extend your design to support multiple languages?"
+  },
+  {
+   "t": "p",
+   "k": "4270e7ada89b",
+   "en": "To support other non-English queries, we store Unicode characters in trie nodes. If you are not familiar with Unicode, here is the definition: “an encoding standard covers all the characters for all the writing systems of the world, modern and ancient” [5]."
+  },
+  {
+   "t": "h3",
+   "k": "1e98da63bea3",
+   "en": "Interviewer: What if top search queries in one country are different from others?"
+  },
+  {
+   "t": "p",
+   "k": "d2a0be3baec4",
+   "en": "In this case, we might build different tries for different countries. To improve the response time, we can store tries in CDNs."
+  },
+  {
+   "t": "h3",
+   "k": "d4288cb392b0",
+   "en": "Interviewer: How can we support the trending (real-time) search queries?"
+  },
+  {
+   "t": "p",
+   "k": "459caa8903d8",
+   "en": "Assuming a news event breaks out, a search query suddenly becomes popular. Our original design will not work because:"
+  },
+  {
+   "t": "li",
+   "k": "2635a1af8e17",
+   "en": "Offline workers are not scheduled to update the trie yet because this is scheduled to run on weekly basis."
+  },
+  {
+   "t": "li",
+   "k": "4e76416dccf2",
+   "en": "Even if it is scheduled, it takes too long to build the trie."
+  },
+  {
+   "t": "p",
+   "k": "b634123fbb05",
+   "en": "Building a real-time search autocomplete is complicated and is beyond the scope of this book so we will only give a few ideas:"
+  },
+  {
+   "t": "li",
+   "k": "289ed2d43e6a",
+   "en": "Reduce the working data set by sharding."
+  },
+  {
+   "t": "li",
+   "k": "f84ab07a619c",
+   "en": "Change the ranking model and assign more weight to recent search queries."
+  },
+  {
+   "t": "li",
+   "k": "02b879f0d10a",
+   "en": "Data may come as streams, so we do not have access to all the data at once. Streaming data means data is generated continuously. Stream processing requires a different set of systems: Apache Hadoop MapReduce [6], Apache Spark Streaming [7], Apache Storm [8], Apache Kafka [9], etc. Because all those topics require specific domain knowledge, we are not going into detail here."
+  },
+  {
+   "t": "p",
+   "k": "71b8b7a68128",
+   "en": "Congratulations on getting this far! Now give yourself a pat on the back. Good job!"
+  },
+  {
+   "t": "p",
+   "k": "d5924366db67",
+   "en": "[1] The Life of a Typeahead Query: https://www.facebook.com/notes/facebook-engineering/the-life-of-a-typeahead-query/389105248919/ [2] How We Built Prefixy: A Scalable Prefix Search Service for Powering Autocomplete: https://medium.com/@prefixyteam/how-we-built-prefixy-a-scalable-prefix-search-service-for-powering-autocomplete-c20f98e2eff1 [3] Prefix Hash Tree An Indexing Data Structure over Distributed Hash Tables: https://people.eecs.berkeley.edu/~sylvia/papers/pht.pdf [4] MongoDB wikipedia: https://en.wikipedia.org/wiki/MongoDB [5] Unicode frequently asked questions: https://www.unicode.org/faq/basic_q.html [6] Apache hadoop: https://hadoop.apache.org/ [7] Spark streaming: https://spark.apache.org/streaming/ [8] Apache storm: https://storm.apache.org/ [9] Apache kafka: https://kafka.apache.org/documentation/"
+  }
+ ]
+}

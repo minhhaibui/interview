@@ -1,0 +1,43 @@
+{
+ "id": "37-why-is-redis-so-fast",
+ "title": "Why is Redis so Fast?",
+ "titleKey": "a9d0a88ae110",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "0f825eaca727",
+   "en": "There are 3 main reasons as shown in the diagram below."
+  },
+  {
+   "t": "li",
+   "k": "ada6cba3d186",
+   "en": "Redis is a RAM-based database. RAM access is at least 1000 times faster than random disk access."
+  },
+  {
+   "t": "li",
+   "k": "9c3eac111cb7",
+   "en": "Redis leverages IO multiplexing and single-threaded execution loop for execution efficiency."
+  },
+  {
+   "t": "li",
+   "k": "0cfe2debebee",
+   "en": "Redis leverages several efficient lower-level data structures."
+  },
+  {
+   "t": "p",
+   "k": "1b3e1c215291",
+   "en": "Question: Another popular in-memory store is Memcached. Do you know the differences between Redis and Memcached?"
+  },
+  {
+   "t": "p",
+   "k": "176ae990e058",
+   "en": "You might have noticed the style of this diagram is different from my previous posts. Please let me know which one you prefer. — Check out our bestselling system design books."
+  },
+  {
+   "t": "p",
+   "k": "ef417904d003",
+   "en": "Paperback:AmazonDigital:ByteByteGo. 76"
+  }
+ ]
+}

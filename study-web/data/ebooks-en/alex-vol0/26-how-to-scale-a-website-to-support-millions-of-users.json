@@ -1,0 +1,73 @@
+{
+ "id": "26-how-to-scale-a-website-to-support-millions-of-users",
+ "title": "How to scale a website to support millions of users?",
+ "titleKey": "30d226493466",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "388168ce0bd8",
+   "en": "We will explain this step-by-step."
+  },
+  {
+   "t": "p",
+   "k": "770a87fb2b4d",
+   "en": "The diagram below illustrates the evolution of a simplified eCommerce website. It goes from a monolithic design on one single server, to a service-oriented/microservice architecture. 55 56 Suppose we have two services: inventory service (handles product descriptions and inventory management) and user service (handles user information, registration, login, etc.)."
+  },
+  {
+   "t": "p",
+   "k": "eea0a7156de0",
+   "en": "Step 1 - With the growth of the user base, one single application server cannot handle the traffic anymore. We put the application server and the database server into two separate servers."
+  },
+  {
+   "t": "p",
+   "k": "9a5ea5560f7b",
+   "en": "Step 2 - The business continues to grow, and a single application server is no longer enough. So we deploy a cluster of application servers."
+  },
+  {
+   "t": "p",
+   "k": "5ce16ab91c6d",
+   "en": "Step 3 - Now the incoming requests have to be routed to multiple application servers, how can we ensure each application server gets an even load? The load balancer handles this nicely."
+  },
+  {
+   "t": "p",
+   "k": "401138fee762",
+   "en": "Step 4 - With the business continuing to grow, the database might become the bottleneck. To mitigate this, we separate reads and writes in a way that frequent read queries go to read replicas. With this setup, the throughput for the database writes can be greatly increased."
+  },
+  {
+   "t": "p",
+   "k": "27d6ebdfad44",
+   "en": "Step 5 - Suppose the business continues to grow. One single database cannot handle the load on both the inventory table and user table. We have a few options:"
+  },
+  {
+   "t": "li",
+   "k": "0322b903ed07",
+   "en": "Vertical partition. Adding more power (CPU, RAM, etc.) to the database server. It has a hard limit."
+  },
+  {
+   "t": "li",
+   "k": "aa84508ab960",
+   "en": "Horizontal partition by adding more database servers."
+  },
+  {
+   "t": "li",
+   "k": "2bbbb797e1a1",
+   "en": "Adding a caching layer to offload read requests."
+  },
+  {
+   "t": "p",
+   "k": "9ab85a1fc2a2",
+   "en": "Step 6 - Now we can modularize the functions into different services."
+  },
+  {
+   "t": "p",
+   "k": "1db4e07d4837",
+   "en": "The architecture becomes service-oriented / microservice."
+  },
+  {
+   "t": "p",
+   "k": "345b89ed96cd",
+   "en": "Question: what else do we need to support an e-commerce website at Amazon’s scale? 57"
+  }
+ ]
+}

@@ -1,0 +1,83 @@
+{
+ "id": "48-read-replica-pattern",
+ "title": "Read replica pattern",
+ "titleKey": "d97b97f01f7a",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "a305eb303131",
+   "en": "There are two common ways to implement the read replica pattern:"
+  },
+  {
+   "t": "li",
+   "k": "8375981d686f",
+   "en": "Embed the routing logic in the application code (explained in the last post)."
+  },
+  {
+   "t": "li",
+   "k": "dc304a66cd51",
+   "en": "Use database middleware."
+  },
+  {
+   "t": "p",
+   "k": "2f42b2459f8a",
+   "en": "We focus on option 2 here. The middleware provides transparent routing between the application and database servers. We can customize the routing logic based on difficult rules such as user, schema, statement, etc."
+  },
+  {
+   "t": "p",
+   "k": "3fdb77f4270c",
+   "en": "The diagram below illustrates the setup: 103"
+  },
+  {
+   "t": "li",
+   "k": "047312ce1b3e",
+   "en": "When Alice places an order on amazon, the request is sent to Order Service."
+  },
+  {
+   "t": "li",
+   "k": "cc66ba9f808d",
+   "en": "Order Service does not directly interact with the database. Instead, it sends database queries to the database middleware."
+  },
+  {
+   "t": "li",
+   "k": "8eee65616c47",
+   "en": "The database middleware routes writes to the primary database."
+  },
+  {
+   "t": "p",
+   "k": "b4a87bc25caa",
+   "en": "Data is replicated to two replicas."
+  },
+  {
+   "t": "li",
+   "k": "428e3b9c1c45",
+   "en": "Alice views the order details (read). The request is sent through the middleware."
+  },
+  {
+   "t": "li",
+   "k": "3632b90b7c99",
+   "en": "Alice views the recent order history (read). The request is sent through the middleware."
+  },
+  {
+   "t": "p",
+   "k": "e692ad064365",
+   "en": "The database middleware acts as a proxy between the application and databases. It uses standard MySQL network protocol for communication."
+  },
+  {
+   "t": "p",
+   "k": "4b616439acaa",
+   "en": "Pros: - Simplified application code. The application doesn’t need to be aware of the database topology and manage access to the database directly. - Better compatibility. The middleware uses the MySQL network protocol. Any MySQL compatible client can connect to the middleware easily. This makes database migration easier."
+  },
+  {
+   "t": "p",
+   "k": "809ba8e0a107",
+   "en": "Cons: - Increased system complexity. A database middleware is a complex system. Since all database queries go through the middleware, it usually requires a high availability setup to avoid a single point of failure. - Additional middleware layer means additional network latency."
+  },
+  {
+   "t": "p",
+   "k": "b8402fabbc68",
+   "en": "Therefore, this layer requires excellent performance. 104"
+  }
+ ]
+}

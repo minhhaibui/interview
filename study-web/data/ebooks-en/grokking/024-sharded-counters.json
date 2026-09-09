@@ -1,0 +1,569 @@
+{
+ "id": "024-sharded-counters",
+ "title": "Sharded Counters",
+ "titleKey": "febc08af4b56",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "9c8c8056fbcf",
+   "en": "System Design: The Sharded Counters"
+  },
+  {
+   "t": "p",
+   "k": "130956faad4f",
+   "en": "Get introduced to sharded counters."
+  },
+  {
+   "t": "h2",
+   "k": "e1cad14b3808",
+   "en": "Problem statement"
+  },
+  {
+   "t": "p",
+   "k": "4efc4f9fbb4b",
+   "en": "Real-time applications like Facebook, Twitter, and YouTube have high user traffic. Users interact with the applications and perform multiple operations (view, like, comment, and so on) depending on the application’s structure. For instance, an image is posted on a Facebook page that has millions of followers, and the post’s likes rapidly increase after each millisecond. Here, it might be easy to count the likes for this single image, but what will we do when thousands of such images or videos are uploaded simultaneously by many celebrities, each with millions of followers. This problem is known as the heavy hitters problem."
+  },
+  {
+   "t": "p",
+   "k": "c38cee625a8a",
+   "en": "The above scenario shows how a simple counting operation becomes challenging to manage with precision and performance. The following figure shows YouTube’s videos that were viewed by millions of users in a 24-hour span in August 2021:"
+  },
+  {
+   "t": "p",
+   "k": "5e653bfe7090",
+   "en": "On average, six thousand tweets are sent on Twitter within one second, which equals 360,000 tweets per minute and about 500 million tweets per day. A challenging task is to handle billions of likes on these 500 million tweets per day."
+  },
+  {
+   "t": "p",
+   "k": "51330a46b973",
+   "en": "The following table shows the most liked tweets in one day as of 2022:"
+  },
+  {
+   "t": "p",
+   "k": "cf0e27e6b738",
+   "en": "How will we handle millions of write requests coming against the likes on thousands of tweets per minute? The challenge is that writing takes more time than reading, and concurrent activity makes this problem harder. As the number of concurrent writes increases for some counter (which might be a variable residing in a node’s memory), the lock contention increases non-linearly. After some point, we might spend most of the time acquiring the lock so that we could safely update the counter."
+  },
+  {
+   "t": "h2",
+   "k": "6c2f1f17d332",
+   "en": "How will we design sharded counters?"
+  },
+  {
+   "t": "p",
+   "k": "2f00ab4b57e9",
+   "en": "We have divided the design of sharded counters into three lessons:"
+  },
+  {
+   "t": "li",
+   "k": "2eb55b766695",
+   "en": "High-level Design: We’ll discuss the high-level design of sharded counters in this lesson. In addition, we’ll also briefly explain the API design."
+  },
+  {
+   "t": "li",
+   "k": "5e930d69eabb",
+   "en": "Detailed Design: This lesson will dive deeply into the design of sharded counters. Moreover, we’ll also evaluate our proposed design."
+  },
+  {
+   "t": "li",
+   "k": "39a9030044e4",
+   "en": "Quiz: We’ll review major concepts of sharded counters design with a quiz."
+  },
+  {
+   "t": "p",
+   "k": "b749e00f1c49",
+   "en": "Let’s begin with the high-level solution sketch of sharded counters."
+  },
+  {
+   "t": "h1",
+   "k": "92e97cd5c3f3",
+   "en": "High-level Design of Sharded Counters"
+  },
+  {
+   "t": "p",
+   "k": "27a4a9321b86",
+   "en": "Let's understand and design sharded counters."
+  },
+  {
+   "t": "h2",
+   "k": "2797af6ddf27",
+   "en": "High-level solution sketch"
+  },
+  {
+   "t": "p",
+   "k": "7364d36eee73",
+   "en": "Managing millions of tweet likes requires many counters operating on many nodes. To manage these counters, we need an efficient system that can provide high performance and scalability as the number of users grows."
+  },
+  {
+   "t": "p",
+   "k": "6abe27190fb9",
+   "en": "What will happen when a single tweet on Twitter gets a million likes, and the application server receives a write request against each like to increment the relevant counter? These millions of requests are eventually serialized in a queue for data consistency. Such serialization is one way to deal with concurrent activity, though at the expense of added delay. Real-time applications want to keep the quality of experience high by providing as minimum as possible latency for the end user."
+  },
+  {
+   "t": "p",
+   "k": "fbc1f762e97a",
+   "en": "Let’s see the illustration below to understand this problem:"
+  },
+  {
+   "t": "p",
+   "k": "9397782a814d",
+   "en": "A single counter for each tweet posted by a celebrity is not enough to handle millions of users. The solution to this problem is a sharded counter, also known as a distributed counter, where each counter has a specified number of shards as needed. These shards run on different computational units in parallel. We can improve performance and reduce contention by balancing the millions of write requests across shards."
+  },
+  {
+   "t": "p",
+   "k": "662b496bdd31",
+   "en": "First, a write request is forwarded to the specified tweet counter when the user likes that tweet. Then, the system chooses an available shard of the specified tweet counter to increment the like count. Let’s look at the illustration below to understand sharded counters having specified shards:"
+  },
+  {
+   "t": "p",
+   "k": "8714544b9fe0",
+   "en": "In the above illustration, the total number of shards per counter is (N+1)."
+  },
+  {
+   "t": "p",
+   "k": "0f57fdec7e06",
+   "en": "We’ll use an appropriate value for N according to our needs. Let’s discuss an example to understand how sharded counters handle millions of write and read requests for a single post."
+  },
+  {
+   "t": "p",
+   "k": "c9ac416c4001",
+   "en": "Let’s assume that a famous YouTube channel with millions of subscribers uploads a new video. The server receives a burst of write requests for video views from worldwide users. First, a new counter initiates for a newly uploaded video. The server forwards the request to the corresponding counter, and our system chooses the shard randomly and updates the shard value, which is initially zero. In contrast, when the server receives read requests, it adds the values of all the shards of a counter to get the current total."
+  },
+  {
+   "t": "p",
+   "k": "c8b56f7dad2d",
+   "en": "We can use a sharded counter for every scenario where we need scalable counting (such as Facebook posts and YouTube videos)."
+  },
+  {
+   "t": "h2",
+   "k": "b72a86678b21",
+   "en": "API design for sharded counters"
+  },
+  {
+   "t": "p",
+   "k": "ebf607b6dbf3",
+   "en": "This section discusses the APIs that will be called for sharded counters. Our API design will help us understand the interactions between sharded counters and their callers. To make our discussion concrete, we’ll discuss each API function in the context of Twitter. Let’s develop APIs for each of the following functionalities:"
+  },
+  {
+   "t": "h3",
+   "k": "d1d0f92903e6",
+   "en": "Create counter"
+  },
+  {
+   "t": "p",
+   "k": "deeb87fc6c84",
+   "en": "The \\createCounter API initializes a distributed counter for use. The \\createCounter API is given below:"
+  },
+  {
+   "t": "code",
+   "k": "8672a98224ab",
+   "en": "createCounter(counter_id, number_of_shards)"
+  },
+  {
+   "t": "p",
+   "k": "8a86f07291d6",
+   "en": "ParameterDescription counter_idIt represents the unique ID of the counter. The caller of this API can use a sequencer to get a unique identifier. See the lesson on sequencer building blocks for more details. number_of_shardsIt specifies the number of shards for the counter."
+  },
+  {
+   "t": "p",
+   "k": "900c78e5df9b",
+   "en": "We can use an appropriate data store to keep our metadata, which includes counter identifiers, their number of shards, and the mapping of shards to physical machines."
+  },
+  {
+   "t": "p",
+   "k": "277066b5109a",
+   "en": "Let’s consider Twitter as an example to understand how an application uses the above API. The \\createCounter API is used when a user posts something on social media. For instance, if a user posts a tweet on Twitter, the application server calls the \\createCounter API. The content_type parameter is the post type that the system uses to decide the number of counters that need to be created."
+  },
+  {
+   "t": "p",
+   "k": "89d135fd3332",
+   "en": "For example, the system needs a view counter only if the tweet contains a video clip."
+  },
+  {
+   "t": "p",
+   "k": "81e6e4145b30",
+   "en": "To find an appropriate value for number_of_shards, we can use the following heuristics:"
+  },
+  {
+   "t": "p",
+   "k": "9eab1bf5a0df",
+   "en": "The followers_count parameter denotes the followers’ count of the user who posts a tweet."
+  },
+  {
+   "t": "p",
+   "k": "35203884a461",
+   "en": "The post_type parameter specifies whether the post is public or protected."
+  },
+  {
+   "t": "p",
+   "k": "ad8f637f0153",
+   "en": "Protected tweets are for the followers only, and in this case, we have a better predictor of the number of shards."
+  },
+  {
+   "t": "h3",
+   "k": "0a03cef2952d",
+   "en": "Write counter"
+  },
+  {
+   "t": "p",
+   "k": "0c764b2b24ba",
+   "en": "The \\writeCounter API is used when we want to increment (or decrement) a counter. In reality, a specific shard of the counter is incremented or decremented, and our service makes that decision based on multiple factors, which we’ll discuss later. The \\writeCounter API is given below:"
+  },
+  {
+   "t": "code",
+   "k": "67193f68f20a",
+   "en": "writeCounter(counter_id, action_type)"
+  },
+  {
+   "t": "p",
+   "k": "c34f7fa26a48",
+   "en": "ParameterDescription counter_idIt is the unique identifier (provided at the time of counter creation). action_typeIt specifies the intended action (increment or decrement value of the counter). We extract the required information about the counter from our data store."
+  },
+  {
+   "t": "p",
+   "k": "1c5ad3c8ca7e",
+   "en": "In our Twitter example, the \\writeCounter API is used when users act (by liking, replying, and so on) on someone else’s post or their own post."
+  },
+  {
+   "t": "h3",
+   "k": "c6295fa3252d",
+   "en": "Read counter"
+  },
+  {
+   "t": "p",
+   "k": "5bc2e14e4aa6",
+   "en": "The \\readCounter API is used when we want to know the current value of the counter. Our system fetches appropriate information from the datastore to collect value from all shards. The \\readCounter API is given below:"
+  },
+  {
+   "t": "code",
+   "k": "2face51d364e",
+   "en": "readCounter(counter_id)"
+  },
+  {
+   "t": "p",
+   "k": "e6505d14739c",
+   "en": "ParameterDescription counter_idIt is the unique identifier (provided at the time of counter creation)."
+  },
+  {
+   "t": "p",
+   "k": "137ef877d906",
+   "en": "For Twitter, the counter_id will be decided based on the following metrics:"
+  },
+  {
+   "t": "p",
+   "k": "b410c7989a4f",
+   "en": "The tweet_id specifies the tweet's unique ID for which the request is generated. We can use tweet_id to get the counter_id for all the counters of the features (likes, retweets, and so on)."
+  },
+  {
+   "t": "p",
+   "k": "399814da6ff3",
+   "en": "The \\readCounter API is called when users want to see the number of likes or view counts on a specific tweet. Usually, this API is triggered by another API when users want to see their home or user timeline."
+  },
+  {
+   "t": "p",
+   "k": "5fc7bf772004",
+   "en": "The following section will discuss what happens in the back-end system when all the above APIs are called."
+  },
+  {
+   "t": "h1",
+   "k": "04d31477f509",
+   "en": "Detailed Design of Sharded Counters"
+  },
+  {
+   "t": "p",
+   "k": "8f25d462e744",
+   "en": "Learn about the design of sharded counters in detail."
+  },
+  {
+   "t": "h2",
+   "k": "674535ec930b",
+   "en": "Detailed design"
+  },
+  {
+   "t": "p",
+   "k": "bd85607b0e4a",
+   "en": "We’ll now discuss the three primary functionalities of the sharded counter– creation, write, and read–in detail. We’ll answer many important questions by using Twitter as an example. These questions include:"
+  },
+  {
+   "t": "p",
+   "k": "1176076787a7",
+   "en": "How many shards should be created against each new tweet?"
+  },
+  {
+   "t": "p",
+   "k": "c263475d573c",
+   "en": "How will the shard value be incremented for a specific tweet?"
+  },
+  {
+   "t": "p",
+   "k": "889c783503df",
+   "en": "What will happen in the system when read requests come from the end users?"
+  },
+  {
+   "t": "h3",
+   "k": "0f5d90185ab2",
+   "en": "Sharded counter creation"
+  },
+  {
+   "t": "p",
+   "k": "770d13a8d6cb",
+   "en": "As we discussed earlier, when a user posts a tweet on Twitter, the \\createCounter API is called. The system creates multiple counters for each newly created post by the user. The following is the list of main counters created against each new tweet:"
+  },
+  {
+   "t": "p",
+   "k": "0e2e3e50186d",
+   "en": "Tweet like counter Tweet reply counter Tweet retweet counter Tweet view counter in case a tweet contains video Now, the question is how does the system decide the number of shards in each counter? The number of shards is critical for good performance. If the shard count is small for a specific write workload, we face high write contention, which results in slow writes. On the other hand, if the shard count is too high for a particular write profile, we encounter a higher overhead on the read operation. The reason for slower reads is because of the collection of values from different shards that might reside on different nodes inside geographically distributed data centers. The reading cost of a counter value rises linearly with the number of shards because the values of all shards of a respective counter are added. The writes scale linearly as we add new shards due to increasing requests. Therefore, there is a trade-off between making writes quick versus read performance. We’ll discuss how we can improve read performance later."
+  },
+  {
+   "t": "p",
+   "k": "d914ea5e1d90",
+   "en": "The decision about the number of shards depends on many factors that collectively try to predict the write load on a specific counter in the short term."
+  },
+  {
+   "t": "p",
+   "k": "dc2929080a11",
+   "en": "For tweets, these factors include follower count. The tweet of a user with millions of followers gets more shards than a user with few followers on Twitter because there is a possibility that their tweets will get many, often millions, of likes. Sometimes, a celebrity tweet includes one or more hashtags. The system also creates the sharded counter for this hashtag because it has a high chance of being marked as a trend."
+  },
+  {
+   "t": "p",
+   "k": "9d69bfdb99bf",
+   "en": "Many human-centered activities often have a long-tailed activity pattern, where many people are concentrated on a relatively small set of activities. Perhaps shortened attention spans might be playing a role here. It means that after some time, the flurry of likes will die down, and we might not need as many shards now for a counter as were once needed. Similarly, our initial prediction for future writes might turn out to be wrong, and we might need more shards to handle write requests. We require that our system can dynamically expand or shrink the number of shards based on the current need."
+  },
+  {
+   "t": "p",
+   "k": "b89fa7268802",
+   "en": "We need to monitor the write load for all the shards to appropriately route requests to specific shards, possibly using load balancers. Such a feedback mechanism can also help us decide when to close down some of the shards for a counter and when to add additional shards. This process does not only provide good performance for the end user but also utilizes our resources at near-optimal levels."
+  },
+  {
+   "t": "p",
+   "k": "e919b6334d6e",
+   "en": "Point to Ponder What happens when a user with just a few followers has a post go viral on Twitter?"
+  },
+  {
+   "t": "p",
+   "k": "f7d8bd7fe030",
+   "en": "Hide Answer The system needs to detect such cases where a counter unexpectedly starts getting very high write traffic. We’ll dynamically increase the number of shards of the affected counter to mitigate the situation."
+  },
+  {
+   "t": "h3",
+   "k": "978b520024de",
+   "en": "Burst of writes requests"
+  },
+  {
+   "t": "p",
+   "k": "8b995b71aa58",
+   "en": "As we mentioned earlier, millions of users interact with our example celebrity’s tweet, which eventually sends a burst of write requests to the system. The system assigns each write request to the available shards of the specified counter of the particular tweet. How does the system select these shards operating on different computational units (nodes) to assign the write requests? We can use three approaches to do this:"
+  },
+  {
+   "t": "h3",
+   "k": "d44bec264609",
+   "en": "Round-robin selection"
+  },
+  {
+   "t": "p",
+   "k": "71be16aadb2c",
+   "en": "One way to solve the above problem is to use a round-robin selection of shards."
+  },
+  {
+   "t": "p",
+   "k": "b4b603af2911",
+   "en": "For example, let’s assume the number of shards is 100. The system starts with shard_1, then shard_2, and continues until it reaches shard_100. Usually, round-robin work allocation either overloads or underutilizes resources because scheduling is done without considering the current load conditions. However, if each request is similar (and roughly needs the same time to serve), a round-robin approach can be used and is attractive for its simplicity."
+  },
+  {
+   "t": "p",
+   "k": "902fb8f294c4",
+   "en": "The following slide show shows shard selection using the round-robin technique."
+  },
+  {
+   "t": "p",
+   "k": "b2c091b341d5",
+   "en": "We assume that user requests are first handed out to an appropriate server by the load balancer. Then, each such server uses its own round-robin scheduling to use a shard. We have shown a single server for simplicity, but a shard server can receive requests from many servers at the same time and might be overloaded, causing delays for the specific server’s request, which can be seen in the following slide."
+  },
+  {
+   "t": "h3",
+   "k": "407a35c56be0",
+   "en": "Random selection"
+  },
+  {
+   "t": "h3",
+   "k": "5d73390ac10e",
+   "en": "Metrics-based selection"
+  },
+  {
+   "t": "p",
+   "k": "30d24d701963",
+   "en": "The third approach is shard selection based on specific metrics. For example, a dedicated node (load balancer) manages the selection of the shards by reading the shards’ status. The below slides go over how sharded counters are created:"
+  },
+  {
+   "t": "h3",
+   "k": "39a5536e9581",
+   "en": "Manage read requests"
+  },
+  {
+   "t": "p",
+   "k": "c29a7369ecb5",
+   "en": "When the user sends the read request, the system will aggregate the value of all shards of the specified counter to return the total count of the feature (such as like or reply). Accumulating values from all the shards on each read request will result in low read throughput and high read latency."
+  },
+  {
+   "t": "p",
+   "k": "8de300872ce4",
+   "en": "The decision of when the system will sum all shards values is also very critical. If there is high write traffic along with reads, it might be virtually impossible to get a real current value because by the time we report a read value to the client, it will have already changed. So, periodically reading all the shards of a counter and caching it should serve most of the use cases. By reducing the accumulation period, we can increase the accuracy of read values."
+  },
+  {
+   "t": "p",
+   "k": "702fe35f9736",
+   "en": "Point to Ponder Can you think of a use case where sharded counters with the above-mentioned consistency model might not be suitable?"
+  },
+  {
+   "t": "p",
+   "k": "a6610f5b0bac",
+   "en": "Hide Answer We might not use shared counters with a relaxed consistency model where we need strong consistency. An example can be read-then-write scenarios where we first need to get the accurate value of something before deciding to modify it (actually, such a scenario will need transaction support)."
+  },
+  {
+   "t": "h2",
+   "k": "d129ed7b9a35",
+   "en": "Using sharded counters for the Top K problem"
+  },
+  {
+   "t": "p",
+   "k": "34a312664134",
+   "en": "This section will discuss how we can use sharded counters to solve a real-world problem known as the Top K problem. We’ll continue to use the real-time application Twitter as an example, where calculating trends is one of the Top K problems for Twitter. Here, K represents the number of top trends. Many users use various hashtags in their tweets. It is a huge challenge to manage millions of hashtags’ counts to show them in individual users’ trends timelines based on their locality."
+  },
+  {
+   "t": "p",
+   "k": "6803c43988bc",
+   "en": "The sharded counter is the key to the above problem. As discussed earlier, on Twitter, the system creates the counters for each hashtag and decides the shard count according to the user’s followers who used the hashtag in the tweet. When users on Twitter use the same hashtag again in their tweet, the count maintains the same counter created initially on the first use of that hashtag."
+  },
+  {
+   "t": "p",
+   "k": "189811bfba6d",
+   "en": "Twitter shows trends primarily based on the popularity of the specific hashtag in a user’s region. Twitter will maintain a separate counter for each discussed metric with a global hashtag counter. Let’s discuss each of the metrics below:"
+  },
+  {
+   "t": "p",
+   "k": "4c1ce2d2e386",
+   "en": "Region-wise hashtag count indicates the number of tweets with the same hashtag used within a specific geographical region. For example, thousands of tweets with the same tags from New York City suggest that users in the New York area may see this hashtag in their trends timeline."
+  },
+  {
+   "t": "p",
+   "k": "ad0c0dc7d5d5",
+   "en": "A time window indicates the amount of time during which tweets with specific tags are posted."
+  },
+  {
+   "t": "p",
+   "k": "c49e76f4f64a",
+   "en": "Below is more detail on the above illustration:"
+  },
+  {
+   "t": "p",
+   "k": "5f7fbb3c631c",
+   "en": "The global hashtag counter represents the total of all location-based counters."
+  },
+  {
+   "t": "p",
+   "k": "0581fb041859",
+   "en": "Location-based counters represent their current count when the system reaches the set threshold in a specified time and the hashtag becomes a trend for some users. For example, Twitter sets 10,000 as a threshold. When location-based hashtag counts reach 10,000, Twitter shows these hashtags in the trends timeline of the users of the respective country where the hashtag is being used. The specified hashtag may be displayed worldwide if counts increase in all countries."
+  },
+  {
+   "t": "p",
+   "k": "8a45280afd74",
+   "en": "Next, we’ll discuss Top K tweets in a user’s homepage timeline. The Top K tweets include accounts the user is following, tweets the user has liked, and retweets of accounts the user follows. Tweets get priority in Top K problems based on follower count and time. Twitter also shows promoted tweets and some tweets of accounts the user doesn’t follow in the user’s home timeline, depending on the tweet’s popularity and location."
+  },
+  {
+   "t": "li",
+   "k": "eb6c680cedef",
+   "en": "Note: Twitter also uses other metrics to optimize Top K selection, but we’ve discussed the leading metrics here.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "70057602de3f",
+   "en": "Placement of sharded counters"
+  },
+  {
+   "t": "p",
+   "k": "c8bbde75641c",
+   "en": "An important concern is where we should place shared counters. Should they reside on the same nodes as application servers, in separate nodes in the data center, in nodes of CDN at the edge of a network near the end users? The exact answer to this question depends on our specific use case. For Twitter, we can compute counts by placing sharded counters near the user, which can also help to handle heavy hitter and Top K problems efficiently."
+  },
+  {
+   "t": "p",
+   "k": "564076d8309c",
+   "en": "Quiz Should we lock all shards of a counter before accumulating their values?"
+  },
+  {
+   "t": "p",
+   "k": "28215b0a22f5",
+   "en": "Hide Answer No. Reads can happen concurrently with writes without the need for an across-shards lock. This lock will decimate the write performance, the original reason we used sharded counters. Under a relaxed consistency model, where the value of a counter might not reflect the exact current value, there is no need for simultaneous read locks across all shards."
+  },
+  {
+   "t": "p",
+   "k": "ef4e0b153887",
+   "en": "However, depending on the specific use case, such a mechanism might be used when reads frequency is very low."
+  },
+  {
+   "t": "p",
+   "k": "baf12bf25e25",
+   "en": "Reads can store counter values in appropriate data stores and rely on the respective data stores for read scalability. The Cassandra store can be used to maintain views, likes, comments, and many more counts of the users in the specified region. These counts represent the last computed sum of all shards of a particular counter."
+  },
+  {
+   "t": "p",
+   "k": "a475981148f9",
+   "en": "When users generate a timeline, read requests are forwarded to the nearest servers, and then the persisted values in the store can be used to respond. This storage also helps to show the region-wise Top K trends. The list of local Top K trends is sent to the application server, and then the application server sorts all the lists to make a list of global Top K trends. Eventually, the application server sends all counters’ details to the cache."
+  },
+  {
+   "t": "p",
+   "k": "c1e5e9e756db",
+   "en": "We also need storage for the sharded counters, which store all information about them with their metadata. The Redis or Memcache servers can play a vital role here. For example, each tweet’s unique ID can become the key, and the value of this key can be a counter ID, or a list of counters’ IDs (like counter, reply counter, and so on). Furthermore, each counter ID has its own key-value store where the counter (for example, a likes counter) ID is a key and the value is a list of assigned shards."
+  },
+  {
+   "t": "p",
+   "k": "df97b07fe8df",
+   "en": "The job of identifying the relevant counter and mapping all write requests to the appropriate counter in sharded counters can be done in parallel. We map the all-write request to the appropriate counter, and then each counter chooses a shard randomly based on some metrics to do increments and decrements. In contrast, we reduce periodically to aggregate the value of all shards of the particular counter. Then, these counter values can be stored in the Cassandra store. The slides below help illustrate these points:"
+  },
+  {
+   "t": "h2",
+   "k": "015d95327585",
+   "en": "Evaluation of the sharded counters"
+  },
+  {
+   "t": "h3",
+   "k": "f2c1b76db30d",
+   "en": "Availability"
+  },
+  {
+   "t": "p",
+   "k": "0289f2bad3b0",
+   "en": "A single counter for any feature (such as like, view, or reply) has a high risk of a single point of failure. Sharded counters eliminate a single point of failure by running many shards for a particular counter. The system remains available even if some shards go down or suffer a fault. This way, sharded counters provide high availability."
+  },
+  {
+   "t": "h3",
+   "k": "b06273ade235",
+   "en": "Scalability"
+  },
+  {
+   "t": "p",
+   "k": "e2c24f31de92",
+   "en": "Sharded counters allow high horizontal scaling as needed. Shards running on additional nodes can be easily added to the system to scale up our operation capacity. Eventually, these additional shards also increase the system’s performance."
+  },
+  {
+   "t": "h3",
+   "k": "844e392a5d6c",
+   "en": "Reliability"
+  },
+  {
+   "t": "p",
+   "k": "517aded87423",
+   "en": "Another primary purpose of the sharded counters is to reduce the massive write request by mapping each write request to a particular shard. Each write request is handled when it comes, and there is no request waiting in the queue. Due to this, the hit ratio increases, and the system’s reliability also increases."
+  },
+  {
+   "t": "p",
+   "k": "74529c3be175",
+   "en": "Furthermore, the system periodically saves the computed counts in stable storage—Cassandra, in this case."
+  },
+  {
+   "t": "h2",
+   "k": "6a38a38f03e4",
+   "en": "Conclusion"
+  }
+ ]
+}

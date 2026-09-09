@@ -1,0 +1,152 @@
+{
+ "id": "48-incrementally-strangling-a-monolith",
+ "title": "Incrementally Strangling a Monolith",
+ "titleKey": "d8bc8a638c15",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "e2b4dbe0bd76",
+   "en": "Your monolith is 6 years old. 500k lines of code. One deploy every 3 weeks. One bad migration takes down the whole thing."
+  },
+  {
+   "t": "p",
+   "k": "0e8cfe136eba",
+   "en": "Leadership says: \"rewrite it.\" You've seen what happens when teams do that. 18 months. Budget overruns."
+  },
+  {
+   "t": "p",
+   "k": "9c33a39f926f",
+   "en": "Half the features never make it back. The new system launches and nobody trusts it."
+  },
+  {
+   "t": "p",
+   "k": "55597cf5fd33",
+   "en": "There's a better way. You don't rewrite — you strangle."
+  },
+  {
+   "t": "p",
+   "k": "baf2877ab3b3",
+   "en": "Here's your system:"
+  },
+  {
+   "t": "li",
+   "k": "95f2d1969c65",
+   "en": "OrderService (monolith) handles: order creation, fulfillment, invoicing, returns"
+  },
+  {
+   "t": "li",
+   "k": "230db81cbcdc",
+   "en": "40 engineers. 3 teams. All deploying to the same codebase."
+  },
+  {
+   "t": "li",
+   "k": "9ca474daba83",
+   "en": "Returns processing is a bottleneck. The business wants it extracted first."
+  },
+  {
+   "t": "li",
+   "k": "83b531d70a7d",
+   "en": "You can't freeze feature work during migration."
+  },
+  {
+   "t": "p",
+   "k": "c3359d921548",
+   "en": "You need to extract Returns into a standalone service without a big-bang rewrite."
+  },
+  {
+   "t": "p",
+   "k": "9856a6e71ec3",
+   "en": "What's your migration strategy?"
+  },
+  {
+   "t": "p",
+   "k": "a91838f9f9f0",
+   "en": "A) Strangler Fig — route /returns traffic to a new service via a proxy/facade, keep the monolith intact until the new service is proven. Deprecate monolith code after."
+  },
+  {
+   "t": "p",
+   "k": "fde962bdae37",
+   "en": "B) Branch by Abstraction — introduce an interface inside the monolith, build the new implementation behind it, flip the switch when ready, then move it out."
+  },
+  {
+   "t": "p",
+   "k": "c9736f1e8318",
+   "en": "C) Big Bang Rewrite — freeze the monolith, rebuild everything in microservices in parallel, cut over when done."
+  },
+  {
+   "t": "p",
+   "k": "124ffd4a8864",
+   "en": "D) Database-First Migration — extract the returns database tables into a separate schema first, build the service around it, then reroute traffic."
+  },
+  {
+   "t": "h3",
+   "k": "71c3695c56b9",
+   "en": "DAY 47 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "li",
+   "k": "f7bbb6ecd435",
+   "en": "Why A wins:",
+   "lead": "Why A wins"
+  },
+  {
+   "t": "p",
+   "k": "3a77769d6bd9",
+   "en": "You introduce a routing proxy in front of the monolith. /returns traffic routes to the new service. The monolith handles everything else. You run both in parallel — no freeze, no big-bang. Migrate one endpoint at a time, each step independently rollback-able. Only deprecate monolith code after the new service has proven itself under real load. Netflix and Amazon have run versions of this at scale."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "c94b0c2635a0",
+   "en": "Why B is close but different (Branch by Abstraction):",
+   "lead": "Why B is close but different (Branch by Abstraction)"
+  },
+  {
+   "t": "p",
+   "k": "5f0c6ea81281",
+   "en": "Real pattern — but it lives inside the codebase. You wrap the logic behind an interface, build the new implementation behind a flag, then flip it. It's a refactoring tool, not a deployment strategy. Often used inside a Strangler Fig migration to prepare internal structure. But on its own it doesn't get you to an independently deployed service."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "327ae5e6ef98",
+   "en": "Why C is wrong (Big Bang Rewrite):",
+   "lead": "Why C is wrong (Big Bang Rewrite)"
+  },
+  {
+   "t": "p",
+   "k": "824a2277333d",
+   "en": "The monolith doesn't freeze while you rebuild. Business keeps shipping features. Your parallel rewrite immediately diverges from reality. \"Done\" keeps moving. The cutover is a single high-stakes event with no incremental validation. Joel Spolsky called this \"the single worst strategic mistake any software company can make\" — because every hack in the old codebase was a real bug fix you've now forgotten."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "10b98574953c",
+   "en": "Why D is more dangerous than it looks (Database-First):",
+   "lead": "Why D is more dangerous than it looks (Database-First)"
+  },
+  {
+   "t": "p",
+   "k": "ef59618a8ce8",
+   "en": "Extracting the DB tables first sounds logical but breaks the monolith's ORM immediately. You've created a distributed data problem before building the distributed system to handle it. Data migration is the last step — extract service logic first, keep data co-located temporarily, then migrate with dual-write. Doing it in reverse order compounds the risk at every step."
+  },
+  {
+   "t": "h3",
+   "k": "e9a64451b441",
+   "en": "DAY 48 · SYSTEM DESIGN"
+  }
+ ]
+}

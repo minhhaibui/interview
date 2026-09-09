@@ -1,0 +1,398 @@
+{
+ "id": "08-chapter-7-design-a-unique-id-generator-in-distributed-system",
+ "title": "CHAPTER 7: DESIGN A UNIQUE ID GENERATOR IN DISTRIBUTED SYSTEMS",
+ "titleKey": "4fe15bc94c8b",
+ "book": "alex-vol1",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "11e2d1eeea05",
+   "en": "In this chapter, you are asked to design a unique ID generator in distributed systems. Your first thought might be to use a primary key with the auto_increment attribute in a traditional database. However, auto_increment does not work in a distributed environment because a single database server is not large enough and generating unique IDs across multiple databases with minimal delay is challenging."
+  },
+  {
+   "t": "p",
+   "k": "1b738dab398c",
+   "en": "Here are a few examples of unique IDs:"
+  },
+  {
+   "t": "h2",
+   "k": "cdb2072eee15",
+   "en": "Step 1 - Understand the problem and establish design scope"
+  },
+  {
+   "t": "p",
+   "k": "62de6e84e278",
+   "en": "Asking clarification questions is the first step to tackle any system design interview question."
+  },
+  {
+   "t": "p",
+   "k": "e9fd19648868",
+   "en": "Here is an example of candidate-interviewer interaction:"
+  },
+  {
+   "t": "p",
+   "k": "13a9e90b8c52",
+   "en": "Candidate: What are the characteristics of unique IDs?"
+  },
+  {
+   "t": "p",
+   "k": "ff0855b154d6",
+   "en": "Interviewer: IDs must be unique and sortable."
+  },
+  {
+   "t": "p",
+   "k": "f1cd86caf124",
+   "en": "Candidate: For each new record, does ID increment by 1?"
+  },
+  {
+   "t": "p",
+   "k": "a7df73c000eb",
+   "en": "Interviewer: The ID increments by time but not necessarily only increments by 1. IDs created in the evening are larger than those created in the morning on the same day."
+  },
+  {
+   "t": "p",
+   "k": "54707644d550",
+   "en": "Candidate: Do IDs only contain numerical values?"
+  },
+  {
+   "t": "p",
+   "k": "03d9e98ac623",
+   "en": "Interviewer: Yes, that is correct."
+  },
+  {
+   "t": "p",
+   "k": "b3baaa76f527",
+   "en": "Candidate: What is the ID length requirement?"
+  },
+  {
+   "t": "p",
+   "k": "1eae43cb9592",
+   "en": "Interviewer: IDs should fit into 64-bit."
+  },
+  {
+   "t": "p",
+   "k": "4a47cb6d9b26",
+   "en": "Candidate: What is the scale of the system?"
+  },
+  {
+   "t": "p",
+   "k": "1b5103816800",
+   "en": "Interviewer: The system should be able to generate 10,000 IDs per second."
+  },
+  {
+   "t": "p",
+   "k": "c41c7fed20c4",
+   "en": "Above are some of the sample questions that you can ask your interviewer. It is important to understand the requirements and clarify ambiguities. For this interview question, the requirements are listed as follows:"
+  },
+  {
+   "t": "li",
+   "k": "060f0aa5c1bc",
+   "en": "IDs must be unique."
+  },
+  {
+   "t": "li",
+   "k": "5fbff891bf57",
+   "en": "IDs are numerical values only."
+  },
+  {
+   "t": "li",
+   "k": "cffddd27efdd",
+   "en": "IDs fit into 64-bit."
+  },
+  {
+   "t": "li",
+   "k": "b717b02a2da1",
+   "en": "IDs are ordered by date."
+  },
+  {
+   "t": "li",
+   "k": "d0cef9318541",
+   "en": "Ability to generate over 10,000 unique IDs per second."
+  },
+  {
+   "t": "h2",
+   "k": "21ec56b45561",
+   "en": "Step 2 - Propose high-level design and get buy-in"
+  },
+  {
+   "t": "p",
+   "k": "a017711730a6",
+   "en": "Multiple options can be used to generate unique IDs in distributed systems. The options we considered are:"
+  },
+  {
+   "t": "li",
+   "k": "3081c4056e99",
+   "en": "Multi-master replication"
+  },
+  {
+   "t": "li",
+   "k": "92f6a5ebb00e",
+   "en": "Universally unique identifier (UUID)"
+  },
+  {
+   "t": "li",
+   "k": "f8598c008fa3",
+   "en": "Ticket server"
+  },
+  {
+   "t": "li",
+   "k": "90ca09133adb",
+   "en": "Twitter snowflake approach Let us look at each of them, how they work, and the pros/cons of each option."
+  },
+  {
+   "t": "h2",
+   "k": "3081c4056e99",
+   "en": "Multi-master replication"
+  },
+  {
+   "t": "p",
+   "k": "244d761e59da",
+   "en": "As shown in Figure 7-2, the first approach is multi-master replication."
+  },
+  {
+   "t": "p",
+   "k": "13f828087e54",
+   "en": "This approach uses the databases’ auto_increment feature. Instead of increasing the next ID by 1, we increase it by k, where k is the number of database servers in use. As illustrated in Figure 7-2, next ID to be generated is equal to the previous ID in the same server plus 2. This solves some scalability issues because IDs can scale with the number of database servers."
+  },
+  {
+   "t": "p",
+   "k": "801baef3113c",
+   "en": "However, this strategy has some major drawbacks:"
+  },
+  {
+   "t": "li",
+   "k": "16f388e71863",
+   "en": "Hard to scale with multiple data centers"
+  },
+  {
+   "t": "li",
+   "k": "547f6dcc6b7b",
+   "en": "IDs do not go up with time across multiple servers."
+  },
+  {
+   "t": "li",
+   "k": "a41e2451769a",
+   "en": "It does not scale well when a server is added or removed."
+  },
+  {
+   "t": "h2",
+   "k": "48e3462cbeed",
+   "en": "UUID"
+  },
+  {
+   "t": "p",
+   "k": "221caef3eb05",
+   "en": "A UUID is another easy way to obtain unique IDs. UUID is a 128-bit number used to identify information in computer systems. UUID has a very low probability of getting collusion."
+  },
+  {
+   "t": "p",
+   "k": "1ee3bf29b7b8",
+   "en": "Quoted from Wikipedia, “after generating 1 billion UUIDs every second for approximately 100 years would the probability of creating a single duplicate reach 50%” [1]."
+  },
+  {
+   "t": "p",
+   "k": "2163f4f9e3ed",
+   "en": "Here is an example of UUID: 09c93e62-50b4-468d-bf8a-c07e1040bfb2. UUIDs can be generated independently without coordination between servers. Figure 7-3 presents the UUIDs design."
+  },
+  {
+   "t": "p",
+   "k": "666ab91de63a",
+   "en": "In this design, each web server contains an ID generator, and a web server is responsible for generating IDs independently."
+  },
+  {
+   "t": "p",
+   "k": "6876fe088f66",
+   "en": "Pros:"
+  },
+  {
+   "t": "li",
+   "k": "d0fedddc1a3f",
+   "en": "Generating UUID is simple. No coordination between servers is needed so there will not be any synchronization issues."
+  },
+  {
+   "t": "li",
+   "k": "9b2040ce6a54",
+   "en": "The system is easy to scale because each web server is responsible for generating IDs they consume. ID generator can easily scale with web servers."
+  },
+  {
+   "t": "p",
+   "k": "898d607196f9",
+   "en": "Cons:"
+  },
+  {
+   "t": "li",
+   "k": "b732d9718c13",
+   "en": "IDs are 128 bits long, but our requirement is 64 bits."
+  },
+  {
+   "t": "li",
+   "k": "c8563fb39546",
+   "en": "IDs do not go up with time."
+  },
+  {
+   "t": "li",
+   "k": "ce367a18457b",
+   "en": "IDs could be non-numeric."
+  },
+  {
+   "t": "h2",
+   "k": "f8598c008fa3",
+   "en": "Ticket Server"
+  },
+  {
+   "t": "p",
+   "k": "913aade12d41",
+   "en": "Ticket servers are another interesting way to generate unique IDs. Flicker developed ticket servers to generate distributed primary keys [2]. It is worth mentioning how the system works."
+  },
+  {
+   "t": "p",
+   "k": "096ffb95cc1e",
+   "en": "The idea is to use a centralized auto_increment feature in a single database server (Ticket Server). To learn more about this, refer to flicker’s engineering blog article [2]."
+  },
+  {
+   "t": "p",
+   "k": "6876fe088f66",
+   "en": "Pros:"
+  },
+  {
+   "t": "li",
+   "k": "3d3e34333fe0",
+   "en": "Numeric IDs."
+  },
+  {
+   "t": "li",
+   "k": "074d907be6f8",
+   "en": "It is easy to implement, and it works for small to medium-scale applications."
+  },
+  {
+   "t": "p",
+   "k": "898d607196f9",
+   "en": "Cons:"
+  },
+  {
+   "t": "li",
+   "k": "e4b3e9c29291",
+   "en": "Single point of failure. Single ticket server means if the ticket server goes down, all systems that depend on it will face issues. To avoid a single point of failure, we can set up multiple ticket servers. However, this will introduce new challenges such as data synchronization."
+  },
+  {
+   "t": "h2",
+   "k": "dcc9b75595f6",
+   "en": "Twitter snowflake approach"
+  },
+  {
+   "t": "p",
+   "k": "4f14c861293e",
+   "en": "Approaches mentioned above give us some ideas about how different ID generation systems work. However, none of them meet our specific requirements; thus, we need another approach. Twitter’s unique ID generation system called “snowflake” [3] is inspiring and can satisfy our requirements."
+  },
+  {
+   "t": "p",
+   "k": "5d2bd88460d7",
+   "en": "Divide and conquer is our friend. Instead of generating an ID directly, we divide an ID into different sections. Figure 7-5 shows the layout of a 64-bit ID."
+  },
+  {
+   "t": "p",
+   "k": "681aecfc9604",
+   "en": "Each section is explained below."
+  },
+  {
+   "t": "li",
+   "k": "77be398b05fd",
+   "en": "Sign bit: 1 bit. It will always be 0. This is reserved for future uses. It can potentially be used to distinguish between signed and unsigned numbers."
+  },
+  {
+   "t": "li",
+   "k": "35dfe46bc5b5",
+   "en": "Timestamp: 41 bits. Milliseconds since the epoch or custom epoch. We use Twitter snowflake default epoch 1288834974657, equivalent to Nov 04, 2010, 01:42:54 UTC."
+  },
+  {
+   "t": "li",
+   "k": "a99641e6279b",
+   "en": "Datacenter ID: 5 bits, which gives us 2 ^ 5 = 32 datacenters."
+  },
+  {
+   "t": "li",
+   "k": "aa319a2681d5",
+   "en": "Machine ID: 5 bits, which gives us 2 ^ 5 = 32 machines per datacenter."
+  },
+  {
+   "t": "li",
+   "k": "382be9cae2b9",
+   "en": "Sequence number: 12 bits. For every ID generated on that machine/process, the sequence number is incremented by 1. The number is reset to 0 every millisecond."
+  },
+  {
+   "t": "h2",
+   "k": "5008c4b3d7bc",
+   "en": "Step 3 - Design deep dive"
+  },
+  {
+   "t": "p",
+   "k": "ce4e7f6e15d7",
+   "en": "In the high-level design, we discussed various options to design a unique ID generator in distributed systems. We settle on an approach that is based on the Twitter snowflake ID generator. Let us dive deep into the design. To refresh our memory, the design diagram is relisted below."
+  },
+  {
+   "t": "h3",
+   "k": "a5a01b8fa531",
+   "en": "Timestamp"
+  },
+  {
+   "t": "p",
+   "k": "5c28c546cbcb",
+   "en": "The most important 41 bits make up the timestamp section. As timestamps grow with time, IDs are sortable by time. Figure 7-7 shows an example of how binary representation is converted to UTC. You can also convert UTC back to binary representation using a similar method."
+  },
+  {
+   "t": "p",
+   "k": "e383361eb152",
+   "en": "The maximum timestamp that can be represented in 41 bits is 2 ^ 41 - 1 = 2199023255551 milliseconds (ms), which gives us: ~ 69 years = 2199023255551 ms / 1000 seconds / 365 days / 24 hours/ 3600 seconds. This means the ID generator will work for 69 years and having a custom epoch time close to today’s date delays the overflow time. After 69 years, we will need a new epoch time or adopt other techniques to migrate IDs."
+  },
+  {
+   "t": "h3",
+   "k": "9145c8cd29a9",
+   "en": "Sequence number"
+  },
+  {
+   "t": "p",
+   "k": "7d627a46fc64",
+   "en": "Sequence number is 12 bits, which give us 2 ^ 12 = 4096 combinations. This field is 0 unless more than one ID is generated in a millisecond on the same server. In theory, a machine can support a maximum of 4096 new IDs per millisecond."
+  },
+  {
+   "t": "h2",
+   "k": "02a33876c958",
+   "en": "Step 4 - Wrap up"
+  },
+  {
+   "t": "p",
+   "k": "8dd50e10b56e",
+   "en": "If there is extra time at the end of the interview, here are a few additional talking points:"
+  },
+  {
+   "t": "li",
+   "k": "13c60a922844",
+   "en": "Clock synchronization. In our design, we assume ID generation servers have the same clock. This assumption might not be true when a server is running on multiple cores. The same challenge exists in multi-machine scenarios. Solutions to clock synchronization are out of the scope of this book; however, it is important to understand the problem exists."
+  },
+  {
+   "t": "p",
+   "k": "3ea030798cf5",
+   "en": "Network Time Protocol is the most popular solution to this problem. For interested readers, refer to the reference material [4]."
+  },
+  {
+   "t": "li",
+   "k": "ba47d5b50c87",
+   "en": "Section length tuning. For example, fewer sequence numbers but more timestamp bits are effective for low concurrency and long-term applications."
+  },
+  {
+   "t": "li",
+   "k": "9a1d74d65240",
+   "en": "High availability. Since an ID generator is a mission-critical system, it must be highly available."
+  },
+  {
+   "t": "p",
+   "k": "71b8b7a68128",
+   "en": "Congratulations on getting this far! Now give yourself a pat on the back. Good job!"
+  },
+  {
+   "t": "p",
+   "k": "3bd5efc2f4e8",
+   "en": "[1] Universally unique identifier: https://en.wikipedia.org/wiki/Universally_unique_identifier [2] Ticket Servers: Distributed Unique Primary Keys on the Cheap: https://code.flickr.net/2010/02/08/ticket-servers-distributed-unique-primary-keys-on-the-cheap/ [3] Announcing Snowflake: https://blog.twitter.com/engineering/en_us/a/2010/announcing-snowflake.html [4] Network time protocol: https://en.wikipedia.org/wiki/Network_Time_Protocol"
+  }
+ ]
+}

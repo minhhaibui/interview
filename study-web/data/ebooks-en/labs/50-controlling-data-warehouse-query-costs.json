@@ -1,0 +1,213 @@
+{
+ "id": "50-controlling-data-warehouse-query-costs",
+ "title": "Controlling Data-Warehouse Query Costs",
+ "titleKey": "87fd87e4de68",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "f37c2f1e9779",
+   "en": "Your data team just opened a $4,200 BigQuery bill."
+  },
+  {
+   "t": "p",
+   "k": "8fb4fe09646b",
+   "en": "For a single month. One analyst. 12 queries."
+  },
+  {
+   "t": "p",
+   "k": "0476508c3cf1",
+   "en": "The queries weren't wrong. They weren't inefficient SQL. They were reasonable analytics queries — \"give me last 30 days of events for customer X.\" The problem was that every single one scanned the full 3.2 TB table. No partition pruning. No cost control. Just full scans, every time."
+  },
+  {
+   "t": "p",
+   "k": "34470f94b462",
+   "en": "This is the most expensive silent bug in data engineering. You write a query. It looks fast. It returns results."
+  },
+  {
+   "t": "p",
+   "k": "a6df25a82a62",
+   "en": "And every run quietly eats through terabytes you're paying per-byte to scan."
+  },
+  {
+   "t": "p",
+   "k": "804d28e4828f",
+   "en": "The fix is partition strategy — but picking the wrong one doesn't just fail to help, it actively makes things worse."
+  },
+  {
+   "t": "li",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:",
+   "lead": "Here's the setup"
+  },
+  {
+   "t": "p",
+   "k": "0e9e0c890458",
+   "en": "You're running a 3.2 TB events table on BigQuery. 18 months of data. Ingested daily. Analyst queries almost always filter on two things: a date range (\"last 30 days\") and a customer_id (\"for customer X\")."
+  },
+  {
+   "t": "p",
+   "k": "15d8d360dae4",
+   "en": "Which partition + clustering strategy do you pick?"
+  },
+  {
+   "t": "p",
+   "k": "b112450be050",
+   "en": "A) Partition by ingestion date — date range queries only scan the relevant day-partitions."
+  },
+  {
+   "t": "p",
+   "k": "a9ee16d07403",
+   "en": "B) Partition by customer_id ranges — customer queries only scan the relevant ID bucket."
+  },
+  {
+   "t": "p",
+   "k": "8f6a34b52dbc",
+   "en": "C) No partitioning — use Redshift DISTKEY on customer_id + SORTKEY on event_time."
+  },
+  {
+   "t": "p",
+   "k": "c686f6f35f48",
+   "en": "D) Partition by ingestion date + cluster on customer_id — date pruning cuts the partition, clustering prunes within it."
+  },
+  {
+   "t": "h3",
+   "k": "f06614378cee",
+   "en": "DAY 49 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "li",
+   "k": "66aa32556f82",
+   "en": "Why D wins:",
+   "lead": "Why D wins"
+  },
+  {
+   "t": "p",
+   "k": "bd58bcc00e20",
+   "en": "Your analyst queries always filter on two columns: a date range and a customer_id. A single-key strategy protects one and ignores the other."
+  },
+  {
+   "t": "p",
+   "k": "e51c67162034",
+   "en": "Here's what D does in BigQuery:"
+  },
+  {
+   "t": "li",
+   "k": "6d012fedc430",
+   "en": "Partition by date BigQuery skips every partition outside the date range before scanning a single→ row. For a \"last 30 days\" query on 18 months of data, you immediately eliminate ~94% of the table."
+  },
+  {
+   "t": "li",
+   "k": "d8ec3bc6d447",
+   "en": "Cluster by customer_id Within each scanned partition, BigQuery sorts the rows by customer_id→ into storage blocks. A filter on customer_id now skips 90–95% of the remaining rows."
+  },
+  {
+   "t": "p",
+   "k": "0685d1b52e61",
+   "en": "Combined: a \"last 30 days for customer X\" query goes from scanning 3.2 TB ~12 GB. Bill drops→ from $4,200 ~$70/month. Same queries. Same data. Right strategy.→ This pattern works across every major warehouse: BigQuery (partition + cluster), Snowflake (micro-partitioning + cluster keys), Redshift (partition key + SORTKEY compound)."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "51b78a0ac2c7",
+   "en": "Why A is incomplete (date partition only):",
+   "lead": "Why A is incomplete (date partition only)"
+  },
+  {
+   "t": "p",
+   "k": "08b87e4a7e78",
+   "en": "Date partition alone is a real improvement — date range filters prune the irrelevant partitions immediately. Your bill probably drops 60–70%."
+  },
+  {
+   "t": "p",
+   "k": "c9cdba062ff1",
+   "en": "But your analyst queries also filter by customer_id. Inside each date partition, all customer rows are interleaved across storage blocks. BigQuery has to read the entire partition to find customer X's rows."
+  },
+  {
+   "t": "p",
+   "k": "df115102b2bf",
+   "en": "You've cut the scan from 3.2 TB ~500 GB (the last 30 days), but you're still scanning every→ customer inside that window."
+  },
+  {
+   "t": "p",
+   "k": "de87629f00fc",
+   "en": "A is the obvious first step. D is A taken all the way."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "97e31acca545",
+   "en": "Why B is the senior engineer trap (customer_id range partitioning):",
+   "lead": "Why B is the senior engineer trap (customer_id range partitioning)"
+  },
+  {
+   "t": "p",
+   "k": "8320ff700638",
+   "en": "This one gets smart people. Your analysts always filter by customer_id — why not partition on that?"
+  },
+  {
+   "t": "p",
+   "k": "c7306121bb88",
+   "en": "Because real customer_id distributions are never uniform. Your enterprise clients (IDs 1–10,000) generate 80% of all events. Every analytics query against active customers hits the same partition. No pruning benefit — the entire interesting data is in one bucket."
+  },
+  {
+   "t": "p",
+   "k": "aa3a073887b9",
+   "en": "Worse: your queries also filter by date. BigQuery now has to scan the full customer partition to find rows from the last 30 days. You've traded a full table scan for a full-partition scan on your hottest partition. Same cost, different framing."
+  },
+  {
+   "t": "p",
+   "k": "e2ba01a09b31",
+   "en": "Hot partitions on high-traffic ID ranges is the most common expensive mistake in data warehouse design. Looks right in theory. Never works in production."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "8f64dba4ab57",
+   "en": "Why C fails at this scale (DISTKEY + SORTKEY, no partitioning):",
+   "lead": "Why C fails at this scale (DISTKEY + SORTKEY, no partitioning)"
+  },
+  {
+   "t": "p",
+   "k": "c2bf0f3e9112",
+   "en": "DISTKEY distributes rows across Redshift nodes by customer_id hash — optimizes joins. SORTKEY on event_time sorts rows on disk within each slice — helps date range scans read contiguous blocks."
+  },
+  {
+   "t": "p",
+   "k": "ace5be41ddd9",
+   "en": "Both are real optimizations. Neither replaces partition pruning at 3.2 TB."
+  },
+  {
+   "t": "p",
+   "k": "51e6622fa244",
+   "en": "Without partitioning, every query triggers a full table scan across all nodes. If your DISTKEY distribution is skewed — which it will be when enterprise customers dominate — one Redshift node holds 60–70% of your data. Every expensive query hammers that node."
+  },
+  {
+   "t": "p",
+   "k": "5959458d2891",
+   "en": "You've turned a cost problem into a latency + cost problem."
+  },
+  {
+   "t": "p",
+   "k": "6d228cf7b1c8",
+   "en": "DISTKEY + SORTKEY is solid for join optimization and smaller tables. It's not a substitute for partition pruning at terabyte scale."
+  },
+  {
+   "t": "h3",
+   "k": "c77707cbc0ea",
+   "en": "DAY 50 · SYSTEM DESIGN"
+  }
+ ]
+}

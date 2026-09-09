@@ -1,0 +1,466 @@
+{
+ "id": "013-distributed-monitoring",
+ "title": "Distributed Monitoring",
+ "titleKey": "08fd061cf12b",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "f28830f1d128",
+   "en": "System Design: Distributed Monitoring"
+  },
+  {
+   "t": "p",
+   "k": "e6e6a2c9cadb",
+   "en": "Learn about the importance of monitoring in a distributed system, and explore our high-level plan for designing it."
+  },
+  {
+   "t": "h1",
+   "k": "c1ab9924ecda",
+   "en": "Monitoring"
+  },
+  {
+   "t": "p",
+   "k": "941fdaec5f12",
+   "en": "The modern economy depends on the continual operation of IT infrastructure. Such infrastructure contains hardware, distributed services, and network resources. These components are interlinked in such infrastructure, making it challenging to keep everything functioning smoothly and without application downtime."
+  },
+  {
+   "t": "p",
+   "k": "20e43443dfaa",
+   "en": "It’s challenging to know what’s happening at the hardware or application level when our infrastructure is distributed across multiple locations and includes many servers."
+  },
+  {
+   "t": "p",
+   "k": "008bc8fd61a6",
+   "en": "Components can run into failures, response latency overshoot, overloaded or unreachable hardware, and containers running out of resources, among others."
+  },
+  {
+   "t": "p",
+   "k": "cb743136da5b",
+   "en": "Multiple services are running in such an infrastructure, and anything can go awry."
+  },
+  {
+   "t": "p",
+   "k": "eb3d9f4e6092",
+   "en": "When one of the services goes down, it can be the reason for other services to crash, and as a result, the application is unavailable to users. If we don’t know what went wrong early, it could take us a lot of time and effort to debug the system manually. Moreover, for larger services, we need to ensure that our services are working within our agreed service-level agreements. We need to catch important trends and signals of impending failures as early warnings so that any concerns or issues can be addressed."
+  },
+  {
+   "t": "p",
+   "k": "313ec7469968",
+   "en": "Monitoring helps in analyzing such complex infrastructure where something is constantly failing. Monitoring distributed systems entails gathering, interpreting, and displaying data about the interactions between processes that are running at the same time. It assists in debugging, testing, performance evaluation, and having a bird’s-eye view over multiple services."
+  },
+  {
+   "t": "h2",
+   "k": "09e46fbf2d32",
+   "en": "How will we design a distributed monitoring system?"
+  },
+  {
+   "t": "p",
+   "k": "9c86ee4af596",
+   "en": "We’ve divided the distributed monitoring system design into the following chapters and lessons:"
+  },
+  {
+   "t": "li",
+   "k": "ffbf46ec2aaa",
+   "en": "Distributed Monitoring I. Introduction to Distributed Monitoring: Learn why monitoring in a distributed system is crucial, how costly downtime is, and the types of monitoring."
+  },
+  {
+   "t": "p",
+   "k": "4a182dfd4059",
+   "en": "II. Prerequisites for a Monitoring System: Explore a few essential concepts about metrics and alerting in a monitoring system."
+  },
+  {
+   "t": "li",
+   "k": "49f0533ece3f",
+   "en": "Monitoring Server-side Errors I. Designing a Monitoring System: Define the requirements and high-level design of the monitoring system."
+  },
+  {
+   "t": "p",
+   "k": "3df59ba1235c",
+   "en": "II. A Detailed Design of the Monitoring System: Go into the details of designing a monitoring system, and explore the components involved."
+  },
+  {
+   "t": "p",
+   "k": "ce99b7254e07",
+   "en": "III. Visualize Data in a Monitoring System: Learn a unique way to visualize an enormous amount of monitoring data."
+  },
+  {
+   "t": "li",
+   "k": "817ddc6fcb71",
+   "en": "Monitor Client-side Errors I. Focus on Client-side Errors: Get introduced to client-side errors and why it’s important to monitor them."
+  },
+  {
+   "t": "p",
+   "k": "8fe47641f4c0",
+   "en": "II. Design a Client-side Monitoring System: Learn to design a system that monitors the client-side errors."
+  },
+  {
+   "t": "p",
+   "k": "27b672c15f78",
+   "en": "In the next lesson, we’ll look at why monitoring is essential in a distributed system through an example. We’ll also look at the downtime cost of failures and monitoring types."
+  },
+  {
+   "t": "h1",
+   "k": "f7e4a837c49e",
+   "en": "Introduction to Distributed Monitoring"
+  },
+  {
+   "t": "p",
+   "k": "8ef1d83fa838",
+   "en": "Learn why monitoring in a distributed system is crucial."
+  },
+  {
+   "t": "h2",
+   "k": "c6f6cf3f4ab6",
+   "en": "Need for monitoring"
+  },
+  {
+   "t": "p",
+   "k": "6ea9b3f672d0",
+   "en": "Let’s go over how the failure of a single service can affect the smooth execution of related systems. To avoid cascading failures, monitoring can play a vital role with early warnings or steering us to the root cause of faults."
+  },
+  {
+   "t": "p",
+   "k": "7293e9e89ee2",
+   "en": "Let’s consider a scenario where a user uploads a video, intro-to-system-design, to YouTube. The UI service in server A takes the video information and gives the data to service 2 in server B. Service 2 makes an entry in the database and stores the video in blob storage. Another service, 3, in server C manages the replication and synchronization of databases X and Y."
+  },
+  {
+   "t": "p",
+   "k": "d9ee9eb205ce",
+   "en": "In this scenario, service 3 fails due to some error, and service 2 makes an entry in the database X. The database X crashes, and the request to fetch a video is routed to database Y. The user wants to play the video intro-to-system-design, but it will give an error of “Video not found…”"
+  },
+  {
+   "t": "p",
+   "k": "e51b51f4401f",
+   "en": "The example above is relatively simple. In reality, complex problems are encountered since we have many data centers across the globe, and each has millions of servers. Due to a decreasing human administrators to servers ratio, it’s often not feasible to manually find the problems. Having a monitoring system reduces operational costs and encourages an automated way to detect failures."
+  },
+  {
+   "t": "h3",
+   "k": "5461db3c3222",
+   "en": "Downtime cost"
+  },
+  {
+   "t": "p",
+   "k": "b08bbc5e7c6a",
+   "en": "There are fault-tolerant system designs that hide most of the failures from the end users, but it’s crucial to catch the failures before they snowball into a bigger problem. The unplanned outage in services can be costly. For example, in October 2021, Meta’s applications were down for nearly nine hours, resulting in a loss of around $13 million per hour. Such losses emphasize the potential impact of outages."
+  },
+  {
+   "t": "p",
+   "k": "6fb37172ab41",
+   "en": "The IT infrastructure is spread widely around the globe. The illustration below the next paragraph gives an overview of distributed data centers of major cloud providers across the globe, circa 2021. The data centers are connected through private or public networks. Monitoring the servers in geo-separated data centers is essential."
+  },
+  {
+   "t": "p",
+   "k": "144ec4c698a4",
+   "en": "According to Amazon, on December 7, 2021, “At 7:30 AM PST, an automated activity to scale capacity of one of the AWS services hosted in the main AWS network triggered an unexpected behavior from a large number of clients inside the internal network. This resulted in a large surge of connection activity that overwhelmed the networking devices between the internal network and the main AWS network, resulting in communication delays between these networks."
+  },
+  {
+   "t": "p",
+   "k": "1f99468ff429",
+   "en": "These delays increased latency and errors for services communicating between these networks, resulting in even more connection attempts and retries. This led to persistent congestion and performance issues on the devices connecting the two networks.” According to one estimate, the outage cost of Amazon was $66,240 per minute."
+  },
+  {
+   "t": "h3",
+   "k": "be4e8ab449f7",
+   "en": "Types of monitoring"
+  },
+  {
+   "t": "p",
+   "k": "c25699ea26c6",
+   "en": "Let’s consider an example to understand the types of errors we want to monitor."
+  },
+  {
+   "t": "p",
+   "k": "d31c168faf23",
+   "en": "At Educative, whenever a learner connects to an executable environment, a container is assigned. Consider service 1 in server A, which is responsible for allocating a container whenever a learner connects. Another service, 2 on server B takes this information and informs the service responsible for UI. The UI service running in server C updates the UI for the learner. Let’s assume that service 2 fails because of some error, and the learner sees the error of “Cannot connect…”"
+  },
+  {
+   "t": "p",
+   "k": "5d4cf6f6ed81",
+   "en": "How do the Educative developers find out that a learner is facing this error?"
+  },
+  {
+   "t": "p",
+   "k": "580a1e7634ab",
+   "en": "Now, what if a learner makes a request and it never reaches the servers of Educative. How will Educative know that a learner is facing an issue?"
+  },
+  {
+   "t": "p",
+   "k": "fc21e67c7444",
+   "en": "With the above examples, we can divide our monitoring focus into two broad categories of errors:"
+  },
+  {
+   "t": "p",
+   "k": "41c19dac9fd0",
+   "en": "Service-side errors: These are errors that are usually visible to monitoring services as they occur on servers. Such errors are reported as error 5xx in HTTP response codes."
+  },
+  {
+   "t": "p",
+   "k": "98192f7182ef",
+   "en": "Client-side errors: These are errors whose root cause is on the client-side."
+  },
+  {
+   "t": "p",
+   "k": "7106fbe917c3",
+   "en": "Such errors are reported as error 4xx in HTTP response codes. Some client-side errors are invisible to the service when client requests fail to reach the service."
+  },
+  {
+   "t": "p",
+   "k": "66b1a146f9f2",
+   "en": "We’ll explore how to design a monitoring service to handle both scenarios in the upcoming chapter Monitoring Server-side Errors and Monitoring Client-side Errors. We want our monitoring systems to analyze our globally distributed services. It allows a better understanding of the system’s components and agility to detect and respond to faults."
+  },
+  {
+   "t": "h1",
+   "k": "1c808561c7c1",
+   "en": "Prerequisites of a Monitoring System"
+  },
+  {
+   "t": "p",
+   "k": "01dc16ddd7f9",
+   "en": "Learn about the metrics and alerting in a monitoring system."
+  },
+  {
+   "t": "h2",
+   "k": "65e3b8810bcc",
+   "en": "Monitoring: metrics and alerting"
+  },
+  {
+   "t": "p",
+   "k": "042bd02eb66f",
+   "en": "A good monitoring system needs to clearly define what to measure and in what units (metrics). The monitoring system also needs to define threshold values of all metrics and the ability to inform appropriate stakeholders (alerts) when values are out of acceptable ranges. Knowing the state of our infrastructure and systems ensures service stability. The support team can respond to issues more quickly and confidently if they have access to information on the health and performance of the deployments. Monitoring systems that collect measurements, show data, and send warnings when something appears wrong are helpful for the support team."
+  },
+  {
+   "t": "p",
+   "k": "06bec6e0e3f0",
+   "en": "To further understand metrics, alerts, and their connection with monitoring, we’ll go over their significance, their potential benefits, and the data we might want to keep track of."
+  },
+  {
+   "t": "p",
+   "k": "e72aaab2706f",
+   "en": "Point to Ponder What are the conventional approaches to handle failures in IT infrastructure?"
+  },
+  {
+   "t": "p",
+   "k": "5726898a979c",
+   "en": "Hide Answer The two conventional approaches to handling IT infrastructure failures are the reactive and proactive approaches."
+  },
+  {
+   "t": "p",
+   "k": "e530f0755983",
+   "en": "In the reactive approach, corrective action is taken after the failure occurs. In this approach, even if DevOps takes quick action to find the cause of the error and promptly handle the failures, it causes downtime."
+  },
+  {
+   "t": "p",
+   "k": "797b5fa8efdd",
+   "en": "As a result, there will be system downtime in the reactive approach, which is generally undesirable for continuously running applications."
+  },
+  {
+   "t": "p",
+   "k": "66a1ee5d5410",
+   "en": "In a proactive approach, proactive actions are taken before failure occurs. Therefore, it prevents downtimes and associated losses. The proactive approach works on predicting system failures to take corrective action to avoid the failure. This approach offers better reliability by preventing downtime."
+  },
+  {
+   "t": "p",
+   "k": "448121090caa",
+   "en": "In modern services, completely avoiding problems is not possible."
+  },
+  {
+   "t": "p",
+   "k": "73c9c8a66899",
+   "en": "Something is always failing inside huge data centers and network deployments. The goal is to find the impending problems early on and design systems in such a way that service faults are invisible to the end users."
+  },
+  {
+   "t": "h2",
+   "k": "966b9734015a",
+   "en": "Metrics"
+  },
+  {
+   "t": "p",
+   "k": "d46ada681427",
+   "en": "Metrics objectively define what we should measure and what units will be appropriate. Metric values provide an insight into the system at any point in time For example, a web server’s ability to handle a certain amount of traffic per second or its ability to join a pool of web servers are examples of high-level data correlated with a component’s specific purpose or activity. Another example can be measuring network performance in terms of throughput (megabits per second) and latency (round-trip time). We need to collect values of metrics with minimal performance penalty. We may use user-perceived latency or the amount of computational resources to measure this penalty."
+  },
+  {
+   "t": "p",
+   "k": "b6e1e6153c21",
+   "en": "Values that track how many physical resources our operating system uses can be a good starting point. If we have a monitoring system in place, we don’t have to do much additional work to get data regarding processor load, CPU statistics like cache hits and misses, RAM usage by OS and processes, page faults, disc space, disc read and write latencies, swap space usage, and so on. Metrics provided by many web servers, database servers, and other software help us determine whether everything is running smoothly or not."
+  },
+  {
+   "t": "li",
+   "k": "e2e083fbc877",
+   "en": "Note: Connect to the following terminal to see details about the CPU utilization of processes that are currently active on the virtual machine.",
+   "lead": "Note"
+  },
+  {
+   "t": "h3",
+   "k": "fa826abcea18",
+   "en": "Click to Connect..."
+  },
+  {
+   "t": "p",
+   "k": "de697a8288e3",
+   "en": "We use the top command to view Linux processes. Running this command opens an interactive view of the running system containing a summary of the system and a list of processes or threads. The default view has the following:"
+  },
+  {
+   "t": "p",
+   "k": "8137e381c3e1",
+   "en": "On the top, we can see how long the machine has been turned on, how many users are logged in, and the average load on the machine for the past few minutes."
+  },
+  {
+   "t": "p",
+   "k": "f24c4d5c3f38",
+   "en": "On the next line, we can see the state (running, sleeping, or stopped) of tasks running on the machine."
+  },
+  {
+   "t": "p",
+   "k": "ad96bf8c54ff",
+   "en": "Next, we have the CPU consumption values."
+  },
+  {
+   "t": "p",
+   "k": "d00ffe45b385",
+   "en": "Lastly, we have an overview of physical memory how much of it is free, used, buffered, or available."
+  },
+  {
+   "t": "p",
+   "k": "f79ffabb2dfc",
+   "en": "Now, let’s take the following steps to see a change in the CPU usage:"
+  },
+  {
+   "t": "li",
+   "k": "94ff514b2d90",
+   "en": "Quit by entering q in the terminal."
+  },
+  {
+   "t": "li",
+   "k": "71baff4c51a0",
+   "en": "Run nohup ./script.sh &>/dev/null &. This script has an infinite loop running in it, and running the command will execute the script in the background."
+  },
+  {
+   "t": "li",
+   "k": "4634dbb7671b",
+   "en": "Run the top command to observe an increase in CPU usage."
+  },
+  {
+   "t": "h3",
+   "k": "b3cb82665353",
+   "en": "Populate the metrics"
+  },
+  {
+   "t": "p",
+   "k": "7069fda28d03",
+   "en": "The metrics should be logically centralized for global monitoring and alerting purposes. Fetching metrics is crucial to the monitoring system. Metrics can either be pushed or pulled into a monitoring system, depending on the preference of the user."
+  },
+  {
+   "t": "p",
+   "k": "987552915095",
+   "en": "Here, we confront a fundamental design challenge now: Do we utilize push or pull? Should the server proactively send the metrics’ values out, or should it only expose an endpoint and wait reactively for an inquiry?"
+  },
+  {
+   "t": "p",
+   "k": "13ab62ad86b5",
+   "en": "In pull strategy, each monitored server merely needs to store the metrics in memory and send them to an exposed endpoint. The exposed endpoint allows the monitoring application to fetch the metrics itself. Servers sending too much data or sending data too frequently can’t overload the monitoring system. The monitoring system will pull data as per its own schedule."
+  },
+  {
+   "t": "p",
+   "k": "0024906b15a8",
+   "en": "In other situations, though, pushing may be beneficial, such as when a firewall prevents the monitoring system from accessing the server directly. The monitoring system has the ability to adjust a global configuration about the data to be collected and the interval at which servers and switches should push the data."
+  },
+  {
+   "t": "p",
+   "k": "a5db938f87d6",
+   "en": "Push and pull terminologies might be confusing. Whenever we discuss push or pull strategy, we’ll consider it from the monitoring system’s perspective. That is, either the system will pull the metrics values from the applications, or the metrics will be pushed to the monitoring system. To avoid confusion, we’ll stick to the monitoring system’s viewpoint."
+  },
+  {
+   "t": "li",
+   "k": "1f78147ff884",
+   "en": "Note: In the pull model, monitoring system asks distributed data collectors to give data that they collected locally. This means that the data flow happens only when requested by the monitoring system. On the other hand, in the push model, distributed collectors send their collected data to the monitoring system periodically.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "94f0393cc1a4",
+   "en": "Point to Ponder Logging is the act of keeping records of events in a software system."
+  },
+  {
+   "t": "p",
+   "k": "f5a175af6ddc",
+   "en": "How does it help in monitoring?"
+  },
+  {
+   "t": "p",
+   "k": "6b0e38e80f51",
+   "en": "Hide Answer In logging, the application servers log the information into the file. The information can be CPU usage, application-related information, and other relevant properties that we deem necessary to backtrace or debug a file when a problem is encountered. We can populate our metrics based on the values logged in the logs."
+  },
+  {
+   "t": "p",
+   "k": "49ad8d4b7265",
+   "en": "Logs and metrics both help in monitoring a service. But this isn’t always true since processing the log information takes time. In real time, we need to act swiftly for early detection of issues. So, logging is also one of the inputs of metrics. Logging is just a mechanism to collect information, and the monitoring system can use it for collecting necessary information."
+  },
+  {
+   "t": "p",
+   "k": "6c188f5e1c91",
+   "en": "Logging can also help to temporarily keep the data on a server to absorb any momentary data spikes or to decouple data generation and monitoring systems."
+  },
+  {
+   "t": "li",
+   "k": "dbbdc7604a9c",
+   "en": "Note: At times, we use the word “metrics” when we should have used “metrics’ values.” However, we can figure out which of them is being referred to through the context they’re being used in.",
+   "lead": "Note"
+  },
+  {
+   "t": "h3",
+   "k": "d78afc593f87",
+   "en": "Persist the data"
+  },
+  {
+   "t": "p",
+   "k": "e00cb58c7111",
+   "en": "Figuring out how to store the metrics from the servers that are being monitored is important. A centralized in-memory metrics repository may be all that’s needed. However, for a large data center with millions of things to monitor, there will be an enormous amount of data to store, and a time-series database can help in this regard."
+  },
+  {
+   "t": "p",
+   "k": "c6c758201973",
+   "en": "Time-series databases help maintain durability, which is an important factor."
+  },
+  {
+   "t": "p",
+   "k": "df45fc1cfdc0",
+   "en": "Without a historical view of events in a monitoring system, it isn’t very useful."
+  },
+  {
+   "t": "p",
+   "k": "b7ecce618bee",
+   "en": "Samples having a value of time stamp are stored in chronological sequence. So, a whole metric’s timeline can be shown in the form of a time series."
+  },
+  {
+   "t": "h3",
+   "k": "7cef2d0c5d88",
+   "en": "Application metrics"
+  },
+  {
+   "t": "p",
+   "k": "6dfddbba5c3e",
+   "en": "We may need to add code or APIs to expose metrics we care about for other components, notably our own applications. We embed logging or monitoring code in our applications, called code instrumentation, to collect information of interest."
+  },
+  {
+   "t": "p",
+   "k": "bd9b1b56cc1c",
+   "en": "Looking at metrics as a whole can shed light on how our systems are performing and how healthy they are. Monitoring systems employ these inputs to generate a comprehensive view of our environment, automate responses to changes like commissioning more EC2 instances if the applications’ traffic increases, and warn humans when necessary. Metrics are system measurements that allow analyzing historical trends, correlations, and changes in the performance, consumption, or error rates."
+  },
+  {
+   "t": "h2",
+   "k": "0fe71c485dc3",
+   "en": "Alerting"
+  },
+  {
+   "t": "p",
+   "k": "54f4575c10a7",
+   "en": "Alerting is the part of a monitoring system that responds to changes in metric values and takes action."
+  },
+  {
+   "t": "p",
+   "k": "3dc5aa295a3a",
+   "en": "There are two components to an alert definition: a metrics-based condition or threshold, and an action to take when the values fall outside of the permitted range."
+  }
+ ]
+}

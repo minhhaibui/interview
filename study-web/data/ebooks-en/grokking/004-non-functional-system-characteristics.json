@@ -1,0 +1,476 @@
+{
+ "id": "004-non-functional-system-characteristics",
+ "title": "Non-functional System Characteristics",
+ "titleKey": "55dd10b56fcd",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "f2c1b76db30d",
+   "en": "Availability"
+  },
+  {
+   "t": "p",
+   "k": "ab1a91d9ace5",
+   "en": "Learn about availability, how to measure it, and its importance."
+  },
+  {
+   "t": "h2",
+   "k": "ae2097ced4dd",
+   "en": "What is availability?"
+  },
+  {
+   "t": "p",
+   "k": "5b0daa85e8a0",
+   "en": "Availability is the percentage of time that some service or infrastructure is accessible to clients and is operated upon under normal conditions. For example, if a service has 100% availability, it means that the said service functions and responds as intended (operates normally) all the time."
+  },
+  {
+   "t": "h3",
+   "k": "e4eb44993c30",
+   "en": "Measuring availability"
+  },
+  {
+   "t": "p",
+   "k": "9734dac01e50",
+   "en": "Mathematically, availability, A, is a ratio. The higher the A value, the better. We can also write this up as a formula: (Total Time −Amount Of Time Service Was Down)"
+  },
+  {
+   "t": "p",
+   "k": "148d0eb7f362",
+   "en": "A (in percent) = ∗100 Total Time We measure availability as a number of nines. The following table shows how much downtime is permitted when we’re using a given number of nines."
+  },
+  {
+   "t": "h2",
+   "k": "f58e0ef0f933",
+   "en": "The Nines of Availability"
+  },
+  {
+   "t": "p",
+   "k": "0c709deed7bc",
+   "en": "Availability Percentages versus Service Downtime Availability %Downtime per YearDowntime per Downtime per Week Month 90% (1 nine)36.5 days72 hours16.8 hours 99% (2 nines)3.65 days7.20 hours1.68 hours"
+  },
+  {
+   "t": "li",
+   "k": "26d194773b46",
+   "en": "5% (2 nines)1.83 days3.60 hours50.4 minutes"
+  },
+  {
+   "t": "li",
+   "k": "ebec8e835a7c",
+   "en": "9% (3 nines)8.76 hours43.8 minutes 10.1 minutes"
+  },
+  {
+   "t": "li",
+   "k": "3e4be06d76c3",
+   "en": "99% (4 nines)52.56 minutes4.32 minutes 1.01 minutes"
+  },
+  {
+   "t": "li",
+   "k": "5abeec442d36",
+   "en": "999% (5 nines)5.26 minutes25.9 seconds6.05 seconds"
+  },
+  {
+   "t": "li",
+   "k": "b9ac9f14d321",
+   "en": "9999% (6 nines)31.5 seconds2.59 seconds0.605 seconds"
+  },
+  {
+   "t": "li",
+   "k": "47197577fb70",
+   "en": "99999% (7 nines)3.15 seconds0.259 seconds0.0605 seconds"
+  },
+  {
+   "t": "h3",
+   "k": "7945affbbdc2",
+   "en": "Availability and service providers"
+  },
+  {
+   "t": "p",
+   "k": "dc64c03eadc1",
+   "en": "Each service provider may start measuring availability at different points in time. Some cloud providers start measuring it when they first offer the service, while some measure it for specific clients when they start using the service."
+  },
+  {
+   "t": "p",
+   "k": "8f97b0c2573a",
+   "en": "Some providers might not reduce their reported availability numbers if their service was not down for all the clients. The planned downtimes are excluded."
+  },
+  {
+   "t": "p",
+   "k": "36dcbe90c1f4",
+   "en": "Downtime due to cyberattacks might not be incorporated into the calculation of availability. Therefore, we should carefully understand how a specific provider calculates their availability numbers."
+  },
+  {
+   "t": "h1",
+   "k": "844e392a5d6c",
+   "en": "Reliability"
+  },
+  {
+   "t": "p",
+   "k": "54be35729558",
+   "en": "Learn about reliability, how to measure it, and its importance."
+  },
+  {
+   "t": "h2",
+   "k": "87835994eca6",
+   "en": "What is reliability?"
+  },
+  {
+   "t": "p",
+   "k": "e7691b15d74e",
+   "en": "Reliability, R, is the probability that the service will perform its functions for a specified time. R measures how the service performs under varying operating conditions."
+  },
+  {
+   "t": "p",
+   "k": "591fdc0144ef",
+   "en": "We often use mean time between failures (MTBF) and mean time to repair (MTTR) as metrics to measure R."
+  },
+  {
+   "t": "p",
+   "k": "0ab959e8497e",
+   "en": "Total Elapsed Time−Sum of Downtime MTBF= Total Number of Failures Total Maintenance Time MTTR= Total Number of Repairs (We strive for a higher MTBF value and a lower MTTR value.)"
+  },
+  {
+   "t": "h3",
+   "k": "3bfb38007ad5",
+   "en": "Reliability and availability"
+  },
+  {
+   "t": "p",
+   "k": "f1420d7dc16a",
+   "en": "Reliability and availability are two important metrics to measure compliance of service to agreed-upon service level objectives (SLO)."
+  },
+  {
+   "t": "p",
+   "k": "aa4b6bc99d05",
+   "en": "The measurement of availability is driven by time loss, whereas the frequency and impact of failures drive the measure of reliability. Availability and reliability are essential because they enable the stakeholders to assess the health of the service."
+  },
+  {
+   "t": "p",
+   "k": "c30b278c6727",
+   "en": "Reliability (R) and availability (A) are two distinct concepts, but they are related."
+  },
+  {
+   "t": "p",
+   "k": "3edd9201fb5e",
+   "en": "Mathematically, A is a function of R. This means that the value of R can change independently, and the value of A depends on R. Therefore, it’s possible to have situations where we have: low A, low R low A, high R high A, low R high A, high R (desirable)"
+  },
+  {
+   "t": "p",
+   "k": "3ea0284895e3",
+   "en": "Point to ponder."
+  },
+  {
+   "t": "p",
+   "k": "3e5100aa6d1a",
+   "en": "What is the difference between reliability and availability?"
+  },
+  {
+   "t": "p",
+   "k": "12bab59de9ff",
+   "en": "Hide Answer Reliability measures how well a system performs its intended operations (functional requirements). We use averages for that (Mean Time to Failure, Mean Time to Repair, etc.)"
+  },
+  {
+   "t": "p",
+   "k": "440634b12cd3",
+   "en": "Availability measures the percentage of time a system accepts requests and responds to clients."
+  },
+  {
+   "t": "li",
+   "k": "cfc772fd55c5",
+   "en": "Example 1: A certain system may be 90% available but only reliable 80% of the time.",
+   "lead": "Example 1"
+  },
+  {
+   "t": "li",
+   "k": "5f8c8885e1fc",
+   "en": "Example 2: Suppose we consider our “system” the stuff inside a data center (hardware + software). Let’s assume this data center suffers a network failure such that no outsider traffic is coming in and no insider traffic is going out. In this case, instantaneous availability might be zero (because clients cannot reach the service) even though inside the data center, all systems are perfectly functioning (instantaneous reliability 100%).",
+   "lead": "Example 2"
+  },
+  {
+   "t": "p",
+   "k": "e87a790a849c",
+   "en": "We use both of them (reliability and availability) in different contexts."
+  },
+  {
+   "t": "p",
+   "k": "9a4028e59445",
+   "en": "For example, storage vendors often quote MTTF for their disks. Most online services use uptime (as a measure of availability) in their SLAs."
+  },
+  {
+   "t": "p",
+   "k": "874cec5732bc",
+   "en": "For example, the uptime of EC2 virtual machines is 99.95%."
+  },
+  {
+   "t": "h1",
+   "k": "b06273ade235",
+   "en": "Scalability"
+  },
+  {
+   "t": "p",
+   "k": "7f80aff500fc",
+   "en": "Learn about scalability and its importance in system design."
+  },
+  {
+   "t": "h1",
+   "k": "1f6b3400e526",
+   "en": "What is scalability?"
+  },
+  {
+   "t": "p",
+   "k": "3eef586fa6d6",
+   "en": "Scalability is the ability of a system to handle an increasing amount of workload without compromising performance. A search engine, for example, must accommodate increasing numbers of users, as well as the amount of data it indexes."
+  },
+  {
+   "t": "p",
+   "k": "2a4d58a29402",
+   "en": "The workload can be of different types, including the following:"
+  },
+  {
+   "t": "p",
+   "k": "fa59013516ba",
+   "en": "Request workload: This is the number of requests served by the system."
+  },
+  {
+   "t": "p",
+   "k": "2629019d141b",
+   "en": "Data/storage workload: This is the amount of data stored by the system."
+  },
+  {
+   "t": "h2",
+   "k": "2c9eed7721ec",
+   "en": "Dimensions"
+  },
+  {
+   "t": "p",
+   "k": "7f0ded875274",
+   "en": "Here are the different dimensions of scalability:"
+  },
+  {
+   "t": "p",
+   "k": "fbcec0f75972",
+   "en": "Size scalability: A system is scalable in size if we can simply add additional users and resources to it."
+  },
+  {
+   "t": "p",
+   "k": "a65556bb00ea",
+   "en": "Administrative scalability: This is the capacity for a growing number of organizations or users to share a single distributed system with ease."
+  },
+  {
+   "t": "p",
+   "k": "0b40fcf082c0",
+   "en": "Geographical scalability: This relates to how easily the program can cater to other regions while maintaining acceptable performance constraints. In other words, the system can readily service a broad geographical region, as well as a smaller one."
+  },
+  {
+   "t": "h2",
+   "k": "3e0876cd2892",
+   "en": "Different approaches of scalability"
+  },
+  {
+   "t": "p",
+   "k": "9712580a3557",
+   "en": "Here are the different ways to implement scalability."
+  },
+  {
+   "t": "h3",
+   "k": "99bfd5935174",
+   "en": "Vertical scalability—scaling up"
+  },
+  {
+   "t": "p",
+   "k": "a0a5d6a6e5e2",
+   "en": "Vertical scaling, also known as “scaling up,” refers to scaling by providing additional capabilities (for example, additional CPUs or RAM) to an existing device. Vertical scaling allows us to expand our present hardware or software capacity, but we can only grow it to the limitations of our server. The dollar cost of vertical scaling is usually high because we might need exotic components to scale up."
+  },
+  {
+   "t": "h3",
+   "k": "3f75f6424fa9",
+   "en": "Horizontal scalability—scaling out"
+  },
+  {
+   "t": "p",
+   "k": "3dbf1b2fc919",
+   "en": "Horizontal scaling, also known as “scaling out,” refers to increasing the number of machines in the network. We use commodity nodes for this purpose because of their attractive dollar-cost benefits. The catch here is that we need to build a system such that many nodes could collectively work as if we had a single, huge server."
+  },
+  {
+   "t": "h1",
+   "k": "d10b48d90d9b",
+   "en": "Maintainability"
+  },
+  {
+   "t": "p",
+   "k": "f4df40d66403",
+   "en": "Learn about maintainability, how to measure it, and its relationship with reliability."
+  },
+  {
+   "t": "h2",
+   "k": "2727959bcb7b",
+   "en": "What is maintainability?"
+  },
+  {
+   "t": "p",
+   "k": "5f762b4fa6a4",
+   "en": "Besides building a system, one of the main tasks afterward is keeping the system up and running by finding and fixing bugs, adding new functionalities, keeping the system’s platform updated, and ensuring smooth system operations. One of the salient features to define such requirements of an exemplary system design is maintainability. We can further divide the concept of maintainability into three underlying aspects:"
+  },
+  {
+   "t": "li",
+   "k": "0fdf553b4629",
+   "en": "Operability: This is the ease with which we can ensure the system’s smooth operational running under normal circumstances and achieve normal conditions under a fault."
+  },
+  {
+   "t": "li",
+   "k": "03e83e0550da",
+   "en": "Lucidity: This refers to the simplicity of the code. The simpler the code base, the easier it is to understand and maintain it, and vice versa."
+  },
+  {
+   "t": "li",
+   "k": "19b04a87b1c9",
+   "en": "Modifiability: This is the capability of the system to integrate modified, new, and unforeseen features without any hassle."
+  },
+  {
+   "t": "h2",
+   "k": "c011d5425f27",
+   "en": "Measuring maintainability"
+  },
+  {
+   "t": "p",
+   "k": "c9079f7f888e",
+   "en": "Maintainability, M, is the probability that the service will restore its functions within a specified time of fault occurrence. M measures how conveniently and swiftly the service regains its normal operating conditions."
+  },
+  {
+   "t": "p",
+   "k": "4edc9c1d9c48",
+   "en": "For example, suppose a component has a defined maintainability value of 95% for half an hour. In that case, the probability of restoring the component to its fully active form in half an hour is 0.95."
+  },
+  {
+   "t": "li",
+   "k": "529cb5ea55f4",
+   "en": "Note: Maintainability gives us insight into the system’s capability to undergo repairs and modifications while it’s operational.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "bd4ca86cfd1e",
+   "en": "We use (mean time to repair) MTTR as the metric to measure M."
+  },
+  {
+   "t": "p",
+   "k": "901f3a6286c8",
+   "en": "Total Maintenance Time MTTR= Total Number of Repairs In other words, MTTR is the average amount of time required to repair and restore a failed component. Our goal is to have as low a value of MTTR as possible."
+  },
+  {
+   "t": "h3",
+   "k": "90c0c452c813",
+   "en": "Maintainability and reliability"
+  },
+  {
+   "t": "p",
+   "k": "89d381e2cb60",
+   "en": "Maintainability can be defined more clearly in close relation to reliability. The only difference between them is the variable of interest. Maintainability refers to time-to-repair, whereas reliability refers to both time-to-repair and the time-to-failure. Combining maintainability and reliability analysis can help us achieve availability, downtime, and uptime insights."
+  },
+  {
+   "t": "h1",
+   "k": "c09350ca5ce3",
+   "en": "Fault Tolerance"
+  },
+  {
+   "t": "p",
+   "k": "76fb4d4bb1df",
+   "en": "Learn about fault tolerance, how to measure it, and its importance."
+  },
+  {
+   "t": "h2",
+   "k": "918104d7223d",
+   "en": "What is fault tolerance?"
+  },
+  {
+   "t": "p",
+   "k": "28fc9daa9f7b",
+   "en": "Real-world, large-scale applications run hundreds of servers and databases to accommodate billions of users’ requests and store significant data. These applications need a mechanism that helps with data safety and eschews the recalculation of computationally intensive tasks by avoiding a single point of failure."
+  },
+  {
+   "t": "p",
+   "k": "08b8376a1bc7",
+   "en": "Fault tolerance refers to a system’s ability to execute persistently even if one or more of its components fail."
+  },
+  {
+   "t": "p",
+   "k": "c637cc53eec3",
+   "en": "Here, components can be software or hardware. Conceiving a system that is hundred percent fault-tolerant is practically very difficult."
+  },
+  {
+   "t": "p",
+   "k": "41f61fe45fbf",
+   "en": "Let’s discuss some important features for which fault-tolerance becomes a necessity."
+  },
+  {
+   "t": "p",
+   "k": "e0921b92c400",
+   "en": "Availability focuses on receiving every client’s request by being accessible 24/7."
+  },
+  {
+   "t": "p",
+   "k": "4d806c6bafc0",
+   "en": "Reliability is concerned with responding by taking specified action on every client’s request."
+  },
+  {
+   "t": "h3",
+   "k": "0c48c2844f3e",
+   "en": "Fault tolerance techniques"
+  },
+  {
+   "t": "p",
+   "k": "1789e19f6c53",
+   "en": "Failure occurs at the hardware or software level, which eventually affects the data. Fault tolerance can be achieved by many approaches, considering the system structure. Let’s discuss the techniques that are significant and suitable for most designs."
+  },
+  {
+   "t": "h3",
+   "k": "7ddb9625261f",
+   "en": "Replication"
+  },
+  {
+   "t": "p",
+   "k": "c964606672a3",
+   "en": "One of the most widely-used techniques is replication-based fault tolerance."
+  },
+  {
+   "t": "p",
+   "k": "28e46515d967",
+   "en": "With this technique, we can replicate both the services and data. We can swap out failed nodes with healthy ones and a failed data store with its replica. A large service can transparently make the switch without impacting the end customers."
+  },
+  {
+   "t": "p",
+   "k": "dd111dddf98a",
+   "en": "We create multiple copies of our data in separate storage. All copies need to update regularly for consistency when any update occurs in the data. Updating data in replicas is a challenging job. When a system needs strong consistency, we can synchronously update data in replicas. However, this reduces the availability of the system. We can also asynchronously update data in replicas when we can tolerate eventual consistency, resulting in stale reads until all replicas converge. Thus, there is a trade-off between both consistency approaches. We compromise either on availability or on consistency under failures—a reality that is outlined in the CAP theorem."
+  },
+  {
+   "t": "h3",
+   "k": "9c139e5e6f91",
+   "en": "Checkpointing"
+  },
+  {
+   "t": "p",
+   "k": "b0a7973a3d74",
+   "en": "Checkpointing is a technique that saves the system’s state in stable storage when the system state is consistent. Checkpointing is performed in many stages at different time intervals. The primary purpose is to save the computational state at a given point. When a failure occurs in the system, we can get the last computed data from the previous checkpoint and start working from there."
+  },
+  {
+   "t": "p",
+   "k": "be95e95f72d7",
+   "en": "When the system has to perform checkpointing, it makes sure that the system is in a consistent state, meaning that all processes are stopped except read processes that do not change the state of the system. This type of checkpointing is known as synchronous checkpointing. On the other hand, checkpointing in an inconsistent state leads to data inconsistency problems. Let’s look at the illustration below to understand the difference between a consistent and an inconsistent state:"
+  },
+  {
+   "t": "p",
+   "k": "7ab300f73bcb",
+   "en": "Consistent state: The illustration above shows no communication among the processes when the system performs checkpointing. All the processes are sending or receiving messages before and after checkpointing. This state of the system is called a consistent state."
+  },
+  {
+   "t": "p",
+   "k": "b1b9229a86a6",
+   "en": "Note that on the left side illustration above, the sending and reception of any message are recorded in respective checkpoints. For example, message m1’s sending and reception are recorded in the left illustration, while on the right illustration, the checkpoint on process J does not record sending it, while Process i does record its reception. If both systems fail at that point, and we use checkpoints for recovery, then one checkpoint will know about m1’s reception, while the other will have no record of sending it."
+  },
+  {
+   "t": "p",
+   "k": "a987fe7265a9",
+   "en": "Inconsistent state: The illustration also displays that processes communicate through messages when the system performs checkpointing. This indicates an inconsistent state, because when we get a previously saved checkpoint, Process i will have a message (m1) and Process j will have no record of message sending."
+  }
+ ]
+}

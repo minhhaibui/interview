@@ -7,7 +7,7 @@
  *   - /api/* và các request cross-origin khác (Firebase, Anthropic): không can thiệp.
  * Đổi VERSION mỗi khi muốn ép xoá cache cũ.
  */
-const VERSION = 'v302';
+const VERSION = 'v303';
 const CACHE = `prep-${VERSION}`;
 const CDN_HOSTS = ['cdn.jsdelivr.net', 'www.gstatic.com'];
 
@@ -16,12 +16,15 @@ const PRECACHE = [
   './', 'index.html', 'styles.css', 'app.js',
   'coding-problems.js', 'iq-questions.js', 'english-questions.js', 'situational-questions.js',
   'design-drills.js', 'output-quiz.js', 'complexity-quiz.js', 'debug-challenges.js', 'api-quiz.js', 'sql-drill.js', 'cli-quiz.js',
-  'star-questions.js', 'reverse-questions.js', 'english-phrases.js', 'english-interview.js', 'english-support.js', 'en-core.js', 'capstone-tracker.js',
+  'star-questions.js', 'reverse-questions.js', 'english-phrases.js', 'english-interview.js', 'english-support.js', 'en-core.js', 'capstone-tracker.js', 'ebook.js',
   'ko-vocab.js', 'zh-vocab.js', 'java-quiz.js', 'redis-quiz.js', 'dist-quiz.js', 'devops-quiz.js',
   'js-quiz.js', 'node-quiz.js', 'react-quiz.js',
   'firebase-config.js', // script cùng origin trong index.html — nạp sẵn để offline không lỗi tải
   'icon.svg', 'manifest.webmanifest',
   'data/tree.json', 'data/snippets.json', 'data/docs.json',
+  // Danh mục ebook nạp sẵn; nội dung từng chương để stale-while-revalidate cache dần khi đọc
+  // (191 chương ~ vài MB, precache hết sẽ làm lần cài đầu rất nặng).
+  'data/ebooks/index.json',
 ];
 
 // Thư viện CDN nạp sẵn để OFFLINE có ngay (không chờ tới lần tải thứ 2).

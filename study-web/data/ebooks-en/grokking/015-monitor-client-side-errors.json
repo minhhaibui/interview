@@ -1,0 +1,320 @@
+{
+ "id": "015-monitor-client-side-errors",
+ "title": "Monitor Client-side Errors",
+ "titleKey": "5c0b85f0b1dc",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "83c5174d8e7d",
+   "en": "Focus on Client-side Errors in a Monitoring System"
+  },
+  {
+   "t": "p",
+   "k": "f2131df8ad2a",
+   "en": "Learn what client-side errors are and their impact on the service."
+  },
+  {
+   "t": "h2",
+   "k": "eef6489aafe3",
+   "en": "Client-side errors"
+  },
+  {
+   "t": "p",
+   "k": "1f6dff7749ec",
+   "en": "In a distributed system, clients often access the service via an HTTP request. We can monitor our web and application servers’ logs if a request fails to process. If multiple requests fail, we can observe a spike in internal errors (error 500)."
+  },
+  {
+   "t": "p",
+   "k": "7ee3c7d33e6d",
+   "en": "Those errors whose root cause is on the client side are hard to respond to because the service has little to no insight into the client’s system. We might try to look for a dip in the load compared to averages, but such a graph is usually hard. It can have false positives and false negatives due to factors such as unexpectedly variable load or if a small portion of the client population is affected."
+  },
+  {
+   "t": "p",
+   "k": "3021fe0cef7e",
+   "en": "There are many factors that can cause failures that can result in clients being unable to reach the server. These include the following:"
+  },
+  {
+   "t": "p",
+   "k": "3695c424164e",
+   "en": "Failure in DNS name resolution."
+  },
+  {
+   "t": "p",
+   "k": "a30b4027b904",
+   "en": "Any failure in routing along the path from the client to the service provider."
+  },
+  {
+   "t": "p",
+   "k": "900237ed686d",
+   "en": "Any failures with third-party infrastructure, such as middleboxes and content delivery networks (CDNs)."
+  },
+  {
+   "t": "h2",
+   "k": "e6d9db000028",
+   "en": "Failures due to a routing bug"
+  },
+  {
+   "t": "p",
+   "k": "8789a622c000",
+   "en": "Let’s look at a real-world example of an error that impacted a large number of service customers, but the service wasn’t readily aware of it."
+  },
+  {
+   "t": "p",
+   "k": "bdf68759676d",
+   "en": "One of Google’s peer ISPs accidentally announced Internet routes that it wasn’t supposed to. As a result, the traffic of many of Google’s customers started routing through unintended ISPs and wasn’t reaching Google because of the BGP leak; one of the examples of the BGP leak is shown in the illustration below. Clients were frustrated because they weren’t able to reach Google, while Google might have been unaware of such problems right away because these issues didn’t happen on its infrastructure."
+  },
+  {
+   "t": "p",
+   "k": "af6b54484937",
+   "en": "We can learn more about this event by clicking here."
+  },
+  {
+   "t": "p",
+   "k": "8f1b96f2d83f",
+   "en": "Border Gateway Protocol (BGP) is a routing protocol that connects the entire Internet. The routing is easy in a local area network because every device is connected to the same computer network. However, it gets complicated as the network grows, and the Internet is comprised of millions of networks all around the globe. Big organizations and ISPs manage Internet connectivity for multiple network sites and locations themselves. It’s called an autonomous system (AS)."
+  },
+  {
+   "t": "p",
+   "k": "af4ddb431ed5",
+   "en": "An AS handles the network traffic inside it, and the BGP router manages the inbound and outbound traffic. Each BGP router contains routing tables. It allows BGP to find the best path over the Internet to send the packet to its destination. But a leaked route can occur. A leaked route occurs when an autonomous system propagates some routing announcements beyond their intended scope."
+  },
+  {
+   "t": "p",
+   "k": "3b31e8a97faa",
+   "en": "On November 12, 2018, a BGP leak occurred, and it impacted clients worldwide, including Google, Meta, and Amazon. A service announced a 216.58.192.0/19 route to some autonomous systems and a more specific route (216.58.192.0/22) to one autonomous system, which wasn’t supposed to announce it further. IP forwarding picks the longest prefix as a match. In the example, a /22 will be longer than a /19 prefix. Due to configuration errors, the more specific route leaked to the Internet, and because since it’s so specific, all traffic went through the wrong autonomous system, resulting in dropping the traffic."
+  },
+  {
+   "t": "p",
+   "k": "ad67f101ad9c",
+   "en": "The above leak isn’t unique. Similar issues keep arising. Another such leakage happened on April 16, 2021, when an AS mistakenly announced over 30,000 BGP prefixes. This resulted in a 13 times spike in the inbound traffic to their network."
+  },
+  {
+   "t": "p",
+   "k": "662fb6cbbb31",
+   "en": "However, an increase in influx was observed, and the problem was solved."
+  },
+  {
+   "t": "p",
+   "k": "29eeb6775daa",
+   "en": "The impacted services’ monitoring systems might not catch the above events readily. Monitoring such situations is crucial so that the application remains available for all of its customers. Therefore, in the next lessons, we’ll go through methods that help us to monitor the situations mentioned above."
+  },
+  {
+   "t": "h1",
+   "k": "5dae40055435",
+   "en": "Design of a Client-side Monitoring System"
+  },
+  {
+   "t": "p",
+   "k": "16862c0a3284",
+   "en": "Learn to design a system to monitor the errors that don’t reach our service."
+  },
+  {
+   "t": "p",
+   "k": "7eb679e7b99c",
+   "en": "However, all such cases have a slow feedback loop. As a service provider, we want to detect such problems as quickly as possible to take remedial measures."
+  },
+  {
+   "t": "p",
+   "k": "cd9f3aa3e2e6",
+   "en": "Let’s design such a system."
+  },
+  {
+   "t": "h2",
+   "k": "9bec44131eab",
+   "en": "Initial design"
+  },
+  {
+   "t": "p",
+   "k": "b9e3ea230b9c",
+   "en": "To ensure that the client’s requests reach the server, we’ll act as clients and perform reachability and health checks. We’ll need various vantage points across the globe. We can run a service, let’s call it prober, that periodically sends requests to the service to check availability. This way, we can monitor reachability to our service from many different places."
+  },
+  {
+   "t": "h3",
+   "k": "081eae6eaf73",
+   "en": "Issues with probers"
+  },
+  {
+   "t": "p",
+   "k": "b695c8172889",
+   "en": "We can have the following issues with probers:"
+  },
+  {
+   "t": "p",
+   "k": "04d5d0d2dcf3",
+   "en": "Incomplete coverage: We might not have good coverage across all autonomous systems. There are 100,000 unique autonomous systems on the Internet as of March 2021. It’s not cost-effective or even possible to put those many probes across the globe. Country or ISP-specific regulations and the need for periodic maintenance are additional hurdles to implementing such a scheme."
+  },
+  {
+   "t": "p",
+   "k": "ea4d042a8058",
+   "en": "Lack of user imitation: Such probes might not represent a typical user behavior to explain how a typical user will use the service."
+  },
+  {
+   "t": "li",
+   "k": "4c92977ac74e",
+   "en": "Note: The initial design is based on active probing.",
+   "lead": "Note"
+  },
+  {
+   "t": "h2",
+   "k": "1dbec16352f8",
+   "en": "Improve the design"
+  },
+  {
+   "t": "p",
+   "k": "16b967e3a253",
+   "en": "Instead of using a prober on vantage points, we can embed the probers into the actual application instead. We’ll have the following two components:"
+  },
+  {
+   "t": "p",
+   "k": "1dc84cfa70d3",
+   "en": "Agent: This is a prober embedded in the client application that sends the appropriate service reports about any failures."
+  },
+  {
+   "t": "p",
+   "k": "67de660617fc",
+   "en": "Collector: This is a report collector independent of the primary service. It’s made independent to avoid the situations where client agents want to report an error to the failed service. We summarize errors reports from collectors and look for spikes in the errors graph to see client-side issues."
+  },
+  {
+   "t": "p",
+   "k": "876dd37b2a71",
+   "en": "The following illustration shows how an agent reaches an independent collector when primary service isn’t reachable:"
+  },
+  {
+   "t": "p",
+   "k": "71098ac17689",
+   "en": "These collectors are a hierarchy of big data processing systems. We can place them near the client network, and over time, we can accumulate these statistics from all such localized sites. We’ll use online stream processing systems to make such a system near real-time. If we’re mainly looking for summary statistics, our system can tolerate the loss of some error reports. Some reports will be relative to the overall user population. We might say 1% of service users are “some.” If we don’t want to lose any reports, we’ll need to design a system with more care, which will be more expensive."
+  },
+  {
+   "t": "p",
+   "k": "428d9480be7b",
+   "en": "Now, we’ll solve the following concerns:"
+  },
+  {
+   "t": "p",
+   "k": "422247fbfcdc",
+   "en": "Can a user activate and deactivate client-side reports?"
+  },
+  {
+   "t": "p",
+   "k": "6b50bfe251e9",
+   "en": "How do client-side agents reach collectors under faulty conditions?"
+  },
+  {
+   "t": "p",
+   "k": "7a25cb020d12",
+   "en": "How will we protect user privacy?"
+  },
+  {
+   "t": "h2",
+   "k": "c175d51e18bc",
+   "en": "Activate and deactivate reports"
+  },
+  {
+   "t": "p",
+   "k": "379ffd47d6a3",
+   "en": "We’ll use a custom HTML header to send appropriate information to the collectors. Though a client accesses the service via a browser, a specific browser should know about this feature to appropriately fill in the header information in the HTTP requests. For organizations that make browsers and provide services (for example, Chromium-based browsers), such features can be incorporated and standardized over time."
+  },
+  {
+   "t": "p",
+   "k": "66eb46d123ce",
+   "en": "Another solution can be to use a client-side application that the service controls, and then we can easily include such headers over HTTP ."
+  },
+  {
+   "t": "p",
+   "k": "847a2badbffd",
+   "en": "The client can fill in the request header if the client has already consented to that. The service can then reply with appropriate values for the policy and collection endpoints."
+  },
+  {
+   "t": "h2",
+   "k": "08191a3876f1",
+   "en": "Reach collectors under faulty conditions"
+  },
+  {
+   "t": "p",
+   "k": "0481ec7f2bd1",
+   "en": "The collectors need to be in a different failure domain from the web service endpoint that we’re trying to monitor. The client side can try various collectors in different failure domains until one works. We can see a similar pattern in the following examples. At times, we refer to such a phenomenon as being outside the blast radius of a fault."
+  },
+  {
+   "t": "p",
+   "k": "12aa7e3fc02b",
+   "en": "If we want to see the reachability of an IP , we host the service on a different IP . If we monitor the availability of a domain, we host the collector on a different domain. And if we want to detect that an autonomous system route isn’t hijacked, we host the service in a different autonomous system. Though, for last-mile errors, there isn’t much we could do as a service provider. We might accumulate such events at the client side and report them on the next connectivity. A service can influence the remaining component failures."
+  },
+  {
+   "t": "h2",
+   "k": "c8f48ca2ea6a",
+   "en": "Reaching Collectors Under Faulty Conditions"
+  },
+  {
+   "t": "li",
+   "k": "86c56f9e55e7",
+   "en": "2.3.4 unreachableDifferent server IP Can't resolve example.comDifferent domain AS 1234 hijackedDifferent ASN CDN availableDifferent/no CDN Last-mile problemsNo readily available fall-back for the service"
+  },
+  {
+   "t": "h2",
+   "k": "d4a9eeb60fd7",
+   "en": "Protect user privacy"
+  },
+  {
+   "t": "p",
+   "k": "b68e86eb4065",
+   "en": "The human user who uses the client-side software should be in full control to precisely know what data is collected and sent with each request. The user should also be able to reactivate the feature any time they wish. If we use our client-side application (and not a browser application), we have a lot of flexibility in what diagnostic could be included in the report. For a browser-based client, we can avoid the following information:"
+  },
+  {
+   "t": "p",
+   "k": "b287e73bf80d",
+   "en": "We can avoid including traceroute hops to see a client to the service path."
+  },
+  {
+   "t": "p",
+   "k": "ae54c744b81e",
+   "en": "Users can be susceptible to their geographic location. It might be akin to collecting location information."
+  },
+  {
+   "t": "p",
+   "k": "3061e44b080b",
+   "en": "We can avoid including which DNS resolver is being used. Again, details of DNS can leak some information about the location."
+  },
+  {
+   "t": "p",
+   "k": "679cd6360799",
+   "en": "We can avoid including round-trip-time (RTT) and packet loss information."
+  },
+  {
+   "t": "li",
+   "k": "d195fa8760a3",
+   "en": "Note: As a guiding rule, we should try to collect as little information as possible, and it must only be used for the specific purpose a user gave consent for.",
+   "lead": "Note"
+  },
+  {
+   "t": "p",
+   "k": "b2287be04202",
+   "en": "Ideally, for a web-based client, we should only collect the information that’s logged in the weblog when any request has been successful."
+  },
+  {
+   "t": "p",
+   "k": "bb8535914a05",
+   "en": "We shouldn’t use any active probing except to test the service’s standard functionality and report such probes’ results. So, traceroute and RTT or packet loss information is excluded."
+  },
+  {
+   "t": "p",
+   "k": "bf3af84ff8e9",
+   "en": "Any intermediary (like ISPs or middleboxes) can’t change, add, or remove the error reporting mechanism due to encryption. Similarly, designated collectors are the only place where such data can go."
+  },
+  {
+   "t": "h2",
+   "k": "6a38a38f03e4",
+   "en": "Conclusion"
+  },
+  {
+   "t": "p",
+   "k": "851c290db260",
+   "en": "In a distributed system, it’s difficult to detect and respond to errors on the client side. So, it’s necessary to monitor such events to provide a good user experience."
+  },
+  {
+   "t": "p",
+   "k": "70ded58acce3",
+   "en": "We can handle errors using an independent agent that sends service reports about any failures to a collector. Such collectors should be independent of the primary service in terms of infrastructure and deployment."
+  }
+ ]
+}

@@ -1,0 +1,157 @@
+{
+ "id": "12-handling-webhook-retries-idempotently",
+ "title": "Handling Webhook Retries Idempotently",
+ "titleKey": "72a46e03d9d8",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "e930e16f6e54",
+   "en": "Stripe just sent your server a charge.succeeded webhook."
+  },
+  {
+   "t": "p",
+   "k": "0ef9f2018ba6",
+   "en": "Your pod was mid-restart. The webhook timed out. Stripe will retry — but now you're racing."
+  },
+  {
+   "t": "p",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:"
+  },
+  {
+   "t": "p",
+   "k": "cc819a1127d3",
+   "en": "NestJS API on ECS, 4 tasks behind an ALB. Stripe POSTs charge.succeeded events to /webhooks/stripe. You have ~10s to return a 200 before Stripe times out and queues a retry. On Black Friday you're handling ~80 webhooks/sec."
+  },
+  {
+   "t": "p",
+   "k": "6e81aa503009",
+   "en": "Three failure modes are already happening in prod:"
+  },
+  {
+   "t": "li",
+   "k": "a4ab85dcf658",
+   "en": "Pod restarts mid-deploy webhook missed Stripe retries you process it, but a second pod also→→→ processed the original →double charge confirmation email sent"
+  },
+  {
+   "t": "li",
+   "k": "38e5fd959017",
+   "en": "DB is slow at peak handler takes 12s Stripe times out retries now you're processing the same→→→→ event twice while the first one is still running"
+  },
+  {
+   "t": "li",
+   "k": "9ed28ae27ad4",
+   "en": "Stripe sends charge.succeeded then charge.refunded 200ms apart your queue delivers them out of→ order you mark the order paid AFTER it was already refunded→ The handler is a 30-line function that does the right thing 99% of the time. The 1% is killing you."
+  },
+  {
+   "t": "p",
+   "k": "c3f6947854c9",
+   "en": "Idempotency key + dedup table — store every event ID on receipt, skip if already seen. Retry with exponential backoff + dead-letter queue — never drop a webhook, process at-least- Verify signature, return 200 immediately, push to an internal queue — decouple receipt from Sequence numbers + reorder buffer — hold events until the prior sequence has landed, then What do you do? once. processing. process in strict order."
+  },
+  {
+   "t": "h3",
+   "k": "3e0537528921",
+   "en": "DAY 11 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "b3b456295fb9",
+   "en": "Answer: C — Verify signature, return 200 immediately, push to an internal queue ✅ Here's why, and why the other three trick smart engineers:"
+  },
+  {
+   "t": "li",
+   "k": "43721ea846db",
+   "en": "Why C wins (Sync receipt + async processing):",
+   "lead": "Why C wins (Sync receipt + async processing)"
+  },
+  {
+   "t": "p",
+   "k": "aba69fec03b9",
+   "en": "The fundamental problem is that Stripe's clock and your handler's clock are decoupled. Stripe gives you ~10 seconds to ACK. Your DB write, your fraud check, your email send — none of that should live inside that 10-second window. Ever."
+  },
+  {
+   "t": "p",
+   "k": "2b3c2162e9bf",
+   "en": "The pattern: validate the HMAC signature in <5ms, write the raw payload to SQS / Kafka / Redis Streams, return 200. Now your handler is bounded by network + signature verification, not by whatever your downstream services are doing today. Pod restart mid-processing? The message is already durable in the queue — a worker picks it up. DB slow? The webhook endpoint doesn't care — it returned 200 in 8ms. This is what Stripe, Shopify, and GitHub literally tell you to do in their own webhook docs."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "857b2f0a339d",
+   "en": "Why A is the trap answer (Idempotency key + dedup table):",
+   "lead": "Why A is the trap answer (Idempotency key + dedup table)"
+  },
+  {
+   "t": "p",
+   "k": "eb46fcf4bfbf",
+   "en": "This is the answer that fools senior engineers in interviews — and it's not wrong, it's just incomplete."
+  },
+  {
+   "t": "p",
+   "k": "e0247db370fb",
+   "en": "Yes, you absolutely need idempotency. Stripe will deliver the same event ID more than once. A dedup table keyed on event.id with a unique constraint is table stakes. But it doesn't solve the original pain: the handler is still synchronous, still on the critical 10-second path, still getting killed by pod restarts mid-write."
+  },
+  {
+   "t": "p",
+   "k": "4fe7dccb2c91",
+   "en": "If you ship A alone, you've prevented double-processing — but you're still timing out, still triggering retries, still creating the conditions for the race. Idempotency is a property your handler must have, not an architecture. C is the architecture; A lives inside it. The senior engineer trap is treating idempotency as the whole answer when it's one of three layers."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "2f9ac4a60aee",
+   "en": "Why B is wrong as the answer (Retry + DLQ):",
+   "lead": "Why B is wrong as the answer (Retry + DLQ)"
+  },
+  {
+   "t": "p",
+   "k": "cdb1d2fe4686",
+   "en": "Stripe is already doing the retry with exponential backoff. That's their job, not yours. Stripe retries failed webhooks for up to 3 days with backoff. You don't need to build that for inbound webhooks — you'd be duplicating provider behavior."
+  },
+  {
+   "t": "p",
+   "k": "578a6f30990a",
+   "en": "Retry + DLQ is the right pattern for your internal queue (the one C creates), not for the webhook endpoint itself. If your worker fails to process a queued event, sure, retry it and DLQ after N attempts."
+  },
+  {
+   "t": "p",
+   "k": "435d5c520232",
+   "en": "But that's a downstream concern. Putting \"retry logic\" at the webhook receiver level confuses inbound and outbound retry semantics."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "65a4d49cdef6",
+   "en": "Why D is wrong (Sequence numbers + reorder buffer):",
+   "lead": "Why D is wrong (Sequence numbers + reorder buffer)"
+  },
+  {
+   "t": "p",
+   "k": "c10e5eb89f6a",
+   "en": "This sounds rigorous and it's the answer engineers reach for after they've been burned by ordering once. The problem: most webhook providers don't give you sequence numbers. Stripe doesn't. GitHub doesn't. Even when they do (Shopify's X-Shopify-Webhook-Id), the gaps aren't dense — you can't tell \"missing event 47\" from \"47 was filtered.\""
+  },
+  {
+   "t": "p",
+   "k": "4c94da1a2b1c",
+   "en": "More importantly: ordering at the receiver is the wrong layer. You handle ordering at the domain level — when you process charge.refunded, you check the current state of the order before transitioning. If the order is already in refunded, you no-op. State machines beat reorder buffers because they handle the case where events arrive out of order AND the case where one of them never arrives at all. A reorder buffer just means you stall forever when an event gets dropped upstream."
+  },
+  {
+   "t": "h3",
+   "k": "aa363c01ef98",
+   "en": "DAY 12 · SYSTEM DESIGN"
+  }
+ ]
+}

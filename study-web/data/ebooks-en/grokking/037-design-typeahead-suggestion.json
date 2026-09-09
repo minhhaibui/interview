@@ -1,0 +1,817 @@
+{
+ "id": "037-design-typeahead-suggestion",
+ "title": "Design-Typeahead-Suggestion",
+ "titleKey": "fdef57cf1fd5",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "c87fd4affd68",
+   "en": "System Design: The Typeahead Suggestion System"
+  },
+  {
+   "t": "p",
+   "k": "0bc8b8b0f3da",
+   "en": "Learn about the typeahead suggestion system and understand the important details related to its design process."
+  },
+  {
+   "t": "h2",
+   "k": "26aca7941a99",
+   "en": "Introduction"
+  },
+  {
+   "t": "p",
+   "k": "0ebc76285748",
+   "en": "Typeahead suggestion, also referred to as the autocomplete feature, enables users to search for a known and frequently searched query. This feature comes into play when a user types a query in the search box. The typeahead system provides a list of suggestions to complete a query based on the user’s search history, the current context of the search, and trending content across different users and regions. Frequently searched queries always appear at the top of the suggestion list. The typeahead system doesn’t make the search faster. However, it helps the user form a sentence more quickly. It’s an essential part of all search engines that enhances the user experience."
+  },
+  {
+   "t": "h2",
+   "k": "30317787e7c6",
+   "en": "How will we design a typeahead suggestion system?"
+  },
+  {
+   "t": "p",
+   "k": "1e9aeddd3aca",
+   "en": "We’ve divided the chapter on the design of the typeahead suggestion system into six lessons:"
+  },
+  {
+   "t": "li",
+   "k": "749cd47567a9",
+   "en": "Requirements: In this lesson, we focus on the functional and non-functional requirements for designing a typeahead suggestion system. We also discuss resource estimations for the smooth operation of the system."
+  },
+  {
+   "t": "li",
+   "k": "5003519d5bd6",
+   "en": "High-level design: In this lesson, we discuss the high-level design of our version of the typeahead suggestion system. We also discuss some essential APIs used in the design."
+  },
+  {
+   "t": "li",
+   "k": "0ecde1f140d1",
+   "en": "Data Structure for Storing Prefixes: In this lesson, we cover an efficient tree data structure called trie that’s used to store search prefixes. We also discuss how it can be further optimized to reduce the tree traversal time."
+  },
+  {
+   "t": "li",
+   "k": "4fdaec922285",
+   "en": "Detailed design: In this lesson, we explain the two main components, the suggestions service and the assembler, which make up the detailed design of the typeahead suggestion system."
+  },
+  {
+   "t": "li",
+   "k": "251a27c74811",
+   "en": "Evaluation: This lesson evaluates the proposed design of the typeahead suggestion system based on the non-functional requirements of the system."
+  },
+  {
+   "t": "p",
+   "k": "1c03fb96bce1",
+   "en": "It also presents some client-side optimization and personalization that could significantly affect the system’s design."
+  },
+  {
+   "t": "li",
+   "k": "d06a65875cc2",
+   "en": "Quiz: In this lesson, we assess our understanding of the design via a quiz."
+  },
+  {
+   "t": "p",
+   "k": "a46969380b46",
+   "en": "Let’s start by identifying the requirements for designing a typeahead suggestion system."
+  },
+  {
+   "t": "h1",
+   "k": "c917f161fae0",
+   "en": "Requirements of the Typeahead Suggestion System’s Design"
+  },
+  {
+   "t": "h2",
+   "k": "ed2eb3742618",
+   "en": "Requirements"
+  },
+  {
+   "t": "p",
+   "k": "5e78a5271d28",
+   "en": "In this lesson, we look into the requirements and estimated resources that are necessary for the design of the typeahead suggestion system. Our proposed design should meet the following requirements."
+  },
+  {
+   "t": "h3",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "dbeddef1d713",
+   "en": "The system should suggest top N (let’s say top ten) frequent and relevant terms to the user based on the text a user types in the search box."
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "li",
+   "k": "82f54918b15f",
+   "en": "Low latency: The system should show all the suggested queries in real time after a user types. The latency shouldn’t exceed 200 ms. A study suggests that the average time between two keystrokes is 160 milliseconds. So, our time-budget of suggestions should be greater than 160 ms to give a real-time response. This is because if a user is typing fast, they already know what to search and might not need suggestions. At the same time, our system response should be greater than 160 ms. However, it should not be too high because in that case, a suggestion might be stale and less useful.",
+   "lead": "Low latency"
+  },
+  {
+   "t": "li",
+   "k": "cc6c9d102a03",
+   "en": "Fault tolerance: The system should be reliable enough to provide suggestions despite the failure of one or more of its components.",
+   "lead": "Fault tolerance"
+  },
+  {
+   "t": "li",
+   "k": "8bcc0dd3578a",
+   "en": "Scalability: The system should support the ever-increasing number of users over time.",
+   "lead": "Scalability"
+  },
+  {
+   "t": "h2",
+   "k": "a9be995c473a",
+   "en": "Resource estimation"
+  },
+  {
+   "t": "p",
+   "k": "1fce3fa2b416",
+   "en": "As was stated earlier, the typeahead feature is used to enhance the user experience while typing a query. We need to design a system that works on a scale that’s similar to Google Search. Google receives more than 3.5 billion searches every day. Designing such an enormous system is a challenging task that requires different resources. Let’s estimate the storage and bandwidth requirements for the proposed system."
+  },
+  {
+   "t": "h3",
+   "k": "5e7e60e98560",
+   "en": "Storage estimation"
+  },
+  {
+   "t": "p",
+   "k": "803bc9d67940",
+   "en": "Assuming that out of the 3.5 billion queries per day, two billion queries are unique and need to be stored. Let’s also assume that each query consists of 15 characters on average, and each character takes 2 Bytes of storage. According to this formulation, we would require the following: 2 billion ×15×2=60GB to store all the queries made in a day."
+  },
+  {
+   "t": "p",
+   "k": "5be46e12562a",
+   "en": "Storage required per year: 60GB/day×365=21.9TB/year"
+  },
+  {
+   "t": "h3",
+   "k": "10d00f179eb1",
+   "en": "Bandwidth estimation"
+  },
+  {
+   "t": "li",
+   "k": "a546a4dcf2f6",
+   "en": "5 billion queries will reach our system every day. Assume that each query a user types is 15 characters long on average."
+  },
+  {
+   "t": "p",
+   "k": "118d581d8031",
+   "en": "Keeping this in mind, the total number of reading requests of characters per day would be as follows: 15×3.5 billion=52.5 billion characters per day."
+  },
+  {
+   "t": "p",
+   "k": "d9ae5d47e309",
+   "en": "Total read requests per second: 52.5B/86400≈0.607M characters/sec. 86,400 is the number of seconds per day."
+  },
+  {
+   "t": "p",
+   "k": "45856dc72dbb",
+   "en": "Since each character takes 2 Bytes, the bandwidth our system would need is as follows:"
+  },
+  {
+   "t": "li",
+   "k": "096228b5bc6e",
+   "en": "607M×2×8=9.7Mb/sec"
+  },
+  {
+   "t": "li",
+   "k": "56495ecdb9a6",
+   "en": "7Mb/sec is the incoming bandwidth requirement for queries that have a maximum length of 15 characters. Our system would suggest the top ten queries that are roughly of the same length as the query length after each character a user types. Therefore, the outgoing bandwidth requirement would become the following: 15×10×9.7Mb/sec=1.46Gb/sec."
+  },
+  {
+   "t": "h3",
+   "k": "7e7845b4ea66",
+   "en": "Number of servers estimation"
+  },
+  {
+   "t": "p",
+   "k": "6f48875a6f42",
+   "en": "Our system will receive 607,000 requests per second concurrently. Therefore, we need to have many servers installed to avoid burdening a single server. Let’s assume that a single server can handle 8,000 queries per second. So, we require around 76 servers to handle 607,000 queries. 607K/8000≈76 servers Here, we only refer to the number of application servers. For simplicity, we ignored the number of cache and database servers. The actual number is higher than 76 because we would also need redundant servers to achieve availability."
+  },
+  {
+   "t": "p",
+   "k": "9e6901cc266a",
+   "en": "In the table below, adjust the values to see how the resource estimations change."
+  },
+  {
+   "t": "p",
+   "k": "8c152cbab072",
+   "en": "Resource Estimation for the Typeahead Suggestion System Total Queries per Day3.5billion Unique Queries per Da 2billion y Minimum Characters i 15Characters n a Query Server's QPS8000Queries per second f Storage60GB/day f Incoming Bandwidth9.7Mb/sec f Outgoing Bandwidth1.455Gb/sec f Number of Servers76Severs"
+  },
+  {
+   "t": "h2",
+   "k": "cfa08fe6c777",
+   "en": "Building blocks we will use"
+  },
+  {
+   "t": "p",
+   "k": "11c573d82be4",
+   "en": "The design of the typeahead suggestion system consists of the following building blocks that have been discussed in the initial chapters of the course:"
+  },
+  {
+   "t": "p",
+   "k": "44bac1b978dd",
+   "en": "Databases are required to keep the data related to the queries’ prefixes."
+  },
+  {
+   "t": "p",
+   "k": "1e4af6352ab2",
+   "en": "Load balancers are required to disseminate incoming queries among a number of active servers."
+  },
+  {
+   "t": "p",
+   "k": "c538e97aa7b0",
+   "en": "Caches are used to keep the top N suggestions for fast retrieval."
+  },
+  {
+   "t": "p",
+   "k": "7183f876bf9a",
+   "en": "In the next lesson, we’ll focus on the high-level design and APIs of the typeahead suggestion system."
+  },
+  {
+   "t": "h1",
+   "k": "df9e8b2bd45a",
+   "en": "High-level Design of the Typeahead Suggestion System"
+  },
+  {
+   "t": "p",
+   "k": "8fae0ad7c248",
+   "en": "Get an overview of the high-level design of the typeahead suggestion system."
+  },
+  {
+   "t": "h2",
+   "k": "f0e860766605",
+   "en": "High-level design"
+  },
+  {
+   "t": "p",
+   "k": "be676127c05d",
+   "en": "According to our requirements, the system shouldn’t just suggest queries in real time with minimum latency but should also store the new search queries in the database. This way, the user gets suggestions based on popular and recent searches."
+  },
+  {
+   "t": "p",
+   "k": "740cdf414290",
+   "en": "Our proposed system should do the following:"
+  },
+  {
+   "t": "p",
+   "k": "b857efb5754a",
+   "en": "Provide suggestions based on the search history of the user."
+  },
+  {
+   "t": "p",
+   "k": "93ef5d66be7d",
+   "en": "Store all the new and trending queries in the database to include them in the list of suggestions."
+  },
+  {
+   "t": "p",
+   "k": "11b622f2c928",
+   "en": "When a user starts typing a query, every typed character hits one of the application servers. Let’s assume that we have a suggestions service that obtains the top ten suggestions from the cache, Redis, and returns them as a response to the client. In addition to this, suppose we have another service known as an assembler. An assembler collects the user searches, applies some analytics to rank the searches, and stores them in a NoSQL database that’s distributed across several nodes."
+  },
+  {
+   "t": "p",
+   "k": "f77fdd64a317",
+   "en": "Furthermore, we also need load balancers to distribute the incoming requests evenly. We also add application servers as entry points for clients so that they can forward requests to the appropriate microservices. These web servers encapsulate the internal system architecture and provide other services, such as authentication, monitoring, request shaping, management, and more."
+  },
+  {
+   "t": "h2",
+   "k": "58dbf879b581",
+   "en": "API design"
+  },
+  {
+   "t": "p",
+   "k": "1853da45a503",
+   "en": "Since the system provides suggestions to the user and adds trending queries to the databases, we need the following APIs."
+  },
+  {
+   "t": "h3",
+   "k": "54fcc4c39fea",
+   "en": "Get suggestion"
+  },
+  {
+   "t": "code",
+   "k": "be866ff1903f",
+   "en": "getSuggestions(prefix)"
+  },
+  {
+   "t": "p",
+   "k": "83154c5bc38b",
+   "en": "This API call retrieves suggestions from the servers. This call is made via the suggestion service and returns the response to the client."
+  },
+  {
+   "t": "p",
+   "k": "ebb253406196",
+   "en": "The following table explains the parameter that’s passed to the API call:"
+  },
+  {
+   "t": "p",
+   "k": "1c33768be4d2",
+   "en": "ParameterDescription prefixThis refers to whatever the user has typed in the search bar."
+  },
+  {
+   "t": "h3",
+   "k": "ade529c0587e",
+   "en": "Add trending queries to the database"
+  },
+  {
+   "t": "code",
+   "k": "9ef4969e60af",
+   "en": "addToDatabase(query)"
+  },
+  {
+   "t": "p",
+   "k": "2fa9561a0471",
+   "en": "This API call adds a trending query to the database via an assembler if the query has already been searched and has crossed a certain threshold."
+  },
+  {
+   "t": "p",
+   "k": "00dc0c594110",
+   "en": "ParameterDescription queryThis represents a frequently searched query that crosses the predefined limit."
+  },
+  {
+   "t": "p",
+   "k": "1bdfe60f8693",
+   "en": "Point to Ponder Instead of updating the whole page, we just need to update the suggested query in the search box in real time. What technique can we use for this purpose?"
+  },
+  {
+   "t": "p",
+   "k": "b5c3f3c280f2",
+   "en": "Hide Answer We should update the query asynchronously using AJAX. AJAX is a set of web development techniques. It allows web pages to exchange a small amount of data, as in the typeahead suggestion system, with the server without interfering with the display and behaviors of the existing web page."
+  },
+  {
+   "t": "p",
+   "k": "c42998fed16a",
+   "en": "In the next lesson, we’ll learn about an efficient data structure that’s used to store the suggestions or prefixes."
+  },
+  {
+   "t": "h1",
+   "k": "d8414a355400",
+   "en": "Data Structure for Storing Prefixes"
+  },
+  {
+   "t": "p",
+   "k": "0b5321e81020",
+   "en": "Learn about the efﬁcient data structure that’s used to store the search suggestions."
+  },
+  {
+   "t": "h2",
+   "k": "5e387ad3d09e",
+   "en": "The trie data structure"
+  },
+  {
+   "t": "p",
+   "k": "eb716e21aa3a",
+   "en": "Before we move on to the discussion of the detailed design of the typeahead suggestion system, we must choose an efficient data structure to store the prefixes. Prefixes are the groups of characters a user types. The issue we’re attempting to tackle is that we have many strings that we need to store in a way that allows users to search for them using any prefix. Our service suggests the next words that match the provided prefix. Let’s suppose our database contains the phrases UNITED, UNIQUE, UNIVERSAL, and UNIVERSITY. Our system should suggest “UNIVERSAL” and “UNIVERSITY” when the user types “UNIV.”"
+  },
+  {
+   "t": "p",
+   "k": "2a7e584fd1e1",
+   "en": "There should be a method that can efficiently store our data and help us conduct fast searches because we have to handle a lot of requests with minimal latency."
+  },
+  {
+   "t": "p",
+   "k": "1fdf212a7f34",
+   "en": "We can’t rely on a database for this because providing suggestions from the database takes longer as compared to reading suggestions from the RAM."
+  },
+  {
+   "t": "p",
+   "k": "8d2152826907",
+   "en": "Therefore, we need to store our index in memory in an efficient data structure."
+  },
+  {
+   "t": "p",
+   "k": "fe6feaf4f57e",
+   "en": "However, for durability and availability, this data is stored in the database."
+  },
+  {
+   "t": "p",
+   "k": "465dae5396c2",
+   "en": "The trie (pronounced “try”) is one of the data structures that’s best suited to our needs. A trie is a tree-like data structure for storing phrases, with each tree node storing a character in the phrase in order. If we needed to store UNITED, UNIQUE, UNIVERSAL, and UNIVERSITY in the trie, it would look like this:"
+  },
+  {
+   "t": "code",
+   "k": "7e5c7a9e3fb3",
+   "en": "Root U N I VQT EUE RED S IA TL Y"
+  },
+  {
+   "t": "p",
+   "k": "7202181beed4",
+   "en": "If the user types “UNIV ,” our service can traverse the trie to go to the node V to find all the terms that start with this prefix—for example, UNIVERSAL, UNIVERSITY, and so on."
+  },
+  {
+   "t": "p",
+   "k": "2817a17e885e",
+   "en": "The trie can combine nodes as one where only a single branch exists, which reduces the depth of the tree. This also reduces the traversal time, which in turn increases the efficiency. As an example, a space- and time-efficient model of the above trie is the following:"
+  },
+  {
+   "t": "code",
+   "k": "477ffd65f534",
+   "en": "Root UNI VERSQUETED ITYAL"
+  },
+  {
+   "t": "h3",
+   "k": "fad782e8e4b4",
+   "en": "Track the top searches"
+  },
+  {
+   "t": "p",
+   "k": "a5bec0dff40c",
+   "en": "Since our system keeps track of the top searches and returns the top suggestion, we store the number of times each term is searched in the trie node. Let’s say that a user searches for UNITED 15 times, UNIQUE 20 times, UNIVERSAL 21 times, and UNIVERSITY 25 times. In order to provide the top suggestions to the user, these counts are stored in each node where these terms terminate. The resultant trie looks like this:"
+  },
+  {
+   "t": "code",
+   "k": "de0db7dd8fcd",
+   "en": "Root UNI VERSQUE, 20TED, 15 ITY, 25AL, 21"
+  },
+  {
+   "t": "p",
+   "k": "9979472f3dd5",
+   "en": "If a user types “UNI,” the system starts traversing the tree under the root node for UNI. After comparing all the terms originating from the root node, the system provides suggestions of all the possible words. Since the frequency of the word UNIVERSITY is high, it appears at the top. Similarly, the frequency of the word UNITED is relatively low, so it appears last. If the user picks UNIQUE from the list of suggestions, the number against UNIQUE increases to 21."
+  },
+  {
+   "t": "p",
+   "k": "7b6ec8bbcf65",
+   "en": "Point to Ponder We reduced the time to traverse the trie by combining nodes with single branches and reducing the number of levels. Is there any other way to minimize the trie traversal time?"
+  },
+  {
+   "t": "p",
+   "k": "69340e2dc9ed",
+   "en": "Hide Answer One way to reduce the trie traversal time is to pre-compute and save the top ten (or any number of our choosing) suggestions for every prefix in the node. This means that instead of traversing the trie each time a user types in “UNIVERS” into the search box, the system will have precomputed, sorted, and stored the solution to the prefix UNIVERS—that is, UNIVERSITY, UNIVERSAL, and so on—inside the node that carries the prefix UNIVERS. However, this approach requires extra space to save precomputed results."
+  },
+  {
+   "t": "h3",
+   "k": "97ead9cab931",
+   "en": "Trie partitioning"
+  },
+  {
+   "t": "p",
+   "k": "2d49b7700ede",
+   "en": "We aim to design a system like Google that we can use to handle billions of queries every second. One server isn’t sufficient to handle such an enormous amount of requests. In addition to this, storing all the prefixes in a single trie isn’t a viable option for the system’s availability, scalability, and durability. A good solution is to split the trie into multiple tries for a better user experience."
+  },
+  {
+   "t": "p",
+   "k": "6b37c5d82f4e",
+   "en": "Let’s assume that the trie is split into two parts, and each part has a replica for durability purposes. All the prefixes starting from “A” to “M” are stored on Server/01, and the replica is stored on Server/02. Similarly, all the prefixes starting from “N” to “Z” are stored on Server/03, and the replica is stored on Server/04. It should be noted that this simple technique doesn’t always balance the load equally because some prefixes have many more words while others have fewer. We use this simple technique to understand partitioning."
+  },
+  {
+   "t": "p",
+   "k": "389857ed189c",
+   "en": "We can split the trie into as many parts as we wish to distribute the load on to different servers and achieve the desired performance."
+  },
+  {
+   "t": "h2",
+   "k": "7a2a559fc4e8",
+   "en": "Partitioned Trie"
+  },
+  {
+   "t": "p",
+   "k": "4fce7854b54f",
+   "en": "Prefixes Primary Secondary A to M Server/01 Server/02 N to Z Server/03 Server/04 Point to Ponder Where will the mapping between the prefixes and their primary and secondary storage be stored? Who will manage and direct the requests to these servers?"
+  },
+  {
+   "t": "p",
+   "k": "d12e53598704",
+   "en": "Hide Answer In a distributed system where multiple clusters consisting of several servers can be used for a specific service, we use a cluster manager like ZooKeeper to store the mapping between clusters."
+  },
+  {
+   "t": "h3",
+   "k": "ffad44e82f36",
+   "en": "Process a query after partitioning"
+  },
+  {
+   "t": "p",
+   "k": "60af57dfa183",
+   "en": "When a user types a query, it hits the load balancer and is forwarded to one of the application servers. The application server searches the appropriate trie depending on the prefix typed by the user. For example, if a user types something starting from “U,” it either accesses Server/03 or Server/04 since both have the tries stored on them that have prefixes starting with “U.”"
+  },
+  {
+   "t": "h3",
+   "k": "fa0c7c3ca7cd",
+   "en": "Update the trie"
+  },
+  {
+   "t": "p",
+   "k": "156c7ff5f11b",
+   "en": "Billions of searches every day give us hundreds of thousands of queries per second. Therefore, the process of updating a trie for every query is highly resource intensive and time-consuming and could hamper our read requests."
+  },
+  {
+   "t": "p",
+   "k": "ecbf74f95139",
+   "en": "This issue can be resolved by updating the trie offline after a specific interval. To update the trie offline, we log the queries and their frequency in a hash table and aggregate the data at regular intervals. After a specific amount of time, the trie is updated with the aggregated information. After the update of the trie, all the previous entries are deleted from the hash table."
+  },
+  {
+   "t": "h2",
+   "k": "fa171c7d24c6",
+   "en": "Prefixes and Their Frequencies Updated Periodically"
+  },
+  {
+   "t": "p",
+   "k": "2ca56c9b498f",
+   "en": "Prefix Time Interval (One Hour) Frequency UNIVERSITY 1st hour UNIVERSITY 2nd hour UNIVERSITY 3rd hour 100 We can put up a MapReduce (MR) job to process all of the logging data regularly, let’s say every 15 minutes. These MR services calculate the frequency of all the searched phrases in the previous 15 minutes and dump the results into a hash table in a database like Cassandra. After that, we may further update the trie with the new data. We can update the current copy of the trie with all of the new words and their frequencies. We should perform this offline because our priority is to provide suggestions to users instead of keeping them waiting."
+  },
+  {
+   "t": "p",
+   "k": "14bf6e6fb04d",
+   "en": "Primarily, we can update the trie using the following two approaches."
+  },
+  {
+   "t": "p",
+   "k": "4e2cd12ea1a1",
+   "en": "We can replicate the trie on each server to update it offline. After that, we can start using it for suggestions and throw away the old ones."
+  },
+  {
+   "t": "p",
+   "k": "f3c0c2c0e8c6",
+   "en": "Another way is to have one primary copy and several secondary copies of the trie. While the main copy is used to answer the queries, we may update the secondary copy. We may also make the secondary our main copy once the upgrade is complete. We can then upgrade our previous primary, which will then be able to serve the traffic as well."
+  },
+  {
+   "t": "p",
+   "k": "2cbab057eabe",
+   "en": "Point to Ponder If the prefix frequencies keep increasing over time, the corresponding integers storing them can overflow. How can we manage this issue?"
+  },
+  {
+   "t": "p",
+   "k": "50e3b36ffc73",
+   "en": "Hide Answer We can normalize frequencies by mapping them in a range, let’s say between zero and 1,000. Alternatively, we can stop any further additions after a certain threshold is reached, assuming that any prefix reaching that threshold is at the top of the rankings."
+  },
+  {
+   "t": "p",
+   "k": "07e68040243c",
+   "en": "In the next lesson, we’ll discuss the detailed design of the typeahead suggestion system."
+  },
+  {
+   "t": "h1",
+   "k": "395ae67ce894",
+   "en": "Detailed Design of the Typeahead Suggestion System"
+  },
+  {
+   "t": "p",
+   "k": "3ded2d6909d5",
+   "en": "Learn about the detailed design of the typeahead suggestion system."
+  },
+  {
+   "t": "h2",
+   "k": "674535ec930b",
+   "en": "Detailed design"
+  },
+  {
+   "t": "p",
+   "k": "073463090f03",
+   "en": "Let’s go over the flow and interaction of the components shown in the illustration below. Our design is divided into two main parts:"
+  },
+  {
+   "t": "h3",
+   "k": "52be9de32157",
+   "en": "Suggestion service"
+  },
+  {
+   "t": "p",
+   "k": "5aad736f85a8",
+   "en": "At the same time that a user types a query in the search box, the getSuggestions(prefix) API calls hit the suggestions services. The top ten popular queries are returned from the distributed cache, Redis."
+  },
+  {
+   "t": "h3",
+   "k": "cd2e8cfa846b",
+   "en": "Assembler"
+  },
+  {
+   "t": "p",
+   "k": "8acfe2e8ca05",
+   "en": "In the previous lesson, we discussed how tries are built, partitioned, and stored in the database. However, the creation and updation of a trie shouldn’t come in the critical path of a user’s query. We shouldn’t update the trie in real time for the following reasons:"
+  },
+  {
+   "t": "p",
+   "k": "82c9eeaf343c",
+   "en": "There could be millions of users entering queries every second. During such phases with large amounts of incoming traffic, updating the trie in real time on every query can slow down our suggestion service."
+  },
+  {
+   "t": "p",
+   "k": "2571b1fd6310",
+   "en": "We have to provide top suggestions that might not frequently change after the creation or updation of the trie. So, it’s less important to update the trie frequently."
+  },
+  {
+   "t": "p",
+   "k": "a7ad05943b0e",
+   "en": "In light of the reasons given above, we have a separate service called an assembler that’s responsible for creating and updating tries after a certain configurable amount of time. The assembler consists of the following different services:"
+  },
+  {
+   "t": "li",
+   "k": "522b448d380c",
+   "en": "Collection service: Whenever a user types, this service collects the log that consists of phrases, time, and other metadata and dumps it in a database that’s processed later. Since the size of this data is huge, the Hadoop Distributed File System (HDFS) is considered a suitable storage system for storing this raw data.",
+   "lead": "Collection service"
+  },
+  {
+   "t": "p",
+   "k": "e7e79c97b4e0",
+   "en": "An example of the raw data from the collection service is shown in the following table. We record the time so that the system knows when to update the frequency of a certain phrase."
+  },
+  {
+   "t": "h2",
+   "k": "68946a52b3a4",
+   "en": "Raw Data Collected by the Collection Service"
+  },
+  {
+   "t": "p",
+   "k": "9d4676feb936",
+   "en": "PhrasesDate and Time (DD-MM-YYYY HH:MM:SS)"
+  },
+  {
+   "t": "p",
+   "k": "cd3e9ea800d9",
+   "en": "UNIVERSAL23-03-2022 10:16:18 UNIVERSITY23-03-2022 10:20:11 UNIQUE23-03-2022 10:21:10 UNIQUE23-03-2022 10:22:24 UNIVERSITY23-03-2022 10:25:09"
+  },
+  {
+   "t": "li",
+   "k": "cd7ac331f346",
+   "en": "Aggregator: The raw data collected by the collection service is usually not in a consolidated shape. We need to consolidate the raw data to process it further and to create or update the tries. An aggregator retrieves the data from the HDFS and distributes it to different workers. Generally, the MapReducer is responsible for aggregating the frequency of the prefixes over a given interval of time, and the frequency is updated periodically in the associated Cassandra database. Cassandra is suitable for this purpose because it can store large amounts of data in a tabular format.",
+   "lead": "Aggregator"
+  },
+  {
+   "t": "p",
+   "k": "112491f859ce",
+   "en": "The following table shows the processed and consolidated data within a particular period. This table is updated regularly by the aggregator and is stored in a hash table in a database like Cassandra. For simplicity, we assume that our data is case insensitive."
+  },
+  {
+   "t": "h2",
+   "k": "39f99c4679ed",
+   "en": "Useful Information Extracted from the Raw Data"
+  },
+  {
+   "t": "p",
+   "k": "bbb3c596e390",
+   "en": "PhrasesFrequencyTime Interval UNIVERSAL14001st 15 minutes UNIVERSITY13401st 15 minutes UNIQUE12001st 15 minutes"
+  },
+  {
+   "t": "li",
+   "k": "eb687fd49f5e",
+   "en": "Trie builder: This service is responsible for creating or updating tries. It stores these new and updated tries on their respective shards in the trie database via ZooKeeper. Tries are stored in persistent storage in a file so that we can rebuild our trie easily if necessary. NoSQL document databases such as MongoDB are suitable for storing these tries. This storage of a trie is needed when a machine restarts.",
+   "lead": "Trie builder"
+  },
+  {
+   "t": "p",
+   "k": "73d5ce835ab2",
+   "en": "The trie is updated from the aggregated data in the Cassandra database."
+  },
+  {
+   "t": "p",
+   "k": "8a59b68a6845",
+   "en": "The existing snapshot of a trie is updated with all the new terms and their corresponding frequencies. Otherwise, a new trie is created using the data in the Cassandra database."
+  },
+  {
+   "t": "p",
+   "k": "9f7189a87ad6",
+   "en": "Once a trie is created or updated, the system makes it available for the suggestion service."
+  },
+  {
+   "t": "p",
+   "k": "c019d93c3ea2",
+   "en": "Point to Ponder Should we collect data and build a trie per user, or should it be shared among all users?"
+  },
+  {
+   "t": "p",
+   "k": "3383ae01067b",
+   "en": "Hide Answer Since we aim to design a system on a scale that’s similar to Google Search, billions of users will be using our service. Since the number of users would be huge, maintaining a tree for each user would become complex and time-consuming. There’s also a possibility of duplicated trees if several users have typed some common searches, resulting in resource wastage."
+  },
+  {
+   "t": "p",
+   "k": "113e1f311cb9",
+   "en": "Therefore, our design assumes a common trie that’s shared among users, where the ranking would be based on single phrases in the trie and the frequency of the terms."
+  },
+  {
+   "t": "h1",
+   "k": "f7fac2ab6a22",
+   "en": "Evaluation of the Typeahead Suggestion System’s Design"
+  },
+  {
+   "t": "h2",
+   "k": "682946f90c1f",
+   "en": "Fulfill requirements"
+  },
+  {
+   "t": "li",
+   "k": "0d98b8548269",
+   "en": "Low latency: There are various levels at which we can minimize the system’s latency. We can minimize the latency with the following options:",
+   "lead": "Low latency"
+  },
+  {
+   "t": "p",
+   "k": "1cc21519e610",
+   "en": "Reduce the depth of the tree, which reduces the overall traversal time."
+  },
+  {
+   "t": "p",
+   "k": "2caccac47a7a",
+   "en": "Update the trie offline, which means that the time taken by the update operation isn’t on the clients’ critical path."
+  },
+  {
+   "t": "p",
+   "k": "6b8c6cd41e00",
+   "en": "Use geographically distributed application and database servers. This way, the service is provided near the user, which also reduces any communication delays and aids in reducing latency."
+  },
+  {
+   "t": "p",
+   "k": "c442d9285ed2",
+   "en": "Use Redis and Cassandra cache clusters on top of NoSQL database clusters."
+  },
+  {
+   "t": "p",
+   "k": "4dae82a2d36e",
+   "en": "Appropriately partition tries, which leads to a proper distribution of the load and results in better performance."
+  },
+  {
+   "t": "li",
+   "k": "f4605039f853",
+   "en": "Fault tolerance: Since the replication and partitioning of the trees are provided, the system operates with high resilience. If one server fails, others are on standby to deliver the services.",
+   "lead": "Fault tolerance"
+  },
+  {
+   "t": "li",
+   "k": "f5862edbee90",
+   "en": "Scalability: Since our proposed system is flexible, more servers can be added or removed as the load increases. For example, if the number of queries increases, the number of partitions or shards of the trees is increased accordingly.",
+   "lead": "Scalability"
+  },
+  {
+   "t": "h2",
+   "k": "d65910325352",
+   "en": "Approaches to Fulfill Non-functional Requirements"
+  },
+  {
+   "t": "li",
+   "k": "aceab1a3f255",
+   "en": "Updating the tries offline and not in real time)"
+  },
+  {
+   "t": "li",
+   "k": "d045916eb59c",
+   "en": "Partitioning of the tries"
+  },
+  {
+   "t": "li",
+   "k": "e49e64312174",
+   "en": "Caching servers Fault tolerance•Replicating the tries and the NoSQL databases Scalability•Adding or removing application servers based on the incoming traffic"
+  },
+  {
+   "t": "li",
+   "k": "904fb06d998f",
+   "en": "Increasing the trie partitions"
+  },
+  {
+   "t": "h2",
+   "k": "e712182dc6c3",
+   "en": "Client-side optimisation"
+  },
+  {
+   "t": "p",
+   "k": "fc37c57453a5",
+   "en": "To improve the user’s experience, we can implement the following client-side optimizations:"
+  },
+  {
+   "t": "p",
+   "k": "4d57e5e9f753",
+   "en": "The client should only attempt to contact the server if the user hasn’t pressed any keys for some time—for example, any delay greater than 160 ms, which is the average delay between two keystrokes. This way, we can also avoid unnecessary bandwidth consumption. This suggestion might not be useful when a user is typing rapidly."
+  },
+  {
+   "t": "p",
+   "k": "fea4f9d975f4",
+   "en": "The client can initially wait till the user types a few characters."
+  },
+  {
+   "t": "p",
+   "k": "70ff4b12400d",
+   "en": "Clients can save a local copy of the recent history of suggestions. The rate of reuse of recent history in the suggestions list is relatively high."
+  },
+  {
+   "t": "p",
+   "k": "7062d59f9ac0",
+   "en": "One of the most crucial elements is establishing a connection with the server as soon as possible. The client can establish a connection with the server as soon as the user visits the search page. As a result, the client doesn’t waste time establishing the connection when the user inputs the first character. Usually, the connection is established with the server via a WebSocket protocol."
+  },
+  {
+   "t": "p",
+   "k": "34401186815a",
+   "en": "For efficiency, the server can push a portion of its cache to CDNs and other edge caches at Internet exchange points (IXPs) or even inside a client’s Internet service provider (ISP)."
+  },
+  {
+   "t": "h2",
+   "k": "49aa4709bf1e",
+   "en": "Personalization"
+  },
+  {
+   "t": "p",
+   "k": "be5edceaf748",
+   "en": "Users receive typeahead suggestions based on their previous searches, location, language, and other factors. We can save each user’s personal history on the server separately and cache it on the client. Before transmitting the final set to the user, the server might include these customized phrases. Personalized searches should always take precedence over other types of searches."
+  },
+  {
+   "t": "h2",
+   "k": "05535ecff78e",
+   "en": "Summary"
+  },
+  {
+   "t": "p",
+   "k": "7a083b98c927",
+   "en": "In this design problem, we learned how pushing resource-intensive processing to the offline infrastructure and using appropriate data structures enables us to serve our customers with low latency. Many optimizations lend themselves to specific use cases. We saw multiple optimizations on our trie data structures for condensed data storage and quick serving."
+  }
+ ]
+}

@@ -1,0 +1,58 @@
+{
+ "id": "040-conclusions",
+ "title": "Conclusions",
+ "titleKey": "e49ddbc9cd1c",
+ "book": "grokking",
+ "blocks": [
+  {
+   "t": "h1",
+   "k": "e49ddbc9cd1c",
+   "en": "Conclusions"
+  },
+  {
+   "t": "p",
+   "k": "e2151d04546d",
+   "en": "Let's sum up what we’ve learned in this course."
+  },
+  {
+   "t": "p",
+   "k": "0a6398d1d0dd",
+   "en": "Before we conclude, we’d like to congratulate you for completing such a challenging course!"
+  },
+  {
+   "t": "p",
+   "k": "c98f640bb52e",
+   "en": "In this course, we learned system design activity from the lens of basic building blocks—the fundamental subsystems that combine to make a bigger system. Doing so enabled us to focus on the specific business use cases instead of repeating the recurring concepts."
+  },
+  {
+   "t": "p",
+   "k": "9217c8d84d84",
+   "en": "We carefully selected our design problems from many different domains, and we've made an explicit effort to incorporate some unique aspects or issues of system design activity in each of them."
+  },
+  {
+   "t": "h2",
+   "k": "78eb9cd7d188",
+   "en": "Unique Aspects of Each Design Problem"
+  },
+  {
+   "t": "p",
+   "k": "4f3f9c03781e",
+   "en": "Design Unique Aspect of Design Problem YouTubeBuilding custom data stores like Vitess and BigTable to meet scalability needs QuoraVertical sharding of MySQL database to meet the scalability requirements Google The use of segmentation of a map to meet scalability needs and achieve high performance Maps YelpUsage of Quadtrees for speedy access to spatial data UberImproved payment service to ensure fraud detection, and matching the driver and rider on maps TwitterThe use of client-side load balancers for multiple services that had thousands of instances in order to reduce latency NewsfeedA recommendation system to ensure ranking and feed suggestions InstagramA perfect example of how different building blocks combine to build a scalable and performant system TinyURLEncoding IDs in the base-58 system for generating unique short URLs Web Detection, identification, and resolution of Web crawler traps crawler WhatsAppMessage management for offline users TypeaheadThe usage of an efficient trie data structure to provide suggestions Google DocsConcurrency management for simultaneous writes, using techniques like operational transformation (OT) and Conflict-free Replicated Data Type (CRDT)"
+  },
+  {
+   "t": "p",
+   "k": "fda3c855eff1",
+   "en": "At this point, we’ve built our system design toolbox, and we can now pick the right tools for the job at hand. We hope that this course has helped you gain enough knowledge to design new problems and solutions using our building blocks. Let’s put our system design knowledge to work and build great systems!"
+  },
+  {
+   "t": "p",
+   "k": "ddb46e3d66e3",
+   "en": "Finally, we would like to thank you for taking the time to complete this course!"
+  },
+  {
+   "t": "p",
+   "k": "cb8695b9a18a",
+   "en": "We hope that it was a great experience for you. Please feel free to drop us an email or leave a comment on our community forum about any suggestions that you may have. — Team Educative"
+  }
+ ]
+}

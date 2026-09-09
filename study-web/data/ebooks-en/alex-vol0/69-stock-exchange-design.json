@@ -1,0 +1,58 @@
+{
+ "id": "69-stock-exchange-design",
+ "title": "Stock exchange design",
+ "titleKey": "e3ca7c1328f4",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "8ce84b8ab494",
+   "en": "The stock market has been volatile recently."
+  },
+  {
+   "t": "p",
+   "k": "123314e5de80",
+   "en": "Coincidentally, we just finished a new chapter “Design a stock exchange”. I’ll use plain English to explain what happens when you place a stock buying order. The focus is on the exchange side."
+  },
+  {
+   "t": "p",
+   "k": "bdff87c1c934",
+   "en": "Step 1: client places an order via the broker’s web or mobile app."
+  },
+  {
+   "t": "p",
+   "k": "edfb0409adf8",
+   "en": "Step 2: broker sends the order to the exchange. 151 Step 3: the exchange client gateway performs operations such as validation, rate limiting, authentication, normalization, etc, and sends the order to the order manager."
+  },
+  {
+   "t": "p",
+   "k": "b6ac984151f5",
+   "en": "Step 4: the order manager performs risk checks based on rules set by the risk manager."
+  },
+  {
+   "t": "p",
+   "k": "8d6cb4f59c64",
+   "en": "Step 5: once risk checks pass, the order manager checks if there is enough balance in the wallet."
+  },
+  {
+   "t": "p",
+   "k": "3b99176c2378",
+   "en": "Step 6-7: the order is sent to the matching engine. The matching engine sends back the execution result if a match is found. Both order and execution results need to be sequenced first in the sequencer so that matching determinism is guaranteed."
+  },
+  {
+   "t": "p",
+   "k": "f3d0a5b452ad",
+   "en": "Step 8 - 10: execution result is passed all the way back to the client."
+  },
+  {
+   "t": "p",
+   "k": "3e90d2f7feae",
+   "en": "Step 11-12: market data (including the candlestick chart and order book) are sent to the data service for consolidation. Brokers query the data service to get the market data."
+  },
+  {
+   "t": "p",
+   "k": "7b0a03b05bef",
+   "en": "Step 13: the reporter composes all the necessary reporting fields (e.g. client_id, price, quantity, order_type, filled_quantity, remaining_quantity) and writes the data to the database for persistence A stock exchange requires 𝐞𝐱𝐭𝐫𝐞𝐦𝐞𝐥𝐲 𝐥𝐨𝐰 𝐥𝐚𝐭𝐞𝐧𝐜𝐲. While most web applications are ok with hundreds of milliseconds latency, a stock exchange requires𝐦𝐢𝐜𝐫𝐨-𝐬𝐞𝐜𝐨𝐧𝐝 𝐥𝐞𝐯𝐞𝐥𝐥𝐚𝐭𝐞𝐧𝐜𝐲. I’ll leave the latency discussion for a separate post since the post is already long. 152"
+  }
+ ]
+}

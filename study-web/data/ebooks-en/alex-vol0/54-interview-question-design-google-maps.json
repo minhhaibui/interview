@@ -1,0 +1,38 @@
+{
+ "id": "54-interview-question-design-google-maps",
+ "title": "Interview Question: Design Google Maps",
+ "titleKey": "ff987181ff64",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "a4281a032494",
+   "en": "Google started project G𝐨𝐨𝐠𝐥𝐞 M𝐚𝐩𝐬 in 2005. As of March 2021, Google Maps had one billion daily active users, 99% coverage of the world in 200 countries."
+  },
+  {
+   "t": "p",
+   "k": "393e44455c3b",
+   "en": "Although Google Maps is a very complex system, we can break it down into 3 high-level components. In this post, let’s take a look at how to design a simplified Google Maps. 115 𝐋𝐨𝐜𝐚𝐭𝐢𝐨𝐧 𝐒𝐞𝐫𝐯𝐢𝐜𝐞 The location service is responsible for recording a user’s location update. The Google Map clients send location updates every few seconds. The user location data is used in many cases: - detect new and recently closed roads - improve the accuracy of the map over time - used as an input for live traffic data."
+  },
+  {
+   "t": "p",
+   "k": "d83f4808da13",
+   "en": "𝐌𝐚𝐩 𝐑𝐞𝐧𝐝𝐞𝐫𝐢𝐧𝐠 The world’s map is projected into a huge 2D map image. It is broken down into small image blocks called “tiles” (see below). The tiles are static. They don’t change very often. An efficient way to serve static tile files is with a CDN backed by cloud storage like S3. The users can load the necessary tiles to compose a map from nearby CDN."
+  },
+  {
+   "t": "p",
+   "k": "9f74ad0e7281",
+   "en": "What if a user is zooming and panning the map viewpoint on the client to explore their surroundings?"
+  },
+  {
+   "t": "p",
+   "k": "190f5080c2e5",
+   "en": "An efficient way is to pre-calculate the map blocks with different zoom levels and load the images when needed."
+  },
+  {
+   "t": "p",
+   "k": "9d43493aaf05",
+   "en": "𝐍𝐚𝐯𝐢𝐠𝐚𝐭𝐢𝐨𝐧 𝐒𝐞𝐫𝐯𝐢𝐜𝐞 This component is responsible for finding a reasonably fast route from point A to point B. It calls two services to help with the path calculation: 1⃣ Geocoding Service: resolve the given address to a latitude/longitude pair 2⃣ Route Planner Service: this service does three things in sequence: - Calculate the top-K shortest paths between A and B - Calculate the estimation of time for each path based on current traffic and historical data - Rank the paths by time predictions and user filtering. For example, the user doesn’t want to avoid tolls. 116"
+  }
+ ]
+}

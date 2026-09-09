@@ -1,0 +1,48 @@
+{
+ "id": "71-design-a-flash-sale-system",
+ "title": "Design a flash sale system",
+ "titleKey": "166e3fff57cb",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "48ec31faa44b",
+   "en": "Black Friday is coming. Designing a system with extremely high concurrency, high availability and quick responsiveness needs to consider many aspects𝐚𝐥𝐥 𝐭𝐡𝐞 𝐰𝐚𝐲 𝐟𝐫𝐨𝐦𝐟𝐫𝐨𝐧𝐭𝐞𝐧𝐝 𝐭𝐨 𝐛𝐚𝐜𝐤𝐞𝐧𝐝.See the below picture for details:"
+  },
+  {
+   "t": "p",
+   "k": "2faf3fe7d858",
+   "en": "𝐃𝐞𝐬𝐢𝐠𝐧 𝐩𝐫𝐢𝐧𝐜𝐢𝐩𝐥𝐞𝐬:"
+  },
+  {
+   "t": "li",
+   "k": "dbd4c7089e2e",
+   "en": "Less is more - less element on the web page, fewer data queries to the database, fewer web requests, fewer system dependencies"
+  },
+  {
+   "t": "li",
+   "k": "2ee86066907d",
+   "en": "Short critical path - fewer hops among services or merge into one service"
+  },
+  {
+   "t": "li",
+   "k": "36e32b4b76d5",
+   "en": "Async - use message queues to handle high TPS"
+  },
+  {
+   "t": "li",
+   "k": "01f5f623dcc5",
+   "en": "Isolation - isolate static and dynamic contents, isolate processes and databases for rare items"
+  },
+  {
+   "t": "li",
+   "k": "e2389c5eda3a",
+   "en": "Overselling is bad. When Decreasing the inventory is important 155"
+  },
+  {
+   "t": "li",
+   "k": "aa246b08bfa0",
+   "en": "User experience is important. We definitely don’t want to inform users that they have successfully placed orders but later tell them no items are actually available 156"
+  }
+ ]
+}

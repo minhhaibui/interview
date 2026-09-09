@@ -1,0 +1,127 @@
+{
+ "id": "29-choosing-a-vector-store-for-semantic-search",
+ "title": "Choosing a Vector Store for Semantic Search",
+ "titleKey": "1bb2633a33a5",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "101a76964e16",
+   "en": "You're building a semantic search feature for a B2B SaaS product."
+  },
+  {
+   "t": "p",
+   "k": "84732626cb7c",
+   "en": "The corpus: 4 million support articles, docs, and user-generated tickets. Users type natural language queries. They expect Google-quality results — not keyword matching."
+  },
+  {
+   "t": "p",
+   "k": "eafed2713a0e",
+   "en": "Your current stack: PostgreSQL 15, Redis, and a Node.js backend. The search team says ILIKE and pg_trgm aren't cutting it. Embeddings are the answer. Now you need a place to store and query 1536-dimensional vectors (OpenAI ada-002) at <100ms p99. 4 million rows. ~24GB of raw embeddings. Query volume: 300 req/s with weekend spikes to 900 req/s."
+  },
+  {
+   "t": "p",
+   "k": "09d9370c16be",
+   "en": "Where do you store and query those vectors? with <-> cosine similarity."
+  },
+  {
+   "t": "p",
+   "k": "79a0b59a8445",
+   "en": "Qdrant — open-source vector DB, Rust-based, self-hosted or cloud, optimized for high-throughput filtering."
+  },
+  {
+   "t": "h3",
+   "k": "0871980f2217",
+   "en": "DAY 28 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "li",
+   "k": "9039ad504f52",
+   "en": "Why D wins (Qdrant):",
+   "lead": "Why D wins (Qdrant)"
+  },
+  {
+   "t": "p",
+   "k": "1ab58dc9a4eb",
+   "en": "Qdrant is purpose-built for exactly this workload. Rust core = low latency and predictable memory under load. At 300 req/s you need an index that handles concurrent ANN queries without degrading — Qdrant's HNSW implementation is tuned for this."
+  },
+  {
+   "t": "p",
+   "k": "5b1c3aef057b",
+   "en": "The killer feature here is payload filtering. In a B2B product, users search within a workspace, tenant, or product line — not globally. Qdrant handles vector search + metadata filter in one pass."
+  },
+  {
+   "t": "p",
+   "k": "738987f20409",
+   "en": "Every other option forces post-filtering, which blows up recall and adds round-trips."
+  },
+  {
+   "t": "p",
+   "k": "32b430f9d18a",
+   "en": "Self-hosted gives you full control over HNSW params (m, ef_construction), memory mapping, and on-disk indexing — critical when your corpus grows past RAM."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "li",
+   "k": "3b6bff4bfedd",
+   "en": "Why A is the trap (pgvector): pgvector is great for getting started — under ~500k vectors it's often the right call because you already own PostgreSQL. But at 4M rows and 300 req/s, the HNSW index runs inside Postgres's buffer pool, competing with your transactional workload. Latency goes non-linear under concurrency.",
+   "lead": "Why A is the trap (pgvector)"
+  },
+  {
+   "t": "p",
+   "k": "9fbc841c94c9",
+   "en": "VACUUM on a large embeddings table is painful."
+  },
+  {
+   "t": "p",
+   "k": "a13f941924ff",
+   "en": "Rule of thumb: pgvector under 500k vectors + low concurrency = fine. Above that, you're borrowing against future pain."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "li",
+   "k": "0863e4600631",
+   "en": "Why B loses (Pinecone):",
+   "lead": "Why B loses (Pinecone)"
+  },
+  {
+   "t": "p",
+   "k": "83d8b16206a5",
+   "en": "Pinecone works and teams ship with it fast. But the cost model bites hard at 300 req/s sustained — serverless tier prices per query unit, you're looking at thousands of dollars/month. There's also proprietary lock-in: no standard wire protocol, so migrating means re-implementing your ingestion pipeline from scratch."
+  },
+  {
+   "t": "p",
+   "k": "b7ab6c73bffa",
+   "en": "Right tool when: speed to market matters more than cost, and query volume is under ~50 req/s."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "li",
+   "k": "28f55b4d20d5",
+   "en": "Why C loses (Weaviate):",
+   "lead": "Why C loses (Weaviate)"
+  },
+  {
+   "t": "p",
+   "k": "ac852674047c",
+   "en": "Weaviate is solid with good hybrid search (BM25 + vector) and multi-modal support. But the Kubernetes footprint is heavier than Qdrant for this use case. For a team not already running K8s for their vector layer, the operational overhead is real. Weaviate shines for multi-modal search or semantic graph relationships — for pure dense vector search with filtering, Qdrant is leaner."
+  },
+  {
+   "t": "h3",
+   "k": "2f4a26d3b4f9",
+   "en": "DAY 29 · SYSTEM DESIGN"
+  }
+ ]
+}

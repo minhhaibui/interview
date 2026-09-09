@@ -1,0 +1,38 @@
+{
+ "id": "61-big-data-papers",
+ "title": "Big data papers",
+ "titleKey": "3ce90a7288fa",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "80c38a96836c",
+   "en": "Below is a timeline of important big data papers and how the techniques evolved over time."
+  },
+  {
+   "t": "p",
+   "k": "f4d255658218",
+   "en": "The green highlighted boxes are the famous 3 Google papers, which established the foundation of the big data framework. At the high-level:"
+  },
+  {
+   "t": "p",
+   "k": "f6d4d8853703",
+   "en": "𝘉𝘪𝘨 𝘋𝘢𝘵𝘢 𝘛𝘦𝘤𝘩𝘯𝘪𝘲𝘶𝘦𝘴 = 𝘔𝘢𝘴𝘴𝘪𝘷𝘦 𝘥𝘢𝘵𝘢 + 𝘔𝘢𝘴𝘴𝘪𝘷𝘦 𝘤𝘢𝘭𝘤𝘶𝘭𝘢𝘵𝘪𝘰𝘯 Let’s look at the 𝐎𝐋𝐓𝐏 evolution. BigTable provided a distributed storage system for structured data but dropped some characteristics of relational DB. Then Megastore brought back schema and simple transactions; Spanner brought back data consistency."
+  },
+  {
+   "t": "p",
+   "k": "7a369183e49e",
+   "en": "Now let’s look at the 𝐎𝐋𝐀𝐏 evolution. MapReduce was not easy to program, so Hive solved this by introducing a SQL-like query 134 language. But Hive still used MapReduce under the hood, so it’s not very responsive. In 2010, Dremel provided an interactive query engine."
+  },
+  {
+   "t": "p",
+   "k": "b39881fc0ec9",
+   "en": "𝐒𝐭𝐫𝐞𝐚𝐦𝐢𝐧𝐠 𝐩𝐫𝐨𝐜𝐞𝐬𝐬𝐢𝐧𝐠 was born to further solve the latency issue in OLAP. The famous 𝒍𝒂𝒎𝒃𝒅𝒂 architecture was based on Storm and MapReduce, where streaming processing and batch processing have different processing flows. Then people started to build streaming processing with apache Kafka. 𝑲𝒂𝒑𝒑𝒂 architecture was proposed in 2014, where streaming and batching processings were merged into one flow. Google published The Dataflow Model in 2015, which was an abstraction standard for streaming processing, and Flink implemented this model."
+  },
+  {
+   "t": "p",
+   "k": "160f2703b60b",
+   "en": "To manage a big crowd of commodity server resources, we need resource management Kubernetes. 135"
+  }
+ ]
+}

@@ -1,0 +1,153 @@
+{
+ "id": "23-reliable-messaging-across-services",
+ "title": "Reliable Messaging Across Services",
+ "titleKey": "f8b6388055ed",
+ "book": "labs",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "404c96ef0e1a",
+   "en": "Your payment service just charged a customer."
+  },
+  {
+   "t": "p",
+   "k": "481f808c4601",
+   "en": "It writes to the DB. Now it needs to tell the notification service: \"Send the confirmation email.\""
+  },
+  {
+   "t": "p",
+   "k": "9c08a65d6121",
+   "en": "The HTTP call times out. Did it arrive? You don't know. You retry. Customer gets two emails."
+  },
+  {
+   "t": "p",
+   "k": "d7207608c1e9",
+   "en": "You've just hit the Two Generals Problem. It's not a bug. It's a proof."
+  },
+  {
+   "t": "p",
+   "k": "ff60e0b90fa8",
+   "en": "No protocol over an unreliable channel can guarantee both sides agree on the final message. Not HTTP. Not TCP. Not your retry loop. The uncertainty is mathematically irreducible."
+  },
+  {
+   "t": "p",
+   "k": "c713678c45c2",
+   "en": "Here's the setup:"
+  },
+  {
+   "t": "p",
+   "k": "4281641e9f28",
+   "en": "PaymentService (Node.js, PostgreSQL) NotificationService (Go)→ ~40ms p99 latency, occasional 504s under load."
+  },
+  {
+   "t": "p",
+   "k": "39c5af436d59",
+   "en": "You need to send exactly one confirmation email per payment — no double-sends, no missed sends."
+  },
+  {
+   "t": "p",
+   "k": "b38a607edfc2",
+   "en": "What do you build?"
+  },
+  {
+   "t": "p",
+   "k": "ef61adce8286",
+   "en": "A) Retry with exponential backoff until NotificationService returns 200. If you keep retrying until you get an ACK, you know it arrived."
+  },
+  {
+   "t": "p",
+   "k": "600016592474",
+   "en": "B) Wrap both in a distributed transaction (2PC) — PaymentService and NotificationService commit together or neither does."
+  },
+  {
+   "t": "p",
+   "k": "f1c1e4e7dc14",
+   "en": "C) Outbox pattern — PaymentService writes the notification event to an outbox table in the same DB transaction as the payment. A relay process delivers it separately."
+  },
+  {
+   "t": "p",
+   "k": "6de1e59455c7",
+   "en": "D) Push to SQS with at-least-once delivery. NotificationService deduplicates on a stable idempotency key."
+  },
+  {
+   "t": "p",
+   "k": "92741a5ab654",
+   "en": "Accept you might send twice, but never miss."
+  },
+  {
+   "t": "h3",
+   "k": "0df42adb9814",
+   "en": "DAY 22 · ANSWERS & EXPLANATIONS Answer 1 CORRECT ANSWER"
+  },
+  {
+   "t": "p",
+   "k": "64c9841bd4df",
+   "en": "D — SQS + at-least-once + idempotency key (CORRECT)"
+  },
+  {
+   "t": "p",
+   "k": "674878509050",
+   "en": "The only answer that accepts the impossibility and designs around it. At-least-once means the message will arrive — maybe twice. Idempotency on the consumer side (payment_id:email:v1 in a dedup table) makes the second delivery a no-op. No missed sends, no double-sends in practice. This is exactly how Stripe and AWS handle it. The queue absorbs the uncertainty. Idempotency absorbs the duplicates."
+  },
+  {
+   "t": "h3",
+   "k": "002cc1fd04a9",
+   "en": "Answer 2"
+  },
+  {
+   "t": "p",
+   "k": "9d465d50a27d",
+   "en": "A — Retry until ACK (SENIOR ENGINEER TRAP)"
+  },
+  {
+   "t": "p",
+   "k": "d393292b7d67",
+   "en": "Feels airtight. It's not. What if the 200 response is what timed out — not the request?"
+  },
+  {
+   "t": "p",
+   "k": "63900bcc0006",
+   "en": "NotificationService sent the email AND returned 200, but you never saw the response. So you retry."
+  },
+  {
+   "t": "p",
+   "k": "aeb23da42115",
+   "en": "Second email sent. Now you need to confirm your ACK arrived too... which is the Two Generals recursion. No finite number of retries closes this loop. More handshakes = more latency and more failure surfaces, not more certainty."
+  },
+  {
+   "t": "h3",
+   "k": "e6d7b222ad3b",
+   "en": "Answer 3"
+  },
+  {
+   "t": "p",
+   "k": "9bb63c3c9632",
+   "en": "B — 2PC (WRONG)"
+  },
+  {
+   "t": "p",
+   "k": "99ddd1d32441",
+   "en": "The coordinator is a single point of failure. If it crashes between Phase 1 (prepare) and Phase 2 (commit), both services are stuck with locks held, waiting for a decision that never comes. You've traded message uncertainty for coordinator-failure uncertainty — same problem, more complexity."
+  },
+  {
+   "t": "h3",
+   "k": "d1f74e6027d5",
+   "en": "Answer 4"
+  },
+  {
+   "t": "p",
+   "k": "f53708de42fa",
+   "en": "C — Outbox Pattern (CORRECT but heavier)"
+  },
+  {
+   "t": "p",
+   "k": "6f0211d9524d",
+   "en": "Actually solid — atomicity at the DB level, event and payment always in sync. But you're now running a relay process + CDC pipeline + outbox cleanup. For most teams with SQS already in place, D gets 95% of the same guarantees with a fraction of the infrastructure. C shines at scale or when strict ordering matters. D is the right answer for most teams today."
+  },
+  {
+   "t": "h3",
+   "k": "8bc839b24bb1",
+   "en": "DAY 23 · SYSTEM DESIGN"
+  }
+ ]
+}

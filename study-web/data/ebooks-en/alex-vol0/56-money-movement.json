@@ -1,0 +1,88 @@
+{
+ "id": "56-money-movement",
+ "title": "Money movement",
+ "titleKey": "fa9365f6fb1b",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "83a82ebcde27",
+   "en": "One picture is worth more than a thousand words. This is what happens when you buy a product using Paypal/bank card under the hood."
+  },
+  {
+   "t": "p",
+   "k": "58322331fc76",
+   "en": "To understand this, we need to digest two concepts: 𝐜𝐥𝐞𝐚𝐫𝐢𝐧𝐠 & 𝐬𝐞𝐭𝐭𝐥𝐞𝐦𝐞𝐧𝐭. Clearing is a process that calculates who should pay whom with how much money; while settlement is a process where real money moves between reserves in the settlement bank. 119 Let’s say Bob wants to buy an SDI book from Claire’s shop on Amazon. - Pay-in flow (Bob pays Amazon money):"
+  },
+  {
+   "t": "li",
+   "k": "829d1ac8e75f",
+   "en": "1 Bob buys a book on Amazon using Paypal."
+  },
+  {
+   "t": "li",
+   "k": "061c12d4defe",
+   "en": "2 Amazon issues a money transfer request to Paypal."
+  },
+  {
+   "t": "li",
+   "k": "4abafcc095d1",
+   "en": "3 Since the payment token of Bob’s debit card is stored in Paypal, Paypal can transfer money, on Bob’s behalf, to Amazon’s bank account in Bank A."
+  },
+  {
+   "t": "li",
+   "k": "3d9579322a69",
+   "en": "4 Both Bank A and Bank B send transaction statements to the clearing institution. It reduces the transactions that need to be settled."
+  },
+  {
+   "t": "p",
+   "k": "6c3526a229c1",
+   "en": "Let’s assume Bank A owns Bank B $100 and Bank B owns bank A $500 at the end of the day. When they settle, the net position is that Bank B pays Bank A $400."
+  },
+  {
+   "t": "li",
+   "k": "7dff9b8f1de8",
+   "en": "5 & 1.6 The clearing institution sends clearing and settlement information to the settlement bank. Both Bank A and Bank B have pre-deposited funds in the settlement bank as money reserves, so actual money movement happens between two reserve accounts in the settlement bank. - Pay-out flow (Amazon pays the money to the seller: Claire):"
+  },
+  {
+   "t": "li",
+   "k": "11f18a4751ed",
+   "en": "1 Amazon informs the seller (Claire) that she will get paid soon."
+  },
+  {
+   "t": "li",
+   "k": "edec4586586c",
+   "en": "2 Amazon issues a money transfer request from its own bank (Bank A) to the seller bank (bank C). Here both banks record the transactions, but no real money is moved."
+  },
+  {
+   "t": "li",
+   "k": "3de499c40494",
+   "en": "3 Both Bank A and Bank C send transaction statements to the clearing institution."
+  },
+  {
+   "t": "li",
+   "k": "f0f2be64f98d",
+   "en": "4 & 2.5 The clearing institution sends clearing and settlement information to the settlement bank. Money is transferred from Bank A’s reserve to Bank C’s reserve."
+  },
+  {
+   "t": "p",
+   "k": "6cf82b0c03ef",
+   "en": "Notice that we have three layers: - Transaction layer: where the online purchases happen - Payment and clearing layer: where the payment instructions and transaction netting happen - Settlement layer: where the actual money movement happen 120 The first two layers are called information flow, and the settlement layer is called fund flow."
+  },
+  {
+   "t": "p",
+   "k": "33084de49842",
+   "en": "You can see the 𝐢𝐧𝐟𝐨𝐫𝐦𝐚𝐭𝐢𝐨𝐧 𝐟𝐥𝐨𝐰 𝐚𝐧𝐝 𝐟𝐮𝐧𝐝 𝐟𝐥𝐨𝐰 𝐚𝐫𝐞 𝐬𝐞𝐩𝐚𝐫𝐚𝐭𝐞𝐝. In the info flow, the money seems to be deducted from one bank account and added to another bank account, but the actual money movement happens in the settlement bank at the end of the day."
+  },
+  {
+   "t": "p",
+   "k": "b8d489ae80a2",
+   "en": "Because of the asynchronous nature of the info flow and the fund flow, reconciliation is very important for data consistency in the systems along with the flow."
+  },
+  {
+   "t": "p",
+   "k": "28e8af6345f1",
+   "en": "It makes things even more interesting when Bob wants to buy a book in the Indian market, where Bob pays USD but the seller can only receive INR. 121"
+  }
+ ]
+}

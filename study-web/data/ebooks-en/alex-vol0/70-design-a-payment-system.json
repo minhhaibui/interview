@@ -1,0 +1,73 @@
+{
+ "id": "70-design-a-payment-system",
+ "title": "Design a payment system",
+ "titleKey": "a03125511baf",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "54d182ecabaa",
+   "en": "Today is Cyber Monday. Here is how money moves when you click the Buy button on Amazon or any of your favorite shopping websites."
+  },
+  {
+   "t": "p",
+   "k": "7e03efd7f45c",
+   "en": "I posted the same diagram last week for an overview and a few people asked me about the detailed steps, so here you go:"
+  },
+  {
+   "t": "li",
+   "k": "0f25ec4a7139",
+   "en": "When a user clicks the “Buy” button, a payment event is generated and sent to the payment service."
+  },
+  {
+   "t": "li",
+   "k": "8e8b07c71283",
+   "en": "The payment service stores the payment event in the database."
+  },
+  {
+   "t": "li",
+   "k": "d08d659cfbc4",
+   "en": "Sometimes a single payment event may contain several payment orders. For example, you may select products from multiple sellers in a single checkout process. The payment service will call the payment executor for each payment order."
+  },
+  {
+   "t": "li",
+   "k": "6dd36bec6aec",
+   "en": "The payment executor stores the payment order in the database."
+  },
+  {
+   "t": "li",
+   "k": "ed422d28f452",
+   "en": "The payment executor calls an external PSP to finish the credit card payment."
+  },
+  {
+   "t": "li",
+   "k": "4bb2a66f022d",
+   "en": "After the payment executor has successfully executed the payment, the payment service will update the wallet to record how much money a given seller has. 153"
+  },
+  {
+   "t": "li",
+   "k": "611a67ba2540",
+   "en": "The wallet server stores the updated balance information in the database."
+  },
+  {
+   "t": "li",
+   "k": "e1463b737dd6",
+   "en": "After the wallet service has successfully updated the seller’s balance information, the payment service will call the ledger to update it."
+  },
+  {
+   "t": "li",
+   "k": "2da96d554017",
+   "en": "The ledger service appends the new ledger information to the database."
+  },
+  {
+   "t": "li",
+   "k": "9a0f11cb5bf5",
+   "en": "Every night the PSP or banks send settlement files to their clients."
+  },
+  {
+   "t": "p",
+   "k": "6ea71c2443de",
+   "en": "The settlement file contains the balance of the bank account, together with all the transactions that took place on this bank account during the day. 154"
+  }
+ ]
+}

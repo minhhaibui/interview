@@ -1,0 +1,18 @@
+{
+ "id": "35-what-are-the-top-cache-strategies",
+ "title": "What are the top cache strategies?",
+ "titleKey": "e7a181461bdd",
+ "book": "alex-vol0",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "bb04b75911dd",
+   "en": "Read data from the system: 🔹 Cache aside 🔹 Read through Write data to the system: 🔹 Write around 🔹 Write back 🔹 Write through The diagram below illustrates how those 5 strategies work. Some of the caching strategies can be used together. 71 I left out a lot of details as that will make the post very long. Feel free to leave a comment so we can learn from each other. 72 Question: What are the pros and cons of each caching strategy? How to choose the right one to use? — Check out our bestselling system design books."
+  },
+  {
+   "t": "p",
+   "k": "0693802d6bef",
+   "en": "Paperback:AmazonDigital:ByteByteGo. 73"
+  }
+ ]
+}
