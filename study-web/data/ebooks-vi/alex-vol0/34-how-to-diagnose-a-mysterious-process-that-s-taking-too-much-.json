@@ -1,0 +1,4 @@
+{
+ "c29af9711d43": "Chẩn đoán một tiến trình bí ẩn đang ngốn quá nhiều CPU, bộ nhớ, IO, v.v. ra sao?",
+ "9716363cac65": "Sơ đồ dưới đây minh hoạ những công cụ hữu ích trong hệ thống Linux. 🔹 'vmstat' - báo cáo thông tin về tiến trình, bộ nhớ, phân trang, block IO, bẫy (trap) và hoạt động CPU. 🔹 'iostat' - báo cáo thống kê CPU và vào/ra của hệ thống. 🔹 'netstat' - hiển thị dữ liệu thống kê liên quan tới các giao thức IP, TCP, UDP và ICMP. 🔹 'lsof' - liệt kê những tệp đang mở của hệ thống hiện tại. 🔹 'pidstat' - giám sát mức dùng tài nguyên hệ thống của tất cả hoặc một số tiến trình cụ thể, gồm CPU, bộ nhớ, IO thiết bị, chuyển tác vụ, luồng, v.v."
+}

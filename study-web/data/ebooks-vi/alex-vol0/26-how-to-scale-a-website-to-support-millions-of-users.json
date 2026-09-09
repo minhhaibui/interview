@@ -1,0 +1,16 @@
+{
+ "30d226493466": "Mở rộng một website để phục vụ hàng triệu người dùng ra sao?",
+ "388168ce0bd8": "Ta sẽ giải thích từng bước một.",
+ "770a87fb2b4d": "Sơ đồ dưới đây minh hoạ sự tiến hoá của một website thương mại điện tử đơn giản. Nó đi từ thiết kế khối nguyên trên một server duy nhất tới kiến trúc hướng dịch vụ/microservice. Giả sử ta có hai dịch vụ: dịch vụ kho hàng (lo mô tả sản phẩm và quản lý tồn kho) và dịch vụ người dùng (lo thông tin người dùng, đăng ký, đăng nhập, v.v.).",
+ "eea0a7156de0": "Bước 1 - Khi lượng người dùng tăng lên, một server ứng dụng duy nhất không gánh nổi lưu lượng nữa. Ta tách server ứng dụng và server cơ sở dữ liệu thành hai server riêng.",
+ "9a5ea5560f7b": "Bước 2 - Việc kinh doanh tiếp tục tăng trưởng, và một server ứng dụng không còn đủ. Vì vậy ta triển khai một cụm server ứng dụng.",
+ "5ce16ab91c6d": "Bước 3 - Giờ các request đi vào phải được định tuyến tới nhiều server ứng dụng; làm sao đảm bảo mỗi server nhận tải đều nhau? Bộ cân bằng tải lo việc này rất tốt.",
+ "401138fee762": "Bước 4 - Khi việc kinh doanh tiếp tục tăng trưởng, cơ sở dữ liệu có thể trở thành nút thắt cổ chai. Để giảm nhẹ, ta tách đọc và ghi sao cho những truy vấn đọc thường xuyên đi tới các bản sao chỉ đọc. Với thiết lập này, thông lượng ghi của cơ sở dữ liệu tăng lên đáng kể.",
+ "27d6ebdfad44": "Bước 5 - Giả sử việc kinh doanh tiếp tục tăng trưởng. Một cơ sở dữ liệu duy nhất không gánh nổi tải trên cả bảng kho hàng lẫn bảng người dùng. Ta có vài lựa chọn:",
+ "0322b903ed07": "Phân vùng dọc. Thêm sức mạnh (CPU, RAM, v.v.) cho server cơ sở dữ liệu. Cách này có giới hạn cứng.",
+ "aa84508ab960": "Phân vùng ngang bằng cách thêm server cơ sở dữ liệu.",
+ "2bbbb797e1a1": "Thêm tầng cache để giảm tải request đọc.",
+ "9ab85a1fc2a2": "Bước 6 - Giờ ta mô-đun hoá được các chức năng thành những dịch vụ khác nhau.",
+ "1db4e07d4837": "Kiến trúc trở thành hướng dịch vụ / microservice.",
+ "345b89ed96cd": "Câu hỏi: ta còn cần gì nữa để phục vụ một website thương mại điện tử ở quy mô Amazon?"
+}

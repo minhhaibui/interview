@@ -1,0 +1,13 @@
+{
+ "ba251ff6630a": "Vì sao Kafka nhanh?",
+ "d40ad0d778a4": "Kafka đạt được độ trễ thấp khi giao tin nhắn nhờ I/O tuần tự và nguyên lý Zero Copy. Chính những kỹ thuật đó cũng hay được dùng ở nhiều nền tảng nhắn tin/luồng khác.",
+ "70bb828a51f6": "Sơ đồ dưới đây minh hoạ cách dữ liệu được truyền giữa producer và consumer, cùng ý nghĩa của zero-copy. 🔹 Bước 1.1 - 1.3: Producer ghi dữ liệu xuống đĩa 🔹 Bước 2: Consumer đọc dữ liệu không dùng zero-copy",
+ "44773e7a3fd3": "1: Dữ liệu được nạp từ đĩa vào cache của hệ điều hành",
+ "7b193525eed6": "2 Dữ liệu được sao từ cache hệ điều hành sang ứng dụng Kafka",
+ "ed3a6b434f86": "3 Ứng dụng Kafka sao dữ liệu vào vùng đệm socket",
+ "b353f57516e7": "4 Dữ liệu được sao từ vùng đệm socket sang card mạng",
+ "db6d2ddb37c6": "5 Card mạng gửi dữ liệu ra cho consumer 🔹 Bước 3: Consumer đọc dữ liệu có zero-copy",
+ "2aff1a9d3a9e": "2 Cache hệ điều hành sao thẳng dữ liệu sang card mạng qua lệnh sendfile()",
+ "9134f66e064d": "3 Card mạng gửi dữ liệu ra cho consumer. Zero copy là lối tắt giúp tiết kiệm nhiều lần sao chép dữ liệu giữa ngữ cảnh ứng dụng và ngữ cảnh nhân. Cách này giảm thời gian khoảng 65%. — Xem những cuốn sách thiết kế hệ thống bán chạy nhất của chúng tôi.",
+ "6229291acf06": "Bản in: Amazon. Bản số: ByteByteGo."
+}

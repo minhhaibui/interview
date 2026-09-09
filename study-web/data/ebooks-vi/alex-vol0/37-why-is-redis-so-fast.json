@@ -1,0 +1,10 @@
+{
+ "a9d0a88ae110": "Vì sao Redis nhanh tới vậy?",
+ "0f825eaca727": "Có 3 lý do chính như sơ đồ dưới đây cho thấy.",
+ "ada6cba3d186": "Redis là cơ sở dữ liệu dựa trên RAM. Truy cập RAM nhanh hơn truy cập ngẫu nhiên trên đĩa ít nhất 1000 lần.",
+ "9c3eac111cb7": "Redis tận dụng ghép kênh IO và vòng lặp thực thi đơn luồng để đạt hiệu quả thực thi.",
+ "0cfe2debebee": "Redis tận dụng vài cấu trúc dữ liệu mức thấp hiệu quả.",
+ "1b3e1c215291": "Câu hỏi: Một kho trong bộ nhớ phổ biến khác là Memcached. Bạn có biết khác biệt giữa Redis và Memcached không?",
+ "176ae990e058": "Bạn có thể nhận thấy phong cách của sơ đồ này khác với những bài trước của tôi. Hãy cho tôi biết bạn thích kiểu nào hơn. — Xem những cuốn sách thiết kế hệ thống bán chạy nhất của chúng tôi.",
+ "ef417904d003": "Bản in: Amazon. Bản số: ByteByteGo."
+}

@@ -1,0 +1,15 @@
+{
+ "ab66e409399a": "Vì sao ổ cứng thể rắn (SSD) nhanh?",
+ "9a283b53a573": "\"Ổ thể rắn đọc nhanh gấp 10 lần và ghi nhanh gấp 20 lần so với ổ đĩa cứng.\" [1]. \"SSD là thiết bị lưu trữ dữ liệu dựa trên bộ nhớ flash. Bit được lưu vào các ô nhớ, làm từ transistor cổng nổi. SSD hoàn toàn gồm các linh kiện điện tử, không có bộ phận chuyển động hay cơ khí như trong ổ cứng (HDD)\" [2].",
+ "f934b7e3752d": "Sơ đồ dưới đây minh hoạ kiến trúc SSD. Bước 1: \"Lệnh đến từ người dùng qua giao diện host\" [2].",
+ "df2b64c40cda": "Giao diện có thể là Serial ATA (SATA) hoặc PCI Express (PCIe).",
+ "6b2db94f7491": "Bước 2: \"Bộ xử lý trong bộ điều khiển SSD nhận lệnh rồi chuyển chúng tới bộ điều khiển flash\" [2].",
+ "bff4ff3118ba": "Bước 3: \"SSD cũng có bộ nhớ RAM nhúng, thường dùng cho mục đích cache và để lưu thông tin ánh xạ\" [2].",
+ "17be0abebc00": "Bước 4: \"Các gói bộ nhớ flash NAND được tổ chức theo cụm, trên nhiều kênh\" [2].",
+ "a212cd165473": "Sơ đồ thứ hai minh hoạ cách các trang logic và trang vật lý được ánh xạ, và vì sao kiến trúc này nhanh.",
+ "3be4c2c2694a": "Bộ điều khiển SSD vận hành nhiều hạt FLASH song song, giúp tăng mạnh băng thông nền bên dưới. Khi ta cần ghi nhiều hơn một trang, bộ điều khiển SSD ghi được chúng song song [3], trong khi HDD chỉ có một đầu đọc và mỗi lần chỉ đọc được từ một đầu.",
+ "4d15b28e433f": "Mỗi lần một HOST Page được ghi, bộ điều khiển SSD tìm một trang vật lý để ghi dữ liệu và ánh xạ này được ghi lại. Nhờ ánh xạ đó, lần sau khi HOST đọc một HOST Page, SSD biết phải đọc dữ liệu từ đâu trong FLASH [3].",
+ "b629229d73c9": "Câu hỏi - Những khác biệt chính giữa SSD và HDD là gì?",
+ "9a8dd210f757": "Nếu bạn quan tâm tới kiến trúc, tôi khuyên đọc Coding for SSDs của Emmanuel Goossaert ở tài liệu tham khảo [2].",
+ "d3e3d96f3038": "Nguồn: [1] SSD or HDD: Which Is Right for You?: https://www.avg.com/en/signal/ssd-hdd-which-is-best [2] Coding for SSDs: https://codecapsule.com/2014/02/12/coding-for-ssds-part-1-introduction-and-table-of-contents/ [3] Overview of SSD Structure and Basic Working Principle: https://www.elinfor.com/knowledge/overview-of-ssd-structure-and-basic-working-principle1-p-11203"
+}

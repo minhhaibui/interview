@@ -1,0 +1,13 @@
+{
+ "a1ab27eb804a": "Khoá lạc quan (Optimistic locking)",
+ "af2e5cde8909": "Khoá lạc quan, còn gọi là kiểm soát tương tranh lạc quan, cho phép nhiều người dùng đồng thời cùng thử cập nhật một tài nguyên.",
+ "146ed113cf5c": "Có hai cách phổ biến để hiện thực khoá lạc quan: số phiên bản và dấu thời gian. Số phiên bản nhìn chung được coi là lựa chọn tốt hơn vì đồng hồ server có thể sai lệch theo thời gian.",
+ "b292b0475fb2": "Ta giải thích khoá lạc quan hoạt động ra sao với số phiên bản.",
+ "4fc2ebcd1c6a": "Sơ đồ dưới đây cho thấy một trường hợp thành công và một trường hợp thất bại.",
+ "be7a044ee47e": "Một cột mới tên \"version\" được thêm vào bảng cơ sở dữ liệu.",
+ "85e7ddcc0904": "Trước khi người dùng sửa một hàng, ứng dụng đọc số phiên bản của hàng đó.",
+ "ee04e8903308": "Khi người dùng cập nhật hàng, ứng dụng tăng số phiên bản thêm 1 rồi ghi lại vào cơ sở dữ liệu.",
+ "3a145254609f": "Một phép kiểm chứng ở cơ sở dữ liệu được đặt ra: số phiên bản kế tiếp phải lớn hơn số phiên bản hiện tại đúng 1. Giao dịch bị huỷ nếu kiểm chứng thất bại và người dùng thử lại từ bước 2. Khoá lạc quan thường nhanh hơn khoá bi quan vì ta không khoá cơ sở dữ liệu. Tuy nhiên, hiệu năng của khoá lạc quan tụt mạnh khi mức đồng thời cao.",
+ "872b9bf29725": "Để hiểu vì sao, hãy xét trường hợp nhiều client cùng cố đặt một phòng khách sạn tại cùng thời điểm. Vì không có giới hạn về số client được đọc số phòng còn trống, tất cả đều đọc về cùng một số phòng trống và cùng số phiên bản hiện tại. Khi các client khác nhau đặt phòng rồi ghi kết quả trở lại cơ sở dữ liệu, chỉ một trong số họ thành công, còn lại nhận thông báo kiểm tra phiên bản thất bại. Những client này phải thử lại. Ở vòng thử lại tiếp theo, lại chỉ có một client thành công, còn lại phải thử tiếp. Dù kết quả cuối cùng là đúng, việc thử lại lặp đi lặp lại gây trải nghiệm người dùng rất khó chịu.",
+ "4710d8e9c657": "Câu hỏi: có những cách nào để giải quyết tranh chấp (race condition)?"
+}

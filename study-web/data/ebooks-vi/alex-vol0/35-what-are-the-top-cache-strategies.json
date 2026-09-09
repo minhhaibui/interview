@@ -1,0 +1,5 @@
+{
+ "e7a181461bdd": "Những chiến lược cache hàng đầu là gì?",
+ "bb04b75911dd": "Đọc dữ liệu từ hệ thống: 🔹 Cache aside 🔹 Read through. Ghi dữ liệu vào hệ thống: 🔹 Write around 🔹 Write back 🔹 Write through. Sơ đồ dưới đây minh hoạ cách 5 chiến lược này hoạt động. Vài chiến lược cache dùng kết hợp được với nhau. Tôi đã lược bớt nhiều chi tiết vì nếu không bài viết sẽ rất dài. Đừng ngại để lại bình luận để chúng ta cùng học hỏi lẫn nhau. Câu hỏi: Ưu và nhược điểm của từng chiến lược cache là gì? Chọn đúng chiến lược để dùng ra sao? — Xem những cuốn sách thiết kế hệ thống bán chạy nhất của chúng tôi.",
+ "0693802d6bef": "Bản in: Amazon. Bản số: ByteByteGo."
+}

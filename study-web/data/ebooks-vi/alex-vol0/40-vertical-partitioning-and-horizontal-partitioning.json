@@ -1,0 +1,10 @@
+{
+ "f20c9f22f4c4": "Phân vùng dọc và phân vùng ngang",
+ "671687813620": "Trong nhiều ứng dụng quy mô lớn, dữ liệu được chia thành các phân vùng truy cập riêng được. Có hai chiến lược điển hình để phân vùng dữ liệu. 🔹 Phân vùng dọc: nghĩa là vài cột được chuyển sang bảng mới. Mỗi bảng chứa cùng số hàng nhưng ít cột hơn (xem sơ đồ dưới). 🔹 Phân vùng ngang (thường gọi là chia mảnh — sharding): nó chia một bảng thành nhiều bảng nhỏ hơn. Mỗi bảng là một kho dữ liệu riêng, chứa cùng số cột nhưng ít hàng hơn (xem sơ đồ dưới). Phân vùng ngang được dùng rộng rãi nên hãy xem kỹ hơn.",
+ "ad41c26936e3": "𝐓𝐡𝐮𝐚̣̂𝐭 𝐭𝐨𝐚́𝐧 đ𝐢̣𝐧𝐡 𝐭𝐮𝐲𝐞̂́𝐧: Thuật toán định tuyến quyết định phân vùng (shard) nào lưu dữ liệu. 🔹 Chia mảnh theo dải. Thuật toán này dùng những cột có thứ tự, như số nguyên, số long, dấu thời gian, để tách các hàng. Chẳng hạn, sơ đồ dưới dùng cột User ID để phân vùng theo dải: User ID 1 và 2 nằm ở shard 1, User ID 3 và 4 nằm ở shard 2. 🔹 Chia mảnh theo băm. Thuật toán này áp một hàm băm lên một hoặc vài cột để quyết định hàng nào đi vào bảng nào.",
+ "9254fda3aff3": "Chẳng hạn, sơ đồ dưới dùng 𝐔𝐬𝐞𝐫 𝐈𝐃 𝐦𝐨𝐝 2 làm hàm băm. User ID 1 và 3 nằm ở shard 1, User ID 2 và 4 nằm ở shard 2.",
+ "3e215a15ab4f": "𝐋𝐨̛̣𝐢 𝐢́𝐜𝐡 🔹 Thuận lợi cho việc mở rộng ngang. Chia mảnh mở ra khả năng thêm máy để phân tán tải. 🔹 Rút ngắn thời gian phản hồi. Bằng cách chia một bảng thành nhiều bảng, truy vấn duyệt qua ít hàng hơn, và kết quả trả về nhanh hơn nhiều.",
+ "03624e274bae": "𝐍𝐡𝐮̛𝐨̛̣𝐜 đ𝐢𝐞̂̉𝐦 🔹 Thao tác sắp xếp phức tạp hơn. Thường ta phải lấy dữ liệu từ các shard khác nhau rồi sắp xếp trong mã ứng dụng. 🔹 Phân bố không đều. Vài shard có thể chứa nhiều dữ liệu hơn shard khác (điều này cũng gọi là điểm nóng).",
+ "11fd1eba3a71": "Chủ đề này rất rộng và tôi chắc chắn đã bỏ sót nhiều chi tiết quan trọng.",
+ "893375e67cfa": "Bạn nghĩ còn điều gì quan trọng nữa với việc phân vùng dữ liệu?"
+}

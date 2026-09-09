@@ -1,0 +1,10 @@
+{
+ "b919cb0bbd74": "HTTP 1.0 -> HTTP 1.1 -> HTTP 2.0 -> HTTP 3.0 (QUIC).",
+ "6f44d3b2770a": "Mỗi thế hệ HTTP giải quyết vấn đề gì?",
+ "51835d67033a": "Sơ đồ dưới đây minh hoạ những tính năng then chốt. 🔹 HTTP 1.0 được hoàn thiện và ghi chép đầy đủ năm 1996. Mỗi request tới cùng một server đều cần một kết nối TCP riêng. 🔹 HTTP 1.1 được công bố năm 1997. Một kết nối TCP giữ mở được để tái sử dụng (kết nối bền vững), nhưng nó không giải quyết được vấn đề chặn đầu hàng (HOL).",
+ "a520f88c0a75": "Chặn đầu hàng (HOL blocking) - khi số request song song mà trình duyệt cho phép đã dùng hết, những request sau phải chờ các request trước hoàn tất. 🔹 HTTP 2.0 được công bố năm 2015. Nó xử lý vấn đề HOL bằng cách ghép kênh request, thứ loại bỏ chặn đầu hàng ở tầng ứng dụng, nhưng HOL vẫn tồn tại ở tầng vận chuyển (TCP).",
+ "7140a41a8c1d": "Như bạn thấy trong sơ đồ, HTTP 2.0 đưa vào khái niệm \"luồng\" HTTP: một trừu tượng cho phép ghép kênh nhiều phiên trao đổi HTTP khác nhau trên cùng một kết nối TCP. Mỗi luồng không cần được gửi theo thứ tự. 🔹 Bản nháp đầu tiên của HTTP 3.0 được công bố năm 2020. Nó là kẻ kế nhiệm được đề xuất cho HTTP 2.0. Nó dùng QUIC thay vì TCP làm giao thức vận chuyển nền, qua đó loại bỏ chặn đầu hàng ở tầng vận chuyển.",
+ "d86ac202d068": "QUIC dựa trên UDP. Nó đưa luồng lên thành công dân hạng nhất ở tầng vận chuyển. Các luồng QUIC dùng chung một kết nối QUIC, nên không cần thêm bắt tay hay khởi động chậm để tạo luồng mới, nhưng các luồng QUIC được giao độc lập, nên trong phần lớn trường hợp việc mất gói ảnh hưởng tới một luồng sẽ không ảnh hưởng tới luồng khác.",
+ "277158f5391b": "Câu hỏi: Khi nào ta nên nâng cấp lên HTTP 3.0? Bạn nghĩ ra ưu và nhược điểm nào không? — Xem những cuốn sách thiết kế hệ thống bán chạy nhất của chúng tôi.",
+ "7ea4cba947be": "Bản in: Amazon. Bản số: ByteByteGo."
+}

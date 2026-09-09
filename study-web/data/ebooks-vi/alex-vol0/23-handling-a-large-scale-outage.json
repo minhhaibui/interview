@@ -1,0 +1,14 @@
+{
+ "3e82543556a9": "Xử lý một sự cố quy mô lớn",
+ "79c0dc3bc6dc": "Đây là câu chuyện có thật về việc xử lý một sự cố quy mô lớn, do Sahn Lam, Staff Engineer tại Discord, viết.",
+ "e2af46cca05d": "Khoảng 10 năm trước, tôi chứng kiến lỗi giao diện gây hậu quả nặng nề nhất trong sự nghiệp của mình.",
+ "6b9544b2445b": "Đó là 9 giờ tối thứ Sáu. Tôi ở trong đội phụ trách một trong những game xã hội lớn nhất thời đó. Nó có khoảng 30 triệu DAU. Tình cờ tôi liếc nhìn bảng điều khiển vận hành trước khi tắt máy đi ngủ.",
+ "8555c96b0c37": "Mọi đường trên bảng điều khiển đều bằng không.",
+ "adefb6e1933d": "Ngay lúc đó, tôi nhận cuộc gọi từ sếp. Ông nói cả game đã sập. Chế độ chữa cháy. Toàn lực.",
+ "bf808122c384": "Mọi thứ đã tắt ngóm. Từng thực thể một trên AWS đều bị chấm dứt. Các thực thể HA proxy, web server PHP, cơ sở dữ liệu MySQL, node Memcache, tất cả.",
+ "d9f128f30d93": "Phải mất 50 người và 10 giờ để dựng lại mọi thứ. Đó là kỳ tích. Bản thân chuyện đó là một câu chuyện cho một ngày khác.",
+ "2d1facb07190": "Chúng tôi dùng phần mềm của một nhà cung cấp để quản lý việc triển khai trên AWS. Chuyện này diễn ra trước khi Infrastructure as Code trở thành thứ phổ biến. Chưa có Terraform. Đó là thời rất sớm của điện toán đám mây và chúng tôi lớn tới mức AWS yêu cầu phải báo trước mỗi khi muốn mở rộng.",
+ "3123f7101c40": "Chuyện gì đã sai? Nhà cung cấp phần mềm đó đã đưa vào một lỗi trong tuần ấy ở luồng hộp thoại xác nhận. Khi chấm dứt một tập con các node trên giao diện, hộp thoại xác nhận hiển thị đúng danh sách node sẽ bị chấm dứt, nhưng bên dưới nó lại chấm dứt tất cả.",
+ "1478871f507c": "Ngay trước 9 giờ tối định mệnh đó, một SRE tội nghiệp của chúng tôi thực hiện yêu cầu thường lệ và chấm dứt một cụm Memcache không dùng tới. Tôi chỉ có thể tưởng tượng nỗi kinh hoàng và cuộc điện thoại diễn ra sau đó. Cấu trúc mã kiểu gì lại để lọt được một lỗi thảm hoạ như vậy? Chúng tôi chỉ đoán được. Chúng tôi chưa bao giờ nhận được lời giải thích đầy đủ.",
+ "0af65a68bd14": "Đâu là những lỗi phần mềm gây hậu quả nặng nề nhất mà bạn từng gặp trong sự nghiệp?"
+}

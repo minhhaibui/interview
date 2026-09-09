@@ -1,0 +1,15 @@
+{
+ "d81722f8d2af": "AWS Lambda phía sau hậu trường",
+ "15a6470e150a": "Serverless là một trong những chủ đề nóng nhất trong dịch vụ đám mây. AWS Lambda hoạt động ra sao ở hậu trường?",
+ "c174270ab71a": "Lambda là dịch vụ điện toán 𝐬𝐞𝐫𝐯𝐞𝐫𝐥𝐞𝐬𝐬 do Amazon Web Services (AWS) cung cấp, chạy các hàm để phản hồi sự kiện.",
+ "7f818e2d0cf2": "𝐅𝐢𝐫𝐞𝐜𝐫𝐚𝐜𝐤𝐞𝐫 𝐌𝐢𝐜𝐫𝐨𝐕𝐌: Firecracker là bộ máy chạy toàn bộ các hàm Lambda [1]. Đó là công nghệ ảo hoá do Amazon phát triển và viết bằng Rust.",
+ "f40691be93af": "Sơ đồ dưới đây minh hoạ mô hình cô lập cho AWS Lambda Worker. Hàm Lambda chạy trong một sandbox, thứ cung cấp một userland Linux tối giản, vài thư viện và tiện ích phổ thông. Nó tạo môi trường thực thi (worker) trên các thực thể EC2.",
+ "72e2e699823d": "Lambda được khởi tạo và gọi ra sao? Có hai cách.",
+ "18dfee7dc897": "𝐓𝐡𝐮̛̣𝐜 𝐭𝐡𝐢 đ𝐨̂̀𝐧𝐠 𝐛𝐨̣̂: Bước 1: \"Worker Manager liên lạc với Placement Service, thứ chịu trách nhiệm đặt một khối công việc vào một vị trí cho host cho trước (nó cấp phát sandbox) rồi trả về cho Worker Manager\" [2].",
+ "65e6056312fc": "Bước 2: \"Worker Manager sau đó gọi 𝘐𝘯𝘪𝘵 để khởi tạo hàm cho việc thực thi, bằng cách tải gói Lambda từ S3 về và dựng runtime Lambda\" [2]",
+ "b997f9f0b9c2": "Bước 3: Frontend Worker giờ gọi được 𝘐𝘯𝘷𝘰𝘬𝘦 [2].",
+ "8e0b97c45c9a": "𝐓𝐡𝐮̛̣𝐜 𝐭𝐡𝐢 𝐛𝐚̂́𝐭 đ𝐨̂̀𝐧𝐠 𝐛𝐨̣̂: Bước 1: Application Load Balancer chuyển tiếp lời gọi tới một Frontend rảnh, Frontend này đặt sự kiện vào một hàng đợi nội bộ (SQS).",
+ "9a36f6386c57": "Bước 2: Có \"một tập poller được gán cho hàng đợi nội bộ này, chịu trách nhiệm poll nó và chuyển sự kiện tới một Frontend một cách đồng bộ. Sau khi được đặt vào Frontend, nó đi theo mẫu gọi đồng bộ mà ta đã nói ở trên\" [2].",
+ "2bcce18e6b29": "Câu hỏi: bạn nghĩ ra được tình huống sử dụng nào cho AWS Lambda không?",
+ "c11dfa4f97fb": "Nguồn: [1] AWS Lambda whitepaper: https://docs.aws.amazon.com/whitepapers/latest/security-overview-aws-lambda/lambda-executions.html [2] Behind the scenes, Lambda: https://www.bschaatsbergen.com/behind-the-scenes-lambda/ Nguồn ảnh: [1] [2]"
+}

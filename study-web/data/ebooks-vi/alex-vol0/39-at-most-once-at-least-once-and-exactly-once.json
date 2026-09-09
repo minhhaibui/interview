@@ -1,0 +1,12 @@
+{
+ "8907775f2a0b": "At-most once, at-least once và exactly once",
+ "ca4c29be8913": "Trong kiến trúc hiện đại, hệ thống được chia thành những khối xây dựng nhỏ và độc lập, với giao diện được định nghĩa rõ ràng giữa chúng.",
+ "a29157d84beb": "Hàng đợi tin nhắn cung cấp việc liên lạc và phối hợp cho những khối đó. Hôm nay, hãy bàn về các ngữ nghĩa giao khác nhau: at-most once, at-least once và exactly once.",
+ "3ccb387bb210": "𝐀𝐭-𝐦𝐨𝐬𝐭 𝐨𝐧𝐜𝐞 (nhiều nhất một lần): Đúng như tên gọi, at-most once nghĩa là một tin nhắn được giao không quá một lần. Tin nhắn có thể bị mất nhưng không được giao lại. Đây là cách at-most once hoạt động ở mức cao.",
+ "02b902b39fb3": "Tình huống dùng: Nó phù hợp với những việc như giám sát số liệu, nơi mất một chút dữ liệu là chấp nhận được.",
+ "af6038e44158": "𝐀𝐭-𝐥𝐞𝐚𝐬𝐭 𝐨𝐧𝐜𝐞 (ít nhất một lần): Với ngữ nghĩa giao dữ liệu này, việc giao một tin nhắn nhiều hơn một lần là chấp nhận được, nhưng không tin nhắn nào được phép mất.",
+ "55460d2556f0": "Tình huống dùng: Với at-least once, tin nhắn không bị mất nhưng cùng một tin nhắn có thể được giao nhiều lần. Dù không lý tưởng từ góc nhìn người dùng, ngữ nghĩa at-least once thường là đủ tốt cho những trường hợp mà dữ liệu trùng không phải vấn đề lớn hoặc việc khử trùng làm được ở phía consumer. Chẳng hạn, với một khoá duy nhất trong mỗi tin nhắn, một tin nhắn bị từ chối khi ghi dữ liệu trùng vào cơ sở dữ liệu.",
+ "184b8218ee81": "𝐄𝐱𝐚𝐜𝐭𝐥𝐲 𝐨𝐧𝐜𝐞 (đúng một lần): Exactly once là ngữ nghĩa giao khó hiện thực nhất. Nó thân thiện với người dùng, nhưng cái giá về hiệu năng và độ phức tạp của hệ thống là rất cao.",
+ "3e51d4bc3a5e": "Tình huống dùng: Những việc liên quan tới tài chính (thanh toán, giao dịch, kế toán, v.v.). Exactly once đặc biệt quan trọng khi việc trùng lặp là không chấp nhận được và dịch vụ phía sau hoặc bên thứ ba không hỗ trợ tính luỹ đẳng.",
+ "ab5eefa114df": "Câu hỏi: khác biệt giữa hàng đợi tin nhắn và nền tảng luồng sự kiện như Kafka, Apache Pulsar, v.v. là gì?"
+}

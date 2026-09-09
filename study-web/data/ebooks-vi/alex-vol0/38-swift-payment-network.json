@@ -1,0 +1,20 @@
+{
+ "9263c550719f": "Mạng thanh toán SWIFT",
+ "58233c0c73f8": "Bạn hẳn đã nghe về 𝐒𝐖𝐈𝐅𝐓. SWIFT là gì? Nó đóng vai trò gì trong thanh toán xuyên biên giới? Bạn tìm được câu trả lời cho những câu hỏi đó trong bài này.",
+ "a559dc492926": "Society for Worldwide Interbank Financial Telecommunication (SWIFT) là 𝐡𝐞̣̂ 𝐭𝐡𝐨̂́𝐧𝐠 𝐧𝐡𝐚̆́𝐧 𝐭𝐢𝐧 an toàn chính, kết nối các ngân hàng trên thế giới.",
+ "5a5dff0b529d": "Hệ thống đặt tại Bỉ này do các ngân hàng thành viên vận hành và xử lý hàng triệu thông điệp thanh toán mỗi ngày. Sơ đồ dưới đây minh hoạ cách thông điệp thanh toán được truyền từ Ngân hàng A (ở New York) tới Ngân hàng B (ở London).",
+ "f61740aa366f": "Bước 1: Ngân hàng A gửi một thông điệp kèm chi tiết chuyển tiền tới Regional Processor A ở New York. Đích đến là Ngân hàng B. Bước 2: Regional Processor kiểm chứng định dạng rồi gửi nó tới Slice Processor A. Regional Processor chịu trách nhiệm kiểm chứng thông điệp đầu vào và xếp hàng thông điệp đầu ra. Slice Processor chịu trách nhiệm lưu và định tuyến thông điệp một cách an toàn.",
+ "c5921c248e9a": "Bước 3: Slice Processor A lưu thông điệp.",
+ "fe2e701b7e69": "Bước 4: Slice Processor A báo cho Regional Processor A rằng thông điệp đã được lưu.",
+ "e0805b46441f": "Bước 5: Regional Processor A gửi ACK/NAK cho Ngân hàng A. ACK nghĩa là thông điệp sẽ được gửi tới Ngân hàng B. NAK nghĩa là thông điệp sẽ KHÔNG được gửi tới Ngân hàng B.",
+ "711504e6aef1": "Bước 6: Slice Processor A gửi thông điệp tới Regional Processor B ở London.",
+ "9721fab46bc2": "Bước 7: Regional Processor B lưu tạm thông điệp.",
+ "42e1f4fa5db6": "Bước 8: Regional Processor B gán một ID duy nhất MON (Message Output Number) cho thông điệp rồi gửi nó tới Slice Processor B. Bước 9: Slice Processor B kiểm chứng MON.",
+ "3607087227ca": "Bước 10: Slice Processor B cho phép Regional Processor B gửi thông điệp tới Ngân hàng B.",
+ "332a7172e0c7": "Bước 11: Regional Processor B gửi thông điệp tới Ngân hàng B.",
+ "85dc6f80e311": "Bước 12: Ngân hàng B nhận thông điệp và lưu lại.",
+ "3d22160396b3": "Bước 13: Ngân hàng B gửi UAK/UNK tới Regional Processor B. UAK (xác nhận tích cực từ người dùng) nghĩa là Ngân hàng B nhận thông điệp không lỗi; UNK (xác nhận tiêu cực từ người dùng) nghĩa là Ngân hàng B nhận được checksum sai.",
+ "c18237abc6e3": "Bước 14: Regional Processor B tạo một báo cáo dựa trên phản hồi của Ngân hàng B, rồi gửi nó tới Slice Processor B. Bước 15: Slice Processor B lưu báo cáo.",
+ "1427a134dcd2": "Bước 16 - 17: Slice Processor B gửi một bản sao báo cáo cho Slice Processor A. Slice Processor A lưu báo cáo. — Xem những cuốn sách thiết kế hệ thống bán chạy nhất của chúng tôi.",
+ "e8a83f737fd9": "Bản in: Amazon. Bản số: ByteByteGo."
+}

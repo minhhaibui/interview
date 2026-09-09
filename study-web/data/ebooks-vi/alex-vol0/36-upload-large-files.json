@@ -1,0 +1,14 @@
+{
+ "b4228179a4b8": "Tải lên tệp lớn",
+ "c01a62cf7957": "Làm sao tối ưu hiệu năng khi ta 𝐭𝐚̉𝐢 𝐥𝐞̂𝐧 𝐭𝐞̣̂𝐩 𝐥𝐨̛́𝐧 tới dịch vụ lưu trữ đối tượng như S3?",
+ "6d5c4d6d2fc1": "Trước khi trả lời câu hỏi này, hãy xem vì sao ta cần tối ưu quá trình này. Vài tệp có thể lớn hơn vài GB. Có thể tải thẳng một tệp đối tượng lớn như vậy lên, nhưng sẽ mất rất nhiều thời gian. Nếu kết nối mạng đứt giữa chừng, ta phải làm lại từ đầu. Giải pháp tốt hơn là cắt một đối tượng lớn thành những phần nhỏ hơn rồi tải chúng lên độc lập. Sau khi mọi phần đã lên, kho đối tượng ghép lại đối tượng từ các phần đó. Quá trình này gọi là 𝐭𝐚̉𝐢 𝐥𝐞̂𝐧 𝐧𝐡𝐢𝐞̂̀𝐮 𝐩𝐡𝐚̂̀𝐧 (multipart upload).",
+ "15ecba1ca0c5": "Sơ đồ dưới đây minh hoạ cách tải lên nhiều phần hoạt động:",
+ "62f27650e17a": "Client gọi kho đối tượng để khởi tạo một lượt tải lên nhiều phần.",
+ "2c4f76ac82e9": "Kho dữ liệu trả về một uploadID, thứ nhận diện duy nhất lượt tải này.",
+ "5fc965040cbb": "Client cắt tệp lớn thành những đối tượng nhỏ rồi bắt đầu tải lên.",
+ "08edd08cad23": "Hãy giả sử kích thước tệp là 1,6GB và client cắt nó thành 8 phần, mỗi phần 200 MB. Client tải phần đầu tiên lên kho dữ liệu kèm uploadID nhận được ở bước 2.",
+ "e97fa18efcbe": "Khi một phần được tải lên xong, kho dữ liệu trả về một ETag, về bản chất là checksum md5 của phần đó. Nó được dùng để kiểm chứng lượt tải nhiều phần.",
+ "a6e2360105f9": "Sau khi mọi phần đã lên, client gửi request hoàn tất tải lên nhiều phần, gồm uploadID, số thứ tự các phần, và các ETag.",
+ "c76bd1c960c8": "Kho dữ liệu ghép lại đối tượng từ các phần dựa trên số thứ tự phần. Vì đối tượng rất lớn, quá trình này có thể mất vài phút. Sau khi ghép xong, nó trả thông báo thành công về cho client. — Xem những cuốn sách thiết kế hệ thống bán chạy nhất của chúng tôi.",
+ "97a25f9fcb49": "Bản in: Amazon. Bản số: ByteByteGo."
+}

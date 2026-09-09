@@ -1,0 +1,13 @@
+{
+ "bab91cb0b10b": "Tránh crawl trùng URL ở quy mô Google ra sao?",
+ "04a3e566f3b9": "Lựa chọn 1: Dùng cấu trúc dữ liệu Set để kiểm tra xem một URL đã tồn tại chưa. Set thì nhanh, nhưng không tiết kiệm không gian.",
+ "de3f3c5a9579": "Lựa chọn 2: Lưu URL vào cơ sở dữ liệu rồi kiểm tra xem URL mới đã có trong đó chưa. Cách này chạy được nhưng tải lên cơ sở dữ liệu sẽ rất cao.",
+ "7621bed61f25": "Lựa chọn 3: 𝐁𝐥𝐨𝐨𝐦 𝐟𝐢𝐥𝐭𝐞𝐫. Đây là lựa chọn được ưu tiên. Bloom filter do Burton Howard Bloom đề xuất năm 1970. Đó là cấu trúc dữ liệu xác suất dùng để kiểm tra xem một phần tử có thuộc một tập hợp không. 🔹 false: phần tử chắc chắn không nằm trong tập. 🔹 true: phần tử có lẽ nằm trong tập.",
+ "e81e9ac3181b": "Dương tính giả là có thể xảy ra, nhưng âm tính giả thì không.",
+ "d388ba7fd4ba": "Sơ đồ dưới đây minh hoạ cách Bloom filter hoạt động. Cấu trúc dữ liệu cơ bản của Bloom filter là vector bit. Mỗi bit đại diện cho một giá trị đã băm. Bước 1: Để thêm một phần tử vào bloom filter, ta đưa nó qua 3 hàm băm khác nhau (A, B và C) rồi bật các bit ở những vị trí thu được.",
+ "e3623c7714d1": "Lưu ý rằng cả \"www.myweb1.com\" lẫn \"www.myweb2.com\" đều đánh dấu 1 vào cùng bit ở chỉ số 5. Dương tính giả có thể xảy ra vì một bit có thể đã bị phần tử khác bật lên.",
+ "77d94ce46f0c": "Bước 2: Khi kiểm tra sự tồn tại của một chuỗi URL, chính các hàm băm A, B và C đó được áp lên chuỗi URL. Nếu cả ba bit đều là 1 thì URL có thể tồn tại trong tập dữ liệu; nếu bất kỳ bit nào là 0 thì URL chắc chắn không tồn tại trong tập dữ liệu.",
+ "8ebfcaad4a82": "Việc chọn hàm băm là quan trọng. Chúng phải phân bố đều và nhanh. Chẳng hạn, RedisBloom và Apache Spark dùng murmur, còn InfluxDB dùng xxhash.",
+ "33d11c1c716e": "Câu hỏi - Trong ví dụ của ta, ta dùng ba hàm băm. Thực tế nên dùng bao nhiêu hàm băm? Có những đánh đổi gì? — Xem những cuốn sách thiết kế hệ thống bán chạy nhất của chúng tôi.",
+ "0c1c3df98a65": "Bản in: Amazon. Bản số: ByteByteGo."
+}

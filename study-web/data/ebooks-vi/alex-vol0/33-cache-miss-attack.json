@@ -1,0 +1,8 @@
+{
+ "d37d35a599a0": "Tấn công trượt cache (Cache miss attack)",
+ "0d90293e985d": "Cache thì tuyệt vời nhưng không phải không có cái giá của nó, như nhiều thứ khác trong đời.",
+ "f6b7ab7fd2de": "Một trong các vấn đề là 𝐓𝐚̂́𝐧 𝐜𝐨̂𝐧𝐠 𝐭𝐫𝐮̛𝐨̛̣𝐭 𝐜𝐚𝐜𝐡𝐞. Xin sửa giúp nếu đây không phải thuật ngữ đúng. Nó chỉ tình huống dữ liệu cần lấy không tồn tại trong cơ sở dữ liệu mà cũng không được cache. Vậy nên mọi request rốt cuộc đều đánh xuống cơ sở dữ liệu, làm hỏng chính mục đích của việc dùng cache. Nếu kẻ xấu tung ra rất nhiều truy vấn với những khoá như vậy, cơ sở dữ liệu dễ dàng bị quá tải.",
+ "89cd7e29984e": "Sơ đồ dưới đây minh hoạ quá trình đó.",
+ "ba6a1d5cfe71": "Hai cách hay được dùng để giải quyết vấn đề này: 🔹 Cache những khoá với giá trị null. Đặt TTL (thời gian sống) ngắn cho các khoá có giá trị null. 🔹 Dùng Bloom filter. Bloom filter là cấu trúc dữ liệu cho ta biết nhanh một phần tử có nằm trong một tập hợp hay không. Nếu khoá tồn tại, request trước hết đi tới cache rồi truy vấn cơ sở dữ liệu nếu cần. Nếu khoá không tồn tại trong tập dữ liệu, nghĩa là khoá không có trong cache/cơ sở dữ liệu. Khi đó truy vấn sẽ không đụng tới tầng cache hay cơ sở dữ liệu. — Xem những cuốn sách thiết kế hệ thống bán chạy nhất của chúng tôi.",
+ "437ef5d44df9": "Bản in: Amazon. Bản số: ByteByteGo."
+}

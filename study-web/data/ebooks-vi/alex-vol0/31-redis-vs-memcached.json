@@ -1,0 +1,5 @@
+{
+ "4bfeb6637d15": "Redis vs Memcached",
+ "f2be83550f92": "Sơ đồ dưới đây minh hoạ những khác biệt then chốt.",
+ "f257797a7bd4": "Lợi thế về cấu trúc dữ liệu khiến Redis là lựa chọn tốt cho: 🔹 Ghi lại số lượt bấm và bình luận cho mỗi bài đăng (hash) 🔹 Sắp xếp danh sách người dùng đã bình luận và khử trùng lặp (zset) 🔹 Cache lịch sử hành vi người dùng và lọc các hành vi độc hại (zset, hash) 🔹 Lưu thông tin dạng đúng/sai của khối dữ liệu cực lớn vào không gian nhỏ. Chẳng hạn, trạng thái đăng nhập, trạng thái thành viên. (bitmap)"
+}
