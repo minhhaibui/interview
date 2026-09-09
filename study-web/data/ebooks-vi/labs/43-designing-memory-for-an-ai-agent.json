@@ -1,0 +1,22 @@
+{
+ "f4ae7abad7b1": "Thiết kế bộ nhớ cho một AI agent",
+ "86d93d23af7c": "AI agent của bạn nhớ được tên người dùng.",
+ "a436daae41b0": "Rồi nó quên mất mình đang làm gì.",
+ "c713678c45c2": "Đây là bối cảnh:",
+ "393a11470d79": "Người dùng yêu cầu agent: đặt chuyến bay rẻ nhất tới NYC, tìm khách sạn dưới 150 đô/đêm, rồi so sánh tổng chi phí chuyến đi.",
+ "76208765300e": "Tới bước 3, agent gọi LLM với 8.000 token lịch sử hội thoại thô — mà vẫn trả lời như thể đang ở lượt 1.",
+ "86eff71f7705": "Bạn cần một kiến trúc bộ nhớ trước khi thứ này lên production. Bạn chọn cái nào?",
+ "a09d24b9a9f8": "A) Chỉ dùng cửa sổ ngữ cảnh — toàn bộ hội thoại nằm trong system prompt. Đơn giản. Vỡ ở khoảng 15 lượt hoặc 8 nghìn token, cái nào tới trước.",
+ "308cd34d69eb": "B) Kho bộ nhớ vector — nhúng những lượt đã qua, truy hồi top-k theo độ tương đồng ngữ nghĩa lúc truy vấn. Chạy rất tốt cho tới khi \"chuyến bay NYC\" lôi ra một ký ức về chuyến đi NYC trong quá khứ thay vì tác vụ hiện tại.",
+ "5a7ffe1f5e9a": "C) Bộ nhớ theo tình tiết kèm tóm tắt — nén những lượt cũ thành các bản tóm tắt sự kiện có cấu trúc, rồi chèn những cái liên quan vào từng request. Xây phức tạp hơn. Khó làm rối hơn nhiều.",
+ "d86761b4261c": "D) Trạng thái phiên trong Redis — kho khoá-giá trị có cấu trúc, agent đọc/ghi một cách tường minh. Tất định. Đòi hỏi agent phải biết lưu cái gì và lưu khi nào.",
+ "4749a8ae2e7a": "NGÀY 42 · ĐÁP ÁN & GIẢI THÍCH. Đáp án 1 ĐÁP ÁN ĐÚNG",
+ "11aee3587617": "C — Bộ nhớ theo tình tiết kèm tóm tắt. Đáp án đúng cho những agent hướng tác vụ. Mẫu làm: → Giữ N lượt gần nhất trong ngữ cảnh (trí nhớ ngắn hạn) → Nén những lượt cũ hơn thành các bản tóm tắt sự kiện có cấu trúc (theo tình tiết) → Chỉ chèn những bản tóm tắt liên quan vào mỗi request mới. Đó là chỗ mà các agent chạy thật ở Anthropic, LangChain Memory v2 và OpenAI Assistants API đều hội tụ về. Tốn công kỹ thuật hơn lúc đầu — nhưng là mẫu duy nhất suy giảm êm ái khi quy mô lớn dần.",
+ "002cc1fd04a9": "Đáp án 2",
+ "4c5e30806651": "A — Chỉ dùng cửa sổ ngữ cảnh. Sụp đổ rất nhanh. Ở khoảng 15 lượt hoặc 8 nghìn token, bạn hoặc phải cắt cụt phần ngữ cảnh đầu, hoặc chạm trần của mô hình. Chạy ổn cho demo. Thất bại với những agent chạy thật có tác vụ nhiều bước. Lập luận \"cứ tăng độ dài ngữ cảnh lên\" bỏ qua chi phí và bài toán lạc giữa đường — LLM luôn bỏ qua nội dung bị chôn ở giữa những prompt dài.",
+ "e6d7b222ad3b": "Đáp án 3",
+ "ad14280dfcab": "B — Kho bộ nhớ vector. Bài toán truy hồi khó chịu hơn vẻ ngoài. Tương đồng ngữ nghĩa không đồng nghĩa với liên quan tới tác vụ. Trong một tác vụ đặt chỗ nhiều bước, việc nhúng \"tìm khách sạn dưới 150 đô\" có thể truy hồi ra một ký ức từ phiên của người dùng khác — hoặc một cuộc trò chuyện cũ về một thành phố hoàn toàn khác. Rất tốt cho truy hồi tri thức. Không đáng tin cho trạng thái tác vụ mang tính thủ tục.",
+ "d1f74e6027d5": "Đáp án 4",
+ "d60443606bf6": "D — Trạng thái phiên trong Redis. Vững chắc và tất định. Cái bẫy: agent phải tự quyết định một cách tường minh rằng ghi cái gì vào trạng thái và đọc nó khi nào. Đó là bài toán thiết kế không hề tầm thường — bạn đang xây một giao thức bộ nhớ làm việc đặt trên những lời gọi công cụ của mình. Phần lớn các đội đánh giá thấp công sức thiết kế lược đồ mà việc này đòi hỏi.",
+ "604f57e54515": "NGÀY 43 · THIẾT KẾ HỆ THỐNG"
+}
