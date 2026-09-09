@@ -1,0 +1,20 @@
+{
+ "15e8d1768fba": "Diệt bài toán truy vấn N+1",
+ "8ed20f4a46cf": "Endpoint /orders của bạn nạp 50 đơn hàng cho một trang.",
+ "f67752fdae9c": "P95 là 2,4 giây. DB thì ổn. Server ứng dụng cũng ổn. Chẳng có gì cháy cả.",
+ "6bad300f8d2f": "Rồi bạn mở log truy vấn. 51 truy vấn mỗi request. Một SELECT cho danh sách đơn hàng. Rồi 50 truy vấn nữa — mỗi đơn một cái — để lấy khách hàng. ORM đang lazy-load order.customer bên trong vòng map của bạn.",
+ "a9e0eaf30e44": "N+1 kinh điển. Bạn từng thấy rồi. Cách sửa là \"hiển nhiên\" — cho tới buổi họp đội, nơi ba kỹ sư đề xuất ba thứ khác nhau và ai cũng nghĩ mình đúng.",
+ "9d821cb63a07": "Đây là những gì đang bày trên bàn: (...) ở hậu trường.",
+ "ae5fbf34cc44": "Phi chuẩn hoá customer_name vào thẳng bảng orders — đọc thẳng từ hàng orders, không join, không truy vấn thứ hai.",
+ "110cf188b446": "NGÀY 02 · ĐÁP ÁN & GIẢI THÍCH. Đáp án 1 ĐÁP ÁN ĐÚNG",
+ "305025b0321e": "Vì sao A thắng: Một câu LEFT JOIN customers ON orders.customer_id = customers.id trả về cả trang trong đúng một vòng đi–về. P95 tụt từ 2,4 giây xuống ~80ms. Không hạ tầng mới. Không kiểu hỏng mới. Bài toán N+1 trong ORM gần như luôn có cùng nguyên nhân gốc: một quan hệ lazy mà lập trình viên không nhận ra là lazy. include của Prisma, include của Sequelize, relations của TypeORM — ORM nào cũng có. Chỉ với tới những mẫu cầu kỳ hơn khi JOIN thực sự không giải nổi.",
+ "002cc1fd04a9": "Đáp án 2",
+ "6bb2749bc9b2": "Vì sao B là bẫy (DataLoader): Mẫu rất đẹp — nhưng nó xứng đáng đồng tiền bát gạo trong GraphQL, nơi đồ thị resolver toả ra theo những cách mà một câu JOIN không diễn tả nổi. Ở đây bạn chỉ có một endpoint danh sách với một quan hệ. JOIN đơn giản hơn hẳn và nhanh hơn hẳn. Bạn đang giải một vấn đề mình không có và trả thuế phức tạp mãi mãi.",
+ "e6d7b222ad3b": "Đáp án 3",
+ "37e1a1976097": "Vì sao C sai (Redis): Cache-first sửa triệu chứng, không sửa mẫu truy vấn. Bạn vẫn phát 50 lệnh GET cache mỗi request, giờ lại ôm thêm bài toán vô hiệu hoá cache mỗi lần một khách hàng cập nhật, và trượt cache lạnh với mọi ID sau mỗi lần deploy. Cache là công cụ mở rộng, không phải công cụ trị N+1.",
+ "d1f74e6027d5": "Đáp án 4",
+ "8e81cfd34a9c": "Vì sao D là cuộc tranh cãi kéo dài cả sự nghiệp (phi chuẩn hoá): Chính danh ở quy mô Instagram. Nhưng cũng là cách bạn kết cục có tên thời con gái của một khách hàng ba năm sau khi cô ấy lấy chồng, vì chẳng ai viết đường ghi cập nhật. Phi chuẩn hoá là quyết định khuếch đại việc ghi đội lốt tối ưu việc đọc.",
+ "94e6a07fb7ae": "Hãy làm khi JOIN thực sự không đạt nổi SLO độ trễ ở quy mô của bạn — chứ đừng làm sớm hơn.",
+ "310399c680c2": "Fixed Window — một ô đếm cho mỗi (api_key, phút). Tăng, kiểm tra, từ chối. Đơn giản, nhanh, một khoá Redis",
+ "5a0289615926": "NGÀY 03 · THIẾT KẾ HỆ THỐNG"
+}
