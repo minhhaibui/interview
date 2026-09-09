@@ -1,0 +1,12 @@
+{
+ "e49ddbc9cd1c": "Kết luận",
+ "e2151d04546d": "Hãy tổng kết những gì ta đã học trong khoá này.",
+ "0a6398d1d0dd": "Trước khi khép lại, chúng tôi xin chúc mừng bạn đã hoàn thành một khoá học đầy thử thách như thế này!",
+ "c98f640bb52e": "Trong khoá học này, ta đã học hoạt động thiết kế hệ thống qua lăng kính các khối xây dựng cơ bản — những hệ thống con nền tảng ghép lại thành một hệ thống lớn hơn. Nhờ vậy, ta tập trung được vào những tình huống nghiệp vụ cụ thể thay vì lặp đi lặp lại các khái niệm quen thuộc.",
+ "9217c8d84d84": "Chúng tôi đã tuyển chọn kỹ các bài toán thiết kế từ nhiều lĩnh vực khác nhau, và cố ý đưa vào mỗi bài một vài khía cạnh hay vấn đề độc đáo của công việc thiết kế hệ thống.",
+ "78eb9cd7d188": "Khía cạnh độc đáo của từng bài toán thiết kế",
+ "4f3f9c03781e": "Thiết kế — Khía cạnh độc đáo. YouTube: xây kho dữ liệu riêng như Vitess và BigTable để đáp ứng nhu cầu mở rộng. Quora: chia mảnh dọc cơ sở dữ liệu MySQL để đáp ứng yêu cầu mở rộng. Google Maps: dùng việc phân đoạn bản đồ để đáp ứng nhu cầu mở rộng và đạt hiệu năng cao. Yelp: dùng Quadtree để truy cập nhanh dữ liệu không gian. Uber: cải tiến dịch vụ thanh toán để phát hiện gian lận, và ghép tài xế với khách trên bản đồ. Twitter: dùng bộ cân bằng tải phía client cho nhiều dịch vụ vốn có hàng nghìn instance nhằm giảm độ trễ. Newsfeed: hệ gợi ý để xếp hạng và đề xuất nội dung. Instagram: ví dụ hoàn hảo về việc các khối xây dựng khác nhau ghép lại thành một hệ thống mở rộng tốt và hiệu năng cao. TinyURL: mã hoá ID theo hệ cơ số 58 để sinh URL rút gọn duy nhất. Web crawler: phát hiện, nhận diện và xử lý các bẫy dành cho crawler. WhatsApp: quản lý tin nhắn cho người dùng đang ngoại tuyến. Typeahead: dùng cấu trúc dữ liệu trie hiệu quả để đưa ra gợi ý. Google Docs: quản lý đồng thời cho những lần ghi cùng lúc, bằng các kỹ thuật như operational transformation (OT) và Conflict-free Replicated Data Type (CRDT).",
+ "fda3c855eff1": "Tới đây, ta đã dựng được hộp đồ nghề thiết kế hệ thống của mình, và giờ chọn được đúng công cụ cho việc trước mắt. Chúng tôi hy vọng khoá học đã giúp bạn có đủ kiến thức để thiết kế những bài toán và giải pháp mới bằng các khối xây dựng này. Hãy đem kiến thức thiết kế hệ thống ra dùng và xây nên những hệ thống tuyệt vời!",
+ "ddb46e3d66e3": "Cuối cùng, chúng tôi xin cảm ơn bạn đã dành thời gian hoàn thành khoá học này!",
+ "cb8695b9a18a": "Chúng tôi hy vọng đây là một trải nghiệm tuyệt vời với bạn. Xin cứ thoải mái gửi email hay để lại bình luận trên diễn đàn cộng đồng của chúng tôi về mọi góp ý bạn có. — Đội ngũ Educative"
+}
