@@ -1,0 +1,20 @@
+{
+ "c74de5e079d7": "Tính nhất quán của cache trên đường ghi",
+ "30b216554f53": "Cache và DB của bạn lại lệch nhau. Lần nữa.",
+ "6803ea5efa01": "Một người dùng cập nhật hồ sơ. Cache vẫn phục vụ cái tên cũ suốt 10 phút sau đó. Bộ phận hỗ trợ nhận một phiếu. Bạn vá bằng cách xả cache. Tuần sau nó lại xảy ra.",
+ "0236725867ed": "Bạn được yêu cầu sửa tính nhất quán khi ghi trước khi nó thành sự cố mà khách hàng nhìn thấy.",
+ "c713678c45c2": "Đây là bối cảnh:",
+ "b78368880c86": "API NestJS → PostgreSQL (nguồn chân lý) + Redis (cache). Khoảng 600 request/giây khi đọc, khoảng 80 request/giây khi ghi lúc đỉnh. Mẫu hiện tại: ghi vào DB, rồi vô hiệu hoá khoá cache thủ công khi thành công. 3 sự cố trong tháng này — tất cả đều lần ra được là do cache ôi thiu sau khi ghi. Bạn cần một chiến lược sống sót qua tranh chấp, thử lại và hỏng hóc cục bộ. Bạn thay đổi cái gì? nhất quán.",
+ "3990a51fd04c": "Write-behind — ghi vào cache trước, xả xuống DB bất đồng bộ. Ghi nhanh, lưu bền theo kiểu cuối cùng cũng tới.  Write-around — bỏ qua cache hoàn toàn khi ghi. Chỉ ghi vào DB. Cache tự đầy ở lần trượt đọc kế tiếp. Ghi kép với outbox — ghi vào DB + phát một sự kiện. Một consumer cập nhật cache từ log sự kiện.",
+ "18098407d41b": "NGÀY 26 · ĐÁP ÁN & GIẢI THÍCH. Đáp án 1 ĐÁP ÁN ĐÚNG",
+ "0383e7c4fde4": "Đáp án: D — Ghi kép với outbox. Vấn đề cốt lõi không phải \"ghi theo thứ tự nào\" — mà là \"chuyện gì xảy ra khi một lượt ghi thành công còn lượt kia thất bại?\"",
+ "8d9cd5d7d5f2": "Vì sao D thắng: Mọi kiểu ghi kép ngây thơ đều có cùng một tranh chấp: ghi vào DB, ghi vào cache, sập giữa hai bước → cache ôi thiu vô thời hạn. Outbox biến việc cập nhật cache thành hệ quả của lượt ghi DB, chứ không phải một thao tác anh em. Một giao dịch DB nguyên tử: bản ghi + sự kiện outbox. Một consumer cập nhật Redis từ sự kiện đó. Nó cũng cho bạn khả năng phát lại — nếu Redis chết rồi sống lại, chỉ cần xử lý lại outbox.",
+ "002cc1fd04a9": "Đáp án 2",
+ "bb88f63d0510": "Vì sao A thất bại (Write-through): Trông an toàn nhất. Lại nguy hiểm nhất ở quy mô lớn. Hai lượt I/O đồng bộ ở mọi lần ghi. Nếu Redis chậm, API ghi của bạn chậm. Nếu Redis chết, bạn có chặn người dùng lại không? Bạn đã biến Redis thành phụ thuộc cứng của đường ghi.",
+ "e6d7b222ad3b": "Đáp án 3",
+ "b9c9af716daf": "Vì sao B thất bại (Write-behind): Nhanh, nhưng: nếu worker bất đồng bộ sập trước khi xả xuống DB, lượt ghi đó biến mất.",
+ "6e7b3df677f1": "Chấp nhận được với bộ đếm phân tích. Không bao giờ chấp nhận được với một nguồn chân lý.",
+ "d1f74e6027d5": "Đáp án 4",
+ "9cbd74e84b6d": "Vì sao C chỉ sửa được một phần (Write-around): Nó giải quyết cache ôi thiu bằng cách không ghi vào cache gì cả. Gọn gàng — nhưng đọc-sau-ghi vỡ khi bản sao trễ, và những khối công việc nặng về ghi kéo tụt tỉ lệ trúng cache của bạn.",
+ "ef582eb39800": "NGÀY 27 · THIẾT KẾ HỆ THỐNG"
+}
