@@ -80,10 +80,11 @@ function buildEbooks() {
     console.log('  ⚠ ebooks: chưa có data/ebooks-en/ — bỏ qua (chạy tools/build_ebooks.py để sinh)');
     return;
   }
+  const srcFig = path.join(__dirname, 'data', 'figures');
   const outDir = path.join(OUT, 'ebooks');
   fs.rmSync(outDir, { recursive: true, force: true });
   const index = JSON.parse(fs.readFileSync(path.join(srcEn, 'index.json'), 'utf8'));
-  let totalBlocks = 0, totalVi = 0;
+  let totalBlocks = 0, totalVi = 0, totalFig = 0;
 
   for (const book of index.books) {
     fs.mkdirSync(path.join(outDir, book.id), { recursive: true });
@@ -91,10 +92,23 @@ function buildEbooks() {
       const ch = JSON.parse(fs.readFileSync(path.join(srcEn, book.id, `${meta.id}.json`), 'utf8'));
       const viFile = path.join(srcVi, book.id, `${meta.id}.json`);
       const vi = fs.existsSync(viFile) ? JSON.parse(fs.readFileSync(viFile, 'utf8')) : {};
-      let done = 0;
+      // Sơ đồ cắt sẵn từ PDF (tools/extract_figures.py) — gắn vào chính block
+      // chú thích hình, tra theo cùng khoá băm `k`.
+      const figFile = path.join(srcFig, book.id, `${meta.id}.json`);
+      const fig = fs.existsSync(figFile) ? JSON.parse(fs.readFileSync(figFile, 'utf8')) : {};
+      let done = 0, figs = 0;
       for (const b of ch.blocks) {
         if (vi[b.k]) { b.vi = vi[b.k]; done++; }
+        if (fig[b.k]) {
+          const f = fig[b.k];
+          b.img = `img/ebook/${book.id}/${f.f}`;
+          b.iw = f.w;
+          b.ih = f.h;
+          figs++;
+        }
       }
+      meta.fig = figs;
+      totalFig += figs;
       ch.titleVi = vi[ch.titleKey] || '';
       meta.titleVi = ch.titleVi;
       meta.vi = done;
@@ -105,7 +119,7 @@ function buildEbooks() {
   }
   fs.writeFileSync(path.join(outDir, 'index.json'), JSON.stringify(index));
   const pct = totalBlocks ? Math.round((100 * totalVi) / totalBlocks) : 0;
-  console.log(`  ✓ ebooks/        ${index.books.length} sách · ${totalBlocks} block · đã dịch ${totalVi} (${pct}%)`);
+  console.log(`  ✓ ebooks/        ${index.books.length} sách · ${totalBlocks} block · đã dịch ${totalVi} (${pct}%) · ${totalFig} sơ đồ`);
 }
 
 console.log('Building static data → public/data/');

@@ -56,6 +56,9 @@ def fix_ocr(s):
     # Ngoặc vuông/tròn bị lẫn ở mục tham khảo: "[4)", "(5]", "19)" -> "[4]", "[5]", "[19]"
     s = re.sub(r'[\[(](\d{1,3})[\])]', r'[\1]', s)
     s = re.sub(r'\s+([,.;:])', r'\1', s)
+    # Sách chỉ có 13 chương, nên số chương trong chú thích mà vượt 13 là do OCR
+    # đọc nhầm chữ số (bản này: "Figure 18.3" nằm giữa 13.2 và 13.4).
+    s = re.sub(r'\b(Figure|Table)\s*18\.(\d+)', r'\g<1> 13.\2', s)
     return ' '.join(s.split())
 
 

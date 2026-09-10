@@ -140,6 +140,13 @@ function ebLeadHtml(text) {
   return m ? `<b>${escHtml(m[1])}:</b> ${escHtml(m[2])}` : escHtml(text);
 }
 
+/** Ảnh sơ đồ cắt từ sách gốc — hiện MỘT lần, kể cả ở chế độ song song. */
+function ebFigImg(b) {
+  if (!b.img) return '';
+  return `<img class="eb-fig-img" src="${escHtml(b.img)}" width="${b.iw}" height="${b.ih}"
+    alt="${escHtml(b.vi || b.en)}" loading="lazy" decoding="async">`;
+}
+
 /** Chuyển 1 block thành HTML theo chế độ đang xem. */
 function ebBlockHtml(b, mode) {
   if (b.t === 'code') return `<pre class="eb-code">${escHtml(b.en)}</pre>`; // code không dịch
@@ -149,11 +156,12 @@ function ebBlockHtml(b, mode) {
   const wrap = (text, lang, extra) =>
     `<${tag} lang="${lang}" class="${[cls, extra].filter(Boolean).join(' ')}">${text}</${tag}>`;
 
-  if (mode === 'en') return wrap(fmt(b.en), 'en', '');
+  const img = ebFigImg(b);
+  if (mode === 'en') return img + wrap(fmt(b.en), 'en', '');
   if (mode === 'vi') {
-    return b.vi ? wrap(fmt(b.vi), 'vi', '') : wrap(fmt(b.en), 'en', 'eb-untranslated');
+    return img + (b.vi ? wrap(fmt(b.vi), 'vi', '') : wrap(fmt(b.en), 'en', 'eb-untranslated'));
   }
-  return `<div class="eb-row eb-row-${b.t}">
+  return `${img}<div class="eb-row eb-row-${b.t}">
     <div class="eb-col eb-col-en">${wrap(fmt(b.en), 'en', '')}</div>
     <div class="eb-col eb-col-vi">${b.vi ? wrap(fmt(b.vi), 'vi', '') : '<p class="eb-todo">— chưa dịch —</p>'}</div>
   </div>`;

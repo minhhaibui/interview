@@ -3025,6 +3025,35 @@ test('ebook: bản dịch tiếng Việt khớp khoá băm của bản gốc', (
   assert.ok(translated >= 0);
 });
 
+test('ebook: sơ đồ trong manifest đều có ảnh và neo đúng block chú thích', () => {
+  // Ảnh cắt từ PDF (tools/extract_figures.py) tra theo cùng khoá băm với bản
+  // dịch. Khoá mồ côi = ảnh không bao giờ hiện; thiếu file = ô ảnh vỡ.
+  const figDir = path.resolve(__dirname, '..', 'data', 'figures');
+  if (!fs.existsSync(figDir)) return;
+  const imgRoot = path.resolve(__dirname, '..', 'public', 'img', 'ebook');
+  let shown = 0;
+  for (const bookId of fs.readdirSync(figDir)) {
+    const bookDir = path.join(figDir, bookId);
+    if (bookId === 'overrides' || !fs.statSync(bookDir).isDirectory()) continue;
+    for (const file of fs.readdirSync(bookDir)) {
+      const chId = file.replace(/\.json$/, '');
+      const mf = JSON.parse(fs.readFileSync(path.join(bookDir, file), 'utf8'));
+      const ch = JSON.parse(fs.readFileSync(path.join(EB_EN, bookId, `${chId}.json`), 'utf8'));
+      const byKey = new Map(ch.blocks.map(b => [b.k, b]));
+      for (const [k, v] of Object.entries(mf)) {
+        const b = byKey.get(k);
+        assert.ok(b, `${bookId}/${chId}: khoá ảnh mồ côi ${k} (${v.f})`);
+        assert.ok(/^(Figure|Hình)\s*\d+\.\d+\s*[:;]/.test(b.en.trim()),
+          `${bookId}/${chId}: ${v.f} gắn vào block không phải chú thích hình: "${b.en.slice(0, 60)}"`);
+        assert.ok(fs.existsSync(path.join(imgRoot, bookId, v.f)),
+          `${bookId}/${chId}: thiếu file ảnh ${v.f}`);
+        shown++;
+      }
+    }
+  }
+  assert.ok(shown >= 0);
+});
+
 test('ebook: tab được nối đủ (script, view, switchView, service worker)', () => {
   assert.ok(HTML.includes('src="ebook.js"'), 'index.html thiếu <script src="ebook.js">');
   assert.ok(HTML.includes('data-view="ebook"'), 'thiếu nút tab ebook');
