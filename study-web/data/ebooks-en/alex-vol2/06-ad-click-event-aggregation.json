@@ -1,0 +1,2203 @@
+{
+ "id": "06-ad-click-event-aggregation",
+ "title": "Ad Click Event Aggregation",
+ "titleKey": "d81815d355d5",
+ "book": "alex-vol2",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "10b870d19074",
+   "en": "With the rise of Facebook, YouTube, TikTok, and the online media economy, digital advertising is taking an ever-bigger share of the total advertising spending. As a result, tracking ad click events is very important. In this chapter, we explore how to design an ad click event aggregation system at Facebook or Google scale."
+  },
+  {
+   "t": "p",
+   "k": "48a52f2ba0a3",
+   "en": "Before we dive into technical design, let's learn about the core concepts of online advertising to better understand this topic. One core benefit of online advertising is its measurability, as quantified by real-time data."
+  },
+  {
+   "t": "p",
+   "k": "290f21f97b1b",
+   "en": "Digital advertising has a core process called Real-Time Bidding (RTB), in which digital advertising inventory is bought and sold. Figure 6.1 shows how the online advertising process works."
+  },
+  {
+   "t": "p",
+   "k": "dadeab2a7433",
+   "en": "Demand Side · SSP · DSP · Ad Exchange"
+  },
+  {
+   "t": "figure",
+   "k": "41fe9df5d594",
+   "en": "Figure 6.1: RTB process"
+  },
+  {
+   "t": "p",
+   "k": "7c59ed243a9f",
+   "en": "The speed of the RTB process is important as it usually occurs in less than a second. Data accuracy is also very important. Ad click event aggregation plays a critical role in measuring the effectiveness of online advertising, which essentially impacts how much"
+  },
+  {
+   "t": "h3",
+   "k": "7aa37b862ef6",
+   "en": "money advertisers pay. Based on the click aggregation results, campaign managers"
+  },
+  {
+   "t": "p",
+   "k": "6d25c04d4703",
+   "en": "can control the budget or adjust bidding strategies, such as changing targeted audience groups, keywords, etc. The key metrics used in online advertising, including clickthrough rate (CTR) [1] and conversion rate (CVR) [2], depend on aggregated ad click data."
+  },
+  {
+   "t": "h2",
+   "k": "cdb2072eee15",
+   "en": "Step 1 - Understand the Problem and Establish Design Scope"
+  },
+  {
+   "t": "h3",
+   "k": "68275329bc3c",
+   "en": "The following set of questions helps to clarify requirements and narrow down the"
+  },
+  {
+   "t": "p",
+   "k": "7db6303f770e",
+   "en": "scope."
+  },
+  {
+   "t": "p",
+   "k": "f45022743802",
+   "en": "Candidate: What is the formal of the input data?"
+  },
+  {
+   "t": "p",
+   "k": "67841c648fdf",
+   "en": "Interviewer: It's a log file located in different servers and the latest click events are appended to the end of the log file. The event has the following attributes: ad. id click_timestamp, user_id, ip, and country."
+  },
+  {
+   "t": "p",
+   "k": "879297869417",
+   "en": "Candidate: What's the data volume?"
+  },
+  {
+   "t": "p",
+   "k": "60010675c263",
+   "en": "Interviewer: 1 billion ad clicks per day and 2 million ads in total. The number of ad click events grows 30% year-over-year."
+  },
+  {
+   "t": "p",
+   "k": "07498512cd42",
+   "en": "Candidate: What are some of the most important queries to support?"
+  },
+  {
+   "t": "p",
+   "k": "2ba84c01c3d2",
+   "en": "Interviewer: The system needs to support the following 3 queries:"
+  },
+  {
+   "t": "li",
+   "k": "f3f818a0100e",
+   "en": "Return the number of click events for a particular ad in the last N/ minutes. • Return the top 100 most clicked ads in the past 1 minute. Both parameters should be configurable. Aggregation occurs every minute."
+  },
+  {
+   "t": "li",
+   "k": "5557da7b6c56",
+   "en": "Support data filtering by ip, user_id, or country for the above two queries."
+  },
+  {
+   "t": "p",
+   "k": "f21b16a756f8",
+   "en": "Candidate: Do we need to worry about edge cases? I can think of the following:"
+  },
+  {
+   "t": "li",
+   "k": "08f393923b38",
+   "en": "There might be events that arrive later than expected."
+  },
+  {
+   "t": "li",
+   "k": "6f2f1ed27b2b",
+   "en": "There might be duplicated events."
+  },
+  {
+   "t": "li",
+   "k": "f4a48339ace2",
+   "en": "Different parts of the system might be down at any time, so we need to consider system recovery."
+  },
+  {
+   "t": "p",
+   "k": "1254f84c4ca0",
+   "en": "Interviewer: That's a good list. Yes, take these into consideration."
+  },
+  {
+   "t": "p",
+   "k": "fb17c6ab1ebb",
+   "en": "Candidate: What is the latency requirement?"
+  },
+  {
+   "t": "p",
+   "k": "8686f41b448d",
+   "en": "Interviewer: A few minutes of end-to-end latency. Note that latency requirements for RTB and ad click aggregation are very different. While latency for RTB is usually less than one second due to the responsiveness requirement, a few minutes of latency is acceptable for ad click event aggregation because it is primarily used for ad billing and reporting."
+  },
+  {
+   "t": "p",
+   "k": "f0c3363d962f",
+   "en": "With the information gathered above, we have both functional and non-functional requirements."
+  },
+  {
+   "t": "h3",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "li",
+   "k": "c3447f12a579",
+   "en": "Aggregate the number of clicks of ad_id in the last M minutes."
+  },
+  {
+   "t": "li",
+   "k": "822329b5fe63",
+   "en": "Return the top 100 most clicked ad_ id every minute."
+  },
+  {
+   "t": "li",
+   "k": "d49e265cb25c",
+   "en": "Support aggregation filtering by different attributes."
+  },
+  {
+   "t": "li",
+   "k": "9e0298c59d48",
+   "en": "Dataset volume is at Facebook or Google scale (see the back-of-envelope estimation section below for detailed system scale requirements)."
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "li",
+   "k": "64e9ac27536e",
+   "en": "Correctness of the aggregation result is important as the data is used for RTB and ads billing."
+  },
+  {
+   "t": "li",
+   "k": "a17faf074832",
+   "en": "Properly handle delayed or duplicate events."
+  },
+  {
+   "t": "li",
+   "k": "33f89803368c",
+   "en": "Robustness. The system should be resilient to partial failures."
+  },
+  {
+   "t": "li",
+   "k": "aee2da11e90c",
+   "en": "Latency requirement. End-to-end latency should be a few minutes, at most."
+  },
+  {
+   "t": "h2",
+   "k": "758a31cef712",
+   "en": "Back-of-the-envelope estimation"
+  },
+  {
+   "t": "p",
+   "k": "9a29d850808d",
+   "en": "Let's do an estimation to understand the scale of the system and the potential challenges we will need to address."
+  },
+  {
+   "t": "li",
+   "k": "fd5dd8274fa7",
+   "en": "1 billion DAU (Daily Active Users)."
+  },
+  {
+   "t": "li",
+   "k": "7345626e7133",
+   "en": "Assume on average each user clicks 1 ad per day. That's 1 billion ad click events per day."
+  },
+  {
+   "t": "p",
+   "k": "2e1c8a14c222",
+   "en": "10° events"
+  },
+  {
+   "t": "li",
+   "k": "10243269677e",
+   "en": "Ad click QPS = 105 seconds in a day"
+  },
+  {
+   "t": "li",
+   "k": "3bd1fd8a445d",
+   "en": "= 10,000"
+  },
+  {
+   "t": "li",
+   "k": "75f80006c874",
+   "en": "Assume peak ad click QPS is 5 times the average number. Peak QPS = 50,000 QPS. • Assume a single ad click event occupies 0.1KB storage. Daily storage requirement is: 0.1KB x 1 billion = 100GB. The monthly storage requirement is about 3TB."
+  },
+  {
+   "t": "h2",
+   "k": "21ec56b45561",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in"
+  },
+  {
+   "t": "p",
+   "k": "560353a70d6b",
+   "en": "In this section, we discuss query API design, data model, and high-level design."
+  },
+  {
+   "t": "h2",
+   "k": "4dc3d2297e41",
+   "en": "Query API design"
+  },
+  {
+   "t": "p",
+   "k": "5dda4e52beb5",
+   "en": "The purpose of the API design is to have an agreement between the client and the server. In a consumer app, a client is usually the end-user who uses the product. In our case, however, a client is the dashboard user (data scientist, product manager, advertiser, etc.) who runs queries against the aggregation service."
+  },
+  {
+   "t": "p",
+   "k": "c365d596bbb8",
+   "en": "Let's review the functional requirements so we can better design the APIs:"
+  },
+  {
+   "t": "li",
+   "k": "c3447f12a579",
+   "en": "Aggregate the number of clicks of ad_id in the last M minutes."
+  },
+  {
+   "t": "li",
+   "k": "8a105ae64bb7",
+   "en": "Return the top N most clicked ad_ids in the last M minute."
+  },
+  {
+   "t": "li",
+   "k": "d49e265cb25c",
+   "en": "Support aggregation filtering by different attributes."
+  },
+  {
+   "t": "p",
+   "k": "5eea4cb47afd",
+   "en": "We only need two APIs to support those three use cases because filtering (the last requirement) can be supported by adding query parameters to the requests."
+  },
+  {
+   "t": "p",
+   "k": "acf91621056e",
+   "en": "AP| 1: Aggregate the number of clicks of ad_id in the last M minutes."
+  },
+  {
+   "t": "p",
+   "k": "b7f90d4c10dc",
+   "en": "Detail"
+  },
+  {
+   "t": "p",
+   "k": "a033a528b603",
+   "en": "API"
+  },
+  {
+   "t": "p",
+   "k": "f9ccf4359c48",
+   "en": "Return aggregated event count for"
+  },
+  {
+   "t": "h3",
+   "k": "640433769fcf",
+   "en": "GET /v1/ads/{:ad_id}/aggregated_count"
+  },
+  {
+   "t": "p",
+   "k": "ca9f62938f8f",
+   "en": "a given ad_id"
+  },
+  {
+   "t": "p",
+   "k": "9393a8cb64ef",
+   "en": "Table 6.1: API for aggregating the number of clicks"
+  },
+  {
+   "t": "p",
+   "k": "8855ad8c6737",
+   "en": "Request parameters are:"
+  },
+  {
+   "t": "p",
+   "k": "64ab734c6806",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 161 Field"
+  },
+  {
+   "t": "p",
+   "k": "cb329146a0dd",
+   "en": "Description"
+  },
+  {
+   "t": "p",
+   "k": "0b1e95cfd977",
+   "en": "from"
+  },
+  {
+   "t": "p",
+   "k": "a5c99f495182",
+   "en": "Start minute (default is now minus 1 minute)"
+  },
+  {
+   "t": "p",
+   "k": "8def09ec444c",
+   "en": "End minute (default is now)"
+  },
+  {
+   "t": "p",
+   "k": "a607f65065e2",
+   "en": "An identifier for different filtering strategies. For"
+  },
+  {
+   "t": "p",
+   "k": "4bb4ca75941b",
+   "en": "filter"
+  },
+  {
+   "t": "p",
+   "k": "413f2514cae7",
+   "en": "example, filter = 001 filters out non-US clicks"
+  },
+  {
+   "t": "p",
+   "k": "885dab7b7421",
+   "en": "Table 6.2: Request parameters for /v1/ads/{:ad_id}/aggregated_count Response:"
+  },
+  {
+   "t": "p",
+   "k": "9c8616f55987",
+   "en": "Field · Description · ad_id · The identifier of the ad"
+  },
+  {
+   "t": "p",
+   "k": "9789447a8694",
+   "en": "string The aggregated count between the start and end"
+  },
+  {
+   "t": "p",
+   "k": "ee9f38e186ba",
+   "en": "count"
+  },
+  {
+   "t": "p",
+   "k": "be2e2bb698c7",
+   "en": "minutes"
+  },
+  {
+   "t": "p",
+   "k": "7a5251e03f90",
+   "en": "Table 6.3: Response for /v1/ads/{:ad_id}/aggregated_count"
+  },
+  {
+   "t": "h3",
+   "k": "d76b03df4835",
+   "en": "API 2: Return top N most clicked ad_ids in the last M minutes"
+  },
+  {
+   "t": "p",
+   "k": "b7f90d4c10dc",
+   "en": "Detail"
+  },
+  {
+   "t": "p",
+   "k": "58b853d594c7",
+   "en": "Return top N most clicked ads in the"
+  },
+  {
+   "t": "h3",
+   "k": "bbd11708e371",
+   "en": "GET /v1/ads/popular_ads"
+  },
+  {
+   "t": "p",
+   "k": "2196cad5e3a2",
+   "en": "last M minutes"
+  },
+  {
+   "t": "p",
+   "k": "31ca8a977d73",
+   "en": "Table 6.4: API for /v1/ads/popular_ads"
+  },
+  {
+   "t": "p",
+   "k": "a7e124e1c9cd",
+   "en": "Request parameters are: · Field · Description · Top N most clicked ads · count"
+  },
+  {
+   "t": "p",
+   "k": "af7f1a7066df",
+   "en": "integer The aggregation window size (M) in minutes"
+  },
+  {
+   "t": "p",
+   "k": "320ad267d8d9",
+   "en": "window"
+  },
+  {
+   "t": "p",
+   "k": "c9efe50aa4a4",
+   "en": "integer An identifier for different filtering strategies"
+  },
+  {
+   "t": "p",
+   "k": "4bb4ca75941b",
+   "en": "filter"
+  },
+  {
+   "t": "p",
+   "k": "25bcee09da1e",
+   "en": "Table 6.5: Request parameters for /v1/ads/popular_ads"
+  },
+  {
+   "t": "p",
+   "k": "9068b691c2b3",
+   "en": "Response: · Field · Description · ad_ids · A list of the most clicked ads · array"
+  },
+  {
+   "t": "p",
+   "k": "2fd0912877f0",
+   "en": "Table 6.6: Response for /v1/ads/popular_ads"
+  },
+  {
+   "t": "h2",
+   "k": "de26407535de",
+   "en": "Data model"
+  },
+  {
+   "t": "p",
+   "k": "5050aeea3acf",
+   "en": "There are two types of data in the system: raw data and aggregated data."
+  },
+  {
+   "t": "p",
+   "k": "6c38030c3ddf",
+   "en": "Raw data"
+  },
+  {
+   "t": "p",
+   "k": "afad38c1f284",
+   "en": "Below shows what the raw data looks like in log files:"
+  },
+  {
+   "t": "h3",
+   "k": "632aa0961713",
+   "en": "[AdClickEvent] ad001, 2021-01-01 00:00:01, user 1, 207.148.22.22, USA"
+  },
+  {
+   "t": "p",
+   "k": "a989588f49a7",
+   "en": "Table 6.7 lists what the data fields look like in a structured way. Data is scattered on different application servers."
+  },
+  {
+   "t": "p",
+   "k": "0193d5ef0974",
+   "en": "ad_id"
+  },
+  {
+   "t": "h2",
+   "k": "5fa44fedfaf3",
+   "en": "click_timestamp"
+  },
+  {
+   "t": "p",
+   "k": "a14cc1ec8330",
+   "en": "207.148.22.22 · user1 · ad001 · 2021-01-01 00:00:01 · user1 · 207.148.22.22 · ad001 · 2021-01-01 00:00:02 · 209.153.56.11 · ad002 · 2021-01-01 00:00:02 · Table 6.7: Raw data"
+  },
+  {
+   "t": "h2",
+   "k": "ff5d1b5621bf",
+   "en": "Aggregated data"
+  },
+  {
+   "t": "p",
+   "k": "cab65c848969",
+   "en": "Assume that ad click events are aggregated every minute. Table 6.8 shows the aggregated result."
+  },
+  {
+   "t": "p",
+   "k": "8367241b83cf",
+   "en": "202101010000 · 202101010001 · Table 6.8: Aggregated data"
+  },
+  {
+   "t": "p",
+   "k": "cd692db7146b",
+   "en": "To support ad filtering, we add an additional field called filter_id to the table. Records with the same ad_id and click_minute are grouped by filter_id as shown in Table 6.9, and filters are defined in Table 6.10."
+  },
+  {
+   "t": "p",
+   "k": "c7556acd190d",
+   "en": "ad_id · filter_id · 0012 · ad001 · 202101010000 · ad001 · 202101010000 · ad001 · 202101010001 · 0023 · ad001 · 202101010001"
+  },
+  {
+   "t": "p",
+   "k": "aae5ccecee48",
+   "en": "Table 6.9: Aggregated data with filters"
+  },
+  {
+   "t": "p",
+   "k": "a71a8b08d4d7",
+   "en": "filter_id · user_id · 123.1.2.3 · Table 6.10: Filter table"
+  },
+  {
+   "t": "p",
+   "k": "2f5ac39a9955",
+   "en": "To support the query to return the top N most clicked ads in the last M minutes, the following structure is used."
+  },
+  {
+   "t": "p",
+   "k": "210955aa7493",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 163 Most_clicked _ads"
+  },
+  {
+   "t": "p",
+   "k": "c29436568dce",
+   "en": "07009_5223"
+  },
+  {
+   "t": "h3",
+   "k": "d7c58cbf7eac",
+   "en": "undate time kinute timesCHE"
+  },
+  {
+   "t": "p",
+   "k": "712baec821de",
+   "en": "Last of ad De a 150% dora:"
+  },
+  {
+   "t": "h3",
+   "k": "2735f68dc5bf",
+   "en": "Table ni1: Support top Nmost cooked ads in the lar Mazes"
+  },
+  {
+   "t": "h2",
+   "k": "4d04521b659a",
+   "en": "Comparison"
+  },
+  {
+   "t": "h3",
+   "k": "db660d25a402",
+   "en": "The superist hetweer storing ram data and aggregated data is sorra heir"
+  },
+  {
+   "t": "p",
+   "k": "4c20e109b717",
+   "en": "Raw data only · Ful data set · Smaler data set · Fros"
+  },
+  {
+   "t": "li",
+   "k": "87671cca6492",
+   "en": "Support data filter and recalala • Fast query"
+  },
+  {
+   "t": "li",
+   "k": "ebe3060abe89",
+   "en": "Data loss. This is derived catE • Hage data sturage"
+  },
+  {
+   "t": "p",
+   "k": "dae4084a7254",
+   "en": "For example. 10 entries =5T Coms"
+  },
+  {
+   "t": "li",
+   "k": "83f93451a0b5",
+   "en": "Sum query"
+  },
+  {
+   "t": "p",
+   "k": "6f374b7f8ac6",
+   "en": "be aggregated to 1 entry"
+  },
+  {
+   "t": "p",
+   "k": "4091aacc6602",
+   "en": "Tahle €.12: Ram data is aggregated data"
+  },
+  {
+   "t": "p",
+   "k": "bb88e4695309",
+   "en": "Sauli me store ram data or agaregated data? Our recommendation is to store but 123 take a lock at why"
+  },
+  {
+   "t": "li",
+   "k": "89e5166e6d2b",
+   "en": "I's a good idea to keep the ram data If something goes arong, me could a te ram data for debugging. li the aggregated data is corrupted due to a bad bug, me car recalculate the aggregated data from the raw data after the bug is fixed"
+  },
+  {
+   "t": "li",
+   "k": "fcf2ae6e9663",
+   "en": "Aggregated data should be stored as well The data size of the raw data is huge Ibe lange sire makes querying raw data directly very inefficient. Io mitigate this problem me run read queries on aggregated data"
+  },
+  {
+   "t": "li",
+   "k": "1fa360ac94ad",
+   "en": "Ram data serves as backup data. We usually don't need to query raw data unless recalvulation is needed Old raw data could be moved to cold storage to reduce costs • Aggregated data serves as active data it is tuned for query performance."
+  },
+  {
+   "t": "h3",
+   "k": "aa1ca1ca055b",
+   "en": "Choose the right database"
+  },
+  {
+   "t": "p",
+   "k": "9372ad6cf1ea",
+   "en": "W sen it oomes to choosing the right database, we need to evaluate the following."
+  },
+  {
+   "t": "li",
+   "k": "8c19b55d798f",
+   "en": "What does the data look like? Is the data relational? Is it a document or a blob? • Is the workflow read-heavy, write-heavy, or both?"
+  },
+  {
+   "t": "li",
+   "k": "e275bde159b2",
+   "en": "Is transaction support needed?"
+  },
+  {
+   "t": "li",
+   "k": "86591a5b154a",
+   "en": "Do the queries rely on many online analytical processing (OLAP) functions [3] like"
+  },
+  {
+   "t": "h2",
+   "k": "f90533139934",
+   "en": "SUM COUNT?"
+  },
+  {
+   "t": "p",
+   "k": "89b284c7e442",
+   "en": "164 Chapter 6. Ad Click Event Aggregation"
+  },
+  {
+   "t": "p",
+   "k": "d31f1a989b87",
+   "en": "Let's examine the raw data first. Even though we don't need to query the raw data during normal operations, it is useful for data scientists or machine learning engineers to study user response prediction, behavioral targeting, relevance feedback, etc. [4]."
+  },
+  {
+   "t": "p",
+   "k": "35ea51de7d48",
+   "en": "As shown in the back of the envelope estimation, the average write QPS is 10,000, and the peak QPS can be 50,000, so the system is write-heavy. On the read side, raw data is used as backup and a source for recalculation, so in theory, the read volume is low."
+  },
+  {
+   "t": "p",
+   "k": "7e07bfc3b77c",
+   "en": "Relational databases can do the job, but scaling the write can be challenging. NoSQL databases like Cassandra and InfluxDB are more suitable because they are optimized for write and time-range queries."
+  },
+  {
+   "t": "p",
+   "k": "83b8596efeb7",
+   "en": "Another option is to store the data in Amazon S3 using one of the columnar data formats like ORC [5], Parquet [6], or AVRO [7]. We could put a cap on the size of each file (say, 10GB) and the stream processor responsible for writing the raw data could handle the file rotation when the size cap is reached. Since this setup may be unfamiliar for many, in this design we use Cassandra as an example."
+  },
+  {
+   "t": "p",
+   "k": "8f808eee9916",
+   "en": "For aggregated data, it is time-series in nature and the workflow is both read and write heavy. This is because, for each ad, we need to query the database every minute to display the latest aggregation count for customers. This feature is useful for auto-refreshing the dashboard or triggering alerts in a timely manner. Since there are two million ads in total, the workflow is read-heavy. Data is aggregated and written every minute by the aggregation service, so it's write-heavy as well. We could use the same type of database to store both raw data and aggregated data."
+  },
+  {
+   "t": "p",
+   "k": "dd6eb4273049",
+   "en": "Now we have discussed query API design and data model, let's put together the high-level design."
+  },
+  {
+   "t": "h2",
+   "k": "f0e860766605",
+   "en": "High-level design"
+  },
+  {
+   "t": "p",
+   "k": "37e065bbde1b",
+   "en": "In real-time big data [8] processing, data usually flows into and out of the processing system as unbounded data streams. The aggregation service works in the same way; the input is the raw data (unbounded data streams), and the output is the aggregated results (see Figure 6.2)."
+  },
+  {
+   "t": "p",
+   "k": "3c783a61ad5e",
+   "en": "Output · Display Process · Input · Data · Query · Database+ · Aggregation · Push data · Log Watcher"
+  },
+  {
+   "t": "figure",
+   "k": "15a3bbade44e",
+   "en": "Figure 6.2: Aggregation workflow"
+  },
+  {
+   "t": "h2",
+   "k": "53d6ae3ea6f2",
+   "en": "Asynchronous processing"
+  },
+  {
+   "t": "p",
+   "k": "7bf777a32d67",
+   "en": "The design we currently have is synchronous. This is not good because the capacity of producers and consumers is not always equal. Consider the following case; if there is a sudden increase in traffic and the number of events produced is far beyond what consumers can handle, consumers might get out-of-memory errors or experience an unex- Step 2 - Propose High-level Design and Get Buy-in | 165 pected shutdown. If one component in the synchronous link is down, the whole system stops working"
+  },
+  {
+   "t": "p",
+   "k": "64d0bbd1457a",
+   "en": "A common solution is to adopt a message queue (Kafka) to decouple producers and consumers. This makes the whole process asynchronous and producers/consumers can be scaled independently."
+  },
+  {
+   "t": "p",
+   "k": "04bfd243c9b1",
+   "en": "Putting everything we have discussed together, we come up with the high-level design as shown in Figure 6.3. Log watcher, aggregation service, and database are decoupled by two message queues. The database writer polls data from the message queue, transforms the data into the database format, and writes it to the database."
+  },
+  {
+   "t": "p",
+   "k": "5846e3dede4d",
+   "en": "Data · Message · Message · Log Watcher · Aggregation · Queue · Queue · Service · Database · Database · Writer · Writer · Aggregation Raw data · database database"
+  },
+  {
+   "t": "p",
+   "k": "96dc95f575b8",
+   "en": "Query aggregation results Query"
+  },
+  {
+   "t": "p",
+   "k": "4cf5bc59bee9",
+   "en": "Service"
+  },
+  {
+   "t": "p",
+   "k": "0b05a6852867",
+   "en": "(Dashboard)"
+  },
+  {
+   "t": "figure",
+   "k": "dea6923ccd0a",
+   "en": "Figure 6.3: High-level design"
+  },
+  {
+   "t": "p",
+   "k": "1d70b6023933",
+   "en": "What is stored in the first message queue? It contains ad click event data as shown in Table 6.13."
+  },
+  {
+   "t": "h3",
+   "k": "5a36b87d0c9c",
+   "en": "ad_id click_timestamp user_id ip country"
+  },
+  {
+   "t": "p",
+   "k": "b5d3bfa162c9",
+   "en": "Table 6.13: Data in the first message queue"
+  },
+  {
+   "t": "p",
+   "k": "e755180fac15",
+   "en": "What is stored in the second message queue? The second message queue contains two types of data:"
+  },
+  {
+   "t": "p",
+   "k": "c06f2db90929",
+   "en": "1. Ad click counts aggregated at per-minute granularity."
+  },
+  {
+   "t": "p",
+   "k": "ec5fffb91457",
+   "en": "ad id click minute | count"
+  },
+  {
+   "t": "p",
+   "k": "427a5db57c0c",
+   "en": "Table 6.14: Data in the second message queue"
+  },
+  {
+   "t": "p",
+   "k": "80f5733b1109",
+   "en": "2. Top N most clicked ads aggregated at per-minute granularity."
+  },
+  {
+   "t": "h3",
+   "k": "8c164a31b455",
+   "en": "update_time_minute most_clicked_ads"
+  },
+  {
+   "t": "p",
+   "k": "4afc583e2507",
+   "en": "Table 6.15: Data in the second message queue"
+  },
+  {
+   "t": "p",
+   "k": "91dd95f9c43f",
+   "en": "You might be wondering why we don't write the aggregated results to the database directly. The short answer is that we need the second message queue like Kafka to achieve end-to-end exactly once semantics (atomic commit) [9]."
+  },
+  {
+   "t": "p",
+   "k": "e2d19f8354e3",
+   "en": "Atomic commit · Data · Message · Message · Aggregation · Log Watcher · Queue · Queue · Service · Database · Database · Writer · Aggregation Raw data · database · database Query · Service · (Dashboard)"
+  },
+  {
+   "t": "figure",
+   "k": "c10ef2b3b4b3",
+   "en": "Figure 6.4: End-to-end exactly once"
+  },
+  {
+   "t": "p",
+   "k": "3584d8cf1e25",
+   "en": "Next, let's dig into the details of the aggregation service."
+  },
+  {
+   "t": "h3",
+   "k": "6df0f6ff5de3",
+   "en": "Aggregation service"
+  },
+  {
+   "t": "p",
+   "k": "7b60c655acfd",
+   "en": "The MapReduce framework is a good option to aggregate ad click events. The directed acyclic graph (DAG) is a good model for it [10]. The key to the DAG model is to break down the system into small computing units, like the Map/Aggregate/Reduce nodes, as shown in Figure 6.5."
+  },
+  {
+   "t": "p",
+   "k": "9867a4879599",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 167 Aggregate"
+  },
+  {
+   "t": "p",
+   "k": "d4dcaa70913a",
+   "en": "* Ad count · _Data · Map · Aggregate · Ad count · Top 100 aggregation · Aggregate · _Data · Map · Reduce · * Top 100 Ads Input · Aggregate"
+  },
+  {
+   "t": "figure",
+   "k": "2516caaa37d0",
+   "en": "Figure 6.5: Aggregation service"
+  },
+  {
+   "t": "p",
+   "k": "3138979810fb",
+   "en": "Each node is responsible for one single task and it sends the processing result to its"
+  },
+  {
+   "t": "h3",
+   "k": "cf806e38e1e2",
+   "en": "downstream nodes."
+  },
+  {
+   "t": "p",
+   "k": "648b0f40bbd5",
+   "en": "Map node"
+  },
+  {
+   "t": "p",
+   "k": "9be6a1b97657",
+   "en": "A Map node reads data from a data source, and then filters and transforms the data. For example, a Map node sends ads with ad_id %2 = 0 to node 1, and the other ads go to node 2, as shown in Figure 6.6."
+  },
+  {
+   "t": "p",
+   "k": "30859b950462",
+   "en": "Aggregate · Node 1 · ad_id %2 = 0 · Data · Input · ad_id %2 = 1 · Aggregate · Node 2"
+  },
+  {
+   "t": "figure",
+   "k": "22965bccef6b",
+   "en": "Figure 6.6: Map operation"
+  },
+  {
+   "t": "h3",
+   "k": "e4908ccc1ba5",
+   "en": "You might be wondering why we need the Map node. An alternative option is to set"
+  },
+  {
+   "t": "p",
+   "k": "d57f315ad720",
+   "en": "up Kafka partitions or tags and let the aggregate nodes subscribe to Kafka directly. This works, but the input data may need to be cleaned or normalized, and these operations can be done by the Map node. Another reason is that we may not have control over how data is produced and therefore events with the same ad_id might land in different Kafka partitions."
+  },
+  {
+   "t": "p",
+   "k": "0854835b48a0",
+   "en": "Aggregate node"
+  },
+  {
+   "t": "p",
+   "k": "623f1d2d9fc2",
+   "en": "An Aggregate node counts ad click events by ad_id in memory every minute. In the MapReduce paradigm, the Aggregate node is part of the Reduce. So the map-aggregatereduce process really means map-reduce-reduce."
+  },
+  {
+   "t": "h2",
+   "k": "44d55967a07f",
+   "en": "Reduce node"
+  },
+  {
+   "t": "p",
+   "k": "dbe48d6eaf1a",
+   "en": "A Reduce node reduces aggregated results from all \"Aggregate\" nodes to the final result. For example, as shown in Figure 6.7, there are three aggregation nodes and each contains the top 3 most clicked ads within the node. The Reduce node reduces the total number of most clicked ads to 3."
+  },
+  {
+   "t": "p",
+   "k": "79ab8a405974",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 169 Reduce"
+  },
+  {
+   "t": "p",
+   "k": "b9c042a18b2b",
+   "en": "Aggregate · Output · ad1: 12 · ad2: 3 · Top 3 most clicked ad7: · ad1: 12 · ads from the last · ad10: 4 · Task: get top 3 · ad7: · minute are ad1, ad7 ad8: 3 · ad13: 8 · and ad 13 · ad13: 8 · ad11: 4 · ad15: 3"
+  },
+  {
+   "t": "figure",
+   "k": "6ed632dd3045",
+   "en": "Figure 6.7: Reduce node"
+  },
+  {
+   "t": "p",
+   "k": "7445958ed462",
+   "en": "The DAG model represents the well-known MapReduce paradigm. It is designed to take big data and use parallel distributed computing to turn big data into little- or regular-sized data."
+  },
+  {
+   "t": "p",
+   "k": "0f4151408687",
+   "en": "In the DAG model, intermediate data can be stored in memory and different nodes communicate with each other through either TCP (nodes running in different processes) or shared memory (nodes running in different threads)."
+  },
+  {
+   "t": "p",
+   "k": "7d239061c90b",
+   "en": "Main use cases"
+  },
+  {
+   "t": "p",
+   "k": "dcbe43b25ff0",
+   "en": "Now that we understand how MapReduce works at the high level, let's take a look at how it can be utilized to support the main use cases:"
+  },
+  {
+   "t": "li",
+   "k": "5839d7df7411",
+   "en": "Aggregate the number of clicks of ad_id in the last M mins."
+  },
+  {
+   "t": "li",
+   "k": "2ea153e8d2fd",
+   "en": "Return top N most clicked ad _ids in the last M minutes."
+  },
+  {
+   "t": "li",
+   "k": "fa594c03cb4f",
+   "en": "Data filtering."
+  },
+  {
+   "t": "p",
+   "k": "0c0372d343be",
+   "en": "Use case 1: aggregate the number of clicks"
+  },
+  {
+   "t": "p",
+   "k": "7415f91c1aea",
+   "en": "As shown in Figure 6.8, input events are partitioned by ad_id (ad_id %3) in Map nodes and are then aggregated by Aggregation nodes."
+  },
+  {
+   "t": "p",
+   "k": "b534cac9fa52",
+   "en": "Outputs · Map · Aggregate · as a lite ines · aggregation) · 22 was ask as times"
+  },
+  {
+   "t": "figure",
+   "k": "1b0598c5f3d9",
+   "en": "Figure 6.8: Aggregate the number of clicks"
+  },
+  {
+   "t": "h3",
+   "k": "5726e227b5c6",
+   "en": "Use case 2: return top N most clicked ads"
+  },
+  {
+   "t": "figure",
+   "k": "b11af6f05972",
+   "en": "Figure 6.9 shows a simplified design of getting the top 3 most clicked ads, which can"
+  },
+  {
+   "t": "p",
+   "k": "9973d8ef106e",
+   "en": "be extended to top N. Input events are mapped using ad _id and each Aggregate node maintains a heap data structure to get the top 3 ads within the node efficiently. In the last step, the Reduce node reduces 9 ads (top 3 from each aggregate node) to the top 3 most clicked ads every minute."
+  },
+  {
+   "t": "p",
+   "k": "ef2a15e82d78",
+   "en": "Outputs Reduce · Map · Aggregate · ad3: 12 · ad6: 5 · ad9: · ad12:1 · ad15: 1 · ad3: 12 · ad1: · ad1: · ad2: · Top 3 most · adG: · 5- · ad4: · ad7: 3 · -4 · ad4: · ad10: 2 · ad5: · -4 · ad1 and ad2 · ad13: 1 · ad9: 3 · ad7: 3 · ad8: 3 · ad2: 8 · ad5: 4 · adB: 3 · ad11: 2 · ad14: 1"
+  },
+  {
+   "t": "figure",
+   "k": "fb9d6c5e27a4",
+   "en": "Figure 6.9: Return top N most clicked ads"
+  },
+  {
+   "t": "p",
+   "k": "1c89ad31aaea",
+   "en": "Use case 3: data filtering"
+  },
+  {
+   "t": "p",
+   "k": "d5ff3a4e0e0e",
+   "en": "To support data filtering like \"show me the aggregated click count for ad001 within the USA only\", we can pre-define filtering criteria and aggregate based on them. For example, the aggregation results look like this for ad001 and ad002:"
+  },
+  {
+   "t": "p",
+   "k": "29ac63856cc4",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 171 ad001"
+  },
+  {
+   "t": "p",
+   "k": "806fc0a93b16",
+   "en": "202101010001 · ad001 · 202101010001 · ad001 · 202101010001 · others · ad002 · 202101010001 · 202101010001 · 202101010001 · others"
+  },
+  {
+   "t": "p",
+   "k": "3185a337c0ac",
+   "en": "Table 6.16: Aggregation results (filter by country)"
+  },
+  {
+   "t": "p",
+   "k": "eb5d611eb88b",
+   "en": "This technique is called the star schema [11], which is widely used in data warehouses. The filtering fields are called dimensions. This approach has the following benefits:"
+  },
+  {
+   "t": "li",
+   "k": "d3df28f181d3",
+   "en": "It is simple to understand and build."
+  },
+  {
+   "t": "li",
+   "k": "ee39d11a65b4",
+   "en": "The current aggregation service can be reused to create more dimensions in the star schema. No additional component is needed."
+  },
+  {
+   "t": "li",
+   "k": "3803cb67494c",
+   "en": "Accessing data based on filtering criteria is fast because the result is pre-calculated."
+  },
+  {
+   "t": "p",
+   "k": "dffd71e38d20",
+   "en": "A limitation with this approach is that it creates many more buckets and records, especially when we have a lot of filtering criteria."
+  },
+  {
+   "t": "h2",
+   "k": "5008c4b3d7bc",
+   "en": "Step 3 - Design Deep Dive"
+  },
+  {
+   "t": "p",
+   "k": "c696e60303e6",
+   "en": "In this section, we will dive deep into the following:"
+  },
+  {
+   "t": "p",
+   "k": "2977da82d8bb",
+   "en": "Streaming vs batching · Time and aggregation window · Delivery guarantees · Scale the system"
+  },
+  {
+   "t": "li",
+   "k": "1547ac1ddef5",
+   "en": "Data monitoring and correctness"
+  },
+  {
+   "t": "li",
+   "k": "e80ffc275eff",
+   "en": "Final design diagram"
+  },
+  {
+   "t": "li",
+   "k": "c09350ca5ce3",
+   "en": "Fault tolerance"
+  },
+  {
+   "t": "h3",
+   "k": "053b048469b3",
+   "en": "Streaming vs batching"
+  },
+  {
+   "t": "p",
+   "k": "f57fee689734",
+   "en": "The high-level architecture we proposed in Figure 6.3 is a type of stream processing system. Table 6.17 shows the comparison of three types of systems [12]:"
+  },
+  {
+   "t": "p",
+   "k": "53a15424e1e8",
+   "en": "Services · Batch system · (Online · (near real-time · (offline system) · system) · system) · Respond to · No response to the · No response to the · the client"
+  },
+  {
+   "t": "h2",
+   "k": "ec7d19a2ffd5",
+   "en": "Responsiveness"
+  },
+  {
+   "t": "p",
+   "k": "9db1eac5b597",
+   "en": "client needed · client needed · quickly · Bounded input with · Input has no · finite size. A large · Input · User requests · boundary (infinite · amount of data · streams) · Materialized views, · Materialized views, · Responses to · aggregated metrics, · aggregated metrics, · Output · clients · etc. · etc. · Availability,"
+  },
+  {
+   "t": "h2",
+   "k": "476ee0f6af1d",
+   "en": "Performance"
+  },
+  {
+   "t": "p",
+   "k": "c658f4cbcf79",
+   "en": "Throughput, latency"
+  },
+  {
+   "t": "h2",
+   "k": "e382b1ded37d",
+   "en": "measurement"
+  },
+  {
+   "t": "p",
+   "k": "2f45ed58089a",
+   "en": "latency · Online · Flink [13] · Example · shopping"
+  },
+  {
+   "t": "p",
+   "k": "6475b0d9725c",
+   "en": "Table 6.17: Comparison of three types of systems"
+  },
+  {
+   "t": "p",
+   "k": "c65ec4533da8",
+   "en": "In our design, both stream processing and batch processing are used. We utilized stream processing to process data as it arrives and generates aggregated results in a near realtime fashion. We utilized batch processing for historical data backup."
+  },
+  {
+   "t": "p",
+   "k": "c335b5b1778d",
+   "en": "For a system that contains two processing paths (batch and streaming) simultaneously, this architecture is called lambda [14]. A disadvantage of lambda architecture is that you have two processing paths, meaning there are two codebases to maintain. Kappa architecture [15], which combines the batch and streaming in one processing path, solves the problem. The key idea is to handle both real-time data processing and continuous data reprocessing using a single stream processing engine. Figure 6.10 shows a comparison of lambda and kappa architecture."
+  },
+  {
+   "t": "p",
+   "k": "fa5d0326aa7f",
+   "en": "Step 3 - Design Deep Dive | 173 Lambda Architecture"
+  },
+  {
+   "t": "p",
+   "k": "d09187c34ee0",
+   "en": "Batch Engine · * Serving Backend - · Query Results · Raw Data · Query Serving Backend · Real-time Engine · Raw Data · Results"
+  },
+  {
+   "t": "figure",
+   "k": "7f8280a27788",
+   "en": "Figure 6.10: Lambda and Kappa architectures"
+  },
+  {
+   "t": "p",
+   "k": "8e1bd6d86ec9",
+   "en": "Our high-level design uses Kappa architecture, where the reprocessing of historical data also goes through the real-time aggregation service. See the \"Data recalculation\" section below for details."
+  },
+  {
+   "t": "h3",
+   "k": "ff52f332d3cd",
+   "en": "Data recalculation"
+  },
+  {
+   "t": "p",
+   "k": "69ccd02cff6e",
+   "en": "Sometimes we have to recalculate the aggregated data, also called historical data replay. For example, if we discover a major bug in the aggregation service, we would need to recalculate the aggregated data from raw data starting at the point where the bug was introduced. Figure 6.11 shows the data recalculation flow:"
+  },
+  {
+   "t": "p",
+   "k": "59ede3f7f2a0",
+   "en": "1. The recalculation service retrieves data from raw data storage. This is a batched job. 2. Retrieved data is sent to a dedicated aggregation service so that the real-time processing is not impacted by historical data replay."
+  },
+  {
+   "t": "p",
+   "k": "a6a0251eece8",
+   "en": "3. Aggregated results are sent to the second message queue, then updated in the aggregation database."
+  },
+  {
+   "t": "p",
+   "k": "4bc18ae8bf0e",
+   "en": "Queue · Message · Queue · database Query"
+  },
+  {
+   "t": "figure",
+   "k": "7ebe81bdc1ad",
+   "en": "Figure 6.11: Recalculation service"
+  },
+  {
+   "t": "p",
+   "k": "753f24e1b665",
+   "en": "The recalculation process reuses the data aggregation service but uses a different data source (the raw data)."
+  },
+  {
+   "t": "p",
+   "k": "714eea0f4c98",
+   "en": "Time"
+  },
+  {
+   "t": "p",
+   "k": "25172baacc96",
+   "en": "We need a timestamp to perform aggregation. The timestamp can be generated in two different places:"
+  },
+  {
+   "t": "li",
+   "k": "2c3a563fe60b",
+   "en": "Event time: when an ad click happens."
+  },
+  {
+   "t": "li",
+   "k": "acb6e7c3a544",
+   "en": "Processing time: refers to the system time of the aggregation server that processes the click event."
+  },
+  {
+   "t": "h3",
+   "k": "df1e3c5ab100",
+   "en": "Due to network delays and asynchronous environments (data go through a message"
+  },
+  {
+   "t": "p",
+   "k": "a58b797aee99",
+   "en": "queue), the gap between event time and processing time can be large. As shown in Figure 6.12, event 1 arrives at the aggregation service very late (5 hours later)."
+  },
+  {
+   "t": "p",
+   "k": "2431172ce06d",
+   "en": "5 hours later · Event Time · Processing Time"
+  },
+  {
+   "t": "figure",
+   "k": "f5a903e3174c",
+   "en": "Figure 6.12: Late events"
+  },
+  {
+   "t": "p",
+   "k": "c6b3f6159bf6",
+   "en": "If event time is used for aggregation, we have to deal with delayed events. If processing time is used for aggregation, the aggregation result may not be accurate. There is no perfect solution, so we need to consider the trade-offs."
+  },
+  {
+   "t": "p",
+   "k": "efed02db3191",
+   "en": "Step 3 - Design Deep Dive | 175 Pros"
+  },
+  {
+   "t": "p",
+   "k": "f4b56b55de2c",
+   "en": "It depends on the timestamp Aggregation results are more"
+  },
+  {
+   "t": "p",
+   "k": "6db9ead31ec4",
+   "en": "generated on the client-side. Clients might have the wrong accurate because the client"
+  },
+  {
+   "t": "p",
+   "k": "5006ed0248a0",
+   "en": "Event"
+  },
+  {
+   "t": "p",
+   "k": "8e3c11873b07",
+   "en": "knows exactly when an ad is"
+  },
+  {
+   "t": "p",
+   "k": "c0ce45faf4ac",
+   "en": "time, or the timestamp might time"
+  },
+  {
+   "t": "p",
+   "k": "23b23d56159e",
+   "en": "clicked · be generated by malicious · users"
+  },
+  {
+   "t": "p",
+   "k": "d247af34e14c",
+   "en": "The timestamp is not accurate Processing Server timestamp is more"
+  },
+  {
+   "t": "p",
+   "k": "4dcb2641b8bb",
+   "en": "if an event reaches the system reliable"
+  },
+  {
+   "t": "p",
+   "k": "714eea0f4c98",
+   "en": "time"
+  },
+  {
+   "t": "p",
+   "k": "9106dc2dacbf",
+   "en": "at a much later time"
+  },
+  {
+   "t": "p",
+   "k": "d0c1ef248a96",
+   "en": "Table 6.18: Event time vs processing time"
+  },
+  {
+   "t": "p",
+   "k": "23dea88cfc78",
+   "en": "Since data accuracy is very important, we recommend using event time for aggregation. How do we properly process delayed events in this case? A technique called \"watermark\" is commonly utilized to handle slightly delayed events."
+  },
+  {
+   "t": "p",
+   "k": "b4b14e3c042e",
+   "en": "In Figure 6.13, ad click events are aggregated in the one-minute tumbling window (see the \"Aggregation window\" section on page 177 for more details). If event time is used to decide whether the event is in the window, window 1 misses event 2, and window 3 misses event 5 because they arrive slightly later than the end of their aggregation windows."
+  },
+  {
+   "t": "p",
+   "k": "7a4b119578b2",
+   "en": "Second -(3 · Event Time · Processing Time · Window 1 · Window 2 · Window 3"
+  },
+  {
+   "t": "figure",
+   "k": "1ca05f6ea931",
+   "en": "Figure 6.13: Miss events in an aggregation window"
+  },
+  {
+   "t": "p",
+   "k": "838ffa867035",
+   "en": "One way to mitigate this problem is to use \"watermark\" (the extended rectangles in Figure 6.14), which is regarded as an extension of an aggregation window. This improves the accuracy of the aggregation result. By extending an extra 15 second (adjustable) aggregation window, window 1 is able to include event 2, and window 3 is able to include event 5."
+  },
+  {
+   "t": "p",
+   "k": "eccacf44e833",
+   "en": "The value set for the watermark depends on the business requirement. A long watermark could catch events that arrive very late, but it adds more latency to the system. A short watermark means data is less accurate, but it adds less latency to the system."
+  },
+  {
+   "t": "p",
+   "k": "4c1e67e3c76a",
+   "en": "Second Event Time · -(3 · Processing Time · Window 1 · Window 2 · Window 3"
+  },
+  {
+   "t": "figure",
+   "k": "92e3df2f0b90",
+   "en": "Figure 6.14: Watermark"
+  },
+  {
+   "t": "p",
+   "k": "c7b06a695c9e",
+   "en": "Notice that the watermark technique does not handle events that have long delays. We can argue that it is not worth the return on investment (ROI) to have a complicated design for low probability events. We can always correct the tiny bit of inaccuracy with end-of-day reconciliation (see \"Reconciliation\" section on page 189). One trade-off to consider is that using watermark improves data accuracy but increases overall latency, due to extended wait time."
+  },
+  {
+   "t": "h2",
+   "k": "0010356cfe2e",
+   "en": "Aggregation window"
+  },
+  {
+   "t": "p",
+   "k": "71442e050ee8",
+   "en": "According to the \"Designing data-intensive applications\" book by Martin Kleppmann [16], there are four types of window functions: tumbling window (also called fixed window), hopping window, sliding window, and session window. We will discuss the tumbling window and sliding window as they are most relevant to our system."
+  },
+  {
+   "t": "p",
+   "k": "cc1fe453aec3",
+   "en": "In the tumbling window (highlighted in Figure 6.15), time is partitioned into same-length, non-overlapping chunks. The tumbling window is a good fit for aggregating ad click events every minute (use case 1)."
+  },
+  {
+   "t": "p",
+   "k": "b3b150508aed",
+   "en": "Minute Aggregate · Aggregate · Aggregate · Tumbling Window · (1 minute window)"
+  },
+  {
+   "t": "figure",
+   "k": "958ae7dda364",
+   "en": "Figure 6.15: Tumbling window"
+  },
+  {
+   "t": "p",
+   "k": "3c589208b7cb",
+   "en": "In the sliding window (highlighted in Figure 6.16), events are grouped within a window that slides across the data stream, according to a specified interval. A sliding window can be an overlapping one. This is a good strategy to satisfy our second use case; to get the top N most clicked ads during the last M minutes."
+  },
+  {
+   "t": "p",
+   "k": "6d14a5c88562",
+   "en": "Step 3 - Design Deep Dive | 177 Minute Top ads from last 3 minutes"
+  },
+  {
+   "t": "p",
+   "k": "39e4fbd515e6",
+   "en": "Sliding window · (3 minute window, · Top ads from last 3 minutes · Run every minute)"
+  },
+  {
+   "t": "figure",
+   "k": "122e930b2af2",
+   "en": "Figure 6.16: Sliding window"
+  },
+  {
+   "t": "h3",
+   "k": "3b710bcd56b2",
+   "en": "Delivery guarantees"
+  },
+  {
+   "t": "p",
+   "k": "5a669a1a744d",
+   "en": "Since the aggregation result is utilized for billing, data accuracy and completeness are very important. The system needs to be able to answer questions such as:"
+  },
+  {
+   "t": "li",
+   "k": "e6e5d886be8c",
+   "en": "How to avoid processing duplicate events?"
+  },
+  {
+   "t": "li",
+   "k": "b3ae7792faf6",
+   "en": "How to ensure all events are processed?"
+  },
+  {
+   "t": "p",
+   "k": "9c0e5fb21ede",
+   "en": "Message queues such as Kafka usually provide three delivery semantics: at-most once, at-least once, and exactly once."
+  },
+  {
+   "t": "h3",
+   "k": "b8fe7520fb07",
+   "en": "Which delivery method should we choose?"
+  },
+  {
+   "t": "p",
+   "k": "34558b4b69b8",
+   "en": "In most circumstances, at-least once processing is good enough if a small percentage of duplicates are acceptable."
+  },
+  {
+   "t": "p",
+   "k": "2569516c950f",
+   "en": "However, this is not the case for our system. Differences of a few percent in data points could result in discrepancies of millions of dollars. Therefore, we recommend exactlyonce delivery for the system. If you are interested in learning more about a real-life ad aggregation system, take a look at how Yelp implements it [17]."
+  },
+  {
+   "t": "h2",
+   "k": "c81bb92779e1",
+   "en": "Data deduplication"
+  },
+  {
+   "t": "p",
+   "k": "ec79d6970d09",
+   "en": "One of the most common data quality issues is duplicated data. Duplicated data can come from a wide range of sources and in this section, we discuss two common sources."
+  },
+  {
+   "t": "li",
+   "k": "a62454f488a4",
+   "en": "Client-side. For example, a client might resend the same event multiple times. Duplicated events sent with malicious intent are best handled by ad fraud/risk control components. If this is of interest, please refer to the reference material [18]. • Server outage. If an aggregation service node goes down in the middle of aggregation and the upstream service hasn't yet received an acknowledgment, the same events might be sent and aggregated again. Let's take a closer look."
+  },
+  {
+   "t": "figure",
+   "k": "61039f6fc84e",
+   "en": "Figure 6.17 shows how the aggregation service node (Aggregator) outage introduces du-"
+  },
+  {
+   "t": "p",
+   "k": "54a253071b5b",
+   "en": "plicate data. The Aggregator manages the status of data consumption by storing the offset in upstream Kafka."
+  },
+  {
+   "t": "p",
+   "k": "0775bda78b4d",
+   "en": "Downstream · Upstream · Aggregator · (Kafka) · (Kafka) · 1. Poll events · Consume fror · ffset 10 · 3. Aggregate events · from 100 to 110 · 4. Send aggregated · result · 6. Ack upstream · 5. Ack back · with offset 110 · Data duplication · if system failed at step 6"
+  },
+  {
+   "t": "p",
+   "k": "0a03230b0a58",
+   "en": "and consume again from offset 100"
+  },
+  {
+   "t": "figure",
+   "k": "0e17a142783e",
+   "en": "Figure 6.17: Duplicate data"
+  },
+  {
+   "t": "p",
+   "k": "17af972ac196",
+   "en": "If step 6 fails, perhaps due to Aggregator outage, events from 100 to 110 are already sent to the downstream, but the new offset 110 is not persisted in upstream Kafka. In this case, a new Aggregator would consume again from offset 100, even if those events are already processed, causing duplicate data."
+  },
+  {
+   "t": "p",
+   "k": "700ad30e189e",
+   "en": "The most straightforward solution (Figure 6.18) is to use external file storage, such as HDFS or S3, to record the offset. However, this solution has issues as well."
+  },
+  {
+   "t": "p",
+   "k": "f7056dbff186",
+   "en": "Step 3 - Design Deep Dive | 179 Downstream HDFS / S3"
+  },
+  {
+   "t": "p",
+   "k": "57424d3f59e9",
+   "en": "Upstream · Aggregator · (Kafka) (Kafka) · 2. Consume from · offset 100 · 3.1 Verify offset · 3. Aggregate events · from 100 to 110 · 3.2 Save offset · Can cause potential · message loss ! · 4. Send aggregated result · 5. Ack back · 6. Ack upstream · with new offset 110"
+  },
+  {
+   "t": "figure",
+   "k": "d4f66ef542d1",
+   "en": "Figure 6.18: Record the offset"
+  },
+  {
+   "t": "p",
+   "k": "0969b05afd3e",
+   "en": "In step 3, the aggregator will process events from offset 100 to 110, only if the last offset stored in external storage is 100. If the offset stored in the storage is 110, the aggregator ignores events before oftset 110."
+  },
+  {
+   "t": "p",
+   "k": "da4538023e5f",
+   "en": "But this design has a major problem: the offset is saved to HDFS or S3 (step 3.2) before the aggregation result is sent downstream. If step 4 fails due to Aggregator outage, events from 100 to 110 will never be processed by a newly brought up aggregator node, since the offset stored in external storage is 110."
+  },
+  {
+   "t": "p",
+   "k": "21ba2a2ecf98",
+   "en": "To avoid data loss, we need to save the offset once we get an acknowledgment back from downstream. The updated design is shown in Figure 6.19."
+  },
+  {
+   "t": "p",
+   "k": "c24ee81c1e8e",
+   "en": "/ Chapter 6. Ad Click Event Aggregation"
+  },
+  {
+   "t": "p",
+   "k": "fc9d045ead16",
+   "en": "Downstream · Upstream · Aggregator · HDFS / S3 · (Kafka) · (Kafka) · 1. Poll events · . Consume fror · ffset 10 · 3.1 Verify offset · 3. Aggregate events · from 100 to 110 · 4. Send aggregated result · 5. Ack back · 5.1 Save offset · 6. Ack upstream · with new offset 110"
+  },
+  {
+   "t": "figure",
+   "k": "4c7714fa5744",
+   "en": "Figure 6.19: Save offset after receiving ack"
+  },
+  {
+   "t": "p",
+   "k": "6b3f4159add0",
+   "en": "In this design, if the Aggregator is down before step 5.1 is executed, events from 100 to 110 will be sent downstream again. To achieve exactly once processing, we need to put operations between step 4 to step 6 in one distributed transaction. A distributed transaction is a transaction that works across several nodes. If any of the operations fails, the whole transaction is rolled back."
+  },
+  {
+   "t": "p",
+   "k": "e10b96e4186e",
+   "en": "Step 3 - Design Deep Dive | 181 Downstream Upstream"
+  },
+  {
+   "t": "p",
+   "k": "30dcfba4b699",
+   "en": "HDFS / S3 · Aggregator · (Kafka) (Kafka) · 2. Consume from · offset 100 · 3.1 Verify offset · 3. Aggregate events · from 100 to 110 · 4. Send aggregated result · 5. Save offset · 6. Ack back · 7. Ack upstream · with new offset 110"
+  },
+  {
+   "t": "figure",
+   "k": "221415e1c2ce",
+   "en": "Figure 6.20: Distributed transaction"
+  },
+  {
+   "t": "p",
+   "k": "09c0bf1a9c37",
+   "en": "As you can see, it's not easy to dedupe data in large-scale systems, How to achieve exactly-once processing is an advanced topic. If you are interested in the details, please refer to reference material [9]."
+  },
+  {
+   "t": "h3",
+   "k": "56df7c30f519",
+   "en": "Scale the system"
+  },
+  {
+   "t": "p",
+   "k": "9e4e1230e307",
+   "en": "From the back-of-the-envelope estimation, we know the business grows 30% per year, which doubles traffic every 3 years. How do we handle this growth? Let's take a look."
+  },
+  {
+   "t": "p",
+   "k": "c83ab3b9463b",
+   "en": "Our system consists of three independent components: message queue, aggregation service, and database. Since these components are decoupled, we can scale each one independently."
+  },
+  {
+   "t": "h3",
+   "k": "8d31cef868c7",
+   "en": "Scale the message queue"
+  },
+  {
+   "t": "p",
+   "k": "5a6399e52ead",
+   "en": "We have already discussed how to scale the message queue extensively in the \"Distributed Message Queue\" chapter, so we'll only briefly touch on a few points."
+  },
+  {
+   "t": "p",
+   "k": "731f863412b2",
+   "en": "Producers. We don't limit the number of producer instances, so the scalability of producers can be easily achieved."
+  },
+  {
+   "t": "p",
+   "k": "2d6e9912c2ab",
+   "en": "Consumers. Inside a consumer group, the rebalancing mechanism helps to scale the consumers by adding or removing nodes. As shown in Figure 6.21, by adding two more consumers, each consumer only processes events from one partition."
+  },
+  {
+   "t": "p",
+   "k": "5f33ea0ca12b",
+   "en": "Topic · Topic · Consumer O Consumer 0 · Consumer 1/ · Rebalance · Consumer 2 Consumer 1 · Consumer 3"
+  },
+  {
+   "t": "figure",
+   "k": "ee9940610137",
+   "en": "Figure 6.21: Add consumers"
+  },
+  {
+   "t": "p",
+   "k": "3632dfcbb872",
+   "en": "When there are hundreds of Kafka consumers in the system, consumer rebalance can be quite slow and could take a few minutes or even more. Therefore, if more consumers need to be added, try to do it during off-peak hours to minimize the impact."
+  },
+  {
+   "t": "p",
+   "k": "6beea31d391a",
+   "en": "Brokers"
+  },
+  {
+   "t": "li",
+   "k": "c4a91bd8c0b7",
+   "en": "Hashing key"
+  },
+  {
+   "t": "p",
+   "k": "f3f42dc7eca3",
+   "en": "Using ad _id as hashing key for Kafka partition to store events from the same ad_1d in the same Kafka partition. In this case, an aggregation service can subscribe to all events of the same ad_id from one single partition."
+  },
+  {
+   "t": "li",
+   "k": "d3a067978e1c",
+   "en": "The number of partitions"
+  },
+  {
+   "t": "p",
+   "k": "b512b23217d5",
+   "en": "If the number of partitions changes, events of the same ad_id might be mapped to a different partition. Therefore, it's recommended to pre-allocate enough partitions in advance, to avoid dynamically increasing the number of partitions in production."
+  },
+  {
+   "t": "li",
+   "k": "97f4e806bfc5",
+   "en": "Topic physical sharding"
+  },
+  {
+   "t": "h3",
+   "k": "51fb40d15d04",
+   "en": "One single topic is usually not enough. We can split the data by geography"
+  },
+  {
+   "t": "h3",
+   "k": "8377dfd9ffe1",
+   "en": "(topic_north_america, topic_europe, topic_asia, etc.) or by business type"
+  },
+  {
+   "t": "p",
+   "k": "3d15768116f1",
+   "en": "(topic_web_ads, topic_mobile_ads, etc)."
+  },
+  {
+   "t": "li",
+   "k": "f4507302f492",
+   "en": "Pros: Slicing data to different topics can help increase the system throughput. With fewer consumers for a single topic, the time to rebalance consumer groups is reduced."
+  },
+  {
+   "t": "p",
+   "k": "bb40737b68d7",
+   "en": "o Cons: It introduces extra complexity and increases maintenance costs."
+  },
+  {
+   "t": "h3",
+   "k": "71e6dd081f77",
+   "en": "Scale the aggregation service"
+  },
+  {
+   "t": "p",
+   "k": "9684fcde59db",
+   "en": "In the high-level design, we talked about the aggregation service being a map/reduce operation. Figure 6.22 shows how things are wired together."
+  },
+  {
+   "t": "p",
+   "k": "aaf0a8008fdb",
+   "en": "Step 3 - Design Deep Dive | 183 Reduce"
+  },
+  {
+   "t": "p",
+   "k": "09ce6e4aeead",
+   "en": "Reduce Reduce · Map Calculation · Calculation · Output · Input"
+  },
+  {
+   "t": "p",
+   "k": "073beb2b5d73",
+   "en": "Aggregation Server 1 Aggregation Server 1"
+  },
+  {
+   "t": "p",
+   "k": "879c787a887c",
+   "en": "Reduce process Map process"
+  },
+  {
+   "t": "p",
+   "k": "16e27402a1f9",
+   "en": "Kafka"
+  },
+  {
+   "t": "p",
+   "k": "8679fc31aa88",
+   "en": "Aggregation Server 2 Aggregation Server 2"
+  },
+  {
+   "t": "p",
+   "k": "3ce87fb348f1",
+   "en": "Reduce process Kafka"
+  },
+  {
+   "t": "p",
+   "k": "ef231e213289",
+   "en": "Map process"
+  },
+  {
+   "t": "p",
+   "k": "17c80337a062",
+   "en": "Aggregation Server 3 Aggregation Server 3"
+  },
+  {
+   "t": "p",
+   "k": "e5ca064efb07",
+   "en": "Map process · Kafka · Reduce process"
+  },
+  {
+   "t": "figure",
+   "k": "0fcb5bab4057",
+   "en": "Figure 6.22: Aggregation service"
+  },
+  {
+   "t": "p",
+   "k": "77ee6559c6a1",
+   "en": "If you are interested in the details, please refer to reference material [19J. Aggregation service is horizontally scalable by adding or removing nodes. Here is an interesting question; how do we increase the throughput of the aggregation service? There are two options."
+  },
+  {
+   "t": "p",
+   "k": "cf2de1642b6f",
+   "en": "Option 1: Allocate events with different ad_ids to different threads, as shown in Figure 6.23."
+  },
+  {
+   "t": "p",
+   "k": "9b03918fe964",
+   "en": "Aggregation Service Node · Threads · thread_id = 1 · ad_id = 1 · Events of ad_id · thread_id = 2 · From 1 to 3 · ad_id = 2 · thread id = 3 · ad_id = 3 · All Events · Kafka · thread_id = 1 · ad_id = 4 · Events of ad_id · thread _id = 2 · ad_id = 5 · From 4 to 6 · thread_id = 3 · ad_id = 6 · Threads · Aggregation Service Node"
+  },
+  {
+   "t": "figure",
+   "k": "3cd0fb80049a",
+   "en": "Figure 6.23: Multi-threading"
+  },
+  {
+   "t": "p",
+   "k": "951b77f6932f",
+   "en": "Option 2: Deploy aggregation service nodes on resource providers like Apache Hadoop YARN [20]. You can think of this approach as utilizing multi-processing."
+  },
+  {
+   "t": "p",
+   "k": "edd74f039856",
+   "en": "Option 1 is easier to implement and doesn't depend on resource providers. In reality, however, option 2 is more widely used because we can scale the system by adding more computing resources."
+  },
+  {
+   "t": "h3",
+   "k": "1944b209c415",
+   "en": "Scale the database"
+  },
+  {
+   "t": "p",
+   "k": "3b27e0cf1e9d",
+   "en": "Cassandra natively supports horizontal scaling, in a way similar to consistent hash- Step 3 - Design Deep Dive | 185 Node 3"
+  },
+  {
+   "t": "p",
+   "k": "57e0ecfc5aed",
+   "en": "Node I · Node 2 · Ring without · Node 4 · Node 6 · Node 5 · Node 3 · Node 2 · Node I · Ring with · Node 6 · Node 5 · Node 4"
+  },
+  {
+   "t": "figure",
+   "k": "adb089d059f0",
+   "en": "Figure 6.24: Virtual nodes [21]"
+  },
+  {
+   "t": "p",
+   "k": "6d357fe5cb22",
+   "en": "Data is evenly distributed to every node with a proper replication factor. Each node saves its own part of the ring based on hashed value and also saves copies from other virtual nodes."
+  },
+  {
+   "t": "p",
+   "k": "27ca2adb7be6",
+   "en": "If we add a new node to the cluster, it automatically rebalances the virtual nodes among all nodes. No manual resharding is required. See Cassandra's official documentation for more details [21]."
+  },
+  {
+   "t": "p",
+   "k": "680d0991bd9d",
+   "en": "Hotspot issue"
+  },
+  {
+   "t": "p",
+   "k": "136e4fd0362a",
+   "en": "A shard or service that receives much more data than the others is called a hotspot. This occurs because major companies have advertising budgets in the millions of dollars and their ads are clicked more often. Since events are partitioned by ad_id, some aggregation service nodes might receive many more ad click events than others, potentially causing server overload."
+  },
+  {
+   "t": "p",
+   "k": "d8c7b3a6bca1",
+   "en": "This problem can be mitigated by allocating more aggregation nodes to process popular ads. Let's take a look at an example as shown in Figure 6.25. Assume each aggregation node can handle only 100 events."
+  },
+  {
+   "t": "p",
+   "k": "818926d4a709",
+   "en": "1. Since there are 300 events in the aggregation node (beyond the capacity of a node can handle), it applies for extra resources through the resource manager."
+  },
+  {
+   "t": "p",
+   "k": "f2b18c51d146",
+   "en": "2. The resource manager allocates more resources (for example, add two more aggregation nodes) so the original aggregation node isn't overloaded."
+  },
+  {
+   "t": "p",
+   "k": "ba087d14f636",
+   "en": "3. The original aggregation node split events into 3 groups and each aggregation node handles 100 events."
+  },
+  {
+   "t": "p",
+   "k": "f18da566ae57",
+   "en": "4. The result is written back to the original aggregate node."
+  },
+  {
+   "t": "p",
+   "k": "4abf324d089a",
+   "en": "Extra · Resource · 2) resource · Reduce · Manager · allocated · extra · Split events · resources · Reduced result · Aggregate · ad1, 300 events · _ Data · Aggregated Map · Reduce · Input · Output Aggregate"
+  },
+  {
+   "t": "figure",
+   "k": "ebc305840fc5",
+   "en": "Figure 6.25: Allocate more aggregation nodes"
+  },
+  {
+   "t": "p",
+   "k": "10dd86a6c7b2",
+   "en": "There are more sophisticated ways to handle this problem, such as Global-Local Aggregation or Split Distinct Aggregation. For more information, please refer to [22]."
+  },
+  {
+   "t": "h3",
+   "k": "c09350ca5ce3",
+   "en": "Fault tolerance"
+  },
+  {
+   "t": "p",
+   "k": "0868d8c7bef0",
+   "en": "Let's discuss the fault tolerance of the aggregation service. Since aggregation happens in memory, when an aggregation node goes down, the aggregated result is lost as well. We can rebuild the count by replaying events from upstream Kafka brokers."
+  },
+  {
+   "t": "p",
+   "k": "9cc16e23f789",
+   "en": "Replaying data from the beginning of Kafka is slow. A good practice is to save the \"system status\" like upstream offset to a snapshot and recover from the last saved status. In our design, the \"system status\" is more than just the upstream offset because we need to store data like top N most clicked ads in the past M minutes."
+  },
+  {
+   "t": "figure",
+   "k": "375c79fc519c",
+   "en": "Figure 6.26 shows a simple example of what the data looks like in a snapshot."
+  },
+  {
+   "t": "p",
+   "k": "1f82fb0f942c",
+   "en": "Step 3 - Design Deep Dive | 187 Snapshot for top 3 most clicked ads from last 5 minutes ad1: 12"
+  },
+  {
+   "t": "p",
+   "k": "908a5db05de3",
+   "en": "Data · Message · ad3: 5 · Aggregation · ad3 · Queue · Service · ad2: 3 · ad2"
+  },
+  {
+   "t": "figure",
+   "k": "b7e54888e466",
+   "en": "Figure 6.26: Data in a snapshot"
+  },
+  {
+   "t": "p",
+   "k": "5c9ff9577fb5",
+   "en": "With a snapshot, the failover process of the aggregation service is quite simple. If one aggregation service node fails, we bring up a new node and recover data from the latest snapshot (Figure 6.27). If there are new events that arrive after the last snapshot was taken, the new aggregation node will pull those data from the Kafka broker for replay."
+  },
+  {
+   "t": "p",
+   "k": "fb32bf75d00d",
+   "en": "External · Nodes · Primary · aggregation · aggregation · --. · -. · Snapshot · node · node · Snapshot · Storage"
+  },
+  {
+   "t": "figure",
+   "k": "c91e4e76f7f7",
+   "en": "Figure 6.27: Aggregation node failover"
+  },
+  {
+   "t": "h3",
+   "k": "1547ac1ddef5",
+   "en": "Data monitoring and correctness"
+  },
+  {
+   "t": "p",
+   "k": "2b7baf4054cb",
+   "en": "As mentioned earlier, aggregation results can be used for RTB and billing purposes. It's critical to monitor the system's health and to ensure correctness."
+  },
+  {
+   "t": "h3",
+   "k": "5bba249a4f90",
+   "en": "Continuous monitoring"
+  },
+  {
+   "t": "p",
+   "k": "2f712fc6e830",
+   "en": "Here are some metrics we might want to monitor:"
+  },
+  {
+   "t": "li",
+   "k": "9a7314e001a3",
+   "en": "Latency. Since latency can be introduced at each stage, it's invaluable to track timestamps as events flow through different parts of the system. The differences between those timestamps can be exposed as latency metrics."
+  },
+  {
+   "t": "li",
+   "k": "605ee1115485",
+   "en": "Message queue size. If there is a sudden increase in queue size, we may need to add more aggregation nodes. Notice that Kafka is a message queue implemented as a distributed commit log, so we need to monitor the records-lag metrics instead • System resources on aggregation nodes: CPU, disk, JVM, etc."
+  },
+  {
+   "t": "p",
+   "k": "4f7525e28a45",
+   "en": "Reconciliation"
+  },
+  {
+   "t": "p",
+   "k": "f1001d4e63e6",
+   "en": "Reconciliation means comparing different sets of data in order to ensure data integrity. Unlike reconciliation in the banking industry, where you can compare your records with the bank's records, the result of ad click aggregation has no third-party result to reconcile with."
+  },
+  {
+   "t": "p",
+   "k": "3ef0fe0d6159",
+   "en": "What we can do is to sort the ad click events by event time in every partition at the end of the day, by using a batch job and reconciling with the real-time aggregation result. If we have higher accuracy requirements, we can use a smaller aggregation window; for example, one hour. Please note, no matter which aggregation window is used, the result from the batch job might not match exactly with the real-time aggregation result, since some events might arrive late (see \"Time\" section on page 175)."
+  },
+  {
+   "t": "figure",
+   "k": "97988c35fdec",
+   "en": "Figure 6.28 shows the final design diagram with reconciliation support."
+  },
+  {
+   "t": "p",
+   "k": "98974a40473d",
+   "en": "Data · Message · Queue · Message · Queue · Query"
+  },
+  {
+   "t": "figure",
+   "k": "ee96a034dfef",
+   "en": "Figure 6.28: Final design"
+  },
+  {
+   "t": "h3",
+   "k": "d5d7d62140eb",
+   "en": "Alternative design"
+  },
+  {
+   "t": "p",
+   "k": "35d54aa68640",
+   "en": "In a generalist system design interview, you are not expected to know the internals of different pieces of specialized software used in a big data pipeline. Explaining your thought process and discussing trade-offs is very important, which is why we propose a generic solution. Another option is to store ad click data in Hive, with an ElasticSearch layer built for faster queries. Aggregation is usually done in OLAP databases such as ClickHouse [23] or Druid [24]. Figure 6.29 shows the architecture."
+  },
+  {
+   "t": "p",
+   "k": "6bc80863dc99",
+   "en": "Step 3 - Design Deep Dive | 189 Hive"
+  },
+  {
+   "t": "p",
+   "k": "c160de7930db",
+   "en": "Risk Control · Message · Log Watcher · Engine · Queue · ClickHouse"
+  },
+  {
+   "t": "p",
+   "k": "9d74749d4b67",
+   "en": "Query Query aggregation results"
+  },
+  {
+   "t": "p",
+   "k": "840d7a3b003a",
+   "en": "Merchant Facing"
+  },
+  {
+   "t": "p",
+   "k": "66d9b558f41b",
+   "en": "Analytics"
+  },
+  {
+   "t": "figure",
+   "k": "4ec764899fd6",
+   "en": "Figure 6.29: Alternative design"
+  },
+  {
+   "t": "p",
+   "k": "fe61db50240f",
+   "en": "For more detail on this, please refer to reference material [25]."
+  },
+  {
+   "t": "h2",
+   "k": "02a33876c958",
+   "en": "Step 4 - Wrap Up"
+  },
+  {
+   "t": "p",
+   "k": "bd3852085d61",
+   "en": "In this chapter, we went through the process of designing an ad click event aggregation system at the scale of Facebook or Google. We covered:"
+  },
+  {
+   "t": "li",
+   "k": "5ec9fd1b184b",
+   "en": "Data model and API design."
+  },
+  {
+   "t": "li",
+   "k": "1b1b7addd597",
+   "en": "Use MapReduce paradigm to aggregate ad click events."
+  },
+  {
+   "t": "li",
+   "k": "c3d5e4df6829",
+   "en": "Scale the message queue, aggregation service, and database."
+  },
+  {
+   "t": "li",
+   "k": "a3ff00b27227",
+   "en": "Mitigate hotspot issue."
+  },
+  {
+   "t": "li",
+   "k": "1918f158a5c3",
+   "en": "Monitor the system continuously."
+  },
+  {
+   "t": "li",
+   "k": "0496a68e2233",
+   "en": "Use reconciliation to ensure correctness."
+  },
+  {
+   "t": "li",
+   "k": "9c8e34862679",
+   "en": "Fault tolerance."
+  },
+  {
+   "t": "p",
+   "k": "deedc06404e0",
+   "en": "The ad click event aggregation system is a typical big data processing system. It will be easier to understand and design if you have prior knowledge or experience with industrystandard solutions such as Apache Kafka, Apache Flink, or Apache Spark"
+  },
+  {
+   "t": "p",
+   "k": "71b8b7a68128",
+   "en": "Congratulations on getting this far! Now give yourself a pat on the back. Good job!"
+  },
+  {
+   "t": "h2",
+   "k": "dc0ccd897209",
+   "en": "Chapter Summary"
+  },
+  {
+   "t": "p",
+   "k": "34d2d8522f9e",
+   "en": "aggregate count · functional req · aggregation filtering · correctness · handle delayed events · — non-functional req · step 1 · robustness · minutes latency · 50K peak QPS · estimation · daily storage reg: 100GB · query api design · raw data · aggregated data · data model · comparison · step 2 · choose database · async processing · Ads Aggregation · high-level design · MapReduce · support 3 use cases · streaming vs batching · time · aggregation window · delivery guarantees · scale the system · fault tolerance"
+  },
+  {
+   "t": "li",
+   "k": "1547ac1ddef5",
+   "en": "data monitoring and correctness"
+  },
+  {
+   "t": "p",
+   "k": "9007d3d2e02f",
+   "en": "alternative solution · step 4 · wrap up · Chapter Summary | 191"
+  },
+  {
+   "t": "h2",
+   "k": "5d59149869b8",
+   "en": "Reference Material"
+  },
+  {
+   "t": "p",
+   "k": "345eac92425c",
+   "en": "[1] Clickthrough rate (CTR): Definition. https://support.google.com/google-ads/answ er/2615875?hl=en."
+  },
+  {
+   "t": "p",
+   "k": "3f76ccff5a5c",
+   "en": "[2] Conversion rate: Definition. https://support.google.com/google-ads/answer/26844 89?hl=en."
+  },
+  {
+   "t": "p",
+   "k": "2c23a031c682",
+   "en": "[3] OLAP functions. https://docs.oracle.com/database/121/OLAXS/olap_functions.h"
+  },
+  {
+   "t": "h2",
+   "k": "ae4920fb8bd2",
+   "en": "tm#OLAXS169."
+  },
+  {
+   "t": "p",
+   "k": "d2cddc37c353",
+   "en": "[4] Display Advertising with Real-Time Bidding (RTB) and Behavioural Targeting. ht tps://arxiv.org/pdf/1610.03013.pdf."
+  },
+  {
+   "t": "p",
+   "k": "e1e36f397935",
+   "en": "[5] LanguageManual ORC. https://cwiki.apache.org/confluence/display/hive/languag emanual+orc."
+  },
+  {
+   "t": "p",
+   "k": "7fe757be60f3",
+   "en": "[6] Parquet. https://databricks.com/glossary/what-is-parquet."
+  },
+  {
+   "t": "p",
+   "k": "11fd4abbc64a",
+   "en": "[7] What is avro. https://www.ibm.com/topics/avro."
+  },
+  {
+   "t": "p",
+   "k": "59b235126e18",
+   "en": "[8] Big Data. https://www.datakwery.com/techniques/big-data/."
+  },
+  {
+   "t": "p",
+   "k": "2080303e926b",
+   "en": "[9] An Overview of End-to-End Exactly-Once Processing in Apache Flink. https://flin k.apache.org/features/2018/03/01/end-to-end-exactly-once-apache-flink.html. [10] DAG model. https://en.wikipedia.org/wiki/Directed_acyclic_graph."
+  },
+  {
+   "t": "p",
+   "k": "97353a563e3c",
+   "en": "[11] Understand star schema and the importance for Power BI. https://docs.microsoft.c om/en-us/power-bi/guidance/star-schema."
+  },
+  {
+   "t": "p",
+   "k": "7a313741ac26",
+   "en": "[12] Martin Kleppmann. Designing Data-Intensive Applications. O Reilly Media, 2017. [13] Apache Flink. https://flink.apache.org/"
+  },
+  {
+   "t": "p",
+   "k": "9cbb1ab99b3c",
+   "en": "[14] Lambda architecture. https://databricks.com/glossary/lambda-architecture. [15] Kappa architecture. https://hazelcast.com/glossary/kappa-architecture/."
+  },
+  {
+   "t": "p",
+   "k": "e4387ccb6458",
+   "en": "[16] Martin Kleppmann. Stream Processing. In Designing Data-Intensive Applications. O'Reilly Media, 2017."
+  },
+  {
+   "t": "p",
+   "k": "cb31fdd8d871",
+   "en": "[17] End-to-end Exactly-once Aggregation Over Ad Streams. https://www.youtube.co"
+  },
+  {
+   "t": "h3",
+   "k": "37b908facc16",
+   "en": "m/watch?v=hzxytnPcAUM."
+  },
+  {
+   "t": "p",
+   "k": "699052a301b1",
+   "en": "[18] Ad traffic quality. https://www.google.com/ads/adtrafficquality/."
+  },
+  {
+   "t": "p",
+   "k": "05684cd9a2e1",
+   "en": "[19] Understanding MapReduce in Hadoop. https://www.section.io/engineering-educa tion/understanding-map-reduce-in-hadoop/."
+  },
+  {
+   "t": "p",
+   "k": "6da440bef258",
+   "en": "[20] Flink on Apache Yarn. https://ci.apache.org/projects/flink/flink-docs-release-1.13 /docs/deployment/resource-providers/yarn/."
+  },
+  {
+   "t": "p",
+   "k": "fca6c2bcd094",
+   "en": "[21] How data is distributed across a cluster (using virtual nodes). https://docs.datasta x.com/en/cassandra-oss/3.0/cassandra/architecture/archDataDistributeDistribute .html."
+  },
+  {
+   "t": "p",
+   "k": "d2b3d38b99da",
+   "en": "[22] Flink performance tuning. https://nightlies.apache.org/flink/flink-docs-master/d ocs/dev/table/tuning/."
+  },
+  {
+   "t": "p",
+   "k": "2ff775d79b77",
+   "en": "[23] ClickHouse. https://clickhouse.com/."
+  },
+  {
+   "t": "p",
+   "k": "313853ccffa7",
+   "en": "[24] Druid. https://druid.apache.org/."
+  },
+  {
+   "t": "p",
+   "k": "cd60e33d5c9c",
+   "en": "[25] Real-Time Exactly-Once Ad Event Processing with Apache Flink, Kafka, and Pinot. https://eng.uber.com/real-time-exactly-once-ad-event-processing/"
+  },
+  {
+   "t": "p",
+   "k": "a67811db05b5",
+   "en": "Reference Material | 193"
+  }
+ ]
+}

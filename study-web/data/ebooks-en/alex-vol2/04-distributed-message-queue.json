@@ -1,0 +1,2298 @@
+{
+ "id": "04-distributed-message-queue",
+ "title": "Distributed Message Queue",
+ "titleKey": "5bc37d26e69a",
+ "book": "alex-vol2",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "ced85c0076c3",
+   "en": "In this chapter, we explore a popular question in system design interviews: design a distributed message queue. In modern architecture, systems are broken up into small and independent building blocks with well-defined interfaces between them. Message queues provide communication and coordination for those building blocks. What benefits do message queues bring?"
+  },
+  {
+   "t": "li",
+   "k": "dfe11ed2600d",
+   "en": "Decoupling. Message queues eliminate the tight coupling between components so they can be updated independently."
+  },
+  {
+   "t": "li",
+   "k": "0f4f625c004c",
+   "en": "Improved scalability. We can scale producers and consumers independently based on traffic load. For example, during peak hours, more consumers can be added to handle the increased traffic."
+  },
+  {
+   "t": "li",
+   "k": "6dddf83cbb4c",
+   "en": "Increased availability. If one part of the system goes offline, the other components can continue to interact with the queue."
+  },
+  {
+   "t": "li",
+   "k": "978f4392608a",
+   "en": "Better performance. Message queues make asynchronous communication easy. Producers can add messages to a queue without waiting for the response and consumers consume messages whenever they are available. They don't need to wait for each other."
+  },
+  {
+   "t": "figure",
+   "k": "7ccf7aecf81d",
+   "en": "Figure 4.1 shows some of the most popular distributed message queues on the mar-"
+  },
+  {
+   "t": "p",
+   "k": "ba30170e9c39",
+   "en": "ket. · Apache Kafka · Apache RocketMQ · RabbitMQ · Apache ActiveMQ · Apache Pulsar"
+  },
+  {
+   "t": "figure",
+   "k": "0fbcc3a01a60",
+   "en": "Figure 4.1: Popular distributed message queues"
+  },
+  {
+   "t": "h3",
+   "k": "501b5b686e32",
+   "en": "Message queues vs event streaming platforms"
+  },
+  {
+   "t": "p",
+   "k": "fe3f46d08e08",
+   "en": "Strictly speaking, Apache Kafka and Pulsar are not message queues as they are event streaming platforms. However, there is a convergence of features that starts to blur the distinction between message queues (RocketMQ, ActiveMQ, RabbitMQ, ZeroMQ, etc.) and event streaming platforms (Kafka, Pulsar). For example, RabbitMQ, which is a typical message queue, added an optional streams feature to allow repeated message consump. tion and long message retention, and its implementation uses an append-only log, much like an event streaming platform would. Apache Pulsar is primarily a Kafka competitor, but it is also flexible and performant enough to be used as a typical distributed message queue."
+  },
+  {
+   "t": "p",
+   "k": "828078a2b9f0",
+   "en": "In this chapter, we will design a distributed message queue with additional features, such as long data retention, repeated consumption of messages, etc., that are typically only available on event streaming platforms. These additional features make the design more complicated. Throughout the chapter, we will highlight places where the design could be simplified if the focus of your interview centers around the more traditional distributed message queues."
+  },
+  {
+   "t": "h2",
+   "k": "cdb2072eee15",
+   "en": "Step 1 - Understand the Problem and Establish Design Scope"
+  },
+  {
+   "t": "p",
+   "k": "f583106be04a",
+   "en": "In a nutshell, the basic functionality of a message queue is straightforward: producers send messages to a queue, and consumers consume messages from it. Beyond this basic functionality, there are other considerations including performance, message delivery semantics, data detention, etc. The following set of questions will help clarify requirements and narrow down the scope."
+  },
+  {
+   "t": "p",
+   "k": "21a5faacd8cb",
+   "en": "Candidate: What's the format and average size of messages? Is it text only? Is multimedia allowed?"
+  },
+  {
+   "t": "p",
+   "k": "23639a6679cf",
+   "en": "Interviewer: Text messages only. Messages are generally measured in the range of kilobytes (KBs)."
+  },
+  {
+   "t": "p",
+   "k": "0e2644b32325",
+   "en": "Candidate: Can messages be repeatedly consumed?"
+  },
+  {
+   "t": "p",
+   "k": "890c84e91026",
+   "en": "Interviewer: Yes, messages can be repeatedly consumed by different consumers. Note that this is an added feature. A traditional distributed message queue does not retain a message once it has been successfully delivered to a consumer. Therefore, a message cannot be repeatedly consumed in a traditional message queue."
+  },
+  {
+   "t": "p",
+   "k": "99f6cdc68f71",
+   "en": "Candidate: Are messages consumed in the same order they were produced?"
+  },
+  {
+   "t": "p",
+   "k": "b737b08dfa38",
+   "en": "Interviewer: Yes, messages should be consumed in the same order they were produced Note that this is an added feature. A traditional distributed message queue does not usually guarantee delivery orders."
+  },
+  {
+   "t": "p",
+   "k": "0f28d59f9d85",
+   "en": "Candidate: Does data need to be persisted and what is the data retention?"
+  },
+  {
+   "t": "p",
+   "k": "26b360ef986b",
+   "en": "Interviewer: Yes, let's assume data retention is two weeks. This is an added feature. A traditional distributed message queue does not retain messages."
+  },
+  {
+   "t": "p",
+   "k": "8dc118f7a229",
+   "en": "Candidate: How many producers and consumers are we going to support?"
+  },
+  {
+   "t": "p",
+   "k": "ea914287b37e",
+   "en": "Interviewer: The more the better."
+  },
+  {
+   "t": "p",
+   "k": "0e249cfce119",
+   "en": "Candidate: What's the data delivery semantic we need to support? For example, atmost-once, at-least-once, and exactly once."
+  },
+  {
+   "t": "p",
+   "k": "3079ae125079",
+   "en": "Interviewer: We definitely want to support at-least-once. Ideally, we should support all of them and make them configurable."
+  },
+  {
+   "t": "p",
+   "k": "bb9776b61c40",
+   "en": "Candidate: What's the target throughput and end-to-end latency?"
+  },
+  {
+   "t": "p",
+   "k": "3daf49566296",
+   "en": "Interviewer: It should support high throughput for use cases like log aggregation. It should also support low latency delivery for more traditional message queue use cases. With the above conversation, let's assume we have the following functional requirements:"
+  },
+  {
+   "t": "li",
+   "k": "b8fc5a20f4ae",
+   "en": "Producers send messages to a message queue."
+  },
+  {
+   "t": "li",
+   "k": "8925535baece",
+   "en": "Consumers consume messages from a message queue."
+  },
+  {
+   "t": "li",
+   "k": "63ee990dc591",
+   "en": "Messages can be consumed repeatedly or only once."
+  },
+  {
+   "t": "li",
+   "k": "7b678f7b89bb",
+   "en": "Historical data can be truncated."
+  },
+  {
+   "t": "li",
+   "k": "41f1e9ba2872",
+   "en": "Message size is in the kilobyte range."
+  },
+  {
+   "t": "li",
+   "k": "8b37e770554a",
+   "en": "Ability to deliver messages to consumers in the order they were added to the queue. • Data delivery semantics (at-least once, at-most once, or exactly once) can be configured by users."
+  },
+  {
+   "t": "h2",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "li",
+   "k": "2116f4d3372a",
+   "en": "High throughput or low latency, configurable based on use cases."
+  },
+  {
+   "t": "li",
+   "k": "9e23d3379bf8",
+   "en": "Scalable. The system should be distributed in nature. It should be able to support a sudden surge in message volume."
+  },
+  {
+   "t": "li",
+   "k": "0c83833e1bd0",
+   "en": "Persistent and durable. Data should be persisted on disk and replicated across multiple nodes."
+  },
+  {
+   "t": "h3",
+   "k": "23d6a7b5a7ca",
+   "en": "Adjustments for traditional message queues"
+  },
+  {
+   "t": "p",
+   "k": "91d74cc1c9d4",
+   "en": "Traditional message queues like RabbitMQ do not have as strong a retention requirement as event streaming platforms. Traditional queues retain messages in memory just long enough for them to be consumed. They provide on-disk overflow capacity [1] which is several orders of magnitude smaller than the capacity required for event streaming platforms. Traditional message queues do not typically maintain message ordering. The messages can be consumed in a different order than they were produced. These differences greatly simplify the design which we will discuss where appropriate."
+  },
+  {
+   "t": "h2",
+   "k": "21ec56b45561",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in"
+  },
+  {
+   "t": "p",
+   "k": "9da0719df1d4",
+   "en": "First, let's discuss the basic functionalities of a message queue."
+  },
+  {
+   "t": "figure",
+   "k": "1aeabf4ec507",
+   "en": "Figure 4.2 shows the key components of a message queue and the simplified interactions"
+  },
+  {
+   "t": "p",
+   "k": "7078dee43629",
+   "en": "between these components."
+  },
+  {
+   "t": "p",
+   "k": "313524003eab",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 93 control"
+  },
+  {
+   "t": "p",
+   "k": "7fe475023de6",
+   "en": "Message queue · _ b1. subscribe - · a. produce - · Consumer Producer · b2. consume"
+  },
+  {
+   "t": "figure",
+   "k": "9da81bad0da6",
+   "en": "Figure 4.2: Key components in a message queue"
+  },
+  {
+   "t": "li",
+   "k": "12649f99f1fd",
+   "en": "Producer sends messages to a message queue."
+  },
+  {
+   "t": "li",
+   "k": "0964b83e3273",
+   "en": "Consumer subscribes to a queue and consumes the subscribed messages."
+  },
+  {
+   "t": "li",
+   "k": "500aff44637a",
+   "en": "Message queue is a service in the middle that decouples the producers from the consumers, allowing each of them to operate and scale independently."
+  },
+  {
+   "t": "li",
+   "k": "0a3906f52276",
+   "en": "Both producer and consumer are clients in the client/server model, while the message queue is the server. The clients and servers communicate over the network."
+  },
+  {
+   "t": "h2",
+   "k": "dea435aa1196",
+   "en": "Messaging models"
+  },
+  {
+   "t": "p",
+   "k": "a80db191eb36",
+   "en": "The most popular messaging models are point-to-point and publish-subscribe."
+  },
+  {
+   "t": "p",
+   "k": "9adeadc74858",
+   "en": "Point-to-point"
+  },
+  {
+   "t": "p",
+   "k": "d1e014b64683",
+   "en": "This model is commonly found in traditional message queues. In a point-to-point model, a message is sent to a queue and consumed by one and only one consumer. There can be multiple consumers waiting to consume messages in the queue, but each message can only be consumed by a single consumer. In Figure 4.3, message A is only consumed by consumer 1."
+  },
+  {
+   "t": "p",
+   "k": "ba718a3e1f37",
+   "en": "Consumer 1 · Message A · Message A · Message Queue · Producer · Consumer 2"
+  },
+  {
+   "t": "figure",
+   "k": "354acf9f7831",
+   "en": "Figure 4.3: Point-to-point model"
+  },
+  {
+   "t": "p",
+   "k": "b90347c48283",
+   "en": "Once the consumer acknowledges that a message is consumed, it is removed from the queue. There is no data retention in the point-to-point model. In contrast, our design includes a persistence layer that keeps the messages for two weeks, which allows messages to be repeatedly consumed."
+  },
+  {
+   "t": "p",
+   "k": "e4bb50dad96d",
+   "en": "While our design could simulate a point-to-point model, its capabilities map more naturally to the publish-subscribe model."
+  },
+  {
+   "t": "h3",
+   "k": "51488b1aa2f6",
+   "en": "Publish-subscribe"
+  },
+  {
+   "t": "p",
+   "k": "ba6df2df5a9f",
+   "en": "First, let's introduce a new concept, the topic. Topics are the categories used to organize messages. Each topic has a name that is unique across the entire message queue service. Messages are sent to and read from a specific topic."
+  },
+  {
+   "t": "p",
+   "k": "6d1e47dd5ccc",
+   "en": "In the publish-subscribe model, a message is sent to a topic and received by the consumers subscribing to this topic. As shown in Figure 4.4, message A is consumed by both consumer 1 and consumer 2."
+  },
+  {
+   "t": "p",
+   "k": "aa27ac25120e",
+   "en": "Consumer 1 · Message A · Message A · Message Queue · Producer · Consumer 2 · Message A"
+  },
+  {
+   "t": "figure",
+   "k": "7648a247e777",
+   "en": "Figure 4.4: Publish-subscribe model"
+  },
+  {
+   "t": "p",
+   "k": "e44a9c3c277d",
+   "en": "Our distributed message queue supports both models. The publish-subscribe model is implemented by topics, and the point-to-point model can be simulated by the concept of the consumer group, which will be introduced in the consumer group section."
+  },
+  {
+   "t": "h3",
+   "k": "21d8f7ad190d",
+   "en": "Topics, partitions, and brokers"
+  },
+  {
+   "t": "p",
+   "k": "4d032695a149",
+   "en": "As mentioned earlier, messages are persisted by topics. What if the data volume in a topic is too large for a single server to handle?"
+  },
+  {
+   "t": "p",
+   "k": "c8efb0a0abfc",
+   "en": "One approach to solve this problem is called partition (sharding). As Figure 4.5 shows, we divide a topic into partitions and deliver messages evenly across partitions. Think of a partition as a small subset of the messages for a topic. Partitions are evenly distributed across the servers in the message queue cluster. These servers that hold partitions are called brokers. The distribution of partitions among brokers is the key element to support high scalability. We can scale the topic capacity by expanding the number of partitions."
+  },
+  {
+   "t": "p",
+   "k": "8d9a10b72773",
+   "en": "Partition-1 · Topic-A · Topic-A · Partition-2"
+  },
+  {
+   "t": "figure",
+   "k": "618d5b7b4d0c",
+   "en": "Figure 4.5: Partitions"
+  },
+  {
+   "t": "p",
+   "k": "2450765dde4a",
+   "en": "Each topic partition operates in the form of a queue with the FIFO (first in, first out) mechanism. This means we can keep the order of messages inside a partition. The position of a message in the partition is called an offset."
+  },
+  {
+   "t": "p",
+   "k": "4fdeceb271a1",
+   "en": "When a message is sent by a producer, it is actually sent to one of the partitions for the topic. Each message has an optional message key (for example, a user's ID), and all messages for the same message key are sent to the same partition. If the message key is absent, the message is randomly sent to one of the partitions."
+  },
+  {
+   "t": "p",
+   "k": "2916582b8e88",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 95 When a consumer subscribes to a topic, it pulls data from one or more of these partitions When there are multiple consumers subscribing to a topic, each consumer is responsible for a subset of the partitions for the topic. The consumers form a consumer group for a topic."
+  },
+  {
+   "t": "p",
+   "k": "02c53a5a2781",
+   "en": "The message queue cluster with brokers and partitions is represented in Figure 4.6. Brokers"
+  },
+  {
+   "t": "p",
+   "k": "f88ea9265552",
+   "en": "_ b1. subscribe · Consumers Producers · a. produce - · b2. consume"
+  },
+  {
+   "t": "figure",
+   "k": "c69762dfb5ec",
+   "en": "Figure 4.6: Message queue cluster"
+  },
+  {
+   "t": "h2",
+   "k": "174b21a4b190",
+   "en": "Consumer group"
+  },
+  {
+   "t": "p",
+   "k": "351941cff6b3",
+   "en": "As mentioned earlier, we need to support both point-to-point and subscribe-publish models. A consumer group is a set of consumers, working together to consume messages from topics."
+  },
+  {
+   "t": "p",
+   "k": "1b93bc389660",
+   "en": "Consumers can be organized into groups. Each consumer group can subscribe to multiple topics and maintain its own consuming offsets. For example, we can group consumers by use cases, one group for billing and the other for accounting."
+  },
+  {
+   "t": "p",
+   "k": "fd123701c906",
+   "en": "The instances in the same group can consume traffic in parallel, as in Figure 4.7."
+  },
+  {
+   "t": "li",
+   "k": "93d08d29dbac",
+   "en": "Consumer group 1 subscribes to topic A."
+  },
+  {
+   "t": "li",
+   "k": "17c8abb26751",
+   "en": "Consumer group 2 subscribes to both topics A and B."
+  },
+  {
+   "t": "li",
+   "k": "385dcb5a2535",
+   "en": "Topic A is subscribed by both consumer groups-1 and group-2, which means the same message is consumed by multiple consumers. This pattern supports the subscribe/publish model."
+  },
+  {
+   "t": "p",
+   "k": "b4f855ce830f",
+   "en": "Consumer group-1 · Consumer-1 · Partition-1 · Topic-A · Partition-2 · Consumer-2 · Consumer group-2 · Topic-B Partition-1 · Consumer-3 · Consumer-4"
+  },
+  {
+   "t": "figure",
+   "k": "688e0144cac9",
+   "en": "Figure 4.7: Consumer groups"
+  },
+  {
+   "t": "p",
+   "k": "b8c5a4ca011a",
+   "en": "However, there is one problem. Reading data in parallel improves the throughput, but the consumption order of messages in the same partition cannot be guaranteed. For example, if Consumer-1 and Consumer-2 both read from Partition-1, we will not be able to guarantee the message consumption order in Partition- 1."
+  },
+  {
+   "t": "p",
+   "k": "e75aaa4fcf04",
+   "en": "The good news is we can fix this by adding a constraint, that a single partition can only be consumed by one consumer in the same group. If the number of consumers of a group is larger than the number of partitions of a topic, some consumers will not get data from this topic. For example, in Figure 4.7, Consumer-3 in Consumer group-2 cannot consume"
+  },
+  {
+   "t": "h3",
+   "k": "b617d7d90a26",
+   "en": "messages from topic B because it is consumed by Consumer-4 in the same consumer"
+  },
+  {
+   "t": "p",
+   "k": "7de46750169b",
+   "en": "group, already."
+  },
+  {
+   "t": "p",
+   "k": "00536347746e",
+   "en": "With this constraint, if we put all consumers in the same consumer group, then messages in the same partition are consumed by only one consumer, which is equivalent to the point-to-point model. Since a partition is the smallest storage unit, we can allocate enough partitions in advance to avoid the need to dynamically increase the number of partitions. To handle high scale, we just need to add consumers."
+  },
+  {
+   "t": "h3",
+   "k": "9bae1a294f20",
+   "en": "High-level architecture"
+  },
+  {
+   "t": "figure",
+   "k": "2be68607b9e9",
+   "en": "Figure 4.8 shows the updated high-level design."
+  },
+  {
+   "t": "p",
+   "k": "a8cfd195b767",
+   "en": "Brokers · Consumers · Producers · (Consumer groups)"
+  },
+  {
+   "t": "figure",
+   "k": "88eb04c94a29",
+   "en": "Figure 4.8: High-level design"
+  },
+  {
+   "t": "p",
+   "k": "93df14617ced",
+   "en": "Clients"
+  },
+  {
+   "t": "li",
+   "k": "365749af4471",
+   "en": "Producer: pushes messages to specific topics."
+  },
+  {
+   "t": "li",
+   "k": "ab5996b0f2f2",
+   "en": "Consumer group: subscribes to topics and consumes messages."
+  },
+  {
+   "t": "p",
+   "k": "0b5c8068b3c6",
+   "en": "Core service and storage"
+  },
+  {
+   "t": "li",
+   "k": "1c6e5c1dab1d",
+   "en": "Broker: holds multiple partitions. A partition holds a subset of messages for a topic. • Storage:"
+  },
+  {
+   "t": "li",
+   "k": "ce9214a60339",
+   "en": "Data storage: messages are persisted in data storage in partitions."
+  },
+  {
+   "t": "p",
+   "k": "66df4f6063d5",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 97"
+  },
+  {
+   "t": "li",
+   "k": "31fd94d6d558",
+   "en": "State storage: consumer states are managed by state storage."
+  },
+  {
+   "t": "li",
+   "k": "feb6640b9a68",
+   "en": "Metadata storage: configuration and properties of topics are persisted in metadata storage."
+  },
+  {
+   "t": "li",
+   "k": "d7af9addcaa7",
+   "en": "Coordination service:"
+  },
+  {
+   "t": "li",
+   "k": "628338b59ebe",
+   "en": "Service discovery: which brokers are alive."
+  },
+  {
+   "t": "li",
+   "k": "a1f8bd6afaec",
+   "en": "Leader election: one of the brokers is selected as the active controller. There is only one active controller in the cluster. The active controller is responsible for assigning partitions."
+  },
+  {
+   "t": "li",
+   "k": "b9b4d666b7eb",
+   "en": "Apache ZooKeeper [2] or eted [3] are commonly used to elect a controller."
+  },
+  {
+   "t": "h2",
+   "k": "5008c4b3d7bc",
+   "en": "Step 3 - Design Deep Dive"
+  },
+  {
+   "t": "p",
+   "k": "366a2e6b535d",
+   "en": "To achieve high throughput while satisfying the high data retention requirement, we made three important design choices, which we explain in detail now."
+  },
+  {
+   "t": "li",
+   "k": "cd2946403da4",
+   "en": "We chose an on-disk data structure that takes advantage of the great sequential access performance of rotational disks and the aggressive disk caching strategy of modern operating systems."
+  },
+  {
+   "t": "li",
+   "k": "3ebddcc9906c",
+   "en": "We designed the message data structure to allow a message to be passed from the producer to the queue and finally to the consumer, with no modifications. This minimizes the need for copying which is very expensive in a high volume and high traffic system."
+  },
+  {
+   "t": "li",
+   "k": "6488212f4e21",
+   "en": "We designed the system to favor batching. Small 1/O is an enemy of high throughput. So, wherever possible, our design encourages batching. The producers send messages in batches. The message queue persists messages in even larger batches. The consumers fetch messages in batches when possible, too."
+  },
+  {
+   "t": "h2",
+   "k": "91da2a8b2790",
+   "en": "Data storage"
+  },
+  {
+   "t": "p",
+   "k": "1755c88cffdd",
+   "en": "Now let's explore the options to persist messages in more detail. In order to find the best choice, let's consider the traffic pattern of a message queue."
+  },
+  {
+   "t": "li",
+   "k": "de17bb4f0c78",
+   "en": "Write-heavy, read-heavy."
+  },
+  {
+   "t": "li",
+   "k": "9c4299611132",
+   "en": "No update or delete operations. As a side note, a traditional message queue does not persist messages unless the queue falls behind, in which case there will be \"delete\" operations when the queue catches up. What we are talking about here is the persistence of a data streaming platform."
+  },
+  {
+   "t": "li",
+   "k": "8555ec128b08",
+   "en": "Predominantly sequential read/write access."
+  },
+  {
+   "t": "h3",
+   "k": "988143d12540",
+   "en": "Option 1: Database"
+  },
+  {
+   "t": "p",
+   "k": "61ca850cf9a5",
+   "en": "The first option is to use a database."
+  },
+  {
+   "t": "li",
+   "k": "0723f551e2e7",
+   "en": "Relational database: create a topic table and write messages to the table as rows. • NoSQL database: create a collection as a topic and write messages as documents."
+  },
+  {
+   "t": "p",
+   "k": "9620f22eda2b",
+   "en": "Databases can handle the storage requirement, but they are not ideal because it is hard to design a database that supports both write-heavy and read-heavy access patterns at a large scale. The database solution does not fit our specific data usage patterns very well."
+  },
+  {
+   "t": "p",
+   "k": "82fff980cf04",
+   "en": "This means a database is not the best choice and could become a bottleneck of the system."
+  },
+  {
+   "t": "p",
+   "k": "e57fe9e8c958",
+   "en": "Option 2: Write-ahead log (WAL)"
+  },
+  {
+   "t": "p",
+   "k": "57b9b0c40f64",
+   "en": "The second option is write-ahead log (WAL). WAL is just a plain file where new entries are appended to an append-only log. WAL is used in many systems, such as the redo log"
+  },
+  {
+   "t": "h3",
+   "k": "823eaa7b58ac",
+   "en": "in MySQL [4] and the WAL in ZooKeeper."
+  },
+  {
+   "t": "p",
+   "k": "ce3836df9557",
+   "en": "We recommend persisting messages as WAL log files on disk. WAL has a pure sequential read/write access pattern. The disk performance of sequential access is very good [5]. Also, rotational disks have large capacity and they are pretty affordable."
+  },
+  {
+   "t": "p",
+   "k": "3053fab4cd94",
+   "en": "As shown in Figure 4.9, a new message is appended to the tail of a partition, with a monotonically increasing offset. The easiest option is to use the line number of the log file as the offset. However, a file cannot grow infinitely, so it is a good idea to divide it into segments."
+  },
+  {
+   "t": "p",
+   "k": "d3f51cae55aa",
+   "en": "With segments, new messages are appended only to the active segment file. When the active segment reaches a certain size, a new active segment is created to receive new messages, and the currently active segment becomes inactive, like the rest of the nonactive segments. Non-active segments only serve read requests. Old non-active segment files can be truncated if they exceed the retention or capacity limit."
+  },
+  {
+   "t": "p",
+   "k": "04b3f8ee2721",
+   "en": "1st record"
+  },
+  {
+   "t": "p",
+   "k": "2c2f59a993c9",
+   "en": "segment-2"
+  },
+  {
+   "t": "figure",
+   "k": "200dbd2f551d",
+   "en": "Figure 4.9: Append new messages"
+  },
+  {
+   "t": "p",
+   "k": "c010d997e396",
+   "en": "Segment files of the same partition are organized in a folder named Partition-{:parti tion_id}. The structure is shown in Figure 4.10."
+  },
+  {
+   "t": "p",
+   "k": "5985c4950b45",
+   "en": "Step 3 - Design Deep Dive | 99 Topic-A"
+  },
+  {
+   "t": "p",
+   "k": "4bb48dd61e0d",
+   "en": "segment-2 · segment-2 · segment-1 · segment-1 · segment-3 · segment-3"
+  },
+  {
+   "t": "figure",
+   "k": "46ac91a37ec0",
+   "en": "Figure 4.10: Data segment file distribution in topic partitions"
+  },
+  {
+   "t": "h3",
+   "k": "9d80e7d1f50c",
+   "en": "A note on disk performance"
+  },
+  {
+   "t": "p",
+   "k": "44543efbe6a9",
+   "en": "To meet the high data retention requirement, our design relies heavily on disk drives to hold a large amount of data. There is a common misconception that rotational disks are slow, but this is really only the case for random access. For our workload, as long as we design our on-disk data structure to take advantage of the sequential access pattern, the modern disk drives in a RAID configuration (i.e., with disks striped together for higher performance) could comfortably achieve several hundred MB/sec of read and write speed. This is more than enough for our needs, and the cost structure is favorable."
+  },
+  {
+   "t": "p",
+   "k": "1c2d6ccc22dc",
+   "en": "Also, a modern operating system caches disk data in main memory very aggressively, so much so that it would happily use all available free memory to cache disk data. The WAL takes advantage of the heavy OS disk caching, too, as we described above."
+  },
+  {
+   "t": "h2",
+   "k": "7da333d5b8e0",
+   "en": "Message data structure"
+  },
+  {
+   "t": "p",
+   "k": "cd3100b6b0ae",
+   "en": "The data structure of a message is key to high throughput. It defines the contract between the producers, message queue, and consumers. Our design achieves high performance by eliminating unnecessary data copying while the messages are in transit from the producers to the queue and finally to the consumers. If any parts of the system disagree on this contract, messages will need to be mutated which involves expensive copying. It could seriously hurt the performance of the system."
+  },
+  {
+   "t": "p",
+   "k": "3e5b6b90f3bc",
+   "en": "Below is a sample schema of the message data structure:"
+  },
+  {
+   "t": "p",
+   "k": "40a73c30ec67",
+   "en": "byte[] · bytel] · topic · string · partition · integer · offset · timestamp · integer · integer"
+  },
+  {
+   "t": "p",
+   "k": "37d3622d8846",
+   "en": "Table 4.1: Data schema of a message"
+  },
+  {
+   "t": "h2",
+   "k": "e1a26f70b453",
+   "en": "Message key"
+  },
+  {
+   "t": "p",
+   "k": "2acb99969288",
+   "en": "The key of the message is used to determine the partition of the message. If the key is not defined, the partition is randomly chosen. Otherwise, the partition is chosen by hash (key) % numPartitions. If we need more flexibility, the producer can define its own mapping algorithm to choose partitions. Please note that the key is not equivalent to the partition number."
+  },
+  {
+   "t": "p",
+   "k": "eabe0e7b8802",
+   "en": "The key can be a string or a number. It usually carries some business information. The partition number is a concept in the message queue, which should not be explicitly exposed to clients."
+  },
+  {
+   "t": "p",
+   "k": "6ed6e4714e29",
+   "en": "With a proper mapping algorithm, if the number of partitions changes, messages can still be evenly sent to all the partitions."
+  },
+  {
+   "t": "h2",
+   "k": "5a56c6a9df5c",
+   "en": "Message value"
+  },
+  {
+   "t": "p",
+   "k": "2c37501979fc",
+   "en": "The message value is the payload of a message. It can be plain text or a compressed binary block."
+  },
+  {
+   "t": "p",
+   "k": "09ebf479b4f0",
+   "en": "The key and value of a message are different from the key-value pair in a key-value (KV) store. In the KV store, keys are unique, and we can find the value by key. In a message, keys do not need to be unique. Sometimes they are not even mandatory, and we don't need to find a value by key."
+  },
+  {
+   "t": "h3",
+   "k": "e65baaf46721",
+   "en": "Other fields of a message"
+  },
+  {
+   "t": "li",
+   "k": "6e4d7fe58614",
+   "en": "Topic: the name of the topic that the message belongs to."
+  },
+  {
+   "t": "li",
+   "k": "e3098077e1f3",
+   "en": "Partition: the ID of the partition that the message belongs to."
+  },
+  {
+   "t": "li",
+   "k": "6a201ab9eef3",
+   "en": "Offset: the position of the message in the partition. We can find a message via the combination of three fields: topic, partition, offset."
+  },
+  {
+   "t": "li",
+   "k": "6f811e01a884",
+   "en": "Timestamp: the timestamp of when this message is stored."
+  },
+  {
+   "t": "li",
+   "k": "cc67b7a9e376",
+   "en": "Size: the size of this message."
+  },
+  {
+   "t": "li",
+   "k": "51c92d2979bb",
+   "en": "CRC: Cyclic redundancy check (CRC) is used to ensure the integrity of raw data."
+  },
+  {
+   "t": "p",
+   "k": "0cc196cbfc78",
+   "en": "To support additional features, some optional fields can be added on demand. For example, messages can be filtered by tags, if tags are part of the optional fields."
+  },
+  {
+   "t": "p",
+   "k": "fb4909f74332",
+   "en": "Batching"
+  },
+  {
+   "t": "p",
+   "k": "a52d16bba18b",
+   "en": "Batching is pervasive in this design. We batch messages in the producer, the consumer, and the message queue itself. Batching is critical to the performance of the system. In this section, we focus primarily on batching in the message queue. We discuss batching for producer and consumer in more detail, shortly."
+  },
+  {
+   "t": "p",
+   "k": "f67b1c0fe0bc",
+   "en": "Batching is critical to improving performance because:"
+  },
+  {
+   "t": "p",
+   "k": "283e2addb903",
+   "en": "Step 3 - Design Deep Dive | 101"
+  },
+  {
+   "t": "li",
+   "k": "bae75d2b0ba6",
+   "en": "Taller e the operatine system to croup meccades together in a sthete note are requea and amottizes the cost of expensive network round trips"
+  },
+  {
+   "t": "li",
+   "k": "500a774c7905",
+   "en": "The hroke arites meccages to the append logs in large chunks. a hich leade ta large Hocke of sequential writes and larger contiguous blocks of disk rache, maintained he the operating system. Both lead to much greater sequential disk access throughput"
+  },
+  {
+   "t": "p",
+   "k": "8ba1242762b3",
+   "en": "There is a tradeoff between throughput and latency. If the system is deployed as a lah tional message queue where latency might be more important, the system could be tuned to use a smaller batch size. Disk performance will suffer a little bit in this use case. if tuned for throughput, there might need to be a higher number of partitions per topic. in make up for the slower sequential disk write throughput."
+  },
+  {
+   "t": "p",
+   "k": "a12e07083582",
+   "en": "So far, we've covered the main disk storage subsystem and its associated on disk data structure. Now. let's switch gears and discuss the producer and consumer flows. Then we will come back and finish the deep dive into the rest of the message queue."
+  },
+  {
+   "t": "p",
+   "k": "bd5b890ffd78",
+   "en": "Producer flow"
+  },
+  {
+   "t": "p",
+   "k": "4d73be0f5f3e",
+   "en": "If a producer wants to send messages to a partition, which broker should it connect to? The first option is to introduce a routing layer. All messages sent to the routing layer are routed to the \"correct\" broker. If the brokers are replicated, the \"correct\" broker is the leader replica. We will cover replication later."
+  },
+  {
+   "t": "p",
+   "k": "3276369d5f21",
+   "en": "Producer · Routing · Topic-A · Торіс-A · Partition -1 L/l · Broker-2 · Broker-1"
+  },
+  {
+   "t": "figure",
+   "k": "7d292b29dc21",
+   "en": "Figure 4.11: Routing layer"
+  },
+  {
+   "t": "p",
+   "k": "7e865d80f598",
+   "en": "As shown in Figure 4.11, the producer tries to send messages to Partition-1 of Topic- 1. The producer sends messages to the routing layer."
+  },
+  {
+   "t": "p",
+   "k": "3d6118bf32eb",
+   "en": "2. The routing layer reads the replica distribution plan' from the metadata storage and caches it locally. When a message arrives, it routes the message to the leader replica of Partition-1, which is stored in Broker-1."
+  },
+  {
+   "t": "p",
+   "k": "a7d410249f52",
+   "en": "3. The leader replica receives the message and follower replicas pull data from the leader."
+  },
+  {
+   "t": "p",
+   "k": "b0cbe45ff742",
+   "en": "4. When \"enough\" replicas have synchronized the message, the leader commits the data (persisted on disk), which means the data can be consumed. Then it responds to the producer."
+  },
+  {
+   "t": "h3",
+   "k": "9fc628ac5c3e",
+   "en": "You might be wondering why we need both leader and follower replicas. The reason"
+  },
+  {
+   "t": "p",
+   "k": "287a5cc2fa9e",
+   "en": "is fault tolerance. We dive deep into this process in the \"In-sync replicas\" section on page 113."
+  },
+  {
+   "t": "p",
+   "k": "727e4ef255e1",
+   "en": "This approach works, but it has a few drawbacks:"
+  },
+  {
+   "t": "li",
+   "k": "adb7d2deee56",
+   "en": "A new routing layer means additional network latency caused by overhead and additional network hops."
+  },
+  {
+   "t": "li",
+   "k": "3b5c1b7eb57c",
+   "en": "Request batching is one of the big drivers of efficiency. This design doesn't take that into consideration."
+  },
+  {
+   "t": "figure",
+   "k": "229a0043dcaa",
+   "en": "Figure 4.12 shows the improved design."
+  },
+  {
+   "t": "p",
+   "k": "ad9be094aa3d",
+   "en": "Producer · Buffer · Routing · Topic-A · Partition-1 · Broker-1 · Broker-2"
+  },
+  {
+   "t": "figure",
+   "k": "826fc0e4096e",
+   "en": "Figure 4.12: Producer with buffer and routing"
+  },
+  {
+   "t": "p",
+   "k": "a7ecd9087d07",
+   "en": "The routing layer is wrapped into the producer and a buffer component is added to the producer. Both can be installed in the producer as part of the producer client library. This change brings several benefits:"
+  },
+  {
+   "t": "li",
+   "k": "2ebbeb1a46fe",
+   "en": "Fewer network hops mean lower latency."
+  },
+  {
+   "t": "li",
+   "k": "bc1739d3efe5",
+   "en": "Producers can have their own logic to determine which partition the message should be sent to."
+  },
+  {
+   "t": "li",
+   "k": "ea9f3e9ac8da",
+   "en": "Batching buffers messages in memory and sends out larger batches in a single request. This increases throughput."
+  },
+  {
+   "t": "p",
+   "k": "c601aeb973a9",
+   "en": "The choice of the batch size is a classic tradeoff between throughput and latency (Figure Step 3 - Design Deep Dive | 103 4.13). With a large batch size, the throughput increases but latency is higher, due to a longer wait time to accumulate the batch. With a small batch size, requests are sent sooner so the latency is lower, but throughput suffers. Producers can tune the batch size based on use cases."
+  },
+  {
+   "t": "p",
+   "k": "99966394974c",
+   "en": "2. Latency · High 1 · Batch size · Throughput Low · High"
+  },
+  {
+   "t": "figure",
+   "k": "f35e7bbc8bb6",
+   "en": "Figure 4.13: The choice of the batch size"
+  },
+  {
+   "t": "h2",
+   "k": "6317b4e964c1",
+   "en": "Consumer flow"
+  },
+  {
+   "t": "p",
+   "k": "e4d6802f67fd",
+   "en": "The consumer specifies its offset in a partition and receives back a chunk of events beginning from that position. An example is shown in Figure 4.14."
+  },
+  {
+   "t": "p",
+   "k": "479381784112",
+   "en": "Consumer 1 consumed -- · 11 12 13 14 · • 1 · 2 3 4 1"
+  },
+  {
+   "t": "figure",
+   "k": "1c9ea3f2e3c3",
+   "en": "Figure 4.14: Consumer flow"
+  },
+  {
+   "t": "p",
+   "k": "799c3640d1f3",
+   "en": "Push vs pull"
+  },
+  {
+   "t": "p",
+   "k": "922bd41d5af7",
+   "en": "An important question to answer is whether brokers should push data to consumers, or if consumers should pull data from the brokers."
+  },
+  {
+   "t": "h2",
+   "k": "896ff3596032",
+   "en": "Push model"
+  },
+  {
+   "t": "p",
+   "k": "6876fe088f66",
+   "en": "Pros:"
+  },
+  {
+   "t": "li",
+   "k": "55344889a333",
+   "en": "Low latency. The broker can push messages to the consumer immediately upon receiving them."
+  },
+  {
+   "t": "p",
+   "k": "898d607196f9",
+   "en": "Cons:"
+  },
+  {
+   "t": "li",
+   "k": "3e2320548dae",
+   "en": "If the rate of consumption falls below the rate of production, consumers could be overwhelmed."
+  },
+  {
+   "t": "li",
+   "k": "b5b121bdb842",
+   "en": "It is difficult to deal with consumers with diverse processing power because the brokers control the rate at which data is transferred."
+  },
+  {
+   "t": "p",
+   "k": "bc1831757fd8",
+   "en": "Pull model"
+  },
+  {
+   "t": "p",
+   "k": "6876fe088f66",
+   "en": "Pros:"
+  },
+  {
+   "t": "li",
+   "k": "1b4cfa2c0b53",
+   "en": "Consumers control the consumption rate. We can have one set of consumers process messages in real-time and another set of consumers process messages in batch mode. • If the rate of consumption falls below the rate of production, we can scale out the consumers, or simply catch up when it can."
+  },
+  {
+   "t": "li",
+   "k": "d5a436e4c447",
+   "en": "The pull model is more suitable for batch processing. In the push model, the broker has no knowledge of whether consumers will be able to process messages immediately. If the broker sends one message at a time to the consumer and the consumer is backed up, new messages will end up waiting in the buffer. A pull model pulls all available messages after the consumer's current position in the log (or up to the configurable max size). It is suitable for aggressive batching of data."
+  },
+  {
+   "t": "p",
+   "k": "898d607196f9",
+   "en": "Cons:"
+  },
+  {
+   "t": "li",
+   "k": "523c500cc91a",
+   "en": "When there is no message in the broker, a consumer might still keep pulling data,"
+  },
+  {
+   "t": "h3",
+   "k": "aac142fdb358",
+   "en": "wasting resources. To overcome this issue, many message queues support long"
+  },
+  {
+   "t": "p",
+   "k": "82bbab22445c",
+   "en": "polling mode, which allows pulls to wait a specified amount of time for new messages [6]."
+  },
+  {
+   "t": "p",
+   "k": "6a89cb94d2a2",
+   "en": "Based on these considerations, most message queues choose the pull model."
+  },
+  {
+   "t": "figure",
+   "k": "76119c0928e0",
+   "en": "Figure 4.15 shows the workflow of the consumer pull model."
+  },
+  {
+   "t": "p",
+   "k": "b27a4fff3530",
+   "en": "Step 3 - Design Deep Dive | 105 Consumer B Consumer A"
+  },
+  {
+   "t": "p",
+   "k": "6154b473f340",
+   "en": "Coordinator · Consumer B Consumer A · Coordinator"
+  },
+  {
+   "t": "figure",
+   "k": "ffb4cb50cb5b",
+   "en": "Figure 4.18: New consumer joins"
+  },
+  {
+   "t": "p",
+   "k": "32a57fd45dab",
+   "en": "1. Initially, only Consumer A is in the group. It consumes all the partitions and keeps the heartbeat with the coordinator."
+  },
+  {
+   "t": "p",
+   "k": "a7b8cf29fc3e",
+   "en": "2. Consumer B sends a request to join the group."
+  },
+  {
+   "t": "p",
+   "k": "a5de41ee6711",
+   "en": "3. The coordinator knows it's time to rebalance, so it notifies all the consumers in the group in a passive way. When Consumer A's heartbeat is received by the coordinator, it asks Consumer A to rejoin the group."
+  },
+  {
+   "t": "p",
+   "k": "34105147a926",
+   "en": "4. Once all the consumers have rejoined the group, the coordinator chooses one of them as the leader and informs all the consumers about the election result."
+  },
+  {
+   "t": "p",
+   "k": "20e620062417",
+   "en": "5. The leader consumer generates the partition dispatch plan and sends it to the coordinator. Follower consumers ask the coordinator about the partition dispatch plan. 6. Consumers start consuming messages from newly assigned partitions."
+  },
+  {
+   "t": "figure",
+   "k": "092b0abf8617",
+   "en": "Figure 4.19 shows the flow when an existing Consumer A leaves the group."
+  },
+  {
+   "t": "p",
+   "k": "11aa9118c5f8",
+   "en": "Consumer B Consumer A · Coordinator · Consumer B Consumer A · Coordinator"
+  },
+  {
+   "t": "figure",
+   "k": "0daab74ad071",
+   "en": "Figure 4.19: Existing consumer leaves"
+  },
+  {
+   "t": "p",
+   "k": "3921fc64c7d0",
+   "en": "1. Consumer A and B are in the same consumer group."
+  },
+  {
+   "t": "p",
+   "k": "c3e46b26b61f",
+   "en": "2. Consumer A needs to be shut down, so it requests to leave the group."
+  },
+  {
+   "t": "p",
+   "k": "15bc447499b6",
+   "en": "3. The coordinator knows it's time to rebalance. When Consumer B's heartbeat is received by the coordinator, it asks Consumer B to rejoin the group."
+  },
+  {
+   "t": "p",
+   "k": "6a647319b34e",
+   "en": "4. The remaining steps are the same as the ones shown in Figure 4.18."
+  },
+  {
+   "t": "figure",
+   "k": "a911b35f904d",
+   "en": "Figure 4.20 shows the flow when an existing Consumer A crashes."
+  },
+  {
+   "t": "p",
+   "k": "d72f1090ab98",
+   "en": "Step 3 - Design Deep Dive | 109 Coordinator"
+  },
+  {
+   "t": "p",
+   "k": "f448a78e1a9f",
+   "en": "Consumer A · Consumer B Consumer A seems · Consumer B Coordinator · Consumer A"
+  },
+  {
+   "t": "figure",
+   "k": "7b6f83560853",
+   "en": "Figure 4.20: Existing consumer crashes"
+  },
+  {
+   "t": "p",
+   "k": "862353170fa0",
+   "en": "1. Consumer A and B keep heartbeats with the coordinator."
+  },
+  {
+   "t": "p",
+   "k": "b66fedda2a5c",
+   "en": "2. Consumer A crashes, so there is no heartbeat sent from Consumer A to the coordinator. Since the coordinator doesn't get any heartbeat signal within a specified amount of time from Consumer A, it marks the consumer as dead."
+  },
+  {
+   "t": "p",
+   "k": "f3dc7ffab9fa",
+   "en": "3. The coordinator triggers the rebalance process."
+  },
+  {
+   "t": "p",
+   "k": "990440dc96f0",
+   "en": "4. The following steps are the same as the ones in the previous scenario."
+  },
+  {
+   "t": "p",
+   "k": "e54dd9043269",
+   "en": "Now that we finished the detour on producer and consumer flows, let's come back and finish the deep dive on the rest of the message queue broker."
+  },
+  {
+   "t": "p",
+   "k": "63ca4d569b04",
+   "en": "State storage"
+  },
+  {
+   "t": "p",
+   "k": "c47dee66845b",
+   "en": "In the message queue broker, the state storage stores:"
+  },
+  {
+   "t": "li",
+   "k": "41f163d17a9d",
+   "en": "The mapping between partitions and consumers."
+  },
+  {
+   "t": "li",
+   "k": "7e33b925f665",
+   "en": "The last consumed offsets of consumer groups for each partition. As shown in Figure 4.21, the last consumed offset for consumer group-1 is 6 and the offset for consumer group-2 is 13."
+  },
+  {
+   "t": "p",
+   "k": "b6dbc9845126",
+   "en": "consumer group-1: · last consumed offset = 6 · group-1 consumed · Topic-A Partition -1 · group-2 consumed · 4--- · consumer group-2: · last consumed offset = 13"
+  },
+  {
+   "t": "figure",
+   "k": "23cdb77cf604",
+   "en": "Figure 4.21: Last consumed offset of consumer groups"
+  },
+  {
+   "t": "p",
+   "k": "ba150c044721",
+   "en": "For example, as shown in Figure 4.21, a consumer in group-1 consumes messages from the partition in sequence and commits the consumed offset 6. This means all the messages before and at offset 6 are already consumed. If the consumer crashes, another new consumer in the same group will resume consumption by reading the last consumed offset from the state storage."
+  },
+  {
+   "t": "p",
+   "k": "d0760bdbd719",
+   "en": "The data access patterns for consumer states are:"
+  },
+  {
+   "t": "li",
+   "k": "e1aff23a9312",
+   "en": "Frequent read and write operations but the volume is not high."
+  },
+  {
+   "t": "li",
+   "k": "910a93be11e7",
+   "en": "Data is updated frequently and is rarely deleted."
+  },
+  {
+   "t": "li",
+   "k": "95c93ee017da",
+   "en": "Random read and write operations."
+  },
+  {
+   "t": "li",
+   "k": "2e30571064ec",
+   "en": "Data consistency is important."
+  },
+  {
+   "t": "p",
+   "k": "0850503d8430",
+   "en": "Lots of storage solutions can be used for storing the consumer state data. Considering the data consistency and fast read/write requirements, a KV store like ZooKeeper is a great choice. Kafka has moved the offset storage from ZooKeeper to Kafka brokers. Interested readers can read the reference material [8] to learn more."
+  },
+  {
+   "t": "h2",
+   "k": "8df1343a3b94",
+   "en": "Metadata storage"
+  },
+  {
+   "t": "p",
+   "k": "f1118b363e11",
+   "en": "The metadata storage stores the configuration and properties of topics, including a number of partitions, retention period, and distribution of replicas."
+  },
+  {
+   "t": "p",
+   "k": "52ea070878ce",
+   "en": "Metadata does not change frequently and the data volume is small, but it has a high consistency requirement. ZooKeeper is a good choice for storing metadata."
+  },
+  {
+   "t": "p",
+   "k": "8a0444ded963",
+   "en": "ZooKeeper"
+  },
+  {
+   "t": "p",
+   "k": "80834e6b7a6e",
+   "en": "By reading previous sections, you probably have already sensed that ZooKeeper is very helpful for designing a distributed message queue. If you are not familiar with it, ZooKeeper is an essential service for distributed systems offering a hierarchical key-value store. It is commonly used to provide a distributed configuration service, synchronization service, and naming registry [2]."
+  },
+  {
+   "t": "p",
+   "k": "a16f0f259cea",
+   "en": "ZooKeeper is used to simplify our design as shown in Figure 4.22."
+  },
+  {
+   "t": "p",
+   "k": "9cbe456049f7",
+   "en": "Step 3 - Design Deep Dive | 111 ZooKeeper"
+  },
+  {
+   "t": "p",
+   "k": "44f6713822e1",
+   "en": "Consumers"
+  },
+  {
+   "t": "figure",
+   "k": "ce3cc0558d57",
+   "en": "Figure 4.22: ZooKeeper"
+  },
+  {
+   "t": "p",
+   "k": "a647bdcabb91",
+   "en": "Let's briefly go over the change."
+  },
+  {
+   "t": "li",
+   "k": "e2fcdd74b4d3",
+   "en": "Metadata and state storage are moved to ZooKeeper."
+  },
+  {
+   "t": "li",
+   "k": "e7163c011091",
+   "en": "The broker now only needs to maintain the data storage for messages."
+  },
+  {
+   "t": "li",
+   "k": "5c25ddd806ef",
+   "en": "ZooKeeper helps with the leader election of the broker cluster."
+  },
+  {
+   "t": "p",
+   "k": "7ddb9625261f",
+   "en": "Replication"
+  },
+  {
+   "t": "p",
+   "k": "3b7edd8e23ac",
+   "en": "In distributed systems, hardware issues are common and cannot be ignored. Data gets lost when a disk is damaged or fails permanently. Replication is the classic solution to achieve high availability."
+  },
+  {
+   "t": "p",
+   "k": "0608da64cf08",
+   "en": "As in Figure 4.23, each partition has 3 replicas, distributed across different broker nodes."
+  },
+  {
+   "t": "p",
+   "k": "de05872eaf34",
+   "en": "For each partition, the highlighted replicas are the leaders and the others are followers. Producers only send messages to the leader replica. The follower replicas keep pulling new messages from the leader. Once messages are synchronized to enough replicas, the leader returns an acknowledgment to the producer. We will go into detail about how to define \"enough\" in the In-sync Replicas section on page 113."
+  },
+  {
+   "t": "p",
+   "k": "a11a1151935d",
+   "en": "produce · Topic-A · Topic-A · Topic-A · 1010000 · Topic-A · Topic-A · Topic-A · Topic-B · Topic-8"
+  },
+  {
+   "t": "figure",
+   "k": "7a052e2ae908",
+   "en": "Figure 4.23: Replication"
+  },
+  {
+   "t": "p",
+   "k": "c610f9982c2f",
+   "en": "The distribution of replicas for each partition is called a replica distribution plan. For example, the replica distribution plan in Figure 4.23 can be described as:"
+  },
+  {
+   "t": "li",
+   "k": "5bebfc0833ad",
+   "en": "Partition-1 of Topic-A: 3 replicas, leader in Broker-1, followers in Broker-2 and 3; • Partition-2 of Topic-A: 3 replicas, leader in Broker-2, followers in Broker-3 and 4; • Partition-1 of Topic-B: 3 replicas, leader in Broker-3, followers in Broker-4 and 1."
+  },
+  {
+   "t": "p",
+   "k": "b9a00eb0b6bd",
+   "en": "Who makes the replica distribution plan? It works as follows; with the help of the coordination service, one of the broker nodes is elected as the leader. It generates the replica distribution plan and persists the plan in metadata storage. All the brokers now can work according to the plan."
+  },
+  {
+   "t": "p",
+   "k": "71b2ab81aae9",
+   "en": "If you are interested in knowing more about replications, check out \"Chapter 5. Replication\" of the book \"Design Data-Intensive Applications\" [9]."
+  },
+  {
+   "t": "h3",
+   "k": "e7f2213fbdba",
+   "en": "In-sync replicas"
+  },
+  {
+   "t": "p",
+   "k": "f3ed73dcb055",
+   "en": "We mentioned that messages are persisted in multiple partitions to avoid single node failure, and each partition has multiple replicas. Messages are only written to the leader, and followers synchronize data from the leader. One problem we need to solve is keeping them in sync."
+  },
+  {
+   "t": "p",
+   "k": "ee15bbd56c37",
+   "en": "In-sync replicas (ISR) refer to replicas that are \"in-sync\" with the leader. The definition of \"in-sync\" depends on the topic configuration. For example, if the value of replica.lag.max.messages is 4, it means that as long as the follower is behind the leader by no more than 3 messages, it will not be removed from ISR [10]. The leader is an ISR by default."
+  },
+  {
+   "t": "p",
+   "k": "5906786b37e7",
+   "en": "Let's use an example as shown in Figure 4.24 to shows how ISR works."
+  },
+  {
+   "t": "li",
+   "k": "d134a698cd05",
+   "en": "The committed offset in the leader replica is 13. Two new messages are written to the leader, but not committed yet. Committed offset means that all messages before and at this offset are already synchronized to all the replicas in ISR."
+  },
+  {
+   "t": "li",
+   "k": "e0097dfcec1e",
+   "en": "Replica-2 and replica-3 have fully caught up with the leader, so they are in ISR and can fetch new messages."
+  },
+  {
+   "t": "li",
+   "k": "cdd64a09e1ce",
+   "en": "Replica-4 did not fully catch up with the leader within the configured lag time, so it is not in ISR. When it catches up again, it can be added to ISR."
+  },
+  {
+   "t": "p",
+   "k": "bfadf0f9d697",
+   "en": "Step 3 - Design Deep Dive | 113 replica-2 (follower)"
+  },
+  {
+   "t": "p",
+   "k": "5fb365905291",
+   "en": "10 11 12 13:14 · fetch · replica-3 (follower) · replica-1 (leader) · 10 11 12 13|14: 15 · 10 11 12 13 · fetch · not caught up · replica-4 (follower) · committed offset = 13"
+  },
+  {
+   "t": "p",
+   "k": "b577f26ce7db",
+   "en": "ISR: (replica-1, replica-2, replica-3}"
+  },
+  {
+   "t": "figure",
+   "k": "587af1c1366c",
+   "en": "Figure 4.24: How ISR works"
+  },
+  {
+   "t": "p",
+   "k": "0b2a1dd9092f",
+   "en": "Why do we need ISR? The reason is that ISR reflects the trade-off between performance and durability. If producers don't want to lose any messages, the safest way to do that is to ensure all replicas are already in sync before sending an acknowledgment. But a slow replica will cause the whole partition to become slow or unavailable."
+  },
+  {
+   "t": "p",
+   "k": "726d468e115b",
+   "en": "Now that we've discussed ISR, let's take a look at acknowledgment settings. Producers can choose to receive acknowledgments until the ki number of ISRs has received the message, where k is configurable."
+  },
+  {
+   "t": "p",
+   "k": "2edfbb8ee345",
+   "en": "ACK=all"
+  },
+  {
+   "t": "figure",
+   "k": "c7441e1f040d",
+   "en": "Figure 4.25 illustrates the case with ACK=all. With ACK=all, the producer gets an ACK"
+  },
+  {
+   "t": "p",
+   "k": "87ff5a089c91",
+   "en": "when all ISRs have received the message. This means it takes a longer time to send a message because we need to wait for the slowest ISR, but it gives the strongest message durability."
+  },
+  {
+   "t": "p",
+   "k": "05d61359768e",
+   "en": "Producer · 1. produce · 4. ack · 2. fetch · not caught up replica-1 · replica-2 · replica-3 · follower I|l · follower · 3. synced *Broker-2 · Broker-3 · Broker-1"
+  },
+  {
+   "t": "p",
+   "k": "61f37494a87d",
+   "en": "ISR: (replica-1, replica-2}, ack=all"
+  },
+  {
+   "t": "figure",
+   "k": "acc0f9a2bccf",
+   "en": "Figure 4.25: ACK=all"
+  },
+  {
+   "t": "p",
+   "k": "40b22a75fa08",
+   "en": "ACK=1"
+  },
+  {
+   "t": "p",
+   "k": "ba0b723d1a9d",
+   "en": "With ACK=1, the producer receives an ACK once the leader persists the message. The latency is improved by not waiting for data synchronization. If the leader fails immediately after a message is acknowledged but before it is replicated by follower nodes, then the message is lost. This setting is suitable for low latency systems where occasional data loss is acceptable."
+  },
+  {
+   "t": "p",
+   "k": "cb578a261ba5",
+   "en": "Producer · 1. produce · 2. ack · fetch · not caught up replica-1 · replica-2 · replica-3 · leader · follower · follower I · synced ----- · Broker-1 · Broker-3 · Broker-2"
+  },
+  {
+   "t": "p",
+   "k": "0ed46bcc27e0",
+   "en": "ISR: (replica-1, replica-2}, ack=1"
+  },
+  {
+   "t": "figure",
+   "k": "4b5a9ebd2aeb",
+   "en": "Figure 4.26: ACK=1"
+  },
+  {
+   "t": "p",
+   "k": "103f2fc23a06",
+   "en": "Step 3 - Design Deep Dive | 115 ACK=0"
+  },
+  {
+   "t": "p",
+   "k": "7facc03df834",
+   "en": "The producer keeps sending messages to the leader without waiting for any acknow,edgment, and it never retries. This method provides the lowest latency at the cost of potential message loss. This setting might be good for use cases like collecting metrics or logging data since data volume is high and occasional data loss is acceptable."
+  },
+  {
+   "t": "p",
+   "k": "83c46a5d44d1",
+   "en": "Producer · 1. produce · without ack · not caught up replica-3 · replica-1 · replica-2 · follower · follower · leader · Broker-3 · synced - · Broker-2 · Broker-1"
+  },
+  {
+   "t": "p",
+   "k": "78d7e4ba158e",
+   "en": "ISR: (replica-1, replica-2), ack=0"
+  },
+  {
+   "t": "figure",
+   "k": "96a69a9a9a47",
+   "en": "Figure 4.27: ACK=0"
+  },
+  {
+   "t": "p",
+   "k": "98dcfae232b1",
+   "en": "Configurable ACK allows us to trade durability for performance."
+  },
+  {
+   "t": "p",
+   "k": "c35da00f8f1d",
+   "en": "Now let's look at the consumer side. The easiest setup is to let consumers connect to a leader replica to consume messages."
+  },
+  {
+   "t": "p",
+   "k": "00e4eebaaea5",
+   "en": "You might be wondering if the leader replica would be overwhelmed by this design and why messages are not read from ISRs. The reasons are:"
+  },
+  {
+   "t": "li",
+   "k": "a00ecb528318",
+   "en": "Design and operational simplicity."
+  },
+  {
+   "t": "li",
+   "k": "7b19fbf70a8e",
+   "en": "Since messages in one partition are dispatched to only one consumer within a consumer group, this limits the number of connections to the leader replica."
+  },
+  {
+   "t": "li",
+   "k": "42e7b73e9a76",
+   "en": "The number of connections to the leader replicas is usually not large as long as a topic is not super hot."
+  },
+  {
+   "t": "li",
+   "k": "caac6f6655c0",
+   "en": "If a topic is hot, we can scale by expanding the number of partitions and consumers."
+  },
+  {
+   "t": "p",
+   "k": "a840ce51312a",
+   "en": "In some scenarios, reading from the leader replica might not be the best option. For example, if a consumer is located in a different data center from the leader replica, the read performance suffers. In this case, it is worthwhile to enable consumers to read from the closest ISRs. Interested readers can check out the reference material about this [11]."
+  },
+  {
+   "t": "p",
+   "k": "7fd896db79e7",
+   "en": "ISR is very important. How does it determine if a replica is ISR or not? Usually, the leader for every partition tracks the ISR list by computing the lag of every replica from itself. If you are interested in detailed algorithms, you can find the implementations in reference materials [12] [13]."
+  },
+  {
+   "t": "p",
+   "k": "b06273ade235",
+   "en": "Scalability"
+  },
+  {
+   "t": "p",
+   "k": "714d0edc1bbb",
+   "en": "By now we have made great progress designing the distributed message queue system. In the next step, let's evaluate the scalability of different system components:"
+  },
+  {
+   "t": "p",
+   "k": "0892126ed865",
+   "en": "Producers · Consumers · Brokers · Partitions · Producer"
+  },
+  {
+   "t": "p",
+   "k": "1bc4b4d3b56b",
+   "en": "The producer is conceptually much simpler than the consumer because it doesn't need group coordination. The scalability of producers can easily be achieved by adding or removing producer instances."
+  },
+  {
+   "t": "p",
+   "k": "cb7a82c31787",
+   "en": "Consumer"
+  },
+  {
+   "t": "p",
+   "k": "6bb94a289f0e",
+   "en": "Consumer groups are isolated from each other, so it is easy to add or remove a consumer group. Inside a consumer group, the rebalancing mechanism helps to handle the cases where a consumer gets added or removed, or when it crashes. With consumer groups and the rebalance mechanism, the scalability and fault tolerance of consumers can be achieved"
+  },
+  {
+   "t": "p",
+   "k": "ceb8885a255b",
+   "en": "Broker"
+  },
+  {
+   "t": "p",
+   "k": "90f5c558c9ff",
+   "en": "Before discussing scalability on the broker side, let's first consider the failure recovery of brokers."
+  },
+  {
+   "t": "p",
+   "k": "4346cd9be5f4",
+   "en": "Step 3 - Design Deep Dive | 117 Topic Al"
+  },
+  {
+   "t": "p",
+   "k": "f9202505cd3b",
+   "en": "Topic-A · Topic-A · Topic-B · Topic-B · Broker-1 · Broker-3 · Broker-2 · Topic-A · Partition- 1 · Topic-A Topic A · Topic-A · Partition-2 · Topic-B Topic-B · Topic-B · Parition- 1 · Broker-1 · Broker-2 · Topic-A Topic-A · Topic-A · Topic-A Topic-A · Topic-A · Topic-B Topic- B · Topic-B · Broker-4 Broker-2 · Broker-1"
+  },
+  {
+   "t": "figure",
+   "k": "7c1c3410f293",
+   "en": "Figure 4.28: Broker node crashes"
+  },
+  {
+   "t": "p",
+   "k": "d2ef7b043482",
+   "en": "Let's use an example in Figure 4.28 to explain how failure recovery works."
+  },
+  {
+   "t": "h3",
+   "k": "a923f7fa0086",
+   "en": "1. Assume there are 4 brokers and the partition (replica) distribution plan is shown"
+  },
+  {
+   "t": "p",
+   "k": "94c17650ccec",
+   "en": "below:"
+  },
+  {
+   "t": "li",
+   "k": "8e63e38a07e9",
+   "en": "Partition-1 of topic A: replicas in Broker-1 (leader), 2, and 3."
+  },
+  {
+   "t": "li",
+   "k": "90cc300b4312",
+   "en": "Partition-2 of topic A: replicas in Broker-2 (leader), 3, and 4."
+  },
+  {
+   "t": "li",
+   "k": "3211fee266dd",
+   "en": "Partition-1 of topic B: replicas in Broker-3 (leader), 4, and 1."
+  },
+  {
+   "t": "p",
+   "k": "c2ee786edfc1",
+   "en": "2. Broker-3 crashes, which means all the partitions on the node are lost. The partition"
+  },
+  {
+   "t": "h3",
+   "k": "6f58d8db799a",
+   "en": "distribution plan is changed to:"
+  },
+  {
+   "t": "li",
+   "k": "c10d0ac2dc73",
+   "en": "Partition-1 of topic A: replicas in Broker-1 (leader) and 2."
+  },
+  {
+   "t": "li",
+   "k": "b54b0a27c863",
+   "en": "Partition-2 of topic A: replicas in Broker-2 (leader) and 4."
+  },
+  {
+   "t": "li",
+   "k": "7e597d94ded2",
+   "en": "Partition-1 of topic B: replicas in Broker-4 and 1."
+  },
+  {
+   "t": "p",
+   "k": "c4b24a21277b",
+   "en": "3. The broker controller detects Broker-3 is down and generates a new partition distribution plan for the remaining broker nodes:"
+  },
+  {
+   "t": "li",
+   "k": "fa63e1c67214",
+   "en": "Partition-1 of topic A: replicas in Broker-1 (leader), 2, and 4 (new)."
+  },
+  {
+   "t": "li",
+   "k": "cc63f27b2d63",
+   "en": "Partition-2 of topic A: replicas in Broker-2 (leader), 4, and 1 (new)."
+  },
+  {
+   "t": "li",
+   "k": "d24c9ec7d250",
+   "en": "Partition-1 of topic B: replicas in Broker-4 (leader), 1, and 2 (new)."
+  },
+  {
+   "t": "p",
+   "k": "805b9c292687",
+   "en": "4. The new replicas work as followers and catch up with the leader."
+  },
+  {
+   "t": "p",
+   "k": "63b8df155d3b",
+   "en": "To make the broker fault-tolerant, here are additional considerations:"
+  },
+  {
+   "t": "li",
+   "k": "835b16bfd140",
+   "en": "The minimum number of ISRs specifies how many replicas the producer must receive before a message is considered to be successfully committed. The higher the number, the safer. But on the other hand, we need to balance latency and safety."
+  },
+  {
+   "t": "li",
+   "k": "772e4fa1460d",
+   "en": "If all replicas of a partition are in the same broker node, then we cannot tolerate the failure of this node. It is also a waste of resources to replicate data in the same node. Therefore, replicas should not be in the same node."
+  },
+  {
+   "t": "li",
+   "k": "a963de07375c",
+   "en": "If all the replicas of a partition crash, the data for that partition is lost forever. When choosing the number of replicas and replica locations, there's a trade-off between data safety, resource cost, and latency. It is safer to distribute replicas across data centers, but this will incur much more latency and cost, to synchronize data between replicas. As a workaround, data mirroring can help to copy data across data centers, but this is out of scope. The reference material [14] covers this topic."
+  },
+  {
+   "t": "p",
+   "k": "14d2a85ebc0a",
+   "en": "Now let's get back to discussing the scalability of brokers. The simplest solution would be to redistribute the replicas when broker nodes are added or removed."
+  },
+  {
+   "t": "p",
+   "k": "fcf9aef66c56",
+   "en": "However, there is a better approach. The broker controller can temporarily allow more replicas in the system than the number of replicas in the config file. When the newly added broker catches up, we can remove the ones that are no longer needed. Let's use an example as shown in Figure 4.29 to understand the approach."
+  },
+  {
+   "t": "p",
+   "k": "ca2b993521b3",
+   "en": "Step 3 - Design Deep Dive | 119 Topic-A"
+  },
+  {
+   "t": "p",
+   "k": "3fdc6b96de07",
+   "en": "Topic-A · Topic-A · artition-2 · Topic-A · lopic-Al · Parion 2 ICO Topic-A · Торіс-А · Topic-A · Topic-A · Broker-4"
+  },
+  {
+   "t": "figure",
+   "k": "9f294917b62b",
+   "en": "Figure 4.29: Add new broker node"
+  },
+  {
+   "t": "p",
+   "k": "d1f3422b64ff",
+   "en": "1. The initial setup: 3 brokers, 2 partitions, and 3 replicas for each partition."
+  },
+  {
+   "t": "p",
+   "k": "8b196da8da71",
+   "en": "2. New Broker-4 is added. Assume the broker controller changes the replica distribution of Partition-2 to the broker (2, 3, 4). The new replica in Broker-4 starts to copy data from leader Broker-2. Now the number of replicas for Partition-2 is temporarily more than 3."
+  },
+  {
+   "t": "p",
+   "k": "553b85764071",
+   "en": "3. After the replica in Broker-4 catches up, the redundant partition in Broker-1 is gracefully removed"
+  },
+  {
+   "t": "p",
+   "k": "26e091f8a748",
+   "en": "By following this process, data loss while adding brokers can be avoided. A similar process can be applied to remove brokers safely."
+  },
+  {
+   "t": "p",
+   "k": "88faac11dac2",
+   "en": "Partition"
+  },
+  {
+   "t": "p",
+   "k": "e70f52726ef3",
+   "en": "For various operational reasons, such as scaling the topic, throughput tuning, balancing availability/ throughput, etc., we may change the number of partitions. When the number of partitions changes, the producer will be notified after it communicates with any broker, and the consumer will trigger consumer rebalancing. Therefore, it is safe for both the producer and consumer"
+  },
+  {
+   "t": "p",
+   "k": "c46e023549cd",
+   "en": "Now let's consider the data storage layer when the number of partitions changes. As in"
+  },
+  {
+   "t": "figure",
+   "k": "433085706bce",
+   "en": "Figure 4.30, we have added a partition to the topic."
+  },
+  {
+   "t": "p",
+   "k": "1141661c8513",
+   "en": "Persisted messages · New messages · partition-1 · partition-2 · partition-2 · partition-3"
+  },
+  {
+   "t": "figure",
+   "k": "8719b3c59c6e",
+   "en": "Figure 4.30: Partition increase"
+  },
+  {
+   "t": "li",
+   "k": "b3c8ea70f48d",
+   "en": "Persisted messages are still in the old partitions, so there's no data migration."
+  },
+  {
+   "t": "li",
+   "k": "523898c0aa28",
+   "en": "After the new partition (partition-3) is added, new messages will be persisted in all 3 partitions."
+  },
+  {
+   "t": "p",
+   "k": "89700f55e859",
+   "en": "So it is straightforward to scale the topic by increasing partitions."
+  },
+  {
+   "t": "h3",
+   "k": "350894ac0338",
+   "en": "Decrease the number of partitions"
+  },
+  {
+   "t": "p",
+   "k": "bac6315d9380",
+   "en": "Decreasing partitions is more complicated, as illustrated in Figure 4.31."
+  },
+  {
+   "t": "p",
+   "k": "cc88600ce42c",
+   "en": "New messages · Persisted messages · partition-1 · partition-1 · partition-2 · partition-2 · partition-3 · partition-3"
+  },
+  {
+   "t": "figure",
+   "k": "c147235b2a4f",
+   "en": "Figure 4.31: Partition decrease"
+  },
+  {
+   "t": "li",
+   "k": "3c1a5245fc5a",
+   "en": "Partition-3 is decommissioned so new messages are only received by the remaining partitions (partition-1 and partition-2)."
+  },
+  {
+   "t": "li",
+   "k": "7db45fad797b",
+   "en": "The decommissioned partition (partition-3) cannot be removed immediately because data might be currently consumed by consumers for a certain amount of time. Only after the configured retention period passes, data can be truncated and storage space is freed up. Reducing partitions is not a shortcut to reclaiming data space."
+  },
+  {
+   "t": "li",
+   "k": "cc067101a5ea",
+   "en": "During this transitional period (while partition-3 is decommissioned), producers only send messages to the remaining 2 partitions, but consumers can still consume from all 3 partitions. After the retention period of the decommissioned partition expires, Step 3 - Design Deep Dive | 121 consumer groups need rebalancing."
+  },
+  {
+   "t": "h3",
+   "k": "09f2d2c0426b",
+   "en": "Data delivery semantics"
+  },
+  {
+   "t": "p",
+   "k": "802fdfb7f240",
+   "en": "Now that we understand the different components of a distributed message queuc, let's discuss different delivery semantics: at-most once, at-least once, and exactly once."
+  },
+  {
+   "t": "h2",
+   "k": "51df722f7bfe",
+   "en": "At-most once"
+  },
+  {
+   "t": "p",
+   "k": "d82002efe660",
+   "en": "As the name suggests, at-most once means a message will be delivered not more than once. Messages may be lost but are not redelivered. This is how at-most once delivery works at the high level."
+  },
+  {
+   "t": "li",
+   "k": "14476d83273e",
+   "en": "The producer sends a message asynchronously to a topic without waiting for an acknowledgment (ACK=0). If message delivery fails, there is no retry."
+  },
+  {
+   "t": "li",
+   "k": "cdc0c04d5b01",
+   "en": "Consumer fetches the message and commits the offset before the data is processed If the consumer crashes just after offset commit, the message will not be reconsumed."
+  },
+  {
+   "t": "p",
+   "k": "66cce12bd2f5",
+   "en": "Message queue · Consumer · — may lose msg —* · Producer · may lose msg →"
+  },
+  {
+   "t": "figure",
+   "k": "7d570cba8d0c",
+   "en": "Figure 4.32: At-most once"
+  },
+  {
+   "t": "p",
+   "k": "79113e50f26d",
+   "en": "It is suitable for use cases like monitoring metrics, where a small amount of data loss is acceptable."
+  },
+  {
+   "t": "p",
+   "k": "461619e4da2e",
+   "en": "At-least once"
+  },
+  {
+   "t": "p",
+   "k": "a3406afba3cb",
+   "en": "With this data delivery semantic, it's acceptable to deliver a message more than once, but no message should be lost. Here is how it works at a high level."
+  },
+  {
+   "t": "li",
+   "k": "a1ce4385124d",
+   "en": "Producer sends a message synchronously or asynchronously with a response callback, setting ACK=1 or ACK=all, to make sure messages are delivered to the broker. If the message delivery fails or timeouts, the producer will keep retrying."
+  },
+  {
+   "t": "li",
+   "k": "344448e57984",
+   "en": "Consumer fetches the message and commits the offset only after the data is successfully processed. If the consumer fails to process the message, it will re-consume the message so there won't be data loss. On the other hand, if a consumer processes the message but fails to commit the offset to the broker, the message will be re-consumed when the consumer restarts, resulting in duplicates."
+  },
+  {
+   "t": "li",
+   "k": "4214a6e1b075",
+   "en": "A message might be delivered more than once to the brokers and consumers. Message queue"
+  },
+  {
+   "t": "p",
+   "k": "14965b31fc6b",
+   "en": "Consumer Producer · may have · may have · duplicate · duplicate"
+  },
+  {
+   "t": "figure",
+   "k": "c3093b4eae61",
+   "en": "Figure 4.33: At-least once"
+  },
+  {
+   "t": "p",
+   "k": "f4fe75bdc62f",
+   "en": "Use cases: With at-least once, messages won't be lost but the same message might be delivered multiple times. While not ideal from a user perspective, at-least once delivery semantics are usually good enough for use cases where data duplication is not a big issue or deduplication is possible on the consumer side. For example, with a unique key in each message, a message can be rejected when writing duplicate data to the database."
+  },
+  {
+   "t": "p",
+   "k": "fce0c552f85f",
+   "en": "Exactly once"
+  },
+  {
+   "t": "p",
+   "k": "2d6b9371efc2",
+   "en": "Exactly once is the most difficult delivery semantic to implement. It is friendly to users, but it has a high cost for the system's performance and complexity."
+  },
+  {
+   "t": "p",
+   "k": "773cc6305a23",
+   "en": "Message queue · _ guaranteed · guaranteed · Consumer Producer · once · once"
+  },
+  {
+   "t": "figure",
+   "k": "0fbbbde77016",
+   "en": "Figure 4.34: Exactly once"
+  },
+  {
+   "t": "p",
+   "k": "d560e915b5af",
+   "en": "Use cases: Financial-related use cases (payment, trading, accounting, etc.). Exactly once is especially important when duplication is not acceptable and the downstream service or third party doesn't support idempotency."
+  },
+  {
+   "t": "h2",
+   "k": "a22cd23308b9",
+   "en": "Advanced features"
+  },
+  {
+   "t": "p",
+   "k": "e9f0de5c1829",
+   "en": "In this section, we talk briefly about some advanced features, such as message filtering, delayed messages, and scheduled messages."
+  },
+  {
+   "t": "h3",
+   "k": "3a885bf456fb",
+   "en": "Message filtering"
+  },
+  {
+   "t": "p",
+   "k": "694fd87c930b",
+   "en": "A topic is a logical abstraction that contains messages of the same type. However, some consumer groups may only want to consume messages of certain subtypes. For example, the ordering system sends all the activities about the order to a topic, but the payment system only cares about messages related to checkout and refund."
+  },
+  {
+   "t": "p",
+   "k": "c1549249f5ab",
+   "en": "One option is to build a dedicated topic for the payment system and another topic for the ordering system. This method is simple, but it might raise some concerns."
+  },
+  {
+   "t": "li",
+   "k": "0c7040271b30",
+   "en": "What if other systems ask for different subtypes of messages? Do we need to build dedicated topics for every single consumer request?"
+  },
+  {
+   "t": "li",
+   "k": "a883e1fad223",
+   "en": "It is a waste of resources to save the same messages on different topics."
+  },
+  {
+   "t": "li",
+   "k": "15e58d3c2e24",
+   "en": "The producer needs to change every time a new consumer requirement comes, as the producer and consumer are now tightly coupled."
+  },
+  {
+   "t": "p",
+   "k": "70d6bc876f62",
+   "en": "Therefore, we need to resolve this requirement using a different approach. Luckily, mes- Step 3 - Design Deep Dive | 123 sage filtering comes to the rescue."
+  },
+  {
+   "t": "p",
+   "k": "a1ac36fb3c31",
+   "en": "A naive solution for message filtering is that the consumer fetches the full set of messages and filters out unnecessary messages during processing time. This approach is flexible but introduces unnecessary traffic that will affect system performance."
+  },
+  {
+   "t": "p",
+   "k": "332d69806ba2",
+   "en": "A better solution is to filter messages on the broker side so that consumers will only get messages they care about. Implementing this requires some careful consideration. If data filtering requires data decryption or deserialization, it will degrade the performance of the brokers. Additionally, if messages contain sensitive data, they should not be readable in the message queue."
+  },
+  {
+   "t": "p",
+   "k": "8b449f4cf91a",
+   "en": "Therefore, the filtering logic in the broker should not extract the message payload. It is better to put data used for filtering into the metadata of a message, which can be efficiently read by the broker. For example, we can attach a tag to each message. With a message tag, a broker can filter messages in that dimension. If more tags are attached, the messages can be filtered in multiple dimensions. Therefore, a list of tags can support most of the filtering requirements. To support more complex logic such as mathematical formulae, the broker will need a grammar parser or a script executor, which might be too heavyweight for the message queue."
+  },
+  {
+   "t": "p",
+   "k": "73fc5d2d1f4d",
+   "en": "With tags attached to each message, a consumer can subscribe to messages based on the specified tag, as shown in Figure 4.35. Interested readers can refer to the reference material [15]."
+  },
+  {
+   "t": "li",
+   "k": "0065f9f20d3a",
+   "en": "subscribe with tags"
+  },
+  {
+   "t": "h2",
+   "k": "051542b4bab8",
+   "en": "1|2 3 4 576"
+  },
+  {
+   "t": "p",
+   "k": "2a07b218835c",
+   "en": "Tag · Consumer 1880. · fetch messages · Broker"
+  },
+  {
+   "t": "figure",
+   "k": "1646515fd0da",
+   "en": "Figure 4.35: Message filtering by tags"
+  },
+  {
+   "t": "h2",
+   "k": "66ec6f6101c7",
+   "en": "Delayed messages & scheduled messages"
+  },
+  {
+   "t": "p",
+   "k": "ecd0cf41e9ce",
+   "en": "Sometimes you want to delay the delivery of messages to a consumer for a specified period of time. For example, an order should be closed if not paid within 30 minutes after the order is created. A delayed verification message (check if the payment is completed) is sent immediately but is delivered to the consumer 30 minutes later. When the consumer receives the message, it checks the payment status. If the payment is not completed, the order will be closed. Otherwise, the message will be ignored"
+  },
+  {
+   "t": "p",
+   "k": "94a569862807",
+   "en": "Different from sending instant messages, we can send delayed messages to temporary storage on the broker side instead of to the topics immediately, and then deliver them to the topics when time's up. The high-level design for this is shown in Figure 4.36. Producer"
+  },
+  {
+   "t": "p",
+   "k": "255e5a3bba23",
+   "en": "delayed messages · unstant megearns · deliver when · Temporary · storage · time's up · Broker"
+  },
+  {
+   "t": "figure",
+   "k": "b90715354c29",
+   "en": "Figure 4.36: Delayed messages"
+  },
+  {
+   "t": "h3",
+   "k": "0cdf225d4594",
+   "en": "Core components of the system include the temporary storage and the timing func-"
+  },
+  {
+   "t": "p",
+   "k": "157e34715435",
+   "en": "tion."
+  },
+  {
+   "t": "li",
+   "k": "04288440ec93",
+   "en": "The temporary storage can be one or more special message topics."
+  },
+  {
+   "t": "li",
+   "k": "111edf7cbc99",
+   "en": "The timing function is out of scope, but here are 2 popular solutions:"
+  },
+  {
+   "t": "li",
+   "k": "e78ba07ff906",
+   "en": "Dedicated delay queues with predefined delay levels [16]. For example, RocketMQ doesn't support delayed messages with arbitrary time precision, but delayed messages with specific levels are supported. Message delay levels are 1s, 5s, 10s, 30s, 1m, 2m, 3m, 4m, 6m, 8m, 9m, 10m, 20m, 30m, 1h, and 2h."
+  },
+  {
+   "t": "li",
+   "k": "7593120f5985",
+   "en": "Hierarchical time wheel [17]."
+  },
+  {
+   "t": "p",
+   "k": "1d76c5f0672a",
+   "en": "A scheduled message means a message should be delivered to the consumer at the scheduled time. The overall design is very similar to delayed messages."
+  },
+  {
+   "t": "h2",
+   "k": "02a33876c958",
+   "en": "Step 4 - Wrap Up"
+  },
+  {
+   "t": "p",
+   "k": "76fd8fcc158c",
+   "en": "In this chapter, we have presented the design of a distributed message queue with some advanced features commonly found in data streaming platforms. If there is extra time at the end of the interview, here are some additional talking points:"
+  },
+  {
+   "t": "li",
+   "k": "3ecc17efadf3",
+   "en": "Protocol: it defines rules, syntax, and APis on how to exchange information and transfer data between different nodes. In a distributed message queue, the protocol should be able to:"
+  },
+  {
+   "t": "li",
+   "k": "0db3371c5753",
+   "en": "Cover all the activities such as production, consumption, heartbeat, etc."
+  },
+  {
+   "t": "li",
+   "k": "eadb00a29efb",
+   "en": "Effectively transport data with large volumes."
+  },
+  {
+   "t": "li",
+   "k": "a4975716f152",
+   "en": "Verify the integrity and correctness of the data."
+  },
+  {
+   "t": "h3",
+   "k": "7a97af36bad2",
+   "en": "Some popular protocols include Advanced Message Queuing Protocol (AMQP) [18]"
+  },
+  {
+   "t": "p",
+   "k": "fdfc8d83b73e",
+   "en": "and Kafka protocol [19]."
+  },
+  {
+   "t": "p",
+   "k": "e71498d8bbd4",
+   "en": "Step 4 - Wrap Up | 125"
+  },
+  {
+   "t": "li",
+   "k": "f450e6cbe22f",
+   "en": "Retry consumption. If some messages cannol be consumed successfully, we need to retry the operation. In order not to block incoming messages, how can we retry the operation atter a certain time period? One idea is to send failed messages to a dedicated retry topic. so they can be consumed later."
+  },
+  {
+   "t": "li",
+   "k": "fe0017f89054",
+   "en": "Historical data archive. Assume there is a time-based or capacity-based log retention mechanism. If a consumer needs to replay some historical messages that are already truncated, how can we do it? One possible solution is to use storage systems with large capacities, such as HDFS [20] or object storage, to store historical data."
+  },
+  {
+   "t": "p",
+   "k": "71b8b7a68128",
+   "en": "Congratulations on getting this far! Now give yourself a pat on the back. Good job!"
+  },
+  {
+   "t": "h2",
+   "k": "dc0ccd897209",
+   "en": "Chapter Summary"
+  },
+  {
+   "t": "li",
+   "k": "28b4b0df4d69",
+   "en": "producers send messages to msg queue"
+  },
+  {
+   "t": "li",
+   "k": "64e724a40371",
+   "en": "consumers consume messages from the msg queue"
+  },
+  {
+   "t": "p",
+   "k": "6457d276d9c5",
+   "en": "functional req"
+  },
+  {
+   "t": "li",
+   "k": "243b7d9b0cb9",
+   "en": "messages can be repeatedly consumed"
+  },
+  {
+   "t": "li",
+   "k": "9ef55d7c274a",
+   "en": "message ordering"
+  },
+  {
+   "t": "p",
+   "k": "b436f0636828",
+   "en": "step 1"
+  },
+  {
+   "t": "p",
+   "k": "e6f6cb1ff0e7",
+   "en": "configurable throughput and latency"
+  },
+  {
+   "t": "p",
+   "k": "6556c425a008",
+   "en": "non-functional req · scalable · persistent and durable · r point-to-point · message models · publish-subscribe · producer · consumer · consumer group · data storage · broker · high-level design · state storage · metadata storage · Message Queue · data storage · coordination service · batching · producer flow · push model · consumer flow - · pull model · step 3 · consumer rebalancing · at-most once · delivery semantics · exactly once · step 4 · wrap up · Chapter Summary | 127"
+  },
+  {
+   "t": "h2",
+   "k": "5d59149869b8",
+   "en": "Reference Material"
+  },
+  {
+   "t": "h3",
+   "k": "d6795cd945a1",
+   "en": "17 Cord Lenathlamit. hips: www.rabbitmg.com/maxlength.html"
+  },
+  {
+   "t": "h3",
+   "k": "26bea36209b3",
+   "en": "12) Arate Zindeper Wilipedia https:/en.wikipedia.org/wikiApache /rYar,"
+  },
+  {
+   "t": "h2",
+   "k": "5ebfe189cd00",
+   "en": "4) MigOt hrops www.mysql.com."
+  },
+  {
+   "t": "p",
+   "k": "eed5b6275cf3",
+   "en": "[5] Compurison of disk and memory performance. https://deliveryimages.acm.org/1 1145 15 70090 1563674 jacobs3.jpg"
+  },
+  {
+   "t": "p",
+   "k": "65d7053c79ae",
+   "en": "[*) Mush is pull hitps: kafka.apache.org/documentation/#design_pull."
+  },
+  {
+   "t": "p",
+   "k": "8b2082ac7a39",
+   "en": "[7] Kafka 20 Documentation. https:/kafkaapache.org/20/documentation.htmlscomug mernonfigs"
+  },
+  {
+   "t": "p",
+   "k": "fa30c303ca0f",
+   "en": "[8] Kafka No Longer Requires Zookeeper. https://towardsdatascience.com/kafka-nc longer-requires-zookeeper-ebfbf3862104."
+  },
+  {
+   "t": "p",
+   "k": "72cc595201db",
+   "en": "[9] Martin Kleppmann. Replication. In Designing Data-Intensive Applications, pager 151-197. O' Reilly Media, 2017."
+  },
+  {
+   "t": "p",
+   "k": "7303cb8dcf93",
+   "en": "[10] ISR in Apache Kafka. https://www.cloudkarafka.com/blog/what-does-in-sync-in-a pache-kafka-really-mean.html"
+  },
+  {
+   "t": "p",
+   "k": "1ae42461b49e",
+   "en": "[11] Global map in a geographic Coordinate Reference System. https://cwiki.apachen rg confluence display KAFKA/KIP-39273A + Allow + consumers +to +fetch+from + closest-replica."
+  },
+  {
+   "t": "p",
+   "k": "09ef532128aa",
+   "en": "[12] Hands-free Kafka Replication. https://www.confluent.io/blog/hands-free-kafkay eplication-a-lesson-in-operational-simplicity/"
+  },
+  {
+   "t": "p",
+   "k": "3fb2f5022153",
+   "en": "[13] Kafka high watermark: https:/rongxinblog.wordpress.com/2016/07/29/kafka-hig h-watermark/."
+  },
+  {
+   "t": "p",
+   "k": "ac951cfeb296",
+   "en": "[14] Kafka mirroring. https://cwiki.apache.org/confluence/pages/viewpage.action?.pag eld=27846330."
+  },
+  {
+   "t": "p",
+   "k": "c2ff5a148d6f",
+   "en": "[15] Message filtering in Rocket.MQdtree. https:/partners-intl.aliyun.com/help/doc-de tail/29543.htm"
+  },
+  {
+   "t": "p",
+   "k": "14b543edcd25",
+   "en": "[16] Scheduled messages and delayed messages in Apache RocketMQ. https://partners"
+  },
+  {
+   "t": "li",
+   "k": "abd567818065",
+   "en": "intlaliyun.com/help/doc-detail/43349.htm."
+  },
+  {
+   "t": "p",
+   "k": "a7678d8729e0",
+   "en": "[17] Hashed and hierarchical timing wheels. http://www.cs.columbia.edu/~nahum/w69 98/papers/sosp87-timing-wheels.pdf."
+  },
+  {
+   "t": "p",
+   "k": "b2bfaa397dd4",
+   "en": "[18] Advanced Message Queuing Protocol. https://en.wikipedia.org/wiki/Advanced_M essage_Queuing_ Protocol."
+  },
+  {
+   "t": "p",
+   "k": "50bc74719912",
+   "en": "[19] Kafka protocol guide. https://kafka.apache.org/protocol"
+  },
+  {
+   "t": "p",
+   "k": "df4f8a8ab7e6",
+   "en": "[20] HDFS. https://hadoop.apache.org/docs/r1.2.1/hdfs_design.html"
+  },
+  {
+   "t": "p",
+   "k": "0cdf0cdd4c64",
+   "en": "Reference Material | 129"
+  }
+ ]
+}

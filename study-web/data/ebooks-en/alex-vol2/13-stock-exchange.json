@@ -1,0 +1,3363 @@
+{
+ "id": "13-stock-exchange",
+ "title": "Stock Exchange",
+ "titleKey": "c211d530bccf",
+ "book": "alex-vol2",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "18ad9024d7da",
+   "en": "In this chapter, we design an electronic stock exchange system."
+  },
+  {
+   "t": "p",
+   "k": "11efd4e1a982",
+   "en": "The basic function of an exchange is to facilitate the matching of buyers and sellers efficiently. This fundamental function has not changed over time. Before the rise of computing, people exchanged tangible goods by bartering and shouting at each other to get matched. Today, orders are processed silently by supercomputers, and people trade not only for the exchange of products, but also for speculation and arbitrage. Technology has greatly changed the landscape of trading and exponentially boosted electronic market trading volume."
+  },
+  {
+   "t": "p",
+   "k": "4755cdb89054",
+   "en": "When it comes to stock exchanges, most people think about major market players like The New York Stock exchange (NYSE) or Nasdaq, which have existed for over fifty years. In fact, there are many other types of exchange. Some focus on vertical segmentation of the financial industry and place special focus on technology [1], while others have an emphasis on fairness [2]. Before diving into the design, it is important to check with the interviewer about the scale and the important characteristics of the exchange in question."
+  },
+  {
+   "t": "p",
+   "k": "e2c656ca8da2",
+   "en": "Just to get a taste of the kind of problem we are dealing with; NYSE is trading billions of matches per day [3], and HKEX about 200 billion shares per day [4]. Figure 13.1 shows the big exchanges in the \"trillion-dollar club\" by market capitalization."
+  },
+  {
+   "t": "figure",
+   "k": "76dad29b28f6",
+   "en": "Figure 13.1: Largest stock exchanges (Source: [5])"
+  },
+  {
+   "t": "h2",
+   "k": "cdb2072eee15",
+   "en": "Step 1 - Understand the Problem and Establish Design Scope"
+  },
+  {
+   "t": "p",
+   "k": "a914c253181f",
+   "en": "A modern exchange is a complicated system with stringent requirements on latency, throughput, and robustness. Before we start, let's ask the interviewer a few questions to clarify the requirements."
+  },
+  {
+   "t": "p",
+   "k": "2fd157663370",
+   "en": "Candidate: Which securities are we going to trade? Stocks, options, or futures?"
+  },
+  {
+   "t": "p",
+   "k": "8d694f2f27dd",
+   "en": "Interviewer: For simplicity, only stocks."
+  },
+  {
+   "t": "p",
+   "k": "5333ef534200",
+   "en": "Candidate: Which types of order operations are supported: placing a new order, canceling an order, or replacing an order? Do we need to support limit order, market order, or conditional order?"
+  },
+  {
+   "t": "p",
+   "k": "3387679ed492",
+   "en": "Interviewer: We need to support the following: placing a new order and canceling an order. For the order type, we only need to consider the limit order."
+  },
+  {
+   "t": "p",
+   "k": "637bc69c11d2",
+   "en": "Candidate: Does the system need to support after-hours trading?"
+  },
+  {
+   "t": "p",
+   "k": "f40542d9e055",
+   "en": "Interviewer: No, we just need to support the normal trading hours."
+  },
+  {
+   "t": "p",
+   "k": "f6a538fcd810",
+   "en": "Candidate: Could you describe the basic functions of the exchange? And the scale of the exchange, such as how many users, how many symbols, and how many orders?"
+  },
+  {
+   "t": "p",
+   "k": "df5744e0678a",
+   "en": "Interviewer: A client can place new limit orders or cancel them, and receive matched trades in real-time. A client can view the real-time order book (the list of buy and sell orders). The exchange needs to support at least tens of thousands of users trading at the same time, and it needs to support at least 100 symbols. For the trading volume, we should support billions of orders per day. Also, the exchange is a regulated facility, so we need to make sure it runs risk checks."
+  },
+  {
+   "t": "p",
+   "k": "866b7b0f2131",
+   "en": "Candidate: Could you please elaborate on risk checks?"
+  },
+  {
+   "t": "p",
+   "k": "db1a6d30f573",
+   "en": "Interviewer: Let's just do simple risk checks. For example, a user can only trade a maximum of 1 million shares of Apple stock in one day."
+  },
+  {
+   "t": "p",
+   "k": "301c323cc46a",
+   "en": "Candidate: I noticed you didn't mention user wallet management. Is it something we also need to consider?"
+  },
+  {
+   "t": "p",
+   "k": "4ef0bc4c174b",
+   "en": "Interviewer: Good catch! We need to make sure users have sufficient funds when they place orders. If an order is waiting in the order book to be filled, the funds required for the order need to be withheld to prevent overspending."
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "38fedb2aef82",
+   "en": "After checking with the interviewer for the functional requirements, we should determine the non-functional requirements. In fact, requirements like \"at least 100 symbols\" and \"tens of thousands of users\" tell us that the interviewer wants us to design a small-tomedium scale exchange. On top of this, we should make sure the design can be extended to support more symbols and users. Many interviewers focus on extensibility as an area for follow-up questions."
+  },
+  {
+   "t": "p",
+   "k": "8480c779b107",
+   "en": "Here is a list of non-functional requirements:"
+  },
+  {
+   "t": "li",
+   "k": "126fbf6f7d0a",
+   "en": "Availability. At least 99.99%. Availability is crucial for exchanges. Downtime, even seconds, can harm reputation."
+  },
+  {
+   "t": "li",
+   "k": "0ffc901defa5",
+   "en": "Fault tolerance. Fault tolerance and a fast recovery mechanism are needed to limit the impact of a production incident."
+  },
+  {
+   "t": "li",
+   "k": "89c0f6efc83d",
+   "en": "Latency. The round-trip latency should be at the millisecond level, with a particular focus on the 99th percentile latency. The round trip latency is measured from the moment a market order enters the exchange to the point where the market order returns as a filled execution. A persistently high 99th percentile latency causes a terrible user experience for a small number of users."
+  },
+  {
+   "t": "li",
+   "k": "2617960dcb1f",
+   "en": "Security. The exchange should have an account management system. For legal and compliance, the exchange performs a KYC (Know Your Client) check to verify a user's identity before a new account is opened. For public resources, such as web pages containing market data, we should prevent distributed denial-of-service (DDoS) [6] attacks."
+  },
+  {
+   "t": "h3",
+   "k": "758a31cef712",
+   "en": "Back-of-the-envelope estimation"
+  },
+  {
+   "t": "p",
+   "k": "1e660bbbcfa9",
+   "en": "Let's do some simple back-of-the-envelope calculations to understand the scale of the system:"
+  },
+  {
+   "t": "li",
+   "k": "bf85f121aa9e",
+   "en": "100 symbols"
+  },
+  {
+   "t": "li",
+   "k": "304e6691b3d0",
+   "en": "1 billion orders per day"
+  },
+  {
+   "t": "li",
+   "k": "4eecf521d6c2",
+   "en": "NYSE Stock exchange is open Monday through Friday from 9:30 am to 4:00 pm Eastern Time. That's 6.5 hours in total."
+  },
+  {
+   "t": "p",
+   "k": "949df8f71ffe",
+   "en": "1 billion · = ~43.000 · 6.5 × 3,600"
+  },
+  {
+   "t": "li",
+   "k": "af9516174f9c",
+   "en": "Peak QPS: 5 x QPS = 215,000. The trading volume is significantly higher when the market first opens in the morning and before it closes in the afternoon."
+  },
+  {
+   "t": "p",
+   "k": "c2159990a896",
+   "en": "Step 1 - Understand the Problem and Establish Design Scope | 381"
+  },
+  {
+   "t": "h2",
+   "k": "21ec56b45561",
+   "en": "Step 2 - Propose High-Level Design and Get Buy-In"
+  },
+  {
+   "t": "p",
+   "k": "eb604cde281e",
+   "en": "Before we dive into the high-level design, let's briefly discuss some basic concepts and terminology that are helpful for designing an exchange."
+  },
+  {
+   "t": "h2",
+   "k": "b939da6863a5",
+   "en": "Business Knowledge 101"
+  },
+  {
+   "t": "p",
+   "k": "ceb8885a255b",
+   "en": "Broker"
+  },
+  {
+   "t": "p",
+   "k": "44eef4944878",
+   "en": "Most retail clients trade with an exchange via a broker. Some brokers whom you might be familiar with include Charles Schwab, Robinhood, E*Trade, Fidelity, etc. These brokers provide a friendly user interface for retail users to place trades and view market data."
+  },
+  {
+   "t": "p",
+   "k": "ec28f53ebe57",
+   "en": "Institutional client"
+  },
+  {
+   "t": "p",
+   "k": "a00383b11d64",
+   "en": "Institutional clients trade in large volumes using specialized trading software. Different institutional clients operate with different requirements. For example, pension funds aim for a stable income. They trade infrequently, but when they do trade, the volume is large. They need features like order splitting to minimize the market impact [7] of their sizable orders. Some hedge funds specialize in market making and earn income via commission rebates. They need low latency trading abilities, so obviously they cannot simply view market data on a web page or a mobile app, as retail clients do."
+  },
+  {
+   "t": "p",
+   "k": "9e375b43870e",
+   "en": "Limit order"
+  },
+  {
+   "t": "p",
+   "k": "c3e5b191ec78",
+   "en": "A limit order is a buy or sell order with a fixed price. It might not find a match immediately, or it might just be partially matched."
+  },
+  {
+   "t": "p",
+   "k": "5c0d4cb01256",
+   "en": "Market order"
+  },
+  {
+   "t": "p",
+   "k": "6a3dda90940c",
+   "en": "A market order doesn't specify a price. It is executed at the prevailing market price immediately. A market order sacrifices cost in order to guarantee execution. It is useful in certain fast-moving market conditions."
+  },
+  {
+   "t": "h3",
+   "k": "693db8482d76",
+   "en": "Market data levels"
+  },
+  {
+   "t": "p",
+   "k": "8a6b149f383e",
+   "en": "The US stock market has three tiers of price quotes: L1 (level 1), L2, and L3. L1 market data contains the best bid price, ask price, and quantities (Figure 13.2). Bid price refers to the highest price a buyer is willing to pay for a stock. Ask price refers to the lowest price a seller is willing to sell the stock."
+  },
+  {
+   "t": "p",
+   "k": "8417e33b933c",
+   "en": "APPLE stock · Price · Quantity · best ask · 100.10 · 1800 · best bid · 100.08 · 2000"
+  },
+  {
+   "t": "figure",
+   "k": "da7cdc8f54cd",
+   "en": "Figure 13.2: Level 1 data"
+  },
+  {
+   "t": "p",
+   "k": "497a7352f86d",
+   "en": "L2 includes more price levels than L1 (Figure 13.3)."
+  },
+  {
+   "t": "p",
+   "k": "8272eacf7951",
+   "en": "NAYA · desh of aak 109, 11 · 15ẻe · 1800 · CANNIN · 2000 · beat twi · 108,02 · Buy book · 2000 · 100,06"
+  },
+  {
+   "t": "figure",
+   "k": "0a120c680968",
+   "en": "Figure 18.3: Level 2 data"
+  },
+  {
+   "t": "p",
+   "k": "68beb9d62b19",
+   "en": "El shows price levels and the queued quantity at each price level (Figure 18.4)."
+  },
+  {
+   "t": "p",
+   "k": "de017ebdade7",
+   "en": "APPLE stock · Price · Quantity · depth of ask 100.13 · 100.12 · Sell book · 100.11 · best ask · 100.10 · 1100 · Price · Quantity · 100.08 · best bid · 100.07 · Buy book · 100.06 · 1100 · depth of bid 100.05"
+  },
+  {
+   "t": "figure",
+   "k": "d56bf18ac5ed",
+   "en": "Figure 13.4: Level 3 data"
+  },
+  {
+   "t": "p",
+   "k": "468762caf367",
+   "en": "Candlestick chart"
+  },
+  {
+   "t": "p",
+   "k": "30b3244712e8",
+   "en": "1 candlestick chart represents the stock price for a certain period of time. A typical andlestick looks like this (Figure 13.5). A candlestick shows the market's open, close, sigh and low price for a time interval. The common time intervals are one-minute, fivenute, one-hour, one-day, one-week, and one-month."
+  },
+  {
+   "t": "p",
+   "k": "7b77acbace4c",
+   "en": "Step 2 - Propose High-Level Design and Get Buy-In | 383 High"
+  },
+  {
+   "t": "p",
+   "k": "24e3d5e05633",
+   "en": "Upper Shadow · Open · Real Body · Close- · Lower Shadow · Low"
+  },
+  {
+   "t": "figure",
+   "k": "3a6761d26e62",
+   "en": "Figure 13.5: A single candlestick chart"
+  },
+  {
+   "t": "p",
+   "k": "99f707ef02f0",
+   "en": "FIX"
+  },
+  {
+   "t": "p",
+   "k": "32a00250dd08",
+   "en": "FIX protocol [8], which stands for Financial Information exchange protocol, was created in 1991. It is a vendor-neutral communications protocol for exchanging securities transaction information. See below for an example of a securities transaction encoded in FIX [8]."
+  },
+  {
+   "t": "p",
+   "k": "f9680372d441",
+   "en": "8= FIX.4.2 | 9=176 / 35=8 | 49= PHLX | 56= PERS ||"
+  },
+  {
+   "t": "h3",
+   "k": "b0a6a5e1b51d",
+   "en": "52=20071123-05:30:00.000 | 11= ATOMNOCCC9990900 | 20=3 | 150=E | 39= E"
+  },
+  {
+   "t": "h3",
+   "k": "92d1c6da8110",
+   "en": "| 55=MSFT | 167=CS | 54=1 | 38=15 | 40=2 | 44=15 | 58=PHLX EQUITY"
+  },
+  {
+   "t": "h3",
+   "k": "03b8502a201f",
+   "en": "TESTING / 59=0 | 47=С | 32=0 | 31=0 | 151=15 | 14=0 1 6=0 1 10=128 |"
+  },
+  {
+   "t": "h3",
+   "k": "f0e860766605",
+   "en": "High-level design"
+  },
+  {
+   "t": "p",
+   "k": "8aa6c32f6605",
+   "en": "Now that we have some basic understanding of the key concepts, let's take a look at the high-level design, as shown in Figure 13.6."
+  },
+  {
+   "t": "p",
+   "k": "4d3b12bebd06",
+   "en": "Data · Aggregated · Risk Check · Order Manager · Sequencer · Order Book Goldman · I + Market Data Flow · DB · @-• Reporting Flow"
+  },
+  {
+   "t": "figure",
+   "k": "923b0f474489",
+   "en": "Figure 13.6: High-level design"
+  },
+  {
+   "t": "p",
+   "k": "afe3679cc9ab",
+   "en": "Let's trace the life of an order through various components in the diagram to see how the pieces fit together."
+  },
+  {
+   "t": "p",
+   "k": "4743e4823f75",
+   "en": "First, we follow the order through the trading flow. This is the critical path with strict latency requirements. Everything has to happen fast in the flow:"
+  },
+  {
+   "t": "p",
+   "k": "a6437b8fa30e",
+   "en": "Step 1: A client places an order via the broker's web or mobile app."
+  },
+  {
+   "t": "p",
+   "k": "91c5362fad60",
+   "en": "Step 2: The broker sends the order to the exchange."
+  },
+  {
+   "t": "p",
+   "k": "63295f1621ee",
+   "en": "Step 3: The order enters the exchange through the client gateway. The client gateway performs basic gatekeeping functions such as input validation, rate limiting, authentication, normalization, etc. The client gateway then forwards the order to the order manager."
+  },
+  {
+   "t": "p",
+   "k": "735d66d9f24e",
+   "en": "Step 4 ~ 5: The order manager performs risk checks based on rules set by the risk manager."
+  },
+  {
+   "t": "p",
+   "k": "a731a786c170",
+   "en": "Step 6: After passing risk checks, the order manager verifies there are sufficient funds in the wallet for the order."
+  },
+  {
+   "t": "p",
+   "k": "9bbe5fb921c6",
+   "en": "Step 7 ~ 9: The order is sent to the matching engine. When a match is found, the matching engine emits two executions (also called fills), with one each for the buy and sell sides. To guarantee that matching results are deterministic when replayed, both orders and executions are sequenced in the sequencer (more on the sequencer later)."
+  },
+  {
+   "t": "p",
+   "k": "0e764ad814d5",
+   "en": "Step 10 ~ 14: The executions are returned to the client."
+  },
+  {
+   "t": "p",
+   "k": "5fede89d2112",
+   "en": "Next, we follow the market data flow and trace the order executions from the matching engine to the broker via the data service."
+  },
+  {
+   "t": "p",
+   "k": "347021f1506e",
+   "en": "Step M1: The matching engine generates a stream of executions (fills) as matches are made. The stream is sent to the market data publisher."
+  },
+  {
+   "t": "p",
+   "k": "eb8748c5194e",
+   "en": "Step M2: The market data publisher constructs the candlestick charts and the order books as market data from the stream of executions and orders. It then sends market data to the data service."
+  },
+  {
+   "t": "p",
+   "k": "6fbe9e0afb44",
+   "en": "Step M3: The market data is saved to specialized storage for real-time analytics. Brokers connect to the data service to obtain timely market data. Brokers relay market data to their clients."
+  },
+  {
+   "t": "p",
+   "k": "50ce67cb8fc3",
+   "en": "Lastly, we examine the reporting flow."
+  },
+  {
+   "t": "p",
+   "k": "79750722834d",
+   "en": "Step R1 ~R2 (reporting flow): The reporter collects all the necessary reporting fields (e.g. client_id, price, quantity, order_type, filled_quantity, remaining-quantity) from orders and executions, and writes the consolidated records to the database."
+  },
+  {
+   "t": "p",
+   "k": "4c56ff2e7c6a",
+   "en": "Note that the trading flow (steps 1 to 14) is on the critical path, while the market data flow and reporting flow are not. They have different latency requirements."
+  },
+  {
+   "t": "p",
+   "k": "17d0550649f1",
+   "en": "Now let's examine each of the three flows in more detail."
+  },
+  {
+   "t": "p",
+   "k": "c636405b0192",
+   "en": "Step 2 - Propose High-Level Design and Get Buy-In | 385 Trading flow"
+  },
+  {
+   "t": "p",
+   "k": "fcebce104ca0",
+   "en": "The trading flow is on the critical path of the exchange. Everything must happen fast. The heart of the trading flow is the matching engine. Let's go over that first."
+  },
+  {
+   "t": "h3",
+   "k": "bb8c44414de7",
+   "en": "Matching engine"
+  },
+  {
+   "t": "p",
+   "k": "5fbfc0369b18",
+   "en": "The matching engine is also called the cross engine. Here are the primary responsibilities of the matching engine:"
+  },
+  {
+   "t": "p",
+   "k": "e1f6446ee474",
+   "en": "1. Maintain the order book for each symbol. An order book is a list of buy and sell orders for a symbol. We explain the construction of an order book in the Data models section later."
+  },
+  {
+   "t": "p",
+   "k": "f7264dce9aec",
+   "en": "2. Match buy and sell orders. A match results in two executions (one from the buy side and the other from the sell side). The matching function must be fast and accurate. 3. Distribute the execution stream as market data."
+  },
+  {
+   "t": "p",
+   "k": "0bb25f478e2c",
+   "en": "A highly available matching engine implementation must be able to produce matches in a deterministic order. That is, given a known sequence of orders as an input, the matching engine must produce the same sequence of executions (fills) as an output when the sequence is replayed. This determinism is a foundation of high availability which we will discuss at length in the deep dive section."
+  },
+  {
+   "t": "p",
+   "k": "8d8fccdc9788",
+   "en": "Sequencer"
+  },
+  {
+   "t": "p",
+   "k": "a2bd176c1b77",
+   "en": "The sequencer is the key component that makes the matching engine deterministic. It stamps every incoming order with a sequence ID before it is processed by the matching engine. It also stamps every pair of executions (fills) completed by the matching engine with sequence IDs. In other words, the sequencer has an inbound and an outbound instance, with each maintaining its own sequences. The sequence generated by each sequencer must be sequential numbers, so that any missing numbers can be easily detected. See Figure 13.7 for details."
+  },
+  {
+   "t": "p",
+   "k": "5e8fa61ae03a",
+   "en": "Inbound Sequencer · Order Manager · Match Engine · Outbound Sequencer"
+  },
+  {
+   "t": "figure",
+   "k": "6aadccacf3bf",
+   "en": "Figure 13.7: Inbound and outbound sequencers"
+  },
+  {
+   "t": "p",
+   "k": "513f0d039ab8",
+   "en": "The incoming orders and outgoing executions are stamped with sequence IDs for these reasons:"
+  },
+  {
+   "t": "p",
+   "k": "3c7b9f208f1d",
+   "en": "1. Timeliness and fairness · 2. Fast recovery / replay · 3. Exactly-once guarantee"
+  },
+  {
+   "t": "p",
+   "k": "20d7bf310446",
+   "en": "The sequencer does not only generate sequence IDs. It also functions as a message queue. There is one to send messages (incoming orders) to the matching engine, and another one te send messages (executions) back to the order manager. It is also an event store for the orders and executions. It is similar to having two Kafka event streams connected to the matching engine, one for incoming orders and the other for outgoing executions. In fact, er could have used Kafka if its latency was lower and more predictable. We discuss how the sequencer is implemented in a low-latency exchange environment in the deep dive ex tion."
+  },
+  {
+   "t": "p",
+   "k": "959655eb50b8",
+   "en": "Order manager"
+  },
+  {
+   "t": "p",
+   "k": "fef5e02c12a4",
+   "en": "The order manager receives orders on one end and receives executions on the other. It manages the orders' states. Let's look at it closely."
+  },
+  {
+   "t": "p",
+   "k": "0f3a577d5034",
+   "en": "The order manager receives inbound orders from the client gateway and performs the following:"
+  },
+  {
+   "t": "li",
+   "k": "1854a3bf3d7e",
+   "en": "It sends the order for risk checks. Our requirements for risk checking are simple. For example, we verify that a user's trade volume is below $1M a day."
+  },
+  {
+   "t": "li",
+   "k": "43894c43a80e",
+   "en": "It checks the order against the user's wallet and verifies that there are sufficient funds to cover the trade. The wallet was discussed at length in the \"Digital Wallet\" chapter on page 341. Refer to that chapter for an implementation that would work in the exchange."
+  },
+  {
+   "t": "li",
+   "k": "2370e35e2ca9",
+   "en": "It sends the order to the sequencer where the order is stamped with a sequence ID. The sequenced order is then processed by the matching engine. There are many attributes in a new order, but there is no need to send all the attributes to the matching engine. To reduce the size of the message in data transmission, the order manager only sends the necessary attributes."
+  },
+  {
+   "t": "p",
+   "k": "b8c5acaa4fc1",
+   "en": "On the other end, the order manager receives executions from the matching engine via the sequencer. The order manager returns the executions for the filled orders to the brokers via the client gateway."
+  },
+  {
+   "t": "p",
+   "k": "c7423fe7a0e6",
+   "en": "The order manager should be fast, efficient, and accurate. It maintains the current states for the orders. In fact, the challenge of managing the various state transitions is the major source of complexity for the order manager. There can be tens of thousands of cases involved in a real exchange system. Event sourcing [9] is perfect for the design of an order manager. We discuss an event sourcing design in the deep dive section."
+  },
+  {
+   "t": "p",
+   "k": "dace0331b765",
+   "en": "Client gateway"
+  },
+  {
+   "t": "p",
+   "k": "9463308634cf",
+   "en": "The client gateway is the gatekeeper for the exchange. It receives orders placed by clients and routes them to the order manager. The gateway provides the following functions as shown in Figure 13.8."
+  },
+  {
+   "t": "p",
+   "k": "08ee2c461245",
+   "en": "Step 2 - Propose High-Level Design and Get Buy-In | 387 Gateway"
+  },
+  {
+   "t": "p",
+   "k": "98079ecb7dbc",
+   "en": "Auth · Normalization · Rate Limit · FIXT Support"
+  },
+  {
+   "t": "figure",
+   "k": "eed190a20de6",
+   "en": "Figure 13.8: Client gateway components"
+  },
+  {
+   "t": "p",
+   "k": "bc124e3292ea",
+   "en": "The client gateway is on the critical path and is latency-sensitive. It should stay lightweight. It passes orders to the correct destinations as quickly as possible. The functions above, while critical, must be completed as quickly as possible. It is a design trade-off to decide what functionality to put in the client gateway, and what to leave out. As a general guideline, we should leave complicated functions to the matching engine and risk check."
+  },
+  {
+   "t": "p",
+   "k": "a1a277684925",
+   "en": "There are different types of client gateways for retail and institutional clients. The main considerations are latency, transaction volume, and security requirements. For instance, institutions like the market makers provide a large portion of liquidity for the exchange. They require very low latency. Figure 13.9 shows different client gateway connections to an exchange. An extreme example is the colocation (colo) engine. It is the trading engine software running on some servers rented by the broker in the exchange's data center. The latency is literally the time it takes for light to travel from the colocated server to the exchange server [10]."
+  },
+  {
+   "t": "p",
+   "k": "c94c5e45cb3c",
+   "en": "Exchange · Exchange · App/Web · Website/App · Gateway · Sharded · Services · API Gateway · Broker/Dealer · (FIX/Non-FIX) · Other API · Colo Engine · Users"
+  },
+  {
+   "t": "figure",
+   "k": "f0556ec2438d",
+   "en": "Figure 13.9: Client gateway"
+  },
+  {
+   "t": "h3",
+   "k": "c0f274b81e58",
+   "en": "Market data flow"
+  },
+  {
+   "t": "p",
+   "k": "97c543f5a9a4",
+   "en": "The market data publisher (MDP) receives executions from the matching engine and builds the order books and candlestick charts from the stream of executions. The order books and candlestick charts, which we discuss in the Data Models section later, are collectively called market data. The market data is sent to the data service where they are made available to subscribers. Figure 13.10 shows an implementation of MDP and how it fits with the other components in the market data flow."
+  },
+  {
+   "t": "p",
+   "k": "555807456d8d",
+   "en": "Order · Order · Order · book · book · book · Matching · Orders, matched results — · Candlestick · Engine · Charts · Persistence · Data Service"
+  },
+  {
+   "t": "figure",
+   "k": "25f793214abb",
+   "en": "Figure 13.10: Market Data Publisher"
+  },
+  {
+   "t": "p",
+   "k": "3dc4e645ccae",
+   "en": "Reporting flow"
+  },
+  {
+   "t": "p",
+   "k": "c4436e9345ab",
+   "en": "One essential part of the exchange is reporting. The reporter is not on the trading critical path, but it is a critical part of the system. It provides trading history, tax reporting, compliance reporting, settlements, etc. Efficiency and latency are critical for the trading flow, but the reporter is less sensitive to latency. Accuracy and compliance are key factors for the reporter."
+  },
+  {
+   "t": "p",
+   "k": "a10854a8a0d0",
+   "en": "It is common practice to piece attributes together from both incoming orders and outgoing executions. An incoming new order contains order details, and outgoing execution usually only contains order ID, price, quantity, and execution status. The reporter merges the attributes from both sources for the reports. Figure 13.11 shows how the components in the reporting flow fit together."
+  },
+  {
+   "t": "p",
+   "k": "b48567cce1ad",
+   "en": "Step 2 - Propose High-Level Design and Get Buy-In | 389 orders"
+  },
+  {
+   "t": "p",
+   "k": "b8b1f6d186bf",
+   "en": "Matching · Order · Manager · Manager · Reporter · NewOrderRea · NewOrderAck · Fill · Request · Response · ExecutionReport · Settlement & · Books & · Records · Clearing · Reporting"
+  },
+  {
+   "t": "figure",
+   "k": "61c3b8ccea2e",
+   "en": "Figure 13.11: Reporter"
+  },
+  {
+   "t": "p",
+   "k": "a4b86bbf558c",
+   "en": "A sharp reader might notice that the section order of \"Step 2 - Propose High-Level Design and Get Buy-In\" looks a little different than other chapters. In this chapter, the API design and data models sections come after the high-level design. The sections are arranged this way because these other sections require some concepts that were introduced in the high-level design."
+  },
+  {
+   "t": "h2",
+   "k": "58dbf879b581",
+   "en": "API Design"
+  },
+  {
+   "t": "p",
+   "k": "89ef51dd208f",
+   "en": "Now that we understand the high-level design, let's take a look at the API design. Clients interact with the stock exchange via the brokers to place orders, view executions, view market data, download historical data for analysis, etc. We use the RESTful conventions for the API below to specify the interface between the brokers and the client gateway. Refer to the \"Data models\" section on page 393 for the resources mentioned below."
+  },
+  {
+   "t": "p",
+   "k": "1bb5585179b3",
+   "en": "Note that the RESTful API might not satisfy the latency requirements of institutional clients like hedge funds. The specialized software built for these institutions likely uses a different protocol, but no matter what it is, the basic functionality mentioned below needs to be supported."
+  },
+  {
+   "t": "p",
+   "k": "cce55e4309a7",
+   "en": "Order"
+  },
+  {
+   "t": "p",
+   "k": "da6428adfff6",
+   "en": "POST /v1/order"
+  },
+  {
+   "t": "p",
+   "k": "c24d4e80dd46",
+   "en": "This endpoint places an order. It requires authentication."
+  },
+  {
+   "t": "p",
+   "k": "f1f1425b65e5",
+   "en": "Parameters"
+  },
+  {
+   "t": "p",
+   "k": "6f1a2f040642",
+   "en": "symbol: the stock symbol. String"
+  },
+  {
+   "t": "p",
+   "k": "89adee99d5fd",
+   "en": "side: buy or sell. String"
+  },
+  {
+   "t": "p",
+   "k": "3ceb782f20ae",
+   "en": "price: the price of the limit order. Long"
+  },
+  {
+   "t": "p",
+   "k": "0debf512ba04",
+   "en": "order Type: limit or market (note we only support limit orders in our design). String quantity: the quantity of the order. Long"
+  },
+  {
+   "t": "p",
+   "k": "3c752aaebdcf",
+   "en": "Response · Body: · id: the ID of the order. Long"
+  },
+  {
+   "t": "p",
+   "k": "37ab81ecf9ce",
+   "en": "creationTime: the system creation time of the order. Long"
+  },
+  {
+   "t": "p",
+   "k": "79a2701acc01",
+   "en": "filledQuantity: the quantity that has been successfully executed. Long"
+  },
+  {
+   "t": "p",
+   "k": "dac9f06180ff",
+   "en": "remainingQuantity: the quantity still to be executed. Long"
+  },
+  {
+   "t": "p",
+   "k": "cf6cb0957f36",
+   "en": "status: new/canceled/filled. String"
+  },
+  {
+   "t": "p",
+   "k": "bd7d749af2b6",
+   "en": "rest of the attributes are the same as the input parameters"
+  },
+  {
+   "t": "p",
+   "k": "4fc19dd49d67",
+   "en": "Code:"
+  },
+  {
+   "t": "p",
+   "k": "94e9e89b294d",
+   "en": "200: successful"
+  },
+  {
+   "t": "p",
+   "k": "7a29fc196035",
+   "en": "40x: parameter error/access denied/unauthorized"
+  },
+  {
+   "t": "p",
+   "k": "c45bdab066ff",
+   "en": "500: server error"
+  },
+  {
+   "t": "p",
+   "k": "1e2147459888",
+   "en": "Execution"
+  },
+  {
+   "t": "p",
+   "k": "550aefa62286",
+   "en": "GET /v1/execution?symbol={ symbol}&orderId={:orderId}&startTime={:startTime}& endTime={= endTime}"
+  },
+  {
+   "t": "p",
+   "k": "c1d8d09bc28e",
+   "en": "This endpoint queries execution info. It requires authentication."
+  },
+  {
+   "t": "p",
+   "k": "f1f1425b65e5",
+   "en": "Parameters"
+  },
+  {
+   "t": "p",
+   "k": "6f1a2f040642",
+   "en": "symbol: the stock symbol. String"
+  },
+  {
+   "t": "p",
+   "k": "b63ddb006779",
+   "en": "orderId: the ID of the order. Optional. String"
+  },
+  {
+   "t": "p",
+   "k": "5bf17d4954f0",
+   "en": "startlime: query start time in epoch [11]. Long"
+  },
+  {
+   "t": "p",
+   "k": "b8d8d39fdffa",
+   "en": "endTime: query end time in epoch. Long"
+  },
+  {
+   "t": "p",
+   "k": "0ec6d1505497",
+   "en": "Response"
+  },
+  {
+   "t": "p",
+   "k": "27b8f46ad9c6",
+   "en": "Body:"
+  },
+  {
+   "t": "p",
+   "k": "e1f1f78bc6ea",
+   "en": "Step 2 - Propose High-Level Design and Get Buy-In | 391 executions: array with cach execution in scope (see attributes below). Array"
+  },
+  {
+   "t": "p",
+   "k": "a9756646f1d4",
+   "en": "id: the ID of the execution. Long"
+  },
+  {
+   "t": "p",
+   "k": "143d31b7fa89",
+   "en": "orderId: the ID of the order. Long"
+  },
+  {
+   "t": "p",
+   "k": "6f1a2f040642",
+   "en": "symbol: the stock symbol. String"
+  },
+  {
+   "t": "p",
+   "k": "89adee99d5fd",
+   "en": "side: buy or sell. String"
+  },
+  {
+   "t": "p",
+   "k": "82333cb0a218",
+   "en": "price: the price of the execution. Long"
+  },
+  {
+   "t": "p",
+   "k": "a98eb4d2c8d8",
+   "en": "orderType: limit or market. String"
+  },
+  {
+   "t": "p",
+   "k": "66ae88cef40e",
+   "en": "quantity: the filled quantity. Long"
+  },
+  {
+   "t": "p",
+   "k": "4fc19dd49d67",
+   "en": "Code:"
+  },
+  {
+   "t": "p",
+   "k": "94e9e89b294d",
+   "en": "200: successful"
+  },
+  {
+   "t": "p",
+   "k": "d73b292f960c",
+   "en": "40x: parameter error/not found/access denied/unauthorized"
+  },
+  {
+   "t": "p",
+   "k": "c45bdab066ff",
+   "en": "500: server error"
+  },
+  {
+   "t": "p",
+   "k": "375b244f6971",
+   "en": "Order book"
+  },
+  {
+   "t": "p",
+   "k": "7b56bb0b68c1",
+   "en": "GET /v1/marketdata/orderBook/L2?symbo1={:symbol}&depth={:depth3"
+  },
+  {
+   "t": "h3",
+   "k": "ea4a2ccfab4e",
+   "en": "This endpoint queries L2 order book information for a symbol with designated"
+  },
+  {
+   "t": "p",
+   "k": "d936b9ff0599",
+   "en": "depth."
+  },
+  {
+   "t": "p",
+   "k": "f1f1425b65e5",
+   "en": "Parameters"
+  },
+  {
+   "t": "p",
+   "k": "6f1a2f040642",
+   "en": "symbol: the stock symbol. String"
+  },
+  {
+   "t": "p",
+   "k": "1d3155f09229",
+   "en": "depth: order book depth per side. Int"
+  },
+  {
+   "t": "p",
+   "k": "8976ca0a5d7c",
+   "en": "startTime: query start time in epoch. Long"
+  },
+  {
+   "t": "p",
+   "k": "b8d8d39fdffa",
+   "en": "endTime: query end time in epoch. Long"
+  },
+  {
+   "t": "p",
+   "k": "0ec6d1505497",
+   "en": "Response"
+  },
+  {
+   "t": "p",
+   "k": "27b8f46ad9c6",
+   "en": "Body:"
+  },
+  {
+   "t": "p",
+   "k": "eb4d1dc5939e",
+   "en": "bids: array with price and size. Array"
+  },
+  {
+   "t": "p",
+   "k": "5a4b960667c3",
+   "en": "asks: array with price and size.Array"
+  },
+  {
+   "t": "p",
+   "k": "4fc19dd49d67",
+   "en": "Code:"
+  },
+  {
+   "t": "p",
+   "k": "94e9e89b294d",
+   "en": "200: successful"
+  },
+  {
+   "t": "p",
+   "k": "d73b292f960c",
+   "en": "40x: parameter error/not found/access denied/unauthorized"
+  },
+  {
+   "t": "p",
+   "k": "c45bdab066ff",
+   "en": "500: server error"
+  },
+  {
+   "t": "p",
+   "k": "ed90d12aba93",
+   "en": "Historical prices (candlestick charts)"
+  },
+  {
+   "t": "p",
+   "k": "5bb02d2ae6ea",
+   "en": "GET /v1/marketdata/candles?symbol={:symbol}&resolution={:resolution}&startTime {: startTime}&endTime={:endTime}"
+  },
+  {
+   "t": "p",
+   "k": "c64413a17e50",
+   "en": "This endpoint queries candlestick chart data (see candlestick chart in data models section) for a symbol given a time range and resolution."
+  },
+  {
+   "t": "p",
+   "k": "f1f1425b65e5",
+   "en": "Parameters"
+  },
+  {
+   "t": "p",
+   "k": "6f1a2f040642",
+   "en": "symbol: the stock symbol. String"
+  },
+  {
+   "t": "p",
+   "k": "7d12decf71c9",
+   "en": "resolution: window length of the candlestick chart in seconds. Long"
+  },
+  {
+   "t": "p",
+   "k": "d422f9fc306e",
+   "en": "startTime: start time of the window in epoch. Long"
+  },
+  {
+   "t": "p",
+   "k": "9041c678cde3",
+   "en": "endTime: end time of the window in epoch. Long"
+  },
+  {
+   "t": "p",
+   "k": "0ec6d1505497",
+   "en": "Response"
+  },
+  {
+   "t": "p",
+   "k": "27b8f46ad9c6",
+   "en": "Body:"
+  },
+  {
+   "t": "p",
+   "k": "eafcfd303f6e",
+   "en": "candles: array with each candlestick data (attributes listed below). Array"
+  },
+  {
+   "t": "p",
+   "k": "9be4482a8b70",
+   "en": "open: open price of each candlestick. Double"
+  },
+  {
+   "t": "p",
+   "k": "8def43327dbc",
+   "en": "close: close price of each candlestick. Double"
+  },
+  {
+   "t": "p",
+   "k": "850e92249b22",
+   "en": "high: high price of each candlestick. Double"
+  },
+  {
+   "t": "p",
+   "k": "20666b1f1162",
+   "en": "low: low price of each candlestick. Double"
+  },
+  {
+   "t": "p",
+   "k": "4fc19dd49d67",
+   "en": "Code:"
+  },
+  {
+   "t": "p",
+   "k": "94e9e89b294d",
+   "en": "200: successful"
+  },
+  {
+   "t": "p",
+   "k": "d73b292f960c",
+   "en": "40x: parameter error/not found/access denied/unauthorized"
+  },
+  {
+   "t": "p",
+   "k": "c45bdab066ff",
+   "en": "500: server error"
+  },
+  {
+   "t": "h2",
+   "k": "1a3c91c12238",
+   "en": "Data models"
+  },
+  {
+   "t": "p",
+   "k": "00291c51aaac",
+   "en": "There are three main types of data in the stock exchange. Let's explore them one by one."
+  },
+  {
+   "t": "p",
+   "k": "3a1cb4fb323e",
+   "en": "Product, order, and execution · Order book · Candlestick chart"
+  },
+  {
+   "t": "h3",
+   "k": "8cbcf8c09239",
+   "en": "Product, order, execution"
+  },
+  {
+   "t": "p",
+   "k": "31c5140a0f0c",
+   "en": "A product describes the attributes of a traded symbol, like product type, trading symbol, UI display symbol, settlement currency, lot size, tick size, etc. This data doesn't change frequently. It is primarily used for UI display. The data can be stored in any database and is highly cacheable."
+  },
+  {
+   "t": "p",
+   "k": "fc6e21bee486",
+   "en": "An order represents the inbound instruction for a buy or sell order. An execution represents the outbound matched result. An execution is also called a fill. Not every order has an execution. The output of the matching engine contains two executions, representing the buy and sell sides of a matched order."
+  },
+  {
+   "t": "p",
+   "k": "f46293dea7f5",
+   "en": "See Figure 13.12 for the logical model diagram that shows the relationships between the three entities. Note it is not a database schema."
+  },
+  {
+   "t": "p",
+   "k": "51a8f3cba0c9",
+   "en": "Step 2 - Propose High-Level Design and Get Buy-in | 393 Order"
+  },
+  {
+   "t": "p",
+   "k": "24d372171757",
+   "en": "Execution · + orderID: UUID · + execID: UUID · + productID: int · + orderID: UUID · + price: long · + price: long · + quantity: long · + quantity: long · + side: Side · + side: Side · + orderStatus: OrderStatus · + orderStatus: OrderStatus · + order Type: OrderType · + order Type: OrderType · O..ng · + timelnForce: TimelnForce · + symbol: long · + userlD: long · + symbol: long · + userlD: long · + feeCurrency: Currency · + feeRate: long · + clientOrderlD: string · + feeAmount: long · + broker: string · + accountID: long · + accountID: long · + entryTime: long · + execStatus: ExecStatus · + transaction Time: long · + transaction Time: long · Product · + productID: int · + symbol: type · + tickSize: decimal · + quoteCurrency: Currency · + settleCurrency: Currency · + field: type"
+  },
+  {
+   "t": "figure",
+   "k": "a8a80984e6b4",
+   "en": "Figure 13.12: Product, order, execution"
+  },
+  {
+   "t": "p",
+   "k": "19a662eafa81",
+   "en": "Orders and executions are the most important data in the exchange. We encounter them in all three flows mentioned in the high-level design, in slightly different forms."
+  },
+  {
+   "t": "li",
+   "k": "afabc48c3c32",
+   "en": "In the critical trading path, orders and executions are not stored in a database. To achieve high performance, this path executes trades in memory and leverages hard disk or shared memory to persist and share orders and executions. Specifically, orders and executions are stored in the sequencer for fast recovery, and data is archived after the market closes. We discuss an efficient implementation of the sequencer in the deep dive section."
+  },
+  {
+   "t": "li",
+   "k": "a28ac41b0a9a",
+   "en": "The reporter writes orders and executions to the database for reporting use cases like reconciliation and tax reporting."
+  },
+  {
+   "t": "li",
+   "k": "cb0d565a43aa",
+   "en": "Executions are forwarded to the market data processor to reconstruct the order book and candlestick chart data. We discuss these data types next."
+  },
+  {
+   "t": "p",
+   "k": "375b244f6971",
+   "en": "Order book"
+  },
+  {
+   "t": "p",
+   "k": "5471ca25d1c9",
+   "en": "An order book is a list of buy and sell orders for a specific security or financial instrument, organized by price level [12] [13]. It is a key data structure in the matching engine for fast order matching. An efficient data structure for an order book must satisfy these requirements:"
+  },
+  {
+   "t": "li",
+   "k": "b871676f8208",
+   "en": "Constant lookup time. Operation includes: getting volume at a price level or between price levels."
+  },
+  {
+   "t": "li",
+   "k": "2e3f0946780b",
+   "en": "Fast add/cancel/execute operations, preferably O[1] time complexity. Operations include: placing a new order, canceling an order, and matching an order."
+  },
+  {
+   "t": "li",
+   "k": "09f87066591a",
+   "en": "Fast update. Operation: replacing an order."
+  },
+  {
+   "t": "li",
+   "k": "786a75d0ca71",
+   "en": "Query best bid/ask."
+  },
+  {
+   "t": "li",
+   "k": "30912da77dd7",
+   "en": "Iterate through price levels."
+  },
+  {
+   "t": "p",
+   "k": "4dd81ba7ec6a",
+   "en": "Let's walk through an example order execution against an order book, as illustrated in"
+  },
+  {
+   "t": "figure",
+   "k": "af5ca50ac10f",
+   "en": "Figure 13.13."
+  },
+  {
+   "t": "p",
+   "k": "019395e59270",
+   "en": "APPLE stock · Price · Quantity · depth of ask 100.13 · 100.12 · Sell book · 100.11 · best ask · 100.10 · 1100 · Price · Quantity · 500 / 600 · best bid · 100.08 · 100/ · Buy book · 100.07 · 1100 · 100.06 · depth of bid 100.05"
+  },
+  {
+   "t": "p",
+   "k": "898ba24c6e22",
+   "en": "Buy 2700 shares: 2700 - 200 - 400 - 1100 - 100 - 900 = 0"
+  },
+  {
+   "t": "figure",
+   "k": "34c2811db77a",
+   "en": "Figure 13.13: Limit order book illustrated"
+  },
+  {
+   "t": "p",
+   "k": "3e5dad13db81",
+   "en": "In the example above, there is a large market buy order for 2,700 shares of Apple. The buy order matches all the sell orders in the best ask queue and the first sell order in the 100.11 price queue. After fulfilling this large order, the bid/ask spread widens, and the price increases by one level (best ask is 100.11 now)."
+  },
+  {
+   "t": "p",
+   "k": "40c162d5a323",
+   "en": "The following code snippet shows an implementation of the order book."
+  },
+  {
+   "t": "p",
+   "k": "303b96093755",
+   "en": "Step 2 - Propose High-Level Design and Get Buy-In | 395"
+  },
+  {
+   "t": "h3",
+   "k": "189778424b97",
+   "en": "class Pricelevell"
+  },
+  {
+   "t": "h3",
+   "k": "760318b6d7be",
+   "en": "private Price limitPrice;"
+  },
+  {
+   "t": "h3",
+   "k": "19a86c807bf6",
+   "en": "private long totalVolume;"
+  },
+  {
+   "t": "h3",
+   "k": "f13a4e3b948f",
+   "en": "private List< Order> orders;"
+  },
+  {
+   "t": "p",
+   "k": "dbaf11d63d07",
+   "en": "class Book <Side > 2"
+  },
+  {
+   "t": "h3",
+   "k": "db9904fba693",
+   "en": "private Side side;"
+  },
+  {
+   "t": "h3",
+   "k": "9bd2f991f516",
+   "en": "private Map<Price, Pricelevel> limitMap;"
+  },
+  {
+   "t": "h3",
+   "k": "a7c3eb175df3",
+   "en": "class OrderBook 1"
+  },
+  {
+   "t": "h3",
+   "k": "4577698eb5a7",
+   "en": "private Book <Buy> buybook;"
+  },
+  {
+   "t": "h3",
+   "k": "9cc0f64f96df",
+   "en": "private Book <Sell> sellBook;"
+  },
+  {
+   "t": "h3",
+   "k": "4d595111bb8a",
+   "en": "private Pricelevel bestBid;"
+  },
+  {
+   "t": "h3",
+   "k": "c315ee92edf7",
+   "en": "private Pricelevel bestuffer;"
+  },
+  {
+   "t": "h3",
+   "k": "121754cd9f03",
+   "en": "private Map<OrderID, Order> orderMap;"
+  },
+  {
+   "t": "h3",
+   "k": "dd7cce3070e7",
+   "en": "Does the code meet all the design requirements stated above? For example, when"
+  },
+  {
+   "t": "p",
+   "k": "b29b8b4a8b7c",
+   "en": "adding/canceling a limit order, is the time complexity O[1]? The answer is no since we are using a plain list here (private List<Order> orders). To have a more efficient order book, change the data structure of \"orders\" to a doubly-linked list so that the deletion type of operation (cancel and match) is also O[1]. Let's review how we achieve O [1] time complexity for these operations:"
+  },
+  {
+   "t": "p",
+   "k": "61de93fd18ad",
+   "en": "1. Placing a new order means adding a new Order to the tail of the PriceLevel. This is O[1] time complexity for a doubly-linked list."
+  },
+  {
+   "t": "p",
+   "k": "8522b7601a08",
+   "en": "2. Matching an order means deleting an Order from the head of the PriceLevel. This is O [1] time complexity for a doubly-linked list."
+  },
+  {
+   "t": "p",
+   "k": "bcdee81cc95d",
+   "en": "3. Canceling an order means deleting an Order from the OrderBook. We leverage the helper data structure Map<OrderID, Order> orderMap in the OrderBook to find the Order to cancel in O[1] time. Once the order is found, if the \"orders\" list was a singly-linked list, the code would have to traverse the entire list to locate the previous pointer in order to delete the order. That would have taken O(n) time. Since the list is now doubly-linked, the order itself has a pointer to the previous order, which allows the code to delete the order without traversing the entire order list."
+  },
+  {
+   "t": "figure",
+   "k": "815b7590d1bb",
+   "en": "Figure 13.14 explains how these three operations work."
+  },
+  {
+   "t": "p",
+   "k": "51de2b835bd3",
+   "en": "before"
+  },
+  {
+   "t": "figure",
+   "k": "96591e2e8883",
+   "en": "Figure 13.14: Place, match, and cancel an order in O [1]"
+  },
+  {
+   "t": "p",
+   "k": "325602236bd0",
+   "en": "See the reference material for more details [14]."
+  },
+  {
+   "t": "p",
+   "k": "e7466204ba38",
+   "en": "It is worth noting that the order book data structure is also heavily used in the market data processor to reconstruct the L1, L2, and L3 data from the streams of executions generated by the matching engine."
+  },
+  {
+   "t": "h3",
+   "k": "468762caf367",
+   "en": "Candlestick chart"
+  },
+  {
+   "t": "p",
+   "k": "dcf4b4bd87ae",
+   "en": "Candlestick chart is another key data structure (alongside order book) in the market data processor to produce market data."
+  },
+  {
+   "t": "p",
+   "k": "71a32d81475d",
+   "en": "We model this with a Candlestick class and a CandlestickChart class. When the interval for the candlestick has elapsed, a new Candlestick class is instantiated for the next interval and added to the linked list in the CandleStickChart instance."
+  },
+  {
+   "t": "h3",
+   "k": "640ec4537bb3",
+   "en": "class Candlestick {"
+  },
+  {
+   "t": "h3",
+   "k": "d2f474bd2041",
+   "en": "private long openPrice;"
+  },
+  {
+   "t": "h3",
+   "k": "1188bae104f7",
+   "en": "private long closePrice;"
+  },
+  {
+   "t": "h2",
+   "k": "75d5387f52c4",
+   "en": "highPrice;"
+  },
+  {
+   "t": "p",
+   "k": "f9eecd97d958",
+   "en": "private long"
+  },
+  {
+   "t": "h3",
+   "k": "957c77daf5a5",
+   "en": "private long lowPrice;"
+  },
+  {
+   "t": "h3",
+   "k": "4822a6ce2969",
+   "en": "private long volume;"
+  },
+  {
+   "t": "h3",
+   "k": "dcec3d72ea11",
+   "en": "private long timestamp;"
+  },
+  {
+   "t": "p",
+   "k": "3f33e2db18a7",
+   "en": "Step 2 - Propose High-Level Design and Get Buy-In | 397"
+  },
+  {
+   "t": "h3",
+   "k": "8530c14de246",
+   "en": "private int interval;"
+  },
+  {
+   "t": "h3",
+   "k": "d55ad79c185e",
+   "en": "class CandlestickChart 1"
+  },
+  {
+   "t": "h3",
+   "k": "2250f212c428",
+   "en": "private LinkedList<Candlestick> sticks;"
+  },
+  {
+   "t": "p",
+   "k": "dafc38efa7e8",
+   "en": "Tracking price history in candlestick charts for many symbols at many time intervals consumes a lot of memory. How can we optimize it? Here are two ways:"
+  },
+  {
+   "t": "p",
+   "k": "b6a87465129b",
+   "en": "1. Use pre-allocated ring buffers to hold sticks to reduce the number of new object allocations."
+  },
+  {
+   "t": "p",
+   "k": "555469be0311",
+   "en": "2. Limit the number of sticks in the memory and persist the rest to disk."
+  },
+  {
+   "t": "p",
+   "k": "26d728c25486",
+   "en": "We will examine the optimizations in the \"Market data publisher\" section in deep dive on page 409."
+  },
+  {
+   "t": "p",
+   "k": "ebce8ed39c0e",
+   "en": "The market data is usually persisted in an in-memory columnar database (for example, KDB [15]) for real-time analytics. After the market is closed, data is persisted in a historical database."
+  },
+  {
+   "t": "h2",
+   "k": "5008c4b3d7bc",
+   "en": "Step 3 - Design Deep Dive"
+  },
+  {
+   "t": "p",
+   "k": "63bff6c2d8a7",
+   "en": "Now that we understand how an exchange works at a high level, let's investigate how a modern exchange has evolved to become what it is today. What does a modern exchange look like? The answer might surprise a lot of readers. Some large exchanges run almost everything on a single gigantic server. While it might sound extreme, we can learn many good lessons from it."
+  },
+  {
+   "t": "p",
+   "k": "744816c8a212",
+   "en": "Let's dive in."
+  },
+  {
+   "t": "h2",
+   "k": "476ee0f6af1d",
+   "en": "Performance"
+  },
+  {
+   "t": "p",
+   "k": "b52c1d6bd0ab",
+   "en": "As discussed in the non-functional requirements, latency is very important for an exchange. Not only does the average latency need to be low, but the overall latency must also be stable. A good measure for the level of stability is the 99th percentile latency."
+  },
+  {
+   "t": "p",
+   "k": "1fafb3f953f2",
+   "en": "Latency can be broken down into its components as shown in the formula below: executionTimeAlongCriticalPath"
+  },
+  {
+   "t": "p",
+   "k": "a8814962e133",
+   "en": "Latency = 2"
+  },
+  {
+   "t": "p",
+   "k": "2aafb7be4c70",
+   "en": "There are two ways to reduce latency:"
+  },
+  {
+   "t": "p",
+   "k": "0b37b454751d",
+   "en": "1. Decrease the number of tasks on the critical path."
+  },
+  {
+   "t": "p",
+   "k": "62c1d66b9b87",
+   "en": "2. Shorten the time spent on each task:"
+  },
+  {
+   "t": "p",
+   "k": "30ce1c866ca4",
+   "en": "a. By reducing or eliminating network and disk usage"
+  },
+  {
+   "t": "p",
+   "k": "0045ab1db106",
+   "en": "b. By reducing execution time for each task"
+  },
+  {
+   "t": "p",
+   "k": "3d93e733f90d",
+   "en": "| Chapter 13. Stock Exchange"
+  },
+  {
+   "t": "p",
+   "k": "146e2313fdec",
+   "en": "Let's review the first point. As shown in the high-level design, the critical trading path includes the following:"
+  },
+  {
+   "t": "p",
+   "k": "9c8932316fda",
+   "en": "gateway → order manager → sequencer → matching engine"
+  },
+  {
+   "t": "p",
+   "k": "8756951dc57a",
+   "en": "The critical path only contains the necessary components, even logging is removed from the critical path to achieve low latency."
+  },
+  {
+   "t": "p",
+   "k": "4a3550282e40",
+   "en": "Now let's look at the second point. In the high-level design, the components on the critical path run on individual servers connected over the network. The round trip network latency is about 500 microseconds. When there are multiple components all communicating over the network on the critical path, the total network latency adds up to singledigit milliseconds. In addition, the sequencer is an event store that persists events to disk. Even assuming an efficient design that leverages the performance advantage of sequential writes, the latency of disk access still measures in tens of milliseconds. To learn more about network and disk access latency, see \"Latency Numbers Every Programmer Should Know\" [16]."
+  },
+  {
+   "t": "p",
+   "k": "f13bc9a96354",
+   "en": "Accounting for both network and disk access latency, the total end-to-end latency adds up to tens of milliseconds. While this number was respectable in the early days of the exchange, it is no longer sufficient as exchanges compete for ultra-low latency."
+  },
+  {
+   "t": "p",
+   "k": "f0b707ce597a",
+   "en": "To stay ahead of the competition, exchanges over time evolve their design to reduce the end-to-end latency on the critical path to tens of microseconds, primarily by exploring options to reduce or eliminate network and disk access latency. A time-tested design eliminates the network hops by putting everything on the same server. When all components are on the same server, they can communicate via mmap [17] as an event store (more on this later)."
+  },
+  {
+   "t": "figure",
+   "k": "2039474dfb7c",
+   "en": "Figure 13.15 shows a low-latency design with all the components on a single"
+  },
+  {
+   "t": "p",
+   "k": "3d641a8db4d8",
+   "en": "server: · One Single Server · Market Data · Order Manager · Matching Engine · Publisher · Application Loop · Application Loop · Application Loop · Aggregated · Position · Reporter · Logging · Risk Check · Keeper"
+  },
+  {
+   "t": "figure",
+   "k": "66f4be4e8e70",
+   "en": "Figure 13.15: A low latency single server exchange design"
+  },
+  {
+   "t": "p",
+   "k": "c450fc30d0f1",
+   "en": "Step 3 - Design Deep Dive | 399 There are a few interesting design decisions that are worth a closer look at."
+  },
+  {
+   "t": "p",
+   "k": "82b41f5d0430",
+   "en": "Let's first focus on the application loops in the diagram above. An application loop is an interesting concept. It keeps polling for tasks to execute in a while loop and is the primary task execution mechanism. To meet the strict latency budget, only the most mission-critical tasks should be processed by the application loop. Its goal is to reduce the execution time for each component and to guarantee a highly predictable execution time (i.e., a low 99th percentile latency). Each box in the diagram represents a component. A component is a process on the server. To maximize CPU efficiency, each application loop (think of it as the main processing loop) is single-threaded, and the thread is pinned to a fixed CPU core. Using the order manager as an example, it looks like the following diagram (Figure 13.16)."
+  },
+  {
+   "t": "p",
+   "k": "df1d8ed746d8",
+   "en": "Order Manager · Input Thread/Netloop · dispatch · Order State · _ update* · Loop · Thread · dispatch · Output Thread/Netloop · orders"
+  },
+  {
+   "t": "figure",
+   "k": "e22a6775cec4",
+   "en": "Figure 13.16: Application loop thread in Order Manager"
+  },
+  {
+   "t": "p",
+   "k": "de329887bc54",
+   "en": "In this diagram, the application loop for the order manager is pinned to CPU 1. The benefits of pinning the application loop to the CPU are substantial:"
+  },
+  {
+   "t": "p",
+   "k": "dabf3d963255",
+   "en": "1. No context switch [18]. CPU 1 is fully allocated to the order manager's application loop."
+  },
+  {
+   "t": "p",
+   "k": "1b5ff7a6c7f2",
+   "en": "2. No locks and therefore no lock contention, since there is only one thread that updates states."
+  },
+  {
+   "t": "p",
+   "k": "641501ef5b1c",
+   "en": "Both of these contribute to a low 99th percentile latency."
+  },
+  {
+   "t": "p",
+   "k": "c0028fc3a1f1",
+   "en": "The tradeoff of CPU pinning is that it makes coding more complicated. Engineers need to carefully analyze the time each task takes to keep it from occupying the application loop thread for too long, as it can potentially block subsequent tasks."
+  },
+  {
+   "t": "p",
+   "k": "1ea87977c9f2",
+   "en": "Next, let's focus our attention on the long rectangle labeled \"mmap\" at the center of"
+  },
+  {
+   "t": "figure",
+   "k": "286fd1156fb0",
+   "en": "Figure 13.15. \"mmap\" refers to a POSIX-compliant UNIX system call named mmap [2] that"
+  },
+  {
+   "t": "p",
+   "k": "46287a5ec279",
+   "en": "maps a file into the memory of a process."
+  },
+  {
+   "t": "p",
+   "k": "28c2c49e05a4",
+   "en": "mmap[2] provides a mechanism for high-performance sharing of memory between processes. The performance advantage is compounded when the backing file is in /dev/shm. /dev/shm is a memory-backed file system. When mmap [2] is done over a file in /dev/shm, the access to the shared memory does not result in any disk access at all."
+  },
+  {
+   "t": "p",
+   "k": "200c39dbf91b",
+   "en": "Modern exchanges take advantage of this to eliminate as much disk access from the critical path as possible. mmap[2] is used in the server to implement a message bus over which the components on the critical path communicate. The communication pathway has no network or disk access, and sending a message on this mmap message bus takes sub-microsecond. By leveraging mmap to build an event store, coupled with the event sourcing design paradigm which we will discuss next, modern exchanges can build lowlatency microservices inside a server."
+  },
+  {
+   "t": "p",
+   "k": "b85c3a841a04",
+   "en": "Event sourcing"
+  },
+  {
+   "t": "p",
+   "k": "e5146e01cece",
+   "en": "We discussed event sourcing in the \"Digital Wallet\" chapter on page 341. Please refer to that chapter for an in-depth review of event sourcing."
+  },
+  {
+   "t": "p",
+   "k": "71781fb5a452",
+   "en": "The concept of event sourcing is not hard to understand. In a traditional application, states are persisted in a database. When something goes wrong, it is hard to trace the source of the issue. The database only keeps the current states, and there are no records of the events that have led to the current states."
+  },
+  {
+   "t": "p",
+   "k": "4cee1c662616",
+   "en": "In event sourcing, instead of storing the current states, it keeps an immutable log of all state-changing events. These events are the golden source of truth. See Figure 13.17 for a comparison."
+  },
+  {
+   "t": "p",
+   "k": "1355990dd320",
+   "en": "OrderFilledEvent · Order V1 · Order V2 · New · Order · Event · OrderStatus · Version · Event Sequence · Event Type · V1 · New · NewOrderEvent · V2 · OrderFilledEvent · Non Event Sourcing · Event Sourcing"
+  },
+  {
+   "t": "figure",
+   "k": "24df91381365",
+   "en": "Figure 13.17: Non-event sourcing vs event sourcing"
+  },
+  {
+   "t": "p",
+   "k": "2cbb7e85b82d",
+   "en": "On the left is a classic database schema. It keeps track of the order status for an order, but it does not contain any information about how an order arrives at the current state. On the right is the event sourcing counterpart. It tracks all the events that change the order states, and it can recover order states by replaying all the events in sequence."
+  },
+  {
+   "t": "figure",
+   "k": "391754b3794e",
+   "en": "Figure 13.18 shows an event sourcing design using the mmap event store as a message"
+  },
+  {
+   "t": "p",
+   "k": "24974b383b07",
+   "en": "bus. This looks very much like the Pub-Sub model in Kafka. In fact, if there is no strict Step 3 - Design Deep Dive | 401 latency requirement, Kafka could be used."
+  },
+  {
+   "t": "p",
+   "k": "f68788e0b0ff",
+   "en": "Matching Engine · External / Trading · Domain · Domain · Order Manager · (FIX) · (SBE) · Matching · Order State · Core · matching · App loop · Gateway · FIX · Event store · Event Store · Market Data · Client · Client · OrderfiledEvent · Event Store (mmap) · Sequence · Event type · SBE · encoded · payload"
+  },
+  {
+   "t": "p",
+   "k": "cf3df68d5ecf",
+   "en": "Trading Domain (SBE) Reporting Domain (Your choice)"
+  },
+  {
+   "t": "p",
+   "k": "b7ca465c7d37",
+   "en": "Reporter · Order · Manager"
+  },
+  {
+   "t": "figure",
+   "k": "c00cad2ae3d0",
+   "en": "Figure 13.18: An event sourcing design"
+  },
+  {
+   "t": "p",
+   "k": "3c39aea80754",
+   "en": "In the diagram, the external domain communicates with the trading domain using FIX that we introduced in the Business Knowledge 101 section on page 382."
+  },
+  {
+   "t": "li",
+   "k": "67e2ccbb3005",
+   "en": "The gateway transforms FIX to \"FIX over Simple Binary Encoding\" (SBE) for fast and compact encoding and sends each order as a NewOrderEvent via the Event Store Client in a pre-defined format (see event store entry in the diagram)."
+  },
+  {
+   "t": "li",
+   "k": "e1ed960d5ed2",
+   "en": "The order manager (embedded in the matching engine) receives the NewOrderEvent from the event store, validates it, and adds it to its internal order states. The order is then sent to the matching core."
+  },
+  {
+   "t": "li",
+   "k": "c52f09ebb072",
+   "en": "If the order gets matched, an OrderFilledEvent is generated and sent to the event store."
+  },
+  {
+   "t": "li",
+   "k": "3640d0da36e7",
+   "en": "Other components such as the market data proceeror and the reporter edberther to the event store and process those erents aeroedigl"
+  },
+  {
+   "t": "p",
+   "k": "6d1c59edeb40",
+   "en": "This design follows the high level design cloeele, but there are some apestmente to soake it work more efficiently in the erent sourcing paradigm."
+  },
+  {
+   "t": "p",
+   "k": "5fbb97a1187b",
+   "en": "The first differenoe is the order manager The onder manager becomes a reusable Abrary that is embedded in different components. It makes sense for this design because the states of the orders are important for multiple components. Having a centralized order manager for other components to update or query the order states would hurt lateney, especially if those components are not on the critical trading path, as is the case for the reporter in the diagram. Although each component maintains the order stated by itself, with event soureing the states are guaranteed to be identical and replayable,"
+  },
+  {
+   "t": "p",
+   "k": "40a0ce1cba44",
+   "en": "Another key differenee is that the sequencer is nowhere to be seen. What happened to it?"
+  },
+  {
+   "t": "p",
+   "k": "0a4693e7ed00",
+   "en": "With the event sourcing design, we have one single event store for all messages, Note that the event store entry contains a sequence field. This field is injected by the sequencer."
+  },
+  {
+   "t": "p",
+   "k": "26487efff3c9",
+   "en": "There is only one sequencer for each event store. It is a bad practice to have multiple sequencers, as they will fight for the right to write to the event store. In a busy system like an exchange, a lot of time would be wasted on lock contention. Therefore, the sequencer is a single writer which sequences the events before sending them to the event store. Unlike the sequencer in the high-level design which also functions as a message store, the sequencer here only does one simple thing and is super fast. Figure 13.19 shows a design for the sequencer in a memory-map (mmap) environment."
+  },
+  {
+   "t": "p",
+   "k": "977a8343abcd",
+   "en": "The sequencer pulls events from the ring buffer that is local to each component. For each event, it stamps a sequence ID on the event and sends it to the event store. We can have backup sequencers for high availability in case the primary sequencer goes down."
+  },
+  {
+   "t": "p",
+   "k": "c0b4575bf99e",
+   "en": "Step 3 - Design Deep Dive | 403 Matching"
+  },
+  {
+   "t": "p",
+   "k": "7672a5a4a29a",
+   "en": "Gateway · Engine · 1 Write to ring buffer · nng · Sequencer pulls data [2] · Sequencer"
+  },
+  {
+   "t": "p",
+   "k": "70ead8783900",
+   "en": "3 Sequencer writes to Event Store"
+  },
+  {
+   "t": "p",
+   "k": "292dc88e7063",
+   "en": "Event Store (mmap)"
+  },
+  {
+   "t": "figure",
+   "k": "37191cbb1a77",
+   "en": "Figure 13.19: Sample design of Sequencer"
+  },
+  {
+   "t": "h3",
+   "k": "530f76d00e6b",
+   "en": "High availability"
+  },
+  {
+   "t": "p",
+   "k": "aac6d0e94acd",
+   "en": "For high availability, our design aims for 4 nines (99.99%). This means the exchange can only have 8.64 seconds of downtime per day. It requires almost immediate recovery if a service goes down."
+  },
+  {
+   "t": "p",
+   "k": "ad0c4276437f",
+   "en": "To achieve high availability, consider the following:"
+  },
+  {
+   "t": "li",
+   "k": "c957bdcd45c2",
+   "en": "First, identify single-point-of-failures in the exchange architecture. For example, the failure of the matching engine could be a disaster for the exchange. Therefore, we set up redundant instances alongside the primary instance."
+  },
+  {
+   "t": "li",
+   "k": "fb83c19922de",
+   "en": "Second, detection of failure and the decision to failover to the backup instance should be fast."
+  },
+  {
+   "t": "p",
+   "k": "68d80cf2b1e1",
+   "en": "For stateless services such as the client gateway, they could easily be horizontally scaled by adding more servers. For stateful components, such as the order manager and matching engine, we need to be able to copy state data across replicas."
+  },
+  {
+   "t": "figure",
+   "k": "f08a0268b248",
+   "en": "Figure 13.20 shows an example of how to copy data. The hot matching engine works as"
+  },
+  {
+   "t": "p",
+   "k": "957db6a3ec8a",
+   "en": "the primary instance, and the warm engine receives and processes the exact same events but does not send any event out onto the event store. When the primary goes down, the warm instance can immediately take over as the primary and send out events. When the warm secondary instance goes down, upon restart, it can always recover all the states from the event store. Event sourcing is a great fit for the exchange architecture. The inherent determinism makes state recovery easy and accurate."
+  },
+  {
+   "t": "p",
+   "k": "f76a4b201517",
+   "en": "Matching Engine · Matching Engine · (Hot) · (Warm) · NewOrderEvent · NewOrderEvent · Event Store (mmap)"
+  },
+  {
+   "t": "figure",
+   "k": "0116817774d9",
+   "en": "Figure 13.20: Hot-warm matching engine"
+  },
+  {
+   "t": "p",
+   "k": "84f88d6cb4d7",
+   "en": "We need to design a mechanism to detect potential problems in the primary. Besides normal monitoring of hardware and processes, we can also send heartbeats from the matching engine. If a heartbeat is not received in time, the matching engine might be experiencing problems."
+  },
+  {
+   "t": "p",
+   "k": "2cf631e5f31a",
+   "en": "The problem with this hot-warm design is that it only works within the boundary of a single server. To achieve high availability, we have to extend this concept across multiple machines or even across data centers. In this setting, an entire server is either hot or warm, and the entire event store is replicated from the hot server to all warm replicas. Replicating the entire event store across machines takes time. We could use reliable UDP [19] to efficiently broadcast the event messages to all warm servers. Refer to the design of Aeron [20] for an example."
+  },
+  {
+   "t": "p",
+   "k": "9eabf01fce8f",
+   "en": "In the next section, we discuss an improvement to the hot-warm design to achieve high availability."
+  },
+  {
+   "t": "h3",
+   "k": "c09350ca5ce3",
+   "en": "Fault tolerance"
+  },
+  {
+   "t": "p",
+   "k": "38d9b79ba760",
+   "en": "The hot-warm design above is relatively simple. It works reasonably well, but what happens if the warm instances go down as well? This is a low probability but catastrophic event, so we should prepare for it."
+  },
+  {
+   "t": "p",
+   "k": "5bb12a9ccf61",
+   "en": "This is a problem large tech companies face. They tackle it by replicating core data to data centers in multiple cities. It mitigates the risk of a natural disaster such as an earthquake or a large-scale power outage. To make the system fault-tolerant, we have to answer many questions:"
+  },
+  {
+   "t": "p",
+   "k": "48a7077267d4",
+   "en": "1. If the primary instance goes down, how and when do we decide to failover to the"
+  },
+  {
+   "t": "h3",
+   "k": "efbeb70096ee",
+   "en": "backup instance?"
+  },
+  {
+   "t": "p",
+   "k": "a196661dbd35",
+   "en": "2. How do we choose the leader among backup instances?"
+  },
+  {
+   "t": "p",
+   "k": "6bb41175a3b7",
+   "en": "3. What is the recovery time needed (RTO - Recovery Time Objective)?"
+  },
+  {
+   "t": "p",
+   "k": "6a97ad0a381f",
+   "en": "4. What functionalities need to be recovered (RPO - Recovery Point Objective)? Can our system operate under degraded conditions?"
+  },
+  {
+   "t": "p",
+   "k": "7345700f2fd8",
+   "en": "Let's answer these questions one by one."
+  },
+  {
+   "t": "p",
+   "k": "2f0438128bbb",
+   "en": "First, we have to understand what \"down\" really means. This is not as straightforward as it seems. Consider these situations."
+  },
+  {
+   "t": "p",
+   "k": "a31ba2cbd00b",
+   "en": "Step 3 - Design Deep Dive | 405 1. The system might send out false alarms, which cause unnecessary failovers."
+  },
+  {
+   "t": "p",
+   "k": "5ae65c7c842c",
+   "en": "2. Bugs in the code might cause the primary instance to go down. The same bug could bring down the backup instance after the failover. When all backup instances are knocked out by the bug, the system is no longer available."
+  },
+  {
+   "t": "p",
+   "k": "591f4bc5edc5",
+   "en": "These are tough problems to solve. Here are some suggestions. When we first release a new system, we might need to perform failovers manually. Only when we gather enough signals and operational experience and gain more confidence in the system do we automate the failure detection process. Chaos engineering [21] is a good practice to surface edge cases and gain operational experience faster."
+  },
+  {
+   "t": "p",
+   "k": "7400b4f83979",
+   "en": "Once the decision to failover is correctly made, how do we decide which server takes over? Fortunately, this is a well-understood problem. There are many battle-tested leader-election algorithms. We use Raft [22] as an example."
+  },
+  {
+   "t": "figure",
+   "k": "a55865cadfed",
+   "en": "Figure 13.21 shows a Raft cluster with 5 servers with their own event stores. The current"
+  },
+  {
+   "t": "p",
+   "k": "3baa0ffeec48",
+   "en": "leader sends data to all the other instances (followers). The minimum number of votes required to perform an operation in Raft is ½ + 1, where n is the number of members in the cluster. In this example, the minimum is 2 + 1 = 3."
+  },
+  {
+   "t": "p",
+   "k": "9c6525d919f8",
+   "en": "The following diagram (Figure 13.21) shows the followers receiving new events from the leader over RPC. The events are saved to the follower's own mmap event store."
+  },
+  {
+   "t": "p",
+   "k": "b06b2453e4e9",
+   "en": "Matching Engine · Matching Engine · (Hot) · (Warm) · NewOrderEvent · NewOrderEvent · Event Store (mmap) · Event Store (mmap) · AppendEntries RPCs · Event Store (mmap) · Event Store (mmap) · Event Store (mmap)"
+  },
+  {
+   "t": "figure",
+   "k": "a2fa6a2020ec",
+   "en": "Figure 13.21: Event replication in Raft cluster"
+  },
+  {
+   "t": "p",
+   "k": "e53471822eba",
+   "en": "Let's briefly examine the leader election process. The leader sends heartbeat messages (AppendEnties with no content as shown in Figure 13.21) to its followers. If a follower has not received heartbeat messages for a period of time, it triggers an election timeout that initiates a new election. The first follower that reaches election timeout becomes a candidate, and it asks the rest of the followers to vote (RequestVote). If the first follower receives a majority of votes, it becomes the new leader. If the first follower has a lower term value than the new node, it cannot be the leader. If multiple followers become candidates at the same time, it is called a \"split vote\". In this case, the election times out, and a new election is initiated. See Figure 13.22 for the explanation of \"term\". Time is divided into arbitrary intervals in Raft to represent normal operation and election."
+  },
+  {
+   "t": "p",
+   "k": "c12c48263017",
+   "en": "Term 1 · Term 2 · Term 3 · Term 4 Term 5 · time -* · Elections · Normal Operation Split Vote"
+  },
+  {
+   "t": "figure",
+   "k": "04c60dd71a09",
+   "en": "Figure 13.22: Raft terms (Source: [23])"
+  },
+  {
+   "t": "p",
+   "k": "3fdd9d60e601",
+   "en": "Next. let's take a look at recovery time. Recovery Time Objective (RTO) refers to the amount of time an application can be down without causing significant damage to the business. For a stock exchange, we need to achieve a second-level RTO, which definitely requires automatic failover of services. To do this, we categorize services based on priority and define a degradation strategy to maintain a minimum service level."
+  },
+  {
+   "t": "p",
+   "k": "e58cf383842f",
+   "en": "Finally, we need to figure out the tolerance for data loss. Recovery Point Objective (RPO) refers to the amount of data that can be lost before significant harm is done to the business, i.e. the loss tolerance. In practice, this means backing up data frequently. For a stock exchange, data loss is not acceptable, so RPO is near zero. With Raft, we have many copies of the data. it guarantees that state consensus is achieved among cluster nodes. If the current leader crashes, the new leader should be able to function immediately."
+  },
+  {
+   "t": "h3",
+   "k": "a15dffb02290",
+   "en": "Matching algorithms"
+  },
+  {
+   "t": "p",
+   "k": "1ccfec7a7c51",
+   "en": "Let's take a slight detour and dive into the matching algorithms. The pseudo-code below explains how matching works at a high level."
+  },
+  {
+   "t": "h3",
+   "k": "c2f6810acb22",
+   "en": "Context handle0rder (OrderBook orderBook, OrderEvent"
+  },
+  {
+   "t": "h3",
+   "k": "1dad54593e79",
+   "en": "if (orderEvent. getSequenceld () ! = nextSequence) {"
+  },
+  {
+   "t": "h3",
+   "k": "f76a10fa7ebf",
+   "en": "return Error (OUT_OF_ORDER, nextSequence);"
+  },
+  {
+   "t": "h3",
+   "k": "e0e8faae6a38",
+   "en": "if (! validateUrder (symbol, price, quantity)) 1"
+  },
+  {
+   "t": "h3",
+   "k": "efbab780956c",
+   "en": "return ERROR (INVALID_ORDER, orderEvent);"
+  },
+  {
+   "t": "h3",
+   "k": "8055b9239c0e",
+   "en": "Order order = createOrderFromEvent (orderEvent);"
+  },
+  {
+   "t": "h3",
+   "k": "7f0a8b11d7b7",
+   "en": "switch (msgType):"
+  },
+  {
+   "t": "p",
+   "k": "423b8e51c8de",
+   "en": "case NEW:"
+  },
+  {
+   "t": "h3",
+   "k": "45e0769b11bc",
+   "en": "return handleNew orderBook, order);"
+  },
+  {
+   "t": "p",
+   "k": "f3e2f37726d4",
+   "en": "case CANCEL:"
+  },
+  {
+   "t": "h3",
+   "k": "c701e75d97f0",
+   "en": "return handleCancel (orderBook, order);"
+  },
+  {
+   "t": "p",
+   "k": "71b822126e9f",
+   "en": "default:"
+  },
+  {
+   "t": "p",
+   "k": "b5f145130517",
+   "en": "msgType);"
+  },
+  {
+   "t": "h3",
+   "k": "7a0bc104da76",
+   "en": "return ERROR (INVALID_MSG_TYPE,"
+  },
+  {
+   "t": "p",
+   "k": "064f9f92af21",
+   "en": "Step 3 - Design Deep Dive | 407"
+  },
+  {
+   "t": "h3",
+   "k": "c81e728a7477",
+   "en": "Context handleNew(OrderBook orderBook, Order order) 1"
+  },
+  {
+   "t": "h3",
+   "k": "dedec07be970",
+   "en": "if (BUY.equals(order.side)) {"
+  },
+  {
+   "t": "h3",
+   "k": "51062bbd0d32",
+   "en": "return match(orderBook.sellBook, order);"
+  },
+  {
+   "t": "p",
+   "k": "41a5cdfaa22c",
+   "en": "} else {"
+  },
+  {
+   "t": "h3",
+   "k": "934208959163",
+   "en": "return match(orderBook.buyBook, order);"
+  },
+  {
+   "t": "h3",
+   "k": "53261b9ff51a",
+   "en": "Context handleCancel (OrderBook orderBook, Order order) {"
+  },
+  {
+   "t": "h3",
+   "k": "ffd7f7c4b774",
+   "en": "if (! orderBook. orderMap.contains(order.orderId)) {"
+  },
+  {
+   "t": "h3",
+   "k": "02ea6d9fc9f4",
+   "en": "return ERROR(CANNOT_CANCEL_ALREADY_MATCHED, order);"
+  },
+  {
+   "t": "p",
+   "k": "ce34e5732442",
+   "en": "removeOrder (order);"
+  },
+  {
+   "t": "h3",
+   "k": "54e2d80f0739",
+   "en": "setOrderStatus (order, CANCELED);"
+  },
+  {
+   "t": "h3",
+   "k": "28a87e155d78",
+   "en": "return SUCCESS (CANCEL_SUCCESS, order);"
+  },
+  {
+   "t": "h3",
+   "k": "eb3fda40bc15",
+   "en": "Context match(OrderBook book, Order order) 1"
+  },
+  {
+   "t": "h3",
+   "k": "d19c6e7982a8",
+   "en": "Quantity leavesQuantity = order.quantity - order.matchedQuantity;"
+  },
+  {
+   "t": "h3",
+   "k": "45ba4064b25e",
+   "en": "Iterator<Order> limitIter = book. limitMap.get(order.price).orders;"
+  },
+  {
+   "t": "h3",
+   "k": "1c908a5d90cb",
+   "en": "while (limitIter.hasNext() && leavesQuantity > 0) {"
+  },
+  {
+   "t": "h3",
+   "k": "4f272b1e0558",
+   "en": "Quantity matched = min (limitIter.next.quantity, order.quantity);"
+  },
+  {
+   "t": "h3",
+   "k": "fbc2ad4091f1",
+   "en": "order.matchedQuantity += matched;"
+  },
+  {
+   "t": "h3",
+   "k": "a954c646b536",
+   "en": "leavesQuantity = order.quantity - order.matchedQuantity;"
+  },
+  {
+   "t": "h3",
+   "k": "9645227efa41",
+   "en": "remove (limitIter.next);"
+  },
+  {
+   "t": "h3",
+   "k": "318f7a4d5c81",
+   "en": "generateMatchedFill();"
+  },
+  {
+   "t": "h3",
+   "k": "b05ef64a14f2",
+   "en": "return SUCCESS (MATCH_SUCCESS, order);"
+  },
+  {
+   "t": "p",
+   "k": "188c28d360ed",
+   "en": "The pseudocode uses the FIFO (First In First Out) matching algorithm. The order that comes in first at a certain price level gets matched first, and the last one gets matched last."
+  },
+  {
+   "t": "p",
+   "k": "f8076af14c55",
+   "en": "There are many matching algorithms. These algorithms are commonly used in futures trading. For example, a FIFO with LMM (Lead Market Maker) algorithm allocates a certain quantity to the LMM based on a predefined ratio ahead of the FIFO queue, which the LMM firm negotiates with the exchange for the privilege. See more matching algorithms on the CME website [24]. The matching algorithms are used in many other scenarios. A typical one is a dark pool [25]."
+  },
+  {
+   "t": "h2",
+   "k": "ff5d0f7e5fcc",
+   "en": "Determinism"
+  },
+  {
+   "t": "p",
+   "k": "236014fc0b0f",
+   "en": "There is both functional determinism and latency determinism. We have covered functional determinism in previous sections. The design choices we make, such as sequencer and event sourcing, guarantee that if the events are replayed in the same order, the results will be the same."
+  },
+  {
+   "t": "p",
+   "k": "688a6ec69718",
+   "en": "With functional determinism, the actual time when the event happens does not matter most of the time. What matters is the order of the events. In Figure 13.23, event timestamps from discrete uneven dots in the time dimension are converted to continuous dots, and the time spent on replay/recovery can be greatly reduced"
+  },
+  {
+   "t": "p",
+   "k": "dfcd22935740",
+   "en": "event 2 event 3 · event 6 · event 1 · event 5 ever · event 4 · Time"
+  },
+  {
+   "t": "figure",
+   "k": "c897d2ad217e",
+   "en": "Figure 13.23: Time in event sourcing"
+  },
+  {
+   "t": "p",
+   "k": "8e8fe0363fdf",
+   "en": "Latency determinism means having almost the same latency through the system for each trade. This is key to the business. There is a mathematical way to measure this: the 99th percentile latency, or even more strictly, the 99.99th percentile latency. We can leverage HdrHistogram 26] to calculate latency. If the 99th percentile latency is low, the exchange offers stable performance across almost all the trades."
+  },
+  {
+   "t": "p",
+   "k": "aeed77fe9c71",
+   "en": "It is important to investigate large latency fluctuations. For example, in Java, safe points are often the cause. The HotSpot JVM [27] Stop-the-World garbage collection is a wellknown example."
+  },
+  {
+   "t": "p",
+   "k": "3703f85f2a70",
+   "en": "This concludes our deep dive on the critical trading path. In the remainder of this chapter, we take a closer look at some of the more interesting aspects of other parts of the exchange."
+  },
+  {
+   "t": "h3",
+   "k": "bc6338438a55",
+   "en": "Market data publisher optimizations"
+  },
+  {
+   "t": "p",
+   "k": "692d7ad1ff8d",
+   "en": "As we can see from the matching algorithm, the L3 order book data gives us a better view of the market. We can get free one-day candlestick data from Google Finance, but it is expensive to get the more detailed L2/L3 order book data. Many hedge funds record the data themselves via the exchange real-time API to build their own candlestick charts and other charts for technical analysis."
+  },
+  {
+   "t": "p",
+   "k": "ac644ff40c17",
+   "en": "The market data publisher (MDP) receives matched results from the matching engine and rebuilds the order book and candlestick charts based on that. It then publishes the data to the subscribers."
+  },
+  {
+   "t": "p",
+   "k": "2d4875120128",
+   "en": "The order book rebuild is similar to the pseudocode mentioned in the matching algorithms section above. MDP is a service with many levels. For example, a retail client can only view 5 levels of L2 data by default and needs to pay extra to get 10 levels. MDP's memory cannot expand forever, so we need to have an upper limit on the candlesticks. Refer to the data models section for a review of the candlestick charts. The design of the MDP is in Figure 13.24."
+  },
+  {
+   "t": "p",
+   "k": "ce545c3bbbfe",
+   "en": "Step 3 - Design Deep Dive | 409 Order"
+  },
+  {
+   "t": "p",
+   "k": "239d2400ab34",
+   "en": "Order · Order · book · book · book"
+  },
+  {
+   "t": "p",
+   "k": "37f0f5aaaf49",
+   "en": "Hold recent 100 ticks Candlestick Charts"
+  },
+  {
+   "t": "p",
+   "k": "949c220933a6",
+   "en": "Matching · Orders, matched results · Engine · Persistence · Data Service"
+  },
+  {
+   "t": "figure",
+   "k": "6e95cd06ad42",
+   "en": "Figure 13.24: Market Data Publisher"
+  },
+  {
+   "t": "p",
+   "k": "b2ae73cf0833",
+   "en": "This design utilizes ring buffers. A ring buffer, also called a circular buffer, is a fixedsize queue with the head connected to the tail. A producer continuously produces data and one or more consumers pull data off it. The space in a ring buffer is pre-allocated There is no object creation or deallocation necessary. The data structure is also lock-free. There are other techniques to make the data structure even more efficient. For example, padding ensures that the ring buffer's sequence number is never in a cache line with anything else. Refer to [28] for more detail."
+  },
+  {
+   "t": "h3",
+   "k": "763c99713fb6",
+   "en": "Distribution fairness of market data"
+  },
+  {
+   "t": "p",
+   "k": "0081aed5a14e",
+   "en": "In stock trading, having lower latency than others is like having an oracle that can see the future. For a regulated exchange, it is important to guarantee that all the receivers of market data get that data at the same time. Why is this important? For example, the MDP holds a list of data subscribers, and the order of the subscribers is decided by the order in which they connect to the publisher, with the first one always receiving data first. Guess what happens, then? Smart clients will fight to be the first on the list when the market opens."
+  },
+  {
+   "t": "p",
+   "k": "219c1bb82afa",
+   "en": "There are some ways to mitigate this. Multicast using reliable UDP is a good solution to broadcast updates to many participants at once. The MDP could also assign a random order when the subscriber connects to it. We look at multicast in more detail."
+  },
+  {
+   "t": "p",
+   "k": "2c859d861c8b",
+   "en": "Multicast"
+  },
+  {
+   "t": "p",
+   "k": "739f401868fc",
+   "en": "Data can be transported over the internet by three different types of protocols. Let's take a quick look."
+  },
+  {
+   "t": "p",
+   "k": "42e85e669d41",
+   "en": "1. Unicast: from one source to one destination."
+  },
+  {
+   "t": "p",
+   "k": "6f150958e311",
+   "en": "2. Broadcast: from one source to an entire subnetwork."
+  },
+  {
+   "t": "p",
+   "k": "1d0980f7d3de",
+   "en": "3. Multicast: from one source to a set of hosts that can be on different subnetworks. Multicast is a commonly-used protocol in exchange design. By configuring several receivers in the same multicast group, they will in theory receive data at the same time. However, UDP is an unreliable protocol and the datagram might not reach all the receivers. There are solutions to handle retransmission [29]."
+  },
+  {
+   "t": "p",
+   "k": "bf6b324f6495",
+   "en": "Colocation"
+  },
+  {
+   "t": "p",
+   "k": "c336f6a8f8e0",
+   "en": "While we are on the subject of fairness, it is a fact that a lot of exchanges offer colocation services, which put hedge funds or brokers' servers in the same data center as the exchange. The latency in placing an order to the matching engine is essentially proportional to the length of the cable. Colocation does not break the notion of fairness. It can be considered as a paid-for VIP service."
+  },
+  {
+   "t": "h3",
+   "k": "47968a14a3f7",
+   "en": "Network security"
+  },
+  {
+   "t": "p",
+   "k": "1cb5ee4a900a",
+   "en": "An exchange usually provides some public interfaces and a DDoS attack is a real challenge. Here are a few techniques to combat DDoS:"
+  },
+  {
+   "t": "p",
+   "k": "8af6bf6a2fde",
+   "en": "1. Isolate public services and data from private services, so DDoS attacks don't impact the most important clients. In case the same data is served, we can have multiple read-only copies to isolate problems."
+  },
+  {
+   "t": "p",
+   "k": "1416d572fe30",
+   "en": "2. Use a caching layer to store data that is infrequently updated. With good caching, most queries won't hit databases."
+  },
+  {
+   "t": "h3",
+   "k": "b3428a70d6b2",
+   "en": "3. Harden URLs against DDoS attacks. For example, with an URL like https://my."
+  },
+  {
+   "t": "p",
+   "k": "e3938511c451",
+   "en": "website.com/data?from=123&to=456, an attacker can easily generate many different requests by changing the query string. Instead, URLs like this work better: https://my.website.com/data/recent. It can also be cached at the CDN layer."
+  },
+  {
+   "t": "p",
+   "k": "9491d216a5d0",
+   "en": "4. An effective safelist/blocklist mechanism is needed. Many network gateway products provide this type of functionality."
+  },
+  {
+   "t": "p",
+   "k": "1f80dd6400e5",
+   "en": "5. Rate limiting is frequently used to defend against DDoS attacks."
+  },
+  {
+   "t": "h2",
+   "k": "02a33876c958",
+   "en": "Step 4 - Wrap Up"
+  },
+  {
+   "t": "p",
+   "k": "a1179551c565",
+   "en": "After reading this chapter, you may come to the conclusion that an ideal deployment model for a big exchange is to put everything on a single gigantic server or even one single process. Indeed, this is exactly how some exchanges are designed!"
+  },
+  {
+   "t": "p",
+   "k": "5046190c223a",
+   "en": "With the recent development of the cryptocurrency industry, many crypto exchanges use cloud infrastructure to deploy their services [30]. Some decentralized finance projects are based on the notion of AMM (Automatic Market Making) and don't even need an order book."
+  },
+  {
+   "t": "p",
+   "k": "61276f322b7b",
+   "en": "The convenience provided by the cloud ecosystem changes some of the designs and lowers the threshold for entering the industry. This will surely inject innovative energy into the financial world."
+  },
+  {
+   "t": "p",
+   "k": "71b8b7a68128",
+   "en": "Congratulations on getting this far! Now give yourself a pat on the back. Good job!"
+  },
+  {
+   "t": "p",
+   "k": "60a18250ae1c",
+   "en": "Step 4 - Wrap Up | 411"
+  },
+  {
+   "t": "h2",
+   "k": "dc0ccd897209",
+   "en": "Chapter Summary"
+  },
+  {
+   "t": "p",
+   "k": "783dc128f1ca",
+   "en": "non-functional req · security · 100 symbols · estimation · 215k peak QPS · trading flow · high-level design · market data flow · reporting flow · order · — api design · step 2 · order book · ( data model · Stock Exchange · performance · event sourcing · high availability · fault tolerance · matching algorithms · step 3 · — determinism"
+  },
+  {
+   "t": "p",
+   "k": "9e76a85d9608",
+   "en": "< market data publisher optimization"
+  },
+  {
+   "t": "p",
+   "k": "2adb3031cf15",
+   "en": "\\ fairness · multicast · network security · — wrap up"
+  },
+  {
+   "t": "h2",
+   "k": "5d59149869b8",
+   "en": "Reference Material"
+  },
+  {
+   "t": "p",
+   "k": "a2ddda141471",
+   "en": "[1] LMAX exchange was famous for its open-source Disruptor. https://www.lmax.com /exchange."
+  },
+  {
+   "t": "p",
+   "k": "12ebfdeb9f34",
+   "en": "\", also is the \"Flash Boys Exchange\". https: [2] IEX attracts investors by \"playing fair\","
+  },
+  {
+   "t": "p",
+   "k": "3bcc9fed1b83",
+   "en": "//en.wikipedia.org/wiki/IEX."
+  },
+  {
+   "t": "h3",
+   "k": "3aadc9b31393",
+   "en": "[3] NYSE matched volume. https://www.nyse.com/markets/us-equity-volumes."
+  },
+  {
+   "t": "p",
+   "k": "5cea2743e1fd",
+   "en": "[4] HKEX daily trading volume. https://www.hkex.com.hk/Market-Data/Statistics/C onsolidated-Reports/Securities-Statistics-Archive/Trading_Value_Volume_And_N"
+  },
+  {
+   "t": "h3",
+   "k": "38230dd0d81c",
+   "en": "umber_Of_Deals?sc_lang=en#select1=0."
+  },
+  {
+   "t": "p",
+   "k": "feb17cd579ac",
+   "en": "[5] All of the World's Stock Exchanges by Size. http://money.visualcapitalist.com/all"
+  },
+  {
+   "t": "li",
+   "k": "5d4634084488",
+   "en": "of-the-worlds-stock-exchanges-by-size/."
+  },
+  {
+   "t": "p",
+   "k": "91d2da26c35e",
+   "en": "[6] Denial of service attack. https://en.wikipedia.org/wiki/Denial-of-service_attack [7] Market impact. https://en.wikipedia.org/wiki/Market_impact."
+  },
+  {
+   "t": "p",
+   "k": "9c422e8ffcf4",
+   "en": "[8] Fix trading. https://www.fixtrading.org/."
+  },
+  {
+   "t": "p",
+   "k": "990c8e4fb7bf",
+   "en": "[9] Event Sourcing. https://martinfowler.com/eaaDev/EventSourcing.html."
+  },
+  {
+   "t": "p",
+   "k": "2226558ff2b5",
+   "en": "[10] CME Co-Location and Data Center Services. https:// www.cmegroup.com/trading /colocation/co-location-services.html."
+  },
+  {
+   "t": "h3",
+   "k": "74bbfe946af6",
+   "en": "[11] Epoch. https://www.epoch101.com/."
+  },
+  {
+   "t": "p",
+   "k": "de618ece925d",
+   "en": "[12] Order book. https://www.investopedia.com/terms/o/order-book.asp."
+  },
+  {
+   "t": "p",
+   "k": "2152c029fc6d",
+   "en": "[13] Order book. https://en.wikipedia.org/wiki/Order_book."
+  },
+  {
+   "t": "p",
+   "k": "38ac19febab7",
+   "en": "[14] How to Build a Fast Limit Order Book. https://bit.ly/3ngMtEO."
+  },
+  {
+   "t": "p",
+   "k": "c8968b4556d1",
+   "en": "[15] Developing with kdb+ and the q language. https://code.kx.com/q/."
+  },
+  {
+   "t": "p",
+   "k": "6255f6de0c1d",
+   "en": "[16] Latency Numbers Every Programmer Should Know. https://gist.github.com/jboner /2841832."
+  },
+  {
+   "t": "h3",
+   "k": "8ea568905e3f",
+   "en": "[17] mmap. https://en.wikipedia.org/wiki/Memory_map."
+  },
+  {
+   "t": "p",
+   "k": "ab9b34bcf6c0",
+   "en": "[18] Context switch. https://bit.ly/3pva7A6."
+  },
+  {
+   "t": "p",
+   "k": "4dc8253693dd",
+   "en": "[19] Reliable User Datagram Protocol. https://en.wikipedia.org/wiki/Reliable_User_Dat"
+  },
+  {
+   "t": "h3",
+   "k": "4177585c5be0",
+   "en": "agram_Protocol."
+  },
+  {
+   "t": "p",
+   "k": "d10b073b75bc",
+   "en": "[20] Aeron. https://github.com/real-logic/aeron/wiki/Design-Overview."
+  },
+  {
+   "t": "p",
+   "k": "04b6b2397d74",
+   "en": "[21] Chaos engineering. https://en.wikipedia.org/wiki/Chaos_engineering."
+  },
+  {
+   "t": "p",
+   "k": "fc74979d17fd",
+   "en": "[22] Raft. https://raft.github.io/."
+  },
+  {
+   "t": "p",
+   "k": "7f970a1e921e",
+   "en": "[23] Designing for Understandability: the Raft Consensus Algorithm. https://raft.githu b.io/slides/uiuc2016.pdf."
+  },
+  {
+   "t": "p",
+   "k": "ee09712e554d",
+   "en": "Reference Material | 413 [24] Supported Matching Algorithms. https://bit.ly/3aYoCEo."
+  },
+  {
+   "t": "p",
+   "k": "8449a60a3151",
+   "en": "[25] Dark pool. https://www.investopedia.com/terms/d/dark-pool.asp."
+  },
+  {
+   "t": "p",
+   "k": "869064e58f1c",
+   "en": "[26] HdrHistogram: A High Dynamic Range Histogram. http://hdrhistogram.org/. [27] HotSpot (virtual machine). https://en.wikipedia.org/wiki/HotSpot_(virtual_machi ne)."
+  },
+  {
+   "t": "p",
+   "k": "9cf2f6f534f8",
+   "en": "[28] Cache line padding. https://bit.ly/31ZTFWz."
+  },
+  {
+   "t": "p",
+   "k": "ed28d66827c9",
+   "en": "[29] NACK-Oriented Reliable Multicast. https://en.wikipedia.org/wiki/NACK-Oriente d_Reliable_Multicast."
+  },
+  {
+   "t": "p",
+   "k": "85345a961551",
+   "en": "[30] AWS Coinbase Case Study. https://aws.amazon.com/solutions/case-studies/coinba se/."
+  },
+  {
+   "t": "p",
+   "k": "ba1e67c77adc",
+   "en": "Afterword"
+  },
+  {
+   "t": "p",
+   "k": "24168b7ac9ce",
+   "en": "Congratulations! You have completed this interview guide. You have accumulated skills and knowledge with which to design complex systems. Not everyone has the discipline to do what you have done, to learn what you have learned. Take a moment to pat yourself on the back. Your hard work will pay off."
+  },
+  {
+   "t": "p",
+   "k": "e1a991bf2c1f",
+   "en": "Landing your dream job is a long journey and requires lots of time and effort. Practice makes perfect. Best of luck!"
+  },
+  {
+   "t": "p",
+   "k": "8a18d419498c",
+   "en": "Thank you for buying and reading this book. Without readers like you, our work would not exist. We hope you have enjoyed the book!"
+  },
+  {
+   "t": "p",
+   "k": "ca69ee9c152c",
+   "en": "If you have comments or questions about this book, feel free to send us an email at hi@bytebytego.com. If you notice any errors, please let us know so we can make corrections for the next edition. Thank you!"
+  },
+  {
+   "t": "h2",
+   "k": "233301c47e56",
+   "en": "Join the community"
+  },
+  {
+   "t": "p",
+   "k": "f2d9ca650749",
+   "en": "We created a members-only Discord group. It is designed for community discussions on the following topics:"
+  },
+  {
+   "t": "li",
+   "k": "2985f78b814c",
+   "en": "System design fundamentals."
+  },
+  {
+   "t": "li",
+   "k": "6848d6ab6aa0",
+   "en": "Showcasing design diagrams and getting feedback."
+  },
+  {
+   "t": "li",
+   "k": "679950771d94",
+   "en": "Finding mock interview buddies."
+  },
+  {
+   "t": "li",
+   "k": "b6aa99943656",
+   "en": "General chat with community members."
+  },
+  {
+   "t": "p",
+   "k": "20e31287a904",
+   "en": "Come join us and introduce yourself to the community, today! Use the link below or"
+  },
+  {
+   "t": "h3",
+   "k": "66682aceecd1",
+   "en": "scan the QR code."
+  },
+  {
+   "t": "p",
+   "k": "e5e0166c01c0",
+   "en": "http://bit.ly/systemdiscord · Reference Material | 415 Index · Symbols · atomic commit, 167 · 2PC, 221, 346, 347, 349-351 · atomic operation, 220 · audit, 360 · Automatic Market Making, 411"
+  },
+  {
+   "t": "p",
+   "k": "2699b86ae1e0",
+   "en": "A pathfinding algorithms, 64, 84"
+  },
+  {
+   "t": "p",
+   "k": "01ef2751217d",
+   "en": "Availability Zone, 255 · Availability Zones, 271 · ACID, 199, 210, 219, 221, 321 · ActiveMQ, 92 · availability zones, 28 · adjacency lists, 77 · AVRO, 165"
+  },
+  {
+   "t": "h3",
+   "k": "00c69501c147",
+   "en": "Advanced Message Queuing Protocol,"
+  },
+  {
+   "t": "p",
+   "k": "67d4541c8699",
+   "en": "AWS, 253, 303, 304 · AWS Lambda, 304 · Aeron, 405 · AL, 271"
+  },
+  {
+   "t": "h3",
+   "k": "9af500d288e7",
+   "en": "aggregation window, 164, 176"
+  },
+  {
+   "t": "p",
+   "k": "71dd4b9b50f2",
+   "en": "Airbnb, 195, 201, 337 · Amazon, 137, 201, 317 · B+ tree, 269"
+  },
+  {
+   "t": "h3",
+   "k": "75014829f71a",
+   "en": "Amazon API Gateway, 304"
+  },
+  {
+   "t": "p",
+   "k": "742e9a16132d",
+   "en": "Backblaze, 274"
+  },
+  {
+   "t": "h3",
+   "k": "15e59fda32e4",
+   "en": "Amazon Web Services, 253, 303"
+  },
+  {
+   "t": "p",
+   "k": "81dc9528958d",
+   "en": "base32, 12"
+  },
+  {
+   "t": "h2",
+   "k": "a6e937ce1939",
+   "en": "AML/CFT, 318"
+  },
+  {
+   "t": "p",
+   "k": "963dd5b9bd45",
+   "en": "AMM, 411 · bid price, 382 · AMQP, 125 · Bigtable, 137, 237, 245"
+  },
+  {
+   "t": "h3",
+   "k": "a7a35cac4b47",
+   "en": "Apache James, 232"
+  },
+  {
+   "t": "p",
+   "k": "f2acedbdb6ea",
+   "en": "Blue/green deployment, 19"
+  },
+  {
+   "t": "p",
+   "k": "9171407104f1",
+   "en": "append-only, 362, 366"
+  },
+  {
+   "t": "p",
+   "k": "bda2450c3d53",
+   "en": "brokers, 95, 96, 98, 102, 104-106, 113, Apple, 395"
+  },
+  {
+   "t": "p",
+   "k": "472ab7504722",
+   "en": "118, 120, 122 · Apple Pay, 315 · buy order, 395 · application loop, 400 · ask price, 382"
+  },
+  {
+   "t": "h3",
+   "k": "512190bd8cf0",
+   "en": "asynchronous, 328"
+  },
+  {
+   "t": "p",
+   "k": "9fdb64619aad",
+   "en": "California Consumer Privacy Act, At-least once, 122"
+  },
+  {
+   "t": "p",
+   "k": "cca6de37de13",
+   "en": "at-least once, 93, 123 · candlestick chart, 383 · at-least-once, 331"
+  },
+  {
+   "t": "p",
+   "k": "1f6c87e08799",
+   "en": "candlestick charts, 385, 388, 398,"
+  },
+  {
+   "t": "p",
+   "k": "1069ee61649b",
+   "en": "at-most once, 93, 122 · at-most-once, 331 · CAP theorem, 79 · Index | 417 CVR, 159 · Card schemes, 318 · card verification value, 336 · CVV, 336 · Cyclic redundancy check, 101 · cartesian tiers, 9"
+  },
+  {
+   "t": "p",
+   "k": "d0d4fef6499e",
+   "en": "Cassandra, 45, 70, 77, 79, 137, 152, 186,"
+  },
+  {
+   "t": "p",
+   "k": "0dad51d4126e",
+   "en": "233, 237, 245, 309 · CCPA, 2, 36 · DAG, 167, 170 · CDC, 218 · daily active users, 290 · CDN, 72-74, 76, 201, 411 · dark pool, 408 · Ceph, 260 · Database constraints, 211 · change data capture, 218 · Datadog, 132 · Channel, 41"
+  },
+  {
+   "t": "p",
+   "k": "98254eb94880",
+   "en": "DAU, 37, 59, 68, 161, 290, 310, 312"
+  },
+  {
+   "t": "p",
+   "k": "c08b6ce4efbc",
+   "en": "channel, 41-43, 46-54 · DB-engines, 137 · channels, 41 · DBA, 320 · Chaos engineering, 406 · DDD, 355 · Charles Schwab, 382 · DDoS, 336, 381, 411 · checksum, 275, 276, 283, 284 · Dead letter queue, 330 · checksums, 275 · Deadlocks, 212 · Choreography, 354 · Debezium, 218 · circular buffer, 410 · determinism, 404 · click-through rate, 159 · Dijkstra, 64 · ClickHouse, 189 · directed acyclic graph, 167"
+  },
+  {
+   "t": "h3",
+   "k": "7144b64b6afb",
+   "en": "CloudWatch, 143"
+  },
+  {
+   "t": "p",
+   "k": "e5d86cb426f3",
+   "en": "Discovery, 318"
+  },
+  {
+   "t": "p",
+   "k": "3a93fb3c57bd",
+   "en": "cluster, 39, 40, 51, 55"
+  },
+  {
+   "t": "p",
+   "k": "ad80ba87fe31",
+   "en": "distributed denial-of-service, 381"
+  },
+  {
+   "t": "p",
+   "k": "64d98a0f39d7",
+   "en": "distributed transaction, 181, 371"
+  },
+  {
+   "t": "p",
+   "k": "c3dfd1ffb401",
+   "en": "CME, 408"
+  },
+  {
+   "t": "h3",
+   "k": "be738d8c9789",
+   "en": "CockroachDB, 335"
+  },
+  {
+   "t": "p",
+   "k": "fe2bba2caa55",
+   "en": "DKIM, 242 · Colocation, 411 · columnar database, 398 · DNS, 6, 28, 227, 229 · Domain name service, 227 · Command, 356"
+  },
+  {
+   "t": "h3",
+   "k": "52a02365ea2d",
+   "en": "Command-query responsibility"
+  },
+  {
+   "t": "p",
+   "k": "1ea28cb83a02",
+   "en": "Domain-Driven Design, 355"
+  },
+  {
+   "t": "p",
+   "k": "9b5500b8ed61",
+   "en": "segregation, 360"
+  },
+  {
+   "t": "p",
+   "k": "4b4608f71d74",
+   "en": "DomainKeys Identified Mail, 242"
+  },
+  {
+   "t": "p",
+   "k": "25b3770af0cb",
+   "en": "commission rebate, 382 · DoorDash, 88 · double-entry, 322 · compensating transaction, 347 · double-reservation, 206 · compensation, 350 · Downsampling, 150 · Consistent hashing, 266 · Druid, 189 · consistent hashing, 49 · DynamoDB, 309, 310 · Consumer group, 96 · consumer group, 95, 96, 106 · content delivery network, 201 · conversion rate, 159 · E*Trade, 382 · CQRS, 361, 364, 368, 373, 375 · ElasticSearch, 189 · CRC, 101 · Elasticsearch, 22, 133, 244 · Elixir, 55 · crc, 100 · cross engine, 386 · ELK, 133 · CTR, 159 · equator, 10 · Geofencing, 21 · erasure coding, 271-274, 276 · geofencing, 21 · Erlang, 55"
+  },
+  {
+   "t": "p",
+   "k": "f0ea3527e72e",
+   "en": "geographic information systems,"
+  },
+  {
+   "t": "p",
+   "k": "9c6a5b9c461c",
+   "en": "ETA, 59 · etcd, 48, 98, 140 · Geohash, 7, 10-13, 22 · even grid, 9"
+  },
+  {
+   "t": "p",
+   "k": "c9c36afb370a",
+   "en": "Event sourcing, 343, 357, 361, 365"
+  },
+  {
+   "t": "p",
+   "k": "316251c84543",
+   "en": "geohash, 9, 10, 12, 13, 15, 22, 25-27, 29-31, 53, 54"
+  },
+  {
+   "t": "p",
+   "k": "12a84adfb3d3",
+   "en": "event sourcing, 355-357, 359-362, 364,"
+  },
+  {
+   "t": "p",
+   "k": "17d7feae7319",
+   "en": "Geohashing, 13, 62, 63 · 365, 367-369, 371-373, 375, · geohashing, 63, 72, 75 · 387, 401-403 · geospatial, 4, 9 · event store, 399, 406 · event., 356 · geospatial databases, 7 · eventually consistent, 361 · geospatial indexing, 9 · Exactly once, 123 · GIS, 62 · exactly once, 93, 167, 181 · Global-Local Aggregation, 187 · exactly-once, 325, 331 · gm:map101, 60"
+  },
+  {
+   "t": "p",
+   "k": "a932f11d3104",
+   "en": "exchange, 379-382, 384, 385, 387-390,"
+  },
+  {
+   "t": "p",
+   "k": "3fb3dba6a69a",
+   "en": "Gmail, 228, 241 · 398, 399, 404, 408, 409, · Google, 21, 132, 160 · Google Cloud, 304 · Exponential backoff, 235, 332 · Google Cloud Functions, 304 · Google Design, 80 · Google Finance, 409 · Facebook, 132, 159, 160"
+  },
+  {
+   "t": "p",
+   "k": "ad9a33ee2777",
+   "en": "Google Maps, 1, 22, 59, 62, 68, 70, 80, 88, fault-tolerance, 331"
+  },
+  {
+   "t": "p",
+   "k": "7b3ab9a44d82",
+   "en": "FC, 254 · Google Pay, 315 · Fibre Channel, 254 · Google Places API, 4 · Fidelity, 382 · Google S2, 9, 20 · FIFO, 95, 356, 358, 408 · Gorilla, 147 · fills, 385, 386 · gPRC, 202 · financial instrument, 395 · Grafana, 153 · First In First Out, 408 · Graphite, 143 · FIX, 384, 402 · gRPC, 264 · FIX protocol, 384 · fixed window, 177 · Flink, 146, 190 · Hadoop, 137 · hard disk drives, 253 · hash ring, 49, 50, 52 · hash slot, 306 · Garbage collection, 284 · hash table, 344 · garbage collection, 409 · GDPR, 2, 36, 247 · HBase, 137"
+  },
+  {
+   "t": "p",
+   "k": "325d1d9d6a4c",
+   "en": "General Data Protection Regulation,"
+  },
+  {
+   "t": "p",
+   "k": "d502d1303025",
+   "en": "HDFS, 126, 179, 180, 364 · Geocoding, 62 · HdrHistogram, 409 · heartbeats, 107 · geocoding, 76, 83 · hedge fund, 382 · geofence, 21"
+  },
+  {
+   "t": "p",
+   "k": "079b641abfc5",
+   "en": "Index | 419 179, 183, 187, 188, 190, 244, hedge funds, 409, 411"
+  },
+  {
+   "t": "p",
+   "k": "f453a14567b2",
+   "en": "Hierarchical time wheel, 125"
+  },
+  {
+   "t": "p",
+   "k": "c59c43baddd9",
+   "en": "294, 329-331, 358. 362, 365, 387, 401, 402"
+  },
+  {
+   "t": "p",
+   "k": "a1d4039db86c",
+   "en": "Hilbert curve, 20 · Hive, 189 · Kappa architecture, 173, 174 · HKEX, 379 · KDB, 398 · HMAC, 275 · keep-alive, 71"
+  },
+  {
+   "t": "h3",
+   "k": "9d0cfc8c7458",
+   "en": "hopping window, 177"
+  },
+  {
+   "t": "p",
+   "k": "dc70bac29908",
+   "en": "Kibana, 133 · hot-warm, 405 · Know Your Client, 381 · hotspot, 186 · KYC, 381"
+  },
+  {
+   "t": "h3",
+   "k": "a842bd094338",
+   "en": "HotSpot JVM, 409"
+  },
+  {
+   "t": "p",
+   "k": "1dc5001ca237",
+   "en": "lambda, 173 · IAM, 259 · Latitude, 61"
+  },
+  {
+   "t": "h3",
+   "k": "81b1b951ad7d",
+   "en": "Idempotency, 333"
+  },
+  {
+   "t": "p",
+   "k": "b70c90d4c554",
+   "en": "latitude, 3, 8, 62, 75, 82, 83"
+  },
+  {
+   "t": "p",
+   "k": "d61d553e732b",
+   "en": "idempotency, 198, 206, 208, 320, 331,"
+  },
+  {
+   "t": "p",
+   "k": "3f84cfdd9e8e",
+   "en": "LBS, 2, 5, 6, 16, 30, 31 · 333-336 · Lead Market Maker, 408 · IMAP, 226, 227, 230 · leader election, 406 · immutable, 359, 362, 364, 366 · Least Recently Used, 217 · In-sync Replicas, 112 · levels, 12 · In-sync replicas, 113 · limit order, 380, 382 · InfluxDB, 137, 148, 149 · linked list, 47 · inode, 258, 267 · LinkedIn, 257 · Institutional client, 382 · Internet Mail Access Protocol, · load balancer, 6 · Location-based service, 6 · interpolation, 62 · location-based service, 2, 5 · inverted index, 233 · lock, 211 · IOPS, 237, 256 · lock contention, 400, 403 · iSCSI, 254 · lock-free, 410 · isolation, 210 · Log-Structured Merge-Tree, 245 · ISP, 243 · log-structured merge-tree, 363 · ISR, 113, 114, 116, 117 · Logstash, 133 · long polling, 87, 232"
+  },
+  {
+   "t": "p",
+   "k": "8a08c7412130",
+   "en": "longitude, 3, 8, 61, 62, 75, 82, 83"
+  },
+  {
+   "t": "p",
+   "k": "16fc696bb956",
+   "en": "JMAP, 232 · low latency, 382 · LRU, 217 · JSON, 25, 164 · LSM, 245, 363"
+  },
+  {
+   "t": "p",
+   "k": "61940f46e549",
+   "en": "JSON Meta Application Protocol,"
+  },
+  {
+   "t": "p",
+   "k": "b36103088d35",
+   "en": "Lyft, 22, 88"
+  },
+  {
+   "t": "p",
+   "k": "e3ceeddc1382",
+   "en": "JWZ algorithm, 240"
+  },
+  {
+   "t": "p",
+   "k": "38ace1ad4028",
+   "en": "market data publisher, 388, 409"
+  },
+  {
+   "t": "p",
+   "k": "6a7ebb200c96",
+   "en": "market making, 382"
+  },
+  {
+   "t": "p",
+   "k": "3a44ae351b55",
+   "en": "k-nearest, 1, 23"
+  },
+  {
+   "t": "p",
+   "k": "f31a0eb61981",
+   "en": "Kafka, 71, 80, 85, 92, 111, 125, 146, 147,"
+  },
+  {
+   "t": "p",
+   "k": "2eaa02c891aa",
+   "en": "market order, 381, 382 · Marriott International, 195 · 152, 153, 166, 167, 169, 178, · MasterCard, 318, 324"
+  },
+  {
+   "t": "p",
+   "k": "22e76d0818e8",
+   "en": "offset, 95, 100, 104, 106, 110, 111, 113, matching engine, 385-388, 393, 395,"
+  },
+  {
+   "t": "p",
+   "k": "8519226d009d",
+   "en": "OLAP, 164, 189 · 404, 405, 409, 411 · MAU, 290, 302 · OpenTSDB, 135, 137 · MD5, 275"
+  },
+  {
+   "t": "p",
+   "k": "de8ace55ea0a",
+   "en": "Optimistic locking, 211, 213, 214"
+  },
+  {
+   "t": "p",
+   "k": "ae6657b22ae0",
+   "en": "md5, 283 · ORC, 165 · MDP, 388, 409, 410 · Orchestration, 354 · Mercator projection, 62"
+  },
+  {
+   "t": "p",
+   "k": "1cfedf7e5d3c",
+   "en": "order book, 380, 381, 386, 388, 392, 395, meridian, 10"
+  },
+  {
+   "t": "p",
+   "k": "54ab45ad5a04",
+   "en": "397, 409 · OTP, 55 · message store, 403 · MetricsDB, 137 · Out-of-order, 353 · Microservice, 220 · out-of-order, 350, 352, 353"
+  },
+  {
+   "t": "p",
+   "k": "d2b9b05f3817",
+   "en": "microservice, 201, 203, 219-221,"
+  },
+  {
+   "t": "p",
+   "k": "f2a7168a7c1d",
+   "en": "353-355 · Microsoft, 304 · PagerDuty, 132, 152 · Microsoft Azure Functions, 304 · Pagination, 3 · Microsoft Exchange, 245 · Parquet, 165 · Microsoft Outlook, 227 · Partition, 121 · MIME, 228"
+  },
+  {
+   "t": "p",
+   "k": "181bc7688a99",
+   "en": "partition, 95, 97, 99-104, 106-108,"
+  },
+  {
+   "t": "p",
+   "k": "bee61e184397",
+   "en": "mmap, 362, 399, 401, 403, 406 · 111-114, 116-121 · mmap [2], 401 · Paxos, 265, 335"
+  },
+  {
+   "t": "h3",
+   "k": "e6b8f18a1b49",
+   "en": "MongoDB, 22, 309"
+  },
+  {
+   "t": "p",
+   "k": "873783b56016",
+   "en": "payload, 255 · monolithic, 219 · Payment Service Provider, 318 · monthly active users, 290 · PayPal, 315, 322, 333, 341 · multicast, 411 · PCI DSS, 322, 336"
+  },
+  {
+   "t": "p",
+   "k": "3d68ff221cbd",
+   "en": "Multipurpose Internet Mail Extension,"
+  },
+  {
+   "t": "p",
+   "k": "7fe2e3b25511",
+   "en": "peer-to-peer, 37 · pension fund, 382 · MX record, 227 · percentile, 381, 398, 400, 409"
+  },
+  {
+   "t": "p",
+   "k": "8e865a978667",
+   "en": "MySQL, 4, 99, 136, 211, 216, 237, 303,"
+  },
+  {
+   "t": "p",
+   "k": "1726c78c4018",
+   "en": "personally identifiable information, 306, 309, 313"
+  },
+  {
+   "t": "p",
+   "k": "d480a4c0f83b",
+   "en": "Pessimistic locking, 211 · pessimistic locking, 211 · Nasdaq, 379 · PIL, 247 · Netflix, 201 · point of presence, 73 · NewSQL, 321 · POP, 73, 226, 227, 229, 230 · NFS, 254 · Post Office Protocol, 227 · NOP, 348, 349, 352 · PostGIS, 7"
+  },
+  {
+   "t": "p",
+   "k": "0f99ebd123d3",
+   "en": "NoSQL, 41, 79, 99, 137, 165, 233, 237,"
+  },
+  {
+   "t": "p",
+   "k": "5e6c8a3ee272",
+   "en": "Postgres, 7 · 240, 295, 303, 309, 312, · PostgreSQL, 237 · precision, 22 · NYSE, 379, 381 · price level, 395 · Prometheus, 135, 148 · PSP, 318-327, 333-336 · Office365, 241 · Pull model, 105 · Index | 421 reverse proxy, 369 · Pulsar. 92 · ring buffer, 403 · Push model, 104 · push model. 142 · ring buffers, 410 · risk manager, 385 · Robinhood, 382 · RocketMQ, 92, 125 · quadrants, 16 · RocksDB, 245, 269, 363"
+  },
+  {
+   "t": "p",
+   "k": "090335bacf84",
+   "en": "quadtree. 9. 16-19, 22, 23, 25-27."
+  },
+  {
+   "t": "p",
+   "k": "eb90e5289825",
+   "en": "ROI, 177 · round trip latency, 381 · round-robin, 106 · Routing tiles, 65, 66 · RabbitMQ. 92, 93"
+  },
+  {
+   "t": "p",
+   "k": "7ed923b76f71",
+   "en": "routing tiles, 64, 65, 77, 80, 84-86 rack, 270"
+  },
+  {
+   "t": "p",
+   "k": "16cc67aa7421",
+   "en": "RPC, 202 · Radius, 13 · RPO, 405, 407"
+  },
+  {
+   "t": "p",
+   "k": "8433018f11af",
+   "en": "radius, 1-3, 6, 7, 13, 15, 21, 30"
+  },
+  {
+   "t": "p",
+   "k": "05a0bff95bd0",
+   "en": "RTB, 159, 160, 188 · Rados Gateway, 260 · RTO, 405, 407"
+  },
+  {
+   "t": "p",
+   "k": "af828acfdefc",
+   "en": "Raft, 265, 335, 366-368, 373, 375, 406,"
+  },
+  {
+   "t": "p",
+   "k": "a82e96e7ceb9",
+   "en": "RTree, 9 · RAID, 100 · Rate limiting, 336 · S2, 21, 22 · RDS, 295. 296"
+  },
+  {
+   "t": "p",
+   "k": "88a38538c5d0",
+   "en": "S3, 77, 78, 165, 179, 180, 233, 235, 237, read-only, 361"
+  },
+  {
+   "t": "p",
+   "k": "310cc5e384db",
+   "en": "248, 253-256, 278 · Real-Time Bidding, 159 · Saas, 132 · reconciliation, 327"
+  },
+  {
+   "t": "p",
+   "k": "279677bdfa5b",
+   "en": "Saga, 221, 353-355, 371-373, 375 Recovery Point Objective, 405,"
+  },
+  {
+   "t": "p",
+   "k": "5c453858809e",
+   "en": "SATA, 256"
+  },
+  {
+   "t": "p",
+   "k": "3ccc63522703",
+   "en": "search radius, 40, 41, 43, 44, 46"
+  },
+  {
+   "t": "p",
+   "k": "3631e5e75730",
+   "en": "Recovery Time Objective, 405, · security, 395 · segments, 99 · redirect URL, 325, 326"
+  },
+  {
+   "t": "p",
+   "k": "e7126c4327d5",
+   "en": "Redis, 7, 22, 27, 28, 30, 31, 40, 45, 47, 48,"
+  },
+  {
+   "t": "p",
+   "k": "3ad9de5f42e4",
+   "en": "sell order, 382, 395"
+  },
+  {
+   "t": "p",
+   "k": "15e471c76e52",
+   "en": "56, 217, 218, 233, 295, 297, 300,"
+  },
+  {
+   "t": "p",
+   "k": "bd09c67bb6f3",
+   "en": "Sender Policy Framework, 242"
+  },
+  {
+   "t": "p",
+   "k": "b3273e53e4d8",
+   "en": "302-306, 308, 309, 312, 313,"
+  },
+  {
+   "t": "p",
+   "k": "00abda90789d",
+   "en": "sequencer, 385-387, 394, 399, 403, 344, 345, 355, 374"
+  },
+  {
+   "t": "p",
+   "k": "fa28da2b69ab",
+   "en": "Redis Pub/Sub, 41-43, 46-52, · serializable, 210 · Server-Sent Events, 87 · 54-56 · Service Discovery, 140 · Region Cover algorithm, 22 · session window, 177 · reliable UDP, 405 · Reproducibility, 359, 360 · SHA1, 275"
+  },
+  {
+   "t": "p",
+   "k": "8b27d93f29ab",
+   "en": "RESTful, 3, 197, 231, 234, 236, 253-255,"
+  },
+  {
+   "t": "p",
+   "k": "6ae7c302207e",
+   "en": "shard, 45, 47"
+  },
+  {
+   "t": "p",
+   "k": "352c9c3912d7",
+   "en": "sharding, 24-26, 31, 45, 47, 48, 95, 205, 259, 264, 304, 319, 343,"
+  },
+  {
+   "t": "p",
+   "k": "00f3f3ac2e7a",
+   "en": "221, 277, 305, 310, 312, 344, RESTful API, 39, 40, 45, 56"
+  },
+  {
+   "t": "p",
+   "k": "b7d7de89d901",
+   "en": "shortest-path, 84 · retail client, 382 · Simple Mail Transfer Protocol, · Retryable failures, 331 · return on investment, 177 · Simple Storage Service, 253 · top-k shortest paths, 84 · single-point-of-failure, 404 · Topic, 96"
+  },
+  {
+   "t": "p",
+   "k": "cee6c7bd1bb8",
+   "en": "topic, 94-101, 113, 116, 118, 119,"
+  },
+  {
+   "t": "p",
+   "k": "3df51c012291",
+   "en": "single-threaded, 400 · 121-123 · skip list, 297, 299 · SLA, 255 · Topics, 94 · topics, 41, 95-98, 123, 124 · sliding window, 177 · trading hours, 380 · SMB/CIFS, 254 · Try-Confirm/Cancel, 347 · SMTP, 226, 227, 229, 230, · TTL, 40, 45-47, 217 · 234-236 · tumbling window, 177 · snapshot, 188, 364 · Twitter, 137, 201 · solid-state drives, 253 · Two-phase commit, 221 · sorted, 297 · two-phase commit, 346 · Sorted sets, 299 · Spark, 146, 190 · SPF, 242"
+  },
+  {
+   "t": "p",
+   "k": "d905ac5f05ee",
+   "en": "Split Distinct Aggregation, 187"
+  },
+  {
+   "t": "p",
+   "k": "d19fac325aca",
+   "en": "Uber, 88, 201, 337 · split vote, 407 · UDP, 411 · Splunk, 132 · UNIX, 257, 258, 401 · SQLite, 269, 363 · SSD, 253 · SSE, 87 · virtual private network, 202 · SSL, 336 · Visa, 318, 324 · SS Table, 269 · VPN, 202 · star schema, 172 · state, 357"
+  },
+  {
+   "t": "p",
+   "k": "d4e7bb815fac",
+   "en": "state machine, 354, 357-359, 361, 364,"
+  },
+  {
+   "t": "p",
+   "k": "28d523dd66dc",
+   "en": "WAL, 99, 100, 268 · watermark, 177 · Statista, 241 · Web Mercator, 62 · Stop-the-World, 409 · WebGL, 81 · Storm, 146 · webhook, 325 · Stripe, 315, 325, 333"
+  },
+  {
+   "t": "p",
+   "k": "531e60ba7337",
+   "en": "WebSocket, 39-47, 49-56, 87, 232,"
+  },
+  {
+   "t": "p",
+   "k": "d20ee2568459",
+   "en": "symbol, 386 · synchronous, 328 · write sharding, 310 · Write-ahead log, 99 · write-ahead log, 268 · TC/C, 347-355, 371, 375 · term, 407 · X/Open XA, 347 · Tight coupling, 329 · Tik Tok, 159 · Time to Live, 40 · Yahoo Mail, 241 · time-to-live, 217 · YAML, 151 · Timestream, 137 · YARN, 185 · linder, 21, 22 · Yelp, 1, 30, 178 · Tipalti, 323"
+  },
+  {
+   "t": "p",
+   "k": "d7a42bc41446",
+   "en": "Index | 423 Yelp business endpoints, 4"
+  },
+  {
+   "t": "p",
+   "k": "53f0cc643f0a",
+   "en": "ZeroMQ, 92"
+  },
+  {
+   "t": "p",
+   "k": "50f13ba344cd",
+   "en": "Yext, 19"
+  },
+  {
+   "t": "p",
+   "k": "de51a592e3b3",
+   "en": "ZooKeeper, 48, 98, 99, 111, 112, 140, 344, YouTube, 159"
+  },
+  {
+   "t": "h3",
+   "k": "219bcc1ff194",
+   "en": "YugabyteDB, 335"
+  },
+  {
+   "t": "p",
+   "k": "912ace9f2af0",
+   "en": "Made in United States · North Haven, CT · 20 September 2022 · 24375513R00239"
+  },
+  {
+   "t": "h3",
+   "k": "687f81ec5570",
+   "en": "This book is fantastic. It is a great continuation of the first book. I strongly"
+  },
+  {
+   "t": "h3",
+   "k": "4383a2699f34",
+   "en": "recommend it to anyone who is studying for system design interviews."
+  },
+  {
+   "t": "li",
+   "k": "0db5c5efe109",
+   "en": "Sunny Patel, Software Engineering Manager at Microsoft"
+  },
+  {
+   "t": "h2",
+   "k": "0c89e21955e5",
+   "en": "I was a Tech Lead at FAANG, but needed help in getting up to speed with"
+  },
+  {
+   "t": "h3",
+   "k": "8746068fd827",
+   "en": "unfamiliar domains. If you put in the work, this book will help you acquire the"
+  },
+  {
+   "t": "h2",
+   "k": "2f450faf8cad",
+   "en": "breadth and depth of knowledge you need for talking about bottlenecks and"
+  },
+  {
+   "t": "h3",
+   "k": "3b4ce0f784ad",
+   "en": "alternatives, as expected of a Tech Lead."
+  },
+  {
+   "t": "li",
+   "k": "3d2a36b408e1",
+   "en": "Herbert Degano, Staff Software Engineer at Coinbase"
+  },
+  {
+   "t": "h2",
+   "k": "15a3d6fcc938",
+   "en": "What's inside?"
+  },
+  {
+   "t": "li",
+   "k": "46bb725f14bb",
+   "en": "An insider's take on what interviewers really look for and why."
+  },
+  {
+   "t": "li",
+   "k": "a2d5a025f967",
+   "en": "A 4-step framework for solving any system design interview question. • 13 real system design interview questions with detailed solutions."
+  },
+  {
+   "t": "li",
+   "k": "1f42f5fda3f7",
+   "en": "303 diagrams to visually explain how different systems work."
+  },
+  {
+   "t": "h2",
+   "k": "ca6a6df81b02",
+   "en": "About the Authors"
+  },
+  {
+   "t": "p",
+   "k": "648fccf79aa6",
+   "en": "'System Design Interview - An Insider's Guide (Volume 1)' is an Amazon bestseller, which has been translated into six languages. He has worked at Twitter, Apple, and Zynga."
+  },
+  {
+   "t": "h2",
+   "k": "6995f00b4613",
+   "en": "Sahn Lam is a software engineer with decades of"
+  },
+  {
+   "t": "h3",
+   "k": "6c66b0c18eeb",
+   "en": "experience in building scalable systems at high-growth"
+  },
+  {
+   "t": "h2",
+   "k": "1080ce36590d",
+   "en": "companies like Discord, Zynga, and NetApp. He has"
+  },
+  {
+   "t": "h2",
+   "k": "cddb8f0eb74e",
+   "en": "designed, built, operated, and optimized many"
+  },
+  {
+   "t": "p",
+   "k": "0ce504425211",
+   "en": "interesting distributed systems used by millions of users."
+  },
+  {
+   "t": "h2",
+   "k": "544e532e8cd2",
+   "en": "You can connect with Alex on social media, where he shares system design"
+  },
+  {
+   "t": "h3",
+   "k": "59841ba2a79b",
+   "en": "interview tips every week."
+  },
+  {
+   "t": "h2",
+   "k": "3b700545262b",
+   "en": "twitter.com/alexxubyte"
+  },
+  {
+   "t": "p",
+   "k": "f0c57498347b",
+   "en": "ISBN 9781736049112"
+  },
+  {
+   "t": "h3",
+   "k": "a268c5079d93",
+   "en": "bit.ly/linkedinaxu"
+  }
+ ]
+}

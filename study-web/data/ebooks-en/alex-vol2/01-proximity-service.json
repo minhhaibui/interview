@@ -1,0 +1,2038 @@
+{
+ "id": "01-proximity-service",
+ "title": "Proximity Service",
+ "titleKey": "eab33c55e16d",
+ "book": "alex-vol2",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "7920f0e56ac1",
+   "en": "In this chapter, we design a proximity service. A proximity service is used to discover nearby places such as restaurants, hotels, theaters, museums, etc., and is a core component that powers features like finding the best restaurants nearby on Yelp or finding k-nearest gas stations on Google Maps. Figure 1.1 shows the user interface via which you can search for nearby restaurants on Yelp [1]. Note the map tiles used in this book are from Stamen Design [2] and data are from OpenStreetMap [3]."
+  },
+  {
+   "t": "p",
+   "k": "e7c95b4c2824",
+   "en": "More"
+  },
+  {
+   "t": "p",
+   "k": "4edef102155d",
+   "en": "DaGG"
+  },
+  {
+   "t": "figure",
+   "k": "60c86b449559",
+   "en": "Figure 1.1: Nearby search on Yelp"
+  },
+  {
+   "t": "h2",
+   "k": "cdb2072eee15",
+   "en": "Step 1 - Understand the Problem and Establish Design Scope"
+  },
+  {
+   "t": "p",
+   "k": "27647ad5f49a",
+   "en": "Yelp supports many features and it is not feasible to design all of them in an interview session, so it's important to narrow down the scope by asking questions. The interactions between the interviewer and the candidate could look like this:"
+  },
+  {
+   "t": "p",
+   "k": "0630b702dde0",
+   "en": "Candidate: Can a user specify the search radius? If there are not enough businesses within the search radius, does the system expand the search?"
+  },
+  {
+   "t": "p",
+   "k": "bb68f160aa59",
+   "en": "Interviewer: That's a great question. Let's assume we only care about businesses within a specified radius. If time allows, we can then discuss how to expand the search if there are not enough businesses within the radius."
+  },
+  {
+   "t": "p",
+   "k": "b6910aaf633d",
+   "en": "Candidate: What's the maximal radius allowed? Can I assume it's 20km (12.5 miles?"
+  },
+  {
+   "t": "p",
+   "k": "73a10f131110",
+   "en": "Interviewer: That's a reasonable assumption."
+  },
+  {
+   "t": "p",
+   "k": "9087919422fd",
+   "en": "Candidate: Can a user change the search radius on the UI?"
+  },
+  {
+   "t": "p",
+   "k": "010659ab14d0",
+   "en": "Interviewer: Yes, we have the following options: 0.5km (0.31 mile), 1km (0.62 mile). 2km (1.24 mile), 5km (3.1 mile), and 20km (12.42 mile)."
+  },
+  {
+   "t": "p",
+   "k": "015b0da67751",
+   "en": "Candidate: How does business information get added, deleted, or updated? Do we need to reflect these operations in real-time?"
+  },
+  {
+   "t": "p",
+   "k": "0aeec3c35256",
+   "en": "Interviewer: Business owners can add, delete or update a business. Assume we have a business agreement upfront that newly added/updated businesses will be effective the next day."
+  },
+  {
+   "t": "p",
+   "k": "dec57c5de442",
+   "en": "Candidate: A user might be moving while using the app/website, so the search results could be slightly different after a while. Do we need to refresh the page to keep the results up to date?"
+  },
+  {
+   "t": "p",
+   "k": "256ea35c030a",
+   "en": "Interviewer: Let's assume a user's moving speed is slow and we don't need to constantly refresh the page."
+  },
+  {
+   "t": "h3",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "08fb31a6c87e",
+   "en": "Based on this conversation, we focus on 3 key features:"
+  },
+  {
+   "t": "li",
+   "k": "dcf480be745f",
+   "en": "Return all businesses based on a user's location (latitude and longitude pair) and radius."
+  },
+  {
+   "t": "li",
+   "k": "2f33c436c473",
+   "en": "Business owners can add, delete or update a business, but this information doesn't need to be reflected in real-time."
+  },
+  {
+   "t": "li",
+   "k": "d997411508a0",
+   "en": "Customers can view detailed information about a business."
+  },
+  {
+   "t": "h2",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "p",
+   "k": "ab1102523b65",
+   "en": "From the business requirements, we can infer a list of non-functional requirements. You should also check these with the interviewer."
+  },
+  {
+   "t": "li",
+   "k": "8197d0f47eec",
+   "en": "Low latency. Users should be able to see nearby businesses quickly."
+  },
+  {
+   "t": "li",
+   "k": "ba319b1ab815",
+   "en": "Data privacy. Location info is sensitive data. When we design a location-based service (LBS), we should always take user privacy into consideration. We need to comply with data privacy laws like General Data Protection Regulation (GDPR) [4] and California Consumer Privacy Act (CCPA) [5], etc."
+  },
+  {
+   "t": "li",
+   "k": "037b95053d64",
+   "en": "High availability and scalability requirements. We should ensure our system can handle the spike in traffic during peak hours in densely populated areas."
+  },
+  {
+   "t": "h3",
+   "k": "758a31cef712",
+   "en": "Back-of-the-envelope estimation"
+  },
+  {
+   "t": "p",
+   "k": "0058a03644c0",
+   "en": "Let's take a look at some back-of-the-envelope calculations to determine the potential scale and challenges our solution will need to address. Assume we have 100 million daily active users and 200 million businesses."
+  },
+  {
+   "t": "p",
+   "k": "411f937efc93",
+   "en": "Calculate QPS"
+  },
+  {
+   "t": "li",
+   "k": "c6802dd6ce3c",
+   "en": "Seconds in a day = 24 × 60 × 60 = 86,400. We can round it up to 105 for easier calculation. 10 is used throughout this book to represent seconds in a day. • Assume a user makes 5 search queries per day."
+  },
+  {
+   "t": "p",
+   "k": "6d58b7b32783",
+   "en": "100 million × 5 · Search QPS = = · = 5,000"
+  },
+  {
+   "t": "h2",
+   "k": "21ec56b45561",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in"
+  },
+  {
+   "t": "p",
+   "k": "e35e9fce0df0",
+   "en": "In this section, we discuss the following:"
+  },
+  {
+   "t": "li",
+   "k": "58dbf879b581",
+   "en": "API design"
+  },
+  {
+   "t": "li",
+   "k": "f0e860766605",
+   "en": "High-level design"
+  },
+  {
+   "t": "li",
+   "k": "69e861ed50e0",
+   "en": "Algorithms to find nearby businesses"
+  },
+  {
+   "t": "li",
+   "k": "de26407535de",
+   "en": "Data model"
+  },
+  {
+   "t": "h2",
+   "k": "58dbf879b581",
+   "en": "API design"
+  },
+  {
+   "t": "p",
+   "k": "78ce5cc603b6",
+   "en": "We use the RESTful API convention to design a simplified version of the APIs."
+  },
+  {
+   "t": "h3",
+   "k": "0e0524938305",
+   "en": "GET /v1/search/nearby"
+  },
+  {
+   "t": "p",
+   "k": "737282e2291a",
+   "en": "This endpoint returns businesses based on certain search criteria. In real-life applications, search results are usually paginated. Pagination [6] is not the focus of this chapter, but is worth mentioning during an interview."
+  },
+  {
+   "t": "p",
+   "k": "ab6833520bdc",
+   "en": "Request Parameters: · Description · Field · latitude · Latitude of a given location · decimal · longitude · Longitude of a given location · decimal"
+  },
+  {
+   "t": "p",
+   "k": "6398092f0376",
+   "en": "Optional. Default is 5000 meters (about 3 miles)"
+  },
+  {
+   "t": "p",
+   "k": "b4ab509195d7",
+   "en": "radius · int · Table 1.1: Request parameters · \"total\": 10"
+  },
+  {
+   "t": "h3",
+   "k": "dfbc7b21a222",
+   "en": "\"businesses\": [{business object}]"
+  },
+  {
+   "t": "p",
+   "k": "8f5885f5fa06",
+   "en": "The business object contains everything needed to render the search result page, but we may still need additional attributes such as pictures, reviews, star rating, etc., to render Step 2 - Propose High-level Design and Get Buy-in | 3 the business detail page. Therefore, when a user clicks on the business detail page. a ney endpoint call to fetch the detailed information of a business is usually required."
+  },
+  {
+   "t": "p",
+   "k": "3842346d592b",
+   "en": "APIs for a business"
+  },
+  {
+   "t": "p",
+   "k": "a8ec51b17f38",
+   "en": "The APIs related to a business object are shown in the table below."
+  },
+  {
+   "t": "p",
+   "k": "2f5d98a7a532",
+   "en": "APT"
+  },
+  {
+   "t": "p",
+   "k": "b7f90d4c10dc",
+   "en": "Detail"
+  },
+  {
+   "t": "p",
+   "k": "c6c01bc337aa",
+   "en": "Return detailed information about a business GET /v1/businesses/:id"
+  },
+  {
+   "t": "p",
+   "k": "b4443a771154",
+   "en": "POST /v1/businesses · Add a business · PUT /v1/businesses/:id · Update details of a business · DELETE /v1/businesses/:id · Delete a business · Table 1.2: APIs for a business"
+  },
+  {
+   "t": "p",
+   "k": "b69ec72963e9",
+   "en": "If you are interested in real-world APIs for place/business search, two examples are Google Places API [7] and Yelp business endpoints [8]."
+  },
+  {
+   "t": "h2",
+   "k": "de26407535de",
+   "en": "Data model"
+  },
+  {
+   "t": "p",
+   "k": "882cd7d696bd",
+   "en": "In this section, we discuss the read/write ratio and the schema design. The scalability of the database is covered in deep dive."
+  },
+  {
+   "t": "h3",
+   "k": "082d81ce4dca",
+   "en": "Read/write ratio"
+  },
+  {
+   "t": "p",
+   "k": "becaea458fe9",
+   "en": "Read volume is high because the following two features are very commonly used:"
+  },
+  {
+   "t": "li",
+   "k": "ae07ff6b5e52",
+   "en": "Search for nearby businesses."
+  },
+  {
+   "t": "li",
+   "k": "1aae5aa012ac",
+   "en": "View the detailed information of a business."
+  },
+  {
+   "t": "p",
+   "k": "d67ee0d0a6d3",
+   "en": "On the other hand, the write volume is low because adding, removing, and editing business info are infrequent operations."
+  },
+  {
+   "t": "p",
+   "k": "10a1f6cc7059",
+   "en": "For a read-heavy system, a relational database such as MySQL can be a good fit. Let's take a closer look at the schema design."
+  },
+  {
+   "t": "h2",
+   "k": "513cb5735fda",
+   "en": "Data schema"
+  },
+  {
+   "t": "p",
+   "k": "278f03bd9675",
+   "en": "The key database tables are the business table and the geospatial (geo) index table. Business table"
+  },
+  {
+   "t": "p",
+   "k": "850cb1a892f6",
+   "en": "The business table contains detailed information about a business. It is shown in Table 1.3 and the primary key is business_id."
+  },
+  {
+   "t": "p",
+   "k": "d7f093b16223",
+   "en": "business · business_id · address · city · state · country · latitude · longtitude · Table 1.3: Business table"
+  },
+  {
+   "t": "h3",
+   "k": "013f9b7b05e5",
+   "en": "Geo index table"
+  },
+  {
+   "t": "p",
+   "k": "d43763011920",
+   "en": "A geo index table is used for the efficient processing of spatial operations. Since this table requires some knowledge about geohash, we will discuss it in the \"Scale the database\" section on page 24."
+  },
+  {
+   "t": "h3",
+   "k": "f0e860766605",
+   "en": "High-level design"
+  },
+  {
+   "t": "p",
+   "k": "86fcae41f1f2",
+   "en": "The high-level design diagram is shown in Figure 1.2. The system comprises two parts: location-based service (LBS) and business-related service. Let's take a look at each component of the system."
+  },
+  {
+   "t": "p",
+   "k": "2b5aa8b17d9d",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 5 Load balancer"
+  },
+  {
+   "t": "p",
+   "k": "c96dbcfe5bf0",
+   "en": "/search/nearby · /businesses/{id} · LBS · Business · Service · Read Read · Write · Replica · Replica · Replica · Primary · Database Cluster"
+  },
+  {
+   "t": "figure",
+   "k": "f71eff4bdd63",
+   "en": "Figure 1.2: High-level design"
+  },
+  {
+   "t": "p",
+   "k": "a87e9cdb2b18",
+   "en": "Load balancer"
+  },
+  {
+   "t": "p",
+   "k": "9d7590f224e5",
+   "en": "The load balancer automatically distributes incoming traffic across multiple services. Normally, a company provides a single DNS entry point and internally routes the API calls to the appropriate services based on the URL paths."
+  },
+  {
+   "t": "h3",
+   "k": "fe902d6980ec",
+   "en": "Location-based service (LBS)"
+  },
+  {
+   "t": "p",
+   "k": "281e87e171f1",
+   "en": "The LBS service is the core part of the system which finds nearby businesses for a given radius and location. The LBS has the following characteristics:"
+  },
+  {
+   "t": "li",
+   "k": "59d9843a429f",
+   "en": "It is a read-heavy service with no write requests."
+  },
+  {
+   "t": "li",
+   "k": "5bfe2366fea3",
+   "en": "QPS is high, especially during peak hours in dense areas."
+  },
+  {
+   "t": "li",
+   "k": "9605404decaf",
+   "en": "This service is stateless so it's easy to scale horizontally."
+  },
+  {
+   "t": "h3",
+   "k": "d5800bc75696",
+   "en": "Business service"
+  },
+  {
+   "t": "p",
+   "k": "7c39e5cd2b0a",
+   "en": "Business service mainly deals with two types of requests:"
+  },
+  {
+   "t": "li",
+   "k": "d05e5898fec6",
+   "en": "Business owners create, update, or delete businesses. Those requests are mainly write operations, and the QPS is not high."
+  },
+  {
+   "t": "li",
+   "k": "eeb4fb8d7e8f",
+   "en": "Customers view detailed information about a business. QPS is high during peak hours."
+  },
+  {
+   "t": "h3",
+   "k": "6cc2eef557b9",
+   "en": "Database cluster"
+  },
+  {
+   "t": "p",
+   "k": "7a98107ef365",
+   "en": "The database cluster can use the primary-secondary setup. In this setup, the primary database handles all the write operations, and multiple replicas are used for read operations. Data is saved to the primary database first and then replicated to replicas. Due to the replication delay, there might be some discrepancy between data read by the LBS and the data written to the primary database. This inconsistency is usually not an issue because business information doesn't need to be updated in real-time."
+  },
+  {
+   "t": "p",
+   "k": "fef209990b13",
+   "en": "Scalability of business service and LBS"
+  },
+  {
+   "t": "p",
+   "k": "5dc2eb033325",
+   "en": "Both the business service and LBS are stateless services, so it's easy to automatically add more servers to accommodate peak traffic (e.g. mealtime) and remove servers during offpeak hours (e.g. sleep time). If the system operates on the cloud, we can set up different regions and availability zones to further improve availability [?]. We discuss this more in the deep dive."
+  },
+  {
+   "t": "h3",
+   "k": "3c34c79401fb",
+   "en": "Algorithms to fetch nearby businesses"
+  },
+  {
+   "t": "p",
+   "k": "4e4452f04e75",
+   "en": "In real life, companies might use existing geospatial databases such as Geohash in Redis [10] or Postgres with PostGIS extension [11]. You are not expected to know the internals of those geospatial databases during an interview. It's better to demonstrate your problem-solving skills and technical knowledge by explaining how the geospatial index works, rather than to simply throw out database names."
+  },
+  {
+   "t": "p",
+   "k": "60ed62981e98",
+   "en": "The next step is to explore different options for fetching nearby businesses. We will list a few options, go over the thought process, and discuss trade-offs."
+  },
+  {
+   "t": "h3",
+   "k": "864812f08c4e",
+   "en": "Option 1: Two-dimensional search"
+  },
+  {
+   "t": "p",
+   "k": "e8cb986ba33b",
+   "en": "The most intuitive but naive way to get nearby businesses is to draw a circle with the predefined radius and find all the businesses within the circle as shown in Figure 1.3."
+  },
+  {
+   "t": "figure",
+   "k": "6f1a266e28c9",
+   "en": "Figure 1.3: Two dimensional search"
+  },
+  {
+   "t": "p",
+   "k": "c3fe42579b5a",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 7 This process can be translated into the following pseudo SQL, query:"
+  },
+  {
+   "t": "h3",
+   "k": "b39778c7d11c",
+   "en": "SELECT business_id, latitude, longitude,"
+  },
+  {
+   "t": "p",
+   "k": "d7f5b0f02126",
+   "en": "FROM business"
+  },
+  {
+   "t": "h3",
+   "k": "0bb23eda7799",
+   "en": "WHERE (latitude BETWEEN {:my_lat} - radius AND {:my_lat} + radlus)"
+  },
+  {
+   "t": "h3",
+   "k": "46806a999cbf",
+   "en": "(longitude BETWEEN {:my_long} - radius AND {:my_long} + radius)"
+  },
+  {
+   "t": "p",
+   "k": "5be4a068ce19",
+   "en": "This query is not efficient because we need to scan the whole table. What if we bul indexes on longitude and latitude columns? Would this improve the efficiency? The answer is not by much. The problem is that we have two-dimensional data and the datas returned from each dimension could still be huge. For example, as shown in Figure 1.4, we can quickly retrieve dataset 1 and dataset 2, thanks to indexes on longitude and latitude columns. But to fetch businesses within the radius, we need to perform an intersed operation on those two datasets. This is not efficient because each dataset contains lots of data."
+  },
+  {
+   "t": "p",
+   "k": "f145cb7cadd2",
+   "en": "Europe · South · America · 90."
+  },
+  {
+   "t": "figure",
+   "k": "1186f9b04a14",
+   "en": "Figure 1.4: Intersect two datasets"
+  },
+  {
+   "t": "p",
+   "k": "02e63f326ca4",
+   "en": "The problem with the previous approach is that the database index can only improve search speed in one dimension. So naturally, the follow-up question is, can we map twodimensional data to one dimension? The answer is yes."
+  },
+  {
+   "t": "p",
+   "k": "ee0fb07e579b",
+   "en": "Before we dive into the answers, let's take a look at different types of indexing methods. In a broad sense, there are two types of geospatial indexing approaches, as shown in"
+  },
+  {
+   "t": "figure",
+   "k": "f64bc07acc62",
+   "en": "Figure 1.5. The highlighted ones are the algorithms we discuss in detail because they are"
+  },
+  {
+   "t": "p",
+   "k": "be82bed4e29d",
+   "en": "commonly used in the industry."
+  },
+  {
+   "t": "li",
+   "k": "b4a0831482f0",
+   "en": "Hash: even grid, geohash, cartesian tiers [12], etc."
+  },
+  {
+   "t": "li",
+   "k": "63631dd13747",
+   "en": "Tree: quadtree, Google S2, RTree [13], etc."
+  },
+  {
+   "t": "p",
+   "k": "e58775ddbeb3",
+   "en": "Index · Hash · Tree · Google S2 · RTree · Quadtree · Geohash"
+  },
+  {
+   "t": "figure",
+   "k": "ca9866320c65",
+   "en": "Figure 1.5: Different types of geospatial indexes"
+  },
+  {
+   "t": "p",
+   "k": "91d7510b7ba6",
+   "en": "Even though the underlying implementations of those approaches are different, the highlevel idea is the same, that is, to divide the map into smaller areas and build indexes for fast search. Among those, geohash, quadtree, and Google S2 are most widely used in real-world applications. Let's take a look at them one by one."
+  },
+  {
+   "t": "p",
+   "k": "348be0edf257",
+   "en": "Reminder"
+  },
+  {
+   "t": "p",
+   "k": "2991aac2d5a7",
+   "en": "In a real interview, you usually don't need to explain the implementation details of indexing options. However, it is important to have some basic understanding of the need for geospatial indexing, how it works at a high level, and also its limitations."
+  },
+  {
+   "t": "h3",
+   "k": "ba5f658ea4a6",
+   "en": "Option 2: Evenly divided grid"
+  },
+  {
+   "t": "p",
+   "k": "73c90e2d8aa8",
+   "en": "One simple approach is to evenly divide the world into small grids (Figure 1.6). This way, one grid could have multiple businesses, and each business on the map belongs to one grid."
+  },
+  {
+   "t": "p",
+   "k": "f7744d6461b5",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 9 Global Map - Geographic Coordinate System - WGS84 Datum"
+  },
+  {
+   "t": "p",
+   "k": "011aeab0202f",
+   "en": "Units Degrees - Latitude / Longitude"
+  },
+  {
+   "t": "p",
+   "k": "2c609a28b37b",
+   "en": "-25 · -50 · -75 · 150 · 100 · -50 · Longitude (Degrees)"
+  },
+  {
+   "t": "figure",
+   "k": "26ece7084c84",
+   "en": "Figure 1.6: Global map (source: [14])"
+  },
+  {
+   "t": "p",
+   "k": "a68feca48447",
+   "en": "This approach works to some extent, but it has one major issue: the distribution of businesses is not even. There could be lots of businesses in downtown New York, while other grids in deserts or oceans have no business at all. By dividing the world into even grids, we produce a very uneven data distribution. Ideally, we want to use more granular grids for dense areas and large grids in sparse areas. Another potential challenge is to find neighboring grids of a fixed grid."
+  },
+  {
+   "t": "h2",
+   "k": "bb8aeea4bd52",
+   "en": "Option 3: Geohash"
+  },
+  {
+   "t": "p",
+   "k": "c57f94e68bcc",
+   "en": "Geohash is better than the evenly divided grid option. It works by reducing the twodimensional longitude and latitude data into a one-dimensional string of letters and digits. Geohash algorithms work by recursively dividing the world into smaller and smaller grids with each additional bit. Let's go over how geohash works at a high level. First, divide the planet into four quadrants along with the prime meridian and equator."
+  },
+  {
+   "t": "p",
+   "k": "3b443231e366",
+   "en": "(180,90) · (-180,90) · (180,-90) · (-180,-90)"
+  },
+  {
+   "t": "figure",
+   "k": "f7dfa1b4ad83",
+   "en": "Figure 1.7: Geohash"
+  },
+  {
+   "t": "li",
+   "k": "461071003895",
+   "en": "Latitude range [-90, 0] is represented by 0"
+  },
+  {
+   "t": "li",
+   "k": "6f3e9d3d0fee",
+   "en": "Latitude range [0, 90] is represented by 1"
+  },
+  {
+   "t": "li",
+   "k": "d18ca40333ff",
+   "en": "Longitude range [-180, 0] is represented by 0"
+  },
+  {
+   "t": "li",
+   "k": "4f57cd39ecad",
+   "en": "Longitude range (0, 180] is represented by 1"
+  },
+  {
+   "t": "p",
+   "k": "456bc35fe737",
+   "en": "Second, divide each grid into four smaller grids. Each grid can be represented by alternating between longitude bit and latitude bit."
+  },
+  {
+   "t": "p",
+   "k": "1fba83639a25",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 11"
+  },
+  {
+   "t": "figure",
+   "k": "b4571091d18c",
+   "en": "Figure 1.8: Divide grid"
+  },
+  {
+   "t": "p",
+   "k": "188cffaed927",
+   "en": "Repeat this subdivision until the grid size is within the precision desired. Geohash usually uses base32 representation [15]. Let's take a look at two examples."
+  },
+  {
+   "t": "li",
+   "k": "6c1bfe8e1fb0",
+   "en": "geohash of the Google headquarter (length = 6):"
+  },
+  {
+   "t": "p",
+   "k": "c0cd4290b6d3",
+   "en": "1001 10110 01001 10000 11011 11010 (base32 in binary) →"
+  },
+  {
+   "t": "h3",
+   "k": "c3a2725ba0a7",
+   "en": "9q9hvu (base32)"
+  },
+  {
+   "t": "li",
+   "k": "9142ced4327d",
+   "en": "geohash of the Facebook headquarter (length = 6):"
+  },
+  {
+   "t": "p",
+   "k": "ca774ab83d7c",
+   "en": "1001 10110 01001 10001 10000 10111 (base32 in binary) →"
+  },
+  {
+   "t": "h3",
+   "k": "443e63cc467c",
+   "en": "949jhr (base32)"
+  },
+  {
+   "t": "p",
+   "k": "acb355fd4a2c",
+   "en": "Geohash has 12 precisions (also called levels) as shown in Table 1.4. The precision factor determines the size of the grid. We are only interested in geohashes with lengths between 4 and 6. This is because when it's longer than 6, the grid size is too small, while if it is smaller than 4, the grid size is too large (see Table 1.4)."
+  },
+  {
+   "t": "p",
+   "k": "085d4e2ecbc5",
+   "en": "Grid width x height"
+  },
+  {
+   "t": "p",
+   "k": "13bedbbd81b6",
+   "en": "geohash length"
+  },
+  {
+   "t": "p",
+   "k": "e40e502b3795",
+   "en": "5,009.4km x 4,992.6km (the size of the planet)"
+  },
+  {
+   "t": "p",
+   "k": "5c04787a9370",
+   "en": "1,252.3km x 624.1km · 156.5km x 156km · 39.1km x 19.5km · 4.9km x 4.9km · 1.2km x 609.4m · 152.9m x 152.4m · 4.8m x 4.8m · 1.2m x 59.5cm · 14.9cm x 14.9cm · 3.7cm × 1.9cm"
+  },
+  {
+   "t": "p",
+   "k": "0e52146e13cf",
+   "en": "Table 1.4: Geohash length to grid size mapping (source: [16])"
+  },
+  {
+   "t": "p",
+   "k": "5e896e1ca470",
+   "en": "How do we choose the right precision? We want to find the minimal geohash length that covers the whole circle drawn by the user-defined radius. The corresponding relationship between the radius and the length of geohash is shown in the table below."
+  },
+  {
+   "t": "h3",
+   "k": "742c60ba0220",
+   "en": "Radius (Kilometers)"
+  },
+  {
+   "t": "p",
+   "k": "2ad356e63f93",
+   "en": "0.5km (0.31 mile) · 1km (0.62 mile) · 2km (1.24 mile) · 5km (3.1 mile) · 20km (12.42 mile)"
+  },
+  {
+   "t": "p",
+   "k": "8257bf7e3306",
+   "en": "Table 1.5: Radius to geohash mapping"
+  },
+  {
+   "t": "p",
+   "k": "8c43fd750df3",
+   "en": "This approach works great most of the time, but there are some edge cases with how the geohash boundary is handled that we should discuss with the interviewer."
+  },
+  {
+   "t": "h3",
+   "k": "6e21995e2f12",
+   "en": "Boundary issues"
+  },
+  {
+   "t": "p",
+   "k": "8a087db98a68",
+   "en": "Geohashing guarantees that the longer a shared prefix is between two geohashes, the closer they are. As shown in Figure 1.9, all the grids have a shared prefix: 9q8zn."
+  },
+  {
+   "t": "p",
+   "k": "a6ee9b1bd7c3",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 13 sqaenf"
+  },
+  {
+   "t": "p",
+   "k": "69a285b1eb2a",
+   "en": "998206 · 948znd · 9q8zn3 · 9q8zn9 · 9q8anb · 9q82n2 · 9q8zn8"
+  },
+  {
+   "t": "figure",
+   "k": "fa1c6d3c6f75",
+   "en": "Figure 1.9: Shared prefix"
+  },
+  {
+   "t": "h3",
+   "k": "a2801334160d",
+   "en": "Boundary issue 1"
+  },
+  {
+   "t": "p",
+   "k": "63d1355c95cf",
+   "en": "However. the reverse is not true: two locations can be very close but have no shared prefix at all. This is because two close locations on either side of the equator or prime meridian belong to different \"halves\" of the world. For example, in France, La Roche- Chalais (geohash: u000) is just 30km from Pomerol (geohash: ezzz) but their geohashes have no shared prefix at all [17]."
+  },
+  {
+   "t": "p",
+   "k": "617896a59102",
+   "en": "La Roche-Chalais · geohash:u000 · Only 30km away. · Pomerol · geohash:ezzz"
+  },
+  {
+   "t": "figure",
+   "k": "1c04d2d2c4a1",
+   "en": "Figure 1.10: No shared prefix"
+  },
+  {
+   "t": "p",
+   "k": "e36c951261ba",
+   "en": "Because of this boundary issue, a simple prefix SQL query below would fail to fetch all nearby businesses."
+  },
+  {
+   "t": "p",
+   "k": "bea810f5382d",
+   "en": "WHERE geohash LIKE '9q8zn%'"
+  },
+  {
+   "t": "h3",
+   "k": "e4527f945a19",
+   "en": "SELECT * FROM geohash_index"
+  },
+  {
+   "t": "h3",
+   "k": "759f8038f17b",
+   "en": "Boundary issue 2"
+  },
+  {
+   "t": "p",
+   "k": "cbf122efc5cb",
+   "en": "Another boundary issue is that two positions can have a long shared prefix, but they belong to different geohashes as shown in Figure 1.11."
+  },
+  {
+   "t": "p",
+   "k": "e6702cd00b4a",
+   "en": "9q82n6 · 908znd · 9a8zn3 · 9q8zn9 · 9q8znc · 9q82n2 · 9q8zn8 · 9q8znb"
+  },
+  {
+   "t": "figure",
+   "k": "d808baf29fce",
+   "en": "Figure 1.11: Boundary issue"
+  },
+  {
+   "t": "p",
+   "k": "8112ac36dbdd",
+   "en": "A common solution is to fetch all businesses not only within the current grid but also from its neighbors. The geohashes of neighbors can be calculated in constant time and more details about this can be found here [17]."
+  },
+  {
+   "t": "h3",
+   "k": "9660f946a02b",
+   "en": "Not enough businesses"
+  },
+  {
+   "t": "p",
+   "k": "83f8bec3b87b",
+   "en": "Now let's tackle the bonus question. What should we do if there are not enough businesses returned from the current grid and all the neighbors combined?"
+  },
+  {
+   "t": "p",
+   "k": "c243df481256",
+   "en": "Option 1: only return businesses within the radius. This option is easy to implement, but the drawback is obvious. It doesn't return enough results to satisfy a user's needs. Option 2: increase the search radius. We can remove the last digit of the geohash and use the new geohash to fetch nearby businesses. If there are not enough businesses, we continue to expand the scope by removing another digit. This way, the grid size is gradually expanded until the result is greater than the desired number of results. Figure 1.12 shows the conceptual diagram of the expanding search process."
+  },
+  {
+   "t": "figure",
+   "k": "c78a2f55b41b",
+   "en": "Figure 1.12: Expand the search process"
+  },
+  {
+   "t": "p",
+   "k": "256c3d509c5d",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 15"
+  },
+  {
+   "t": "h2",
+   "k": "dcf7315dfed9",
+   "en": "Option 4: Quadtree"
+  },
+  {
+   "t": "p",
+   "k": "a86ccceb483f",
+   "en": "Another popular solution is quadtree. A quadtree [18] is a data structure that is com. monly used to partition a two-dimensional space by recursively subdividing it into four quadrants (grids) until the contents of the grids meet certain criteria. For example, the criterion can be to keep subdividing until the number of businesses in the grid is not more than 100. This number is arbitrary as the actual number can be determined by business needs. With a quadtree, we build an in-memory tree structure to answer queries. Note that quadtree is an in-memory data structure and it is not a database solution. It runs on each LBS server, and the data structure is built at server start-up time."
+  },
+  {
+   "t": "p",
+   "k": "fd145cf6cad3",
+   "en": "The following figure visualizes the conceptual process of subdividing the world into a quadtree. Let's assume the world contains 200m (million) businesses."
+  },
+  {
+   "t": "p",
+   "k": "84dd7f279472",
+   "en": "10m 11m 200m"
+  },
+  {
+   "t": "p",
+   "k": "55136dec39ca",
+   "en": "SW (70m)"
+  },
+  {
+   "t": "figure",
+   "k": "acd077c1b72f",
+   "en": "Figure 1.13: Quadtree"
+  },
+  {
+   "t": "figure",
+   "k": "688d14afd903",
+   "en": "Figure 1.14 explains the quadtree building process in more detail. The root node repre-"
+  },
+  {
+   "t": "p",
+   "k": "28ef5de4c608",
+   "en": "sents the whole world map. The root node is recursively broken down into 4 quadrants until no nodes are left with more than 100 businesses."
+  },
+  {
+   "t": "p",
+   "k": "1f4855aff157",
+   "en": "200m"
+  },
+  {
+   "t": "li",
+   "k": "b3cecddda484",
+   "en": "Represent many layers Internal node"
+  },
+  {
+   "t": "p",
+   "k": "d12e3b53c8ee",
+   "en": "SW · nw · Leaf node · 30m · 40m · nw · 12m"
+  },
+  {
+   "t": "figure",
+   "k": "542a67c314d0",
+   "en": "Figure 1.14: Build quadtree"
+  },
+  {
+   "t": "p",
+   "k": "a8b6e4b0092c",
+   "en": "The pseudocode for building quadtree is shown below:"
+  },
+  {
+   "t": "h3",
+   "k": "3de97b090584",
+   "en": "public void buildQuadtree (TreeNode node) {"
+  },
+  {
+   "t": "h3",
+   "k": "20617260b333",
+   "en": "if (countNumber0fBusinessesInCurrentGrid (node) > 100) {"
+  },
+  {
+   "t": "h3",
+   "k": "bf99432d2aee",
+   "en": "node. subdivide );"
+  },
+  {
+   "t": "h3",
+   "k": "964255d5d635",
+   "en": "for (TreeNode child: node getChildren)) {"
+  },
+  {
+   "t": "h3",
+   "k": "c099c0a9e6d6",
+   "en": "buildQuadtree (child);"
+  },
+  {
+   "t": "h3",
+   "k": "b8c1af681dfc",
+   "en": "How much memory does it need to store the whole quadtree?"
+  },
+  {
+   "t": "p",
+   "k": "e8b0b64402c4",
+   "en": "To answer this question, we need to know what kind of data is stored."
+  },
+  {
+   "t": "h3",
+   "k": "f3e8953a190f",
+   "en": "Data on a leaf node"
+  },
+  {
+   "t": "p",
+   "k": "6ae999552a0d",
+   "en": "Name"
+  },
+  {
+   "t": "p",
+   "k": "b280cbe09326",
+   "en": "Top left coordinates and bottom-right"
+  },
+  {
+   "t": "p",
+   "k": "a62133675653",
+   "en": "32 bytes (8 bytes * 4)"
+  },
+  {
+   "t": "p",
+   "k": "06b185b0e4a3",
+   "en": "coordinates to identify the grid"
+  },
+  {
+   "t": "p",
+   "k": "5396a5640fff",
+   "en": "8 bytes per ID x 100 (maximal number List of business IDs in the grid"
+  },
+  {
+   "t": "p",
+   "k": "8a27bbb1d51d",
+   "en": "of businesses allowed in one grid)"
+  },
+  {
+   "t": "p",
+   "k": "c2b6b886b73f",
+   "en": "832 bytes · Total · Table 1.6: Leaf node · Data on internal node"
+  },
+  {
+   "t": "p",
+   "k": "c495e13a8752",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 17 Name"
+  },
+  {
+   "t": "p",
+   "k": "89368e1d6801",
+   "en": "Size"
+  },
+  {
+   "t": "p",
+   "k": "b280cbe09326",
+   "en": "Top left coordinates and bottom-right"
+  },
+  {
+   "t": "p",
+   "k": "3e5c18618630",
+   "en": "32 bytes (8 bytes x4)"
+  },
+  {
+   "t": "p",
+   "k": "06b185b0e4a3",
+   "en": "coordinates to identify the grid"
+  },
+  {
+   "t": "p",
+   "k": "ab347d61b00a",
+   "en": "32 bytes (8 bytes x4) · Pointers to 4 children · 64 bytes · Total · Table 1.7: Internal node"
+  },
+  {
+   "t": "p",
+   "k": "60d6c75e2166",
+   "en": "Even though the tree-building process depends on the number of businesses within a grid, this number does not need to be stored in the quadtree node because it can be inferred from records in the database."
+  },
+  {
+   "t": "p",
+   "k": "150985b4d33a",
+   "en": "Now that we know the data structure for each node, let's take a look at the memory usage."
+  },
+  {
+   "t": "li",
+   "k": "fefc88c109ec",
+   "en": "Each grid can store a maximal of 100 businesses"
+  },
+  {
+   "t": "p",
+   "k": "6552982927bf",
+   "en": "200 million · =~ 2 million · Number of leaf nodes =~ -"
+  },
+  {
+   "t": "p",
+   "k": "39e072300f2d",
+   "en": "=~ 0.67 million. If you do not know why"
+  },
+  {
+   "t": "li",
+   "k": "7bd9d8e8b966",
+   "en": "Number of internal nodes = 2 million x"
+  },
+  {
+   "t": "p",
+   "k": "96e779fcf0c1",
+   "en": "the number of internal nodes is one-third of the leaf nodes, please read the reference material [19]."
+  },
+  {
+   "t": "li",
+   "k": "bb6594c068f7",
+   "en": "Total memory requirement = 2 million x 832 bytes + 0.67 million x 64 bytes = ~ 1.71GB. Even if we add some overhead to build the tree, the memory requirement to build the tree is quite small."
+  },
+  {
+   "t": "p",
+   "k": "f340168095d5",
+   "en": "In a real interview, we shouldn't need such detailed calculations. The key takeaway here is that the quadtree index doesn't take too much memory and can easily fit in one server. Does it mean we should use only one server to store the quadtree index? The answer is no. Depending on the read volume, a single quadtree server might not have enough CPU or network bandwidth to serve all read requests. If that is the case, it will be necessary to spread the read load among multiple quadtree servers."
+  },
+  {
+   "t": "p",
+   "k": "8edfd02b7b71",
+   "en": "How long does it take to build the whole quadtree?"
+  },
+  {
+   "t": "p",
+   "k": "708d1f6d0836",
+   "en": "Each leaf node contains approximately 100 business IDs. The time complexity to build the tree is 100 log 100, where n is the total number of businesses. It might take a few minutes to build the whole quadtree with 200 million businesses."
+  },
+  {
+   "t": "h3",
+   "k": "f7e425b47dbd",
+   "en": "How to get nearby businesses with quadtree?"
+  },
+  {
+   "t": "p",
+   "k": "a7c148584457",
+   "en": "1. Build the quadtree in memory."
+  },
+  {
+   "t": "p",
+   "k": "17a358307319",
+   "en": "2. After the quadtree is built, start searching from the root and traverse the tree, until we find the leaf node where the search origin is. If that leaf node has 100 businesses, return the node. Otherwise, add businesses from its neighbors until enough businesses are returned."
+  },
+  {
+   "t": "p",
+   "k": "2b2f9951027c",
+   "en": "Operational considerations for quadtree"
+  },
+  {
+   "t": "p",
+   "k": "24afd4708f5c",
+   "en": "As mentioned above, it may take a few minutes to build a quadtree with 200 million businesses at the server start-up time. It is important to consider the operational implications of such a long server start-up time. While the quadtree is being built, the server cannot serve traffic. Therefore, we should roll out a new release of the server incrementally to a small subset of servers at a time. This avoids taking a large swath of the server cluster offline and causes service brownout. Blue/green deployment [20] can also be used, but an entire cluster of new servers fetching 200 million businesses at the same time from the database service can put a lot of strain on the system. This can be done, but it may complicate the design and you should mention that in the interview."
+  },
+  {
+   "t": "p",
+   "k": "8123f1650545",
+   "en": "Another operational consideration is how to update the quadtree as businesses are added and removed over time. The easiest approach would be to incrementally rebuild the quadtree, a small subset of servers at a time, across the entire cluster. But this would mean some servers would return stale data for a short period of time. However, this is generally an acceptable compromise based on the requirements. This can be further mitigated by setting up a business agreement that newly added/updated businesses will only be effective the next day. This means we can update the cache using a nightly job. One potential problem with this approach is that tons of keys will be invalidated at the same time, causing heavy load on cache servers."
+  },
+  {
+   "t": "p",
+   "k": "4b82bb9d0d5a",
+   "en": "It's also possible to update the quadtree on the fly as businesses are added and removed. This certainly complicates the design, especially if the quadtree data structure could be accessed by multiple threads. This will require some locking mechanism which could dramatically complicate the quadtree implementation."
+  },
+  {
+   "t": "h3",
+   "k": "96217c097271",
+   "en": "Real-world quadtree example"
+  },
+  {
+   "t": "p",
+   "k": "cb4126012600",
+   "en": "Yext [21] provided an image (Figure 1.15) that shows a constructed quadtree near Denver [21]. We want smaller, more granular grids for dense areas and larger grids for sparse areas."
+  },
+  {
+   "t": "p",
+   "k": "977b26641588",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 19 Bgulder"
+  },
+  {
+   "t": "p",
+   "k": "0116466760e3",
+   "en": "Alvada · Strasburg · Denver. Aerera · Byers · Des Centennial."
+  },
+  {
+   "t": "figure",
+   "k": "a997df36d0ba",
+   "en": "Figure 1.15: Real-world example of a quadtree"
+  },
+  {
+   "t": "h3",
+   "k": "75747731a91a",
+   "en": "Option 5: Google S2"
+  },
+  {
+   "t": "p",
+   "k": "ea18ee506ce9",
+   "en": "Google S2 geometry library [22] is another big player in this field. Similar to Quadtree, it is an in-memory solution. It maps a sphere to a ID index based on the Hilbert curve (a space-filling curve) [23]. The Hilbert curve has a very important property: two points that are close to each other on the Hilbert curve are close in 1D space (Figure 1.16). Search on 1D space is much more efficient than on 2D. Interested readers can play with an online tool [24] for the Hilbert curve."
+  },
+  {
+   "t": "p",
+   "k": "f1626c2fd758",
+   "en": "0.500 · 0.625 · 0.750"
+  },
+  {
+   "t": "figure",
+   "k": "021b13328a8b",
+   "en": "Figure 1.16: Hilbert curve (source: [24])"
+  },
+  {
+   "t": "p",
+   "k": "298e3ea300cb",
+   "en": "S2 is a complicated library and you are not expected to explain its internals during an interview. But because it's widely used in companies such as Google, Tinder, etc., we will briefly cover its advantages."
+  },
+  {
+   "t": "li",
+   "k": "70c1dec59880",
+   "en": "S2 is great for geofencing because it can cover arbitrary areas with varying levels (Figure 1.17). According to Wikipedia, \"A geofence is a virtual perimeter for a realworld geographic area. A geo-fence could be dynamically generated-as in a radius around a point location, or a geo-fence can be a predefined set of boundaries (such as school zones or neighborhood boundaries)\" [25]."
+  },
+  {
+   "t": "p",
+   "k": "b160c1d61064",
+   "en": "Geofencing allows us to define perimeters that surround the areas of interest and to send notifications to users who are out of the areas. This can provide richer functionalities than just returning nearby businesses."
+  },
+  {
+   "t": "p",
+   "k": "306b403c267e",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 21 Geofence"
+  },
+  {
+   "t": "figure",
+   "k": "54af7aec6533",
+   "en": "Figure 1.17: Geofence"
+  },
+  {
+   "t": "li",
+   "k": "5d6e2b2ebea0",
+   "en": "Another advantage of S2 is its Region Cover algorithm [26]. Instead of having a fixed level (precision) as in geohash, we can specify min level, max level, and max cells in S2. The result returned by S2 is more granular because the cell sizes are flexible. If you want to learn more, take a look at the S2 tool [26]."
+  },
+  {
+   "t": "h2",
+   "k": "d0c18034a863",
+   "en": "Recommendation"
+  },
+  {
+   "t": "p",
+   "k": "045e5eb5bddd",
+   "en": "To find nearby businesses efficiently, we have discussed a few options: geohash, quadtree and S2. As you can see from Table 1.8, different companies or technologies adopt different options."
+  },
+  {
+   "t": "p",
+   "k": "1259fd3f2fae",
+   "en": "Geo Index"
+  },
+  {
+   "t": "p",
+   "k": "770e7d0fb5db",
+   "en": "Bing map [27], Redis [10], MongoDB [28], Lyft [29] geohash"
+  },
+  {
+   "t": "p",
+   "k": "e0911de05768",
+   "en": "quadtree · Yext [21] · Both geohash and quadtree · Elasticsearch [30] · S2 · Google Maps, Tinder [31]"
+  },
+  {
+   "t": "p",
+   "k": "081e299f9361",
+   "en": "Table 1.8: Different types of geo indexes"
+  },
+  {
+   "t": "p",
+   "k": "01b5ebbea126",
+   "en": "During an interview, we suggest choosing geohash or quadtree because S2 is more complicated to explain clearly in an interview."
+  },
+  {
+   "t": "h2",
+   "k": "db508ab954f8",
+   "en": "Geohash vs quadtree"
+  },
+  {
+   "t": "p",
+   "k": "646e0a7c544b",
+   "en": "Before we conclude this section, let's do a quick comparison between geohash and quadtree."
+  },
+  {
+   "t": "p",
+   "k": "776fd947b104",
+   "en": "Geohash"
+  },
+  {
+   "t": "li",
+   "k": "3e958291d5d6",
+   "en": "Easy to use and implement. No need to build a tree."
+  },
+  {
+   "t": "li",
+   "k": "0f431b7662cd",
+   "en": "Supports returning businesses within a specified radius."
+  },
+  {
+   "t": "li",
+   "k": "4ad62d63dd71",
+   "en": "When the precision (level) of geohash is fixed, the size of the grid is fixed as well. It cannot dynamically adjust the grid size, based on population density. More complex logic is needed to support this."
+  },
+  {
+   "t": "li",
+   "k": "3ddbae4753ff",
+   "en": "Updating the index is easy. For example, to remove a business from the index,"
+  },
+  {
+   "t": "p",
+   "k": "c90af69a2b96",
+   "en": "we just need to remove it from the corresponding row with the same geohash and business_id. See Figure 1.18 for a concrete example."
+  },
+  {
+   "t": "p",
+   "k": "779b26b10c67",
+   "en": "geohash · business_id · 9q8zn · 908zn · 9q8zn"
+  },
+  {
+   "t": "figure",
+   "k": "30e9c174f7f1",
+   "en": "Figure 1.18: Remove a business"
+  },
+  {
+   "t": "p",
+   "k": "06b2ab95d213",
+   "en": "Quadtree"
+  },
+  {
+   "t": "li",
+   "k": "6914914dbed0",
+   "en": "Slightly harder to implement because it needs to build the tree."
+  },
+  {
+   "t": "li",
+   "k": "71feb9e07ddb",
+   "en": "Supports fetching k-nearest businesses. Sometimes we just want to return k-nearest businesses and don't care if businesses are within a specified radius. For example, when you are traveling and your car is low on gas, you just want to find the nearest k gas stations. These gas stations may not be near you, but the app needs to return the nearest k results. For this type of query, a quadtree is a good fit because its subdividing process is based on the number k and it can automatically adjust the query range until it returns k results."
+  },
+  {
+   "t": "li",
+   "k": "18c6492123c3",
+   "en": "It can dynamically adjust the grid size based on population density (see the Denver example in Figure 1.15)."
+  },
+  {
+   "t": "li",
+   "k": "c567ddc5e924",
+   "en": "Updating the index is more complicated than geohash. A quadtree is a tree structure. If a business is removed, we need to traverse from the root to the leaf node, to remove the business. For example, if we want to remove the business with ID = 2, we have to travel from the root all the way down to the leaf node, as shown in Figure 1.19. Updating the index takes O (log n), but the implementation is complicated if the data structure is accessed by a multi-threaded program, as locking is required. Also, rebalancing the tree can be complicated. Rebalancing is necessary if, for example, a leaf node has no room for a new addition. A possible fix is to over-allocate the ranges."
+  },
+  {
+   "t": "p",
+   "k": "234de3073688",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 23 Represent many layers Internal node"
+  },
+  {
+   "t": "p",
+   "k": "4faf1385d404",
+   "en": "sw · se · Leaf node · 40m · 30m · ne · Sw · 12m · 4m · 9ml"
+  },
+  {
+   "t": "figure",
+   "k": "0b291cb06178",
+   "en": "Figure 1.19: Update quadtree"
+  },
+  {
+   "t": "h2",
+   "k": "5008c4b3d7bc",
+   "en": "Step 3 - Design Deep Dive"
+  },
+  {
+   "t": "p",
+   "k": "2cbabf0909c7",
+   "en": "By now you should have a good picture of what the overall system looks like. Now let's dive deeper into a few areas."
+  },
+  {
+   "t": "p",
+   "k": "35d8bd463104",
+   "en": "Scale the database · Caching · Region and availability zones"
+  },
+  {
+   "t": "li",
+   "k": "18123e9f2a1f",
+   "en": "Filter results by time or business type"
+  },
+  {
+   "t": "li",
+   "k": "e57d80ae8778",
+   "en": "Final architecture diagram"
+  },
+  {
+   "t": "h2",
+   "k": "1944b209c415",
+   "en": "Scale the database"
+  },
+  {
+   "t": "p",
+   "k": "6404a0de8879",
+   "en": "We will discuss how to scale two of the most important tables: the business table and the geospatial index table."
+  },
+  {
+   "t": "p",
+   "k": "efb4d5ea156f",
+   "en": "Business table"
+  },
+  {
+   "t": "p",
+   "k": "d8c768d31f87",
+   "en": "The data for the business table may not all fit in one server, so it is a good candidate for sharding. The easiest approach is to shard everything by business ID. This sharding scheme ensures that load is evenly distributed among all the shards, and operationally it is easy to maintain."
+  },
+  {
+   "t": "h3",
+   "k": "39773ee07dbf",
+   "en": "Geospatial index table"
+  },
+  {
+   "t": "p",
+   "k": "9b5e3ca981af",
+   "en": "Both geohash and quadtree are widely used. Due to geohash's simplicity, we use it as an example. There are two ways to structure the table."
+  },
+  {
+   "t": "p",
+   "k": "f6939a3b80da",
+   "en": "Option 1: For each geohash key, there is a JSON array of business IDs in a single row. This means all business IDs within a geohash are stored in one row."
+  },
+  {
+   "t": "p",
+   "k": "4c1dcdb5c243",
+   "en": "geospatial_index · geohash · list_of_business_ids"
+  },
+  {
+   "t": "p",
+   "k": "b6b70053b0d4",
+   "en": "Table 1.9: list_of_business_ids is a JSON array"
+  },
+  {
+   "t": "p",
+   "k": "0e20d7e3457f",
+   "en": "Option 2: If there are multiple businesses in the same geohash, there will be multiple rows, one for each business. This means different business IDs within a geohash are stored in different rows."
+  },
+  {
+   "t": "p",
+   "k": "01dea5e04701",
+   "en": "geospatial_index · geohash · business_id"
+  },
+  {
+   "t": "p",
+   "k": "775bb98a60c8",
+   "en": "Table 1.10: business_id is a single ID"
+  },
+  {
+   "t": "p",
+   "k": "71cda484f50c",
+   "en": "Here are some sample rows for option 2."
+  },
+  {
+   "t": "p",
+   "k": "94e6c9853664",
+   "en": "32 feac · 32feac · f31cad"
+  },
+  {
+   "t": "p",
+   "k": "fd0f6f8e2c43",
+   "en": "Table 1.11: Sample rows of the geospatial index table"
+  },
+  {
+   "t": "h3",
+   "k": "29e851d4e557",
+   "en": "Recommendation: we recommend option 2 because of the following reasons:"
+  },
+  {
+   "t": "p",
+   "k": "bc0c05e19634",
+   "en": "For option 1, to update a business, we need to fetch the array of business_ids and scan the whole array to find the business to update. When inserting a new business, we have to scan the entire array to make sure there is no duplicate. We also need to lock the row to prevent concurrent updates. There are a lot of edge cases to handle."
+  },
+  {
+   "t": "p",
+   "k": "b8ee5c01d96d",
+   "en": "For option 2, if we have two columns with a compound key of (geohash, business_id), the addition and removal of a business are very simple. There would be no need to lock anything."
+  },
+  {
+   "t": "p",
+   "k": "b2363698793c",
+   "en": "Scale the geospatial index"
+  },
+  {
+   "t": "p",
+   "k": "b7c3f9393dde",
+   "en": "One common mistake about scaling the geospatial index is to quickly jump to a sharding scheme without considering the actual data size of the table. In our case, the full dataset Step 3 - Design Deep Dive | 25 for the geospatial index table is not large (quadtree index only takes 1.71G memory and storage requirement for geohash index is similar). The whole geospatial index can easily fit in the working set of a modern database server. However, depending on the read volume, a single database server might not have enough CPU or network bandwidth to handle all read requests. If that is the case, it is necessary to spread the read load among multiple database servers."
+  },
+  {
+   "t": "p",
+   "k": "4d60d668fe39",
+   "en": "There are two general approaches for spreading the load of a relational database server. We can add read replicas, or shard the database."
+  },
+  {
+   "t": "p",
+   "k": "4725192c7f66",
+   "en": "Many engineers like to talk about sharding during interviews. However, it might not be a good fit for the geohash table as sharding is complicated. For instance, the sharding logic has to be added to the application layer. Sometimes, sharding is the only option. In this case, though, everything can fit in the working set of a database server, so there is no strong technical reason to shard the data among multiple servers."
+  },
+  {
+   "t": "p",
+   "k": "685b8f0e4592",
+   "en": "A better approach, in this case, is to have a series of read replicas to help with the read load. This method is much simpler to develop and maintain. For this reason, scaling the geospatial index table through replicas is recommended."
+  },
+  {
+   "t": "p",
+   "k": "3b2019edb0a6",
+   "en": "Caching"
+  },
+  {
+   "t": "p",
+   "k": "0be5c9bd91e6",
+   "en": "Before introducing a cache layer we have to ask ourselves, do we really need a cache layer?"
+  },
+  {
+   "t": "p",
+   "k": "135b4b062ab2",
+   "en": "It is not immediately obvious that caching is a solid win:"
+  },
+  {
+   "t": "li",
+   "k": "34b9795db624",
+   "en": "The workload is read-heavy, and the dataset is relatively small. The data could fit in the working set of any modern database server. Therefore, the queries are not I/0 bound and they should run almost as fast as an in-memory cache."
+  },
+  {
+   "t": "li",
+   "k": "a444bd08edc9",
+   "en": "If read performance is a bottleneck, we can add database read replicas to improve the"
+  },
+  {
+   "t": "h3",
+   "k": "0127d6f38f0f",
+   "en": "read throughput."
+  },
+  {
+   "t": "p",
+   "k": "ccf0c223822a",
+   "en": "Be mindful when discussing caching with the interviewer, as it will require careful benchmarking and cost analysis. If you find out that caching does fit the business requirements, then you can proceed with discussions about caching strategy."
+  },
+  {
+   "t": "p",
+   "k": "b6c21036db45",
+   "en": "Cache key"
+  },
+  {
+   "t": "p",
+   "k": "493825fef229",
+   "en": "The most straightforward cache key choice is the location coordinates (latitude and longitude) of the user. However, this choice has a few issues:"
+  },
+  {
+   "t": "li",
+   "k": "2cd665f92dbd",
+   "en": "Location coordinates returned from mobile phones are not accurate as they are just the best estimation [32]. Even if you don't move, the results might be slightly different each time you fetch coordinates on your phone."
+  },
+  {
+   "t": "li",
+   "k": "28d8a0155cf5",
+   "en": "A user can move from one location to another, causing location coordinates to change slightly. For most applications, this change is not meaningful."
+  },
+  {
+   "t": "p",
+   "k": "4622dd39cec6",
+   "en": "Therefore, location coordinates are not a good cache key. Ideally, small changes in location should still map to the same cache key. The geohash/quadtree solution mentioned earlier handles this problem well because all businesses within a grid map to the same geohash."
+  },
+  {
+   "t": "h3",
+   "k": "35cf8ce4d4a1",
+   "en": "Types of data to cache"
+  },
+  {
+   "t": "p",
+   "k": "92c5911c8301",
+   "en": "As shown in Table 1.12, there are two types of data that can be cached to improve the overall performance of the system:"
+  },
+  {
+   "t": "p",
+   "k": "a62f2225bf70",
+   "en": "Key"
+  },
+  {
+   "t": "p",
+   "k": "776fd947b104",
+   "en": "geohash"
+  },
+  {
+   "t": "p",
+   "k": "47fe40016909",
+   "en": "List of business IDs in the grid"
+  },
+  {
+   "t": "h3",
+   "k": "39d7a41312c0",
+   "en": "business_id Business object"
+  },
+  {
+   "t": "p",
+   "k": "d92cd9eeb7f5",
+   "en": "Table 1.12: Key-value pairs in cache"
+  },
+  {
+   "t": "p",
+   "k": "c8f926ae77a4",
+   "en": "List of business IDs in a grid"
+  },
+  {
+   "t": "p",
+   "k": "8aa325d9c3bf",
+   "en": "Since business data is relatively stable, we precompute the list of business IDs for a given geohash and store it in a key-value store such as Redis. Let's take a look at a concrete example of getting nearby businesses with caching enabled."
+  },
+  {
+   "t": "p",
+   "k": "c36d92a5804d",
+   "en": "1. Get the list of business IDs for a given geohash."
+  },
+  {
+   "t": "h3",
+   "k": "add3bcc90425",
+   "en": "SELECT business_id FROM geohash_index WHERE geohash LIKE *{:"
+  },
+  {
+   "t": "p",
+   "k": "f3b76643addb",
+   "en": "geohash 3%*"
+  },
+  {
+   "t": "p",
+   "k": "20eebc67a90f",
+   "en": "2. Store the result in the Redis cache if cache misses."
+  },
+  {
+   "t": "h3",
+   "k": "078208f9b843",
+   "en": "public List<String> getNearbyBusinessIds (String geohash) {"
+  },
+  {
+   "t": "h3",
+   "k": "00634d6807a1",
+   "en": "String cacheKey = hash (geohash);"
+  },
+  {
+   "t": "h3",
+   "k": "6c12d6d72cf7",
+   "en": "List<string > listOfBusinessIds = Redis. get (cacheKey);"
+  },
+  {
+   "t": "h3",
+   "k": "e7d0e896bea2",
+   "en": "if (listOfBusinessIDs == null) {"
+  },
+  {
+   "t": "h3",
+   "k": "5bd8de69904b",
+   "en": "listOfBusinessIds = Run the select SQL query above;"
+  },
+  {
+   "t": "h3",
+   "k": "2056c182368c",
+   "en": "Cache. set (cacheKey, listOfBusinessIds, \"1d\");"
+  },
+  {
+   "t": "h3",
+   "k": "d93ee983bc67",
+   "en": "return listOfBusinessIds;"
+  },
+  {
+   "t": "p",
+   "k": "d9b0d2a261a7",
+   "en": "When a new business is added, edited, or deleted, the database is updated and the cache invalidated. Since the volume of those operations is relatively small and no locking mechanism is needed for the geohash approach, update operations are easy to deal with."
+  },
+  {
+   "t": "p",
+   "k": "2bfa625a9c4a",
+   "en": "According to the requirements, a user can choose the following 4 radii on the client: 500m, 1km, 2km, and 5km. Those radii are mapped to geohash lengths of 4, 5, 5, and 6, respectively. To quickly fetch nearby businesses for different radii, we cache data in Redis on all three precisions (geohash_4, geohash_5, and geohash_6)."
+  },
+  {
+   "t": "p",
+   "k": "267024f57c0e",
+   "en": "As mentioned earlier, we have 200 million businesses and each business belongs to 1 grid in a given precision. Therefore the total memory required is:"
+  },
+  {
+   "t": "li",
+   "k": "7d720c7127bc",
+   "en": "Storage for Redis values: 8 bytes x 200 million x 3 precisions = ~ 5GB"
+  },
+  {
+   "t": "li",
+   "k": "a9e0967e3f1d",
+   "en": "Storage for Redis keys: negligible"
+  },
+  {
+   "t": "p",
+   "k": "b5c451b2c2f8",
+   "en": "Step 3 - Design Deep Dive | 27"
+  },
+  {
+   "t": "li",
+   "k": "1bc624efec64",
+   "en": "Total memory required: ~ 5GB"
+  },
+  {
+   "t": "p",
+   "k": "dd6b7b0d5912",
+   "en": "We can get away with one modern Redis server from the memory usage perspective, but to ensure high availability and reduce cross continent latency, we deploy the Redis cluster across the globe. Given the estimated data size, we can have the same copy of cache data deployed globally. We call this Redis cache \"Geohash\" in our final architecture diagram (Figure 1.21)."
+  },
+  {
+   "t": "p",
+   "k": "a480edd23ad7",
+   "en": "Business data needed to render pages on the client"
+  },
+  {
+   "t": "p",
+   "k": "4d51d5927aa7",
+   "en": "This type of data is quite straightforward to cache. The key is the business_id and the value is the business object which contains the business name, address, image URLs, etc. We call this Redis cache \"Business info\" in our final architecture diagram (Figure 1.21)."
+  },
+  {
+   "t": "h3",
+   "k": "4aed9bd87d79",
+   "en": "Region and availability zones"
+  },
+  {
+   "t": "p",
+   "k": "8cf8cdcb996a",
+   "en": "We deploy a location-based service to multiple regions and availability zones as shown in Figure 1.20. This has a few advantages:"
+  },
+  {
+   "t": "li",
+   "k": "032bdcebc51e",
+   "en": "Makes users physically \"closer\" to the system. Users from the US West are connected to the data centers in that region, and users from Europe are connected with data centers in Europe."
+  },
+  {
+   "t": "li",
+   "k": "ecb201d78c75",
+   "en": "Gives us the flexibility to spread the traffic evenly across the population. Some regions such as Japan and Korea have high population densities. It might be wise to put them in separate regions, or even deploy location-based services in multiple availability zones to spread the load."
+  },
+  {
+   "t": "li",
+   "k": "eecc6186390f",
+   "en": "Privacy laws. Some countries may require user data to be used and stored locally. In this case, we could set up a region in that country and employ DNS routing to restrict all requests from the country to only that region."
+  },
+  {
+   "t": "p",
+   "k": "4512c17cf77c",
+   "en": "140ms · 15ms · 40ms"
+  },
+  {
+   "t": "figure",
+   "k": "579dd8e44d38",
+   "en": "Figure 1.20: Deploy LBS \"closer\" to the user"
+  },
+  {
+   "t": "h3",
+   "k": "aacc956fa4d1",
+   "en": "Follow-up question: filter results by time or business type"
+  },
+  {
+   "t": "p",
+   "k": "a18429fb8b8f",
+   "en": "The interviewer might ask a follow-up question: how to return businesses that are open now, or only return businesses that are restaurants?"
+  },
+  {
+   "t": "p",
+   "k": "cd0ca577c8e7",
+   "en": "Candidate: When the world is divided into small grids with geohash or quadtree, the number of businesses returned from the search result is relatively small. Therefore, it is acceptable to return business IDs first, hydrate business objects, and filter them based on opening time or business type. This solution assumes opening time and business type are stored in the business table."
+  },
+  {
+   "t": "h3",
+   "k": "e80ffc275eff",
+   "en": "Final design diagram"
+  },
+  {
+   "t": "p",
+   "k": "3ffe1005b423",
+   "en": "Putting everything together, we come up with the following design diagram."
+  },
+  {
+   "t": "p",
+   "k": "84091df5cf61",
+   "en": "Step 3 - Design Deep Dive | 29 Load balancer"
+  },
+  {
+   "t": "p",
+   "k": "f2e232b0087b",
+   "en": "@ /search/nearby · /businesses/{id) · Business · LBS · Service · Write · Read · Read · Sync — · Business Info · Geohash · Primary Replica · Replica · Redis Cluster · Database Cluster"
+  },
+  {
+   "t": "figure",
+   "k": "6c75aaa3b1d0",
+   "en": "Figure 1.21: Design diagram"
+  },
+  {
+   "t": "h3",
+   "k": "a0e688cba808",
+   "en": "Get nearby businesses"
+  },
+  {
+   "t": "p",
+   "k": "19911fc8e751",
+   "en": "1. You try to find restaurants within 500 meters on Yelp. The client sends the user location (latitude = 37.776720, longitude = -122.416730) and radius (500m) to the load balancer."
+  },
+  {
+   "t": "p",
+   "k": "12248f36eafa",
+   "en": "2. The load balancer forwards the request to the LBS."
+  },
+  {
+   "t": "p",
+   "k": "3857cbaf66a0",
+   "en": "3. Based on the user location and radius info, the LBS finds the geohash length that matches the search. By checking Table 1.5, 500m map to geohash length = 6. 4. LBS calculates neighboring geohashes and adds them to the list. The result looks like this:"
+  },
+  {
+   "t": "h3",
+   "k": "cf5c76a910bb",
+   "en": "list_of_geohashes = [my_geohash, neighbor_geohash, neighbor2_geohash,"
+  },
+  {
+   "t": "h3",
+   "k": "14485c76aa1d",
+   "en": "..., neighbor8_geohash]"
+  },
+  {
+   "t": "p",
+   "k": "4e449a8de686",
+   "en": "5. For each geohash in list_of_geohashes, LBS calls the \"Geohash\" Redis server to fetch corresponding business IDs. Calls to fetch business IDs for each geohash can be made in parallel to reduce latency."
+  },
+  {
+   "t": "p",
+   "k": "3faf6497f1d0",
+   "en": "6. Based on the list of business IDs returned, LBS fetches fully hydrated business information from the \"Business info\" Redis server, then calculates distances between a user and businesses, ranks them, and returns the result to the client."
+  },
+  {
+   "t": "h3",
+   "k": "5342025dbbec",
+   "en": "View, update, add or delete a business"
+  },
+  {
+   "t": "p",
+   "k": "b2d406ba894d",
+   "en": "All business-related APIs are separated from the LBS. To view the detailed information about a business, the business service first checks if the data is stored in the \"Business info\" Redis cache. If it is, cached data will be returned to the client. If not, data is fetched from the database cluster and then stored in the Redis cache, allowing subsequent requests to get results from the cache directly."
+  },
+  {
+   "t": "p",
+   "k": "eb7fd79433c4",
+   "en": "Since we have an upfront business agreement that newly added/updated businesses will be effective the next day, cached business data is updated by a nightly job."
+  },
+  {
+   "t": "h2",
+   "k": "02a33876c958",
+   "en": "Step 4 - Wrap Up"
+  },
+  {
+   "t": "p",
+   "k": "5f26ab09ba46",
+   "en": "In this chapter, we have presented the design for proximity service. The system is a typical LBS that leverages geospatial indexing. We discussed several indexing options:"
+  },
+  {
+   "t": "p",
+   "k": "a2a3d7fea7d5",
+   "en": "Two-dimensional search · Evenly divided grid · Geohash · Quadtree · Google S2"
+  },
+  {
+   "t": "p",
+   "k": "e03af877004d",
+   "en": "Geohash, quadtree, and S2 are widely used by different tech companies. We choose geohash as an example to show how a geospatial index works."
+  },
+  {
+   "t": "p",
+   "k": "70ba886a79cf",
+   "en": "In the deep dive, we discussed why caching is effective in reducing the latency, what should be cached and how to use cache to retrieve nearby businesses fast. We also discussed how to scale the database with replication and sharding."
+  },
+  {
+   "t": "p",
+   "k": "6e6a5e4ca033",
+   "en": "We then looked at deploying LBS in different regions and availability zones to improve availability, to make users physically closer to the servers, and to comply better with local privacy laws."
+  },
+  {
+   "t": "p",
+   "k": "71b8b7a68128",
+   "en": "Congratulations on getting this far! Now give yourself a pat on the back. Good job!"
+  },
+  {
+   "t": "p",
+   "k": "32876ae3309f",
+   "en": "Step 4 - Wrap Up | 31"
+  },
+  {
+   "t": "h2",
+   "k": "dc0ccd897209",
+   "en": "Chapter Summary"
+  },
+  {
+   "t": "p",
+   "k": "60094c194d95",
+   "en": "return nearby businesses"
+  },
+  {
+   "t": "p",
+   "k": "a583b4a59e68",
+   "en": "add/delete/update a business functional req"
+  },
+  {
+   "t": "p",
+   "k": "c43dccdb8f88",
+   "en": "view a business · step 1 · low latency · non-functional req · data privacy · 5,000 search qps · api for search · api design · pagination · read/write ratio · data model · data schema · step 2 · high-level design diagram · two-dimensional search · evenly divided grid · Proximity Service · geohash · algorithms · quadtree · google S2 · geohash vs quadtree · business table · scale the database · geospatial index table · cache key · caching · types of data · region and availability zone · final design diagram · step 4 — wrap up"
+  },
+  {
+   "t": "h2",
+   "k": "5d59149869b8",
+   "en": "Reference Material"
+  },
+  {
+   "t": "p",
+   "k": "873c7c3b2811",
+   "en": "[1] Yelp. https://www.yelp.com/"
+  },
+  {
+   "t": "p",
+   "k": "5f3be046c05e",
+   "en": "[2] Map tiles by Stamen Design. http://maps.stamen.com/,"
+  },
+  {
+   "t": "p",
+   "k": "dc30b60af082",
+   "en": "[3] OpenStreetMap. https://www.openstreetmap.org."
+  },
+  {
+   "t": "p",
+   "k": "4cf92c57018a",
+   "en": "[4] GDPR. https://en.wikipedia.org/wiki/General_Data_Protection_Regulation."
+  },
+  {
+   "t": "p",
+   "k": "dfb32c2f5c7b",
+   "en": "[5] CCPA. https://en.wikipedia.org/wiki/California_Consumer_Privacy_Act."
+  },
+  {
+   "t": "p",
+   "k": "8e1d448ed9f4",
+   "en": "[6] Pagination in the REST API. https://developer.atlassian.com/server/confluence/pa gination-in-the-rest-api/."
+  },
+  {
+   "t": "p",
+   "k": "5321a1c9b593",
+   "en": "[7] Google places API. https://developers.google.com/maps/documentation/places/we b-service/search."
+  },
+  {
+   "t": "p",
+   "k": "0c741dda85d2",
+   "en": "[8] Yelp business endpoints. https://www.yelp.com/developers/documentation/v3/bus iness_search."
+  },
+  {
+   "t": "p",
+   "k": "61a439713280",
+   "en": "19) Regions and Zones. https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/usin g-regions-availability-zones.html."
+  },
+  {
+   "t": "h3",
+   "k": "916cf92775a0",
+   "en": "[10] Redis GEOHASH. https://redis.io/commands/GEOHASH."
+  },
+  {
+   "t": "p",
+   "k": "ba26a9f0e4ad",
+   "en": "[11] POSTGIS. https://postgis.net/."
+  },
+  {
+   "t": "p",
+   "k": "c24aa86fae5a",
+   "en": "[12] Cartesian tiers. http://www.nsshutdown.com/projects/lucene/whitepaper/localluc ene_v2.html."
+  },
+  {
+   "t": "p",
+   "k": "4b8f4d256cd6",
+   "en": "[13] R-tree. https://en.wikipedia.org/wiki/R-tree."
+  },
+  {
+   "t": "p",
+   "k": "48f7d66c32dd",
+   "en": "[14] Global map in a Geographic Coordinate Reference System. https://bit.ly/3DsjAwg. [15] Base32. https://en.wikipedia.org/wiki/Base32"
+  },
+  {
+   "t": "p",
+   "k": "a865edbdafa0",
+   "en": "[16] Geohash grid aggregation. https://bit.ly/3kKI4eб."
+  },
+  {
+   "t": "p",
+   "k": "01c469bab535",
+   "en": "[17] Geohash. https://www.movable-type.co.uk/scripts/geohash.html."
+  },
+  {
+   "t": "p",
+   "k": "b5b8e4d12da6",
+   "en": "[18] Quadtree. https://en.wikipedia.org/wiki/Quadtree."
+  },
+  {
+   "t": "p",
+   "k": "68d86d032bf3",
+   "en": "[19] How many leaves has a quadtree. https://stackoverflow.com/questions/35976444/h ow-many-leaves-has-a-quadtree."
+  },
+  {
+   "t": "p",
+   "k": "70531cf8eb71",
+   "en": "[20] Blue green deployment. https://martinfowler.com/bliki/BlueGreenDeployment.h tml."
+  },
+  {
+   "t": "p",
+   "k": "ebe81c9e12dc",
+   "en": "[21] Improved Location Caching with Quadtrees. https://engblog.yext.com/post/geoloc ation-caching."
+  },
+  {
+   "t": "p",
+   "k": "fe42514f7854",
+   "en": "[22] S2. https://s2geometry.io/."
+  },
+  {
+   "t": "p",
+   "k": "a0e6e8b9de2c",
+   "en": "[23] Hilbert curve. https://en.wikipedia.org/wiki/Hilbert_curve."
+  },
+  {
+   "t": "p",
+   "k": "9fdaf4682b2b",
+   "en": "Reference Material | 33 [24] Hilbert mapping. http://bit-player.org/extras/hilbert/hilbert-mapping.html. [25] Geo-fence. https://en.wikipedia.org/wiki/Geo-fence."
+  },
+  {
+   "t": "p",
+   "k": "c4fe8d195fbe",
+   "en": "[26] Region cover. https://s2.sidewalklabs.com/regioncoverer/."
+  },
+  {
+   "t": "p",
+   "k": "aedf724d368c",
+   "en": "[27] Bing map. https://bit.ly/30ytSfG."
+  },
+  {
+   "t": "h3",
+   "k": "dd3a5554085d",
+   "en": "[28] MongoDB. https://docs.mongodb.com/manual/tutorial/build-a-2d-index/."
+  },
+  {
+   "t": "p",
+   "k": "f2a376a43947",
+   "en": "[29] Geospatial Indexing: The 10 Million QPS Redis Architecture Powering Lyft. https:"
+  },
+  {
+   "t": "h3",
+   "k": "7f2253875762",
+   "en": "//www.youtube.com/watch?v=cSFWIF96Sds&t=2155s."
+  },
+  {
+   "t": "p",
+   "k": "6d9ef2ab3e3d",
+   "en": "[30] Geo Shape Type. https://www.elastic.co/guide/en/elasticsearch/reference/1.6/ma"
+  },
+  {
+   "t": "h3",
+   "k": "a1bb37319f32",
+   "en": "pping-geo-shape-type.html."
+  },
+  {
+   "t": "h3",
+   "k": "c82cf8536986",
+   "en": "[31] Geosharded Recommendations Part 1: Sharding Approach. https://medium.com/t"
+  },
+  {
+   "t": "h3",
+   "k": "77bb42843faf",
+   "en": "inder-engineering/geosharded-recommendations-part-1-sharding-approach-d5ds"
+  },
+  {
+   "t": "p",
+   "k": "c75276a5fef3",
+   "en": "4e0ec77a."
+  },
+  {
+   "t": "p",
+   "k": "747361825f63",
+   "en": "[32] Get the last known location. https://developer.android.com/training/location/retr"
+  },
+  {
+   "t": "h3",
+   "k": "5f17bdc9e5bb",
+   "en": "ieve-current#Challenges."
+  }
+ ]
+}

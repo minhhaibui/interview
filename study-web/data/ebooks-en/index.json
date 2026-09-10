@@ -1372,6 +1372,106 @@
      "blocks": 41
     }
    ]
+  },
+  {
+   "id": "alex-vol2",
+   "title": "System Design Interview – An Insider's Guide (Vol 2)",
+   "titleVi": "Phỏng vấn thiết kế hệ thống – Cẩm nang người trong nghề (Tập 2)",
+   "author": "Alex Xu & Sahn Lam",
+   "note": "13 bài thiết kế nâng cao: proximity, Google Maps, message queue, thanh toán, ví điện tử, sàn chứng khoán… (nguồn OCR từ bản scan).",
+   "chapters": [
+    {
+     "id": "01-proximity-service",
+     "num": "01",
+     "title": "Proximity Service",
+     "chars": 43600,
+     "blocks": 406
+    },
+    {
+     "id": "02-nearby-friends",
+     "num": "02",
+     "title": "Nearby Friends",
+     "chars": 39135,
+     "blocks": 284
+    },
+    {
+     "id": "03-google-maps",
+     "num": "03",
+     "title": "Google Maps",
+     "chars": 43215,
+     "blocks": 323
+    },
+    {
+     "id": "04-distributed-message-queue",
+     "num": "04",
+     "title": "Distributed Message Queue",
+     "chars": 55375,
+     "blocks": 458
+    },
+    {
+     "id": "05-metrics-monitoring-and-alerting-system",
+     "num": "05",
+     "title": "Metrics Monitoring and Alerting System",
+     "chars": 35697,
+     "blocks": 344
+    },
+    {
+     "id": "06-ad-click-event-aggregation",
+     "num": "06",
+     "title": "Ad Click Event Aggregation",
+     "chars": 44716,
+     "blocks": 439
+    },
+    {
+     "id": "07-hotel-reservation-system",
+     "num": "07",
+     "title": "Hotel Reservation System",
+     "chars": 41698,
+     "blocks": 399
+    },
+    {
+     "id": "08-distributed-email-service",
+     "num": "08",
+     "title": "Distributed Email Service",
+     "chars": 41369,
+     "blocks": 370
+    },
+    {
+     "id": "09-s3-like-object-storage",
+     "num": "09",
+     "title": "S3-like Object Storage",
+     "chars": 54824,
+     "blocks": 477
+    },
+    {
+     "id": "10-real-time-gaming-leaderboard",
+     "num": "10",
+     "title": "Real-time Gaming Leaderboard",
+     "chars": 39902,
+     "blocks": 356
+    },
+    {
+     "id": "11-payment-system",
+     "num": "11",
+     "title": "Payment System",
+     "chars": 43701,
+     "blocks": 358
+    },
+    {
+     "id": "12-digital-wallet",
+     "num": "12",
+     "title": "Digital Wallet",
+     "chars": 53960,
+     "blocks": 409
+    },
+    {
+     "id": "13-stock-exchange",
+     "num": "13",
+     "title": "Stock Exchange",
+     "chars": 74301,
+     "blocks": 671
+    }
+   ]
   }
  ]
 }

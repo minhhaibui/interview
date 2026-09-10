@@ -1,0 +1,2003 @@
+{
+ "id": "07-hotel-reservation-system",
+ "title": "Hotel Reservation System",
+ "titleKey": "73ce6b4a6e72",
+ "book": "alex-vol2",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "ab27aa233ebe",
+   "en": "In this chapter, we design a hotel reservation system for a hotel chain such as Marriott International. The design and techniques used in this chapter are also applicable to other popular booking-related interview topics:"
+  },
+  {
+   "t": "li",
+   "k": "67859dbef70f",
+   "en": "Design Airbnb"
+  },
+  {
+   "t": "li",
+   "k": "1b34df8a0b9f",
+   "en": "Design a flight reservation system"
+  },
+  {
+   "t": "li",
+   "k": "41408a61d3a7",
+   "en": "Design a movie ticket booking system"
+  },
+  {
+   "t": "h2",
+   "k": "cdb2072eee15",
+   "en": "Step 1 - Understand the Problem and Establish Design Scope"
+  },
+  {
+   "t": "p",
+   "k": "5ce4f0f9d8d6",
+   "en": "The hotel reservation system is complicated and its components vary based on business use cases. Before diving into the design, we should ask the interviewer clarification questions to narrow down the scope."
+  },
+  {
+   "t": "p",
+   "k": "4a47cb6d9b26",
+   "en": "Candidate: What is the scale of the system?"
+  },
+  {
+   "t": "p",
+   "k": "bb13eec14bd5",
+   "en": "Interviewer: Let's assume we are building a website for a hotel chain that has 5,000 hotels and 1 million rooms in total."
+  },
+  {
+   "t": "p",
+   "k": "f97bc5fc8e2f",
+   "en": "Candidate: Do customers pay when they make reservations or when they arrive at the hotel?"
+  },
+  {
+   "t": "p",
+   "k": "d51067532d56",
+   "en": "Interviewer: For simplicity, they pay in full when they make reservations."
+  },
+  {
+   "t": "h3",
+   "k": "d6c95f2e9561",
+   "en": "Candidate: Do customers book hotel rooms through the hotel's website only? Do we"
+  },
+  {
+   "t": "p",
+   "k": "d75c4b524335",
+   "en": "need to support other reservation options such as phone calls?"
+  },
+  {
+   "t": "p",
+   "k": "b6f9e7f81f6c",
+   "en": "Interviewer: Let's assume people could book a hotel room through the hotel website or app."
+  },
+  {
+   "t": "p",
+   "k": "71aad55d5505",
+   "en": "Candidate: Can customers cancel their reservations?"
+  },
+  {
+   "t": "p",
+   "k": "42d377006239",
+   "en": "Interviewer: Yes."
+  },
+  {
+   "t": "p",
+   "k": "672ff5e7936f",
+   "en": "Candidate: Are there any other things we need to consider?"
+  },
+  {
+   "t": "p",
+   "k": "af4a8bd21573",
+   "en": "Interviewer: Yes, we allow 10% overbooking. In case you do not know, overbooking means the hotel will sell more rooms than they actually have. Hotels do this in anticipation that some customers will cancel their reservations."
+  },
+  {
+   "t": "p",
+   "k": "69a8f4f50b60",
+   "en": "Candidate: Since we have limited time, I assume the hotel room search is not in scope. We focus on the following features."
+  },
+  {
+   "t": "li",
+   "k": "c1077093a3ab",
+   "en": "Show the hotel-related page."
+  },
+  {
+   "t": "li",
+   "k": "6b3b2f59e067",
+   "en": "Show the hotel room-related detail page."
+  },
+  {
+   "t": "li",
+   "k": "325bc13057fc",
+   "en": "Reserve a room."
+  },
+  {
+   "t": "li",
+   "k": "15e22d45babb",
+   "en": "Admin panel to add/remove/update hotel or room info."
+  },
+  {
+   "t": "li",
+   "k": "2ebade963d6f",
+   "en": "Support the overbooking feature."
+  },
+  {
+   "t": "h3",
+   "k": "978922ff37ba",
+   "en": "Interviewer: Sounds good."
+  },
+  {
+   "t": "p",
+   "k": "b793ca2e0c62",
+   "en": "Interviewer: One more thing, hotel prices change dynamically. The price of a hotel room depends on how full the hotel is expected to be on a given day. For this interview, we can assume the price could be different each day."
+  },
+  {
+   "t": "p",
+   "k": "edd223a0133c",
+   "en": "Candidate: I'll keep this in mind."
+  },
+  {
+   "t": "h3",
+   "k": "76753cdc2355",
+   "en": "Next, you might want to talk about the most important non-functional require-"
+  },
+  {
+   "t": "p",
+   "k": "a0d07898ce66",
+   "en": "ments."
+  },
+  {
+   "t": "h2",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "li",
+   "k": "f7eb6bc2c69e",
+   "en": "Support high concurrency. During peak season or big events, some popular hotels may have a lot of customers trying to book the same room."
+  },
+  {
+   "t": "li",
+   "k": "ca914ba43d14",
+   "en": "Moderate latency. It's ideal to have a fast response time when a user makes the reservation, but it's acceptable if the system takes a few seconds to process a reservation request."
+  },
+  {
+   "t": "h2",
+   "k": "758a31cef712",
+   "en": "Back-of-the-envelope estimation"
+  },
+  {
+   "t": "li",
+   "k": "2e6503c7de60",
+   "en": "5,000 hotels and 1 million rooms in total."
+  },
+  {
+   "t": "li",
+   "k": "f11ae6f3ae39",
+   "en": "Assume 70% of the rooms are occupied and the average stay duration is 3 days. 1 million × 0.7"
+  },
+  {
+   "t": "p",
+   "k": "ebcb62797755",
+   "en": "Estimated daily reservations: · ~ 240,000) · 240,000"
+  },
+  {
+   "t": "li",
+   "k": "1f81ed604c0b",
+   "en": "Reservations per second = 105 seconds in a day"
+  },
+  {
+   "t": "p",
+   "k": "43e24ab9b727",
+   "en": "=~ 3. As we can see, the average reservation transaction per second (TPS) is not high."
+  },
+  {
+   "t": "p",
+   "k": "351a21b60c07",
+   "en": "Next, let's do a rough calculation of the QPS of all pages in the system. There are three steps in a typical customer flow:"
+  },
+  {
+   "t": "p",
+   "k": "3074209f1116",
+   "en": "1. View hotel/room detail page. Users browse this page (query)."
+  },
+  {
+   "t": "p",
+   "k": "46ea762a8689",
+   "en": "2. View the booking page. Users can confirm the booking details, such as dates, number of guests, payment information before booking (query)."
+  },
+  {
+   "t": "p",
+   "k": "210b263abd82",
+   "en": "3. Reserve a room. Users click on the \"book\" button to book the room and the room is reserved (transaction)."
+  },
+  {
+   "t": "p",
+   "k": "e47614ad3832",
+   "en": "Let's assume around 10% of the users reach the next step and 90% of users drop off the flow before reaching the final step. We can also assume that no prefetching feature (prefetching the content before the user reaches the next step) is implemented. Figure 7.1 shows a rough estimation of what the QPS looks like for different steps. We know the final reservation TPS is 3 so we can work backward along the funnel. The QPS of the order confirmation page is 30 and the QPS for the detail page is 300."
+  },
+  {
+   "t": "p",
+   "k": "1022b4ad36fd",
+   "en": "View hotel/room detail · (QPS=300) · Order booking page · (QPS=30) · Reserve rooms · (QPS=3)"
+  },
+  {
+   "t": "figure",
+   "k": "bf4deb095c10",
+   "en": "Figure 7.1: QPS distribution"
+  },
+  {
+   "t": "h2",
+   "k": "21ec56b45561",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in"
+  },
+  {
+   "t": "p",
+   "k": "f9287f888b18",
+   "en": "In this section, we'll discuss:"
+  },
+  {
+   "t": "p",
+   "k": "e161941eb010",
+   "en": "API design · Data models · High-level design · API design"
+  },
+  {
+   "t": "p",
+   "k": "dc14151dd101",
+   "en": "We explore the API design for the hotel reservation system. The most important APIs are listed below using the RESTful conventions."
+  },
+  {
+   "t": "p",
+   "k": "7d571ccb9fac",
+   "en": "Note that this chapter focuses on the design of a hotel reservation system. For a complete hotel website, the design needs to provide intuitive features for customers to search for rooms based on a large array of criteria. The APIs for these search features, while important, are not technically challenging. They are out of scope for this chapter."
+  },
+  {
+   "t": "h3",
+   "k": "424820b07dea",
+   "en": "Hotel-related APls"
+  },
+  {
+   "t": "p",
+   "k": "4a37e36a350f",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 197 Detail"
+  },
+  {
+   "t": "p",
+   "k": "a033a528b603",
+   "en": "API"
+  },
+  {
+   "t": "p",
+   "k": "50c31036eca6",
+   "en": "Get detailed information about a hotel."
+  },
+  {
+   "t": "p",
+   "k": "6c291536cf14",
+   "en": "GET /v1/hotels/ID"
+  },
+  {
+   "t": "p",
+   "k": "82fb058ab98e",
+   "en": "Add a new hotel. This API is only available to"
+  },
+  {
+   "t": "h3",
+   "k": "67562cf0042e",
+   "en": "POST /v1/hotels"
+  },
+  {
+   "t": "p",
+   "k": "43f73f4c6866",
+   "en": "hotel staff."
+  },
+  {
+   "t": "p",
+   "k": "deedc91ddd42",
+   "en": "Update hotel information. This API is only avail- PUT /v1/hotels/1D"
+  },
+  {
+   "t": "p",
+   "k": "d9bf02d9cfa8",
+   "en": "able to hotel staff."
+  },
+  {
+   "t": "p",
+   "k": "3dbe18d163e5",
+   "en": "Delete a hotel. This API is only available to hotel"
+  },
+  {
+   "t": "h3",
+   "k": "ff43f2ae039b",
+   "en": "DELETE /v1/hotels/ID"
+  },
+  {
+   "t": "p",
+   "k": "87d2e3746130",
+   "en": "staff."
+  },
+  {
+   "t": "p",
+   "k": "ba897251f43b",
+   "en": "Table 7.1: Hotel-related APIs"
+  },
+  {
+   "t": "h3",
+   "k": "62a2bfec6ce0",
+   "en": "Room-related APls"
+  },
+  {
+   "t": "p",
+   "k": "b7f90d4c10dc",
+   "en": "Detail"
+  },
+  {
+   "t": "p",
+   "k": "a033a528b603",
+   "en": "API"
+  },
+  {
+   "t": "p",
+   "k": "4a85740d97fd",
+   "en": "Get detailed information about a room."
+  },
+  {
+   "t": "h3",
+   "k": "5439188b83b8",
+   "en": "GET /v1/hotels/1D/rooms/1D"
+  },
+  {
+   "t": "p",
+   "k": "c074f99a8f3d",
+   "en": "Add a room. This API is only available to hotel"
+  },
+  {
+   "t": "h3",
+   "k": "a3c111c2741e",
+   "en": "POST /v1/hotels/ID/rooms"
+  },
+  {
+   "t": "p",
+   "k": "87d2e3746130",
+   "en": "staff."
+  },
+  {
+   "t": "p",
+   "k": "662c2bac5daa",
+   "en": "Update room information. This API is only avail- PUT /v1/hotels/ID/rooms/ID"
+  },
+  {
+   "t": "p",
+   "k": "d9bf02d9cfa8",
+   "en": "able to hotel staff."
+  },
+  {
+   "t": "p",
+   "k": "9485989ff514",
+   "en": "DELETE"
+  },
+  {
+   "t": "p",
+   "k": "14c771f85e5f",
+   "en": "Delete a room. This API is only available to hotel staff."
+  },
+  {
+   "t": "p",
+   "k": "6e579ca37d54",
+   "en": "/v1/hotels/ID/rooms/ID"
+  },
+  {
+   "t": "p",
+   "k": "ffcd9eff7759",
+   "en": "Table 7.2: Hotel-related APIs"
+  },
+  {
+   "t": "h3",
+   "k": "288d1b37b62b",
+   "en": "Reservation related APls"
+  },
+  {
+   "t": "p",
+   "k": "a033a528b603",
+   "en": "API"
+  },
+  {
+   "t": "p",
+   "k": "b7f90d4c10dc",
+   "en": "Detail"
+  },
+  {
+   "t": "h3",
+   "k": "b202e5d25e31",
+   "en": "GET /v1/reservations"
+  },
+  {
+   "t": "p",
+   "k": "67f0e9712fb9",
+   "en": "Get the reservation history of the logged-in user."
+  },
+  {
+   "t": "h3",
+   "k": "dc9dccdd5168",
+   "en": "GET /v1/reservations/ID"
+  },
+  {
+   "t": "p",
+   "k": "4466add1e7ca",
+   "en": "Get detailed information about a reservation."
+  },
+  {
+   "t": "h3",
+   "k": "71963e2e3937",
+   "en": "POST /v1/reservations"
+  },
+  {
+   "t": "p",
+   "k": "6955a3e4fe17",
+   "en": "Make a new reservation."
+  },
+  {
+   "t": "h3",
+   "k": "c0520d5c599f",
+   "en": "DELETE /v1/reservations/ID"
+  },
+  {
+   "t": "p",
+   "k": "e1f8f5ac2770",
+   "en": "Cancel a reservation."
+  },
+  {
+   "t": "p",
+   "k": "cad281d65af3",
+   "en": "Table 7.3: Reservation-related APIs"
+  },
+  {
+   "t": "p",
+   "k": "68f5b23aac6f",
+   "en": "Making a new reservation is a very important feature. The request parameters of making a new reservation (POST /v1/reservations) could look like this."
+  },
+  {
+   "t": "h3",
+   "k": "a8fbce9ce21d",
+   "en": "\"startDate\": \"2021-04-28\","
+  },
+  {
+   "t": "h3",
+   "k": "2b3da21e994c",
+   "en": "\"endDate\": \"2021-04-30\""
+  },
+  {
+   "t": "p",
+   "k": "62b8bc09bcee",
+   "en": "\"hotelID\": \" 245\""
+  },
+  {
+   "t": "h3",
+   "k": "a7d33b6bcef0",
+   "en": "\"roomID\":\"U12354673389\""
+  },
+  {
+   "t": "h3",
+   "k": "2875a0c568f4",
+   "en": "\"reservationID\": \"13422445\""
+  },
+  {
+   "t": "p",
+   "k": "248a129db07f",
+   "en": "Please note reservationID is used as the idempotency key to prevent double booking. Double booking means multiple reservations are made for the same room on the same day. The details are explained in the \"Concurrency issue\" section on page 206."
+  },
+  {
+   "t": "h2",
+   "k": "de26407535de",
+   "en": "Data model"
+  },
+  {
+   "t": "p",
+   "k": "51213a1d0c8f",
+   "en": "Before we decide which database to use, let's take a close look at the data access patterns. For the hotel reservation system, we need to support the following queries:"
+  },
+  {
+   "t": "p",
+   "k": "dfa2d4db3a9d",
+   "en": "Query 1: View detailed information about a hotel."
+  },
+  {
+   "t": "p",
+   "k": "c555030fc438",
+   "en": "Query 2: Find available types of rooms given a date range."
+  },
+  {
+   "t": "p",
+   "k": "45c55a43c087",
+   "en": "Query 3: Record a reservation."
+  },
+  {
+   "t": "p",
+   "k": "3bf54ba9db16",
+   "en": "Query 4: Look up a reservation or past history of reservations."
+  },
+  {
+   "t": "p",
+   "k": "1a70dd23cc83",
+   "en": "From the back-of-the-envelope estimation, we know the scale of the system is not large but we need to prepare for traffic surges during big events. With these requirements in mind, we choose a relational database because:"
+  },
+  {
+   "t": "li",
+   "k": "129fff614ea2",
+   "en": "A relational database works well with read-heavy and write less frequently workflow. This is because the number of users who visit the hotel website/apps is a few orders of magnitude higher than those who actually make reservations. NoSQL databases are generally optimized for writes and the relational database works well enough for"
+  },
+  {
+   "t": "h3",
+   "k": "146755b73e3d",
+   "en": "read-heavy workflow."
+  },
+  {
+   "t": "li",
+   "k": "2f9a24b93d04",
+   "en": "A relational database provides ACID (atomicity, consistency, isolation, durability) guarantees. ACID properties are important for a reservation system. Without those properties, it's not easy to prevent problems such as negative balance, double charge, double reservations, etc. ACID properties make application code a lot simpler and make the whole system easier to reason about. A relational database usually provides these guarantees."
+  },
+  {
+   "t": "li",
+   "k": "e6ac61073fba",
+   "en": "A relational database can easily model the data. The structure of the business data is very clear and the relationship between different entities (hotel, room, room_type, etc) is stable. This kind of data model is easily modeled by a relational database."
+  },
+  {
+   "t": "p",
+   "k": "29b0f494a8ba",
+   "en": "Now that we have chosen the relational database as our data store, let's explore the schema design. Figure 7.2 shows a straightforward schema design and it is the most natural way for many candidates to model the hotel reservation system."
+  },
+  {
+   "t": "p",
+   "k": "d9b6c64a7537",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 199 Rate Service"
+  },
+  {
+   "t": "p",
+   "k": "377e7f3206aa",
+   "en": "Guest Service Hotel Service · room_type_rate · guest · hotel · hotel_id · PK · guest_id · hotel_id · date · first_name · name · last name · rate · address · email · location · Reservation Service · room · reservation · room_id · PK · reservation_id PK · room_type_id · hotel_id · floor · room_id · number · start_date · hotel_id · end_date · name · status · is_available · guest_id · "
+  },
+  {
+   "t": "figure",
+   "k": "aff444f20a81",
+   "en": "Figure 7.2: Database schema"
+  },
+  {
+   "t": "p",
+   "k": "9ec8cb8d2998",
+   "en": "Most attributes are self-explanatory and we will only explain the status field in the reservation table. The status field can be in one of these states: pending, paid, refunded, canceled, rejected. The state machine is shown in Figure 7.3."
+  },
+  {
+   "t": "p",
+   "k": "f5a1ab0538ed",
+   "en": "Pending · Canceled · Rejected · Paid · Refunded"
+  },
+  {
+   "t": "figure",
+   "k": "f40895f20640",
+   "en": "Figure 7.3: Reservation status"
+  },
+  {
+   "t": "p",
+   "k": "156ecc1de06e",
+   "en": "This schema design has a major issue. This data model works for companies like Airbnb as room_id (might be called listing_id) is given when users make reservations. However, this isn't the case for hotels. A user actually reserves a type of room in a given hotel instead of a specific room. For instance, a room type can be a standard room, king-size room, queen-size room with two queen beds, etc. Room numbers are given when the guest checks in and not at the time of the reservation. We need to update our data model to reflect this new requirement. See \"Improved data model\" in the deep dive section on page 203 for more details."
+  },
+  {
+   "t": "h3",
+   "k": "f0e860766605",
+   "en": "High-level design"
+  },
+  {
+   "t": "p",
+   "k": "2e429188f1b6",
+   "en": "We use the microservice architecture for this hotel reservation system. Over the past few years, microservice architecture has gained great popularity. Companies that use microservice include Amazon, Netflix, Uber, Airbnb, Twitter, etc. If you want to learn more about the benefits of a microservice architecture, you can check out some good resources [1] [2]."
+  },
+  {
+   "t": "p",
+   "k": "0a04a8751e68",
+   "en": "Our design is modeled with the microservice architecture and the high-level design diagram is shown in Figure 7.4."
+  },
+  {
+   "t": "p",
+   "k": "f79a94eb81f9",
+   "en": "Public Private · User · Admin CDN · Public API · Gateway · Reservation · Payment · Hotel Management Hotel Service · Rate Service · Service · Service · Service · Cache · Hotel Cache · Hotel DB · Rate DB · Reservation DB · Payment DB"
+  },
+  {
+   "t": "figure",
+   "k": "7cbd00db76d4",
+   "en": "Figure 7.4: High-level design"
+  },
+  {
+   "t": "p",
+   "k": "fcc5ca61c1d6",
+   "en": "We will briefly go over each component of the system from top to bottom."
+  },
+  {
+   "t": "li",
+   "k": "4a5e6c9a2fb3",
+   "en": "User: a user books a hotel room on their mobile phone or computer."
+  },
+  {
+   "t": "li",
+   "k": "cd5c1dce24de",
+   "en": "Admin (hotel staff): authorized hotel staff perform administrative operations such as refunding a customer, canceling a reservation, updating room information, etc."
+  },
+  {
+   "t": "li",
+   "k": "f6c3f77318df",
+   "en": "CDN (content delivery network): for better load time, CDN is used to cache all static assets, including javascript bundles, images, videos, HTML, etc."
+  },
+  {
+   "t": "li",
+   "k": "e702d5d18638",
+   "en": "Public API Gateway: this is a fully managed service that supports rate limiting, authentication, etc. The API gateway is configured to direct requests to specific services based on the endpoints. For example, requests to load the hotel homepage are directed to the hotel service and requests to book a hotel room are routed to the reservation service."
+  },
+  {
+   "t": "li",
+   "k": "4037e0b2809e",
+   "en": "Internal APIs: those APIs are only available for authorized hotel staff. They are accessible through internal software or websites. They are usually further protected Step 2 - Propose High-level Design and Get Buy-in | 201 by a VPN (virtual private network)."
+  },
+  {
+   "t": "li",
+   "k": "835745c47668",
+   "en": "Hotel Service: this provides detailed information on hotels and rooms. Hotel and room data are generally static, so can be easily cached."
+  },
+  {
+   "t": "li",
+   "k": "41fcff55e188",
+   "en": "Rate Service: this provides room rates for different future dates. An interesting fact about the hotel industry is that the price of a room depends on how full the hotel is expected to be for a given day."
+  },
+  {
+   "t": "li",
+   "k": "151150069a59",
+   "en": "Reservation Service: receives reservation requests and reserves the hotel rooms. This service also tracks room inventory as rooms are reserved or reservations are canceled."
+  },
+  {
+   "t": "li",
+   "k": "2d37ff13a04b",
+   "en": "Payment Service: executes payment from a customer and updates the reservation status to paid once a payment transaction succeeds, or rejected if the transaction fails."
+  },
+  {
+   "t": "li",
+   "k": "82276974749f",
+   "en": "Hotel Management Service: only available to authorized hotel staff. Hotel staff are eligible to use the following features: view the record of an upcoming reservation, reserve a room for a customer, cancel a reservation, etc."
+  },
+  {
+   "t": "p",
+   "k": "30932b16697f",
+   "en": "For clarity, Figure 7.4 omits many arrows of interactions between microservices. For example, as shown in Figure 7.5, there should be an arrow between Reservation service and Rate service. Reservation service queries Rate service for room rates. This is used to compute the total room charge for a reservation. Another example is that there should be many arrows connecting the Hotel Management Service with most of the other services. When an admin makes changes via Hotel Management Service, the requests are forwarded to the actual service owning the data, to handle the changes."
+  },
+  {
+   "t": "p",
+   "k": "d0667582b05f",
+   "en": "Reservation · Hotel Management · Service · Service · Rate Service"
+  },
+  {
+   "t": "figure",
+   "k": "1ffee36c0186",
+   "en": "Figure 7.5: Connections between services"
+  },
+  {
+   "t": "p",
+   "k": "f8c8871dfbd8",
+   "en": "For production systems, inter-service communication often employs a modern and highperformance remote procedure call (RPC) framework like gPRC. There are many benefits to using such frameworks. To learn more about gPRC in particular, check out [3]."
+  },
+  {
+   "t": "h2",
+   "k": "5008c4b3d7bc",
+   "en": "Step 3 - Design Deep Dive"
+  },
+  {
+   "t": "p",
+   "k": "a598a4097e13",
+   "en": "Now we've talked about the high-level design, let's go deeper into the following"
+  },
+  {
+   "t": "p",
+   "k": "9f14d531645e",
+   "en": "Improved data model · Concurrency issues · Scaling the system"
+  },
+  {
+   "t": "li",
+   "k": "dbe8611205a5",
+   "en": "Resolving data inconsistency in the microservice architecture"
+  },
+  {
+   "t": "h2",
+   "k": "82ba73188191",
+   "en": "Improved data model"
+  },
+  {
+   "t": "p",
+   "k": "a33ed46bf43b",
+   "en": "As mentioned in the high-level design, when we reserve a hotel room, we actually reserve a type of room, as opposed to a specific room. What do we need to change about the API and schema to accommodate this?"
+  },
+  {
+   "t": "p",
+   "k": "b66f3844641b",
+   "en": "For the reservation API, roomID is replaced by roomTypeID in the request parameter. The API to make a reservation looks like this:"
+  },
+  {
+   "t": "p",
+   "k": "71963e2e3937",
+   "en": "POST /v1/reservations"
+  },
+  {
+   "t": "p",
+   "k": "0cda1bdb3a53",
+   "en": "Request parameters:"
+  },
+  {
+   "t": "h3",
+   "k": "a9736695b88d",
+   "en": "\"startDate\": \"2021-84-28\""
+  },
+  {
+   "t": "h3",
+   "k": "692c55860554",
+   "en": "\"endDate\": \"2021-04-30\","
+  },
+  {
+   "t": "h3",
+   "k": "60175f46c63b",
+   "en": "\"hotelID\": \"245\""
+  },
+  {
+   "t": "h3",
+   "k": "5c99a60ffafe",
+   "en": "\"roomTypeID\": \"12354673389\""
+  },
+  {
+   "t": "h3",
+   "k": "e9612cca4c7f",
+   "en": "\"reservationID\": \"13422445\"'"
+  },
+  {
+   "t": "p",
+   "k": "478b01a7ef83",
+   "en": "The updated schema is shown in Figure 7.6."
+  },
+  {
+   "t": "p",
+   "k": "1e427f7856b8",
+   "en": "Hotel Service · Rate Service · Guest Service · hotel · room_type_rate · guest · hotel_id · PK · guest_id · date · name · address · last_name · email · Reservation Service · room_type_inventory · room · PK · reservation_id PK · room_id · room_type_id · hotel id · room_type_id · room_type_id · date · number · end date · status · name"
+  },
+  {
+   "t": "figure",
+   "k": "fcb9c78b8fd2",
+   "en": "Figure 7.6: Updated schema"
+  },
+  {
+   "t": "p",
+   "k": "be17cf31cb0a",
+   "en": "We'll briefly go over some of the most important tables."
+  },
+  {
+   "t": "p",
+   "k": "234eec4b7b1d",
+   "en": "room: contains information regarding a room."
+  },
+  {
+   "t": "p",
+   "k": "133236d56311",
+   "en": "Step 3 - Design Deep Dive | 203 room_type_rate: stores price data for a specific room type, for future dates."
+  },
+  {
+   "t": "p",
+   "k": "02f3824c7417",
+   "en": "reservation: records guest reservation data."
+  },
+  {
+   "t": "p",
+   "k": "c451be9e56e8",
+   "en": "room_type_inventory: stores inventory data about hotel rooms. This table is very important for the reservation system, so let's take a close look at each column."
+  },
+  {
+   "t": "li",
+   "k": "4ba26c2d4cb6",
+   "en": "hotel_id: ID of the hotel"
+  },
+  {
+   "t": "li",
+   "k": "655dfbd458b5",
+   "en": "room_type_id: ID of a room type."
+  },
+  {
+   "t": "li",
+   "k": "0181c0727ebc",
+   "en": "date: a single date."
+  },
+  {
+   "t": "li",
+   "k": "d92cde668385",
+   "en": "total_inventory: the total number of rooms minus those that are temporarily taken off the inventory. Some rooms might be taken off from the market for maintenance. • total_reserved: the total number of rooms booked for the specified hotel_id, room_type_id, and date."
+  },
+  {
+   "t": "p",
+   "k": "9611dc3cb40c",
+   "en": "There are other ways to design the room_type_inventory table, but having one row per date makes managing reservations within a date range and queries easy. As shown in"
+  },
+  {
+   "t": "figure",
+   "k": "70f902d3f55d",
+   "en": "Figure 7.6, (hotel_id, room_type_id, date) is the composite primary key. The rows of the"
+  },
+  {
+   "t": "p",
+   "k": "85b4924268e1",
+   "en": "table are pre-populated by querying the inventory data across all future dates within 2 years. We have a scheduled daily job that pre-populates inventory data when the dates advance further."
+  },
+  {
+   "t": "p",
+   "k": "4eae4acb4c5d",
+   "en": "Now that we've finalized the schema design, let's do some estimation about the storage volume. As mentioned in the back-of-the-envelope estimation, we have 5,000 hotels. Assume each hotel has 20 types of rooms. That's (5,000 hotels x20 types of rooms x2 years x365 days) = 73 million rows. 73 million is not a lot of data and a single database is enough to store the data. However, a single server means a single point of failure. To achieve high availability, we could set up database replications across multiple regions or availability zones."
+  },
+  {
+   "t": "p",
+   "k": "94119dae15c6",
+   "en": "Table 7.4 shows the sample data of the room_type_inventory table."
+  },
+  {
+   "t": "h2",
+   "k": "deb60a72a0fb",
+   "en": "hotel _id room_type_id"
+  },
+  {
+   "t": "p",
+   "k": "f8f30e4a9c0a",
+   "en": "total_inventory · total_reserved 2021-06-01 · 2021-06-02 · 2021-06-03 · 2023-05-31 · 2021-06-01 · 2210 · 2021-06-01 · 2210 · 2021-06-02"
+  },
+  {
+   "t": "p",
+   "k": "96aef17d42d5",
+   "en": "Table 7.4: Sample data of the room_type_inventory table"
+  },
+  {
+   "t": "p",
+   "k": "94a9cd8efba5",
+   "en": "The room_type_inventory table is utilized to check if a customer can reserve a specific type of room or not. The input and output for a reservation might look like this:"
+  },
+  {
+   "t": "li",
+   "k": "191045bd9706",
+   "en": "Input: startDate (2021-07-01), endDate (2021-07-03), roomTypeld, hotelId,"
+  },
+  {
+   "t": "h3",
+   "k": "b17386e07e22",
+   "en": "number0fRoomsToReserve"
+  },
+  {
+   "t": "li",
+   "k": "f4d90f2fffde",
+   "en": "Output: True if the specified type of room has inventory and users can book it. Otherwise, it returns False."
+  },
+  {
+   "t": "p",
+   "k": "3d2273984250",
+   "en": "From the SQL perspective, it contains the following two steps:"
+  },
+  {
+   "t": "p",
+   "k": "907ce8c3f448",
+   "en": "1. Select rows within a date range"
+  },
+  {
+   "t": "h3",
+   "k": "a4759533d0fc",
+   "en": "SELECT date, total_inventory, total_reserved"
+  },
+  {
+   "t": "h3",
+   "k": "cd949b0cf28b",
+   "en": "FROM room_type_ inventory"
+  },
+  {
+   "t": "h3",
+   "k": "9fa8a0fb2ed2",
+   "en": "WHERE room_type_id = ${roomTypeld} AND hotel_id = ${"
+  },
+  {
+   "t": "p",
+   "k": "20d661999d49",
+   "en": "hotelld}"
+  },
+  {
+   "t": "h3",
+   "k": "8e79e5930f06",
+   "en": "AND date between ${startDate} and ${endDate}"
+  },
+  {
+   "t": "p",
+   "k": "09f4092bef7c",
+   "en": "This query returns data like this:"
+  },
+  {
+   "t": "p",
+   "k": "6544d713a033",
+   "en": "date · total_inventory · total_reserved · 2021-07-01 · 2021-07-02 · 2021-07-03 · Table 7.5: Hotel inventory"
+  },
+  {
+   "t": "p",
+   "k": "8f4f021caf6f",
+   "en": "2. For each entry, the application checks the condition below:"
+  },
+  {
+   "t": "h3",
+   "k": "d51a5723a580",
+   "en": "if ((total_reserved + ${number0fRoomsToReserve}) <="
+  },
+  {
+   "t": "h3",
+   "k": "7f060615e371",
+   "en": "total inventory)"
+  },
+  {
+   "t": "p",
+   "k": "bccb08a98e73",
+   "en": "If the condition returns True for all entries, it means there are enough rooms for each date within the date range."
+  },
+  {
+   "t": "p",
+   "k": "e50b82461b27",
+   "en": "One of the requirements is to support 10% overbooking. With the new schema, it is easy to implement:"
+  },
+  {
+   "t": "h3",
+   "k": "2af49ad0db24",
+   "en": "if ((total_reserved + ${number0fRoomsToReserve}) <= 110% *"
+  },
+  {
+   "t": "h3",
+   "k": "ef8f790f8891",
+   "en": "total_ inventory)"
+  },
+  {
+   "t": "p",
+   "k": "f4dc97995ce2",
+   "en": "At this point, the interviewer might ask a follow-up question: \"if the reservation data is too large for a single database, what would you do?\" There are a few strategies:"
+  },
+  {
+   "t": "li",
+   "k": "5a97777f645e",
+   "en": "Store only current and future reservation data. Reservation history is not frequently accessed. So they can be archived and some can even be moved to cold storage. • Database sharding. The most frequent queries include making a reservation or looking up a reservation by name. In both queries, we need to choose the hotel"
+  },
+  {
+   "t": "h3",
+   "k": "654801fe4baf",
+   "en": "first, meaning hotel_id is a good sharding key. The data can be sharded by"
+  },
+  {
+   "t": "h3",
+   "k": "383243e154f4",
+   "en": "hash(hotel_id) % number_of_servers."
+  },
+  {
+   "t": "p",
+   "k": "33c8bac1103a",
+   "en": "Step 3 - Design Deep Dive | 205"
+  },
+  {
+   "t": "h2",
+   "k": "5219d75b045a",
+   "en": "Concurrency issues"
+  },
+  {
+   "t": "p",
+   "k": "55b216d9884c",
+   "en": "Another important problem to look at is double booking. We need to solve two prob. lems:"
+  },
+  {
+   "t": "p",
+   "k": "9bf31a3162cc",
+   "en": "1. The same user clicks on the book button multiple times."
+  },
+  {
+   "t": "p",
+   "k": "3ec69e988cd1",
+   "en": "2. Multiple users try to book the same room at the same time."
+  },
+  {
+   "t": "p",
+   "k": "7c99137f0b29",
+   "en": "Let's take a look at the first scenario. As shown in Figure 7.7, two reservations are made."
+  },
+  {
+   "t": "p",
+   "k": "53422ce420fe",
+   "en": "User's second click"
+  },
+  {
+   "t": "p",
+   "k": "54050486027b",
+   "en": "end date INSERT INTO RESERVATION ("
+  },
+  {
+   "t": "p",
+   "k": "a83b8c3f9677",
+   "en": "INSERT INTO RESERVATION ( · 121, · 121, · 3, · 2021-06-01, · 2021-06-01, · 2021-06-04, · 2021-06-04, · pending_pay. · pending_pay, · guest1 · guest1"
+  },
+  {
+   "t": "figure",
+   "k": "63d073a1b295",
+   "en": "Figure 7.7: Two reservations are made"
+  },
+  {
+   "t": "p",
+   "k": "0c3db0f70735",
+   "en": "There are two common approaches to solve this problem:"
+  },
+  {
+   "t": "li",
+   "k": "3f9fd9b6d7c3",
+   "en": "Client-side implementation. A client can gray out, hide or disable the \"submit\" button once a request is sent. This should prevent the double-clicking issue most of the time. However, this approach is not very reliable. For example, users can disable javascript, thereby bypassing the client check."
+  },
+  {
+   "t": "li",
+   "k": "54725b87924c",
+   "en": "Idempotent APIs. Add an idempotency key in the reservation API request. An API call is idempotent if it produces the same result no matter how many times it is called. Figure 7.8 shows how to use the idempotency key reservation_id to avoid the double-reservation issue. The detailed steps are explained below."
+  },
+  {
+   "t": "p",
+   "k": "8904edac329b",
+   "en": "User · Reservation · Service · I Generate reservation order"
+  },
+  {
+   "t": "li",
+   "k": "0fa52b2edda1",
+   "en": "2 Show reservation page (reservation _id) -- 1"
+  },
+  {
+   "t": "p",
+   "k": "35166e0426d1",
+   "en": "3a Submit reservation (reservation _id) -"
+  },
+  {
+   "t": "p",
+   "k": "258c915e30bb",
+   "en": "Submit reservation (reservation. id) - X-*_"
+  },
+  {
+   "t": "figure",
+   "k": "30df196b96d3",
+   "en": "Figure 7.8: Unique constraint"
+  },
+  {
+   "t": "p",
+   "k": "102ca1924b80",
+   "en": "1. Generate a reservation order. After a customer enters detailed information about the reservation (room type, check-in date, check-out date, etc) and clicks the \"continue\" button, a reservation order is generated by the reservation service."
+  },
+  {
+   "t": "p",
+   "k": "c6d63a72df6e",
+   "en": "2. The system generates a reservation order for the customer to review. The unique reservation_ id is generated by a globally unique ID generator and returned as part of the API response. The Ul of this step might look like this:"
+  },
+  {
+   "t": "p",
+   "k": "cf346849a677",
+   "en": "Step 3 - Design Deep Dive | 207 Almost done, Alex! We just need a"
+  },
+  {
+   "t": "p",
+   "k": "6e86289c724f",
+   "en": "few more details to confirm your"
+  },
+  {
+   "t": "p",
+   "k": "87c31c0be939",
+   "en": "booking. · Square · $508 · MMYY · Complete my booking>"
+  },
+  {
+   "t": "figure",
+   "k": "5efa7c909232",
+   "en": "Figure 7.9: Confirmation page (Source: [4])"
+  },
+  {
+   "t": "p",
+   "k": "c9bc81220fa7",
+   "en": "3а. Submit reservation 1. The reservation id is included as part of the request. It is the primary key of the reservation table (Figure 7.6). Please note that the idempotency key doesn't have to be the reservation_id. We choose reservation_id because it already exists and works well for our design."
+  },
+  {
+   "t": "p",
+   "k": "7947a90c5f77",
+   "en": "3b. If a user clicks the \"Complete my booking\" button a second time, reservation 2 is submitted. Because reservation id is the primary key of the reservation table, we can rely on the unique constraint of the key to ensure no double reservation happens."
+  },
+  {
+   "t": "figure",
+   "k": "c7324bd92224",
+   "en": "Figure 7.10 explains why double reservation can be avoided"
+  },
+  {
+   "t": "p",
+   "k": "4b65a31fcfd3",
+   "en": "User's second click · INSERT INTO RESERVATION ( · INSERT INTO RESERVATION ( · 121, - · 121. * - · 2. · 3. · 2021-06-01, · 2021-06-01, · Unique · 2021-06-04, · 2021-06-04, · constraint pending_pay, · violation · quest1"
+  },
+  {
+   "t": "p",
+   "k": "7b7e53a83041",
+   "en": "row 1: 121, 2, 3, 2021-06-01, 2021-06-04, pending_ pay, guest 1"
+  },
+  {
+   "t": "figure",
+   "k": "4c2b33ec2f7a",
+   "en": "Figure 7.10: Unique constraint violation"
+  },
+  {
+   "t": "p",
+   "k": "e618c3ce7310",
+   "en": "Scenario 2: what happens if multiple users book the same type of room at the same time when there is only one room left? Let's consider the scenario as shown in Figure 7.11."
+  },
+  {
+   "t": "p",
+   "k": "9a1e3c028b28",
+   "en": "Step 3 - Design Deep Dive | 209 User 1"
+  },
+  {
+   "t": "p",
+   "k": "be0be2895fa4",
+   "en": "User 2"
+  },
+  {
+   "t": "p",
+   "k": "714eea0f4c98",
+   "en": "Time"
+  },
+  {
+   "t": "p",
+   "k": "7e2ef5cc7619",
+   "en": "total_reserved = 99 total_reserved = 99"
+  },
+  {
+   "t": "p",
+   "k": "3e39e4aa40d9",
+   "en": "2 Check room inventory · 1 room left · ® Check room inventory · Reserve room: · total_ reserved += 1 · Reserve room: · 5 total_ reserved += 1 · 6 Commit · @ Commit · total_reserved = 100"
+  },
+  {
+   "t": "figure",
+   "k": "20c1a3de644e",
+   "en": "Figure 7.11: Race condition"
+  },
+  {
+   "t": "p",
+   "k": "183660bc82e7",
+   "en": "1. Let's assume the database isolation level is not serializable [5]. User 1 and User 2 try to book the same type of room at the same time, but there is only 1 room left. Let's call User 1's execution transaction 1 and User 2's execution transaction 2. At this time, there are 100 rooms in the hotel and 99 of them are reserved."
+  },
+  {
+   "t": "p",
+   "k": "1e693d5624e2",
+   "en": "2. Transaction 2 checks if there are enough rooms left by checking if (total_reserved + rooms_to_book) ≤ total_inventory. Since there is 1 more room left, it returns True. 3. Transaction 1 checks if there are enough rooms by checking if (total_reserved + rooms_to_book) ≤ total_ inventory. Since there is 1 more room left, it returns True as well."
+  },
+  {
+   "t": "p",
+   "k": "e09b79c1155c",
+   "en": "4. Transaction 1 reserves the room and updates the inventory: reserved_room becomes 100."
+  },
+  {
+   "t": "h3",
+   "k": "508d83e8c9a4",
+   "en": "5. Then transaction 2 reserves the room. The isolation property in ACID means"
+  },
+  {
+   "t": "p",
+   "k": "58fd66435563",
+   "en": "database transactions must complete their tasks independently from other transactions. So data changes made by transaction 1 are not visible to transaction 2 until transaction 1 is completed (committed). So transaction 2 still sees total_reserved as 99 and reserves the room by updating the inventory: reserved_room becomes 100. This results in the system allowing both users to book a room, but there is only 1 room left."
+  },
+  {
+   "t": "p",
+   "k": "1d2a0763ae7c",
+   "en": "6. Transaction 1 successfully commits the change."
+  },
+  {
+   "t": "p",
+   "k": "ef3d0fe48172",
+   "en": "7. Transaction 2 successfully commits the change."
+  },
+  {
+   "t": "p",
+   "k": "735a4d8488f6",
+   "en": "The solution to this problem generally requires some form of locking mechanism. We explore the following techniques:"
+  },
+  {
+   "t": "p",
+   "k": "c1699984f140",
+   "en": "Pessimistic locking · Optimistic locking · Database constraints"
+  },
+  {
+   "t": "p",
+   "k": "805b17598450",
+   "en": "Before jumping into a fix, let's take a look at the SQL pseudo-code utilized to reserve a room. The SQL has two parts:"
+  },
+  {
+   "t": "li",
+   "k": "f49bbe208f27",
+   "en": "Check room inventory"
+  },
+  {
+   "t": "li",
+   "k": "99d6aa9a3aea",
+   "en": "Reserve a room"
+  },
+  {
+   "t": "h3",
+   "k": "931fcebaa82d",
+   "en": "# step 1: check room inventory"
+  },
+  {
+   "t": "h3",
+   "k": "3cf3afcf914f",
+   "en": "SELECT date, total inventory, total_reserved"
+  },
+  {
+   "t": "h3",
+   "k": "35caf08613ca",
+   "en": "FROM room_type_inventory"
+  },
+  {
+   "t": "h3",
+   "k": "a77327b2cf87",
+   "en": "WHERE room_type_id = ${roomTypeld} AND hotel_id = ${hotelId}"
+  },
+  {
+   "t": "h3",
+   "k": "32973b0ff491",
+   "en": "AND date between #{startDate} and ${endDate}"
+  },
+  {
+   "t": "h3",
+   "k": "5a5224d98c54",
+   "en": "# For every entry returned from step 1"
+  },
+  {
+   "t": "h3",
+   "k": "b17b07ba7c2e",
+   "en": "if ((total_reserved + ${number0fRoomsToReserve}) > 110% *"
+  },
+  {
+   "t": "h3",
+   "k": "c1d5c9def098",
+   "en": "total_ inventory) {"
+  },
+  {
+   "t": "p",
+   "k": "ff3a6f3b41f1",
+   "en": "Rollback"
+  },
+  {
+   "t": "h3",
+   "k": "740d3b7c92b0",
+   "en": "# step 2: reserve rooms"
+  },
+  {
+   "t": "h3",
+   "k": "2f501d271506",
+   "en": "UPDATE room_type_inventory"
+  },
+  {
+   "t": "h3",
+   "k": "8666a3fa33e1",
+   "en": "SET total_reserved = total_reserved + ${number0fRoomsToReserve}"
+  },
+  {
+   "t": "h3",
+   "k": "b039aeacce17",
+   "en": "WHERE room_type_id = #{roomTypeId}"
+  },
+  {
+   "t": "h3",
+   "k": "8e79e5930f06",
+   "en": "AND date between ${startDate} and ${endDate}"
+  },
+  {
+   "t": "p",
+   "k": "4015b57a143a",
+   "en": "Commit"
+  },
+  {
+   "t": "h3",
+   "k": "b30ddd5c3e9d",
+   "en": "Option 1: Pessimistic locking"
+  },
+  {
+   "t": "p",
+   "k": "4f8776eb014d",
+   "en": "The pessimistic locking [6], also called pessimistic concurrency control, prevents simultaneous updates by placing a lock on a record as soon as one user starts to update it. Other users who attempt to update the record have to wait until the first user has released the lock (committed the changes)."
+  },
+  {
+   "t": "p",
+   "k": "4bd93b40e63d",
+   "en": "For MySQL, the \"SELECT... FOR UPDATE\" statement works by locking the rows returned by a selection query. Let's assume a transaction is started by \"transaction 1\". Other Step 3 - Design Deep Dive | 211 transactions have to wait for transaction 1 to finish before beginning another transaction. A detailed explanation is shown in Figure 7.12."
+  },
+  {
+   "t": "p",
+   "k": "f7077742ba83",
+   "en": "User 2 · User 1 · Time · Transaction 2"
+  },
+  {
+   "t": "p",
+   "k": "897cbc591da5",
+   "en": "BEGIN TRANSACTION BEGIN TRANSACTION"
+  },
+  {
+   "t": "p",
+   "k": "86832ba424b4",
+   "en": "# check room inventory · SELECT... FOR UPDATE · Transaction 2 · waits for"
+  },
+  {
+   "t": "p",
+   "k": "6ffa85d0bf68",
+   "en": "# check room inventon SELECT... FOR UPDATI # reserve room"
+  },
+  {
+   "t": "p",
+   "k": "dfae3b179795",
+   "en": "Transaction 1 · UPDATE query · COMMIT TRANSACTION · # reserve room"
+  },
+  {
+   "t": "p",
+   "k": "7dceb93ebc92",
+   "en": "Total reserved = 100, cannot reserve room"
+  },
+  {
+   "t": "p",
+   "k": "43ce7531d240",
+   "en": "ROLLBACK TRANSACTION"
+  },
+  {
+   "t": "figure",
+   "k": "ba44ab92e46a",
+   "en": "Figure 7.12: Pessimistic locking"
+  },
+  {
+   "t": "p",
+   "k": "c42ba081bb62",
+   "en": "In Figure 7.12, the \"SELECT... FOR UPDATE\" statement of transaction 2 waits for transaction 1 to finish because transaction 1 locks the rows. After transaction 1 finishes, total_reserved becomes 100, which means there is no room for user 2 to book. Pros:"
+  },
+  {
+   "t": "li",
+   "k": "1509ebf49a9d",
+   "en": "Prevents applications from updating data that is being or has been changed. • It is easy to implement and it avoids conflict by serializing updates. Pessimistic locking is useful when data contention is heavy."
+  },
+  {
+   "t": "p",
+   "k": "898d607196f9",
+   "en": "Cons:"
+  },
+  {
+   "t": "li",
+   "k": "2a4e54e8c478",
+   "en": "Deadlocks may occur when multiple resources are locked. Writing deadlock-free application code could be challenging"
+  },
+  {
+   "t": "li",
+   "k": "f41858a7926c",
+   "en": "This approach is not scalable. If a transaction is locked for too long, other transactions cannot access the resource. This has a significant impact on database performance, especially when transactions are long-lived or involve a lot of entities."
+  },
+  {
+   "t": "p",
+   "k": "d9305d86f478",
+   "en": "Due to these limitations, we do not recommend pessimistic locking for the reservation system."
+  },
+  {
+   "t": "h3",
+   "k": "1918729690fa",
+   "en": "Option 2: Optimistic locking"
+  },
+  {
+   "t": "p",
+   "k": "fde847f27898",
+   "en": "Optimistic locking [7], also referred to as optimistic concurrency control, allows multiple concurrent users to attempt to update the same resource."
+  },
+  {
+   "t": "p",
+   "k": "6a86b03cc125",
+   "en": "There are two common ways to implement optimistic locking: version number and timestamp. Version number is generally considered to be a better option because the server clock can be inaccurate over time. We explain how optimistic locking works with version number."
+  },
+  {
+   "t": "figure",
+   "k": "01576da1321c",
+   "en": "Figure 7.13 shows a successful case and a failure case."
+  },
+  {
+   "t": "p",
+   "k": "aee80228e5fc",
+   "en": "Read v1 · Read v1 · Read v1 · User 2 User 1 · User 1 · Write v2 · Read v2 · Write v2 · User 2 · Write v3 · V No conflict · X Conflict"
+  },
+  {
+   "t": "figure",
+   "k": "26d777c49368",
+   "en": "Figure 7.13: Optimistic locking"
+  },
+  {
+   "t": "p",
+   "k": "9ee16ca02337",
+   "en": "1. A new column called version is added to the database table."
+  },
+  {
+   "t": "p",
+   "k": "4e7684a0f022",
+   "en": "2. Before a user modifies a database row, the application reads the version number of the row."
+  },
+  {
+   "t": "p",
+   "k": "95473a8ba4bf",
+   "en": "3. When the user updates the row, the application increases the version number by 1 and writes it back to the database."
+  },
+  {
+   "t": "p",
+   "k": "89aa08fc4436",
+   "en": "4. A database validation check is put in place; the next version number should exceed the current version number by 1. The transaction aborts if the validation fails and the user tries again from step 2."
+  },
+  {
+   "t": "p",
+   "k": "83e1f328e505",
+   "en": "Optimistic locking is usually faster than pessimistic locking because we do not lock the database. However, the performance of optimistic locking drops dramatically when concurrency is high."
+  },
+  {
+   "t": "p",
+   "k": "c8b76b177951",
+   "en": "To understand why, consider the case when many clients try to reserve a hotel room at the same time. Because there is no limit on how many clients can read the available room Step 3 - Design Deep Dive | 213 count, all of them read back the same available room count and the current version number. When different clients make reservations and write back the results to the database, only one of them will succeed, and the rest of the clients receive a version check failure message. These clients have to retry. In the subsequent round of retries, there is only one successful client again, and the rest have to retry. Although the end result is correct, repeated retries cause a very unpleasant user experience."
+  },
+  {
+   "t": "p",
+   "k": "6876fe088f66",
+   "en": "Pros:"
+  },
+  {
+   "t": "li",
+   "k": "322f274e703e",
+   "en": "It prevents applications from editing stale data."
+  },
+  {
+   "t": "li",
+   "k": "be81e4aba9b3",
+   "en": "We don't need to lock the database resource. There's actually no locking from the database point of view. It's entirely up to the application to handle the logic with the version number."
+  },
+  {
+   "t": "li",
+   "k": "8888fec11864",
+   "en": "Optimistic locking is generally used when the data contention is low. When conflicts are rare, transactions can complete without the expense of managing locks."
+  },
+  {
+   "t": "p",
+   "k": "898d607196f9",
+   "en": "Cons:"
+  },
+  {
+   "t": "li",
+   "k": "cf82a241003b",
+   "en": "Performance is poor when data contention is heavy."
+  },
+  {
+   "t": "p",
+   "k": "0200a9005452",
+   "en": "Optimistic locking is a good option for a hotel reservation system since the QPS for reservations is usually not high."
+  },
+  {
+   "t": "h3",
+   "k": "dc35a534896a",
+   "en": "Option 3: Database constraints"
+  },
+  {
+   "t": "p",
+   "k": "e5480a4183b3",
+   "en": "This approach is very similar to optimistic locking. Let's explore how it works. In the room_type_inventory table, add the following constraint:"
+  },
+  {
+   "t": "h3",
+   "k": "07dad6716644",
+   "en": "CONSTRAINT 'check_room_count CHECK(('total_inventory - total_reserved"
+  },
+  {
+   "t": "p",
+   "k": "a371744852b7",
+   "en": ">= 0))"
+  },
+  {
+   "t": "h3",
+   "k": "90488da9a7b7",
+   "en": "Using the same example as shown in Figure 7.14, when user 2 tries to reserve a"
+  },
+  {
+   "t": "h3",
+   "k": "a5dd0f43f06c",
+   "en": "room, total_reserved becomes 101, which violates the total_ inventory [100]-"
+  },
+  {
+   "t": "p",
+   "k": "bfd030e36592",
+   "en": "total_reserved [101] ≥ 0 constraint. The transaction is then rolled back."
+  },
+  {
+   "t": "p",
+   "k": "c52fcdf736ae",
+   "en": "Time · User 2 · User 1"
+  },
+  {
+   "t": "p",
+   "k": "3ccd8084e2eb",
+   "en": "total_inventory = 100 total_inventory = 100"
+  },
+  {
+   "t": "p",
+   "k": "7e2ef5cc7619",
+   "en": "total_reserved = 99 total_reserved = 99"
+  },
+  {
+   "t": "p",
+   "k": "3db23a7b94f5",
+   "en": "a Check room inventory · 1 room left · @ Check room inventory · 1 room left · Reserve room: · * total reserved += 1 · 6 Commit · Reserve room: · * total reserved += 1"
+  },
+  {
+   "t": "figure",
+   "k": "12a4bb3d3ad8",
+   "en": "Figure 7.14: Database constraint"
+  },
+  {
+   "t": "p",
+   "k": "b0d891163365",
+   "en": "Pros"
+  },
+  {
+   "t": "li",
+   "k": "c8143d92fa34",
+   "en": "Easy to implement."
+  },
+  {
+   "t": "li",
+   "k": "d7101d7f8b5d",
+   "en": "It works well when data contention is minimal."
+  },
+  {
+   "t": "p",
+   "k": "85d0c6044e05",
+   "en": "Cons"
+  },
+  {
+   "t": "li",
+   "k": "e80ca297e852",
+   "en": "Similar to optimistic locking, when data contention is heavy, it can result in a high volume of failures. Users could see there are rooms available, but when they try to book one, they get the \"no rooms available\" response. The experience can be frustrating to users."
+  },
+  {
+   "t": "li",
+   "k": "832ad87972f8",
+   "en": "The database constraints cannot be version-controlled easily like the application code."
+  },
+  {
+   "t": "li",
+   "k": "262810755ce3",
+   "en": "Not all databases support constraints. It might cause problems when we migrate from one database solution to another."
+  },
+  {
+   "t": "p",
+   "k": "6da5ec682358",
+   "en": "Step 3 - Design Deep Dive | 215 Since this approach is easy to implement and the data contention for a hotel reservation is usually not high (low QPS). it is another good option for the hotel reservation system."
+  },
+  {
+   "t": "p",
+   "k": "b06273ade235",
+   "en": "Scalability"
+  },
+  {
+   "t": "p",
+   "k": "e881dd24122d",
+   "en": "Usually. the load of the hotel reservation system is not high. However, the interviewer might have a follow-up question: \"what if the hotel reservation system is used not just for a hotel chain but for a popular travel site such as booking.com or expedia.com?* In this case. the QPS could be 1.000 times higher."
+  },
+  {
+   "t": "p",
+   "k": "a88c2b08f771",
+   "en": "When the system load is high, we need to understand what might become the bottleneck. All our services are stateless, so they can be easily expanded by adding more servers. The database, however, contains all the states and cannot be scaled up by simply adding more databases. Let's explore how to scale the database."
+  },
+  {
+   "t": "h3",
+   "k": "2964872565e3",
+   "en": "Database sharding"
+  },
+  {
+   "t": "p",
+   "k": "ee0b7362c7f7",
+   "en": "One way to scale the database is to apply database sharding. The idea is to split the data into multiple databases so that each of them only contains a portion of data."
+  },
+  {
+   "t": "p",
+   "k": "e910fa7462c5",
+   "en": "When we shard a database, we need to consider how to distribute the data. As we can see from the data model section, most queries need to filter by hotel_id. So a natural conclusion is we shard data by hotel_id. In Figure 7.15, the load is spread among 16 shards. Assume the QPS is 30,000. After database sharding, each shard handles 3150 = 1.875 QPS, which is within a single MySQL server's load capacity."
+  },
+  {
+   "t": "p",
+   "k": "0b3fde0e6f48",
+   "en": "Service · Shard Shard · hotel_id % 16 · Shard · Shard · Shard · Shard · Shard · Shard"
+  },
+  {
+   "t": "figure",
+   "k": "419113ef9bd2",
+   "en": "Figure 7.15: Database sharding"
+  },
+  {
+   "t": "p",
+   "k": "3b2019edb0a6",
+   "en": "Caching"
+  },
+  {
+   "t": "p",
+   "k": "6f4eac87d2c5",
+   "en": "The hotel inventory data has an interesting characteristic; only current and future hotel inventory data are meaningful because customers can only book rooms in the near future."
+  },
+  {
+   "t": "p",
+   "k": "81d54ecf598a",
+   "en": "So for the storage choice, ideally we want to have a time-to-live (TTL) mechanism to expire old data automatically. Historical data can be queried on a different database. Redis is a good choice because TTI. and Least Recently Used (LRU) cache eviction policy help us make optimal use of memory."
+  },
+  {
+   "t": "p",
+   "k": "9a76c1d223aa",
+   "en": "If the loading speed and database scalability become an issue (for instance, we are designing at booking.com or Expedia's scale), we can add a cache layer on top of the database and move the check room inventory and reserve room logic to the cache layer, as shown in Figure 7.16. In this design, only a small percentage of the requests hit the inventory database as most ineligible requests are blocked by the inventory cache. One thing worth mentioning is that even when there is enough inventory shown in Redis, we still need to recheck the inventory at the database side as a precaution. The database is the source of truth for the inventory data."
+  },
+  {
+   "t": "p",
+   "k": "ead01b34bc5b",
+   "en": "Reservation · Service · Update inventory · Query inventory · Shard · Async update cache · Inventory Cache · Inventory DB"
+  },
+  {
+   "t": "figure",
+   "k": "0e6ade389671",
+   "en": "Figure 7.16: Caching"
+  },
+  {
+   "t": "p",
+   "k": "5478e8f10b06",
+   "en": "Let's first go over each component in this system."
+  },
+  {
+   "t": "p",
+   "k": "6e31e6eb72fb",
+   "en": "Reservation service: supports the following inventory management APIs:"
+  },
+  {
+   "t": "li",
+   "k": "904f3e1d9df0",
+   "en": "Query the number of available rooms for a given hotel, room type, and date range. • Reserve a room by executing total_ reserved +1."
+  },
+  {
+   "t": "li",
+   "k": "5da70bb78777",
+   "en": "Update inventory when a user cancels a reservation."
+  },
+  {
+   "t": "p",
+   "k": "407c437926ec",
+   "en": "Inventory cache: all inventory management query operations are moved to the inventory cache (Redis) and we need to pre-populate inventory data to the cache. The cache is a key-value store with the following structure:"
+  },
+  {
+   "t": "h3",
+   "k": "14be7172dead",
+   "en": "key: hotelID_roomTypeID_{date}"
+  },
+  {
+   "t": "h3",
+   "k": "62c54456cf1c",
+   "en": "value: the number of available rooms for the given hotel ID,"
+  },
+  {
+   "t": "h3",
+   "k": "0fb13e7e6b8c",
+   "en": "room type ID and date."
+  },
+  {
+   "t": "p",
+   "k": "9c3fcd985e7e",
+   "en": "For a hotel reservation system, the volume of read operations (check room inventory) is an order of magnitude higher than write operations. Most of the read operations are Step 3 - Design Deep Dive | 217 answered by the cache."
+  },
+  {
+   "t": "p",
+   "k": "5fbcf2a28e26",
+   "en": "Inventory DB: stores inventory data as the source of truth."
+  },
+  {
+   "t": "h3",
+   "k": "3ab265790cd1",
+   "en": "New challenges posed by the cache"
+  },
+  {
+   "t": "p",
+   "k": "0d72770d67ac",
+   "en": "Adding a cache layer significantly increases the system scalability and throughpuf, hut it also introduces a new challenge: how to maintain data consistency between the database and the cache."
+  },
+  {
+   "t": "p",
+   "k": "62719e1d547f",
+   "en": "When a uset books a room. two operations are executed in the happy path:"
+  },
+  {
+   "t": "p",
+   "k": "281efcec14b6",
+   "en": "1. Query room inventory to find out if there are enough rooms left. The query runs on the Inventory cache."
+  },
+  {
+   "t": "p",
+   "k": "bcbb16fd78b0",
+   "en": "2. Update inventory data. The inventory DB is updated first. The change is then propagated to the cache asynchronously. This asynchronous cache update could be invoked by the application code, which updates the inventory cache after data is saved to the database. It could also be propagated using change data capture (CDC) [8]. CDC is a mechanism that reads data changes from the database and applies the changes to another data system. One common solution is Debezium [9]. It uses a source connector to read changes from a database and applies them to cache solutions such as Redis [10]."
+  },
+  {
+   "t": "p",
+   "k": "078e9edb511d",
+   "en": "Because the inventory data is updated on the database first, there is a possibility that the cache does not reflect the latest inventory data. For example, the cache may report there is still an empty room when the database says there is no room left or vice versa. If you think carefully, you find that the inconsistency between inventory cache and database actually does not matter, as long as the database does the final inventory validation check."
+  },
+  {
+   "t": "p",
+   "k": "75c65d24ed4d",
+   "en": "Let's take a look at an example. Let's say the cache says there is still an empty room, but the database says no. In this case, when the user queries the room inventory, they find there is still room available, so they try to reserve it. When the request reaches the inventory database, the database does the validation and finds that there is no room left. In this case, the client receives an error, indicating someone else just booked the last room before them. When a user refreshes the website, they probably see there is no room left because the database has synchronized inventory data to the cache, before they click the refresh button."
+  },
+  {
+   "t": "p",
+   "k": "b0d891163365",
+   "en": "Pros"
+  },
+  {
+   "t": "li",
+   "k": "4550f8e828ba",
+   "en": "Reduced database load. Since read queries are answered by the cache layer, database load is significantly reduced."
+  },
+  {
+   "t": "li",
+   "k": "01afb2369916",
+   "en": "High performance. Read queries are very fast because results are fetched from memory."
+  },
+  {
+   "t": "p",
+   "k": "85d0c6044e05",
+   "en": "Cons"
+  },
+  {
+   "t": "li",
+   "k": "c1e2664332ab",
+   "en": "Maintaining data consistency between the database and cache is hard. We need to think carefully about how this inconsistency affects user experience."
+  },
+  {
+   "t": "h2",
+   "k": "041bb2869bb8",
+   "en": "Data consistency among services"
+  },
+  {
+   "t": "p",
+   "k": "b07576f05951",
+   "en": "In a traditional monolithic architecture [11], a shared relational database is used to ensure data consistency. In our microservice design, we chose a hybrid approach by having Reservation Service handle both reservation and inventory APIs so that the inventory and reservation database tables are stored in the same relational database. As explained in the \"Concurrency issues\""
+  },
+  {
+   "t": "p",
+   "k": "8bfbc21429e2",
+   "en": "section on page 206, this arrangement allows us to leverage the ACID properties of the relational database to elegantly handle many concurrency issues that arise during the reservation flow."
+  },
+  {
+   "t": "p",
+   "k": "f9410d22ea50",
+   "en": "However, if your interviewer is a microservice purist, they might challenge this hybrid approach. In their mind, for a microservice architecture, each microservice has its own databases as shown on the right in Figure 7.17."
+  },
+  {
+   "t": "p",
+   "k": "5363f428ba85",
+   "en": "Payment Payment"
+  },
+  {
+   "t": "p",
+   "k": "a2939415c541",
+   "en": "Service Payment DB"
+  },
+  {
+   "t": "figure",
+   "k": "318ec934f725",
+   "en": "Figure 7.17: Monolithic vs microservice"
+  },
+  {
+   "t": "p",
+   "k": "59310f24f51b",
+   "en": "This pure design introduces many data consistency issues. Since this is the first time we cover microservices, let's explain how and why it happens. To make it easier to understand, only two services are used in this discussion. In the real world, there could be hundreds of microservices within a company. In a monolithic architecture, as shown in Figure 7.18, different operations can be wrapped in a single transaction to ensure ACID properties."
+  },
+  {
+   "t": "p",
+   "k": "ab971dcf905b",
+   "en": "Step 3 - Design Deep Dive | 219 Database"
+  },
+  {
+   "t": "p",
+   "k": "21f8094fe49e",
+   "en": "User · Manage room inventory · Single · Transaction · Reserve room"
+  },
+  {
+   "t": "figure",
+   "k": "f81fcb316847",
+   "en": "Figure 7.18: Monolithic architecture"
+  },
+  {
+   "t": "p",
+   "k": "c1678f1e7920",
+   "en": "However, in a microservice architecture, each service has its own database. One logically atomic operation can span multiple services. This means we cannot use a single transaction to ensure data consistency. As shown in Figure 7.19, if the update operation fails in the reservation database, we need to roll back the reserved room count in the inventory database. Generally, there is only one happy path, but many failure cases that could cause data inconsistency."
+  },
+  {
+   "t": "p",
+   "k": "d95131a623b5",
+   "en": "User · Reservation · Inventory · Service · Service · Manage room inventory · Single · Transaction · — Reserve room — · Single · Transaction"
+  },
+  {
+   "t": "figure",
+   "k": "f354a35c27ec",
+   "en": "Figure 7.19: Microservice architecture"
+  },
+  {
+   "t": "p",
+   "k": "b4a42cdbefd3",
+   "en": "To address the data inconsistency, here is a high-level summary of industry-proven techniques. If you want to read the details, please refer to the reference materials."
+  },
+  {
+   "t": "li",
+   "k": "27a836233e51",
+   "en": "Two-phase commit (2PC) [12]. 2PC is a database protocol used to guarantee atomic transaction commit across multiple nodes, i.e., either all nodes succeeded or all nodes failed. Because 2PC is a blocking protocol, a single node failure blocks the progress until the node has recovered. It's not performant."
+  },
+  {
+   "t": "li",
+   "k": "aae004834471",
+   "en": "Saga. A Saga is a sequence of local transactions. Each transaction updates and publishes a message to trigger the next transaction step. If a step fails, the saga executes compensating transactions to undo the changes that were made by preceding transactions [13]. 2PC works as a single commit to perform ACID transactions while Saga consists of multiple steps and relies on eventual consistency."
+  },
+  {
+   "t": "p",
+   "k": "d1ef642fb4eb",
+   "en": "It is worth noting that addressing data inconsistency between microservices requires some complicated mechanisms that greatly increase the complexity of the overall design. It is up to you as an architect to decide if the added complexity is worth it. For this problem, we decided that it was not worth it and so went with the more pragmatic approach of storing reservation and inventory data under the same relational database."
+  },
+  {
+   "t": "h2",
+   "k": "02a33876c958",
+   "en": "Step 4 - Wrap Up"
+  },
+  {
+   "t": "p",
+   "k": "8f1642de9bb5",
+   "en": "In this chapter, we presented a design for a hotel reservation system. We started by gathering requirements and calculating a back-of-the-envelope estimation to understand the scale. In the high-level design, we presented the API design, the first draft of the data model, and the system architecture diagram. In the deep dive, we explored alternative database schema design as we realized reservations should be made at the room type level, as opposed to specific rooms. We discussed race conditions in depth and proposed a few potential solutions:"
+  },
+  {
+   "t": "p",
+   "k": "c1699984f140",
+   "en": "pessimistic locking · optimistic locking · database constraints"
+  },
+  {
+   "t": "p",
+   "k": "042cbc2435f7",
+   "en": "We then discussed different approaches to scale the system, including database sharding and using Redis cache. Lastly, we went through data consistency issues in microservice architecture and briefly went through a few solutions."
+  },
+  {
+   "t": "p",
+   "k": "71b8b7a68128",
+   "en": "Congratulations on getting this far! Now give yourself a pat on the back. Good job!"
+  },
+  {
+   "t": "p",
+   "k": "fae19d043e1f",
+   "en": "Step 4 - Wrap Up | 221"
+  },
+  {
+   "t": "h2",
+   "k": "dc0ccd897209",
+   "en": "Chapter Summary"
+  },
+  {
+   "t": "p",
+   "k": "e477ba8cb303",
+   "en": "reserve a room · admin panel · functional req · support overbooking · step 1 · support high concurrency · non-functional req · moderate latency · hotel-related · room-related · reservation-related · view hotel detail · step 2 · find available rooms · data model · make a reservation · lookup a reservation · Hotel Reservation · high-level design"
+  },
+  {
+   "t": "li",
+   "k": "666b09b9c428",
+   "en": "use room TypelD - improved data model -"
+  },
+  {
+   "t": "p",
+   "k": "bdd5f18c23ea",
+   "en": "pessimistic locking optimistic locking"
+  },
+  {
+   "t": "li",
+   "k": "5219d75b045a",
+   "en": "concurrency issues"
+  },
+  {
+   "t": "p",
+   "k": "ece3068a809f",
+   "en": "database constraint database sharding"
+  },
+  {
+   "t": "p",
+   "k": "3b2019edb0a6",
+   "en": "caching"
+  },
+  {
+   "t": "li",
+   "k": "041bb2869bb8",
+   "en": "data consistency among services"
+  },
+  {
+   "t": "p",
+   "k": "61ba1684969f",
+   "en": "step 4 -"
+  },
+  {
+   "t": "li",
+   "k": "bea79731137b",
+   "en": "wrap up"
+  },
+  {
+   "t": "h2",
+   "k": "5d59149869b8",
+   "en": "Reference Material"
+  },
+  {
+   "t": "p",
+   "k": "df44751d7990",
+   "en": "[1] What Are The Benefits of Microservices Architecture? https://www.appdynamics. com/topics/benefits-of-microservices."
+  },
+  {
+   "t": "p",
+   "k": "60f16461d25f",
+   "en": "[2] Microservices. https://en.wikipedia.org/wiki/Microservices."
+  },
+  {
+   "t": "p",
+   "k": "44c1b7f4f1a7",
+   "en": "[3] gRPC. https://www.grpc.io/docs/what-is-grpc/introduction/."
+  },
+  {
+   "t": "h3",
+   "k": "c4be293a72b9",
+   "en": "[4] Booking.com iOS app."
+  },
+  {
+   "t": "p",
+   "k": "b6cfdf9d7ad9",
+   "en": "[5] Serializability. https://en.wikipedia.org/wiki/Serializability."
+  },
+  {
+   "t": "p",
+   "k": "be5473a0b974",
+   "en": "[6] Optimistic and pessimistic record locking. https://ibm.co/3Eb2930."
+  },
+  {
+   "t": "p",
+   "k": "95191326881f",
+   "en": "[7] Optimistic concurrency control. https://en.wikipedia.org/wiki/Optimistic_concurr ency_control."
+  },
+  {
+   "t": "p",
+   "k": "19e6005dab54",
+   "en": "[8] Change data capture. https://docs.oracle.com/cd/B10500_01/server.920/a96520/cd c.htm."
+  },
+  {
+   "t": "p",
+   "k": "e4b10beb7cf5",
+   "en": "[9] Debizium. https://debezium.io/."
+  },
+  {
+   "t": "p",
+   "k": "15bb7c4cad9e",
+   "en": "[10] Redis sink. https://bit.ly/3r3AEUD."
+  },
+  {
+   "t": "p",
+   "k": "bb87bc79f1a9",
+   "en": "[11] Monolithic Architecture. https://microservices.io/patterns/monolithic.html."
+  },
+  {
+   "t": "h3",
+   "k": "5ff6f1b0b886",
+   "en": "[12] Two-phase commit protocol. https://en.wikipedia.org/wiki/Two-phase_commit_p"
+  },
+  {
+   "t": "p",
+   "k": "6c8d0d07af7d",
+   "en": "rotocol."
+  },
+  {
+   "t": "p",
+   "k": "003510e3c57f",
+   "en": "[13] Saga. https://microservices.io/patterns/data/saga.html."
+  },
+  {
+   "t": "p",
+   "k": "b939afdc0a49",
+   "en": "Reference Material | 223"
+  }
+ ]
+}

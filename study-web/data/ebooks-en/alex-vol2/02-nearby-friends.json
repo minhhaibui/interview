@@ -1,0 +1,1428 @@
+{
+ "id": "02-nearby-friends",
+ "title": "Nearby Friends",
+ "titleKey": "b01eb2580c32",
+ "book": "alex-vol2",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "2b64d9fa1985",
+   "en": "In this chapter, we design a scalable backend system for a new mobile app feature called \"Nearby Friends\". For an opt-in user who grants permission to access their location, the mobile client presents a list of friends who are geographically nearby. If you are looking for a real-world example, please refer to this article [1] about a similar feature in the Facebook app."
+  },
+  {
+   "t": "figure",
+   "k": "75ad66af541d",
+   "en": "Figure 2.1: Facebook's nearby friends"
+  },
+  {
+   "t": "p",
+   "k": "8be504832c3a",
+   "en": "If you read Chapter 1 Proximity Service, you may wonder why we need a separate chapter for designing \"nearby friends\" since it looks similar to proximity services. If you think carefully though, you will find major differences. In proximity services, the addresses for businesses are static as their locations do not change, while in \"nearby friends\", data is more dynamic because user locations change frequently."
+  },
+  {
+   "t": "h2",
+   "k": "cdb2072eee15",
+   "en": "Step 1 - Understand the Problem and Establish Design Scope"
+  },
+  {
+   "t": "p",
+   "k": "18ee02c89741",
+   "en": "Any backend system at the Facebook scale is complicated. Before starting with the design, we need to ask clarification questions to narrow down the scope."
+  },
+  {
+   "t": "p",
+   "k": "2fcb3c609b8e",
+   "en": "Candidate: How geographically close is considered to be \"nearby\"?"
+  },
+  {
+   "t": "p",
+   "k": "132f36498e77",
+   "en": "Interviewer: 5 miles. This number should be configurable."
+  },
+  {
+   "t": "p",
+   "k": "a4d8650c49c8",
+   "en": "Candidate: Can I assume the distance is calculated as the straight-line distance between two users? In real life, there could be, for example, a river in between the users, resulting in a longer travel distance."
+  },
+  {
+   "t": "p",
+   "k": "4f39910fe878",
+   "en": "Interviewer: Yes, that's a reasonable assumption."
+  },
+  {
+   "t": "p",
+   "k": "9e683a7712ab",
+   "en": "Candidate: How many users does the app have? Can I assume 1 billion users and 10% of them use the nearby friends feature?"
+  },
+  {
+   "t": "p",
+   "k": "4f39910fe878",
+   "en": "Interviewer: Yes, that's a reasonable assumption."
+  },
+  {
+   "t": "p",
+   "k": "541c946babdc",
+   "en": "Candidate: Do we need to store location history?"
+  },
+  {
+   "t": "p",
+   "k": "dd10bb824e70",
+   "en": "Interviewer: Yes, location history can be valuable for different purposes such as machine learning."
+  },
+  {
+   "t": "p",
+   "k": "dcc4def26c1c",
+   "en": "Candidate: Could we assume if a friend is inactive for more than 10 minutes, that friend will disappear from the nearby friend list? Or should we display the last known location?"
+  },
+  {
+   "t": "p",
+   "k": "f1bfc8f2adef",
+   "en": "Interviewer: We can assume inactive friends will no longer be shown."
+  },
+  {
+   "t": "p",
+   "k": "729d0dd7ee51",
+   "en": "Candidate: Do we need to worry about privacy and data laws such as GDPR or CCPA?"
+  },
+  {
+   "t": "p",
+   "k": "056a539f1afb",
+   "en": "Interviewer: Good question. For simplicity, don't worry about it for now."
+  },
+  {
+   "t": "h3",
+   "k": "0018516ff7f9",
+   "en": "Functional requirements"
+  },
+  {
+   "t": "li",
+   "k": "c39305c0bfdf",
+   "en": "Users should be able to see nearby friends on their mobile apps. Each entry in the nearby friend list has a distance and a timestamp indicating when the distance was last updated."
+  },
+  {
+   "t": "li",
+   "k": "ac72b48978c6",
+   "en": "Nearby friend lists should be updated every few seconds."
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "li",
+   "k": "cbc73eafed0f",
+   "en": "Low latency. It's important to receive location updates from friends without too much delay."
+  },
+  {
+   "t": "li",
+   "k": "d8271807af7f",
+   "en": "Reliability. The system needs to be reliable overall, but occasional data point loss is acceptable."
+  },
+  {
+   "t": "li",
+   "k": "a34aa9bf0a56",
+   "en": "Eventual consistency. The location data store doesn't need strong consistency. A few seconds delay in receiving location data in different replicas is acceptable."
+  },
+  {
+   "t": "h3",
+   "k": "758a31cef712",
+   "en": "Back-of-the-envelope estimation"
+  },
+  {
+   "t": "p",
+   "k": "c3e3e244c671",
+   "en": "Let's do a back-of-the-envelope estimation to determine the potential scale and challenges our solution will need to address. Some constraints and assumptions are listed below:"
+  },
+  {
+   "t": "li",
+   "k": "188cd3d32927",
+   "en": "Nearby friends are defined as friends whose locations are within a 5-mile radius. • The location refresh interval is 30 seconds. The reason for this is that human walking speed is slow (average 3 ~ 4 miles per hour). The distance traveled in 30 seconds does not make a significant difference on the \"nearby friends\" feature."
+  },
+  {
+   "t": "li",
+   "k": "ff5c16ef56d9",
+   "en": "On average, 100 million users use the \"nearby friends\" feature every day."
+  },
+  {
+   "t": "li",
+   "k": "d091a21e7fa5",
+   "en": "Assume the number of concurrent users is 10% of DAU (Daily Active Users), so the number of concurrent users is 10 million."
+  },
+  {
+   "t": "li",
+   "k": "2262fa040933",
+   "en": "On average, a user has 400 friends. Assume all of them use the \"nearby friends\" feature."
+  },
+  {
+   "t": "li",
+   "k": "70c91314ebe9",
+   "en": "The app displays 20 nearby friends per page and may load more nearby friends upon request."
+  },
+  {
+   "t": "p",
+   "k": "411f937efc93",
+   "en": "Calculate QPS"
+  },
+  {
+   "t": "li",
+   "k": "89dc781d411f",
+   "en": "100 million DAU"
+  },
+  {
+   "t": "li",
+   "k": "1774e42c8e0d",
+   "en": "Concurrent users: 10% × 100 million = 10 million"
+  },
+  {
+   "t": "li",
+   "k": "67e81f866e2a",
+   "en": "Users report their locations every 30 seconds."
+  },
+  {
+   "t": "li",
+   "k": "4377435c5c56",
+   "en": "Location update QPS = 10 million"
+  },
+  {
+   "t": "li",
+   "k": "5fc9239d8b23",
+   "en": "= ~334,000"
+  },
+  {
+   "t": "h2",
+   "k": "21ec56b45561",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in"
+  },
+  {
+   "t": "p",
+   "k": "a10f6852b0a2",
+   "en": "In this section, we will discuss the following:"
+  },
+  {
+   "t": "p",
+   "k": "40fd5637e888",
+   "en": "High-level design · API design · Data model"
+  },
+  {
+   "t": "p",
+   "k": "f6d6a855a25e",
+   "en": "In other chapters, we usually discuss API design and data model before the high-level design. However, for this problem, the communication protocol between client and server might not be a straightforward HTTP protocol, as we need to push location data to all friends. Without understanding the high-level design, it's difficult to know what the APIs look like. Therefore, we discuss the high-level design first."
+  },
+  {
+   "t": "h3",
+   "k": "f0e860766605",
+   "en": "High-level design"
+  },
+  {
+   "t": "p",
+   "k": "2d4bc280198d",
+   "en": "At a high level, this problem calls for a design with efficient message passing. Conceptually, a user would like to receive location updates from every active friend nearby. It could in theory be done purely peer-to-peer, that is, a user could maintain a persistent connection to every other active friend in the vicinity (Figure 2.2)."
+  },
+  {
+   "t": "p",
+   "k": "764b001e1ce3",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 37"
+  },
+  {
+   "t": "figure",
+   "k": "d631ebb4eea9",
+   "en": "Figure 2.2: Peer-to-peer"
+  },
+  {
+   "t": "p",
+   "k": "b2ccff7c16a4",
+   "en": "This solution is not practical for a mobile device with sometimes flaky connections and a tight power consumption budget, but the idea sheds some light on the general design direction."
+  },
+  {
+   "t": "p",
+   "k": "9b2a10a1df39",
+   "en": "A more practical design would have a shared backend and look like this:"
+  },
+  {
+   "t": "p",
+   "k": "96286785631c",
+   "en": "Friend A Backend · Friend B · User · Friend C"
+  },
+  {
+   "t": "figure",
+   "k": "0785f7343302",
+   "en": "Figure 2.3: Shared backend"
+  },
+  {
+   "t": "p",
+   "k": "4cbd55cfacab",
+   "en": "What are the responsibilities of the backend in Figure 2.3?"
+  },
+  {
+   "t": "li",
+   "k": "4a48dfc80cd6",
+   "en": "Receive location updates from all active users."
+  },
+  {
+   "t": "li",
+   "k": "330e8a34de23",
+   "en": "For each location update, find all the active friends who should receive it and forward it to those users' devices."
+  },
+  {
+   "t": "li",
+   "k": "c3002f3595a5",
+   "en": "If the distance between two users is over a certain threshold, do not forward it to the recipient's device."
+  },
+  {
+   "t": "p",
+   "k": "8a20434e2188",
+   "en": "This sounds pretty simple. What is the issue? Well, to do this at scale is not easy. We have 10 million active users. With each user updating the location information every 30 seconds, there are 334K updates per second. If on average each user has 400 friends, and we further assume that roughly 10% of those friends are online and nearby, every second the backend forwards 334K x 400 x 10% = 14 million location updates per second. That is a lot of updates to forward."
+  },
+  {
+   "t": "h3",
+   "k": "dad0663d39b7",
+   "en": "Proposed design"
+  },
+  {
+   "t": "p",
+   "k": "ecefdd9abe89",
+   "en": "We will first come up with a high-level design for the backend at a lower scale. Later in the deep dive section, we will optimize the design for scale."
+  },
+  {
+   "t": "figure",
+   "k": "46eee0ea242f",
+   "en": "Figure 2.4 shows the basic design that should satisfy the functional requirements. Let's"
+  },
+  {
+   "t": "p",
+   "k": "b6ec2fb5d14d",
+   "en": "go over each component in the design."
+  },
+  {
+   "t": "p",
+   "k": "ccb1bb8ebcf9",
+   "en": "Mobile Users · WebSocket · http · (WS) · Load Balancer · User management · WebSocket · Friendship management Servers · Servers · Cache · Friendship · Redis Pub/Sub · Location · User · Location · History · Cache · Database · Database"
+  },
+  {
+   "t": "figure",
+   "k": "5155b47df217",
+   "en": "Figure 2.4: High-level design"
+  },
+  {
+   "t": "p",
+   "k": "a87e9cdb2b18",
+   "en": "Load balancer"
+  },
+  {
+   "t": "p",
+   "k": "0aaae3212194",
+   "en": "The load balancer sits in front of the RESTful API servers and the stateful, bi-directional WebSocket servers. It distributes traffic across those servers to spread out load evenly."
+  },
+  {
+   "t": "h3",
+   "k": "4cff36359a7d",
+   "en": "RESTful API servers"
+  },
+  {
+   "t": "p",
+   "k": "ad522d0e6e04",
+   "en": "This is a cluster of stateless HTTP servers that handles the typical request/response traffic. The API request flow is highlighted in Figure 2.5. This API layer handles auxiliary tasks like adding/removing friends, updating user profiles, etc. These are very common and we will not go into more detail."
+  },
+  {
+   "t": "p",
+   "k": "c7cec67968ce",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 39 Mobile Users"
+  },
+  {
+   "t": "p",
+   "k": "699ec2c8ecf9",
+   "en": "WebSocket · http · (WS) · Load Balancer · User management WebSocket · API · Friendship management Servers · Servers · _ Auth, etc · Cache · Friendship Redis Pub/Sub · Location · Location · User · History · Cache · Database · Database"
+  },
+  {
+   "t": "figure",
+   "k": "5f82f9a9940e",
+   "en": "Figure 2.5: RESTful API request flow"
+  },
+  {
+   "t": "h2",
+   "k": "60280f78430b",
+   "en": "WebSocket servers"
+  },
+  {
+   "t": "p",
+   "k": "2ca6fc8bb00b",
+   "en": "This is a cluster of stateful servers that handles the near real-time update of friends' locations. Each client maintains one persistent WebSocket connection to one of these servers. When there is a location update from a friend who is within the search radius, the update is sent on this connection to the client."
+  },
+  {
+   "t": "p",
+   "k": "6070b974d05f",
+   "en": "Another major responsibility of the WebSocket servers is to handle client initialization for the \"nearby friends\" feature. It seeds the mobile client with the locations of all nearby online friends. We will discuss how this is done in more detail later."
+  },
+  {
+   "t": "p",
+   "k": "0a4afcd9313d",
+   "en": "Note \"WebSocket connection\" and \"WebSocket connection handler\" are interchangeable in this chapter."
+  },
+  {
+   "t": "h3",
+   "k": "37873a140641",
+   "en": "Redis location cache"
+  },
+  {
+   "t": "p",
+   "k": "f540382e5a26",
+   "en": "Redis is used to store the most recent location data for each active user. There is a Time to Live (TTL) set on each entry in the cache. When the TTL expires, the user is no longer active and the location data is expunged from the cache. Every update refreshes the TTL. Other KV stores that support TTL could also be used."
+  },
+  {
+   "t": "p",
+   "k": "f2a0f337253e",
+   "en": "User database"
+  },
+  {
+   "t": "p",
+   "k": "acc83d9ce6bd",
+   "en": "The user database stores user data and user friendship data. Either a relational database or a NoSQL database can be used for this."
+  },
+  {
+   "t": "h3",
+   "k": "40a57ac4d17c",
+   "en": "Location history database"
+  },
+  {
+   "t": "p",
+   "k": "442eaf27dbb9",
+   "en": "This database stores users' historical location data. It is not directly related to the \"nearby friends\" feature."
+  },
+  {
+   "t": "h3",
+   "k": "d0bacac0c8f6",
+   "en": "Redis Pub/Sub server"
+  },
+  {
+   "t": "p",
+   "k": "0c1f1a2b7f1f",
+   "en": "Redis Pub/Sub [2] is a very lightweight message bus. Channels in Redis Pub/Sub are very cheap to create. A modern Redis server with GBs of memory could hold millions of channels (also called topics). Figure 2.6 shows how Redis Pub/Sub works."
+  },
+  {
+   "t": "p",
+   "k": "42c5f2875350",
+   "en": "Friends · Redis Pub/Sub · Subscriber 1 · Subscriber 2 · Publisher 2 · Subscriber 3"
+  },
+  {
+   "t": "figure",
+   "k": "4ad897706834",
+   "en": "Figure 2.6: Redis Pub/Sub"
+  },
+  {
+   "t": "p",
+   "k": "f476bbc8c485",
+   "en": "In this design, location updates received via the WebSocket server are published to the user's own channel in the Redis Pub/Sub server. A dedicated WebSocket connection handler for each active friend subscribes to the channel. When there is a location update, the WebSocket handler function gets invoked, and for each active friend, the function recomputes the distance. If the new distance is within the search radius, the new location and timestamp are sent via the WebSocket connection to the friend's client. Other message buses with lightweight channels could also be used."
+  },
+  {
+   "t": "p",
+   "k": "781a20542126",
+   "en": "Now that we understand what each component does, let's examine what happens when a user's location changes from the system's perspective."
+  },
+  {
+   "t": "h3",
+   "k": "70064e10ba54",
+   "en": "Periodic location update"
+  },
+  {
+   "t": "p",
+   "k": "d2bad4e99035",
+   "en": "The mobile client sends periodic location updates over the persistent WebSocket connection. The flow is shown in Figure 2.7."
+  },
+  {
+   "t": "p",
+   "k": "d7635b4d17ff",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 41 Mobile Users"
+  },
+  {
+   "t": "p",
+   "k": "19b4458d77e8",
+   "en": "http · (WS) · Load Balancer · User management WebSocket · API · Friendship management Servers · Servers · Auth, etc · Cache · Friendship Redis Pub/Sub · Location · Location · User · History · Cache · Database · Database"
+  },
+  {
+   "t": "figure",
+   "k": "4d92cbdc1a6c",
+   "en": "Figure 2.7: Periodic location update"
+  },
+  {
+   "t": "p",
+   "k": "90df7a17dbb9",
+   "en": "1. The mobile client sends a location update to the load balancer."
+  },
+  {
+   "t": "p",
+   "k": "de618d932c25",
+   "en": "2. The load balancer forwards the location update to the persistent connection on the WebSocket server for that client."
+  },
+  {
+   "t": "p",
+   "k": "1ee047f37f10",
+   "en": "3. The WebSocket server saves the location data to the location history database. 4. The WebSocket server updates the new location in the location cache. The update refreshes the TTL. The WebSocket server also saves the new location in a variable in the user's WebSocket connection handler for subsequent distance calculations. 5. The WebSocket server publishes the new location to the user's channel in the Redis Pub/Sub server. Steps 3 to 5 can be executed in parallel."
+  },
+  {
+   "t": "p",
+   "k": "598cc40aff26",
+   "en": "6. When Redis Pub/Sub receives a location update on a channel, it broadcasts the update to all the subscribers (WebSocket connection handlers). In this case, the subscribers are all the online friends of the user sending the update. For each subscriber (i.e., for each of the user's friends), its WebSocket connection handler would receive the user location update."
+  },
+  {
+   "t": "p",
+   "k": "d166f4a1d13e",
+   "en": "7. On receiving the message, the WebSocket server, on which the connection handler lives, computes the distance between the user sending the new location (the location data is in the message) and the subscriber (the location data is stored in a variable with the WebSocket connection handler for the subscriber)."
+  },
+  {
+   "t": "p",
+   "k": "45658a49de59",
+   "en": "8. This step is not drawn on the diagram. If the distance does not exceed the search radius, the new location and the last updated timestamp are sent to the subscriber's client. Otherwise, the update is dropped."
+  },
+  {
+   "t": "p",
+   "k": "4ff59879265b",
+   "en": "Since understanding this flow is extremely important, let's examine it again with a concrete example, as shown in Figure 2.8. Before we start, let's make a few assumptions."
+  },
+  {
+   "t": "li",
+   "k": "6b4b150ca15d",
+   "en": "User 1's friends: User 2, User 3, and User 4."
+  },
+  {
+   "t": "li",
+   "k": "7f0f0eb28d57",
+   "en": "User 5's friends: User 4 and User 6."
+  },
+  {
+   "t": "p",
+   "k": "c5aba9cde892",
+   "en": "User 5 · User 1 · WebSocket · User 5's WS · User 1's WS · Servers · connection · connection · 2) Publish · Redis"
+  },
+  {
+   "t": "p",
+   "k": "b6fd20459a93",
+   "en": "User 5's channel User 1's channel"
+  },
+  {
+   "t": "p",
+   "k": "be34fa009e91",
+   "en": "Pub/Sub · User 2's WS · User 3's WS · User 4's WS · User 6's WS · WebSocket · Servers · connection · connection · connection · connection · 4 Friends' location update · User 6 · User 3 · User 4 · User 2"
+  },
+  {
+   "t": "figure",
+   "k": "3edeab1ad2fa",
+   "en": "Figure 2.8: Send location update to friends"
+  },
+  {
+   "t": "p",
+   "k": "9547b86e6fec",
+   "en": "1. When User 1's location changes, their location update is sent to the WebSocket server which holds User 1's connection."
+  },
+  {
+   "t": "p",
+   "k": "328a8ededbe9",
+   "en": "2. The location is published to User 1's channel in Redis Pub/Sub server."
+  },
+  {
+   "t": "p",
+   "k": "c370e2961226",
+   "en": "3. Redis Pub/Sub server broadcasts the location update to all subscribers. In this case, Step 2 - Propose High-level Design and Get Buy-in | 43 subscribers are WebSocket connection handlers (User 1's friends)."
+  },
+  {
+   "t": "p",
+   "k": "14da1217820c",
+   "en": "4. If the distance between the user sending the location (User 1) and the subscriber (User 2) doesn't exceed the search radius, the new location is sent to the client (User 2)."
+  },
+  {
+   "t": "p",
+   "k": "ab89c1323124",
+   "en": "This computation is repeated for every subscriber to the channel. Since there are 400 friends on average, and we assume that 10% of those friends are online and nearby, there are about 40 location updates to forward for each user's location update."
+  },
+  {
+   "t": "h2",
+   "k": "58dbf879b581",
+   "en": "API design"
+  },
+  {
+   "t": "p",
+   "k": "c2123560352b",
+   "en": "Now that we have created a high-level design, let's list APIs needed."
+  },
+  {
+   "t": "p",
+   "k": "f1b52fcef686",
+   "en": "WebSocket: Users send and receive location updates through the WebSocket protocol. At the minimum, we need the following APIs."
+  },
+  {
+   "t": "p",
+   "k": "53146c8c6b6a",
+   "en": "1. Periodic location update"
+  },
+  {
+   "t": "p",
+   "k": "9926dffbecee",
+   "en": "Request: Client sends latitude, longitude, and timestamp."
+  },
+  {
+   "t": "h3",
+   "k": "1377afe754de",
+   "en": "Response: Nothing"
+  },
+  {
+   "t": "p",
+   "k": "0121dc0e7ac6",
+   "en": "2. Client receives location updates"
+  },
+  {
+   "t": "p",
+   "k": "e00fae725f74",
+   "en": "Data sent: Friend location data and timestamp."
+  },
+  {
+   "t": "p",
+   "k": "8bfb408f8ea0",
+   "en": "3. WebSocket initialization"
+  },
+  {
+   "t": "p",
+   "k": "9926dffbecee",
+   "en": "Request: Client sends latitude, longitude, and timestamp."
+  },
+  {
+   "t": "p",
+   "k": "b88c995da912",
+   "en": "Response: Client receives friends' location data."
+  },
+  {
+   "t": "p",
+   "k": "b19bee6ea266",
+   "en": "4. Subscribe to a new friend"
+  },
+  {
+   "t": "p",
+   "k": "a3c9fe408fe7",
+   "en": "Request: WebSocket server sends friend ID."
+  },
+  {
+   "t": "p",
+   "k": "333f428e4ee1",
+   "en": "Response: Friend's latest latitude, longitude, and timestamp."
+  },
+  {
+   "t": "h3",
+   "k": "b53a207aa1b4",
+   "en": "5. Unsubscribe a friend"
+  },
+  {
+   "t": "p",
+   "k": "a3c9fe408fe7",
+   "en": "Request: WebSocket server sends friend ID."
+  },
+  {
+   "t": "p",
+   "k": "8ded20fabb83",
+   "en": "Response. Nothing."
+  },
+  {
+   "t": "p",
+   "k": "4320a005e7dd",
+   "en": "HTTP requests: the API servers handle tasks like adding/removing friends, updating user profiles, etc. These are very common and we will not go into detail here."
+  },
+  {
+   "t": "h2",
+   "k": "de26407535de",
+   "en": "Data model"
+  },
+  {
+   "t": "p",
+   "k": "e9c9a5fd5f8d",
+   "en": "Another important element to discuss is the data model. We already talked about the User DB in the high-level design, so let's focus on the location cache and location history database."
+  },
+  {
+   "t": "p",
+   "k": "c7fb95545cf1",
+   "en": "Location cache"
+  },
+  {
+   "t": "p",
+   "k": "9f951c36461a",
+   "en": "The location cache stores the latest locations of all active users who have had the nearby friends feature turned on. We use Redis for this cache. The key/value of the cache is shown in Table 2.1."
+  },
+  {
+   "t": "p",
+   "k": "a62f2225bf70",
+   "en": "key"
+  },
+  {
+   "t": "p",
+   "k": "f43c097a671c",
+   "en": "user_id | (latitude, longitude, timestamp)"
+  },
+  {
+   "t": "p",
+   "k": "f5f5b480e916",
+   "en": "Table 2.1: Location cache"
+  },
+  {
+   "t": "p",
+   "k": "0f7eec8899a8",
+   "en": "Why don't we use a database to store location data?"
+  },
+  {
+   "t": "p",
+   "k": "323bf3c7eef7",
+   "en": "The \"nearby friends\" feature only cares about the current location of a user. Therefore, we only need to store one location per user. Redis is an excellent choice because it provides super-fast read and write operations. It supports TTL, which we use to auto-purge users from the cache who are no longer active. The current locations do not need to be durably stored. If the Redis instance goes down, we could replace it with an empty new instance and let the cache be filled as new location updates stream in. The active users could miss location updates from friends for an update cycle or two while the new cache warms. It is an acceptable tradeoff. In the deep dive section, we will discuss ways to lessen the impact on users when the cache gets replaced."
+  },
+  {
+   "t": "h3",
+   "k": "40a57ac4d17c",
+   "en": "Location history database"
+  },
+  {
+   "t": "p",
+   "k": "468fcb312188",
+   "en": "The location history database stores users' historical location data and the schema looks like this:"
+  },
+  {
+   "t": "p",
+   "k": "fe584a05522a",
+   "en": "user_id · timestamp · latitude · longitude"
+  },
+  {
+   "t": "p",
+   "k": "bf5b36169767",
+   "en": "We need a database that handles the heavy-write workload well and can be horizontally scaled. Cassandra is a good candidate. We could also use a relational database. However, with a relational database, the historical data would not fit in a single instance so we need to shard that data. The most basic approach is to shard by user ID. This sharding scheme ensures that load is evenly distributed among all the shards, and operationally, it is easy to maintain."
+  },
+  {
+   "t": "h2",
+   "k": "5008c4b3d7bc",
+   "en": "Step 3 - Design Deep Dive"
+  },
+  {
+   "t": "p",
+   "k": "02661f208456",
+   "en": "The high-level design we created in the previous section works in most cases, but it will likely break at our scale. In this section, we work together to uncover the bottlenecks as we increase the scale, and along the way work on solutions to eliminate those bottlenecks."
+  },
+  {
+   "t": "h2",
+   "k": "4bf80ed19658",
+   "en": "How well does each component scale?"
+  },
+  {
+   "t": "p",
+   "k": "52c0280d3caa",
+   "en": "API servers"
+  },
+  {
+   "t": "p",
+   "k": "b8f41f8b41df",
+   "en": "The methods to scale the RESTful API tiers are well understood. These are stateless servers, and there are many ways to auto-scale the clusters based on CPU usage, load, or 1/0. We will not go into detail here."
+  },
+  {
+   "t": "h2",
+   "k": "60280f78430b",
+   "en": "WebSocket servers"
+  },
+  {
+   "t": "p",
+   "k": "3be55905ab51",
+   "en": "For the WebSocket cluster, it is not difficult to auto-scale based on usage. However, the WebSocket servers are stateful, so care must be taken when removing existing nodes. Before a node can be removed, all existing connections should be allowed to drain. To Step 3 - Design Deep Dive | 45 achieve that, we can mark a node as \"draining\" at the load balancer so that no new Wet- Socket connections will be routed to the draining server. Once all the existing connec tions are closed (or after a reasonably long wait), the server is then removed. Releasing a new version of the application software on a WebSocket server requires the same level of care."
+  },
+  {
+   "t": "p",
+   "k": "06fce535dc09",
+   "en": "It is worth noting that effective auto-scaling of stateful servers is the job of a good load balancer. Most cloud load balancers handle this job very well."
+  },
+  {
+   "t": "p",
+   "k": "b5d70075c6fa",
+   "en": "Client initialization"
+  },
+  {
+   "t": "p",
+   "k": "691aa186305c",
+   "en": "The mobile client on startup establishes a persistent WebSocket connection with one of"
+  },
+  {
+   "t": "h3",
+   "k": "bc7b2d316eac",
+   "en": "the WebSocket server instances. Each connection is long-running. Most modern lan-"
+  },
+  {
+   "t": "h3",
+   "k": "a66be3968e91",
+   "en": "guages are capable of maintaining many long-running connections with a reasonably"
+  },
+  {
+   "t": "h3",
+   "k": "089f0fc9883f",
+   "en": "small memory footprint."
+  },
+  {
+   "t": "p",
+   "k": "0d82aa2f6de1",
+   "en": "When a WebSocket connection is initialized, the client sends the initial location of the user, and the server performs the following tasks in the WebSocket connection handler."
+  },
+  {
+   "t": "p",
+   "k": "162a186b3a74",
+   "en": "1. It updates the user's location in the location cache."
+  },
+  {
+   "t": "p",
+   "k": "b750fe34414f",
+   "en": "2. It saves the location in a variable of the connection handler for subsequent calculations."
+  },
+  {
+   "t": "p",
+   "k": "af651aa61351",
+   "en": "3. It loads all the user's friends from the user database."
+  },
+  {
+   "t": "p",
+   "k": "2d9844845cb5",
+   "en": "4. It makes a batched request to the location cache to fetch the locations for all the friends. Note that because we set a TTL on each entry in the location cache to match our inactivity timeout period, if a friend is inactive then their location will not be in the location cache."
+  },
+  {
+   "t": "p",
+   "k": "030c22942df0",
+   "en": "5. For each location returned by the cache, the server computes the distance between the user and the friend at that location. If the distance is within the search radius, the friend's profile, location, and last updated timestamp are returned over the Web- Socket connection to the client."
+  },
+  {
+   "t": "p",
+   "k": "507f2bae17ce",
+   "en": "6. For each friend, the server subscribes to the friend's channel in the Redis Pub/Sub server. We will explain our use of Redis Pub/Sub shortly. Since creating a new channel is cheap, the user subscribes to all active and inactive friends. The inactive friends will take up a small amount of memory on the Redis Pub/Sub server, but they will not consume any CPU or 1/0 (since they do not publish updates) until they come online."
+  },
+  {
+   "t": "p",
+   "k": "c2ec04bf73f1",
+   "en": "7. It sends the user's current location to the user's channel in the Redis Pub/Sub server"
+  },
+  {
+   "t": "h2",
+   "k": "f2a0f337253e",
+   "en": "User database"
+  },
+  {
+   "t": "p",
+   "k": "d41352a8ce1f",
+   "en": "The user database holds two distinct sets of data: user profiles (user ID, username, profile URL, etc.) and friendships. These datasets at our design scale will likely not fit in a single relational database instance. The good news is that the data is horizontally scalable by sharding based on user ID. Relational database sharding is a very common technique."
+  },
+  {
+   "t": "p",
+   "k": "b1e3e70c4cce",
+   "en": "As a side note, at the scale we are designing for, the user and friendship datasets will likely be managed by a dedicated team and be available via an internal API. In this scenario, the WebSocket servers will use the internal API instead of querying the database directly to fetch user and friendship-related data. Whether accessing via API or direct database queries, it does not make much difference in terms of functionality or performance."
+  },
+  {
+   "t": "p",
+   "k": "c7fb95545cf1",
+   "en": "Location cache"
+  },
+  {
+   "t": "p",
+   "k": "ca24a4c26412",
+   "en": "We choose Redis to cache the most recent locations of all the active users. As mentioned earlier, we also set a TTL on each key. The TTL is renewed upon every location update. This puts a cap on the maximum amount of memory used. With 10 million active users at peak, and with each location taking no more than 100 bytes, a single modern Redis server with many GBs of memory should be able to easily hold the location information for all users."
+  },
+  {
+   "t": "p",
+   "k": "4ecfa07f5144",
+   "en": "However, with 10 million active users roughly updating every 30 seconds, the Redis server will have to handle 334K updates per second. That is likely a little too high, even for a modern high-end server. Luckily, this cache data is easy to shard. The location data for each user is independent, and we can evenly spread the load among several Redis servers by sharding the location data based on user ID."
+  },
+  {
+   "t": "p",
+   "k": "e6f67359428f",
+   "en": "To improve availability, we could replicate the location data on each shard to a standby node. If the primary node goes down, the standby could be quickly promoted to minimize downtime."
+  },
+  {
+   "t": "h3",
+   "k": "d0bacac0c8f6",
+   "en": "Redis Pub/Sub server"
+  },
+  {
+   "t": "p",
+   "k": "b6f1032f1e11",
+   "en": "The Pub/Sub server is used as a routing layer to direct messages (location updates) from one user to all the online friends. As mentioned earlier, we choose Redis Pub/Sub because it is very lightweight to create new channels. A new channel is created when someone subscribes to it. If a message is published to a channel that has no subscribers, the message is dropped, placing very little load on the server. When a channel is created, Redis uses a small amount of memory to maintain a hash table and a linked list [3] to track the subscribers. If there is no update on a channel when a user is offline, no CPU cycles are used after a channel is created. We take advantage of this in our design in the following ways:"
+  },
+  {
+   "t": "p",
+   "k": "8e367d71cb67",
+   "en": "1. We assign a unique channel to every user who uses the \"nearby friends\" feature. A user would, upon app initialization, subscribe to each friend's channel, whether the friend is online or not. This simplifies the design since the backend does not need to handle subscribing to a friend's channel when the friend becomes active, or handling unsubscribing when the friend becomes inactive."
+  },
+  {
+   "t": "p",
+   "k": "514b28b51323",
+   "en": "2. The tradeoff is that the design would use more memory. As we will see later, memory use is unlikely to be the bottleneck. Trading higher memory use for a simpler architecture is worth it in this case."
+  },
+  {
+   "t": "p",
+   "k": "9467dff6ac2e",
+   "en": "Step 3 - Design Deep Dive | 47"
+  },
+  {
+   "t": "h3",
+   "k": "9e9fcca1ff35",
+   "en": "How many Redis Pub/Sub servers do we need?"
+  },
+  {
+   "t": "p",
+   "k": "6f89eb0672ec",
+   "en": "Let's do some math on memory and CPU usage."
+  },
+  {
+   "t": "h2",
+   "k": "ec712513f0f6",
+   "en": "Memory usage"
+  },
+  {
+   "t": "p",
+   "k": "f8800bcd4cd7",
+   "en": "Assuming a channel is allocated for each user who uses the nearby friends feature, we need 100 million channels (1 billion x 10%). Assuming that on average a user has 10n) active friends using this feature (this includes friends who are nearby, or not), and it takes about 20 bytes of pointers in the internal hash table and linked list to track each subscriber, it will need about 200GB (100 million x 20 bytes x 100 friends / 10° = 200CB) to hold all the channels. For a modern server with 100GB of memory, we will need about 2 Redis Pub/Sub servers to hold all the channels."
+  },
+  {
+   "t": "p",
+   "k": "5185b987d98c",
+   "en": "CPU usage"
+  },
+  {
+   "t": "p",
+   "k": "61c550e2798f",
+   "en": "As previously calculated, the Pub/Sub server pushes about 14 million updates per second to subscribers. Even though it is not easy to estimate with any accuracy how many messages a modern Redis server could push a second without actual benchmarking, it is safe to assume that a single Redis server will not be able to handle that load. Let's pick a conservative number and assume that a modern server with a gigabit network could handle about 100,000 subscriber pushes per second. Given how small our location update messages are, this number is likely to be conservative. Using this conservative estimate, we will need to distribute the load among 14 million / 100,000 = 140 Redis servers. Again, this number is likely too conservative, and the actual number of servers"
+  },
+  {
+   "t": "h3",
+   "k": "185da0a9c84a",
+   "en": "could be much lower."
+  },
+  {
+   "t": "p",
+   "k": "c55b03bdc941",
+   "en": "From the math, we conclude that:"
+  },
+  {
+   "t": "li",
+   "k": "05040731f241",
+   "en": "The bottleneck of Redis Pub/Sub server is the CP usage, not the memory usage. • To support our scale, we need a distributed Redis Pub/Sub cluster."
+  },
+  {
+   "t": "h3",
+   "k": "6376b4387d20",
+   "en": "Distributed Redis Pub/Sub server cluster"
+  },
+  {
+   "t": "p",
+   "k": "b5107ce92dd8",
+   "en": "How do we distribute the channels to hundreds of Redis servers? The good news is that the channels are independent of each other. This makes it relatively easy to spread the channels among multiple Pub/Sub servers by sharding, based on the publisher's user ID. Practically speaking though, with hundreds of Pub/Sub servers, we should go into a bit more detail on how this is done so that operationally it is somewhat manageable, as servers inevitably go down from time to time."
+  },
+  {
+   "t": "p",
+   "k": "e89d0a93c371",
+   "en": "Here, we introduce a service discovery component to our design. There are many service discovery packages available, with etcd [4] and ZooKeeper [5] among the most popular ones. Our need for the service discovery component is very basic. We need these two features:"
+  },
+  {
+   "t": "p",
+   "k": "f28586d7d3bb",
+   "en": "1. The ability to keep a list of servers in the service discovery component, and a simple UI or API to update it. Fundamentally, service discovery is a small key-value store for holding configuration data. Using Figure 2.9 as an example, the key and value for the hash ring could look like this:"
+  },
+  {
+   "t": "p",
+   "k": "de17090c3fe0",
+   "en": "Key: /config/pub_sub_ring"
+  },
+  {
+   "t": "p",
+   "k": "2a7e7dcd1513",
+   "en": "Value: [\"p_1\", \"p_2\", \"p_3\", \"p-4\"]"
+  },
+  {
+   "t": "p",
+   "k": "90d4e35a7b8b",
+   "en": "2. The ability for clients (in this case, the WebSocket servers) to subscribe to any updates to the \"Value\" (Redis Pub/Sub servers)."
+  },
+  {
+   "t": "p",
+   "k": "50c0473569b4",
+   "en": "Under the \"Key\" mentioned in point 1, we store a hash ring of all the active Redis Pub/Sub servers in the service discovery component (See the consistent hashing chapter in Volume 1 of the System Design Interview book or [6] on details of a hash ring). The hash ring is used by the publishers and subscribers of the Redis Pub/Sub servers to determine the Pub/Sub server to talk to for each channel. For example, channel 2 lives in Redis Pub/Sub server 1 in Figure 2.9."
+  },
+  {
+   "t": "p",
+   "k": "6d85082e977d",
+   "en": "P_4 · hash(channel_name2) · hash(channel_name1) · P_3 · P_2 · P_x: Redis Pub/Sub server X"
+  },
+  {
+   "t": "figure",
+   "k": "a2e841788afd",
+   "en": "Figure 2.9: Consistent hashing"
+  },
+  {
+   "t": "figure",
+   "k": "1d82afac0f80",
+   "en": "Figure 2.10 shows what happens when a WebSocket server publishes a location update"
+  },
+  {
+   "t": "p",
+   "k": "a7ab6dc94311",
+   "en": "to a user's channel."
+  },
+  {
+   "t": "p",
+   "k": "3641d26fb3f8",
+   "en": "Step 3 - Design Deep Dive | 49 P_1"
+  },
+  {
+   "t": "p",
+   "k": "49747e9a4d9c",
+   "en": "P_4 · hash(channel_name2) · p_2 · P_3 · Figure out which Redis · Pub/Sub server to publish · location to · Publish · WebSocket · 2 location · Channel 2 · Servers · update · Redis Pub/Sub"
+  },
+  {
+   "t": "figure",
+   "k": "f1f057f0b501",
+   "en": "Figure 2.10: Figure out the correct Redis Pub/Sub server"
+  },
+  {
+   "t": "p",
+   "k": "51419ce54129",
+   "en": "1. The WebSocket server consults the hash ring to determine the Redis Pub/Sub server to write to. The source of truth is stored in service discovery, but for efficiency, a, copy of the hash ring could be cached on each WebSocket server. The WebSocket server subscribes to any updates on the hash ring to keep its local in-memory copy up to date."
+  },
+  {
+   "t": "p",
+   "k": "9ed237d992ca",
+   "en": "2. WebSocket server publishes the location update to the user's channel on that Redis"
+  },
+  {
+   "t": "h3",
+   "k": "642d57e2d5b6",
+   "en": "Pub/Sub server."
+  },
+  {
+   "t": "p",
+   "k": "7afd1a1c6d74",
+   "en": "Subscribing to a channel for location updates uses the same mechanism."
+  },
+  {
+   "t": "h3",
+   "k": "305b5e12fc99",
+   "en": "Scaling considerations for Redis Pub/Sub servers"
+  },
+  {
+   "t": "p",
+   "k": "62c91ca0d2a8",
+   "en": "How should we scale the Redis Pub/Sub server cluster? Should we scale it up and down daily, based on traffic patterns? This is a very common practice for stateless servers because it is low risk and saves costs. To answer these questions, let's examine some of the properties of the Redis Pub/Sub server cluster."
+  },
+  {
+   "t": "p",
+   "k": "945756f39338",
+   "en": "1. The messages sent on a Pub/Sub channel are not persisted in memory or on disk. They are sent to all subscribers of the channel and removed immediately after. If there are no subscribers, the messages are just dropped. In this sense, the data going through the Pub/Sub channel is stateless."
+  },
+  {
+   "t": "p",
+   "k": "c4e72c35f5dc",
+   "en": "2. However, there are indeed states stored in the Pub/Sub servers for the channels. Specifically, the subscriber list for each channel is a key piece of the states tracked by the Pub/Sub servers. If a channel is moved, which could happen when the channel's Pub/Sub server is replaced, or if a new server is added or an old server removed on the hash ring, then every subscriber to the moved channel must know about it, so they could unsubscribe from the channel on the old server and resubscribe to the replacement channel on the new server. In this sense, a Pub/Sub server is stateful, and coordination with all subscribers to the server must be orchestrated to minimize service interruptions."
+  },
+  {
+   "t": "p",
+   "k": "3d789e8db063",
+   "en": "For these reasons, we should treat the Redis Pub/Sub cluster more like a stateful cluster, similar to how we would handle a storage cluster. With stateful clusters, scaling up or down has some operational overhead and risks, so it should be done with careful planning. The cluster is normally over-provisioned to make sure it can handle daily peak traffic with some comfortable headroom to avoid unnecessary resizing of the cluster."
+  },
+  {
+   "t": "p",
+   "k": "6ca8827eb9d4",
+   "en": "When we inevitably have to scale, be mindful of these potential issues:"
+  },
+  {
+   "t": "li",
+   "k": "7144ac6ebf3d",
+   "en": "When we resize a cluster, many channels will be moved to different servers on the hash ring. When the service discovery component notifies all the WebSocket servers of the hash ring update, there will be a ton of resubscription requests."
+  },
+  {
+   "t": "li",
+   "k": "8e18fffe5a23",
+   "en": "During these mass resubscription events, some location updates might be missed by the clients. Although occasional misses are acceptable for our design, we should minimize the occurrences."
+  },
+  {
+   "t": "li",
+   "k": "0f7154206783",
+   "en": "Because of the potential interruptions, resizing should be done when usage is at its lowest in the day."
+  },
+  {
+   "t": "p",
+   "k": "5beb395756e5",
+   "en": "How is resizing actually done? It is quite simple. Follow these steps:"
+  },
+  {
+   "t": "li",
+   "k": "672a38e64baa",
+   "en": "Determine the new ring size, and if scaling up, provision enough new servers."
+  },
+  {
+   "t": "li",
+   "k": "48de9fd3a3b8",
+   "en": "Update the keys of the hash ring with the new content."
+  },
+  {
+   "t": "li",
+   "k": "dda51f39b6cc",
+   "en": "Monitor your dashboard. There should be some spike in CPU usage in the WebSocket cluster."
+  },
+  {
+   "t": "p",
+   "k": "776690d547f3",
+   "en": "Using the hash ring from Figure 2.9 above, if we were to add 2 new nodes, say, p_5, and p_6, the hash ring would be updated like this:"
+  },
+  {
+   "t": "p",
+   "k": "2ab6eeac20f0",
+   "en": "Old: [\"p_1\", \"p_2\" · ', \"p_3\", \"p_4\"] · New: [\"p_1\", \"p_2\" · ', \"p_3\", \"p_4\" · ', \"p_5\" · , \"p_6\"] · Step 3 - Design Deep Dive | 51"
+  },
+  {
+   "t": "h3",
+   "k": "fc6ad3408f6a",
+   "en": "Operational considerations for Redis Pub/Sub servers"
+  },
+  {
+   "t": "p",
+   "k": "dd7c350bb40f",
+   "en": "The operational risk of replacing an existing Redis Pub/Sub server is much, much lower It does not cause a large number of channels to be moved. Only the channels on the server being replaced will need to be handled. This is good because servers inevitably go down and need to be replaced regularly."
+  },
+  {
+   "t": "p",
+   "k": "233e262d680c",
+   "en": "When a Pub/Sub server goes down, the monitoring software should alert the on-call operator. Precisely how the monitoring software monitors the health of a Pub/Sub server is beyond the scope of this chapter, so it is not covered. The on-call operator updates the hash ring key in service discovery to replace the dead node with a fresh standby node. The WebSocket servers are notified about the update and each one then notifies its connection handlers to re-subscribe to the channels on the new Pub/Sub server. Each WebSocket handler keeps a list of all channels it has subscribed to, and upon receiving the notification from the server, it checks each channel against the hash ring to determine if a channel needs to be re-subscribed on a new server."
+  },
+  {
+   "t": "p",
+   "k": "441441744d8d",
+   "en": "Using the hash ring from Figure 2.9 above, if p_1 went down, and we replace it with p1_new, the hash ring would be updated like so:"
+  },
+  {
+   "t": "p",
+   "k": "2c018d2903df",
+   "en": "Old: [\"p_1\", \"p_2\", \"p_3\", \"p_4\"]"
+  },
+  {
+   "t": "h3",
+   "k": "d426c1979ea9",
+   "en": "New: [\"p_1_new\", \"p_2\", \"p_3\", \"p-4\"]"
+  },
+  {
+   "t": "p",
+   "k": "bfba48af3c04",
+   "en": "p_1_new P_4 · hash(channel_name2) · hash(channel_name2) · p_2 · p_3 · p_2 P_3"
+  },
+  {
+   "t": "figure",
+   "k": "08e594d6d67f",
+   "en": "Figure 2.11: Replace Pub/Sub serverver"
+  },
+  {
+   "t": "h2",
+   "k": "1b47729acbb3",
+   "en": "Adding/removing friends"
+  },
+  {
+   "t": "p",
+   "k": "b3f4647d5a27",
+   "en": "What should the client do when the user adds or removes a friend? When a new friend is added, the client's WebSocket connection handler on the server needs to be notified, so it can subscribe to the new friend's Pub/Sub channel."
+  },
+  {
+   "t": "p",
+   "k": "1e157941b8c1",
+   "en": "Since the \"nearby friends\" feature is within the ecosystem of a larger app, we can assume that the \"nearby friends\" feature could register a callback on the mobile client whenever a new friend is added. The callback, upon invocation, sends a message to the WebSocket server to subscribe to the new friend's Pub/Sub channel. The WebSocket server also returns a message containing the new friend's latest location and timestamp, if they are active."
+  },
+  {
+   "t": "p",
+   "k": "cb3cd73ae038",
+   "en": "Likewise, the client could register a callback in the application whenever a friend is removed. The callback would send a message to the WebSocket server to unsubscribe from the friend's Pub/Sub channel."
+  },
+  {
+   "t": "p",
+   "k": "2f7ffeb5b751",
+   "en": "This subscribe/unsubscribe callback could also be used whenever a friend has opted in or out of the location update."
+  },
+  {
+   "t": "h3",
+   "k": "52b005096105",
+   "en": "Users with many friends"
+  },
+  {
+   "t": "p",
+   "k": "87417f4f05d8",
+   "en": "It is worth discussing whether a user with many friends could cause performance"
+  },
+  {
+   "t": "h3",
+   "k": "ded23c39d45b",
+   "en": "hotspots in our design. We assume here that there is a hard cap on the number"
+  },
+  {
+   "t": "p",
+   "k": "6c377e836c04",
+   "en": "of friends. (Facebook has a cap of 5,000 friends, for example). Friendships are bidirectional. We are not talking about a follower model in which a celebrity could have millions of followers."
+  },
+  {
+   "t": "p",
+   "k": "c39d71144812",
+   "en": "In a scenario with thousands of friends, the Pub/Sub subscribers will be scattered among the many WebSocket servers in the cluster. The update load would be spread among them and it's unlikely to cause any hotspots."
+  },
+  {
+   "t": "p",
+   "k": "697c95127c65",
+   "en": "The user would place a bit more load on the Pub/Sub server where their channel lives. Since there are over 100 Pub/Sub servers, these \"whale\" users would be spread out among the Pub/Sub servers and the incremental load should not overwhelm any single one."
+  },
+  {
+   "t": "h2",
+   "k": "e16783831f69",
+   "en": "Nearby random person"
+  },
+  {
+   "t": "p",
+   "k": "36bb764583be",
+   "en": "You might call this section an extra credit, as it's not in the initial functional requirements. What if the interviewer wants to update the design to show random people who opted-in to location-sharing?"
+  },
+  {
+   "t": "p",
+   "k": "b1be62629974",
+   "en": "One way to do this while leveraging our design is to add a pool of Pub/Sub channels by geohash. (See Chapter 1 Proximity Service for details on geohash). As shown in"
+  },
+  {
+   "t": "figure",
+   "k": "6dac660314e1",
+   "en": "Figure 2.12, an area is divided into four geohash grids and a channel is created for each"
+  },
+  {
+   "t": "p",
+   "k": "9d697807fb84",
+   "en": "grid."
+  },
+  {
+   "t": "p",
+   "k": "ebb88adb2705",
+   "en": "Step 3 - Design Deep Dive | 53 Geohash: 9q8zn6 9q82n6"
+  },
+  {
+   "t": "p",
+   "k": "ba85484893ab",
+   "en": "Geohash: 9q8znd Geohash: 9q8znf 9q8znf"
+  },
+  {
+   "t": "p",
+   "k": "5cd1ba04db3d",
+   "en": "9q8zn3 Redis Pub/Sub"
+  },
+  {
+   "t": "figure",
+   "k": "2f75460dbcf4",
+   "en": "Figure 2.12: Redis Pub/Sub channels"
+  },
+  {
+   "t": "p",
+   "k": "58ddc819488d",
+   "en": "Anyone within the grid subscribes to the same channel. Let's take grid 9q8znd for example as shown in Figure 2.13."
+  },
+  {
+   "t": "p",
+   "k": "e70875ed21e5",
+   "en": "Geohash: · 9q8zn6 · Geohash: · © Location · User 2 2 Subscribe · User 2 · 9q8znd · update · WebSocket connections · Geohash: · User 3 9q8znf · Geohash: · 9q8zn3"
+  },
+  {
+   "t": "figure",
+   "k": "eec76c2721f2",
+   "en": "Figure 2.13: Publish location update to random nearby person"
+  },
+  {
+   "t": "p",
+   "k": "32f2ce7f8fa4",
+   "en": "1. Here, when user 2 updates their location, the WebSocket connection handler computes the user's geohash ID and sends the location to the channel for that geohash. 2. Anyone nearby who subscribes to the channel (exclude the sender) will receive a"
+  },
+  {
+   "t": "h3",
+   "k": "0475947bf9ec",
+   "en": "location update message."
+  },
+  {
+   "t": "p",
+   "k": "e5ebd17ccdc4",
+   "en": "To handle people who are close to the border of a geohash grid, every client could subscribe to the geohash the user is in and the eight surrounding geohash grids. An example with all 9 geohash grids highlighted is shown in Figure 2.14."
+  },
+  {
+   "t": "p",
+   "k": "2200dd8fb381",
+   "en": "Avenue · 9q8znf · 9q8zn6 · 9q8znd · 9q8znc · 9q8zn3 · 9q8zn9 · 9q8znb · 9q8zn2 · 9q8zn8"
+  },
+  {
+   "t": "figure",
+   "k": "65ec8af25f26",
+   "en": "Figure 2.14: Nine geohash grids"
+  },
+  {
+   "t": "h3",
+   "k": "ae9e10a58db4",
+   "en": "Alternative to Redis Pub/Sub"
+  },
+  {
+   "t": "p",
+   "k": "737223bac19b",
+   "en": "Is there any good alternative to using Redis Pub/Sub as the routing layer? The answer is a resounding yes. Erlang [7] is a great solution for this particular problem. We would argue that Erlang is a better solution than the Redis Pub/Sub proposed above. However, Erlang is quite a niche, and hiring good Erlang programmers is hard. But if your team has Erlang expertise, this is a great option."
+  },
+  {
+   "t": "p",
+   "k": "5eb74e645b9a",
+   "en": "So, why Erlang? Erlang is a general programming language and runtime environment built for highly distributed and concurrent applications. When we say Erlang here, we specifically talk about the Erlang ecosystem itself. This includes the language component (Erlang or Elixir [8]) and the runtime environment and libraries (the Erlang virtual machine called BEAM [9] and the Erlang runtime libraries called OTP [10])."
+  },
+  {
+   "t": "p",
+   "k": "af1d02ec7d6c",
+   "en": "The power of Erlang lies in its lightweight processes. An Erlang process is an entity running on the BEAM VM. It is several orders of magnitude cheaper to create than a Linux process. A minimal Erlang process takes about 300 bytes, and we can have millions of these processes on a single modern server. If there is no work to do in an Erlang process, it just sits there without using any CPU cycles at all. In other words, it is extremely cheap to model each of the 10 million active users in our design as an individual Erlang process."
+  },
+  {
+   "t": "p",
+   "k": "b264bc64edcc",
+   "en": "Erlang is also very easy to distribute among many Erlang servers. The operational overhead is very low, and there are great tools to support debugging live production issues, safely. The deployment tools are also very strong."
+  },
+  {
+   "t": "p",
+   "k": "ac2b7a54c60b",
+   "en": "How would we use Erlang in our design? We would implement the WebSocket service in Erlang, and also replace the entire cluster of Redis Pub/Sub with a distributed Erlang application. In this application, each user is modeled as an Erlang process. The user process would receive updates from the WebSocket server when a user's location is updated by the client. The user process also subscribes to updates from the Erlang processes of the Step 3 - Design Deep Dive | 55 user's friends. Subscription is native in Erlang/OTP and it's easy to build. This forms a mesh of connections that would efficiently route location updates from one user to many friends."
+  },
+  {
+   "t": "h2",
+   "k": "02a33876c958",
+   "en": "Step 4 - Wrap Up"
+  },
+  {
+   "t": "p",
+   "k": "209749eff645",
+   "en": "In this chapter, we presented a design that supports a nearby friends feature. Conceptually, we want to design a system that can efficiently pass location updates from one user to their friends."
+  },
+  {
+   "t": "p",
+   "k": "0298ee5a8fdf",
+   "en": "Some of the core components include:"
+  },
+  {
+   "t": "li",
+   "k": "c00274a3ec7c",
+   "en": "WebSocket: real-time communication between clients and the server."
+  },
+  {
+   "t": "li",
+   "k": "24d74950a343",
+   "en": "Redis: fast read and write of location data."
+  },
+  {
+   "t": "li",
+   "k": "f82d91e6bfcb",
+   "en": "Redis Pub/Sub: routing layer to direct location updates from one user to all the online friends."
+  },
+  {
+   "t": "p",
+   "k": "1505d803194d",
+   "en": "We first came up with a high-level design at a lower scale and then discussed challenges that arise as the scale increases. We explored how to scale the following:"
+  },
+  {
+   "t": "p",
+   "k": "b08dc47f7bf7",
+   "en": "RESTful API servers · WebSocket servers · Data layer · Redis Pub/Sub servers · Alternative to Redis Pub/Sub"
+  },
+  {
+   "t": "p",
+   "k": "e3835bf76cbe",
+   "en": "Finally, we discussed potential bottlenecks when a user has many friends and we proposed a design for the \"nearby random person\" feature."
+  },
+  {
+   "t": "p",
+   "k": "71b8b7a68128",
+   "en": "Congratulations on getting this far! Now give yourself a pat on the back. Good job!"
+  },
+  {
+   "t": "h2",
+   "k": "dc0ccd897209",
+   "en": "Chapter Summary"
+  },
+  {
+   "t": "p",
+   "k": "33e50446ae5b",
+   "en": "view nearby friends · functional reg · update nearby friend list"
+  },
+  {
+   "t": "p",
+   "k": "3ce105a3484d",
+   "en": "non-functional req — low latency"
+  },
+  {
+   "t": "p",
+   "k": "a607535502ac",
+   "en": "step 1 · 5-mile radius · location refresh interval: 30s · estimation · locate update qps: 334k · restful api servers · websocket servers · redis location cache · high-level design diagram"
+  },
+  {
+   "t": "p",
+   "k": "9a4d586f042b",
+   "en": "location history database periodic location update"
+  },
+  {
+   "t": "p",
+   "k": "5b8ee3806d3f",
+   "en": "step 2"
+  },
+  {
+   "t": "p",
+   "k": "f87b654496c6",
+   "en": "redis pub/sub server api design"
+  },
+  {
+   "t": "p",
+   "k": "d1ee05a3d024",
+   "en": "location cache · Nearby Friends · data model · location history database · api servers · websocket servers · user database · scale each component · location cache · redis pub/sub server · adding/removing friends · step 3"
+  },
+  {
+   "t": "p",
+   "k": "ec7d9cc2df85",
+   "en": "alternative to redis pub/sub users with many friends"
+  },
+  {
+   "t": "p",
+   "k": "b2a0f76dc02e",
+   "en": "nearby random person · step 4 · wrap up · Chapter Summary | 57"
+  },
+  {
+   "t": "h2",
+   "k": "5d59149869b8",
+   "en": "Reference Material"
+  },
+  {
+   "t": "p",
+   "k": "53c011b903d5",
+   "en": "[1] Facebook Launches \"Nearby Friends\". https:/techcrunch.com/2014/04/17/facebo ok-nearby-friends/."
+  },
+  {
+   "t": "p",
+   "k": "6d4ed72167e7",
+   "en": "[2] Redis Pub/Sub. https://redis.io/topics/pubsub."
+  },
+  {
+   "t": "p",
+   "k": "62bcdb70b2e9",
+   "en": "[3] Redis Pub/Sub under the hood. https://making.pusher.com/redis-pubsub-under.t he-hood/."
+  },
+  {
+   "t": "p",
+   "k": "afe38d753ee8",
+   "en": "[4] etcd. https://etcd.io/."
+  },
+  {
+   "t": "p",
+   "k": "db3649092b04",
+   "en": "[5] ZooKeeper. https://zookeeper.apache.org/."
+  },
+  {
+   "t": "p",
+   "k": "4711f0090b55",
+   "en": "[6] Consistent hashingones. https://www.toptal.com/big-data/consistent-hashing. [7] Erlang. https://www.erlang.org/."
+  },
+  {
+   "t": "p",
+   "k": "e16a33d46678",
+   "en": "[8] Elixir. https://elixir-lang.org/."
+  },
+  {
+   "t": "p",
+   "k": "389832896a22",
+   "en": "19) A brief introduction to BEAM. https://www.erlang.org/blog/a-brief-beam-primer/. [10] OTP. https://www.erlang.org/doc/design_principles/des_princ.html."
+  }
+ ]
+}

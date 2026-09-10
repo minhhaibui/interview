@@ -1,0 +1,2393 @@
+{
+ "id": "09-s3-like-object-storage",
+ "title": "S3-like Object Storage",
+ "titleKey": "2a55a803bb36",
+ "book": "alex-vol2",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "6da0b8befabe",
+   "en": "In this chapter, we design an object storage service similar to Amazon Simple Storage Service (S3). S3 is a service offered by Amazon Web Services (AWS) that provides object storage through a RESTful API-based interface. Here are some facts about AWS S3:"
+  },
+  {
+   "t": "li",
+   "k": "b82845989f69",
+   "en": "Launched in June 2006."
+  },
+  {
+   "t": "li",
+   "k": "f6079feb8153",
+   "en": "S3 added versioning, bucket policy, and multipart upload support in 2010."
+  },
+  {
+   "t": "li",
+   "k": "ebdab02e375b",
+   "en": "S3 added server-side encryption, multi-object delete, and object expiration in 2011. • Amazon reported 2 trillion objects stored in S3 by 2013."
+  },
+  {
+   "t": "li",
+   "k": "6c59e263ac81",
+   "en": "Life cycle policy, event notification, and cross-region replication support were introduced in 2014 and 2015."
+  },
+  {
+   "t": "li",
+   "k": "85b4029e1166",
+   "en": "Amazon reported over 100 trillion objects stored in S3 by 2021."
+  },
+  {
+   "t": "p",
+   "k": "f97fe7fc47c2",
+   "en": "Before we dig into object storage, let's first review storage systems in general and define some terminologies."
+  },
+  {
+   "t": "h2",
+   "k": "bace650c3ea9",
+   "en": "Storage System 101"
+  },
+  {
+   "t": "p",
+   "k": "013972230fa4",
+   "en": "At a high-level, storage systems fall into three broad categories:"
+  },
+  {
+   "t": "p",
+   "k": "46f60dd0c51c",
+   "en": "Block storage · File storage · Object storage · Block storage"
+  },
+  {
+   "t": "p",
+   "k": "acc4525dbc03",
+   "en": "Block storage came first, in the 1960s. Common storage devices like hard disk drives (HDD) and solid-state drives (SSD) that are physically attached to servers are all considered as block storage."
+  },
+  {
+   "t": "p",
+   "k": "0548eff63f95",
+   "en": "Block storage presents the raw blocks to the server as a volume. This is the most flexible and versatile form of storage. The server can format the raw blocks and use them as a file system, or it can hand control of those blocks to an application. Some applications like a database or a virtual machine engine manage these blocks directly in order to squeeze every drop of performance out of them."
+  },
+  {
+   "t": "p",
+   "k": "93bfa671e880",
+   "en": "Block storage is not limited to physically attached storage. Block storage could be connected to a server over a high-speed network or over industry-standard connectivity protocols like Fibre Channel (FC) [1] and iSCSI [2]. Conceptually, the network-attached block storage still presents raw blocks. To the servers, it works the same as physically attached block storage."
+  },
+  {
+   "t": "p",
+   "k": "a8e145dd5ddb",
+   "en": "File storage"
+  },
+  {
+   "t": "p",
+   "k": "33d9310a561b",
+   "en": "File storage is built on top of block storage. It provides a higher-level abstraction to make it easier to handle files and directories. Data is stored as files under a hierarchical directory structure. File storage is the most common general-purpose storage solution. File storage could be made accessible by a large number of servers using common filelevel network protocols like SMB/CIFS [3] and NFS [4]. The servers accessing file storage do not need to deal with the complexity of managing the blocks, formatting volume, etc. The simplicity of file storage makes it a great solution for sharing a large number of files and folders within an organization."
+  },
+  {
+   "t": "p",
+   "k": "728e1ae24718",
+   "en": "Object storage"
+  },
+  {
+   "t": "p",
+   "k": "061a48f8fe4c",
+   "en": "Object storage is new. It makes a very deliberate tradeoff to sacrifice performance for high durability, vast scale, and low cost. It targets relatively \"cold\" data and is mainly used for archival and backup. Object storage stores all data as objects in a flat structure. There is no hierarchical directory structure. Data access is normally provided via a RESTful API. It is relatively slow compared to other storage types. Most public cloud service providers have an object storage offering, such as AWS S3, Google object storage, and Azure blob storage."
+  },
+  {
+   "t": "h2",
+   "k": "4d04521b659a",
+   "en": "Comparison"
+  },
+  {
+   "t": "p",
+   "k": "d1994ecee412",
+   "en": "Object Storage · File Storage · Block Storage · Meta · data · block · block · block · Meta Payload · block · block · block · Payload · block · block · block"
+  },
+  {
+   "t": "figure",
+   "k": "6b498b4e6198",
+   "en": "Figure 9.1: Three different storage options"
+  },
+  {
+   "t": "p",
+   "k": "395a88f74258",
+   "en": "Table 9.1 compares block storage, file storage, and object storage."
+  },
+  {
+   "t": "p",
+   "k": "48f445e2e9f4",
+   "en": "Block storage · File storage · Object storage · N (object versioning Mutable · is supported, · Content · in-place update is · not) · High · Cost · Medium to high"
+  },
+  {
+   "t": "h3",
+   "k": "7c3f5dcddfac",
+   "en": "Medium to high,"
+  },
+  {
+   "t": "p",
+   "k": "ec1a2f5439ab",
+   "en": "Performance · Medium to high · very high · Strong consistency Consistency · Strong consistency · Strong consistency · [5] · Standard file access, · RESTful API"
+  },
+  {
+   "t": "h3",
+   "k": "3ec903f73ef5",
+   "en": "SAS [6]/iSCSI/FC"
+  },
+  {
+   "t": "p",
+   "k": "855f632a1ffa",
+   "en": "Data access"
+  },
+  {
+   "t": "p",
+   "k": "27bf13c15574",
+   "en": "CIFS/SMB, and NFS"
+  },
+  {
+   "t": "h3",
+   "k": "a7810ffdb493",
+   "en": "Medium scalability"
+  },
+  {
+   "t": "p",
+   "k": "a05c1c8f3030",
+   "en": "High scalability · Vast scalability · Scalability"
+  },
+  {
+   "t": "h3",
+   "k": "d790887244a4",
+   "en": "Virtual machines"
+  },
+  {
+   "t": "p",
+   "k": "57727edbde97",
+   "en": "(VM), · Binary data, · General-purpose file · Good for"
+  },
+  {
+   "t": "h3",
+   "k": "4f0cf7d16c6a",
+   "en": "high-performance"
+  },
+  {
+   "t": "p",
+   "k": "2493a5fac43d",
+   "en": "unstructured data system access"
+  },
+  {
+   "t": "p",
+   "k": "cd037bf41806",
+   "en": "applications like · database · Table 9.1: Storage options"
+  },
+  {
+   "t": "h2",
+   "k": "d4e28002092e",
+   "en": "Terminology"
+  },
+  {
+   "t": "p",
+   "k": "8f2df6ad35a6",
+   "en": "To design S3-like object storage, we need to understand some core object storage concepts first. This section provides an overview of the terms that apply to object storage."
+  },
+  {
+   "t": "p",
+   "k": "000e2bffe9dd",
+   "en": "Bucket. A logical container for objects. The bucket name is globally unique. To upload data to S3, we must first create a bucket."
+  },
+  {
+   "t": "p",
+   "k": "6389024ed7b6",
+   "en": "Object. An object is an individual piece of data we store in a bucket. It contains object data (also called payload) and metadata. Object data can be any sequence of bytes we want to store. The metadata is a set of name-value pairs that describe the object."
+  },
+  {
+   "t": "p",
+   "k": "7c456c2c8ddf",
+   "en": "Versioning. A feature that keeps multiple variants of an object in the same bucket. It is enabled at bucket-level. This feature enables users to recover objects that are deleted or overwritten by accident."
+  },
+  {
+   "t": "p",
+   "k": "53ae15c89fb2",
+   "en": "Uniform Resource Identifier (URI). The object storage provides RESTful APIs to access its resources, namely, buckets and objects. Each resource is uniquely identified by its URI."
+  },
+  {
+   "t": "p",
+   "k": "8b8a070fe3d8",
+   "en": "Service-level agreement (SLA). A service-level agreement is a contract between a service provider and a client. For example, the Amazon S3 Standard-Infrequent Access storage class provides the following SLA [7]:"
+  },
+  {
+   "t": "li",
+   "k": "353e5daf3345",
+   "en": "Designed for durability of 99.999999999% of objects across multiple Availability Zones."
+  },
+  {
+   "t": "li",
+   "k": "df955d4d6855",
+   "en": "Data is resilient in the event of one entire Availability Zone destruction."
+  },
+  {
+   "t": "p",
+   "k": "5d3081117c0b",
+   "en": "Storage System 101 | 255"
+  },
+  {
+   "t": "li",
+   "k": "86e5d9a70363",
+   "en": "Designed for 99.9% availability."
+  },
+  {
+   "t": "h2",
+   "k": "cdb2072eee15",
+   "en": "Step 1 - Understand the Problem and Establish Design Scope"
+  },
+  {
+   "t": "h3",
+   "k": "819873ecef55",
+   "en": "The following questions help to clarify the requirements and narrow down the"
+  },
+  {
+   "t": "p",
+   "k": "7db6303f770e",
+   "en": "scope."
+  },
+  {
+   "t": "p",
+   "k": "53a84d245699",
+   "en": "Candidate: Which features should be included in the design?"
+  },
+  {
+   "t": "p",
+   "k": "89676c82533c",
+   "en": "Interviewer: We would like you to design an S3-like object storage system with the following functionalities:"
+  },
+  {
+   "t": "li",
+   "k": "f63e8be20eee",
+   "en": "Bucket creation."
+  },
+  {
+   "t": "li",
+   "k": "56e723db869f",
+   "en": "Object uploading and downloading."
+  },
+  {
+   "t": "li",
+   "k": "cf6ea1e9a6af",
+   "en": "Object versioning."
+  },
+  {
+   "t": "li",
+   "k": "c61bd5975694",
+   "en": "Listing objects in a bucket. It's similar to the aws S3 ls command [8]."
+  },
+  {
+   "t": "p",
+   "k": "25b7db9a609d",
+   "en": "Candidate: What is the typical data size?"
+  },
+  {
+   "t": "p",
+   "k": "f1901a725b28",
+   "en": "Interviewer: We need to store both massive objects (a few GBs or more) and a large number of small objects (tens of KBs,) efficiently."
+  },
+  {
+   "t": "p",
+   "k": "c63a0b8de8e5",
+   "en": "Candidate: How much data do we need to store in one year?"
+  },
+  {
+   "t": "p",
+   "k": "9ddf216e3c98",
+   "en": "Interviewer: 100 petabytes (PB)."
+  },
+  {
+   "t": "p",
+   "k": "4972490e0bb1",
+   "en": "Candidate: Can we assume data durability is 6 nines (99.9999%) and service availability is 4 nines (99.99%)?"
+  },
+  {
+   "t": "p",
+   "k": "c8ad02f7687f",
+   "en": "Interviewer: Yes, that sounds reasonable."
+  },
+  {
+   "t": "h2",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "li",
+   "k": "2251b45d7004",
+   "en": "100PB of data"
+  },
+  {
+   "t": "li",
+   "k": "e9f2aa3a9dba",
+   "en": "Data durability is 6 nines"
+  },
+  {
+   "t": "li",
+   "k": "d0d5abc3e882",
+   "en": "Service availability is 4 nines"
+  },
+  {
+   "t": "li",
+   "k": "9b2b7daa7ccb",
+   "en": "Storage efficiency. Reduce storage costs while maintaining a high degree of reliability and performance."
+  },
+  {
+   "t": "h3",
+   "k": "758a31cef712",
+   "en": "Back-of-the-envelope estimation"
+  },
+  {
+   "t": "p",
+   "k": "31a613078501",
+   "en": "Object storage is likely to have bottlenecks in either disk capacity or disk IO per second (IOPS). Let's take a look."
+  },
+  {
+   "t": "li",
+   "k": "cedb4f0f08a9",
+   "en": "Disk capacity. Let's assume objects follow the distribution listed below:"
+  },
+  {
+   "t": "li",
+   "k": "b853760ad208",
+   "en": "20% of all objects are small objects (less than 1MB)."
+  },
+  {
+   "t": "li",
+   "k": "43c82e58d926",
+   "en": "60% of objects are medium-sized objects (1 MB ~ 64MB)."
+  },
+  {
+   "t": "li",
+   "k": "049a39507de5",
+   "en": "20% are large objects (larger than 64MB)."
+  },
+  {
+   "t": "li",
+   "k": "5eec1041d924",
+   "en": "IOPS. Let's assume one hard disk (SATA interface, 7200 rpm) is capable of doing"
+  },
+  {
+   "t": "p",
+   "k": "6f3d62558167",
+   "en": "100 ~ 150 random seeks per second (100 ~ 150 TOPS)."
+  },
+  {
+   "t": "p",
+   "k": "a709d62ddb8d",
+   "en": "With those assumptions, we can estimate the total number of objects the system can persist. To simplify the calculation, let's use the median size for each object type (0.5MB for small objects, 32MB for medium objects, and 200MB for large objects). A 40% storage usage ratio gives us:"
+  },
+  {
+   "t": "li",
+   "k": "7b84e8b36b55",
+   "en": "100 PB = 100 × 1000 × 1000 × 1000 MB = 10'1 MB"
+  },
+  {
+   "t": "p",
+   "k": "9467d6574fde",
+   "en": "1011 × 0.4"
+  },
+  {
+   "t": "li",
+   "k": "a041c25e70ac",
+   "en": "(0.2 × 0.5MB +0.6 × 32MB +0.2 × 200 MB) = 0.68 billion objects."
+  },
+  {
+   "t": "li",
+   "k": "8a03617fd53c",
+   "en": "If we assume the metadata of an object is about 1KB in size, we need 0.68TB space to store all metadata information."
+  },
+  {
+   "t": "p",
+   "k": "c125a7515871",
+   "en": "Even though we may not use those numbers, it's good to have a general idea about the scale and constraint of the system."
+  },
+  {
+   "t": "h2",
+   "k": "21ec56b45561",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in"
+  },
+  {
+   "t": "p",
+   "k": "05cdf8565488",
+   "en": "Before diving into the design, let's explore a few interesting properties of object storage, as they may influence it."
+  },
+  {
+   "t": "p",
+   "k": "882fd032c5ef",
+   "en": "Object immutability. One of the main differences between object storage and the other two types of storage systems is that the objects stored inside of object storage are immutable. We may delete them or replace them entirely with a new version, but we cannot make incremental changes."
+  },
+  {
+   "t": "p",
+   "k": "132729fe593e",
+   "en": "Key-value store. We could use object URI to retrieve object data (Listing 9.1). The object URI is the key and object data is the value."
+  },
+  {
+   "t": "p",
+   "k": "5a1f34803e3c",
+   "en": "Request:"
+  },
+  {
+   "t": "h3",
+   "k": "9ba06b406495",
+   "en": "GET / bucketl/object.txt HTTP/1.1"
+  },
+  {
+   "t": "p",
+   "k": "0aef24b99a53",
+   "en": "Response:"
+  },
+  {
+   "t": "h3",
+   "k": "0bd9d80a8e6f",
+   "en": "HTTP /1.1 200 0K"
+  },
+  {
+   "t": "h3",
+   "k": "0c10815a416d",
+   "en": "Content-Length: 4567"
+  },
+  {
+   "t": "h3",
+   "k": "ad8e818b54b2",
+   "en": "[4567 bytes of object data]"
+  },
+  {
+   "t": "p",
+   "k": "a99e89c8666e",
+   "en": "Listing 9.1: Use object URI to retrieve object data"
+  },
+  {
+   "t": "p",
+   "k": "4e7801a39fa8",
+   "en": "Write once, read many times. The data access pattern for object data is written once and read many times. According to the research done by LinkedIn, 95% of requests are read operations [9]."
+  },
+  {
+   "t": "p",
+   "k": "bcec91c3879d",
+   "en": "Support both small and large objects. Object size may vary and we need to support both."
+  },
+  {
+   "t": "p",
+   "k": "b821e91f31ee",
+   "en": "The design philosophy of object storage is very similar to that of the UNIX file system. In UNIX, when we save a file in the local file system, it does not save the filename and file data together. Instead, the filename is stored in a data structure called \"inode\" [10], Step 2 - Propose High-level Design and Get Buy-in | 257 and the file data is stored in different disk locations. The inode contains a list of file block pointers that point to the disk locations of the file data. When we access a local file, we first fetch the metadata in the inode. We then read the file data by following the file block pointers to the actual disk locations."
+  },
+  {
+   "t": "p",
+   "k": "df2e7bdf3fb2",
+   "en": "The object storage works similarly. The inode becomes the metadata store that stores all the object metadata. The hard disk becomes the data store that stores the object data. In the UNIX file system, the inode uses the file block pointer to record the location of data on the hard disk. In object storage, the metadata store uses the ID of the object to find the corresponding object data in the data store, via a network request. Figure 9.2 shows the UNIX file system and the object storage."
+  },
+  {
+   "t": "p",
+   "k": "36671caaa90c",
+   "en": "Unix File System · Object Store System · inode · MetaStore · File Name · Object name→ Object ID · Owner UID · Group UID · Object name- Object ID · Mode · Object name→ Object ID · Object name- Object ID · File block pointers · Object name→ Object ID · Network Request · Local Disk Access · Object · Hard disk · DataStore"
+  },
+  {
+   "t": "figure",
+   "k": "68160555a7a4",
+   "en": "Figure 9.2: UNIX file system and object store"
+  },
+  {
+   "t": "p",
+   "k": "c97c47f19d50",
+   "en": "Separating metadata and object data simplifies the design. The data store contains immutable data while the metadata store contains mutable data. This separation enables us to implement and optimize these two components independently. Figure 9.3 shows what the bucket and object look like."
+  },
+  {
+   "t": "p",
+   "k": "cdbe1d55c267",
+   "en": "Data · 0110101010110 · 1010010101001 · Metadata · ID · Bucket Name · Policy · Metadata · ID · Object Name · Bucket"
+  },
+  {
+   "t": "figure",
+   "k": "19321bf184d2",
+   "en": "Figure 9.3: Bucket & object"
+  },
+  {
+   "t": "h3",
+   "k": "f0e860766605",
+   "en": "High-level design"
+  },
+  {
+   "t": "figure",
+   "k": "f72b3d1020fd",
+   "en": "Figure 9.4 shows the high-level design."
+  },
+  {
+   "t": "p",
+   "k": "a9628693b7ee",
+   "en": "Secondary · Data Store · Load balancer · Service · Storage Node · Primary Data Store · API Service · Service · Storage Node Identity & Access · Management · Secondary Data Store · Service · Metadata Service · Storage Node · Data Store · Metadata DB · Metadata Store"
+  },
+  {
+   "t": "figure",
+   "k": "60b86d8b2816",
+   "en": "Figure 9.4: High-level design"
+  },
+  {
+   "t": "p",
+   "k": "39dedff56791",
+   "en": "Let's go over the components one by one."
+  },
+  {
+   "t": "p",
+   "k": "5812765be5f4",
+   "en": "Load balancer. Distributes RESTful API requests across a number of API servers."
+  },
+  {
+   "t": "p",
+   "k": "bd91ef825e41",
+   "en": "API service. Orchestrates remote procedure calls to the identity and access management service, metadata service, and storage stores. This service is stateless so it can be horizontally scaled"
+  },
+  {
+   "t": "p",
+   "k": "5cbcba2f1dbc",
+   "en": "Identity and access management (IAM). The central place to handle authentication, authorization, and access control. Authentication verifies who you are, and authorization validates what operations you could perform based on who you are."
+  },
+  {
+   "t": "p",
+   "k": "ad0d8ca29d31",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 259 Data store. Stores and retrieves the actual data. All data-related operations are based on object ID (UUID)."
+  },
+  {
+   "t": "p",
+   "k": "8bee2ba2f7b0",
+   "en": "Metadata store. Stores the metadata of the objects."
+  },
+  {
+   "t": "p",
+   "k": "5a3805814e51",
+   "en": "Note that the metadata and data stores are just logical components, and there are different ways to implement them. For example, in Ceph's Rados Gateway [11]. there is no standalone metadata store. Everything, including the object bucket, is persisted as one or multiple Rados objects."
+  },
+  {
+   "t": "p",
+   "k": "9ecec666d4a4",
+   "en": "Now we have a basic understanding of the high-level design, let's explore some of the most important workflows in object storage."
+  },
+  {
+   "t": "li",
+   "k": "76bd910619f2",
+   "en": "Uploading an object."
+  },
+  {
+   "t": "li",
+   "k": "40adf7a20098",
+   "en": "Downloading an object."
+  },
+  {
+   "t": "li",
+   "k": "19e262afab49",
+   "en": "Object versioning and listing objects in a bucket. They will be explained in the \"design deep dive section on page 263."
+  },
+  {
+   "t": "h3",
+   "k": "a8fe895b22be",
+   "en": "Uploading an object"
+  },
+  {
+   "t": "p",
+   "k": "e60ed3343da8",
+   "en": "HTTP PUT: · HTTP PUT: · © Create bucket · ® Create object · Secondary Data · Load balancer · Service · Primary Data · _Upload · API Service · object · Service · Identity & Access · Create bucket · Management · metadata · metadata · Secondary Data · Service · Metadata Service · Data Store · Metadata DB · Metadata Store"
+  },
+  {
+   "t": "figure",
+   "k": "af94f4b30979",
+   "en": "Figure 9.5: Uploading an object"
+  },
+  {
+   "t": "p",
+   "k": "43e1c75a7a77",
+   "en": "An object has to reside in a bucket. In this example, we first create a bucket named bucket-to-share and then upload a file named script. txt to the bucket. Figure 9.5 explains how this flow works in 7 steps."
+  },
+  {
+   "t": "p",
+   "k": "a55dece33932",
+   "en": "1. The client sends an HTTP PUT request to create a bucket named bucket-to-share. The request is forwarded to the API service."
+  },
+  {
+   "t": "p",
+   "k": "2b4d56176ac0",
+   "en": "2. The API service calls the IAM to ensure the user is authorized and has WRITE permission."
+  },
+  {
+   "t": "p",
+   "k": "9db14c9def87",
+   "en": "3. The API service calls the metadata store to create an entry with the bucket info in the metadata database. Once the entry is created, a success message is returned to the client."
+  },
+  {
+   "t": "p",
+   "k": "39221fcf2e76",
+   "en": "4. After the bucket is created, the client sends an HTTP PUT request to create an object named script. txt."
+  },
+  {
+   "t": "p",
+   "k": "327fc55bbafc",
+   "en": "5. The API service verifies the user's identity and ensures the user has WRITE permission on the bucket."
+  },
+  {
+   "t": "p",
+   "k": "c67921b7730e",
+   "en": "6. Once validation succeeds, the API service sends the object data in the HTTP PUT payload to the data store. The data store persists the payload as an object and returns the UUID of the object."
+  },
+  {
+   "t": "p",
+   "k": "9b3aa8173637",
+   "en": "7. The API service calls the metadata store to create a new entry in the metadata database. It contains important metadata such as the object_id (UUID), bucket_id (which bucket the object belongs to), object_name, etc. A sample entry is shown in Table 9.2."
+  },
+  {
+   "t": "h2",
+   "k": "c36dd61e9473",
+   "en": "object_name"
+  },
+  {
+   "t": "p",
+   "k": "663a4b1f68bb",
+   "en": "object_id"
+  },
+  {
+   "t": "p",
+   "k": "2ca5b4af3b17",
+   "en": "82AA1B2E-F599-4590-"
+  },
+  {
+   "t": "h3",
+   "k": "3f71a2ee1c85",
+   "en": "239D5866-0052-00F6-"
+  },
+  {
+   "t": "p",
+   "k": "adba2a145d51",
+   "en": "script.txt"
+  },
+  {
+   "t": "p",
+   "k": "01c7fdd1d4cf",
+   "en": "B5E4-1F51AAE5F7E4"
+  },
+  {
+   "t": "h3",
+   "k": "a1b6c62cd0a0",
+   "en": "014E-C914E61ED42B"
+  },
+  {
+   "t": "p",
+   "k": "ad2d940a83b9",
+   "en": "Table 9.2: Sample entry"
+  },
+  {
+   "t": "p",
+   "k": "559ba2a45ba3",
+   "en": "The API to upload an object could look like this:"
+  },
+  {
+   "t": "h3",
+   "k": "e5af26de5ec9",
+   "en": "PUT /bucket-to-share/script.txt HTTP /1.1"
+  },
+  {
+   "t": "h3",
+   "k": "051c59744204",
+   "en": "Host: foo.s3example.org"
+  },
+  {
+   "t": "h3",
+   "k": "861642edcad3",
+   "en": "Date: Sun, 12 Sept 2021 17:51:00 GMT"
+  },
+  {
+   "t": "h3",
+   "k": "13f39d58880a",
+   "en": "Authorization: authorization string"
+  },
+  {
+   "t": "h3",
+   "k": "6cf2691997ad",
+   "en": "Content-Type: text/plain"
+  },
+  {
+   "t": "h3",
+   "k": "0c10815a416d",
+   "en": "Content-Length: 4567"
+  },
+  {
+   "t": "h3",
+   "k": "d36013302f7d",
+   "en": "x-amz-meta-author: Alex"
+  },
+  {
+   "t": "h3",
+   "k": "ad8e818b54b2",
+   "en": "[4567 bytes of object data]"
+  },
+  {
+   "t": "p",
+   "k": "720dc1743785",
+   "en": "Listing 9.2: Uploading an object"
+  },
+  {
+   "t": "h2",
+   "k": "8133b3ab861e",
+   "en": "Downloading an object"
+  },
+  {
+   "t": "p",
+   "k": "d32d17cedc84",
+   "en": "A bucket has no directory hierarchy. However, we can create a logical hierarchy by concatenating the bucket name and the object name to simulate a folder structure. For example, we name the object bucket-to-share/script.txt instead of script. txt. To get an object, we specify the object name in the GET request. The API to download an object looks like this:"
+  },
+  {
+   "t": "p",
+   "k": "91cb025a78ab",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 261"
+  },
+  {
+   "t": "h3",
+   "k": "e65cdc12aeb5",
+   "en": "GE1 / bucket.-to-share/script.txt HTTP/1.1"
+  },
+  {
+   "t": "h3",
+   "k": "051c59744204",
+   "en": "Host: foo.s3example.org"
+  },
+  {
+   "t": "h3",
+   "k": "cc4d0345d46e",
+   "en": "Date: Sun, 12 Sept 2021 18:30:01 GMT"
+  },
+  {
+   "t": "h3",
+   "k": "13f39d58880a",
+   "en": "Authorization: authorization string"
+  },
+  {
+   "t": "p",
+   "k": "fc2180e2c425",
+   "en": "Listing 9.3: Downloading an object."
+  },
+  {
+   "t": "p",
+   "k": "7bad3c91461d",
+   "en": "HTTP GET: · © Download object · Secondary Storage · Service · Load balancer · Primary Get · Storage · API Service · Service · UUID · Identity & Access · 3 object location · Management · (UUID) · Secondary Storage · Service · Metadata Service · Data Store · Metadata DB · Metadata store"
+  },
+  {
+   "t": "figure",
+   "k": "860fab5d2160",
+   "en": "Figure 9.6: Downloading an object"
+  },
+  {
+   "t": "p",
+   "k": "f4880ca2c687",
+   "en": "As mentioned earlier, the data store does not store the name of the object and it only supports object operations via object_id (UUID). In order to download the object, we first map the object name to the UUID. The workflow of downloading an object is shown below:"
+  },
+  {
+   "t": "p",
+   "k": "6d5226b1069e",
+   "en": "1. The client sends an HTTP GET request to the load balancer: GET /bucket-to-share/sc ript. txt"
+  },
+  {
+   "t": "p",
+   "k": "b9f126f1571d",
+   "en": "2. The API service queries the IAM to verify that the user has READ access to the bucket. 3. Once validated, the API service fetches the corresponding object's UUID from the metadata store."
+  },
+  {
+   "t": "p",
+   "k": "bf2e3ded43d7",
+   "en": "4. Next, the API service fetches the object data from the data store by its UUID. 5. The API service returns the object data to the client in HTTP GET response."
+  },
+  {
+   "t": "h2",
+   "k": "5008c4b3d7bc",
+   "en": "Step 3 - Design Deep Dive"
+  },
+  {
+   "t": "p",
+   "k": "1cdf3973e8d0",
+   "en": "In this section, we dive deep into a few areas:"
+  },
+  {
+   "t": "p",
+   "k": "8f584f1e78aa",
+   "en": "Data store · Metadata data model · Listing objects in a bucket · Object versioning"
+  },
+  {
+   "t": "li",
+   "k": "6edbbeb5c6c8",
+   "en": "Optimizing uploads of large files"
+  },
+  {
+   "t": "li",
+   "k": "0724ff6cafe6",
+   "en": "Garbage collection"
+  },
+  {
+   "t": "p",
+   "k": "696b46c5f7c2",
+   "en": "Data store"
+  },
+  {
+   "t": "p",
+   "k": "55de07b79255",
+   "en": "Let's take a closer look at the design of the data store. As discussed previously, the API service handles external requests from users and calls different internal services to fulfill those requests. To persist or retrieve an object, the API service calls the data store. Figure 0,7 shows the interactions between the API service and the data store for uploading and downloading an object."
+  },
+  {
+   "t": "p",
+   "k": "f5064f80ab8c",
+   "en": "Upload Object · Request: Upload · API · Service · DataStore"
+  },
+  {
+   "t": "p",
+   "k": "42cff452ca9a",
+   "en": "Response: ObjectID=30a3e98e-55d9-11ec-bf63-0242ac130002"
+  },
+  {
+   "t": "p",
+   "k": "e9927380411b",
+   "en": "Download Object"
+  },
+  {
+   "t": "p",
+   "k": "99af62f4def7",
+   "en": "Request: Download"
+  },
+  {
+   "t": "p",
+   "k": "9d4b9abf34a4",
+   "en": "ObjectID: 30a3e98e-55d9-11ec-bf63-0242ac130002"
+  },
+  {
+   "t": "p",
+   "k": "bd97742726cf",
+   "en": "API · Service · DataStore"
+  },
+  {
+   "t": "figure",
+   "k": "a56959f02e04",
+   "en": "Figure 9.7: Upload and download an object"
+  },
+  {
+   "t": "h3",
+   "k": "8e909cc5eb2d",
+   "en": "High-level design for the data store"
+  },
+  {
+   "t": "p",
+   "k": "3cd1905ae44e",
+   "en": "The data store has three main components as shown in Figure 9.8."
+  },
+  {
+   "t": "p",
+   "k": "4ae1e29874a9",
+   "en": "Step 3 - Design Deep Dive | 263 Data Node"
+  },
+  {
+   "t": "p",
+   "k": "d5a73c2a7b24",
+   "en": "Primary · Data · Heartbeat · Placement · Data Routing · Data · Service · Service · Data Node · Secondary · Heartbeat · Secondary · Data Node"
+  },
+  {
+   "t": "figure",
+   "k": "2e46f3ae496e",
+   "en": "Figure 9.8: Data store components"
+  },
+  {
+   "t": "h3",
+   "k": "690e2ac6d33e",
+   "en": "Data routing service"
+  },
+  {
+   "t": "p",
+   "k": "1bc935565f9b",
+   "en": "The data routing service provides RESTful or gRPC [12] APIs to access the data node cluster."
+  },
+  {
+   "t": "p",
+   "k": "ee7c5dc79a71",
+   "en": "It is a stateless service that can scale by adding more servers. This service has the following responsibilities:"
+  },
+  {
+   "t": "li",
+   "k": "310747f671e0",
+   "en": "Query the placement service to get the best data node to store data."
+  },
+  {
+   "t": "li",
+   "k": "11117f35ca47",
+   "en": "Read data from data nodes and return it to the API service."
+  },
+  {
+   "t": "li",
+   "k": "8a4124828c44",
+   "en": "Write data to data nodes."
+  },
+  {
+   "t": "h3",
+   "k": "fbd931892e1a",
+   "en": "Placement service"
+  },
+  {
+   "t": "p",
+   "k": "928fcf1c35eb",
+   "en": "The placement service determines which data nodes (primary and replicas) should be chosen to store an object. It maintains a virtual cluster map, which provides the physical topology of the cluster. The virtual cluster map contains location information for each data node which the placement service uses to make sure the replicas are physically separated. This separation is key to high durability. See the \"Durability\" section on page 270 for details. An example of the virtual cluster map is shown in Figure 9.9. Root"
+  },
+  {
+   "t": "p",
+   "k": "020e977caa12",
+   "en": "DC-1"
+  },
+  {
+   "t": "p",
+   "k": "6ea6f0747355",
+   "en": "DC-2"
+  },
+  {
+   "t": "figure",
+   "k": "88130d63c2bb",
+   "en": "Figure 9.9: Virtual cluster map"
+  },
+  {
+   "t": "p",
+   "k": "ddd3a965cc2d",
+   "en": "The placement service continuously monitors all data nodes through heartbeats. If a data node doesn't send a heartbeat within a configurable 15-second grace period, the placement service marks the node as \"down\" in the virtual cluster map."
+  },
+  {
+   "t": "p",
+   "k": "d0c28cd15fa6",
+   "en": "This is a critical service, so we suggest building a cluster of 5 or 7 placement service nodes with Paxos [13] or Raft [14] consensus protocol. The consensus protocol ensures that as long as more than half of the nodes are healthy, the service as a whole continues to work. For example, if the placement service cluster has 7 nodes, it can tolerate a 3 node failure. To learn more about consensus protocols, refer to the reference materials [13] [14]."
+  },
+  {
+   "t": "p",
+   "k": "41f88d23379e",
+   "en": "Data node"
+  },
+  {
+   "t": "p",
+   "k": "f6282af2649d",
+   "en": "The data node stores the actual object data. It ensures reliability and durability by replicating data to multiple data nodes, also called a replication group."
+  },
+  {
+   "t": "p",
+   "k": "e0c701791832",
+   "en": "Each data node has a data service daemon running on it. The data service daemon continuously sends heartbeats to the placement service. The heartbeat message includes the following essential information:"
+  },
+  {
+   "t": "li",
+   "k": "73a0dbdd9e8a",
+   "en": "How many disk drives (HDD or SSD) does the data node manage?"
+  },
+  {
+   "t": "li",
+   "k": "34e29c8d954c",
+   "en": "How much data is stored on each drive?"
+  },
+  {
+   "t": "p",
+   "k": "569c7c2edb11",
+   "en": "When the placement service receives the heartbeat for the first time, it assigns an ID for this data node, adds it to the virtual cluster map, and returns the following information:"
+  },
+  {
+   "t": "p",
+   "k": "b5cf90ea6aee",
+   "en": "a unique ID of the data node · the virtual cluster map · where to replicate data"
+  },
+  {
+   "t": "h3",
+   "k": "b26e7eb7ba63",
+   "en": "Data persistence flow"
+  },
+  {
+   "t": "p",
+   "k": "38d4fdc70be6",
+   "en": "Step 3 - Design Deep Dive | 265 Data Node"
+  },
+  {
+   "t": "p",
+   "k": "4b1996ae142a",
+   "en": "Data Store · Primary Data · Choose · Data Routing · Placement · Data API · Service · Service · placement · Service · Data Node · Objld · Secondary · Secondary Data Node"
+  },
+  {
+   "t": "figure",
+   "k": "73fb9456d3d1",
+   "en": "Figure 9.10: Data persistence flow"
+  },
+  {
+   "t": "p",
+   "k": "42386dffd3ba",
+   "en": "Now let's take a look at how data is persisted in the data node."
+  },
+  {
+   "t": "p",
+   "k": "8cfed56b27fb",
+   "en": "1. The API service forwards the object data to the data store."
+  },
+  {
+   "t": "p",
+   "k": "a696abaeb4d9",
+   "en": "2. The data routing service generates a UUID for this object and queries the placement service for the data node to store this object. The placement service checks the virtual cluster map and returns the primary data node."
+  },
+  {
+   "t": "p",
+   "k": "73b2a104d938",
+   "en": "3. The data routing service sends data directly to the primary data node, together with its UUID."
+  },
+  {
+   "t": "p",
+   "k": "c4146e76bd23",
+   "en": "4. The primary data node saves the data locally and replicates it to two secondary data nodes. The primary node responds to the data routing service when data is successfully replicated to all secondary nodes."
+  },
+  {
+   "t": "p",
+   "k": "748c57ab322c",
+   "en": "5. The UUID of the object (Objld) is returned to the API service."
+  },
+  {
+   "t": "p",
+   "k": "46f30562465a",
+   "en": "In step 2, given a UUID for the object as an input, the placement service returns the replication group for the object. How does the placement service do this? Keep in mind that this lookup needs to be deterministic, and it must survive the addition or removal of replication groups. Consistent hashing is a common implementation of such a lookup function. Refer to [15] for more information."
+  },
+  {
+   "t": "p",
+   "k": "8de5ab045d9c",
+   "en": "In step 4, the primary data node replicates data to all secondary nodes before it returns a response. This makes data strongly consistent among all data nodes. This consistency comes with latency costs because we have to wait until the slowest replica finishes. Figure 9.11 shows the trade-offs between consistency and latency."
+  },
+  {
+   "t": "p",
+   "k": "638c1474e8f4",
+   "en": "266 / Chapter 9. S3-like Object Storage"
+  },
+  {
+   "t": "p",
+   "k": "d023dfc32a9d",
+   "en": "API service wait time · Primary data node · Best consistency · Secondary data node 1 · Highest latency · Secondary data node 2 · Data routing service · Second option: · Primary data node · Medium consistency · Secondary data node 1 · Medium latency · Secondary data node 2 · Data routing service · Third option: · Primary data node · Worst consistency · Secondary data node 1 · Lowest latency · Secondary data node 2"
+  },
+  {
+   "t": "figure",
+   "k": "fe6fb7bc9075",
+   "en": "Figure 9.11: Trade-off between consistency and latency"
+  },
+  {
+   "t": "p",
+   "k": "b0b65ba11b9f",
+   "en": "1. Data is considered as successfully saved after all three nodes store the data. This approach has the best consistency but the highest latency."
+  },
+  {
+   "t": "p",
+   "k": "faf5637828d8",
+   "en": "2. Data is considered as successfully saved after the primary and one of the secondaries store the data. This approach has a medium consistency and medium latency."
+  },
+  {
+   "t": "p",
+   "k": "772a07a4c128",
+   "en": "3. Data is considered as successfully saved after the primary persists the data. This approach has the worst consistency but the lowest latency."
+  },
+  {
+   "t": "p",
+   "k": "943e966f9095",
+   "en": "Both 2 and 3 are forms of eventual consistency."
+  },
+  {
+   "t": "h3",
+   "k": "6d4f1a506ef3",
+   "en": "How data is organized"
+  },
+  {
+   "t": "p",
+   "k": "91e956e8bc90",
+   "en": "Now let's take a look at how each data node manages the data. A simple solution is to store each object in a stand-alone file. This works, but the performance suffers when there are many small files. Two issues arise when having too many small files on a file system. First, it wastes many data blocks. A file system stores files in discrete disk blocks. Disk blocks have the same size, and the size is fixed when the volume is initialized. The typical block size is around 4KB. For a file smaller than 4KB, it would still consume the entire disk block. If the file system holds a lot of small files, it wastes a lot of disk blocks, with each one only lightly filled with a small file."
+  },
+  {
+   "t": "p",
+   "k": "0e0188156c7d",
+   "en": "Second, it could exceed the system's inode capacity. The file system stores the location and other information about a file in a special type of block called inode. For most file systems, the number of inodes is fixed when the disk is initialized. With millions of small files, it runs the risk of consuming all inodes. Also, the operating system does not handle a large number of inodes very well, even with aggressive caching of file system Step 3 - Design Deep Dive | 267 metadata. For these reasons, storing small objects as individual files does not work well in practice."
+  },
+  {
+   "t": "p",
+   "k": "fef62d215431",
+   "en": "To address these issues, we can merge many small objects into a larger file. It works conceptually like a write-ahead log (WAL). When we save an object, it is appended to an existing read-write file. When the read-write file reaches its capacity threshold (usually set to a few GBs), the read-write file is marked as read-only and a new read-write file is created to receive new objects. Once a file is marked as read-only, it can only serve read requests. Figure 9.12 explains how this process works."
+  },
+  {
+   "t": "p",
+   "k": "ddaabbef24ed",
+   "en": "API Service · object 4 · object 3 · Empty spaces"
+  },
+  {
+   "t": "figure",
+   "k": "630734dee59c",
+   "en": "Figure 9.12: Store multiple small objects in one big file"
+  },
+  {
+   "t": "p",
+   "k": "9eb0ea204ac9",
+   "en": "Note that write access to the read-write file must be serialized. As shown in Figure 9.12, objects are stored in order, one after the other, in the read-write file. To maintain this ondisk layout, multiple cores processing incoming write requests in parallel must take their turns to write to the read-write file. For a modern server with a large number of cores processing many incoming requests in parallel, this seriously restricts write throughput. To fix this, we could provide dedicated read-write files, one for each core processing incoming requests."
+  },
+  {
+   "t": "p",
+   "k": "ff1351a0865b",
+   "en": "Object lookup"
+  },
+  {
+   "t": "p",
+   "k": "00c84d30d143",
+   "en": "With each data file holding many small objects, how does the data node locate an object by UUID? The data node needs the following information:"
+  },
+  {
+   "t": "li",
+   "k": "fbde971b8de2",
+   "en": "The data file that contains the object"
+  },
+  {
+   "t": "li",
+   "k": "2ba52212f0ec",
+   "en": "The starting offset of the object in the data file"
+  },
+  {
+   "t": "li",
+   "k": "ede1a4cfe86a",
+   "en": "The size of the object"
+  },
+  {
+   "t": "p",
+   "k": "2c03b8c0a8f9",
+   "en": "The database schema to support this lookup is shown in Table 9.3."
+  },
+  {
+   "t": "p",
+   "k": "0bb4751f790a",
+   "en": "object _mapping · object_id · file_name · start_offset · object_size"
+  },
+  {
+   "t": "p",
+   "k": "204ef720f3ea",
+   "en": "Table 9.3: Object_mapping table"
+  },
+  {
+   "t": "p",
+   "k": "037bea0d4313",
+   "en": "Field · Description · object_id · UUID of the object · file_name"
+  },
+  {
+   "t": "p",
+   "k": "1f3876675ef8",
+   "en": "The name of the file that contains the object"
+  },
+  {
+   "t": "p",
+   "k": "4f9461590c63",
+   "en": "start_offset"
+  },
+  {
+   "t": "p",
+   "k": "450c52b4e8ea",
+   "en": "Beginning address of the object in the file"
+  },
+  {
+   "t": "p",
+   "k": "910dec44e968",
+   "en": "object_size"
+  },
+  {
+   "t": "p",
+   "k": "8274ee242f28",
+   "en": "The number of bytes in the object"
+  },
+  {
+   "t": "p",
+   "k": "945c8cc28ced",
+   "en": "Table 9.4: Object_mapping fields"
+  },
+  {
+   "t": "p",
+   "k": "dd5253140221",
+   "en": "We considered two options for storing this mapping: a file-based key-value store such as RocksDB [16] or a relational database. RocksDB is based on STable [17], and it is fast for writes but slower for reads. A relational database usually uses a B+ tree [18] based storage engine, and it is fast for reads but slower for writes. As mentioned earlier, the data access pattern is write once and read multiple times. Since a relational database provides better read performance, it is a better choice than RocksDB."
+  },
+  {
+   "t": "p",
+   "k": "ff9ad3d2cf0a",
+   "en": "How should we deploy this relational database? At our scale, the data volume for the mapping table is massive. Deploying a single large cluster to support all data nodes could work, but is difficult to manage. Note that this mapping data is isolated within each data node. There is no need to share this across data nodes. To take advantage of this property, we could simply deploy a simple relational database on each data node. SQLite [19] is a good choice here. It is a file-based relational database with a solid reputation."
+  },
+  {
+   "t": "h3",
+   "k": "202fb128809b",
+   "en": "Updated data persistence flow"
+  },
+  {
+   "t": "p",
+   "k": "ab2c832bacbc",
+   "en": "Since we have made quite a few changes to the data node, let's revisit how to save a new object in the data node (Figure 9.13)."
+  },
+  {
+   "t": "p",
+   "k": "ca1c80428c77",
+   "en": "1. The API service sends a request to save a new object named object 4."
+  },
+  {
+   "t": "p",
+   "k": "ccf1c5c4aeaa",
+   "en": "2. The data node service appends the object named object 4 at the end of the read-write file named / data/c."
+  },
+  {
+   "t": "p",
+   "k": "b036f8c7c1bb",
+   "en": "3. A new record of object 4 is inserted into the object_mapping table."
+  },
+  {
+   "t": "p",
+   "k": "9297aa1ea12f",
+   "en": "4. The data node service returns the UUID to the API service."
+  },
+  {
+   "t": "p",
+   "k": "cbf6d67a75f6",
+   "en": "Step 3 - Design Deep Dive | 269 -K."
+  },
+  {
+   "t": "p",
+   "k": "5b802b95fdb2",
+   "en": "0x232B3"
+  },
+  {
+   "t": "figure",
+   "k": "b786fcf3a286",
+   "en": "Figure 9.13: Updated data persistence flow"
+  },
+  {
+   "t": "p",
+   "k": "c6649247ee71",
+   "en": "Durability"
+  },
+  {
+   "t": "p",
+   "k": "7c12016cf6e4",
+   "en": "Data reliability is extremely important for data storage systems. How can we create a storage system that offers six nines of durability? Each failure case has to be carefully considered and data needs to be properly replicated."
+  },
+  {
+   "t": "h3",
+   "k": "220086ee1115",
+   "en": "Hardware failure and failure domain"
+  },
+  {
+   "t": "p",
+   "k": "f60b5faee2cb",
+   "en": "Hard drive failures are inevitable no matter which media we use. Some storage media may have better durability than others, but we cannot rely on a single hard drive to achieve our durability objective. A proven way to increase durability is to replicate data to multiple hard drives, so a single disk failure does not impact the data availability, as a whole. In our design, we replicate data three times."
+  },
+  {
+   "t": "p",
+   "k": "55ebfa3a5093",
+   "en": "Let's assume the spinning hard drive has an annual failure rate of 0.81% [20]. This"
+  },
+  {
+   "t": "h3",
+   "k": "9ba6b3b154ac",
+   "en": "number highly depends on the model and make. Making 3 copies of data gives us"
+  },
+  {
+   "t": "p",
+   "k": "12a03f22b7d1",
+   "en": "1 - 0.00813 =~ 0.999999 reliability. This is a very rough estimate. For more sophisticated calculations, please read [20]."
+  },
+  {
+   "t": "p",
+   "k": "a5468b473683",
+   "en": "For a complete durability evaluation, we also need to consider the impacts of different failure domains. A failure domain is a physical or logical section of the environment that is negatively affected when a critical service experiences problems. In a modern data center, a server is usually put into a rack [21], and the racks are grouped into rows/floors/rooms. Since each rack shares network switches and power, all the servers in a rack are in a rack-level failure domain. A modern server shares components like the motherboard, processors, power supply, HDD drives, etc. The components in a server are in a node-level failure domain."
+  },
+  {
+   "t": "p",
+   "k": "cf6a76edfa61",
+   "en": "Here is a good example of a large-scale failure domain isolation. Typically, data centers divide infrastructure that shares nothing into different Availability Zones (AZs). We replicate our data to different AZs to minimize the failure impact (Figure 9.14). Note that the choice of failure domain level doesn't directly increase the durability of data, but it will result in better reliability in extreme cases, such as large-scale power outages, cooling system failures, natural disasters, etc."
+  },
+  {
+   "t": "p",
+   "k": "d3162730de06",
+   "en": "AZ 1"
+  },
+  {
+   "t": "p",
+   "k": "62353ffe63a1",
+   "en": "(Independent power and networking)"
+  },
+  {
+   "t": "p",
+   "k": "88463ad47dd8",
+   "en": "Rack 1 · Rack 2 · Node 1 · Node 1 · Node 2 · Node 2 · Replicate · Replicate · AZ 2 · AZ 3"
+  },
+  {
+   "t": "p",
+   "k": "62353ffe63a1",
+   "en": "(Independent power and networking)"
+  },
+  {
+   "t": "p",
+   "k": "62353ffe63a1",
+   "en": "(Independent power and networking)"
+  },
+  {
+   "t": "p",
+   "k": "d231fc10283f",
+   "en": "Rack 2 · Rack 1 · Rack 1 · Rack 2 · Replicate · Node 1 · Node 1 · Node 1 · Node 2 · Node 2 · Node 2 · Node 2"
+  },
+  {
+   "t": "figure",
+   "k": "f04c22c93d8f",
+   "en": "Figure 9.14: Multi-Datacenter replication"
+  },
+  {
+   "t": "p",
+   "k": "bcc411ba5de5",
+   "en": "Erasure coding"
+  },
+  {
+   "t": "p",
+   "k": "06940716233f",
+   "en": "Making three full copies of data gives us roughly 6 nines of data durability. Are there other options to further increase durability? Yes, erasure coding is one option. Erasure coding [22] deals with data durability differently. It chunks data into smaller pieces (placed on different servers) and creates parities for redundancy. In the event of failures, we can use chunk data and parities to reconstruct the data. Let's take a look at a concrete example (4 + 2 erasure coding) as shown in Figure 9.15."
+  },
+  {
+   "t": "p",
+   "k": "5ffe70c04a39",
+   "en": "Step 3 - Design Deep Dive | 271 Data"
+  },
+  {
+   "t": "p",
+   "k": "62061ca30ca1",
+   "en": "Calculate · Data loss due · equal-sized · to node crash · reconstruction · data chunks · d1 · d2 · d2 · X d3 · d3 · d3 · d4 · p1"
+  },
+  {
+   "t": "figure",
+   "k": "243974ef09af",
+   "en": "Figure 9.15: Erasure coding"
+  },
+  {
+   "t": "p",
+   "k": "3170111a0712",
+   "en": "1. Data is broken up into four even-sized data chunks d1, d2, d3, and d4."
+  },
+  {
+   "t": "p",
+   "k": "4c264d4c8c05",
+   "en": "2. The mathematical formula [23] is used to calculate the parities p1 and p2. To give a"
+  },
+  {
+   "t": "h3",
+   "k": "742f9c4558e6",
+   "en": "much simplified example, p1 = d1 +2xd2 - d3 +4xd4 and p2 = -d1 +5xd2 + d3"
+  },
+  {
+   "t": "p",
+   "k": "99c6b96169e7",
+   "en": "3. Data d3 and d4 are lost due to node crashes."
+  },
+  {
+   "t": "p",
+   "k": "8d46de9bf129",
+   "en": "4. The mathematical formula is used to reconstruct lost data d3 and d4, using the known values of d1, d2, p1, and p2."
+  },
+  {
+   "t": "p",
+   "k": "0bddf44ca1fa",
+   "en": "Let's take a look at another example as shown in Figure 9.16 to better understand how erasure coding works with failure domains. An (8 + 4) erasure coding setup breaks up the original data evenly into 8 chunks and calculates 4 parities. All 12 pieces of data have the same size. All 12 chunks of data are distributed across 12 different failure domains. The mathematics behind erasure coding ensures that the original data can be reconstructed when at most 4 nodes are down."
+  },
+  {
+   "t": "p",
+   "k": "0c6ddcdb3d67",
+   "en": "Math Calculation · OD000 · OD · O0000 · Failure Domain · Failure Domain · Failure Doman/ · Failure Domain · 00000 · OФ000 · ОO000 · O0000 · Failure Domain · Failure Domain · Failure Domain · Failure Domain · O0000 · O0000 · 00000 · 00000 · Failure Domain · Failure Domain · Failure Domain · Failure Domain"
+  },
+  {
+   "t": "figure",
+   "k": "fa050535751f",
+   "en": "Figure 9.16: (8 + 4) erasure coding"
+  },
+  {
+   "t": "p",
+   "k": "794618bb61b3",
+   "en": "Compared to replication where the data router only needs to read data for an object from one healthy node, in erasure coding the data router has to read data from at least 8 healthy nodes. This is an architectural design tradeoff. We use a more complex solution with a slower access speed, in exchange for higher durability and lower storage cost. For object storage where the main cost is storage, this tradeoff might be worth it."
+  },
+  {
+   "t": "h3",
+   "k": "24aefb027e59",
+   "en": "How much extra space does erasure coding need? For every two chunks of data, we"
+  },
+  {
+   "t": "p",
+   "k": "11ee5a00e4de",
+   "en": "need one parity block, so the storage overhead is 50% (Figure 9.17). While in 3-copy replication, the storage overhead is 200% (Figure 9.17)."
+  },
+  {
+   "t": "p",
+   "k": "3e82f5d07f58",
+   "en": "Step 3 - Design Deep Dive | 273 3-copy replication"
+  },
+  {
+   "t": "p",
+   "k": "fa7ff4d95d69",
+   "en": "Data is distributed across 3 nodes"
+  },
+  {
+   "t": "p",
+   "k": "704287ffdb2e",
+   "en": "025025 02 025028 008"
+  },
+  {
+   "t": "p",
+   "k": "017f80a0773a",
+   "en": "+ 1"
+  },
+  {
+   "t": "p",
+   "k": "a40838d2f8ec",
+   "en": "Data is distributed across 6 nodes"
+  },
+  {
+   "t": "p",
+   "k": "57dade3d0de7",
+   "en": "Erasure coding (4+2)"
+  },
+  {
+   "t": "figure",
+   "k": "e3bd01c2ff29",
+   "en": "Figure 9.17: Extra space for replication and erasure coding"
+  },
+  {
+   "t": "p",
+   "k": "d5bb45b3ed2b",
+   "en": "Does erasure coding increase data durability? Let's assume a node has a 0.81% annual failure rate. According to the calculation done by Backblaze [20], erasure coding can achieve 11 nines durability. The calculation requires complicated math. If you're interested, refer to [20] for details."
+  },
+  {
+   "t": "p",
+   "k": "5998681a2b88",
+   "en": "Table 9.5 compares the pros and cons of replication and erasure coding."
+  },
+  {
+   "t": "p",
+   "k": "bcc411ba5de5",
+   "en": "Erasure coding"
+  },
+  {
+   "t": "p",
+   "k": "7ddb9625261f",
+   "en": "Replication"
+  },
+  {
+   "t": "p",
+   "k": "694125de92f9",
+   "en": "11 nines of durability (8 + 4 6 nines of durability (data"
+  },
+  {
+   "t": "p",
+   "k": "713ef7676e32",
+   "en": "Durability · erasure coding). Erasure · copied 3 times) · coding wins."
+  },
+  {
+   "t": "p",
+   "k": "65f1e0f19fc5",
+   "en": "50% storage overhead. Erasure Storage"
+  },
+  {
+   "t": "p",
+   "k": "c53d1355231e",
+   "en": "200% storage overhead. · efficiency · coding wins."
+  },
+  {
+   "t": "p",
+   "k": "60a90fdea7d1",
+   "en": "Higher usage of computation No computation. Replication"
+  },
+  {
+   "t": "p",
+   "k": "24989d8ee41c",
+   "en": "Compute"
+  },
+  {
+   "t": "p",
+   "k": "c125f03f640d",
+   "en": "wins."
+  },
+  {
+   "t": "p",
+   "k": "269c8364a1a9",
+   "en": "resources to calculate parities. resource"
+  },
+  {
+   "t": "p",
+   "k": "54d789788a69",
+   "en": "Increased write latency because Replicating data to multiple"
+  },
+  {
+   "t": "p",
+   "k": "e1d0c6c1c29e",
+   "en": "Write"
+  },
+  {
+   "t": "p",
+   "k": "5e5e778c9551",
+   "en": "we need to calculate parities nodes. No calculation is needed."
+  },
+  {
+   "t": "p",
+   "k": "476ee0f6af1d",
+   "en": "performance"
+  },
+  {
+   "t": "p",
+   "k": "d0f6817c35dd",
+   "en": "before data is written to disk. Replication wins."
+  },
+  {
+   "t": "p",
+   "k": "6d8364528634",
+   "en": "In normal operation, every read In normal operation, reads are"
+  },
+  {
+   "t": "p",
+   "k": "2ffc783eaffa",
+   "en": "has to come from multiple · served from the same replica. · Reads under a failure mode are · nodes in the cluster. Reads · Read · not impacted because reads can · performance"
+  },
+  {
+   "t": "p",
+   "k": "a53291760634",
+   "en": "under a failure mode are slower be served from a non-fault"
+  },
+  {
+   "t": "p",
+   "k": "92cc338037eb",
+   "en": "because the missing data must replica. Replication wins."
+  },
+  {
+   "t": "p",
+   "k": "976cbfdee70b",
+   "en": "be reconstructed first."
+  },
+  {
+   "t": "p",
+   "k": "a8e97452d079",
+   "en": "Table 9.5: Replication vs erasure coding"
+  },
+  {
+   "t": "p",
+   "k": "c7a82b8d35eb",
+   "en": "In summary, replication is widely adopted in latency-sensitive applications while erasure coding is often used to minimize storage cost. Erasure coding is attractive for its cost efficiency and durability, but it greatly complicates the data node design. Therefore, for this design, we mainly focus on replication."
+  },
+  {
+   "t": "h3",
+   "k": "96180da286b2",
+   "en": "Correctness verification"
+  },
+  {
+   "t": "p",
+   "k": "d1b559643eae",
+   "en": "Erasure coding increases data durability at comparable storage costs. Now we can move on to solve another hard challenge: data corruption."
+  },
+  {
+   "t": "p",
+   "k": "479b4835a20f",
+   "en": "If a disk fails completely and the failure can be detected, it can be treated as a data node failure. In this case, we can reconstruct data using erasure coding. However, in-memory data corruption is a regular occurrence in large-scale systems."
+  },
+  {
+   "t": "p",
+   "k": "4d20cdfd8ae4",
+   "en": "This problem can be addressed by verifying checksums [25] between process boundaries. A checksum is a small-sized block of data that is used to detect data errors. Figure 9.18 illustrates how the checksum is generated."
+  },
+  {
+   "t": "p",
+   "k": "8b8d45799330",
+   "en": "Data · 0110101010110 · F7 33 51 1B 9D F6 · 1010010101001 · algorithm · 0100100010100"
+  },
+  {
+   "t": "figure",
+   "k": "489213bc7ca8",
+   "en": "Figure 9.18: Generate checksum"
+  },
+  {
+   "t": "p",
+   "k": "bba420b7e66a",
+   "en": "If we know the checksum of the original data, we can compute the checksum of the data after transmission:"
+  },
+  {
+   "t": "li",
+   "k": "0699dd878013",
+   "en": "If they are different, data is corrupted."
+  },
+  {
+   "t": "li",
+   "k": "ab6d71c0d1b9",
+   "en": "If they are the same, there is a very high probability the data is not corrupted. The probability is not 100%, but in practice, we could assume they are the same."
+  },
+  {
+   "t": "p",
+   "k": "19413768a2b2",
+   "en": "Checksum of"
+  },
+  {
+   "t": "li",
+   "k": "e828d73fa23b",
+   "en": "Compare → F7 33 51 1B 9D F6"
+  },
+  {
+   "t": "figure",
+   "k": "89efd3c5bef8",
+   "en": "Figure 9.19: Compare checksums"
+  },
+  {
+   "t": "p",
+   "k": "ca77a09012da",
+   "en": "There are many checksum algorithms, such as MD5 [26], SHA1 [27], HMAC [28], etc. A good checksum algorithm usually outputs a significantly different value even for a small change made to the input. For this chapter, we choose a simple checksum algorithm such as MD5."
+  },
+  {
+   "t": "p",
+   "k": "ec6c2d401022",
+   "en": "In our design, we append the checksum at the end of each object. Before a file is marked as read-only, we add a checksum of the entire file at the end. Figure 9.20 shows the layout."
+  },
+  {
+   "t": "p",
+   "k": "b65fe09dd86f",
+   "en": "Step 3 - Design Deep Dive | 275 Read-write File"
+  },
+  {
+   "t": "p",
+   "k": "25e6598f683a",
+   "en": "Read-only File · object 1 · Checksum · object 2 · Checksum · Checksum · object 3 · object 4 · Checksum · object 5 · Checksum · Empty spaces · Checksum · Checksum · Local File System"
+  },
+  {
+   "t": "figure",
+   "k": "5d41da5d12ab",
+   "en": "Figure 9.20: Add checksum to data node"
+  },
+  {
+   "t": "p",
+   "k": "bdd5f9b354d9",
+   "en": "With (8 + 4) erasure coding and checksum verification, this is what happens when we read data:"
+  },
+  {
+   "t": "p",
+   "k": "9512b3ec93ea",
+   "en": "1. Fetch the object data and the checksum."
+  },
+  {
+   "t": "p",
+   "k": "601114163705",
+   "en": "2. Compute the checksum against the data received."
+  },
+  {
+   "t": "p",
+   "k": "a3c8ce45089a",
+   "en": "(a) If the two checksums match, the data is error-free."
+  },
+  {
+   "t": "p",
+   "k": "c6f935620587",
+   "en": "(b) If the checksums are different, the data is corrupted. We will try to recover by reading the data from other failure domains."
+  },
+  {
+   "t": "p",
+   "k": "d4eecb430acf",
+   "en": "3. Repeat steps 1 and 2 until all 8 pieces of data are returned. We then reconstruct the data and send it back to the client."
+  },
+  {
+   "t": "h2",
+   "k": "66b9f2f6ecdc",
+   "en": "Metadata data model"
+  },
+  {
+   "t": "p",
+   "k": "c03bc5e9574d",
+   "en": "In this section, we first discuss the database schema and then dive into scaling the database."
+  },
+  {
+   "t": "p",
+   "k": "fe7042cb74a5",
+   "en": "Schema"
+  },
+  {
+   "t": "p",
+   "k": "189521095b66",
+   "en": "The database schema needs to support the following 3 queries:"
+  },
+  {
+   "t": "p",
+   "k": "d4a846b34ddb",
+   "en": "Query 1: Find the object ID by object name."
+  },
+  {
+   "t": "p",
+   "k": "f5fdf56e5ed5",
+   "en": "Query 2: Insert and delete an object based on the object name."
+  },
+  {
+   "t": "p",
+   "k": "92d7b5c12cd1",
+   "en": "Query 3: List objects in a bucket sharing the same prefix."
+  },
+  {
+   "t": "figure",
+   "k": "f5c1767b7c11",
+   "en": "Figure 9.21 shows the schema design."
+  },
+  {
+   "t": "p",
+   "k": "4b2419abd457",
+   "en": "We necd two database tables: bucket and object."
+  },
+  {
+   "t": "p",
+   "k": "b4852c44f551",
+   "en": "bucket · object · bucket_name · bucket_name · object_name · bucket_id · object_version · owner_id · object _id · enable_versioning"
+  },
+  {
+   "t": "figure",
+   "k": "c9070b45ad1e",
+   "en": "Figure 9.21: Database tables"
+  },
+  {
+   "t": "p",
+   "k": "cb93c968520a",
+   "en": "Scale the bucket table"
+  },
+  {
+   "t": "p",
+   "k": "4af5bcaf8b22",
+   "en": "Since there is usually a limit on the number of buckets a user can create, the size of the bucket table is small. Let's assume we have 1 million customers, each customer owns 10 buckets and each record takes 1KB. That means we need 10GB (1 million x10 × 1KB) of storage space. The whole table can easily fit in a modern database server. However, a single database server might not have enough CPU or network bandwidth to handle all read requests. If so, we can spread the read load among multiple database replicas."
+  },
+  {
+   "t": "p",
+   "k": "3d337d12dcea",
+   "en": "Scale the object table"
+  },
+  {
+   "t": "p",
+   "k": "41878b77cf8c",
+   "en": "The object table holds the object metadata. The dataset at our design scale will likely not fit in a single database instance. We can scale the object table by sharding."
+  },
+  {
+   "t": "p",
+   "k": "317676ac3336",
+   "en": "One option is to shard by the bucket_id so all the objects under the same bucket are stored in one shard. This doesn't work because it causes hotspot shards as a bucket might contain billions of objects."
+  },
+  {
+   "t": "p",
+   "k": "815bd9eae057",
+   "en": "Another option is to shard by object_id. The benefit of this sharding scheme is that it evenly distributes the load. But we will not be able to execute query 1 and query 2 efficiently because those two queries are based on the URI."
+  },
+  {
+   "t": "p",
+   "k": "92cd29727b43",
+   "en": "We choose to shard by a combination of bucket_name and object_name. This is because most of the metadata operations are based on the object URI, for example, finding the object ID by URI or uploading an object via URI. To evenly distribute the data, we can use the hash of the < bucket_name, object_name> as the sharding key."
+  },
+  {
+   "t": "p",
+   "k": "f9810fb89943",
+   "en": "With this sharding scheme, it is straightforward to support the first two queries, but the last query is less obvious. Let's take a look."
+  },
+  {
+   "t": "h3",
+   "k": "f6fd785d8d58",
+   "en": "Listing objects in a bucket"
+  },
+  {
+   "t": "p",
+   "k": "08bca7212f73",
+   "en": "The object store arranges files in a flat structure instead of a hierarchy, like in a file system. An object can be accessed using a path in this format, s3: //bucket-name/object-name. For example, s3: //mybucket/abc/d/e/f/file.txt contains:"
+  },
+  {
+   "t": "li",
+   "k": "229f03902d08",
+   "en": "Bucket name: mybucket"
+  },
+  {
+   "t": "li",
+   "k": "535867c4e4b3",
+   "en": "Object name: abc/d/e/f/file.txt"
+  },
+  {
+   "t": "p",
+   "k": "07ee88f34dd4",
+   "en": "Step 3 - Design Deep Dive | 277 To help users organize their objects in a bucket, S3 introduces a concept called 'prefixes'. A prefix is a string at the beginning of the object name. S3 uses prefixes to organize the data in a way similar to directories. However, prefixes are not directories. Listing a bucket by prefix limits the results to only those object names that begin with the prefix. In the example above with the path s3://mybucket/abc/d/e/f/file. txt, the prefix is abc/d/e/f/."
+  },
+  {
+   "t": "p",
+   "k": "f75bed5dc8b2",
+   "en": "The AWS S3 listing command has 3 typical uses:"
+  },
+  {
+   "t": "p",
+   "k": "810ede91fd52",
+   "en": "1. List all buckets owned by a user. The command looks like this:"
+  },
+  {
+   "t": "h3",
+   "k": "fc0d93b75590",
+   "en": "aws s3 list-buckets"
+  },
+  {
+   "t": "p",
+   "k": "53bd25d4bbd4",
+   "en": "2. List all objects in a bucket that are at the same level as the specified prefix. The command looks like this:"
+  },
+  {
+   "t": "p",
+   "k": "6c1a31df6085",
+   "en": "aws s3 ls s3:// mybucket/abc /"
+  },
+  {
+   "t": "p",
+   "k": "ab1599dcad23",
+   "en": "In this mode, objects with more slashes in the name after the prefix are rolled up into a common prefix. For example, with these objects in the bucket:"
+  },
+  {
+   "t": "h3",
+   "k": "0382937f0e87",
+   "en": "CA/cities/losangeles.txt"
+  },
+  {
+   "t": "h3",
+   "k": "a60035c41061",
+   "en": "CA/cities/sanfranciso.txt"
+  },
+  {
+   "t": "p",
+   "k": "a220fa9d3a40",
+   "en": "NY/ cities/ny.txt"
+  },
+  {
+   "t": "p",
+   "k": "6407f4fec250",
+   "en": "federal.txt"
+  },
+  {
+   "t": "p",
+   "k": "09b50c89c647",
+   "en": "Listing the bucket with the \"/\" prefix would return these results, with everything under CA/ and NY/ rolled up into them:"
+  },
+  {
+   "t": "p",
+   "k": "f3003f355af7",
+   "en": "CA/ · NY / · federal.txt"
+  },
+  {
+   "t": "p",
+   "k": "65cdb4453227",
+   "en": "3. Recursively list all objects in a bucket that shares the same prefix. The command looks like this:"
+  },
+  {
+   "t": "h3",
+   "k": "f81b2b4f66a5",
+   "en": "aws s3 ls s3:// mybucket/abc/ --recursive"
+  },
+  {
+   "t": "p",
+   "k": "ed132290bd2b",
+   "en": "Using the same example as above, listing the bucket with the CA/ prefix would return these results:"
+  },
+  {
+   "t": "h3",
+   "k": "0382937f0e87",
+   "en": "CA/cities/losangeles.txt"
+  },
+  {
+   "t": "h3",
+   "k": "a60035c41061",
+   "en": "CA/cities/sanfranciso.txt"
+  },
+  {
+   "t": "h3",
+   "k": "3a05e356e2b7",
+   "en": "Single database"
+  },
+  {
+   "t": "p",
+   "k": "8618882af0fc",
+   "en": "Let's first explore how we would support the listing command with a single database. To list all buckets owned by a user, we run the following query:"
+  },
+  {
+   "t": "h3",
+   "k": "2a536c482252",
+   "en": "SELECT * FROM bucket WHERE owner_id={id}"
+  },
+  {
+   "t": "p",
+   "k": "713f0e3e7910",
+   "en": "To list all objects in a bucket that share the same prefix, we run a query like this."
+  },
+  {
+   "t": "h3",
+   "k": "f6098fd41665",
+   "en": "SELECT * FROM object"
+  },
+  {
+   "t": "h3",
+   "k": "e645895abff0",
+   "en": "WHERE bucket_id = \"123\" AND object_name LIKE 'abc/%*"
+  },
+  {
+   "t": "p",
+   "k": "1211248cbf3e",
+   "en": "In this example, we find all objects with bucket_id equals to 123 that share the prefix abc/. Any objects with more slashes in their names after the specified prefix are rolled up in the application code as stated earlier in use case 2."
+  },
+  {
+   "t": "p",
+   "k": "4b4d7365b633",
+   "en": "The same query would support the recursive listing mode, as stated in use case 3 previously. The application code would list every object sharing the same prefix, without performing any rollups."
+  },
+  {
+   "t": "h3",
+   "k": "de86d2ab6dc6",
+   "en": "Distributed databases"
+  },
+  {
+   "t": "p",
+   "k": "a768f8761856",
+   "en": "When the metadata table is sharded, it's difficult to implement the listing function because we don't know which shards contain the data. The most obvious solution is to run a search query on all shards and then aggregate the results. To achieve this, we can do the following:"
+  },
+  {
+   "t": "p",
+   "k": "3169576047ad",
+   "en": "1. The metadata service queries every shard by running the following query:"
+  },
+  {
+   "t": "h3",
+   "k": "f6098fd41665",
+   "en": "SELECT * FROM object"
+  },
+  {
+   "t": "h3",
+   "k": "782417d2496e",
+   "en": "WHERE bucket_id = \"123\" AND object_name LIKE 'a/b/%*"
+  },
+  {
+   "t": "p",
+   "k": "00fb3698fe27",
+   "en": "2. The metadata service aggregates all objects returned from each shard and returns the result to the caller."
+  },
+  {
+   "t": "p",
+   "k": "582b3c20aaa5",
+   "en": "This solution works, but implementing pagination for this is a bit complicated. Before we explain why, let's review how pagination works for a simple case with a single database. To return pages of listing with 10 objects for each page, the SELECT query would start with this:"
+  },
+  {
+   "t": "h3",
+   "k": "f6098fd41665",
+   "en": "SELECT * FROM object"
+  },
+  {
+   "t": "h3",
+   "k": "782417d2496e",
+   "en": "WHERE bucket_id = \"123\" AND object_name LIKE 'a/b/%*"
+  },
+  {
+   "t": "h3",
+   "k": "fe42b00cd3f9",
+   "en": "ORDER BY object_name OFFSET 0 LIMIT 10"
+  },
+  {
+   "t": "p",
+   "k": "79c3a3bfe370",
+   "en": "The OFFSET and LIMIT would restrict the results to the first 10 objects. In the next call, the user sends the request with a hint to the server, so it knows to construct the query for the second page with an OFFSET of 10. This hint is usually done with a cursor that the server returns with each page to the client. The offset information is encoded in the cursor. The client would include the cursor in the request for the next page. The server decodes the cursor and uses the offset information embedded in it to construct the query for the next page. To continue with the example above, the query for the second page looks like this:"
+  },
+  {
+   "t": "h3",
+   "k": "e0307fb388eb",
+   "en": "SELECT * FROM metadata"
+  },
+  {
+   "t": "h3",
+   "k": "d0aacc5f3793",
+   "en": "WHERE bucket_id = \"123\" AND object_name LIKE *a/b/%*"
+  },
+  {
+   "t": "h3",
+   "k": "8badbaf3c68c",
+   "en": "ORDER BY object_name OFFSET 10 LIMIT 10"
+  },
+  {
+   "t": "p",
+   "k": "581cb2f19a8e",
+   "en": "This client-server request loop continues until the server returns a special cursor that marks the end of the entire listing."
+  },
+  {
+   "t": "p",
+   "k": "6a6d0ea1906f",
+   "en": "Now, let's explore why it's complicated to support pagination for sharded databases. Since the objects are distributed across shards, the shards would likely return a varying number of results. Some shards would contain a full page of 10 objects, while others Step 3 - Design Deep Dive | 279 would be partial or empty. The application code would receive results from every shard, aggregate and sort them, and return only a page of 10 in our example. The objects that don't get included in the current round must be considered again for the next round. This means that each shard would likely have a different offset. The server must track the offsets for all the shards and associate those offsets with the cursor. If there are hundreds of shards, there will be hundreds of offsets to track."
+  },
+  {
+   "t": "p",
+   "k": "f4f37600a12d",
+   "en": "We have a solution that can solve the problem, but there are some tradeoffs. Since object storage is tuned for vast scale and high durability, object listing performance is rarely a priority. In fact, all commercial object storage supports object listing with sub-optimal performance. To take advantage of this, we could denormalize the listing data into a separate table sharded by bucket ID. This table is only used for listing objects. With this setup, even buckets with billions of objects would offer acceptable performance. This isolates the listing query to a single database which greatly simplifies the implementation."
+  },
+  {
+   "t": "h3",
+   "k": "a0a5eb465d5d",
+   "en": "Object versioning"
+  },
+  {
+   "t": "p",
+   "k": "ea6cda8505f6",
+   "en": "Versioning is a feature that keeps multiple versions of an object in a bucket. With versioning, we can restore objects that are accidentally deleted or overwritten. For example, we may modify a document and save it under the same name, inside the same bucket. Without versioning, the old version of the document metadata is replaced by the new version in the metadata store. The old version of the document is marked as deleted, so its storage space will be reclaimed by the garbage collector. With versioning, the object storage keeps all previous versions of the document in the metadata store, and the old versions of the document are never marked as deleted in the object store."
+  },
+  {
+   "t": "figure",
+   "k": "dc1c0e5e38ef",
+   "en": "Figure 9.22 explains how to upload a versioned object. For this to work, we first need to"
+  },
+  {
+   "t": "p",
+   "k": "c4d8a2fac13e",
+   "en": "enable versioning on the bucket."
+  },
+  {
+   "t": "p",
+   "k": "99db533ef200",
+   "en": "0 HTTP PUT object · Secondary Storage · Service · Load balancer · Storage Node Primary Identity · Storage · Upload · API Service · object · Service · Storage Node Identity Service · Check: · © Create object · 1. Object exists? · metadata"
+  },
+  {
+   "t": "p",
+   "k": "94e619a2f298",
+   "en": "Secondary 2. Versioning enabled?"
+  },
+  {
+   "t": "p",
+   "k": "d58524e1c95d",
+   "en": "Storage · Service · Storage Node Metadata Service · Data Store · Metadata DB · Metadata Store"
+  },
+  {
+   "t": "figure",
+   "k": "d984a02212b3",
+   "en": "Figure 9.22: Object versioning"
+  },
+  {
+   "t": "p",
+   "k": "7706ddc168a6",
+   "en": "1. The client sends an HTTP PUT request to upload an object named script. txt."
+  },
+  {
+   "t": "p",
+   "k": "1719c25373e0",
+   "en": "2. The API service verifies the user's identity and ensures that the user has WRITE permission on the bucket."
+  },
+  {
+   "t": "p",
+   "k": "90ecf7db968d",
+   "en": "3. Once verified, the API service uploads the data to the data store. The data store persists the data as a new object and returns a new UUID to the API service."
+  },
+  {
+   "t": "p",
+   "k": "7220c1d6aa63",
+   "en": "4. The API service calls the metadata store to store the metadata information of this object."
+  },
+  {
+   "t": "p",
+   "k": "7e8d5821f8d9",
+   "en": "5. To support versioning, the object table for the metadata store has a column called object_version that is only used if versioning is enabled. Instead of overwriting the existing record, a new record is inserted with the same bucket_id and object_name as the old record, but with a new object_id and object_version. The object_id is the UUID for the new object returned in step 3. The object_version is a TIMEUUID [29] generated when the new row is inserted. No matter which database we choose for the metadata store, it should be efficient to look up the current version of an object. The current version has the largest TIMEUUID of all the entries with the same object_name. See Figure 9.23 for an illustration of how we store versioned metadata. Step 3 - Design Deep Dive | 281 Metadata Store"
+  },
+  {
+   "t": "p",
+   "k": "ca58e1127f73",
+   "en": "Data Store · object_version = fas3 · object_name=script.txt · Previous · current · object_id=0xM13n · object_id=0xM13n H · version · object_version = bn31 · object_name=script.txt · object_id=0x12Ha · object_id=0x12Ha - · object_name=script.txt · object_version = 1ag1- · object_id=0x91b4 - · object_id=0x91b4"
+  },
+  {
+   "t": "figure",
+   "k": "9be50ea3914e",
+   "en": "Figure 9.23: Versioned metadata"
+  },
+  {
+   "t": "p",
+   "k": "714e88457217",
+   "en": "In addition to uploading a versioned object, it can also be deleted. Let's take a look. When we delete an object, all versions remain in the bucket and we insert a delete marker, as shown in Figure 9.24."
+  },
+  {
+   "t": "p",
+   "k": "8b63a0d802ca",
+   "en": "Metadata Store · object_name=script.txt · Previous · Delete Marker · current · version · Data Store · object_name=script.txt · object_id=0xM13n · object_id=0xM13n · object_name=script.txt · object_id=0x12Ha · object_id=0x12Ha · object_name=script.txt · object_id=0x91b4 · object_id=0x91b4"
+  },
+  {
+   "t": "figure",
+   "k": "d02a0b8bab1b",
+   "en": "Figure 9.24: Delete object by inserting a delete marker"
+  },
+  {
+   "t": "p",
+   "k": "bfb75831d6a8",
+   "en": "A delete marker is a new version of the object, and it becomes the current version of the object once inserted. Performing a GET request when the current version of the object is a delete marker returns a 404 Object Not Found error."
+  },
+  {
+   "t": "h3",
+   "k": "6edbbeb5c6c8",
+   "en": "Optimizing uploads of large files"
+  },
+  {
+   "t": "p",
+   "k": "af16b696b80f",
+   "en": "In the back-of-the-envelope estimation, we estimated that 20% of the objects are large. Some might be larger than a few GBs. It is possible to upload such a large object file directly, but it could take a long time. If the network connection fails in the middle of the upload, we have to start over. A better solution is to slice a large object into smaller parts and upload them independently. After all the parts are uploaded, the object store re-assembles the object from the parts. This process is called multipart upload."
+  },
+  {
+   "t": "figure",
+   "k": "e44b7873719a",
+   "en": "Figure 9.25 illustrates how multipart upload works:"
+  },
+  {
+   "t": "p",
+   "k": "c7ce180f4917",
+   "en": "Data Store · Multipart upload initiation · @uploadID · _ Part 1 · I 1 uploadID · A- ETag 1 · _ Part 2 · Multipart · Uploac · [ ] uploadID · ETag 2 · [ ] uploadID · ETag 8 · uploadID · Part 1 → ETag 1 · Multipart · 5 upload · Part 2— ETag 2 · Completion · completion · Part 8→* ETag 8 · @Success"
+  },
+  {
+   "t": "figure",
+   "k": "bd297ea97770",
+   "en": "Figure 9.25: Multipart upload"
+  },
+  {
+   "t": "p",
+   "k": "a258397ef3e4",
+   "en": "1. The client calls the object storage to initiate a multipart upload."
+  },
+  {
+   "t": "p",
+   "k": "2a403fac648f",
+   "en": "2. The data store returns an uploadID, which uniquely identifies the upload."
+  },
+  {
+   "t": "p",
+   "k": "09b5946bddf5",
+   "en": "3. The client splits the large file into small objects and starts uploading. Let's assume the size of the file is 1.6GB and the client splits it into 8 parts, so each part is 200MB in size. The client uploads the first part to the data store together with the uploadID it received in step 2."
+  },
+  {
+   "t": "p",
+   "k": "496939e6c858",
+   "en": "4. When a part is uploaded, the data store returns an ETag, which is essentially the mds checksum of that part. It is used to verify multipart uploads."
+  },
+  {
+   "t": "p",
+   "k": "2bc9d3c90ded",
+   "en": "5. After all parts are uploaded, the client sends a complete multipart upload request, which includes the uploadID, part numbers, and ETags."
+  },
+  {
+   "t": "p",
+   "k": "60933947c83a",
+   "en": "6. The data store reassembles the object from its parts based on the part number. Since Step 3 - Design Deep Dive | 283 the object is really large, this process may take a few minutes. After reassembly is complete, it returns a success message to the client."
+  },
+  {
+   "t": "p",
+   "k": "ddc5a5f9295d",
+   "en": "One potential problem with this approach is that old parts are no longer useful after the object has been reassembled from them. To solve this problem, we can introduce a garbage collection service responsible for freeing up space from parts that are no longer needed."
+  },
+  {
+   "t": "h3",
+   "k": "0724ff6cafe6",
+   "en": "Garbage collection"
+  },
+  {
+   "t": "p",
+   "k": "6eea36ff3ad6",
+   "en": "Garbage collection is the process of automatically reclaiming storage space that is no longer used. There are a few ways that data might become garbage:"
+  },
+  {
+   "t": "li",
+   "k": "a1172ca98913",
+   "en": "Lazy object deletion. An object is marked as deleted at delete time without actually being deleted."
+  },
+  {
+   "t": "li",
+   "k": "f75896abad07",
+   "en": "Orphan data. For example, half uploaded data or abandoned multipart uploads. • Corrupted data. Data that failed the checksum verification."
+  },
+  {
+   "t": "p",
+   "k": "caa8395330f6",
+   "en": "The garbage collector does not remove objects from the data store, right away. Deleted objects will be periodically cleaned up with a compaction mechanism."
+  },
+  {
+   "t": "p",
+   "k": "8cf6baf05a5d",
+   "en": "The garbage collector is also responsible for reclaiming unused space in replicas. For replication, we delete the object from both primary and backup nodes. For erasure coding, if we use (8 + 4) setup, we delete the object from all 12 nodes."
+  },
+  {
+   "t": "figure",
+   "k": "1dc755cb0616",
+   "en": "Figure 9.26 shows an example of how compaction works."
+  },
+  {
+   "t": "p",
+   "k": "583738893332",
+   "en": "1. The garbage collector copies objects from /data/b to a new file named / data/d. Note the garbage collector skips \"Object 2\" and \"Object 5\" because the delete flag is set to true for both of them."
+  },
+  {
+   "t": "p",
+   "k": "da40080d5747",
+   "en": "2. After all objects are copied, the garbage collector updates the object_mapping table. For example, the obj_id and object_size fields of \"Object 3\" remain the same, but file_name and start_offset are updated to reflect its new location. To ensure data consistency, it's a good idea to wrap the update operations to file_name and start_offset in a database transaction."
+  },
+  {
+   "t": "p",
+   "k": "eb5db7f225f3",
+   "en": "object_mapping table · object_mapping table · obj_id · file_name · offset · obj_size · offset · file_name · obj_size · obj_id · object 3 · /data/b · 0x232B3 · /data/d · Ox10013 · object 3 · /data/b · /data/d · Object 3 · Object 2 · Object 3 · Object 5 · Read-only File · Read-only File · Before Compaction · After Compaction"
+  },
+  {
+   "t": "figure",
+   "k": "477fa5a84957",
+   "en": "Figure 9.26: Compaction"
+  },
+  {
+   "t": "p",
+   "k": "6aa5ba752152",
+   "en": "As we can see from Figure 9.26, the size of the new file after compaction is smaller than the old file. To avoid creating a lot of small files, the garbage collector usually waits until there are a large number of read-only files to compact, and the compaction process appends objects from many read-only files into a few large new files."
+  },
+  {
+   "t": "h2",
+   "k": "02a33876c958",
+   "en": "Step 4 - Wrap Up"
+  },
+  {
+   "t": "p",
+   "k": "9546b90ec2ab",
+   "en": "In this chapter, we described the high-level design for S3-like object storage. We compared the differences between block storage, file storage, and object storage."
+  },
+  {
+   "t": "p",
+   "k": "e180c7e1da3f",
+   "en": "The focus of this interview is on the design of object storage, so we listed how the uploading, downloading, listing objects in a bucket, and versioning of objects are typically done in object storage."
+  },
+  {
+   "t": "p",
+   "k": "bc36dbabd412",
+   "en": "Then we dived deeper into the design. Object storage is composed of a data store and a metadata store. We explained how the data is persisted into the data store and discussed two methods for increasing reliability and durability: replication and erasure coding. For the metadata store, we explained how the multipart upload is executed and how to design the database schema to support typical use cases. Lastly, we explained how to shard the Step 4 - Wrap Up | 285"
+  },
+  {
+   "t": "h2",
+   "k": "5d59149869b8",
+   "en": "Reference Material"
+  },
+  {
+   "t": "p",
+   "k": "5d405dcc6b85",
+   "en": "[1] Fibre channel. https://en.wikipedia.org/wiki/Fibre_Channel."
+  },
+  {
+   "t": "p",
+   "k": "cbb93ccdcf0c",
+   "en": "[2] iSCSI. https://en.wikipedia.org/wiki/ISCSI."
+  },
+  {
+   "t": "p",
+   "k": "696c154cc5fe",
+   "en": "[3] Server Message Block. https://en.wikipedia.org/wiki/Server_Message_Block."
+  },
+  {
+   "t": "p",
+   "k": "9dc510847f4a",
+   "en": "[4] Network File System. https://en.wikipedia.org/wiki/Network_File_System."
+  },
+  {
+   "t": "p",
+   "k": "e031b871abb2",
+   "en": "[5] Amazon S3 Strong Consistency. https://aws.amazon.com/s3/consistency/"
+  },
+  {
+   "t": "p",
+   "k": "45ff52593b9e",
+   "en": "ISCSI."
+  },
+  {
+   "t": "p",
+   "k": "2d12089f0b06",
+   "en": "[6] Serial Attached SCSI. https://en.wikipedia.org/wiki/Serial_Attached_"
+  },
+  {
+   "t": "p",
+   "k": "f83737f95df5",
+   "en": "[7] AWS CLI ls command. https://docs.aws.amazon.com/cli/latest/reference/s3/ls.html. [8] Amazon S3 Service Level Agreement. https://aws.amazon.com/s3/sla/."
+  },
+  {
+   "t": "p",
+   "k": "0381bfbd7d23",
+   "en": "[9] Ambry. LinkedIn'sScalableGeo-DistributedObjectStore:https://assured-cloud-co mputing.illinois.edu/files/2014/03/Ambry-LinkedIns-Scalable-GeoDistributed-Obj ect-Store.pdf."
+  },
+  {
+   "t": "p",
+   "k": "b82ca04cf9eb",
+   "en": "[10] inode. https://en.wikipedia.org/wiki/Inode."
+  },
+  {
+   "t": "p",
+   "k": "83fe851e64a3",
+   "en": "[11] Ceph's Rados Gateway. https://docs.ceph.com/en/pacific/radosgw/index.html. [12] grpc. https://grpc.io/."
+  },
+  {
+   "t": "p",
+   "k": "22def3cba5b3",
+   "en": "[13] Paxos. https://en.wikipedia.org/wiki/Paxos_(computer_science)."
+  },
+  {
+   "t": "p",
+   "k": "0019072e0d06",
+   "en": "[14] Raft. https://raft.github.io/."
+  },
+  {
+   "t": "p",
+   "k": "667e3f1f5eea",
+   "en": "[15] Consistent hashing. https://www.toptal.com/big-data/consistent-hashing."
+  },
+  {
+   "t": "p",
+   "k": "a9b942cd1f5e",
+   "en": "[16] RocksDB. https://github.com/facebook/rocksdb."
+  },
+  {
+   "t": "p",
+   "k": "269a48738149",
+   "en": "[17] STable. https://www.igvita.com/2012/02/06/sstable-and-log-structured-storage-1 eveldb/."
+  },
+  {
+   "t": "p",
+   "k": "302dd9f531b0",
+   "en": "[18] B+ tree. https://en.wikipedia.org/wiki/B%2B_tree."
+  },
+  {
+   "t": "p",
+   "k": "238796d5b067",
+   "en": "[19] SQLite. https://www.sqlite.org/index.html."
+  },
+  {
+   "t": "p",
+   "k": "3e06e84b3a15",
+   "en": "[20] Data Durability Calculation. https://www.backblaze.com/blog/cloud-storage-dur ability/."
+  },
+  {
+   "t": "p",
+   "k": "c51a686c2d8a",
+   "en": "[21] Rack. https://en.wikipedia.org/wiki/19-inch_rack."
+  },
+  {
+   "t": "p",
+   "k": "a1930d62e448",
+   "en": "[22] Erasure Coding. https://en.wikipedia.org/wiki/Erasure_code."
+  },
+  {
+   "t": "p",
+   "k": "96c50aa1de97",
+   "en": "[23] Reed-Solomon error correction. https://en.wikipedia.org/wiki/Reed%E2%80%93Sol"
+  },
+  {
+   "t": "h3",
+   "k": "59bd89d02a33",
+   "en": "omon_error_correction."
+  },
+  {
+   "t": "h3",
+   "k": "11d8138705eb",
+   "en": "[24] Erasure Coding Demystified. https://www.youtube.com/watch?v=Q5kVuM7zEUI."
+  },
+  {
+   "t": "p",
+   "k": "b312edadb1ee",
+   "en": "[25] Checksum. https://en.wikipedia.org/wiki/Checksum."
+  },
+  {
+   "t": "p",
+   "k": "1876758cb9db",
+   "en": "Reference Material | 287 [26] Md5. https://en.wikipedia.org/wiki/MD5."
+  },
+  {
+   "t": "p",
+   "k": "309418d769b2",
+   "en": "[27] Shal. https://en.wikipedia.org/wiki/SHA-1."
+  },
+  {
+   "t": "h3",
+   "k": "4ff50752804a",
+   "en": "[28] Hmac. https://en.wikipedia.org/wiki/HMAC."
+  },
+  {
+   "t": "p",
+   "k": "c7a4b88dbe0a",
+   "en": "[29] TIMEUUID. https://docs.datastax.com/en/cql-oss/3.3/cql/cql_reference/timeuuid_f unctions_r.html."
+  }
+ ]
+}

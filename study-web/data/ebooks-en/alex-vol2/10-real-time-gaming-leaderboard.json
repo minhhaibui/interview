@@ -1,0 +1,1788 @@
+{
+ "id": "10-real-time-gaming-leaderboard",
+ "title": "Real-time Gaming Leaderboard",
+ "titleKey": "3a2cb05334bf",
+ "book": "alex-vol2",
+ "blocks": [
+  {
+   "t": "p",
+   "k": "e8c4b25ec2e5",
+   "en": "In this chapter, we are going to walk through the challenge of designing a leaderboard for an online mobile game."
+  },
+  {
+   "t": "p",
+   "k": "08b9ec0967f6",
+   "en": "What is a leaderboard? Leaderboards are common in gaming and elsewhere to show who is leading a particular tournament or competition. Users are assigned points for completing tasks or challenges, and whoever has the most points is at the top of the leaderboard."
+  },
+  {
+   "t": "figure",
+   "k": "7380b8811bf3",
+   "en": "Figure 10.1 shows an example of a mobile game leaderboard. The leaderboard shows the"
+  },
+  {
+   "t": "p",
+   "k": "95bd32884aca",
+   "en": "ranking of the leading competitors and also displays the position of the user on it."
+  },
+  {
+   "t": "p",
+   "k": "c002cee2bea1",
+   "en": "Rank · Player · Points · Aquaboys · B team · Berlin's Angels · GrendelTeam"
+  },
+  {
+   "t": "figure",
+   "k": "d5a8d29b6633",
+   "en": "Figure 10.1: Leaderboard"
+  },
+  {
+   "t": "h2",
+   "k": "cdb2072eee15",
+   "en": "Step 1 - Understand the Problem and Establish Design Scope"
+  },
+  {
+   "t": "p",
+   "k": "7cb43f15a57b",
+   "en": "Leaderboards can be pretty straightforward, but there are a number of different matters that can add complexity. We should clarify the requirements."
+  },
+  {
+   "t": "p",
+   "k": "a7a5ee6a80ce",
+   "en": "Candidate: How is the score calculated for the leaderboard?"
+  },
+  {
+   "t": "p",
+   "k": "6c33a1a8fb21",
+   "en": "Interviewer: The user gets a point when they win a match. We can go with a simple point system in which each user has a score associated with them. Each time the user wins a match, we should add a point to their total score."
+  },
+  {
+   "t": "p",
+   "k": "7bb7c392dc36",
+   "en": "Candidate: Are all players included in the leaderboard?"
+  },
+  {
+   "t": "p",
+   "k": "42d377006239",
+   "en": "Interviewer: Yes."
+  },
+  {
+   "t": "p",
+   "k": "308b9a461a1e",
+   "en": "Candidate: Is there a time segment associated with the leaderboard?"
+  },
+  {
+   "t": "p",
+   "k": "3849335ca94c",
+   "en": "Interviewer: Each month, a new tournament kicks off which starts a new leaderboard."
+  },
+  {
+   "t": "p",
+   "k": "ce9c2967175e",
+   "en": "Candidate: Can we assume we only care about the top 10 users?"
+  },
+  {
+   "t": "p",
+   "k": "6cf9b9492bd7",
+   "en": "Interviewer: We want to display the top 10 users as well as the position of a specific user on the leaderboard. If time allows, let's also discuss how to return users who are four places above and below a specific user."
+  },
+  {
+   "t": "h3",
+   "k": "edd49f039832",
+   "en": "Candidate: How many users are in a tournament?"
+  },
+  {
+   "t": "p",
+   "k": "46320da86ac9",
+   "en": "Interviewer: Average of 5 million daily active users (DAU) and 25 million monthly active users (MAU)."
+  },
+  {
+   "t": "h3",
+   "k": "c56cddd9e281",
+   "en": "Candidate: How many matches are played on average during a tournament?"
+  },
+  {
+   "t": "p",
+   "k": "30bb36202e90",
+   "en": "Interviewer: Each player plays 10 matches per day on average."
+  },
+  {
+   "t": "p",
+   "k": "211584fa3f22",
+   "en": "Candidate: How do we determine the rank if two players have the same score?"
+  },
+  {
+   "t": "p",
+   "k": "e402c57bad24",
+   "en": "Interviewer: In this case, their ranks are the same. If time allows, we can talk about ways to break ties."
+  },
+  {
+   "t": "p",
+   "k": "31ad61a87408",
+   "en": "Candidate: Does the leaderboard need to be real-time?"
+  },
+  {
+   "t": "p",
+   "k": "6786b08a7981",
+   "en": "Interviewer: Yes, we want to present real-time results, or as close as possible. It is not okay to present a batched history of results."
+  },
+  {
+   "t": "p",
+   "k": "847043406513",
+   "en": "Now that we've gathered all the requirements, let's list the functional requirements."
+  },
+  {
+   "t": "li",
+   "k": "9f9a8d478952",
+   "en": "Display top 10 players on the leaderboard."
+  },
+  {
+   "t": "li",
+   "k": "781312a4aa00",
+   "en": "Show a user's specific rank."
+  },
+  {
+   "t": "li",
+   "k": "1fb91af7408e",
+   "en": "Display players who are four places above and below the desired user (bonus)."
+  },
+  {
+   "t": "p",
+   "k": "ea8aa2707012",
+   "en": "Other than clarifying functional requirements, it's important to understand nonfunctional requirements."
+  },
+  {
+   "t": "h3",
+   "k": "8f1fef20459a",
+   "en": "Non-functional requirements"
+  },
+  {
+   "t": "li",
+   "k": "0d1389bb226d",
+   "en": "Real-time update on scores."
+  },
+  {
+   "t": "li",
+   "k": "360500d45bf1",
+   "en": "Score update is reflected on the leaderboard in real-time."
+  },
+  {
+   "t": "li",
+   "k": "4076fdc523f8",
+   "en": "General scalability, availability, and reliability requirements."
+  },
+  {
+   "t": "h2",
+   "k": "758a31cef712",
+   "en": "Back-of-the-envelope estimation"
+  },
+  {
+   "t": "p",
+   "k": "0c2c7a6b0bd6",
+   "en": "Let's take a look at some back-of-the-envelope calculations to determine the potential scale and challenges our solution will need to address."
+  },
+  {
+   "t": "p",
+   "k": "23d9341bc96e",
+   "en": "With 5 million DAU, if the game had an even distribution of players during a 24-hour eriod, we would have an average of 50 users per second 5,000,000 DAU"
+  },
+  {
+   "t": "p",
+   "k": "776406bc1ebb",
+   "en": "0° seconds =~ 50). How ever, we know that usages most likely aren't evenly distributed, and potentially there are peaks during evenings when many people across different time zones have time to play. To account for this, we could assume that peak load would be 5 times the average. Therefore we'd want to allow for a peak load of 250 users per second."
+  },
+  {
+   "t": "p",
+   "k": "770174a73d46",
+   "en": "QPS for users scoring a point: if a user plays 10 games per day on average, the QPS for"
+  },
+  {
+   "t": "h3",
+   "k": "5cc3f537ccd4",
+   "en": "users scoring a point is: 50 x 10 =~ 500. Peak QPS is 5x of the average: 500 × 5 ="
+  },
+  {
+   "t": "p",
+   "k": "a94786edb370",
+   "en": "2,500."
+  },
+  {
+   "t": "p",
+   "k": "49f1dfc53653",
+   "en": "QPS for fetching the top 10 leaderboard: assume a user opens the game once a day and the top 10 leaderboard is loaded only when a user first opens the game. The QPS for this is around 50."
+  },
+  {
+   "t": "h2",
+   "k": "21ec56b45561",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in"
+  },
+  {
+   "t": "p",
+   "k": "c271efa28a88",
+   "en": "In this section, we will discuss API design, high-level architecture, and data models."
+  },
+  {
+   "t": "p",
+   "k": "58dbf879b581",
+   "en": "API design"
+  },
+  {
+   "t": "p",
+   "k": "8f8da0cd04ea",
+   "en": "At a high level, we need the following three APIs:"
+  },
+  {
+   "t": "h3",
+   "k": "6fcd3a518adb",
+   "en": "POST /v1/scores"
+  },
+  {
+   "t": "p",
+   "k": "5de95a8e66a8",
+   "en": "Update a user's position on the leaderboard when a user wins a game. The request parameters are listed below. This should be an internal API that can only be called by the game servers. The client should not be able to update the leaderboard score directly."
+  },
+  {
+   "t": "p",
+   "k": "2da0b68df884",
+   "en": "Field"
+  },
+  {
+   "t": "p",
+   "k": "cb329146a0dd",
+   "en": "Description"
+  },
+  {
+   "t": "h3",
+   "k": "a69c556dceac",
+   "en": "The user who wins a game."
+  },
+  {
+   "t": "p",
+   "k": "cace4a159ff9",
+   "en": "user_id"
+  },
+  {
+   "t": "h3",
+   "k": "ff28e0e77fc4",
+   "en": "The number of points a user gained by winning a game."
+  },
+  {
+   "t": "p",
+   "k": "ff570f28aa07",
+   "en": "points · Table 10.1: Request parameters · Response: · Name · 200 0K"
+  },
+  {
+   "t": "p",
+   "k": "d18957745ed8",
+   "en": "Successfully updated a user's score."
+  },
+  {
+   "t": "h3",
+   "k": "b2ccbc7e78f1",
+   "en": "400 Bad Request"
+  },
+  {
+   "t": "p",
+   "k": "890c2d9fff98",
+   "en": "Failed to update a user's score."
+  },
+  {
+   "t": "p",
+   "k": "5abae167f155",
+   "en": "Table 10.2: Response"
+  },
+  {
+   "t": "p",
+   "k": "1c5fda58b80b",
+   "en": "GET /v1/scores"
+  },
+  {
+   "t": "p",
+   "k": "bace6f65e00c",
+   "en": "Fetch the top 10 players from the leaderboard."
+  },
+  {
+   "t": "p",
+   "k": "ebf7fd0a9edb",
+   "en": "Sample response:"
+  },
+  {
+   "t": "p",
+   "k": "8ed7d71e46a5",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 291 \"data\": ["
+  },
+  {
+   "t": "h3",
+   "k": "10ee5f655854",
+   "en": "\"user_id\": \"user_id1\""
+  },
+  {
+   "t": "h3",
+   "k": "90f0e7d0e7bb",
+   "en": "\"user_name\": \"alice\""
+  },
+  {
+   "t": "p",
+   "k": "16cfd2aad9e9",
+   "en": "\"rank\": 1,"
+  },
+  {
+   "t": "p",
+   "k": "cdebfd33d5fe",
+   "en": "\"score\": 976"
+  },
+  {
+   "t": "h3",
+   "k": "e408fd39920b",
+   "en": "\"user_id\": \"user_id2\","
+  },
+  {
+   "t": "p",
+   "k": "2b6b13402d85",
+   "en": "\"score\": 965"
+  },
+  {
+   "t": "p",
+   "k": "ec2709b6717f",
+   "en": "\"total\": 10"
+  },
+  {
+   "t": "h3",
+   "k": "13bf98e60d20",
+   "en": "GET /v1/scores/{:user_id}"
+  },
+  {
+   "t": "p",
+   "k": "7676edbd76b7",
+   "en": "Fetch the rank of a specific user."
+  },
+  {
+   "t": "p",
+   "k": "cb329146a0dd",
+   "en": "Description"
+  },
+  {
+   "t": "p",
+   "k": "2da0b68df884",
+   "en": "Field"
+  },
+  {
+   "t": "p",
+   "k": "7a18e216cdf9",
+   "en": "The ID of the user whose rank we would like to fetch."
+  },
+  {
+   "t": "p",
+   "k": "593413b76ec6",
+   "en": "user_id · Table 10.3: Request parameters · Sample response: · \"user_info\": · \"user_id\": · \"user 5\" · \"score\": 940, · \"rank\": 6,"
+  },
+  {
+   "t": "h3",
+   "k": "9bae1a294f20",
+   "en": "High-level architecture"
+  },
+  {
+   "t": "p",
+   "k": "caf4e56f7ed4",
+   "en": "The high-level design diagram is shown in Figure 10.2. There are two services in this design. The game service allows users to play the game and the leaderboard service creates and displays a leaderboard."
+  },
+  {
+   "t": "p",
+   "k": "e7131b2df39b",
+   "en": "4 a. Get leaderboar · 1 Win a game · b. Get player_ran · Game · 2 Update score - · Leaderboard · service · service · 3 Update score · Leaderboard · Store"
+  },
+  {
+   "t": "figure",
+   "k": "72eedccf6a9c",
+   "en": "Figure 10.2: High-level design"
+  },
+  {
+   "t": "p",
+   "k": "095d096727b0",
+   "en": "1. When a player wins a game, the client sends a request to the game service."
+  },
+  {
+   "t": "p",
+   "k": "d6ec921a2462",
+   "en": "2. The game service ensures the win is valid and calls the leaderboard service to update the score."
+  },
+  {
+   "t": "p",
+   "k": "46570a37f640",
+   "en": "3. The leaderboard service updates the user's score in the leaderboard store."
+  },
+  {
+   "t": "p",
+   "k": "2f9cbe0b693e",
+   "en": "4. A player makes a call to the leaderboard service directly to fetch leaderboard data, including:"
+  },
+  {
+   "t": "p",
+   "k": "a8775bf98add",
+   "en": "(a) top 10 leaderboard."
+  },
+  {
+   "t": "p",
+   "k": "1155863167d3",
+   "en": "(b) the rank of the player on the leaderboard."
+  },
+  {
+   "t": "p",
+   "k": "ba6bba9ede42",
+   "en": "Before settling on this design, we considered a few alternatives and decided against them. It might be helpful to go through the thought process of this and to compare different options."
+  },
+  {
+   "t": "p",
+   "k": "0bd4f1c7de2c",
+   "en": "Should the client talk to the leaderboard service directly?"
+  },
+  {
+   "t": "p",
+   "k": "7ca9d8b0c477",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 293 Current Option"
+  },
+  {
+   "t": "p",
+   "k": "758faf9f6459",
+   "en": "Alternative Option · Set score · 1 Win a game · 2 Update score · service · 2 Update score · Leaderboard · Leaderboard · service · service"
+  },
+  {
+   "t": "figure",
+   "k": "f3e5d92b3a8d",
+   "en": "Figure 10.3: Who sets the leaderboard score"
+  },
+  {
+   "t": "p",
+   "k": "abe291b5adac",
+   "en": "In the alternative design, the score is set by the client. This option is not secure because it is subject to man-in-the-middle attack [1], where players can put in a proxy and change scores at will. Therefore, we need the score to be set on the server-side."
+  },
+  {
+   "t": "p",
+   "k": "7347e0092eef",
+   "en": "Note that for server authoritative games such as online poker, the client may not need to call the game server explicitly to set scores. The game server handles all game logic, and it knows when the game finishes and could set the score without any client intervention."
+  },
+  {
+   "t": "h3",
+   "k": "36bf402e1e68",
+   "en": "Do we need a message queue between the game service and the leaderboard ser-"
+  },
+  {
+   "t": "p",
+   "k": "c1ca4ea705cc",
+   "en": "vice?"
+  },
+  {
+   "t": "p",
+   "k": "7f3b6756d774",
+   "en": "The answer to this question highly depends on how the game scores are used. If the data is used in other places or supports multiple functionalities, then it might make sense to put data in Kafka as shown in Figure 10.4. This way, the same data can be consumed by multiple consumers, such as leaderboard service, analytics service, push notification service, etc. This is especially true when the game is a turn-based or multi-player game in which we need to notify other players about the score update. As this is not an explicit requirement based on the conversation with the interviewer, we do not use a message queue in our design."
+  },
+  {
+   "t": "p",
+   "k": "5f323a87dea7",
+   "en": "Leaderboard · service · Game · Analytic · Kafka ( E · service · service · Push Notification · service"
+  },
+  {
+   "t": "figure",
+   "k": "25438df2d40a",
+   "en": "Figure 10.4: Game scores are used by multiple services"
+  },
+  {
+   "t": "h2",
+   "k": "1a3c91c12238",
+   "en": "Data models"
+  },
+  {
+   "t": "p",
+   "k": "ed76c05dd408",
+   "en": "One of the key components in the system is the leaderboard store. We will discuss three potential solutions: relational database, Redis, and NoSQL (NoSQL solution is explained in deep dive section on page 309)."
+  },
+  {
+   "t": "h3",
+   "k": "7f783b2a232c",
+   "en": "Relational database solution"
+  },
+  {
+   "t": "p",
+   "k": "b68a1e2c1d79",
+   "en": "First, let's take a step back and start with the simplest solution. What if the scale doesn't matter and we have only a few users?"
+  },
+  {
+   "t": "p",
+   "k": "5dbd4b620683",
+   "en": "We would most likely opt to have a simple leaderboard solution using a relational database system (RDS). Each monthly leaderboard could be represented as a database table containing user id and score columns. When the user wins a match, either award the user 1 point if they are new, or increase their existing score by 1 point. To determine a user's ranking on the leaderboard, we would sort the table by the score in descending order. The details are explained below."
+  },
+  {
+   "t": "p",
+   "k": "b304b469342c",
+   "en": "Leaderboard DB table: · leaderboard · user_id · varchar · int · score"
+  },
+  {
+   "t": "figure",
+   "k": "3c53f755abc7",
+   "en": "Figure 10.5: Leaderboard table"
+  },
+  {
+   "t": "p",
+   "k": "6dc321475b6b",
+   "en": "In reality, the leaderboard table has additional information, such as a game_id, a timestamp, etc. However, the underlying logic of how to query and update the leaderboard remains the same. For simplicity, we assume only the current month's leaderboard data is stored in the leaderboard table."
+  },
+  {
+   "t": "p",
+   "k": "94df02f0e272",
+   "en": "A user wins a point: · Leaderboard · Insert or update DB · service"
+  },
+  {
+   "t": "figure",
+   "k": "2564216a5153",
+   "en": "Figure 10.6: A user wins a point"
+  },
+  {
+   "t": "p",
+   "k": "3ee04b34a198",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 295 Assume every score update would be an increment of 1. If a user doesn't yet have an entry in the leaderboard for the month, the first insert would be:"
+  },
+  {
+   "t": "h3",
+   "k": "57f3cf8559fe",
+   "en": "INSERT INTO leaderboard (user_id, score) VALUES ('mary1934'"
+  },
+  {
+   "t": "p",
+   "k": "23db19f6a3d7",
+   "en": "An update to the user's score would be:"
+  },
+  {
+   "t": "h3",
+   "k": "316ed91264b0",
+   "en": "UPDATE leaderboard set score=score + 1 where user_id='mary1934';"
+  },
+  {
+   "t": "p",
+   "k": "69bc127a4a90",
+   "en": "Find a user's leaderboard position:"
+  },
+  {
+   "t": "p",
+   "k": "248e440716a0",
+   "en": "Leaderboard · Fetch from DB, sorted by rank · service"
+  },
+  {
+   "t": "figure",
+   "k": "ec824542782e",
+   "en": "Figure 10.7: Find a user's leaderboard position"
+  },
+  {
+   "t": "p",
+   "k": "de2a5cbc256e",
+   "en": "To fetch the user rank, we would sort the leaderboard table and rank by the score:"
+  },
+  {
+   "t": "h3",
+   "k": "70e1b94f9ce8",
+   "en": "SELECT (@rownum:= @rownum + 1) AS"
+  },
+  {
+   "t": "p",
+   "k": "70b06ccebe11",
+   "en": "rank, user_id, score"
+  },
+  {
+   "t": "h3",
+   "k": "53d46ddbf403",
+   "en": "FROM leaderboard"
+  },
+  {
+   "t": "h3",
+   "k": "6c268bece19f",
+   "en": "ORDER BY score DESC;"
+  },
+  {
+   "t": "p",
+   "k": "f97719f2dba1",
+   "en": "The result of the SQL query looks like this:"
+  },
+  {
+   "t": "p",
+   "k": "e4fdaa73dd1e",
+   "en": "user _id · score · happy_tomato · mary 1934"
+  },
+  {
+   "t": "p",
+   "k": "d6f3f9b56c0e",
+   "en": "Table 10.4: Result sorted by score"
+  },
+  {
+   "t": "p",
+   "k": "747414a68f52",
+   "en": "This solution works when the data set is small, but the query becomes very slow when there are millions of rows. Let's take a look at why."
+  },
+  {
+   "t": "p",
+   "k": "108e07f76889",
+   "en": "To figure out the rank of a user, we need to sort every single player into their correct spot on the leaderboard so we can determine exactly what the correct rank is. Remember that there can be duplicate scores as well, so the rank isn't just the position of the user in the list."
+  },
+  {
+   "t": "p",
+   "k": "e6851aaf326e",
+   "en": "SQL databases are not performant when we have to process large amounts of continuously changing information. Attempting to do a rank operation over millions of rows is going to take 10s of seconds, which is not acceptable for the desired real-time approach. Since the data is constantly changing, it is also not feasible to consider a cache."
+  },
+  {
+   "t": "p",
+   "k": "dd9f9413f368",
+   "en": "A relational database is not designed to handle the high load of read queries this implementation would require. An RDS could be used successfully if done as a batch operation, but that would not align with the requirement to return a real-time position for the user on the leaderboard."
+  },
+  {
+   "t": "p",
+   "k": "e263df5feece",
+   "en": "One optimization we can do is to add an index and limit the number of pages to scan with the LIMIT clause. The query looks like this:"
+  },
+  {
+   "t": "h3",
+   "k": "62bc1feec517",
+   "en": "SELECT (@rownum:= @rownum + 1) AS rank"
+  },
+  {
+   "t": "p",
+   "k": "89388b150d8a",
+   "en": ", user_id,"
+  },
+  {
+   "t": "h3",
+   "k": "53d46ddbf403",
+   "en": "FROM leaderboard"
+  },
+  {
+   "t": "h3",
+   "k": "1970387ad9d3",
+   "en": "ORDER BY score DESC"
+  },
+  {
+   "t": "p",
+   "k": "11a5ac487233",
+   "en": "LIMIT 10"
+  },
+  {
+   "t": "p",
+   "k": "1738033ffa41",
+   "en": "However, this approach doesn't scale well. First, finding a user's rank is not performant because it essentially requires a table scan to determine the rank. Second, this approach doesn't provide a straightforward solution for determining the rank of a user who is not at the top of the leaderboard."
+  },
+  {
+   "t": "p",
+   "k": "7af776ce726b",
+   "en": "Redis solution"
+  },
+  {
+   "t": "p",
+   "k": "557c6e20c02d",
+   "en": "We want to find a solution that gives us predictable performance even for millions of users and allows us to have easy access to common leaderboard operations, without needing to fall back on complex DB queries."
+  },
+  {
+   "t": "p",
+   "k": "0d134998b34b",
+   "en": "Redis provides a potential solution to our problem. Redis is an in-memory data store supporting key-value pairs. Since it works in memory, it allows for fast reads and writes. Redis has a specific data type called sorted sets that are ideal for solving leaderboard system design problems."
+  },
+  {
+   "t": "h3",
+   "k": "175be239fb9d",
+   "en": "What are sorted sets?"
+  },
+  {
+   "t": "p",
+   "k": "ff6a292dbbb9",
+   "en": "A sorted set is a data type similar to a set. Each member of a sorted set is associated with a score. The members of a set must be unique, but scores may repeat. The score is used to rank the sorted set in ascending order."
+  },
+  {
+   "t": "p",
+   "k": "f4a92812c5b2",
+   "en": "Our leaderboard use case maps perfectly to sorted sets. Internally, a sorted set is implemented by two data structures: a hash table and a skip list [2]. The hash table maps users to scores and the skip list maps scores to users. In sorted sets, users are sorted by scores. A good way to understand a sorted set is to picture it as a table with score and member columns as shown in Figure 10.8. The table is sorted by score in descending order."
+  },
+  {
+   "t": "p",
+   "k": "43234f0450df",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 297 score"
+  },
+  {
+   "t": "p",
+   "k": "3ce7ce28780e",
+   "en": "user10 · user20 · user105 · user45 · leaderboard_feb_2021 · user7 · user101 · user9 · user302 · user200 · user309"
+  },
+  {
+   "t": "figure",
+   "k": "08be8d50f7a1",
+   "en": "Figure 10.8: February leaderboard is represented by the sorted set"
+  },
+  {
+   "t": "p",
+   "k": "c51f83ae9004",
+   "en": "In this chapter, we don't go into the full detail of the sorted set implementation, but we do go over the high-level ideas."
+  },
+  {
+   "t": "p",
+   "k": "28622fce6b82",
+   "en": "A skip list is a list structure that allows for fast search. It consists of a base sorted linked list and multi-level indexes. Let's take a look at an example. In Figure 10.9, the base list is a sorted singly-linked list. The time complexity of insertion, removal, and search operations is O(n)."
+  },
+  {
+   "t": "p",
+   "k": "8e34122d7d2c",
+   "en": "How can we make those operations faster? One idea is to get to the middle quickly, as the binary search algorithm does. To achieve that, we add a level 1 index that skips every other node, and then a level 2 index that skips every other node of the level 1 indexes. We keep introducing additional levels, with each new level skipping every other nodes of the previous level. We stop this addition when the distance between nodes is ½ - 1, where n is the total number of nodes. As shown in Figure 10.9, searching for number 45 is a lot faster when we have multi-level indexes."
+  },
+  {
+   "t": "h2",
+   "k": "6cc81757cd03",
+   "en": "+ 4+8+10+157=26-=36-*"
+  },
+  {
+   "t": "p",
+   "k": "b2e6c86ecaf6",
+   "en": "60 · Level 1 index · Level 2 index · 36 - · 60 · Level 1 index · 15 · + 36 - 45 - 60 - 68"
+  },
+  {
+   "t": "figure",
+   "k": "0d008daa0945",
+   "en": "Figure 10.9: Skip list"
+  },
+  {
+   "t": "p",
+   "k": "b82877325c8d",
+   "en": "When the data set is small, the speed improvement using the skip list isn't obvious. Figure 10.10 shows an example of a skip list with 5 levels of indexes. In the base linked list, it needs to travel 62 nodes to reach the correct node. In the skip list, it only needs to traverse 11 nodes [3]."
+  },
+  {
+   "t": "h2",
+   "k": "4621d4223f8f",
+   "en": "00000000000090000900000000000000000000000000000000000000"
+  },
+  {
+   "t": "figure",
+   "k": "b1b48ede6a88",
+   "en": "Figure 10.10: Skip list with 5 levels of indexes"
+  },
+  {
+   "t": "p",
+   "k": "b5bf2d753c32",
+   "en": "Sorted sets are more performant than a relational database because each element is automatically positioned in the right order during insert or update, as well as the fact that the complexity of an add or find operation in a sorted set is logarithmic: O(log (n))."
+  },
+  {
+   "t": "p",
+   "k": "a0af6b926a3a",
+   "en": "In contrast, to calculate the rank of a specific user in a relational database, we need to run nested queries:"
+  },
+  {
+   "t": "p",
+   "k": "379685eb6c83",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 299"
+  },
+  {
+   "t": "h3",
+   "k": "a5f880c7c36a",
+   "en": "SELECT *, (SELECT COUNT (*) FROM leaderboard 1b2"
+  },
+  {
+   "t": "p",
+   "k": "763f5d738724",
+   "en": "WHERE 1b2. score ›= lb1. score) RANK"
+  },
+  {
+   "t": "h3",
+   "k": "a2018fde7394",
+   "en": "FROM leaderboard 1b1"
+  },
+  {
+   "t": "h3",
+   "k": "9ab6e08760eb",
+   "en": "WHERE 1b1.user_id = {:user_id};"
+  },
+  {
+   "t": "h3",
+   "k": "db0408fc8824",
+   "en": "Implementation using Redis sorted sets"
+  },
+  {
+   "t": "p",
+   "k": "28ebfc3dc40c",
+   "en": "Now that we know sorted sets are fast, let's take a look at the Redis operations we will use to build our leaderboard [4] [5] [6] [7]:"
+  },
+  {
+   "t": "li",
+   "k": "35682a1f2119",
+   "en": "ZADD: insert the user into the set if they don't yet exist. Otherwise, update the score for the user. It takes O(log(n.)) to execute."
+  },
+  {
+   "t": "li",
+   "k": "e5961e1a3e18",
+   "en": "ZINCRBY: increment the score of the user by the specified increment. If the user doesn't exist in the set, then it assumes the score starts at 0. It takes O(log(n)) to execute."
+  },
+  {
+   "t": "li",
+   "k": "fe90585f80e1",
+   "en": "ZRANGE/ZREVRANGE: fetch a range of users sorted by the score. We can specify the order (range vs. revrange), the number of entries, and the position to start from. This takes O(log(n) + m.) to execute, where m is the number of entries to fetch (which is usually small in our case), and n is the number of entries in the sorted set."
+  },
+  {
+   "t": "li",
+   "k": "19b04544f049",
+   "en": "ZRANK/ZREVRANK: fetch the position of any user sorting in ascending/descending order in logarithmic time."
+  },
+  {
+   "t": "h3",
+   "k": "66d71563b468",
+   "en": "Workflow with sorted sets"
+  },
+  {
+   "t": "p",
+   "k": "1bd7b50a4944",
+   "en": "1. A user scores a point · Leaderboard · ZINCRBY - · service"
+  },
+  {
+   "t": "figure",
+   "k": "4cdfa72c4c47",
+   "en": "Figure 10.11: A user scores a point"
+  },
+  {
+   "t": "p",
+   "k": "eed34c646741",
+   "en": "Every month we create a new leaderboard sorted set and the previous ones are moved to historical data storage. When a user wins a match, they score 1 point; so we call ZINCRBY to increment the user's score by 1 in that month's leaderboard, or add the user to the leaderboard set if they weren't already there. The syntax for ZINCRBY is:"
+  },
+  {
+   "t": "p",
+   "k": "23db2ba0a19f",
+   "en": "ZINCRBY"
+  },
+  {
+   "t": "h3",
+   "k": "3870b2c976b2",
+   "en": "‹key> < increment>"
+  },
+  {
+   "t": "p",
+   "k": "2262634a3df3",
+   "en": "The following command adds a point to user mary 1934 after they win a match."
+  },
+  {
+   "t": "h3",
+   "k": "bb6b474f34f5",
+   "en": "ZINCRBY leaderboard_feb_2021 1 'mary1934'"
+  },
+  {
+   "t": "p",
+   "k": "f23884c34aa4",
+   "en": "2. A user fetches the top 10 global leaderboard"
+  },
+  {
+   "t": "p",
+   "k": "b86b63902c3a",
+   "en": "Leaderboard · ZREVERANGE · service"
+  },
+  {
+   "t": "figure",
+   "k": "d46e8a6bd147",
+   "en": "Figure 10.12: Fetch top 10 global leaderboard"
+  },
+  {
+   "t": "p",
+   "k": "e7c2405237ae",
+   "en": "We will call ZREVRANGE to obtain the members in descending order because we want the highest scores, and pass the WITHSCORES attribute to ensure that it also returns the total score for each user, as well as the set of users with the highest scores. The following command fetches the top 10 players on the Feb-2021 leaderboard."
+  },
+  {
+   "t": "h3",
+   "k": "56871e141b8a",
+   "en": "ZREVRANGE leaderboard_feb_2021 0 9 WITHSCORES"
+  },
+  {
+   "t": "p",
+   "k": "56cb0fbe5b29",
+   "en": "This returns a list like this:"
+  },
+  {
+   "t": "p",
+   "k": "ac01fb14119c",
+   "en": "[(user2, score2), (user, scorel), (user5, score5)...]"
+  },
+  {
+   "t": "p",
+   "k": "03ea088f436c",
+   "en": "3. A user wants to fetch their leaderboard position"
+  },
+  {
+   "t": "p",
+   "k": "1ae5a95b756d",
+   "en": "Leaderboard · ZREVERANK · service"
+  },
+  {
+   "t": "figure",
+   "k": "8981d7d7764e",
+   "en": "Figure 10.13: Fetch a user's leaderboard position"
+  },
+  {
+   "t": "p",
+   "k": "17acd5087207",
+   "en": "To fetch the position of a user in the leaderboard, we will call ZREVRANK to retrieve their rank on the leaderboard. Again, we call the rev version of the command because we want to rank scores from high to low."
+  },
+  {
+   "t": "h3",
+   "k": "e69358cb5cd3",
+   "en": "ZREVRANK leaderboard_feb_2021"
+  },
+  {
+   "t": "p",
+   "k": "c61806d868a6",
+   "en": "4. Fetch the relative position in the leaderboard for a user. An example is shown in Figure 10.14."
+  },
+  {
+   "t": "p",
+   "k": "3ad106212ac8",
+   "en": "Step 2 - Propose High-level Design and Get Buy-in | 301 Points"
+  },
+  {
+   "t": "p",
+   "k": "0b1a52e52946",
+   "en": "Player · Rank · Aquaboys · B team · Berlin's Angels · GrendelTeam · Mallow007 · Woo78 · milan~114 · Mailso_91_"
+  },
+  {
+   "t": "figure",
+   "k": "b34f93fd5e7a",
+   "en": "Figure 10.14: Fetch 4 players above and below"
+  },
+  {
+   "t": "p",
+   "k": "d355e774479a",
+   "en": "While not an explicit requirement, we can easily fetch the relative position for a user by leveraging ZREVRANGE with the number of results above and below the desired player. For example, if user Mallow007's rank is 361 and we want to fetch 4 players above and below"
+  },
+  {
+   "t": "h3",
+   "k": "575e56bf60c3",
+   "en": "them, we would run the following command"
+  },
+  {
+   "t": "h3",
+   "k": "130513716305",
+   "en": "ZREVRANGE leaderboard_feb_2021 357 365"
+  },
+  {
+   "t": "h3",
+   "k": "f55c321789d4",
+   "en": "Storage requirement"
+  },
+  {
+   "t": "p",
+   "k": "a4652a4d9c3b",
+   "en": "At a minimum, we need to store the user id and score. The worst-case scenario is that all 25 million monthly active users have won at least one game, and they all have entries in the leaderboard for the month. Assuming the id is a 24-character string and the score is a 16-bit integer (or 2 bytes), we need 26 bytes of storage per leaderboard entry. Given the worst-case scenario of one leaderboard entry per MAU, we would need 26 bytes x25 million = 650 million bytes or ~ 650MB for leaderboard storage in the Redis cache. Even if we double the memory usage to account for the overhead of the skip list and the hash for the sorted set, one modern Redis server is more than enough to hold the data. Another related factor to consider is CPU and I/O usage. Our peak QPS from the backof-the-envelope estimation is 2500 updates/sec. This is well within the performance envelope of a single Redis server."
+  },
+  {
+   "t": "p",
+   "k": "62e08093f0a3",
+   "en": "One concern about the Redis cache is persistence, as a Redis node might fail. Luckily, Redis does support persistence, but restarting a large Redis instance from disk is slow. Usually, Redis is configured with a read replica, and when the main instance fails, the read replica is promoted, and a new read replica is attached."
+  },
+  {
+   "t": "p",
+   "k": "2d87becc596a",
+   "en": "Besides, we need to have 2 supporting tables (user and point) in a relational database like My SQL. The user table would store the user ID and user's display name (in a real-world application, this would contain a lot more data). The point table would contain the user id, score, and timestamp when they won a game. This can be leveraged for other game functions such as play history, and can also be used to recreate the Redis leaderboard in the event of an infrastructure failure."
+  },
+  {
+   "t": "p",
+   "k": "68ea889143dc",
+   "en": "As a small performance optimization, it may make sense to create an additional cache of the user details, potentially for the top 10 players since they are retrieved most frequently. However, this doesn't amount to a large amount of data."
+  },
+  {
+   "t": "h2",
+   "k": "5008c4b3d7bc",
+   "en": "Step 3 - Design Deep Dive"
+  },
+  {
+   "t": "p",
+   "k": "3a0f7d923634",
+   "en": "Now that we've discussed the high-level design, let's dive into the following:"
+  },
+  {
+   "t": "li",
+   "k": "2658ba8f0f93",
+   "en": "Whether or not to use a cloud provider"
+  },
+  {
+   "t": "li",
+   "k": "05716daadc37",
+   "en": "Manage our own services"
+  },
+  {
+   "t": "li",
+   "k": "4e084a657e19",
+   "en": "Leverage cloud service providers like Amazon Web Services (AWS)"
+  },
+  {
+   "t": "p",
+   "k": "991ee2466e54",
+   "en": "Scaling Redis · Alternative solution: NoSQL · Other considerations"
+  },
+  {
+   "t": "h3",
+   "k": "1ccb09fd58e3",
+   "en": "To use a cloud provider or not"
+  },
+  {
+   "t": "p",
+   "k": "bff2806ec2b4",
+   "en": "Depending on the existing infrastructure, we generally have two options for deploying our solution. Let's take a look at each of them."
+  },
+  {
+   "t": "h3",
+   "k": "05716daadc37",
+   "en": "Manage our own services"
+  },
+  {
+   "t": "p",
+   "k": "ce3f430f7cc3",
+   "en": "In this approach, we will create a leaderboard sorted set each month to store the leaderboard data for that period. The sorted set stores member and score information. The rest of the details about the user, such as their name and profile image, are stored in MySQL databases. When fetching the leaderboard, besides the leaderboard data, API servers also query the database to fetch corresponding users' names and profile images to display or the leaderboard. If this becomes too inefficient in the long term, we can leverage a user profile cache to store users' details for the top 10 players. The design is shown in Figure 10.15."
+  },
+  {
+   "t": "p",
+   "k": "45bf172cbb89",
+   "en": "Step 3 - Design Deep Dive | 303 Leaderboard"
+  },
+  {
+   "t": "p",
+   "k": "99db59354a5c",
+   "en": "Sorted set · User Points · servers · Load balancer · User profile cache"
+  },
+  {
+   "t": "figure",
+   "k": "ea74f4d109d3",
+   "en": "Figure 10.15: Manage our own services"
+  },
+  {
+   "t": "h3",
+   "k": "9628ff24d625",
+   "en": "Build on the cloud"
+  },
+  {
+   "t": "p",
+   "k": "538fcd50836b",
+   "en": "The second approach is to leverage cloud infrastructures. In this section, we assume our existing infrastructure is built on AWS and that it's a natural fit to build the leaderboard on the cloud. We will use two major AWS technologies in this design: Amazon API"
+  },
+  {
+   "t": "h3",
+   "k": "b506af3b4717",
+   "en": "Gateway and AWS Lambda function [8]. The Amazon API gateway provides a way to"
+  },
+  {
+   "t": "p",
+   "k": "932cce5a731e",
+   "en": "define the HTTP endpoints of a RESTful API and connect it to any backend services. We use it to connect to our AWS lambda functions. The mapping between Restful APIs and Lambda functions is shown in Table 10.5."
+  },
+  {
+   "t": "p",
+   "k": "3ac2e114a324",
+   "en": "APIs · Lambda function · GET /v1/scores · LeaderboardFetchTop10 · GET /v1/scores/ {:user_ids · LeaderboardFetchPlayerRank"
+  },
+  {
+   "t": "h3",
+   "k": "6fcd3a518adb",
+   "en": "POST /v1/scores"
+  },
+  {
+   "t": "p",
+   "k": "e976b8652868",
+   "en": "LeaderboardUpdateScore"
+  },
+  {
+   "t": "p",
+   "k": "c98f71a988d3",
+   "en": "Table 10.5: Lambda functions"
+  },
+  {
+   "t": "p",
+   "k": "e5adb457f53d",
+   "en": "AWS Lambda is one of the most popular serverless computing platforms. It allows us to run code without having to provision or manage the servers ourselves. It runs only when needed and will scale automatically based on traffic. Serverless is one of the hottest topics in cloud services and is supported by all major cloud service providers. For example, Google Cloud has Google Cloud Functions [9] and Microsoft has named its offering Microsoft Azure Functions [10]."
+  },
+  {
+   "t": "p",
+   "k": "95113b66b64d",
+   "en": "At a high level, our game calls the Amazon API Gateway, which in turn invokes the appropriate lambda functions. We will use AWS Lambda functions to invoke the appropriate commands on the storage layer (both Redis and MySQL), return the results back to the API Gateway, and then to the application."
+  },
+  {
+   "t": "p",
+   "k": "fc1ef31cc0ea",
+   "en": "We can leverage Lambda functions to perform the queries we need without having to spin up a server instance. AWS provides support for Redis clients that can be called from the Lambda functions. This also allows for auto-scaling as needed with DAU growth. Design diagrams for a user scoring a point and retrieving the leaderboard are shown below:"
+  },
+  {
+   "t": "p",
+   "k": "4fde47bd6af8",
+   "en": "Use case 1: scoring a point · Leaderboard Call ZINCRBY · Leaderboard · Win game · service · API Gateway · Lambda · Point table"
+  },
+  {
+   "t": "figure",
+   "k": "03688e22892d",
+   "en": "Figure 10.16: Score a point"
+  },
+  {
+   "t": "p",
+   "k": "29062de6f085",
+   "en": "Use case 2: retrieving leaderboard"
+  },
+  {
+   "t": "p",
+   "k": "0b46a9ed4f51",
+   "en": "Leaderboard · Call ZREVRANGE · Leaderboard · aderooan · ® Fetch · AWS · API Gateway · Lambda"
+  },
+  {
+   "t": "figure",
+   "k": "cc103ef7bf82",
+   "en": "Figure 10.17: Retrieve leaderboard"
+  },
+  {
+   "t": "p",
+   "k": "2852dfae2681",
+   "en": "Lambdas are great because they are a serverless approach, and the infrastructure will take care of auto-scaling the function as needed. This means we don't need to manage the scaling and environment setup and maintenance. Given this, we recommend going with a serverless approach if we build the game from the ground up."
+  },
+  {
+   "t": "p",
+   "k": "c8585ef9eb2b",
+   "en": "Scaling Redis"
+  },
+  {
+   "t": "p",
+   "k": "00d6cd593943",
+   "en": "With 5 million DAU, we can get away with one Redis cache from both a storage and QPS perspective. However, let's imagine we have 500 million DAU, which is 100 times our original scale. Now our worst-case scenario for the size of the leaderboard goes up"
+  },
+  {
+   "t": "h3",
+   "k": "ad0889fc813e",
+   "en": "to 65GB (650MB x 100), and our QPS goes up to 250,000 (2,500 × 100) queries per"
+  },
+  {
+   "t": "p",
+   "k": "142bf83b63f8",
+   "en": "second. This calls for a sharding solution."
+  },
+  {
+   "t": "p",
+   "k": "833a856b700e",
+   "en": "Data sharding"
+  },
+  {
+   "t": "p",
+   "k": "a047acefadee",
+   "en": "We consider sharding in one of the following two ways: fixed or hash partitions."
+  },
+  {
+   "t": "p",
+   "k": "d24b242920d7",
+   "en": "Fixed partition"
+  },
+  {
+   "t": "p",
+   "k": "727333a0d465",
+   "en": "One way to understand fixed partitions is to look at the overall range of points on the leaderboard. Let's say that the number of points won in one month ranges from 1 to 1000, and we break up the data by range. For example, we could have 10 shards and each shard would have a range of 100 scores (For example, 1 ~ 100, 101 ~ 200, 201 ~ 300,...) as shown in Figure 10.18."
+  },
+  {
+   "t": "p",
+   "k": "df02e0295150",
+   "en": "Step 3 - Design Deep Dive | 305 [201, 300]"
+  },
+  {
+   "t": "p",
+   "k": "f78cbdc412d6",
+   "en": "[101, 200) · [1, 100] · Sorted set Sorted set · Sorted set · Sorted set"
+  },
+  {
+   "t": "figure",
+   "k": "301d920d31db",
+   "en": "Figure 10.18: Fixed partition"
+  },
+  {
+   "t": "p",
+   "k": "89d96aff982a",
+   "en": "For this to work, we want to ensure there is an even distribution of scores across the leaderboard. Otherwise, we need to adjust the score range in each shard to make sure of a relatively even distribution. In this approach, we shard the data ourselves in the application code."
+  },
+  {
+   "t": "p",
+   "k": "d9eafc08b8bb",
+   "en": "When we are inserting or updating the score for a user, we need to know which shard they are in. We could do this by calculating the user's current score from the MySQL database. This can work, but a more performant option is to create a secondary cache to store the mapping from user ID to score. We need to be careful when a user increases their score and moves between shards. In this case, we need to remove the user from their current shard and move them to the new shard."
+  },
+  {
+   "t": "p",
+   "k": "6fdf0c492e9d",
+   "en": "To fetch the top 10 players in the leaderboard, we would fetch the top 10 players from the shard (sorted set) with the highest scores. In Figure 10.18, the last shard with scores [901, 1000] contains the top 10 players."
+  },
+  {
+   "t": "p",
+   "k": "264477d41f98",
+   "en": "To fetch the rank of a user, we would need to calculate the rank within their current shard (local rank), as well as the total number of players with higher scores in all of the shards. Note that the total number of players in a shard can be retrieved by running the info keyspace command in O [1] [11]."
+  },
+  {
+   "t": "p",
+   "k": "90e8fb1d9ccf",
+   "en": "Hash partition"
+  },
+  {
+   "t": "p",
+   "k": "a42fa82b2ad0",
+   "en": "A second approach is to use the Redis cluster, which is desirable if the scores are very clustered or clumped. Redis cluster provides a way to shard data automatically across multiple Redis nodes. It doesn't use consistent hashing but a different form of sharding, where every key is part of a hash slot. There are 16384 hash slots [12] and we can compute the hash slot of a given key by doing CRC16 (key) %16384 [13]. This allows us to add and remove nodes in the cluster easily without redistributing all the keys. In Figure 10.19, we have 3 nodes, where:"
+  },
+  {
+   "t": "li",
+   "k": "490423d23eaa",
+   "en": "The first node contains hash slots [0, 5500)."
+  },
+  {
+   "t": "li",
+   "k": "280a49191c4d",
+   "en": "The second node contains hash slots [5501, 11000]."
+  },
+  {
+   "t": "li",
+   "k": "05ae6e4c4af9",
+   "en": "The third node contains hash slots (11001, 16383]."
+  },
+  {
+   "t": "p",
+   "k": "2226e17195d4",
+   "en": "Client · Proxy · Slot - CRC16(key) % 16384 · Slot: [6501, 11000) · Slot: (11001, 16383] · Primary · Primary · : Primary · Replica · Replica · Replica · Replica · Replica · Replica · Shard 1 · Shard 2 · Shard 2 · Slot: [11001, 16383) · Redis Cluster"
+  },
+  {
+   "t": "figure",
+   "k": "567f17adecc9",
+   "en": "Figure 10.19: Hash partition"
+  },
+  {
+   "t": "p",
+   "k": "06137899e092",
+   "en": "An update would simply change the score of the user in the corresponding shard (determined by CRC16(key) %16384). Retrieving the top 10 players on the leaderboard is more complicated. We need to gather the top 10 players from each shard and have the application sort the data. A concrete example is shown in Figure 10.20. Those queries can be parallelized to reduce latency."
+  },
+  {
+   "t": "p",
+   "k": "b6435ba34f65",
+   "en": "Step 3 - Design Deep Dive | 307 member"
+  },
+  {
+   "t": "p",
+   "k": "3d979b30c3f6",
+   "en": "score · user10 · user7 · user 101 · user 109 · top 10 · score · user10 · shard 1 (top 10) · user20 · member · score · user105 · user20 · user45 · scatter-gather · user9 · user7 · user200 · user 101 · user309 · userg · user302 · user200 · user309 · shard 2 (top 10) · member · score · user 105 · user45 · user302 · user5"
+  },
+  {
+   "t": "figure",
+   "k": "c879d7ef59c3",
+   "en": "Figure 10.20: Scatter-gather"
+  },
+  {
+   "t": "p",
+   "k": "fa071d404838",
+   "en": "This approach has a few limitations:"
+  },
+  {
+   "t": "li",
+   "k": "007e01e4b3a7",
+   "en": "When we need to return top k results (where k is a very large number) on the leaderboard, the latency is high because a lot of entries are returned from each shard and need to be sorted"
+  },
+  {
+   "t": "li",
+   "k": "ad52ecee4e9a",
+   "en": "Latency is high if we have lots of partitions because the query has to wait for the slowest partition."
+  },
+  {
+   "t": "li",
+   "k": "c6b0b9141b80",
+   "en": "Another issue with this approach is that it doesn't provide a straightforward solution for determining the rank of a specific user."
+  },
+  {
+   "t": "p",
+   "k": "efeb3102bf12",
+   "en": "Therefore, we lean towards the first proposal: fixed partition."
+  },
+  {
+   "t": "h3",
+   "k": "021e24eac362",
+   "en": "Sizing a Redis node"
+  },
+  {
+   "t": "p",
+   "k": "0f74c5478f08",
+   "en": "There are multiple things to consider when sizing the Redis nodes [14]. Write-heavy applications require much more available memory, since we need to be able to accommodate all of the writes to create the snapshot in case of a failure. To be safe, allocate twice the amount of memory for write-heavy applications."
+  },
+  {
+   "t": "p",
+   "k": "fcb1e5b49022",
+   "en": "Redis provides a tool called Redis-benchmark that allows us to benchmark the performance of the Redis setup, by simulating multiple clients executing multiple queries and returning the number of requests per second for the given hardware. To learn more about Redis-benchmark, see [15]."
+  },
+  {
+   "t": "h3",
+   "k": "0c03ab0af9fa",
+   "en": "Alternative solution: NoSQL"
+  },
+  {
+   "t": "p",
+   "k": "2b8cb5eae00f",
+   "en": "An alternative solution to consider is NoSQL databases. What kind of NoSQL should we use? Ideally, we want to choose a NoSQL that has the following properties:"
+  },
+  {
+   "t": "li",
+   "k": "d5e2b13cc9f8",
+   "en": "Optimized for writes."
+  },
+  {
+   "t": "li",
+   "k": "e1e3a109f6f0",
+   "en": "Efficiently sort items within the same partition by score."
+  },
+  {
+   "t": "h3",
+   "k": "c94584e546ee",
+   "en": "NoSQL databases such as Amazon's DynamoDB [16], Cassandra, or MongoDB can be"
+  },
+  {
+   "t": "p",
+   "k": "6431a00ad135",
+   "en": "a good fit. In this chapter, we use DynamoDB as an example. DynamoDB is a fully managed NoSQL database that offers reliable performance and great scalability. To allow efficient access to data with attributes other than the primary key, we can leverage global secondary indexes [17] in DynamoDB. A global secondary index contains a selection of attributes from the parent table, but they are organized using a different primary key. Let's take a look at an example."
+  },
+  {
+   "t": "p",
+   "k": "a42b2c2b96ce",
+   "en": "The updated system diagram is shown in Figure 10.21. Redis and MySQL are replaced with DynamoDB."
+  },
+  {
+   "t": "p",
+   "k": "4db13a97b1f5",
+   "en": "Leaderboard · AWS · API Gateway · Lambda · DynamoDB"
+  },
+  {
+   "t": "figure",
+   "k": "be1b73f86423",
+   "en": "Figure 10.21: DynamoDB solution"
+  },
+  {
+   "t": "p",
+   "k": "25ef04362b86",
+   "en": "Assume we design the leaderboard for a chess game and our initial table is shown in"
+  },
+  {
+   "t": "figure",
+   "k": "0b6f9ca33c85",
+   "en": "Figure 10.22. It is a denormalized view of the leaderboard and user tables and contains"
+  },
+  {
+   "t": "p",
+   "k": "2b705aeffc6e",
+   "en": "everything needed to render a leaderboard."
+  },
+  {
+   "t": "p",
+   "k": "87214b19dfdd",
+   "en": "Primary key · Attributes · user_id · email · profile_pic · score · leaderboard _name lovelove · love@test.com · https://cdn.example/3.png · chess#2020-02 · Llove_tofu · test@test.com · https://cdn.example/p.png · chess#2020-02 · golden_gate · gold@test.com · https://cdn.example/2.png · chess#2020-03 · pizza_or_bread · piz@test.com · https://cdn.example/31.png · chess#2021-05 · ocean · oce@test.com · https://cdn.example/32.png · chess#2020-02"
+  },
+  {
+   "t": "figure",
+   "k": "ec099ea46fdc",
+   "en": "Figure 10.22: Denormalized view of the leaderboard and user tables"
+  },
+  {
+   "t": "p",
+   "k": "c59516de8133",
+   "en": "This table scheme works, but it doesn't scale well. As more rows are added, we have to scan the entire table to find the top scores."
+  },
+  {
+   "t": "p",
+   "k": "9d85d14e3c47",
+   "en": "Step 3 - Design Deep Dive | 309 Global Secondary Index Our first attempt is to use"
+  },
+  {
+   "t": "p",
+   "k": "3a0560f6cc75",
+   "en": ", linear scan, we need to add indexes."
+  },
+  {
+   "t": "p",
+   "k": "a20a5eed1551",
+   "en": "Sort year-month? as the partition key and the score as the sort key, as"
+  },
+  {
+   "t": "p",
+   "k": "b590cd794d72",
+   "en": "key (score) Ture 10.23. · ess42020-024p0 condary Index · yes#2020-02#p 1 Attributes · user_id · Sort · ey · email · resst2020-03#p2 profile_pic · key · (score) · S:2020-02#p2 -02 · lovelove · love@test.com · https://cdn.example/3.png · i_love_tofu · •02 · test@test.com · https://cdn.example/p.png · golden_gate · gold@test.com · https://cdn.example/2.png · Figui pizza_or_bread · piz@test.com · https://cdn.example/31.png · ocean · oce@test.com · https://cdn.example/32.png"
+  },
+  {
+   "t": "p",
+   "k": "81cce7594c55",
+   "en": "global secondary index us hon key and the score as ti Lasted within their own par"
+  },
+  {
+   "t": "figure",
+   "k": "12c33174779e",
+   "en": "Figure 10.23: Partition key and sort key"
+  },
+  {
+   "t": "p",
+   "k": "6efc6bf1a25d",
+   "en": "in order to fetch the top 10 t runs into issues at a high load. DynamoDB splits data across multiple"
+  },
+  {
+   "t": "p",
+   "k": "006e8f627d24",
+   "en": "\" mentioned earlier. We sistent hashing. Each item lives in a corresponding node based on its"
+  },
+  {
+   "t": "p",
+   "k": "69b91589c183",
+   "en": "siste scatter\" portion), anc 'e want to structure the data so that data is evenly distributed across"
+  },
+  {
+   "t": "p",
+   "k": "e19c163412ad",
+   "en": "ag all the partitions (this is r table design (Figure 10.23), all the data for the most recent month"
+  },
+  {
+   "t": "p",
+   "k": "9e8a6bcf9eef",
+   "en": "n one partition and that partition becomes a hot partition. How can we"
+  },
+  {
+   "t": "h3",
+   "k": "256d818ffd4f",
+   "en": "ta into n partitions and append a partition number (user_id %"
+  },
+  {
+   "t": "p",
+   "k": "1756d55f3d88",
+   "en": "Sort usel ions) to the partition key. This pattern is called write sharding. Write"
+  },
+  {
+   "t": "p",
+   "k": "98fe34c17dd6",
+   "en": "key mplexity for both read and write operations, so we should consider the"
+  },
+  {
+   "t": "p",
+   "k": "3471a1af9355",
+   "en": "(score) y."
+  },
+  {
+   "t": "p",
+   "k": "25151b0aa35c",
+   "en": "lovelc"
+  },
+  {
+   "t": "h3",
+   "k": "c27d9d46d401",
+   "en": "ion we need to answer is, how many partitions should we have? It"
+  },
+  {
+   "t": "p",
+   "k": "b97e9dcbcd31",
+   "en": "Tite volume or DAU. The important thing to remember is that there is"
+  },
+  {
+   "t": "p",
+   "k": "cb00e89cafcb",
+   "en": "n load on partitions and read complexity. Because data for the same"
+  },
+  {
+   "t": "p",
+   "k": "74041db2c04a",
+   "en": "venly across multiple partitions, the load for a single partition is much"
+  },
+  {
+   "t": "p",
+   "k": "c4fbed98ecb2",
+   "en": "Sort user_ic to read items for a given month, we have to query all the partitions"
+  },
+  {
+   "t": "p",
+   "k": "9641fb59eb57",
+   "en": "key alts, which adds read complexity."
+  },
+  {
+   "t": "p",
+   "k": "37a13beac1c3",
+   "en": "(score) Joks something like this: game_name#{year-month}#p{partition_ number}."
+  },
+  {
+   "t": "p",
+   "k": "d8d8b0a1b022",
+   "en": "i_love_*c the updated schema table."
+  },
+  {
+   "t": "p",
+   "k": "26bbdefd85ed",
+   "en": "pizza_or Sort user_id key · (score) $020-02#p2 · il-time Gaming Leaderboard · Figure Global Secondary Index · Attributes · Partition key (PK) · Sort · user_id · email · profile_pic · key · (score) · chess#2020-02#p0 · lovelove"
+  },
+  {
+   "t": "p",
+   "k": "856251fbfad5",
+   "en": "https://cdn.example/3.png love@test.com"
+  },
+  {
+   "t": "p",
+   "k": "8220f5eafe97",
+   "en": "chess#2020-02#p 1 · _love_tofu · test@test.com"
+  },
+  {
+   "t": "p",
+   "k": "8dc155d9feaa",
+   "en": "https://cdn.example/p.png chess#2020-03#p2"
+  },
+  {
+   "t": "p",
+   "k": "d714b5d5b0e3",
+   "en": "golden_gate"
+  },
+  {
+   "t": "p",
+   "k": "cd8f20833206",
+   "en": "gold@test.com"
+  },
+  {
+   "t": "p",
+   "k": "b9002613a595",
+   "en": "https://cdn.example/2.png chess#2020-02#p1"
+  },
+  {
+   "t": "p",
+   "k": "8dad04e2ad1f",
+   "en": "pizza_or_bread piz@test.com"
+  },
+  {
+   "t": "p",
+   "k": "ea505ac70f9f",
+   "en": "https://cdn.example/31.png chess#2020-02#p2"
+  },
+  {
+   "t": "p",
+   "k": "275a49c3e067",
+   "en": "ocean · oce@test.com · https://cdn.example/32.png"
+  },
+  {
+   "t": "figure",
+   "k": "6cefca05a6d7",
+   "en": "Figure 10.24: Updated partition key"
+  },
+  {
+   "t": "p",
+   "k": "771f398f4f7a",
+   "en": "The global secondary index uses game_name# {year-month?#p{partition_number} as the partition key and the score as the sort key. What we end up with are n partitions that are all sorted within their own partition (locally sorted). If we assume we had 3 partitions, then in order to fetch the top 10 leaderboard, we would use the approach called \"scattergather\" mentioned earlier. We would fetch the top 10 results in each of the partitions (this is the \"scatter\""
+  },
+  {
+   "t": "p",
+   "k": "d4b77b92e89a",
+   "en": "portion), and then we would allow the application to sort the results among all the partitions (this is the \"gather\" portion). An example is shown in Figure 10.25."
+  },
+  {
+   "t": "p",
+   "k": "49204fcafd95",
+   "en": "top 10 from partition 0 (scatter)"
+  },
+  {
+   "t": "p",
+   "k": "da90e12230f8",
+   "en": "Partition key (PK) · Sort · user_id · key · (score) · chess#2020-02#p0 · lovelove · Top 10 leaderboard · gather · score · user_id · lovelove"
+  },
+  {
+   "t": "p",
+   "k": "ebdeee661deb",
+   "en": "top 10 from partition 1 (scatter)"
+  },
+  {
+   "t": "p",
+   "k": "c9e0f980ebd2",
+   "en": "i love_tofu · Sort · Partition key (PK) · user_id · pizza_or_bread key · Apple · (score) · gather · Orange · chess#2020-02#p1 · i_love_tofu · peach · chess#2020-02#p1 · pizza_or_bread · data · gather · Bird"
+  },
+  {
+   "t": "p",
+   "k": "c3a390312803",
+   "en": "top 10 from partition 2 (scatter)"
+  },
+  {
+   "t": "p",
+   "k": "a7dea4a0bd2e",
+   "en": "too_much · user_id · Partition key (PK) · Sort · key · (score) · chess#2020-02#p2 · ocean"
+  },
+  {
+   "t": "figure",
+   "k": "d4ff125b7ada",
+   "en": "Figure 10.25: Scatter-gather"
+  },
+  {
+   "t": "p",
+   "k": "e3e3fd72edca",
+   "en": "Step 3 - Design Deep Dive | 311 How do we decide on the number of partitions? 'This might require some careful benchmarking. More partitions decrease the load on each partition but add complexity, as we need to scalter across more partitions to build the final leaderboard. By employing benchmarking, we can see the trade-off more clearly."
+  },
+  {
+   "t": "p",
+   "k": "bb57429b7d34",
+   "en": "However, similar to the Redis partition solution mentioned carlier, this approach doesn't provide a straightforward solution for determining the relative rank of a user. But it is possible to get the percentile of a user's position, which could be good enough. In real life, telling a player that they are in the top 10 ~ 20% might be better than showing the exact rank at eg. 1,200,001. Therefore, if the scale is large enough that we needed to shard, we could assume that the score distributions are roughly the same across all shards. If this assumption is true, we could have a cron job that analyzes the distribution of the score for each shard, and caches that result."
+  },
+  {
+   "t": "p",
+   "k": "3da800b470bc",
+   "en": "The result would look something like this:"
+  },
+  {
+   "t": "p",
+   "k": "964e770f0c13",
+   "en": "10th percentile = score < 100 · 20th percentile = score < 500 · 90th percentile = score < 6500"
+  },
+  {
+   "t": "p",
+   "k": "ac6d3b4af369",
+   "en": "Then we could quickly return a user's relative ranking (say 90th percentile)."
+  },
+  {
+   "t": "h2",
+   "k": "02a33876c958",
+   "en": "Step 4 - Wrap Up"
+  },
+  {
+   "t": "p",
+   "k": "e728481237db",
+   "en": "In this chapter, we have created a solution for building a real-time game leaderboard with the scale of millions of DAU. We explored the straightforward solution of using a MySQL database and rejected that approach because it does not scale to millions of users. We then designed the leaderboard using Redis sorted sets. We also looked into scaling the solution to 500 million DAU, by leveraging sharding across different Redis caches. We also proposed an alternative NoSQL solution."
+  },
+  {
+   "t": "p",
+   "k": "c8f2b16eae30",
+   "en": "In the event you have some extra time at the end of the interview, you can cover a few more topics:"
+  },
+  {
+   "t": "p",
+   "k": "c613e2656869",
+   "en": "Faster retrieval and breaking tie"
+  },
+  {
+   "t": "p",
+   "k": "0b38814d59c1",
+   "en": "A Redis Hash provides a map between string fields and values. We could leverage a hash for 2 use cases:"
+  },
+  {
+   "t": "p",
+   "k": "6622cfbd8c2c",
+   "en": "1. To store a map of the user id to the user object that we can display on the leaderboard. This allows for faster retrieval than having to go to the database to fetch the user object."
+  },
+  {
+   "t": "p",
+   "k": "deabd2ef159b",
+   "en": "2. In the case of two players having the same scores, we could rank the users based on who received that score first. When we increment the score of the user, we can also store a map of the user id to the timestamp of the most recently won game. In the case of a tie, the user with the older timestamp ranks higher."
+  },
+  {
+   "t": "h3",
+   "k": "fb8b48d6172f",
+   "en": "System failure recovery"
+  },
+  {
+   "t": "p",
+   "k": "9ea40ae33935",
+   "en": "The Redis cluster can potentially experience a large-scale failure. Given the design above, we could create a script that leverages the fact that the MySQL database records an entry with a timestamp each time a user won a game. We could iterate through all of the entries for each user, and call ZINCRBY once per entry, per user. This would allow us to recreate the leaderboard offline if necessary, in case of a large-scale outage."
+  },
+  {
+   "t": "p",
+   "k": "71b8b7a68128",
+   "en": "Congratulations on getting this far! Now give yourself a pat on the back. Good job!"
+  },
+  {
+   "t": "h2",
+   "k": "dc0ccd897209",
+   "en": "Chapter Summary"
+  },
+  {
+   "t": "p",
+   "k": "1def26dfd104",
+   "en": "display top 10 · show a user's rank · functional req · four places above and · below the desired user · real-time update · step 1 · non-functional req · scalable · 5 million DAU · estimation · update score gps: 2.5k · score point · api design · get leaderboard · get player rank · step 2 · Gaming Leaderboard · high-level design · relational database solution · data model · redis solution · build on the cloud or not · step 3 · scale Redis · alternative solution: NoSQL"
+  },
+  {
+   "t": "li",
+   "k": "c613e2656869",
+   "en": "faster retrieval and breaking tie"
+  },
+  {
+   "t": "p",
+   "k": "40b10588ee39",
+   "en": "step 4 · system failure recovery · Chapter Summary | 313"
+  },
+  {
+   "t": "h2",
+   "k": "5d59149869b8",
+   "en": "Reference Material"
+  },
+  {
+   "t": "p",
+   "k": "59d6fb49ea61",
+   "en": "[1] Man-in-the-middle attack. https://en.wikipedia.org/wiki/Man-in-the-middle_attac k."
+  },
+  {
+   "t": "p",
+   "k": "e298d4161a1b",
+   "en": "[2] Redis Sorted Set source code. https://github.com/redis/redis/blob/unstable/src/t_z set.c."
+  },
+  {
+   "t": "p",
+   "k": "d9800a34dbb6",
+   "en": "[3] Geekbang. https://static001.geekbang.org/resource/image/46/a9/46d283cd82c987 153b3fe0c76dfba8a9.jpg-"
+  },
+  {
+   "t": "p",
+   "k": "17506896d4d4",
+   "en": "[4] Building real-time Leaderboard with Redis. https://medium.com/@sandeep4.verm a/building-real-time-leaderboard-with-redis-82c98aa47b9f."
+  },
+  {
+   "t": "p",
+   "k": "560438e5588f",
+   "en": "[5] Build a real-time gaming leaderboard with Amazon ElastiCache for Redis. https: //aws.amazon.com/blogs/database/building-a-real-time-gaming-leaderboard-with"
+  },
+  {
+   "t": "li",
+   "k": "55bf26991e0d",
+   "en": "amazon-elasticache-for-redis."
+  },
+  {
+   "t": "p",
+   "k": "24e875fd5dfd",
+   "en": "[6] How we created a real-time Leaderboard for a million Users. https://levelup.gitcon nected.com/how-we-created-a-real-time-leaderboard-for-a-million-users-555aaa 3ccf7b."
+  },
+  {
+   "t": "p",
+   "k": "d00c8d4356e3",
+   "en": "[7] Leaderboards. https://redislabs.com/solutions/use-cases/leaderboards/."
+  },
+  {
+   "t": "p",
+   "k": "1bf474830fe6",
+   "en": "[8] Lambda. https://aws.amazon.com/lambda/."
+  },
+  {
+   "t": "p",
+   "k": "e319f92eab8c",
+   "en": "[9] Google Cloud Functions. https://cloud.google.com/functions."
+  },
+  {
+   "t": "p",
+   "k": "0204e0e8ee19",
+   "en": "[10] Azure Functions. https://azure.microsoft.com/en-us/services/functions/."
+  },
+  {
+   "t": "p",
+   "k": "b445f277a3d8",
+   "en": "[11] Info command. https://redis.io/commands/INFO."
+  },
+  {
+   "t": "p",
+   "k": "1c888cad218c",
+   "en": "[12] Why redis cluster only have 16384 slots. https://stackoverflow.com/questions/3620 3532/why-redis-cluster-only-have-16384-slots."
+  },
+  {
+   "t": "p",
+   "k": "ef454965af9b",
+   "en": "[13] Cyclic redundancy check. https://en.wikipedia.org/wiki/Cyclic_redundancy_che ck."
+  },
+  {
+   "t": "p",
+   "k": "0be88c4f9fd4",
+   "en": "[14] Choosing your node size. https://docs.aws.amazon.com/AmazonElastiCache/latest /red-ug/nodes-select-size.html."
+  },
+  {
+   "t": "p",
+   "k": "f773fd7cfe91",
+   "en": "[15] How fast is Redis? https://redis.io/topics/benchmarks."
+  },
+  {
+   "t": "p",
+   "k": "658fc53fcf4b",
+   "en": "[16] Using Global Secondary Indexes in DynamoDB. https://docs.aws.amazon.com/am azondynamodb/latest/developerguide/GSI.html."
+  },
+  {
+   "t": "p",
+   "k": "429af13e7d39",
+   "en": "[17] Leaderboard & Write Sharding. https://www.dynamodbguide.com/leaderboard-wr ite-sharding/."
+  }
+ ]
+}

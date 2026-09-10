@@ -17,6 +17,7 @@ import hashlib
 import json
 import os
 import re
+import statistics
 import sys
 from pathlib import Path
 
@@ -168,7 +169,52 @@ def book_labs():
     }
 
 
-BOOKS = [book_grokking, book_alex_vol1, book_alex_vol0, book_labs]
+def book_alex_vol2():
+    """VOL 2 là bản scan ảnh (0 ký tự trích được), nên nguồn là kết quả OCR đã lưu.
+
+    Sinh lại artifact khi PDF thay đổi:
+        python3 tools/ocr_pdf.py "<VOL 2>.pdf" /tmp/v2.jsonl
+        gzip -c /tmp/v2.jsonl > data/ocr/alex-vol2.jsonl.gz
+    """
+    import gzip
+    import ocr_blocks as ob
+
+    src = HERE / 'data' / 'ocr' / 'alex-vol2.jsonl.gz'
+    with gzip.open(src, 'rt') as f:
+        pages = [json.loads(ln) for ln in f if ln.strip()]
+    pages = [p for p in pages if p['page'] >= 9]        # bỏ bìa + mục lục
+
+    lines = [l for p in pages for l in p['lines'] if len(l['t'].strip()) >= 50]
+    base = statistics.median(ob.cw(l) for l in lines)
+    right = statistics.median(l['x'] + l['w'] for l in lines)
+
+    items = []
+    for p in pages:
+        items.extend(ob.page_blocks(p, base, right))
+    blocks = [b for b in ob.collapse_fragments(ob.merge(items))
+              if len(b['en'].strip()) >= 3]
+
+    chapters, cur = [], None
+    for b in blocks:
+        if b['t'] == 'h1':
+            n = f'{len(chapters) + 1:02d}'
+            cur = {'id': f'{n}-{slug(b["en"], n)}', 'num': n,
+                   'title': b['en'], 'blocks': []}
+            chapters.append(cur)
+        elif cur is not None:
+            cur['blocks'].append({'type': b['t'], 'text': b['en']})
+    return {
+        'id': 'alex-vol2',
+        'title': "System Design Interview – An Insider's Guide (Vol 2)",
+        'titleVi': 'Phỏng vấn thiết kế hệ thống – Cẩm nang người trong nghề (Tập 2)',
+        'author': 'Alex Xu & Sahn Lam',
+        'note': '13 bài thiết kế nâng cao: proximity, Google Maps, message queue, '
+                'thanh toán, ví điện tử, sàn chứng khoán… (nguồn OCR từ bản scan).',
+        'chapters': chapters,
+    }
+
+
+BOOKS = [book_grokking, book_alex_vol1, book_alex_vol0, book_labs, book_alex_vol2]
 
 
 def main():
