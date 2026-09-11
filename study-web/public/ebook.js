@@ -101,8 +101,8 @@ function ebDrawList() {
     return `<button class="eb-ch ${ebChapter?.id === c.id ? 'active' : ''}" data-ch="${c.id}">
       <span class="eb-ch-n">${escHtml(c.num)}</span>
       <span class="eb-ch-b">
-        <span class="eb-ch-t">${escHtml(c.titleVi || c.title)}</span>
-        <span class="eb-ch-m">${done[key] ? '✓ đã đọc · ' : ''}${(c.chars / 1000).toFixed(1)}k ký tự${pct < 100 ? ` · dịch ${pct}%` : ''}</span>
+        <span class="eb-ch-t" lang="en">${escHtml(c.title)}</span>
+        <span class="eb-ch-m">${c.titleVi ? `<span class="eb-ch-vi">${escHtml(c.titleVi)}</span> · ` : ''}${done[key] ? '✓ đã đọc · ' : ''}${(c.chars / 1000).toFixed(1)}k ký tự${pct < 100 ? ` · dịch ${pct}%` : ''}</span>
       </span>
     </button>`;
   }).join('');
@@ -202,8 +202,8 @@ function ebDrawReader() {
   reader.innerHTML = `
     <div class="eb-bar">
       <div class="eb-bar-t">
-        <b>${escHtml(ebChapter.titleVi || ebChapter.title)}</b>
-        ${ebChapter.titleVi ? `<span class="eb-bar-en">${escHtml(ebChapter.title)}</span>` : ''}
+        <b lang="en">${escHtml(ebChapter.title)}</b>
+        ${ebChapter.titleVi ? `<span class="eb-bar-en">${escHtml(ebChapter.titleVi)}</span>` : ''}
       </div>
       <div class="eb-modes">
         <button class="eb-mode ${mode === 'en' ? 'active' : ''}" data-mode="en">EN</button>
