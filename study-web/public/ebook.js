@@ -87,6 +87,15 @@ function ebDrawShell() {
   ebDrawList();
 }
 
+/** Phần tiếng Việt để chú bên cạnh tên chương tiếng Anh.
+ *  Vài tên dịch giữ nguyên tên riêng rồi mới chú ("Proximity Service — dịch vụ
+ *  tìm quanh") — cắt phần trùng đi cho khỏi lặp lại ngay cạnh tên gốc. */
+function ebNoteVi(title, titleVi) {
+  if (!titleVi || titleVi === title) return '';
+  const m = titleVi.startsWith(title) && /^\s*[—–-]\s*(.+)$/.exec(titleVi.slice(title.length));
+  return m ? m[1] : titleVi;
+}
+
 function ebDrawList() {
   const book = ebBook(ebBookId);
   const done = ebRead();
@@ -102,7 +111,7 @@ function ebDrawList() {
       <span class="eb-ch-n">${escHtml(c.num)}</span>
       <span class="eb-ch-b">
         <span class="eb-ch-t" lang="en">${escHtml(c.title)}</span>
-        <span class="eb-ch-m">${c.titleVi ? `<span class="eb-ch-vi">${escHtml(c.titleVi)}</span> · ` : ''}${done[key] ? '✓ đã đọc · ' : ''}${(c.chars / 1000).toFixed(1)}k ký tự${pct < 100 ? ` · dịch ${pct}%` : ''}</span>
+        <span class="eb-ch-m">${ebNoteVi(c.title, c.titleVi) ? `<span class="eb-ch-vi">${escHtml(ebNoteVi(c.title, c.titleVi))}</span> · ` : ''}${done[key] ? '✓ đã đọc · ' : ''}${(c.chars / 1000).toFixed(1)}k ký tự${pct < 100 ? ` · dịch ${pct}%` : ''}</span>
       </span>
     </button>`;
   }).join('');
@@ -203,7 +212,7 @@ function ebDrawReader() {
     <div class="eb-bar">
       <div class="eb-bar-t">
         <b lang="en">${escHtml(ebChapter.title)}</b>
-        ${ebChapter.titleVi ? `<span class="eb-bar-en">${escHtml(ebChapter.titleVi)}</span>` : ''}
+        ${ebNoteVi(ebChapter.title, ebChapter.titleVi) ? `<span class="eb-bar-en">${escHtml(ebNoteVi(ebChapter.title, ebChapter.titleVi))}</span>` : ''}
       </div>
       <div class="eb-modes">
         <button class="eb-mode ${mode === 'en' ? 'active' : ''}" data-mode="en">EN</button>
