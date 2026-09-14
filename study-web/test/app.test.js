@@ -2570,6 +2570,7 @@ const ESUP = (() => {
   const w = {};
   new Function('window', read('english-support.js'))(w);
   new Function('window', read('en-core.js'))(w);
+  new Function('window', read('en-core-usage.js'))(w);
   return w;
 })();
 
@@ -2690,7 +2691,9 @@ test('core-tab: lộ trình 30 ngày phủ ĐÚNG 500 từ · 90 cụm · 120 c�
   const src = consts
     + 'const coreVocab = () => window.EN_CORE_VOCAB;'
     + 'const corePhrases = () => window.EN_CORE_PHRASES;'
-    + 'const coreSents = () => window.EN_CORE_SENTENCES;\n'
+    + 'const coreSents = () => window.EN_CORE_SENTENCES;'
+    + 'const coreUsage = () => window.EN_CORE_USAGE;\n'
+    + grab('coreUseWords') + '\n' + grab('coreItemUse') + '\n'
     + grab('corePlan') + '\nreturn { corePlan, CORE_DAYS };';
   const { corePlan, CORE_DAYS } = new Function(...Object.keys(scope), src)(...Object.values(scope));
 
@@ -2704,6 +2707,10 @@ test('core-tab: lộ trình 30 ngày phủ ĐÚNG 500 từ · 90 cụm · 120 c�
     p.sents.forEach(x => sentIds.add(x.id));
     assert.ok(p.phrases.length, `ngày ${d} không có cụm từ nào`);
     assert.ok(p.sents.length, `ngày ${d} không có câu nào để viết`);
+    // Bước 🧠 Đặt câu: ngày nào cũng phải đủ 20 câu và không lặp từ trong cùng một ngày
+    assert.strictEqual(p.uses.length, 20, `ngày ${d} không đủ 20 câu đặt, đang là ${p.uses.length}`);
+    assert.strictEqual(new Set(p.uses.map(x => x.id)).size, 20, `ngày ${d} có câu đặt bị lặp`);
+    p.uses.forEach(x => assert.ok(/dùng từ “.+”$/.test(x.ask), `câu đặt ${x.id} không nêu từ phải dùng`));
     // 4 tuần đầu học lần lượt 4 thì, từ ngày 21 mới trộn
     if (d <= 20) assert.ok(['ps', 'pc', 'past', 'pp'].includes(p.tense), `ngày ${d} phải gắn với một thì cụ thể`);
     else assert.strictEqual(p.tense, 'mix', `ngày ${d} phải là ngày trộn thì`);
@@ -2730,9 +2737,45 @@ test('core-tab: wiring tab/view/phím tắt/gated', () => {
     'thiếu cơ chế đẩy mục gõ sai xuống cuối hàng');
 });
 
+test('en-core: cách dùng — đủ 500 từ × (mẫu dùng + 3 câu ở 3 ngữ cảnh)', () => {
+  const V = ESUP.EN_CORE_VOCAB, U = ESUP.EN_CORE_USAGE;
+  const ids = new Set(V.map(v => v.id));
+  assert.deepStrictEqual(Object.keys(U).filter(k => !ids.has(k)), [], 'EN_CORE_USAGE có khoá không phải id từ');
+  assert.deepStrictEqual(V.filter(v => !U[v.id]).map(v => v.id), [], 'có từ chưa soạn phần cách dùng');
+  const TAGS = ['🏠', '💼', '🛠️'];
+  for (const v of V) {
+    const u = U[v.id];
+    // `pat` là thứ người học đọc để biết từ đi với cái gì — bắt buộc phải NHẮC LẠI chính từ đó,
+    // nếu không thì mẫu viết ra chẳng dính gì tới từ đang học.
+    const re = new RegExp(`(^|[^A-Za-z])${v.en.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^A-Za-z]|$)`, 'i');
+    assert.ok(u.pat && u.pat.length >= 8, `${v.id} (${v.en}) thiếu mẫu dùng`);
+    assert.ok(re.test(u.pat), `${v.id} mẫu dùng không nhắc chính từ "${v.en}": ${u.pat}`);
+    assert.strictEqual(u.ex.length, 3, `${v.id} (${v.en}) phải có đúng 3 câu ngữ cảnh`);
+    assert.deepStrictEqual(u.ex.map(e => e.t), TAGS, `${v.id} phải đủ 3 ngữ cảnh 🏠 💼 🛠️ theo thứ tự`);
+    const seen = new Set();
+    for (const e of u.ex) {
+      assert.ok(e.en && e.vi, `${v.id} có câu thiếu en hoặc vi`);
+      // bộ chấm chuẩn hoá rút gọn về dạng đầy đủ, nên câu MẪU phải viết dạng đầy đủ sẵn
+      assert.ok(!/'/.test(e.en), `${v.id} dùng dạng rút gọn, phải viết đầy đủ: ${e.en}`);
+      assert.ok(!seen.has(e.en), `${v.id} lặp lại câu: ${e.en}`);
+      seen.add(e.en);
+    }
+  }
+});
+
+test('en-core: bước 🧠 Đặt câu được nối vào buổi học và vào ô đáp án', () => {
+  assert.ok(/function coreItemUse\(/.test(APP), 'app.js thiếu coreItemUse');
+  assert.ok(/dùng từ “\$\{w\.en\}”/.test(APP), 'đề bài đặt câu phải nêu rõ từ bắt buộc dùng');
+  assert.ok(/key: 'use', label: '🧠 Đặt câu'/.test(APP), 'coreStart thiếu bước 🧠 Đặt câu');
+  assert.ok(/function coreUseHint\(/.test(APP) && /\$\{coreUseHint\(it\)\}/.test(APP),
+    'ô đáp án của bước gõ từ phải dán kèm mẫu dùng + câu ngữ cảnh');
+});
+
 test('en-core: wiring — nạp script, chế độ 📐, sw cache, từ vựng mang theo phiên âm', () => {
   assert.ok(HTML.includes('<script src="en-core.js"></script>'), 'index.html chưa nạp en-core.js');
   assert.ok(SW.includes("'en-core.js'"), 'sw.js PRECACHE thiếu en-core.js');
+  assert.ok(HTML.includes('<script src="en-core-usage.js"></script>'), 'index.html chưa nạp en-core-usage.js');
+  assert.ok(SW.includes("'en-core-usage.js'"), 'sw.js PRECACHE thiếu en-core-usage.js');
   assert.ok(/data-mode="tense"/.test(HTML), 'index.html thiếu nút chế độ 📐 4 thì');
   assert.ok(/function esRenderTenses\(/.test(APP), 'app.js thiếu hàm esRenderTenses');
   assert.ok(/mode === 'tense' \? esRenderTenses\(\)/.test(APP), 'esSetMode chưa gọi esRenderTenses');

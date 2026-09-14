@@ -9060,16 +9060,31 @@ const CORE_WORDS_PER_DAY = 20;   // 25 ngày × 20 = đúng 500 từ; 5 ngày cu
 const CORE_NEW_DAYS = 25;
 const CORE_PHRASES_PER_DAY = 3;  // 30 ngày × 3 = đúng 90 cụm
 const CORE_REVIEW_CAP = 30;      // trần số từ ôn mỗi buổi, tránh ngày nghỉ về gánh 200 từ
+const CORE_USE_PER_DAY = 20;     // mỗi từ mới được ĐẶT MỘT CÂU ngay trong ngày học nó
 /** Mỗi thì học liền 5 ngày, 6 câu/ngày ⇒ vừa đúng 30 câu của thì đó. */
 const CORE_TENSE_BLOCKS = [['ps', 1, 5], ['pc', 6, 10], ['past', 11, 15], ['pp', 16, 20]];
 
 let coreState = null;
 const coreVocab = () => window.EN_CORE_VOCAB || [];
+const coreUsage = () => window.EN_CORE_USAGE || {};
 const corePhrases = () => window.EN_CORE_PHRASES || [];
 const coreSents = () => window.EN_CORE_SENTENCES || [];
 const coreTenseName = k => (window.EN_TENSES || []).find(t => t.key === k) || null;
 const coreDoneDays = () => store.get('prep-core-done', []);
 const coreCurDay = () => Math.min(CORE_DAYS, (coreDoneDays().length || 0) + 1);
+
+/**
+ * 20 từ sẽ được ĐẶT CÂU trong ngày. Ngày có từ mới thì lấy đúng 20 từ mới đó — học từ nào
+ * dùng từ đó ngay. Năm ngày cuối không còn từ mới nên quét lại cả 500 từ theo bước 23 (nguyên
+ * tố cùng nhau với 500) để mỗi ngày ra một lát cắt khác, không trùng trong cùng một ngày.
+ */
+function coreUseWords(day) {
+  const V = coreVocab();
+  if (!V.length) return [];
+  if (day <= CORE_NEW_DAYS) return V.slice((day - 1) * CORE_WORDS_PER_DAY, day * CORE_WORDS_PER_DAY);
+  const off = (day - CORE_NEW_DAYS - 1) * CORE_USE_PER_DAY;
+  return Array.from({ length: CORE_USE_PER_DAY }, (_, i) => V[(off + i * 23) % V.length]);
+}
 
 /** Giáo án của một ngày — TÍNH RA từ dữ liệu, không chép tay 30 lần nên không lệch được. */
 function corePlan(day) {
@@ -9090,8 +9105,11 @@ function corePlan(day) {
     for (let i = 0; pick.length < n && i < rest.length; i++) pick.push(rest[(day * 7 + i * 13) % rest.length]);
     sents = [...new Set(pick)].slice(0, n);
   }
+  // Mỗi từ có 3 câu ở 3 ngữ cảnh; xoay theo (ngày + vị trí) nên một buổi trộn đủ 🏠 💼 🛠️,
+  // và lần gặp lại ở ngày ôn sẽ rơi vào ngữ cảnh khác chứ không lặp y nguyên.
+  const uses = coreUseWords(day).map((w, i) => coreItemUse(w, (day + i) % 3)).filter(Boolean);
   return {
-    day, newWords, sents,
+    day, newWords, sents, uses,
     phrases: P.slice((day - 1) * CORE_PHRASES_PER_DAY, day * CORE_PHRASES_PER_DAY),
     tense: block ? block[0] : 'mix',
   };
@@ -9109,6 +9127,20 @@ function coreDueItems(day) {
 const coreItemWord = w => ({ id: w.id, ask: w.vi, want: w.en, alts: w.alt || [], note: w.note || '', kind: 'từ' });
 const coreItemPhrase = p => ({ id: p.id, ask: p.vi, want: p.en, alts: p.alt || [], note: p.ex ? `Ví dụ: ${p.ex}` : '', kind: 'cụm' });
 const coreItemSent = s => ({ id: s.id, ask: s.vi, want: s.en, alts: s.alt || [], note: s.note || '', kind: 'câu' });
+/**
+ * Bài ĐẶT CÂU: đề bài là nghĩa tiếng Việt KÈM từ bắt buộc phải dùng. Có nêu từ vì mục tiêu ở
+ * đây không phải đoán xem người ra đề muốn từ nào, mà là đặt được câu ĐÚNG CHỖ cho từ vừa học.
+ */
+function coreItemUse(w, ctx) {
+  const u = coreUsage()[w.id];
+  const ex = u && u.ex && u.ex[ctx];
+  if (!ex) return null;
+  return {
+    id: `${w.id}x${ctx + 1}`, ask: `${ex.vi}  ·  dùng từ “${w.en}”`,
+    want: ex.en, alts: ex.alt || [], kind: 'câu',
+    note: u.pat ? `Mẫu hay đi với “${w.en}”: ${u.pat}` : '',
+  };
+}
 
 /** Màn CHỌN NGÀY: tiến độ tổng, ngày hôm nay làm gì, danh sách 30 ngày. */
 function renderCore() {
@@ -9132,11 +9164,12 @@ function renderCore() {
       <ul class="core-agenda">
         ${p.newWords.length ? `<li>📖 Xem trước rồi <b>gõ ${p.newWords.length} từ mới</b> (từ số ${(cur - 1) * CORE_WORDS_PER_DAY + 1}–${(cur - 1) * CORE_WORDS_PER_DAY + p.newWords.length})</li>`
       : '<li>📖 Không có từ mới — hôm nay chỉ ÔN cho chắc</li>'}
+        <li>🧠 Đặt <b>${p.uses.length} câu</b> bằng chính những từ đó — mỗi câu một ngữ cảnh 🏠 đời thường · 💼 đi làm · 🛠️ kỹ thuật</li>
         <li>🔁 Ôn <b>${due}</b> từ/cụm tới hạn (app tự chọn, không phải tự nhớ)</li>
         <li>🧩 Học <b>${p.phrases.length} cụm hay dùng</b>: ${p.phrases.map(x => escHtml(x.en)).join(' · ') || '—'}</li>
         <li>✍️ Viết <b>${p.sents.length} câu</b> ${t ? `thì <b>${escHtml(t.name)}</b>` : '<b>trộn cả 4 thì</b>'}</li>
       </ul>
-      <button id="core-start" class="iq-start-btn">▶️ Bắt đầu Ngày ${cur}<small>khoảng 25–30 phút · chạy thẳng một mạch</small></button>
+      <button id="core-start" class="iq-start-btn">▶️ Bắt đầu Ngày ${cur}<small>khoảng 35–40 phút · chạy thẳng một mạch</small></button>
     </div>
     ${t ? `<details class="es-tense"><summary>📐 Nhắc lại thì hôm nay — ${t.icon} <b>${escHtml(t.name)}</b></summary>
       <div class="es-form">
@@ -9152,7 +9185,7 @@ function renderCore() {
       return `<button class="core-day ${st}" data-day="${d}">
         <span class="core-dn">Ngày ${d}</span>
         <span class="core-dt">${tt ? tt.icon + ' ' + escHtml(tt.name) : '🔀 Trộn 4 thì'}</span>
-        <span class="core-dw">${pl.newWords.length ? pl.newWords.length + ' từ mới' : 'chỉ ôn'} · ${pl.phrases.length} cụm · ${pl.sents.length} câu</span>
+        <span class="core-dw">${pl.newWords.length ? pl.newWords.length + ' từ mới' : 'chỉ ôn'} · ${pl.uses.length} câu đặt · ${pl.phrases.length} cụm · ${pl.sents.length} câu thì</span>
       </button>`;
     }).join('')}</div>`;
   document.getElementById('core-start').onclick = () => coreStart(cur);
@@ -9166,6 +9199,7 @@ function coreStart(day) {
   const steps = [];
   if (p.newWords.length) steps.push({ key: 'preview', label: '📖 Xem trước', items: p.newWords });
   if (p.newWords.length) steps.push({ key: 'new', label: '⌨️ Gõ từ mới', items: p.newWords.map(coreItemWord) });
+  if (p.uses.length) steps.push({ key: 'use', label: '🧠 Đặt câu', items: p.uses });
   if (due.length) steps.push({ key: 'review', label: '🔁 Ôn từ cũ', items: due.map(x => (x.g ? coreItemWord(x) : coreItemPhrase(x))) });
   steps.push({ key: 'phrase', label: '🧩 Cụm từ', items: p.phrases.map(coreItemPhrase) });
   steps.push({ key: 'write', label: '✍️ Viết câu', items: p.sents.map(coreItemSent) });
@@ -9187,14 +9221,24 @@ function coreRender() {
     </div>`;
 
   if (step.key === 'preview') {
+    const U = coreUsage();
     box.innerHTML = bar + `
-      <p class="es-tip">Đọc lướt một lượt, bấm 🔊 nghe từng từ. <b>Chưa cần thuộc</b> — bước sau mới gõ.</p>
-      <div class="core-words">${step.items.map(w => `
+      <p class="es-tip">Đọc lướt một lượt, bấm 🔊 nghe từng từ. <b>Chưa cần thuộc</b> — bước sau mới gõ.
+        Phần <b>Mẫu dùng</b> và 3 câu ngữ cảnh mới là thứ quyết định bạn có dùng được từ hay không, đọc kỹ chỗ đó.</p>
+      <div class="core-words">${step.items.map(w => {
+        const u = U[w.id] || {};
+        return `
         <div class="core-word">
           <div class="core-w-en">${escHtml(w.en)} <button class="es-say" data-say="${escHtml(w.en)}">🔊</button></div>
           <div class="core-w-ph">${escHtml(String(w.note || '').replace(/^🔊 /, '').split(' · ')[0])}</div>
           <div class="core-w-vi">${escHtml(w.vi)}</div>
-        </div>`).join('')}</div>
+          ${u.pat ? `<div class="core-w-pat"><b>Mẫu dùng:</b> ${escHtml(u.pat)}</div>` : ''}
+          ${(u.ex || []).map(e => `<div class="core-w-ex">
+            <span class="core-w-tag">${escHtml(e.t)}</span>
+            <span class="core-w-exen">${escHtml(e.en)} <button class="es-say" data-say="${escHtml(e.en)}">🔊</button></span>
+            <span class="core-w-exvi">${escHtml(e.vi)}</span>
+          </div>`).join('')}
+        </div>`; }).join('')}</div>
       <div class="iq-nav"><button id="core-next-step" class="iq-start-btn">Đã đọc xong → gõ thử</button></div>`;
     document.getElementById('core-next-step').onclick = () => coreNextStep();
     document.getElementById('core-quit').onclick = () => renderCore();
@@ -9273,7 +9317,25 @@ function coreCheck() {
   fb.innerHTML = `<div class="es-right">✅ Chính xác!</div>
     <div class="es-answer">${escHtml(it.want)} <button class="es-say" data-say="${escHtml(it.want)}">🔊</button></div>
     ${it.note ? `<div class="es-note">📌 ${escHtml(it.note)}</div>` : ''}
+    ${coreUseHint(it)}
     <div class="es-sub">Nhấn <kbd>Enter</kbd> để sang mục tiếp theo.</div>`;
+}
+
+/**
+ * Sau khi gõ xong MỘT TỪ, dán luôn mẫu dùng + 3 câu ngữ cảnh của từ đó vào ô đáp án — đây là
+ * lúc người học đang chú ý nhất, rẻ hơn nhiều so với bắt họ quay lại màn xem trước.
+ */
+function coreUseHint(it) {
+  const u = coreUsage()[it.id];
+  if (!u || it.kind !== 'từ') return '';
+  return `<div class="core-usebox">
+    ${u.pat ? `<div class="core-w-pat"><b>Mẫu dùng:</b> ${escHtml(u.pat)}</div>` : ''}
+    ${(u.ex || []).map(e => `<div class="core-w-ex">
+      <span class="core-w-tag">${escHtml(e.t)}</span>
+      <span class="core-w-exen">${escHtml(e.en)} <button class="es-say" data-say="${escHtml(e.en)}">🔊</button></span>
+      <span class="core-w-exvi">${escHtml(e.vi)}</span>
+    </div>`).join('')}
+  </div>`;
 }
 
 function coreReveal() {
@@ -9287,6 +9349,7 @@ function coreReveal() {
   document.getElementById('core-fb').innerHTML = `<div class="es-shown">👁️ Đáp án:</div>
     <div class="es-answer">${escHtml(it.want)} <button class="es-say" data-say="${escHtml(it.want)}">🔊</button></div>
     ${it.note ? `<div class="es-note">📌 ${escHtml(it.note)}</div>` : ''}
+    ${coreUseHint(it)}
     <div class="es-sub">Mục này sẽ được hỏi LẠI ở cuối hàng — đó mới là lúc bạn nhớ.</div>`;
 }
 

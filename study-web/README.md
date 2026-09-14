@@ -248,12 +248,21 @@ không cần biết mẹo hard-refresh.
   Mỗi buổi được **lưu vào lịch sử** — bấm một dòng để mở lại đúng báo cáo đó (10 buổi
   gần nhất giữ chi tiết từng câu).
 - **🔤 Tiếng Anh Core (30 ngày)** — tab học **theo NGÀY**, mỗi ngày một màn chạy thẳng một mạch:
-  📖 xem trước 20 từ mới (có phiên âm + 🔊) → ⌨️ gõ từ mới → 🔁 ôn từ/cụm tới hạn (SRS tự chọn,
-  trần 30 mục/buổi) → 🧩 3 cụm hay dùng → ✍️ 6 câu theo thì đang học → 🏁 tổng kết + 📋 chép bài nhờ AI.
+  📖 xem trước 20 từ mới (phiên âm + 🔊 + **cách dùng**) → ⌨️ gõ từ mới → **🧠 đặt 20 câu bằng chính
+  những từ đó** → 🔁 ôn từ/cụm tới hạn (SRS tự chọn, trần 30 mục/buổi) → 🧩 3 cụm hay dùng →
+  ✍️ 6 câu theo thì đang học → 🏁 tổng kết + 📋 chép bài nhờ AI.
   **Không phải đổi chế độ hay tự chọn phạm vi** — bấm "Bắt đầu Ngày N" là học. Gõ sai thì mục đó bị
   **đẩy xuống cuối hàng** để hỏi lại, không cho đi tiếp. Giáo án được TÍNH RA từ dữ liệu (25 ngày × 20 từ
   = 500 từ · 30 ngày × 3 = 90 cụm · 20 ngày × 6 = 120 câu, 5 ngày cuối chỉ ôn) nên không bao giờ lệch;
   4 tuần đầu học lần lượt 4 thì, từ ngày 21 trộn cả bốn.
+  **🧠 Cách dùng từng từ** (`en-core-usage.js`): học từ lẻ thì nhớ mặt chữ nhưng tới lúc viết vẫn tắc,
+  nên **cả 500 từ** đều có **mẫu đi kèm** (collocation/cấu trúc: `be good at + V-ing`, `take care of + N`,
+  `arrive at` chứ không `arrive to`…) và **3 câu ví dụ ở 3 ngữ cảnh** — 🏠 đời thường · 💼 đi làm ·
+  🛠️ kỹ thuật/hỗ trợ (**1.500 câu**). Ba câu đó không chỉ để đọc: bước **🧠 Đặt câu** lấy chúng ra làm
+  bài viết VI→EN, **đề bài nêu sẵn từ bắt buộc dùng** (mục tiêu là đặt câu đúng chỗ, không phải đoán
+  từ). Mỗi ngày xoay ngữ cảnh theo `(ngày + vị trí) % 3` nên một buổi trộn đủ 🏠 💼 🛠️ và lần gặp lại
+  rơi vào ngữ cảnh khác; 5 ngày cuối quét vòng lại cả 500 từ. Gõ đúng một từ là mẫu dùng + 3 câu
+  ngữ cảnh hiện ngay trong ô đáp án, đúng lúc đang chú ý nhất.
 
 - **🇬🇧 Tiếng Anh** — tab luyện **VIẾT** (nhìn tiếng Việt → tự gõ ra tiếng Anh), cố ý **KHÔNG gợi ý**
   để bắt não TẠO RA câu chứ không chỉ nhận ra câu; cuối buổi bấm 📋 chép cả bài đi nhờ AI review.

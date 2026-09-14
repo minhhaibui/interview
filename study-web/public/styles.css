@@ -2209,11 +2209,25 @@ button.rt-chip:hover { border-color: var(--accent); color: var(--accent); }
 .core-step.done { border-color: var(--green); color: var(--green); }
 .core-prog { height: 4px; background: var(--bg3); border-radius: 4px; overflow: hidden; margin-bottom: 14px; }
 .core-prog i { display: block; height: 100%; background: var(--accent); transition: width .2s; }
-.core-words { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; margin-bottom: 16px; }
+.core-words { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; margin-bottom: 16px; }
 .core-word { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; }
 .core-w-en { font-weight: 700; font-size: 15px; }
 .core-w-ph { font-size: 12.5px; color: var(--accent); }
 .core-w-vi { font-size: 13.5px; color: var(--muted); }
+
+/* --- 🧠 Cách dùng: mẫu đi kèm + 3 câu ngữ cảnh (màn xem trước và ô đáp án) --- */
+.core-w-pat {
+  margin-top: 7px; padding: 5px 8px; border-radius: 7px;
+  background: var(--bg3); font-size: 12.5px; line-height: 1.5;
+}
+.core-w-ex {
+  display: grid; grid-template-columns: 22px 1fr; gap: 2px 6px;
+  margin-top: 6px; font-size: 13px; line-height: 1.45;
+}
+.core-w-tag { grid-row: span 2; font-size: 13px; opacity: .85; }
+.core-w-exen { font-weight: 600; }
+.core-w-exvi { color: var(--muted); font-size: 12.5px; }
+.core-usebox { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); }
 #core-input {
   width: 100%; box-sizing: border-box; margin-top: 10px; padding: 10px 12px;
   background: var(--bg); color: var(--text); border: 1px solid var(--border);
