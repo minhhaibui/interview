@@ -248,13 +248,14 @@ function ebDrawReader() {
         ${ebNoteVi(ebChapter.title, ebChapter.titleVi) ? `<span class="eb-bar-en">${escHtml(ebNoteVi(ebChapter.title, ebChapter.titleVi))}</span>` : ''}
       </div>
       <div class="eb-modes">
-        ${sum ? '<button id="eb-sum-btn" class="eb-sum-btn" title="Đọc bản tóm tắt cô đọng trước khi vào chi tiết">⚡ Tóm tắt nhanh</button>' : ''}
+        <button id="eb-sum-btn" class="eb-sum-btn ${sum ? '' : 'empty'}"
+          title="${sum ? 'Đọc bản tóm tắt cô đọng trước khi vào chi tiết' : 'Chương này chưa có tóm tắt — bấm để xem chương nào có'}">⚡ Tóm tắt nhanh</button>
         <button class="eb-mode ${mode === 'en' ? 'active' : ''}" data-mode="en">EN</button>
         <button class="eb-mode ${mode === 'vi' ? 'active' : ''}" data-mode="vi">VI</button>
         <button class="eb-mode ${mode === 'both' ? 'active' : ''}" data-mode="both">⇄ Song song</button>
       </div>
     </div>
-    ${ebSumOpen && sum ? ebSumHtml(sum) : ''}
+    ${ebSumOpen ? (sum ? ebSumHtml(sum) : ebSumEmptyHtml()) : ''}
     <article class="eb-art eb-art-${mode}">${parts.join('\n')}</article>
     <div class="eb-foot">
       <button id="eb-prev" ${i <= 0 ? 'disabled' : ''}>← Chương trước</button>
@@ -267,6 +268,13 @@ function ebDrawReader() {
   if (sumBtn) sumBtn.onclick = () => ebToggleSum();
   const sumClose = document.getElementById('eb-sum-close');
   if (sumClose) sumClose.onclick = () => ebToggleSum();
+  const sumJump = document.getElementById('eb-sum-jump');
+  if (sumJump) sumJump.onclick = () => {
+    ebOnlySum = true;
+    ebSumOpen = false;
+    ebDrawShell();
+    ebDrawReader();
+  };
   document.getElementById('eb-prev').onclick = () => ebOpen(chapters[i - 1].id);
   document.getElementById('eb-next').onclick = () => ebOpen(chapters[i + 1].id);
   document.getElementById('eb-done').onclick = () => {
@@ -325,5 +333,30 @@ function ebSumHtml(s) {
       <ul class="eb-sum-traps">${s.traps.map(x => `<li>${escHtml(x)}</li>`).join('')}</ul></section>` : ''}
     ${s.wrap ? `<section class="eb-sum-sec s5"><h3>4️⃣ Tổng kết</h3>
       <p class="eb-sum-wrap">${escHtml(s.wrap)}</p></section>` : ''}
+  </div>`;
+}
+
+/**
+ * Chương chưa có tóm tắt: KHÔNG ẩn nút, vì ẩn thì người học mở vài chương liền
+ * không thấy gì và kết luận tính năng không tồn tại. Thay vào đó nói thẳng chương
+ * nào có và cho một nút lọc thẳng tới nhóm đó.
+ */
+function ebSumEmptyHtml() {
+  const book = ebBook(ebBookId);
+  const n = (book?.chapters || []).filter(c => ebSum(ebBookId, c.id)).length;
+  const has = (ebIndex?.books || [])
+    .map(b => [b, b.chapters.filter(c => ebSum(b.id, c.id)).length])
+    .filter(([, k]) => k)
+    .map(([b, k]) => `${escHtml(b.titleVi)} (${k})`)
+    .join(' · ');
+  return `<div class="eb-sum eb-sum-empty">
+    <div class="eb-sum-head">
+      <b>⚡ Tóm tắt nhanh</b>
+      <span class="eb-sum-sub">Chương này chưa có bản tóm tắt.</span>
+      <button id="eb-sum-close" class="eb-sum-close" title="Đóng">✕</button>
+    </div>
+    <p class="eb-sum-wrap">Tóm tắt được soạn cho các chương <b>“design một hệ thống”</b> — nơi cần
+      mường tượng trước bài toán trước khi đọc 20–75k ký tự. Hiện có ở: ${has || '—'}.</p>
+    ${n ? `<button id="eb-sum-jump" class="eb-sum-jump">⚡ Xem ${n} chương có tóm tắt trong sách này</button>` : ''}
   </div>`;
 }

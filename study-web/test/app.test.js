@@ -3140,8 +3140,14 @@ test('ebook: ⚡ tóm tắt nhanh — nối đủ nút, panel và cache', () => 
   assert.ok(/let ebOnlySum = false/.test(EBOOK), 'ebook.js thiếu cờ lọc chỉ-chương-có-tóm-tắt');
   assert.ok(EBOOK.includes('eb-only-sum'), 'thiếu nút lọc ⚡ cạnh ô tìm chương');
   assert.ok(/!ebOnlySum \|\| ebSum\(book\.id, c\.id\)/.test(EBOOK), 'ebDrawList chưa áp dụng bộ lọc ⚡');
-  // Nút chỉ được hiện khi chương ĐÓ có tóm tắt, không thì bấm vào ra panel rỗng.
-  assert.ok(/\$\{sum \? '<button id="eb-sum-btn"/.test(EBOOK), 'nút ⚡ phải phụ thuộc vào việc chương có tóm tắt');
+  // Nút ở NGUYÊN một chỗ trên mọi chương: ẩn đi thì mở vài chương không thấy gì
+  // là người học kết luận tính năng không tồn tại. Chương chưa có thì nút nhạt
+  // và bấm vào phải giải thích + cho lối nhảy tới nhóm có tóm tắt.
+  assert.ok(/function ebSumEmptyHtml\(/.test(EBOOK), 'thiếu panel giải thích cho chương chưa có tóm tắt');
+  assert.ok(/ebSumOpen \? \(sum \? ebSumHtml\(sum\) : ebSumEmptyHtml\(\)\)/.test(EBOOK),
+    'chương chưa có tóm tắt phải mở panel giải thích thay vì panel rỗng');
+  assert.ok(EBOOK.includes('eb-sum-jump'), 'panel rỗng thiếu nút nhảy tới nhóm chương có tóm tắt');
+  assert.ok(!/\$\{sum \? '<button id="eb-sum-btn"/.test(EBOOK), 'nút ⚡ không được ẩn khi chương thiếu tóm tắt');
   assert.ok(SW.includes("'data/ebooks/summaries.json'"), 'sw.js chưa precache summaries.json');
   // Nguồn nằm ở data/ebook-summaries.json; quên bước chép trong build.js thì bản
   // deploy trên GitHub Pages sẽ không có file, nút ⚡ biến mất mà local vẫn chạy tốt.
@@ -3149,7 +3155,7 @@ test('ebook: ⚡ tóm tắt nhanh — nối đủ nút, panel và cache', () => 
   assert.ok(BUILD.includes('ebook-summaries.json'), 'build.js chưa chép kho tóm tắt sang public/');
   assert.ok(/summaries\.json'\), JSON\.stringify\(sums\)/.test(BUILD), 'build.js chưa ghi ebooks/summaries.json');
   const CSS = read('styles.css');
-  for (const cls of ['.eb-sum-btn', '.eb-sum-qa', '.eb-sum-boxes', '.eb-sum-flow', '.eb-sum-traps', '.eb-only-sum']) {
+  for (const cls of ['.eb-sum-btn', '.eb-sum-qa', '.eb-sum-boxes', '.eb-sum-flow', '.eb-sum-traps', '.eb-only-sum', '.eb-sum-btn.empty', '.eb-sum-jump']) {
     assert.ok(CSS.includes(cls), `styles.css thiếu ${cls}`);
   }
 });

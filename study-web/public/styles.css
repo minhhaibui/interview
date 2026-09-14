@@ -2358,6 +2358,17 @@ body.light .eb-fig-img { filter: none; }
   border-radius: 7px; padding: 5px 12px; font-size: 13px; font-weight: 600; margin-right: 6px;
 }
 .eb-sum-btn:hover { filter: brightness(1.12); }
+/* Chương chưa có tóm tắt: nút vẫn ở đúng chỗ nhưng nhạt đi, bấm vào được giải thích. */
+.eb-sum-btn.empty {
+  background: var(--bg3); color: var(--muted); border-color: var(--border); font-weight: 500;
+}
+.eb-sum-btn.empty:hover { color: var(--text); border-color: var(--accent); filter: none; }
+.eb-sum-empty .eb-sum-wrap { margin: 10px 0 0; color: var(--muted); }
+.eb-sum-jump {
+  margin: 12px 0 12px; background: var(--accent); color: #fff; border: 1px solid var(--accent);
+  border-radius: 8px; padding: 7px 14px; font-size: 13px; font-weight: 600;
+}
+.eb-sum-jump:hover { filter: brightness(1.12); }
 .eb-sum {
   margin: 10px 24px 4px; padding: 14px 18px 6px;
   background: var(--bg2); border: 1px solid var(--accent); border-radius: 12px;
