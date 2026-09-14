@@ -2258,6 +2258,20 @@ button.rt-chip:hover { border-color: var(--accent); color: var(--accent); }
   border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font: inherit;
 }
 .eb-toc input:focus { outline: none; border-color: var(--accent); }
+/* Lọc nhanh tới các chương có ⚡ — trong Grokking phải cuộn qua 25 chương lý
+   thuyết mới gặp chương đầu tiên có tóm tắt, không có nút này thì coi như ẩn. */
+.eb-only-sum {
+  display: flex; align-items: center; gap: 7px; width: 100%; text-align: left;
+  background: var(--bg2); color: var(--muted); border: 1px solid var(--border);
+  border-radius: 8px; padding: 7px 11px; font-size: 12.8px; font-weight: 600;
+}
+.eb-only-sum:hover { color: var(--text); border-color: var(--accent); }
+.eb-only-sum.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.eb-only-n {
+  margin-left: auto; background: var(--bg3); color: var(--muted);
+  border-radius: 20px; padding: 1px 8px; font-size: 11.5px;
+}
+.eb-only-sum.active .eb-only-n { background: rgba(255, 255, 255, .22); color: #fff; }
 #eb-list { overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding-right: 4px; }
 .eb-ch {
   display: flex; gap: 9px; align-items: baseline; text-align: left;

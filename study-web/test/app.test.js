@@ -3135,6 +3135,11 @@ test('ebook: ⚡ tóm tắt nhanh — nối đủ nút, panel và cache', () => 
   assert.ok(/function ebSumHtml\(/.test(EBOOK), 'ebook.js thiếu ebSumHtml');
   assert.ok(/function ebToggleSum\(/.test(EBOOK), 'ebook.js thiếu ebToggleSum');
   assert.ok(EBOOK.includes('eb-sum-btn') && EBOOK.includes('eb-sum-close'), 'thiếu nút mở/đóng tóm tắt');
+  // Trong Grokking chương có ⚡ đầu tiên nằm ở vị trí 26 — không có bộ lọc thì
+  // người học cuộn vài màn vẫn tưởng tính năng không tồn tại.
+  assert.ok(/let ebOnlySum = false/.test(EBOOK), 'ebook.js thiếu cờ lọc chỉ-chương-có-tóm-tắt');
+  assert.ok(EBOOK.includes('eb-only-sum'), 'thiếu nút lọc ⚡ cạnh ô tìm chương');
+  assert.ok(/!ebOnlySum \|\| ebSum\(book\.id, c\.id\)/.test(EBOOK), 'ebDrawList chưa áp dụng bộ lọc ⚡');
   // Nút chỉ được hiện khi chương ĐÓ có tóm tắt, không thì bấm vào ra panel rỗng.
   assert.ok(/\$\{sum \? '<button id="eb-sum-btn"/.test(EBOOK), 'nút ⚡ phải phụ thuộc vào việc chương có tóm tắt');
   assert.ok(SW.includes("'data/ebooks/summaries.json'"), 'sw.js chưa precache summaries.json');
@@ -3144,7 +3149,7 @@ test('ebook: ⚡ tóm tắt nhanh — nối đủ nút, panel và cache', () => 
   assert.ok(BUILD.includes('ebook-summaries.json'), 'build.js chưa chép kho tóm tắt sang public/');
   assert.ok(/summaries\.json'\), JSON\.stringify\(sums\)/.test(BUILD), 'build.js chưa ghi ebooks/summaries.json');
   const CSS = read('styles.css');
-  for (const cls of ['.eb-sum-btn', '.eb-sum-qa', '.eb-sum-boxes', '.eb-sum-flow', '.eb-sum-traps']) {
+  for (const cls of ['.eb-sum-btn', '.eb-sum-qa', '.eb-sum-boxes', '.eb-sum-flow', '.eb-sum-traps', '.eb-only-sum']) {
     assert.ok(CSS.includes(cls), `styles.css thiếu ${cls}`);
   }
 });

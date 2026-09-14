@@ -189,6 +189,9 @@ không cần biết mẹo hard-refresh.
   `data/ebook-summaries.json` (khoá `"<sách>/<chương>"`), `build.js` chép sang
   `public/data/ebooks/summaries.json` và **chặn build nếu có khoá không khớp chương nào** —
   khoá sai thì nút ⚡ sẽ lặng lẽ không bao giờ hiện, không có lỗi nào để lần ra.
+  Danh sách chương có nút **⚡ Chỉ chương có tóm tắt** (kèm số lượng) để nhảy thẳng tới nhóm này —
+  trong Grokking chương có ⚡ đầu tiên nằm tận vị trí 26, không lọc thì cuộn vài màn vẫn tưởng
+  tính năng không tồn tại.
 - **🎯 Phỏng vấn** — một tab gộp cả buổi phỏng vấn, có 4 chế độ:
   - **🏅 Buổi phỏng vấn** (mặc định) — đúng **3 phần** như phần lớn buổi thật:
     🇬🇧 Tiếng Anh **8 câu** → 🧩 **IQ 24 câu** (phần nặng ký nhất, có tính giờ) →

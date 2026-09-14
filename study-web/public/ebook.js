@@ -24,6 +24,7 @@ let ebChapter = null;    // nội dung chương đang mở
 let ebFilter = '';       // ô lọc chương
 let ebSums = null;       // kho tóm tắt, nạp một lần khi mở tab
 let ebSumOpen = false;   // panel ⚡ đang mở?
+let ebOnlySum = false;   // chỉ liệt kê chương CÓ tóm tắt
 
 const ebRead = () => store.get(EB_READ_KEY, {});
 const ebMode = () => store.get(EB_MODE_KEY, 'both');
@@ -75,6 +76,8 @@ async function renderEbook() {
 function ebDrawShell() {
   const body = document.getElementById('ebook-body');
   const done = ebRead();
+  // Sách nào không có chương nào được tóm tắt thì ẩn luôn nút lọc cho khỏi bấm hụt.
+  const nSum = (ebBook(ebBookId)?.chapters || []).filter(c => ebSum(ebBookId, c.id)).length;
   const shelf = ebIndex.books.map(b => {
     const n = b.chapters.filter(c => done[`${b.id}/${c.id}`]).length;
     return `<button class="eb-book ${b.id === ebBookId ? 'active' : ''}" data-book="${b.id}">
@@ -88,6 +91,9 @@ function ebDrawShell() {
     <div class="eb-main">
       <aside class="eb-toc">
         <input id="eb-filter" type="search" placeholder="🔍 Lọc chương…" autocomplete="off" />
+        ${nSum ? `<button id="eb-only-sum" class="eb-only-sum ${ebOnlySum ? 'active' : ''}"
+          title="Chỉ hiện những chương có bản tóm tắt cô đọng">⚡ Chỉ chương có tóm tắt
+          <span class="eb-only-n">${nSum}</span></button>` : ''}
         <div id="eb-list"></div>
       </aside>
       <section id="eb-reader" class="eb-reader"></section>
@@ -97,6 +103,7 @@ function ebDrawShell() {
     ebBookId = btn.dataset.book;
     ebChapter = null;
     ebFilter = '';
+    ebOnlySum = false;
     store.set(EB_LAST_KEY, { book: ebBookId, ch: null });
     ebDrawShell();
     ebDrawReader();
@@ -104,6 +111,8 @@ function ebDrawShell() {
   const filter = document.getElementById('eb-filter');
   filter.value = ebFilter;
   filter.oninput = () => { ebFilter = filter.value.trim().toLowerCase(); ebDrawList(); };
+  const only = document.getElementById('eb-only-sum');
+  if (only) only.onclick = () => { ebOnlySum = !ebOnlySum; ebDrawShell(); };
   ebDrawList();
 }
 
@@ -121,7 +130,8 @@ function ebDrawList() {
   const done = ebRead();
   const q = ebFilter;
   const rows = book.chapters.filter(c =>
-    !q || c.title.toLowerCase().includes(q) || (c.titleVi || '').toLowerCase().includes(q));
+    (!q || c.title.toLowerCase().includes(q) || (c.titleVi || '').toLowerCase().includes(q))
+    && (!ebOnlySum || ebSum(book.id, c.id)));
   const el = document.getElementById('eb-list');
   if (!rows.length) { el.innerHTML = '<p class="eb-empty">Không có chương nào khớp.</p>'; return; }
   el.innerHTML = rows.map(c => {
