@@ -120,6 +120,19 @@ function buildEbooks() {
   fs.writeFileSync(path.join(outDir, 'index.json'), JSON.stringify(index));
   const pct = totalBlocks ? Math.round((100 * totalVi) / totalBlocks) : 0;
   console.log(`  ✓ ebooks/        ${index.books.length} sách · ${totalBlocks} block · đã dịch ${totalVi} (${pct}%) · ${totalFig} sơ đồ`);
+
+  // ⚡ Tóm tắt nhanh — soạn tay ở data/ebook-summaries.json, khoá là "<sách>/<chương>".
+  // Chép nguyên sang public/ nhưng CHẶN khoá không khớp chương nào: khoá sai thì nút ⚡
+  // lặng lẽ không bao giờ hiện, không có lỗi nào để lần ra.
+  const sumFile = path.join(__dirname, 'data', 'ebook-summaries.json');
+  if (fs.existsSync(sumFile)) {
+    const sums = JSON.parse(fs.readFileSync(sumFile, 'utf8'));
+    const real = new Set(index.books.flatMap(b => b.chapters.map(c => `${b.id}/${c.id}`)));
+    const bad = Object.keys(sums).filter(k => !real.has(k));
+    if (bad.length) throw new Error(`ebook-summaries.json có khoá không khớp chương nào: ${bad.join(', ')}`);
+    fs.writeFileSync(path.join(outDir, 'summaries.json'), JSON.stringify(sums));
+    console.log(`  ✓ ebooks/summaries.json  ${Object.keys(sums).length} chương có ⚡ tóm tắt`);
+  }
 }
 
 console.log('Building static data → public/data/');

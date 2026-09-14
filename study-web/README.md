@@ -174,6 +174,21 @@ không cần biết mẹo hard-refresh.
     (đồ thị 🎓 ở Dashboard, tab Hôm nay nhắc thi lại khi quá 7 ngày chưa đo phong độ).
   - Mỗi nút mode có **badge độ phủ** (đã đúng/tổng). Bấm **1–4** chọn đáp án, **Enter** sang câu tiếp.
 - **🏛️ Thiết kế hệ thống** — đề kinh điển + rubric 5 bước, tự chấm hoặc nhờ **AI chấm**.
+
+- **📕 Ebook** — đọc 5 bộ sách System Design **song ngữ Anh–Việt** (204 chương): Grokking ·
+  Alex Xu Tập 0/1/2 · 60 ngày câu hỏi thiết kế. Ba chế độ đọc **EN** / **VI** / **⇄ Song song**
+  (đối chiếu từng đoạn), đánh dấu đã đọc, mở lại đúng chương đang dở; sơ đồ cắt từ bản scan gốc.
+  **⚡ Tóm tắt nhanh** — 38 chương "design một hệ thống" (Grokking 026–038, Alex T1 chương 4–15,
+  toàn bộ Alex T2) có thêm nút ⚡ mở một bản tóm tắt cô đọng đọc trong ~3 phút, theo đúng khung
+  trả lời phỏng vấn: **một câu hệ thống làm gì** → **con số quy mô** → **1️⃣ làm rõ yêu cầu** (nên
+  hỏi lại gì, chốt giả định nào) → **2️⃣ thiết kế cao** (sơ đồ khối một dòng + luồng chính từng
+  bước) → **3️⃣ đi sâu** (chỗ giám khảo hay đào, kèm được–mất) → **⚠️ bẫy hay bị vặn** →
+  **4️⃣ tổng kết**. Mục đích là **mường tượng trước** bài toán rồi mới đọc chương 20–75k ký tự,
+  chứ không thay thế việc đọc. Mọi con số lấy từ chính chương đó; chương chưa có tóm tắt thì
+  **không hiện nút** (danh sách bên trái ghi rõ `⚡ có tóm tắt`). Nguồn soạn tay ở
+  `data/ebook-summaries.json` (khoá `"<sách>/<chương>"`), `build.js` chép sang
+  `public/data/ebooks/summaries.json` và **chặn build nếu có khoá không khớp chương nào** —
+  khoá sai thì nút ⚡ sẽ lặng lẽ không bao giờ hiện, không có lỗi nào để lần ra.
 - **🎯 Phỏng vấn** — một tab gộp cả buổi phỏng vấn, có 4 chế độ:
   - **🏅 Buổi phỏng vấn** (mặc định) — đúng **3 phần** như phần lớn buổi thật:
     🇬🇧 Tiếng Anh **8 câu** → 🧩 **IQ 24 câu** (phần nặng ký nhất, có tính giờ) →

@@ -7,7 +7,7 @@
  *   - /api/* và các request cross-origin khác (Firebase, Anthropic): không can thiệp.
  * Đổi VERSION mỗi khi muốn ép xoá cache cũ.
  */
-const VERSION = 'v311';
+const VERSION = 'v312';
 const CACHE = `prep-${VERSION}`;
 const CDN_HOSTS = ['cdn.jsdelivr.net', 'www.gstatic.com'];
 
@@ -24,7 +24,7 @@ const PRECACHE = [
   'data/tree.json', 'data/snippets.json', 'data/docs.json',
   // Danh mục ebook nạp sẵn; nội dung từng chương để stale-while-revalidate cache dần khi đọc
   // (191 chương ~ vài MB, precache hết sẽ làm lần cài đầu rất nặng).
-  'data/ebooks/index.json',
+  'data/ebooks/index.json', 'data/ebooks/summaries.json',
 ];
 
 // Thư viện CDN nạp sẵn để OFFLINE có ngay (không chờ tới lần tải thứ 2).

@@ -3017,6 +3017,7 @@ test('english-support: EN_SUP_TRACKS là nguồn duy nhất — app.js không ha
 // ---------------------------------------------------------------------------
 const EB_EN = path.resolve(__dirname, '..', 'data', 'ebooks-en');
 const EB_VI = path.resolve(__dirname, '..', 'data', 'ebooks-vi');
+const EB_SUM = path.resolve(__dirname, '..', 'data', 'ebook-summaries.json');
 const ebIndex = () => JSON.parse(fs.readFileSync(path.join(EB_EN, 'index.json'), 'utf8'));
 
 test('ebook: index khớp file chương, không chương rỗng, id không trùng', () => {
@@ -3095,6 +3096,57 @@ test('ebook: sơ đồ trong manifest đều có ảnh và neo đúng block chú
     }
   }
   assert.ok(shown >= 0);
+});
+
+test('ebook: ⚡ tóm tắt nhanh — phủ đúng các chương thiết kế, đủ khung 4 bước', () => {
+  // Đọc từ NGUỒN (data/…), không phải public/data/ — thư mục kia do build.js sinh
+  // và bị .gitignore, nên clone sạch trên CI sẽ không có file nào ở đó.
+  const ix = ebIndex();
+  const SUM = JSON.parse(fs.readFileSync(EB_SUM, 'utf8'));
+  // Mọi khoá phải trỏ tới một chương CÓ THẬT — sai khoá thì nút ⚡ lặng lẽ không bao giờ hiện.
+  const real = new Set(ix.books.flatMap(b => b.chapters.map(c => `${b.id}/${c.id}`)));
+  assert.deepStrictEqual(Object.keys(SUM).filter(k => !real.has(k)), [], 'summaries.json có khoá không khớp chương nào');
+  // Phạm vi đã chốt: các chương "design một hệ thống" của Grokking, Alex T1 và toàn bộ Alex T2.
+  const want = ix.books.flatMap(b => b.chapters
+    .filter(c => (b.id === 'grokking' && c.num >= '026' && c.num <= '038')
+      || (b.id === 'alex-vol1' && c.num >= '05' && c.num <= '16')
+      || b.id === 'alex-vol2')
+    .map(c => `${b.id}/${c.id}`));
+  assert.strictEqual(want.length, 38, `phải có 38 chương thiết kế, đang là ${want.length}`);
+  assert.deepStrictEqual(want.filter(k => !SUM[k]), [], 'có chương thiết kế chưa có bản tóm tắt');
+
+  for (const [k, d] of Object.entries(SUM)) {
+    for (const f of ['one', 'boxes', 'wrap']) assert.ok(d[f] && d[f].length > 20, `${k} thiếu ${f}`);
+    for (const [f, lo, hi] of [['scale', 2, 6], ['clarify', 3, 7], ['flow', 5, 10], ['deep', 4, 8], ['traps', 2, 5]]) {
+      const n = (d[f] || []).length;
+      assert.ok(n >= lo && n <= hi, `${k}: ${f} có ${n} mục, cần ${lo}–${hi}`);
+    }
+    for (const f of ['clarify', 'deep']) {
+      for (const x of d[f]) assert.ok(x.q && x.a, `${k}: ${f} có mục thiếu q hoặc a`);
+    }
+    // Panel render bằng escHtml nên markdown sót lại sẽ hiện ra nguyên dấu sao/backtick.
+    assert.ok(!/\*\*|`/.test(JSON.stringify(d)), `${k} còn markdown trong chuỗi`);
+  }
+});
+
+test('ebook: ⚡ tóm tắt nhanh — nối đủ nút, panel và cache', () => {
+  const EBOOK = read('ebook.js');
+  assert.ok(/function ebLoadSums\(/.test(EBOOK), 'ebook.js thiếu ebLoadSums');
+  assert.ok(/function ebSumHtml\(/.test(EBOOK), 'ebook.js thiếu ebSumHtml');
+  assert.ok(/function ebToggleSum\(/.test(EBOOK), 'ebook.js thiếu ebToggleSum');
+  assert.ok(EBOOK.includes('eb-sum-btn') && EBOOK.includes('eb-sum-close'), 'thiếu nút mở/đóng tóm tắt');
+  // Nút chỉ được hiện khi chương ĐÓ có tóm tắt, không thì bấm vào ra panel rỗng.
+  assert.ok(/\$\{sum \? '<button id="eb-sum-btn"/.test(EBOOK), 'nút ⚡ phải phụ thuộc vào việc chương có tóm tắt');
+  assert.ok(SW.includes("'data/ebooks/summaries.json'"), 'sw.js chưa precache summaries.json');
+  // Nguồn nằm ở data/ebook-summaries.json; quên bước chép trong build.js thì bản
+  // deploy trên GitHub Pages sẽ không có file, nút ⚡ biến mất mà local vẫn chạy tốt.
+  const BUILD = fs.readFileSync(path.resolve(__dirname, '..', 'build.js'), 'utf8');
+  assert.ok(BUILD.includes('ebook-summaries.json'), 'build.js chưa chép kho tóm tắt sang public/');
+  assert.ok(/summaries\.json'\), JSON\.stringify\(sums\)/.test(BUILD), 'build.js chưa ghi ebooks/summaries.json');
+  const CSS = read('styles.css');
+  for (const cls of ['.eb-sum-btn', '.eb-sum-qa', '.eb-sum-boxes', '.eb-sum-flow', '.eb-sum-traps']) {
+    assert.ok(CSS.includes(cls), `styles.css thiếu ${cls}`);
+  }
 });
 
 test('ebook: tab được nối đủ (script, view, switchView, service worker)', () => {

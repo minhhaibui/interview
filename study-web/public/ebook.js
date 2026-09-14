@@ -7,6 +7,11 @@
  *
  * Mỗi block có { t: kiểu, en: bản gốc, vi: bản dịch }. Chương chưa dịch xong thì
  * vẫn đọc được bản tiếng Anh — không chặn.
+ *
+ * ⚡ TÓM TẮT NHANH (data/ebooks/summaries.json): các chương "design một hệ thống" dài
+ * 20–75k ký tự, đọc thẳng vào thì rất dễ lạc. Nút ⚡ mở một bản tóm tắt cô đọng theo đúng
+ * khung trả lời phỏng vấn — làm rõ yêu cầu → thiết kế cao → đi sâu → tổng kết — để mường
+ * tượng trước bài toán rồi mới đọc chi tiết. Chương nào chưa có tóm tắt thì KHÔNG hiện nút.
  */
 
 const EB_MODE_KEY = 'prep-ebook-mode';   // 'en' | 'vi' | 'both'
@@ -17,6 +22,8 @@ let ebIndex = null;      // danh mục đã nạp
 let ebBookId = null;     // sách đang chọn
 let ebChapter = null;    // nội dung chương đang mở
 let ebFilter = '';       // ô lọc chương
+let ebSums = null;       // kho tóm tắt, nạp một lần khi mở tab
+let ebSumOpen = false;   // panel ⚡ đang mở?
 
 const ebRead = () => store.get(EB_READ_KEY, {});
 const ebMode = () => store.get(EB_MODE_KEY, 'both');
@@ -28,6 +35,19 @@ async function ebLoadIndex() {
 }
 
 const ebBook = id => ebIndex?.books.find(b => b.id === id);
+/** Tóm tắt của một chương, chưa có thì trả null (nút ⚡ sẽ không hiện). */
+const ebSum = (book, ch) => (ebSums ? ebSums[`${book}/${ch}`] || null : null);
+
+/** Nạp kho tóm tắt — hỏng thì bỏ qua, tab vẫn đọc được sách như thường. */
+async function ebLoadSums() {
+  if (ebSums) return ebSums;
+  try {
+    ebSums = await fetch('data/ebooks/summaries.json').then(r => r.json());
+  } catch {
+    ebSums = {};
+  }
+  return ebSums;
+}
 
 /** Điểm vào của tab (switchView gọi). */
 async function renderEbook() {
@@ -36,7 +56,7 @@ async function renderEbook() {
   if (!ebIndex) {
     body.innerHTML = '<p class="eb-loading">⏳ Đang nạp thư viện…</p>';
     try {
-      await ebLoadIndex();
+      await Promise.all([ebLoadIndex(), ebLoadSums()]);
     } catch {
       body.innerHTML = '<p class="eb-loading">❌ Không nạp được thư viện ebook. Kiểm tra mạng rồi thử lại.</p>';
       return;
@@ -111,7 +131,7 @@ function ebDrawList() {
       <span class="eb-ch-n">${escHtml(c.num)}</span>
       <span class="eb-ch-b">
         <span class="eb-ch-t" lang="en">${escHtml(c.title)}</span>
-        <span class="eb-ch-m">${ebNoteVi(c.title, c.titleVi) ? `<span class="eb-ch-vi">${escHtml(ebNoteVi(c.title, c.titleVi))}</span> · ` : ''}${done[key] ? '✓ đã đọc · ' : ''}${(c.chars / 1000).toFixed(1)}k ký tự${pct < 100 ? ` · dịch ${pct}%` : ''}</span>
+        <span class="eb-ch-m">${ebNoteVi(c.title, c.titleVi) ? `<span class="eb-ch-vi">${escHtml(ebNoteVi(c.title, c.titleVi))}</span> · ` : ''}${ebSum(book.id, c.id) ? '<span class="eb-ch-sum">⚡ có tóm tắt</span> · ' : ''}${done[key] ? '✓ đã đọc · ' : ''}${(c.chars / 1000).toFixed(1)}k ký tự${pct < 100 ? ` · dịch ${pct}%` : ''}</span>
       </span>
     </button>`;
   }).join('');
@@ -122,6 +142,8 @@ function ebDrawList() {
 async function ebOpen(chId) {
   const book = ebBook(ebBookId);
   if (!book.chapters.some(c => c.id === chId)) return;
+  ebSumOpen = false;                 // đổi chương thì đóng panel ⚡ của chương cũ
+  if (!ebSums) await ebLoadSums();   // vào lại tab khi danh mục đã nạp sẵn
   const reader = document.getElementById('eb-reader');
   reader.innerHTML = '<p class="eb-loading">⏳ Đang mở chương…</p>';
   try {
@@ -192,6 +214,7 @@ function ebDrawReader() {
   }
 
   const mode = ebMode();
+  const sum = ebSum(ebBookId, ebChapter.id);
   const key = `${ebBookId}/${ebChapter.id}`;
   const isRead = !!ebRead()[key];
   const chapters = book.chapters;
@@ -215,11 +238,13 @@ function ebDrawReader() {
         ${ebNoteVi(ebChapter.title, ebChapter.titleVi) ? `<span class="eb-bar-en">${escHtml(ebNoteVi(ebChapter.title, ebChapter.titleVi))}</span>` : ''}
       </div>
       <div class="eb-modes">
+        ${sum ? '<button id="eb-sum-btn" class="eb-sum-btn" title="Đọc bản tóm tắt cô đọng trước khi vào chi tiết">⚡ Tóm tắt nhanh</button>' : ''}
         <button class="eb-mode ${mode === 'en' ? 'active' : ''}" data-mode="en">EN</button>
         <button class="eb-mode ${mode === 'vi' ? 'active' : ''}" data-mode="vi">VI</button>
         <button class="eb-mode ${mode === 'both' ? 'active' : ''}" data-mode="both">⇄ Song song</button>
       </div>
     </div>
+    ${ebSumOpen && sum ? ebSumHtml(sum) : ''}
     <article class="eb-art eb-art-${mode}">${parts.join('\n')}</article>
     <div class="eb-foot">
       <button id="eb-prev" ${i <= 0 ? 'disabled' : ''}>← Chương trước</button>
@@ -228,6 +253,10 @@ function ebDrawReader() {
     </div>`;
 
   reader.querySelectorAll('.eb-mode').forEach(b => b.onclick = () => ebSetMode(b.dataset.mode));
+  const sumBtn = document.getElementById('eb-sum-btn');
+  if (sumBtn) sumBtn.onclick = () => ebToggleSum();
+  const sumClose = document.getElementById('eb-sum-close');
+  if (sumClose) sumClose.onclick = () => ebToggleSum();
   document.getElementById('eb-prev').onclick = () => ebOpen(chapters[i - 1].id);
   document.getElementById('eb-next').onclick = () => ebOpen(chapters[i + 1].id);
   document.getElementById('eb-done').onclick = () => {
@@ -237,4 +266,54 @@ function ebDrawReader() {
     ebDrawShell();
     ebDrawReader();
   };
+}
+
+/* ------------------------------------------------------- ⚡ tóm tắt nhanh */
+
+/** Bật/tắt panel tóm tắt. Mở xong cuộn lên đầu để đọc ngay, không phải tự tìm. */
+function ebToggleSum() {
+  ebSumOpen = !ebSumOpen;
+  ebDrawReader();
+  if (ebSumOpen) {
+    const reader = document.getElementById('eb-reader');
+    if (reader) reader.scrollTop = 0;
+  }
+}
+
+/** Danh sách hỏi–đáp dùng chung cho phần 1️⃣ làm rõ yêu cầu và 3️⃣ đi sâu. */
+function ebSumQa(items) {
+  return (items || []).map(x => `<div class="eb-sum-qa">
+    <div class="eb-sum-q">${escHtml(x.q)}</div>
+    <div class="eb-sum-a">${escHtml(x.a)}</div>
+  </div>`).join('');
+}
+
+/**
+ * Khung 4 bước đúng như cách trả lời một câu system design trên bảng trắng:
+ * làm rõ yêu cầu → phác thiết kế cao → đi sâu chỗ giám khảo đào → tổng kết.
+ * Mục nào chương không nói tới thì ẩn hẳn, không để tiêu đề rỗng.
+ */
+function ebSumHtml(s) {
+  const sec = (cls, head, body) => (body ? `<section class="eb-sum-sec ${cls}">
+    <h3>${head}</h3>${body}</section>` : '');
+  return `<div class="eb-sum">
+    <div class="eb-sum-head">
+      <b>⚡ Tóm tắt nhanh</b>
+      <span class="eb-sum-sub">Đọc ~3 phút để mường tượng trước, rồi mới vào chi tiết bên dưới.</span>
+      <button id="eb-sum-close" class="eb-sum-close" title="Đóng tóm tắt">✕</button>
+    </div>
+    ${s.one ? `<p class="eb-sum-one">${escHtml(s.one)}</p>` : ''}
+    ${s.scale?.length ? `<div class="eb-sum-chips">${s.scale.map(x =>
+      `<span class="eb-sum-chip">${escHtml(x)}</span>`).join('')}</div>` : ''}
+    ${sec('s1', '1️⃣ Làm rõ yêu cầu <small>hỏi lại gì trước khi vẽ</small>', ebSumQa(s.clarify))}
+    ${sec('s2', '2️⃣ Thiết kế cao <small>sơ đồ khối + luồng chính</small>',
+      (s.boxes ? `<div class="eb-sum-boxes">${escHtml(s.boxes)}</div>` : '')
+      + (s.flow?.length ? `<ol class="eb-sum-flow">${s.flow.map(x =>
+        `<li>${escHtml(x)}</li>`).join('')}</ol>` : ''))}
+    ${sec('s3', '3️⃣ Đi sâu <small>chỗ giám khảo hay đào</small>', ebSumQa(s.deep))}
+    ${s.traps?.length ? `<section class="eb-sum-sec s4"><h3>⚠️ Bẫy hay bị vặn</h3>
+      <ul class="eb-sum-traps">${s.traps.map(x => `<li>${escHtml(x)}</li>`).join('')}</ul></section>` : ''}
+    ${s.wrap ? `<section class="eb-sum-sec s5"><h3>4️⃣ Tổng kết</h3>
+      <p class="eb-sum-wrap">${escHtml(s.wrap)}</p></section>` : ''}
+  </div>`;
 }
